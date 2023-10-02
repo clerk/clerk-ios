@@ -15,8 +15,9 @@ let package = Package(
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "Clerk",
-            targets: ["Clerk"]),
-    ], 
+            targets: ["Clerk"]
+        ),
+    ],
     dependencies: [
         .package(url: "https://github.com/kean/Get", from: "2.1.0"),
         .package(url: "https://github.com/CreateAPI/URLQueryEncoder", from: "0.2.0"),
@@ -35,9 +36,7 @@ let package = Package(
             path: "Sources"
         ),
         .testTarget(
-            name: "ClerkTests",
-            dependencies: ["Clerk"], 
-            path: "Tests"
+            name: "ClerkTests", dependencies: ["Clerk"]
         ),
     ]
 )
