@@ -10,7 +10,7 @@ import Foundation
 final public class Clerk {
     
     public static var hello: String {
-        "Hello, World! -Clerk"
+        "Hello, World! - Clerk"
     }
     
 }
