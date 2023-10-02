@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,6 +12,7 @@
 		8F67B6D62ACB0EF70047FFE4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */; };
 		8F67B6DA2ACB0EF70047FFE4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F67B6D92ACB0EF70047FFE4 /* Preview Assets.xcassets */; };
 		8F67B6E32ACB10970047FFE4 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F67B6E22ACB10970047FFE4 /* Clerk */; };
+		8FFF0B352ACB30350096E4BF /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8FFF0B342ACB30350096E4BF /* Clerk */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FFF0B352ACB30350096E4BF /* Clerk in Frameworks */,
 				8F67B6E32ACB10970047FFE4 /* Clerk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -91,6 +93,7 @@
 			name = ClerkExample;
 			packageProductDependencies = (
 				8F67B6E22ACB10970047FFE4 /* Clerk */,
+				8FFF0B342ACB30350096E4BF /* Clerk */,
 			);
 			productName = ClerkExample;
 			productReference = 8F67B6CE2ACB0EF60047FFE4 /* ClerkExample.app */;
@@ -121,7 +124,7 @@
 			);
 			mainGroup = 8F67B6C52ACB0EF60047FFE4;
 			packageReferences = (
-				8F67B6E12ACB10970047FFE4 /* XCLocalSwiftPackageReference ".." */,
+				8FFF0B332ACB30350096E4BF /* XCRemoteSwiftPackageReference "clerk-ios" */,
 			);
 			productRefGroup = 8F67B6CF2ACB0EF60047FFE4 /* Products */;
 			projectDirPath = "";
@@ -370,16 +373,25 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		8F67B6E12ACB10970047FFE4 /* XCLocalSwiftPackageReference ".." */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ..;
+/* Begin XCRemoteSwiftPackageReference section */
+		8FFF0B332ACB30350096E4BF /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:clerkinc/clerk-ios.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		8F67B6E22ACB10970047FFE4 /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = Clerk;
+		};
+		8FFF0B342ACB30350096E4BF /* Clerk */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FFF0B332ACB30350096E4BF /* XCRemoteSwiftPackageReference "clerk-ios" */;
 			productName = Clerk;
 		};
 /* End XCSwiftPackageProductDependency section */
