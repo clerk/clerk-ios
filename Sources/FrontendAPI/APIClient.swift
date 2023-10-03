@@ -27,12 +27,12 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         }
         
         // Required for native application flow on all requests
-        if let url = request.url, var urlComponents = URLComponents(string: url.absoluteString) {
-            urlComponents.queryItems?.append(.init(name: "_is_native", value: "true"))
-            request.url = urlComponents.url
-        }
+//        if let url = request.url, var urlComponents = URLComponents(string: url.absoluteString) {
+//            urlComponents.queryItems?.append(.init(name: "_is_native", value: "true"))
+//            request.url = urlComponents.url
+//        }
         
-//        request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
+        request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
     }
     
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
