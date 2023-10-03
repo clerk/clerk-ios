@@ -12,14 +12,15 @@ let package = Package(
             targets: ["Clerk"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2")
+        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
+        .package(url: "https://github.com/CreateAPI/URLQueryEncoder", from: "0.2.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Clerk",
-            dependencies: ["KeychainAccess"],
+            dependencies: ["KeychainAccess", "URLQueryEncoder"],
             path: "Sources"
         ),
         .testTarget(
