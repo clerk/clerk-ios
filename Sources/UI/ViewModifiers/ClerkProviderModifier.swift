@@ -26,6 +26,9 @@ struct ClerkProviderModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .environmentObject(Clerk.shared)
+            .task {
+                _ = try? await Clerk.shared.client.create()
+            }
     }
 }
 

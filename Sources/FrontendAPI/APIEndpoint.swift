@@ -8,14 +8,14 @@
 import Foundation
 import Get
     
-public enum APIEndpoint {}
+enum APIEndpoint {}
 
 extension APIEndpoint {
-    public static var v1: V1Endpoint {
+    static var v1: V1Endpoint {
         V1Endpoint(path: "/v1")
     }
     
-    public struct V1Endpoint {
+    struct V1Endpoint {
         /// Path: `/v1`
         public let path: String
     }
@@ -23,11 +23,11 @@ extension APIEndpoint {
 
 extension APIEndpoint.V1Endpoint {
     
-    public var client: ClientEndpoint {
+    var client: ClientEndpoint {
         ClientEndpoint(path: path + "/client")
     }
     
-    public struct ClientEndpoint {
+    struct ClientEndpoint {
         /// Path: `/v1/client`
         let path: String
         
@@ -47,11 +47,11 @@ extension APIEndpoint.V1Endpoint {
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint {
     
-    public var signUps: SignUpsEndpoint {
+    var signUps: SignUpsEndpoint {
         SignUpsEndpoint(path: path + "/sign_ups")
     }
     
-    public struct SignUpsEndpoint {
+    struct SignUpsEndpoint {
         /// Path: `v1/client/sign_ups`
         let path: String
         
@@ -67,11 +67,11 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
     
-    public func prepareVerification(id: String) -> PrepareVerificationEndpoint {
+    func prepareVerification(id: String) -> PrepareVerificationEndpoint {
         PrepareVerificationEndpoint(path: path + "/\(id)/prepare_verification")
     }
     
-    public struct PrepareVerificationEndpoint {
+    struct PrepareVerificationEndpoint {
         /// Path: `v1/client/sign_ups/(id)/prepare_verification`
         let path: String
         
@@ -89,11 +89,11 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
     
-    public func attemptVerification(id: String) -> AttemptVerificationEndpoint {
-        AttemptVerificationEndpoint(path: path + "/\(id)/prepare_verification")
+    func attemptVerification(id: String) -> AttemptVerificationEndpoint {
+        AttemptVerificationEndpoint(path: path + "/\(id)/attempt_verification")
     }
     
-    public struct AttemptVerificationEndpoint {
+    struct AttemptVerificationEndpoint {
         /// Path: `v1/client/sign_ups/(id)/attempt_verification`
         let path: String
         

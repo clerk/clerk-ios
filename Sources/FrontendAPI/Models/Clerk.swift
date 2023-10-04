@@ -57,4 +57,11 @@ final public class Clerk: ObservableObject {
     @Published public var client: Client = Client()
 }
 
+#if DEBUG
+extension Clerk {
+    public static var mock: Clerk {
+        Clerk()
+    }
+}
+#endif
 

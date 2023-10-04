@@ -21,21 +21,18 @@ import Foundation
  Those that hold the different values that we supply to the sign-up. Examples of these are username, emailAddress, firstName, etc.
  Those that contain references to the created resources once the sign-up is complete, i.e. createdSessionId and createdUserId.
  */
-public final class SignUp: Decodable, ObservableObject {
-    public var id: String
+public struct SignUp: Decodable {
+    
+    public init(
+        id: String = "",
+        status: String? = nil
+    ) {
+        self.id = id
+        self.status = status
+    }
+    
+    public var id: String = ""
     public var status: String?
-    
-    enum CodingKeys: CodingKey {
-        case id
-        case status
-    }
-    
-    public init(from decoder: Decoder) throws {
-        let container: KeyedDecodingContainer<SignUp.CodingKeys> = try decoder.container(keyedBy: SignUp.CodingKeys.self)
-        
-        self.id = try container.decode(String.self, forKey: SignUp.CodingKeys.id)
-        self.status = try container.decodeIfPresent(String.self, forKey: SignUp.CodingKeys.status)
-    }
 }
 
 extension SignUp {
@@ -88,7 +85,7 @@ extension SignUp {
      */
     @MainActor
     @discardableResult
-    public static func create(_ params: CreateParams) async throws -> SignUp {
+    public func create(_ params: CreateParams) async throws -> SignUp {
         let signUp = try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.post(params)).value.response
         Clerk.shared.client.signUp = signUp
         return signUp
@@ -102,9 +99,8 @@ extension SignUp {
      */
     @MainActor
     @discardableResult
-    public static func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
-        guard let id = Clerk.shared.client.signUp?.id else { throw ClerkAPIError(longMessage: "Client does not have a current sign up.") }
-        return try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.prepareVerification(id: id).post(params)).value.response
+    public func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
+        return try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.prepareVerification(id: Clerk.shared.client.signUp.id).post(params)).value.response
     }
     
     /**
@@ -114,8 +110,7 @@ extension SignUp {
      */
     @MainActor
     @discardableResult
-    public static func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
-        guard let id = Clerk.shared.client.signUp?.id else { throw ClerkAPIError(longMessage: "Client does not have a current sign up.") }
-        return try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.attemptVerification(id: id).post(params)).value.response
+    public func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
+        return try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.attemptVerification(id: Clerk.shared.client.signUp.id).post(params)).value.response
     }
 }
