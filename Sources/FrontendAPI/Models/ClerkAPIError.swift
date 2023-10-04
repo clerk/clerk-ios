@@ -7,15 +7,16 @@
 
 import Foundation
 
-public struct ClerkAPIError: Error, LocalizedError, Codable {
+/// The body of Clerk API Error responses, can contain multiple `ClerkAPIError`.
+public struct ClerkErrorResponse: Decodable {
+    let errors: [ClerkAPIError]
+    let clerkTraceId: String
+}
+
+/// Custom error return by the Clerk API
+public struct ClerkAPIError: Error, LocalizedError, Decodable {
     var message: String?
     var longMessage: String?
-    var code: String?
-    var meta: Meta?
     
-    public struct Meta: Codable {
-        let paramName: String
-    }
-    
-    public var errorDescription: String? { message }
+    public var errorDescription: String? { longMessage ?? message }
 }
