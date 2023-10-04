@@ -20,5 +20,10 @@ import Foundation
  Information about the user and the provided authentication identifier value (email address, phone number or username). Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
 public struct SignIn: Decodable {
-    public let status: String
+    
+    public init(status: String = "") {
+        self.status = status
+    }
+    
+    public var status: String = ""
 }
