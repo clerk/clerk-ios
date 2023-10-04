@@ -34,7 +34,7 @@ final public class Clerk: ObservableObject {
      
      Example Usage:
      ```swift
-     Clerk.configure(
+     Clerk.shared.configure(
        publishableKey: "pk_your_publishable_key",
        frontendAPIURL: "[your-domain].clerk.accounts.dev"
      )
