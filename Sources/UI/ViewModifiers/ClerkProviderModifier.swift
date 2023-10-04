@@ -27,7 +27,11 @@ struct ClerkProviderModifier: ViewModifier {
         content
             .environmentObject(Clerk.shared)
             .task {
-                _ = try? await Clerk.shared.client.create()
+                do {
+                    try await Clerk.shared.client.get()
+                } catch {
+                    _ = try? await Clerk.shared.client.create()
+                }
             }
     }
 }
