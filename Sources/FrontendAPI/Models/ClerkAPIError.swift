@@ -20,3 +20,10 @@ struct ClerkAPIError: Error, LocalizedError, Decodable {
     
     var errorDescription: String? { longMessage ?? message }
 }
+
+/// Custom Clerk error created on the client
+struct ClerkClientError: Error, LocalizedError {
+    var message: String?
+    
+    var errorDescription: String? { message }
+}

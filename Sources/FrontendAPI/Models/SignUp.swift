@@ -106,6 +106,10 @@ extension SignUp {
      */
     @MainActor
     public func prepareVerification(_ params: PrepareVerificationParams) async throws {
+        guard !Clerk.shared.client.signUp.id.isEmpty else {
+            throw ClerkClientError(message: "Please initiate a sign up before attempting to verify.")
+        }
+        
         let request = APIEndpoint
             .v1
             .client
@@ -124,6 +128,10 @@ extension SignUp {
      */
     @MainActor
     public func attemptVerification(_ params: AttemptVerificationParams) async throws {
+        guard !Clerk.shared.client.signUp.id.isEmpty else {
+            throw ClerkClientError(message: "Please initiate a sign up before attempting to verify.")
+        }
+        
         let request = APIEndpoint
             .v1
             .client

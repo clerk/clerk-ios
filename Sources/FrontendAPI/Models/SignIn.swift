@@ -27,3 +27,40 @@ public struct SignIn: Decodable {
     
     private(set) public var status: String = ""
 }
+
+extension SignIn {
+    
+    public struct CreateParams: Encodable {
+        public init(
+            identifier: String,
+            password: String? = nil
+        ) {
+            self.identifier = identifier
+            self.password = password
+        }
+        
+        public let identifier: String
+        public let password: String?
+    }
+    
+}
+
+extension SignIn {
+    
+    /**
+     Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign in lifecycle state.
+
+     Depending on the use-case and the params you pass to the create method, it can either complete the sign in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
+     */
+    public func create(_ params: CreateParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .post(params)
+        
+        let signIn = try await Clerk.apiClient.send(request).value.response
+        Clerk.shared.client.signIn = signIn
+    }
+    
+}

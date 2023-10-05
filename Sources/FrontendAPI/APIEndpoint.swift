@@ -45,6 +45,23 @@ extension APIEndpoint.V1Endpoint {
     }
 }
 
+extension APIEndpoint.V1Endpoint {
+    
+    var environment: EnvironmentEndpoint {
+        EnvironmentEndpoint(path: path + "/environment")
+    }
+    
+    struct EnvironmentEndpoint {
+        /// Path: `v1/environment`
+        let path: String
+        
+        var get: Request<ClerkEnvironment> {
+            .init(path: path)
+        }
+    }
+    
+}
+
 extension APIEndpoint.V1Endpoint.ClientEndpoint {
     
     var signUps: SignUpsEndpoint {
@@ -108,4 +125,21 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
             )
         }
     }
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint {
+    
+    var signIns: SignInsEndpoint {
+        SignInsEndpoint(path: path + "/sign_ins")
+    }
+    
+    struct SignInsEndpoint {
+        /// Path: `v1/client/sign_ins`
+        let path: String
+        
+        func post(_ params: SignIn.CreateParams) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+    
 }
