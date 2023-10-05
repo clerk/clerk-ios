@@ -25,14 +25,17 @@ public struct SignUp: Decodable {
     
     public init(
         id: String = "",
-        status: String? = nil
+        status: String? = nil,
+        unverifiedFields: [String] = []
     ) {
         self.id = id
         self.status = status
+        self.unverifiedFields = unverifiedFields
     }
     
     public var id: String = ""
     public var status: String?
+    public var unverifiedFields: [String] = []
 }
 
 extension SignUp {
@@ -84,8 +87,7 @@ extension SignUp {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @MainActor
-    @discardableResult
-    public func create(_ params: CreateParams) async throws -> SignUp {
+    public func create(_ params: CreateParams) async throws {
         let request = APIEndpoint
             .v1
             .client
@@ -94,7 +96,6 @@ extension SignUp {
         
         let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
-        return signUp
     }
     
     /**
@@ -104,8 +105,7 @@ extension SignUp {
      phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
      */
     @MainActor
-    @discardableResult
-    public func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
+    public func prepareVerification(_ params: PrepareVerificationParams) async throws {
         let request = APIEndpoint
             .v1
             .client
@@ -115,7 +115,6 @@ extension SignUp {
         
         let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
-        return signUp
     }
     
     /**
@@ -124,8 +123,7 @@ extension SignUp {
      Depending on the strategy, the method parameters could differ.
      */
     @MainActor
-    @discardableResult
-    public func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
+    public func attemptVerification(_ params: AttemptVerificationParams) async throws {
         let request = APIEndpoint
             .v1
             .client
@@ -135,6 +133,5 @@ extension SignUp {
         
         let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
-        return signUp
     }
 }

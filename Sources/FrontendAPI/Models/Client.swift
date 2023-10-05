@@ -45,8 +45,7 @@ extension Client {
     
     /// Retrieves the current client.
     @MainActor
-    @discardableResult
-    public func get() async throws -> Client {
+    public func get() async throws {
         let request = APIEndpoint
             .v1
             .client
@@ -54,13 +53,11 @@ extension Client {
         
         let client = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client = client
-        return client
     }
     
     /// Creates a new client for the current instance along with its cookie.
     @MainActor
-    @discardableResult
-    public func create() async throws -> Client {
+    public func create() async throws {
         let request = APIEndpoint
             .v1
             .client
@@ -68,21 +65,18 @@ extension Client {
         
         let client = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client = client
-        return client
     }
     
     /// Deletes the client. All sessions will be reset.
     @MainActor
-    @discardableResult
-    public func destroy() async throws -> Client {
+    public func destroy() async throws {
         let request = APIEndpoint
             .v1
             .client
             .delete
         
-        let client = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.apiClient.send(request)
         Clerk.shared.client = Client()
-        return client
     }
     
 }
