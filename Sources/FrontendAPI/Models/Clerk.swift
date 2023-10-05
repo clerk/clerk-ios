@@ -54,7 +54,10 @@ final public class Clerk: ObservableObject {
     private(set) public var frontendAPIURL: String = ""
     
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client = Client()
+    @Published internal(set) public var client: Client = .init()
+    
+    /// The Environment for the clerk instance.
+    @Published internal(set) public var environment: Clerk.Environment = .init()
 }
 
 #if DEBUG

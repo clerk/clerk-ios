@@ -55,7 +55,7 @@ extension APIEndpoint.V1Endpoint {
         /// Path: `v1/environment`
         let path: String
         
-        var get: Request<ClerkEnvironment> {
+        var get: Request<Clerk.Environment> {
             .init(path: path)
         }
     }

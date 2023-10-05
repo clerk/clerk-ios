@@ -7,19 +7,24 @@
 
 import Foundation
 
-public struct ClerkEnvironment: Decodable {
-    static var shared = ClerkEnvironment()
+extension Clerk {
+ 
+    public struct Environment: Decodable {
+        
+    }
+    
 }
 
-extension ClerkEnvironment {
+extension Clerk.Environment {
     
-    static func get() async throws {
+    @MainActor
+    func get() async throws {
         let request = APIEndpoint
             .v1
             .environment
             .get
         
-        shared = try await Clerk.apiClient.send(request).value
+        Clerk.shared.environment = try await Clerk.apiClient.send(request).value
     }
     
 }

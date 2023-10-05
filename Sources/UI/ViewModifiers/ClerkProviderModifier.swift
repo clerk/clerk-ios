@@ -33,6 +33,9 @@ struct ClerkProviderModifier: ViewModifier {
                     try? await Clerk.shared.client.create()
                 }
             }
+            .task {
+                try? await Clerk.shared.environment.get()
+            }
     }
 }
 
