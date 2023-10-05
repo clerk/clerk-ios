@@ -52,6 +52,7 @@ extension SignIn {
 
      Depending on the use-case and the params you pass to the create method, it can either complete the sign in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
+    @MainActor
     public func create(_ params: CreateParams) async throws {
         let request = APIEndpoint
             .v1
