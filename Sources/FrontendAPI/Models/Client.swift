@@ -43,11 +43,16 @@ public struct Client: Decodable {
 
 extension Client {
     
-    /// Retrieves the current client
+    /// Retrieves the current client.
     @MainActor
     @discardableResult
     public func get() async throws -> Client {
-        let client = try await Clerk.apiClient.send(APIEndpoint.v1.client.get).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .get
+        
+        let client = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client = client
         return client
     }
@@ -56,7 +61,12 @@ extension Client {
     @MainActor
     @discardableResult
     public func create() async throws -> Client {
-        let client = try await Clerk.apiClient.send(APIEndpoint.v1.client.put).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .put
+        
+        let client = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client = client
         return client
     }
@@ -65,7 +75,12 @@ extension Client {
     @MainActor
     @discardableResult
     public func destroy() async throws -> Client {
-        let client = try await Clerk.apiClient.send(APIEndpoint.v1.client.delete).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .delete
+        
+        let client = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client = Client()
         return client
     }

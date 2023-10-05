@@ -86,7 +86,13 @@ extension SignUp {
     @MainActor
     @discardableResult
     public func create(_ params: CreateParams) async throws -> SignUp {
-        let signUp = try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.post(params)).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .signUps
+            .post(params)
+        
+        let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
         return signUp
     }
@@ -100,7 +106,14 @@ extension SignUp {
     @MainActor
     @discardableResult
     public func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
-        let signUp = try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.prepareVerification(id: Clerk.shared.client.signUp.id).post(params)).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .signUps
+            .prepareVerification(id: Clerk.shared.client.signUp.id)
+            .post(params)
+        
+        let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
         return signUp
     }
@@ -113,7 +126,14 @@ extension SignUp {
     @MainActor
     @discardableResult
     public func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
-        let signUp = try await Clerk.apiClient.send(APIEndpoint.v1.client.signUps.attemptVerification(id: Clerk.shared.client.signUp.id).post(params)).value.response
+        let request = APIEndpoint
+            .v1
+            .client
+            .signUps
+            .attemptVerification(id: Clerk.shared.client.signUp.id)
+            .post(params)
+        
+        let signUp = try await Clerk.apiClient.send(request).value.response
         Clerk.shared.client.signUp = signUp
         return signUp
     }

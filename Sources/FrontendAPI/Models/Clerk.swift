@@ -48,10 +48,10 @@ final public class Clerk: ObservableObject {
     }
     
     /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.
-    private(set) var publishableKey: String = ""
+    private(set) public var publishableKey: String = ""
     
     /// Frontend API URL
-    private(set) var frontendAPIURL: String = ""
+    private(set) public var frontendAPIURL: String = ""
     
     /// The Client object for the current device.
     @Published public var client: Client = Client()
