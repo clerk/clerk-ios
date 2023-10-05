@@ -13,7 +13,7 @@ import Foundation
  */
 public struct Client: Decodable {
     
-    public init(
+    init(
         signIn: SignIn = SignIn(),
         signUp: SignUp = SignUp()
     ) {
@@ -21,8 +21,8 @@ public struct Client: Decodable {
         self.signUp = signUp
     }
     
-    public var signIn: SignIn
-    public var signUp: SignUp
+    internal(set) public var signIn: SignIn
+    internal(set) public var signUp: SignUp
     
     enum CodingKeys: CodingKey {
         case signIn

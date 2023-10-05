@@ -12,7 +12,7 @@ import KeychainAccess
 extension Clerk {
     
     /// The Clerk API Client
-    static let apiClient = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
+    static var apiClient = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
         client.delegate = ClerkAPIClientDelegate()
         client.decoder = JSONDecoder.snakeCaseDecoder
         client.sessionConfiguration.httpAdditionalHeaders = [

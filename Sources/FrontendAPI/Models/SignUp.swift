@@ -23,7 +23,7 @@ import Foundation
  */
 public struct SignUp: Decodable {
     
-    public init(
+    init(
         id: String = "",
         status: String? = nil,
         unverifiedFields: [String] = []
@@ -33,9 +33,9 @@ public struct SignUp: Decodable {
         self.unverifiedFields = unverifiedFields
     }
     
-    public var id: String = ""
-    public var status: String?
-    public var unverifiedFields: [String] = []
+    private(set) public var id: String = ""
+    private(set) public var status: String?
+    private(set) public var unverifiedFields: [String] = []
 }
 
 extension SignUp {
@@ -58,7 +58,7 @@ extension SignUp {
             self.strategy = strategy
         }
         
-        public let strategy: VerificationStrategy
+        public var strategy: VerificationStrategy
     }
     
     public struct AttemptVerificationParams: Encodable {
@@ -70,8 +70,8 @@ extension SignUp {
             self.code = code
         }
         
-        public let strategy: VerificationStrategy
-        public let code: String
+        public var strategy: VerificationStrategy
+        public var code: String
     }
     
 }

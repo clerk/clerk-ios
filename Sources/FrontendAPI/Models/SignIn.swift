@@ -21,9 +21,9 @@ import Foundation
  */
 public struct SignIn: Decodable {
     
-    public init(status: String = "") {
+    init(status: String = "") {
         self.status = status
     }
     
-    public var status: String = ""
+    private(set) public var status: String = ""
 }

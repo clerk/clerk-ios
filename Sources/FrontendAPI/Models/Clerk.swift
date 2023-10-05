@@ -54,7 +54,7 @@ final public class Clerk: ObservableObject {
     private(set) public var frontendAPIURL: String = ""
     
     /// The Client object for the current device.
-    @Published public var client: Client = Client()
+    @Published internal(set) public var client: Client = Client()
 }
 
 #if DEBUG

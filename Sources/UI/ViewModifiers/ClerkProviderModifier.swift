@@ -23,14 +23,14 @@ struct ClerkProviderModifier: ViewModifier {
         )
     }
     
-    public func body(content: Content) -> some View {
+    func body(content: Content) -> some View {
         content
             .environmentObject(Clerk.shared)
             .task {
                 do {
                     try await Clerk.shared.client.get()
                 } catch {
-                    _ = try? await Clerk.shared.client.create()
+                    try? await Clerk.shared.client.create()
                 }
             }
     }

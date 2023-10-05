@@ -15,7 +15,7 @@ import Foundation
  ```swift
  func post(_ params: SignUp.CreateParams) -> Request<ClientResponse<SignUp>>
  */
-public struct ClientResponse<Response: Decodable>: Decodable {
+struct ClientResponse<Response: Decodable>: Decodable {
     let response: Response
     let client: Client?
 }
