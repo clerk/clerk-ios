@@ -94,8 +94,8 @@ extension SignUp {
             .signUps
             .post(params)
         
-        let signUp = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client.signUp = signUp
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client
     }
     
     /**
@@ -114,11 +114,12 @@ extension SignUp {
             .v1
             .client
             .signUps
-            .prepareVerification(id: Clerk.shared.client.signUp.id)
+            .id(Clerk.shared.client.signUp.id)
+            .prepareVerification
             .post(params)
         
-        let signUp = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client.signUp = signUp
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client
     }
     
     /**
@@ -136,10 +137,11 @@ extension SignUp {
             .v1
             .client
             .signUps
-            .attemptVerification(id: Clerk.shared.client.signUp.id)
+            .id(Clerk.shared.client.signUp.id)
+            .attemptVerification
             .post(params)
         
-        let signUp = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client.signUp = signUp
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client
     }
 }

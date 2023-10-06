@@ -60,8 +60,8 @@ extension SignIn {
             .signIns
             .post(params)
         
-        let signIn = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client.signIn = signIn
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client
     }
     
 }

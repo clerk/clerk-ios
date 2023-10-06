@@ -15,18 +15,22 @@ public struct Client: Decodable {
     
     init(
         signIn: SignIn = SignIn(),
-        signUp: SignUp = SignUp()
+        signUp: SignUp = SignUp(),
+        sessions: [Session] = []
     ) {
         self.signIn = signIn
         self.signUp = signUp
+        self.sessions = sessions
     }
     
     internal(set) public var signIn: SignIn
     internal(set) public var signUp: SignUp
+    public let sessions: [Session]
     
     enum CodingKeys: CodingKey {
         case signIn
         case signUp
+        case sessions
     }
     
     public init(from decoder: Decoder) throws {
@@ -38,6 +42,7 @@ public struct Client: Decodable {
         
         self.signIn = try container.decodeIfPresent(SignIn.self, forKey: Client.CodingKeys.signIn) ?? SignIn()
         self.signUp = try container.decodeIfPresent(SignUp.self, forKey: Client.CodingKeys.signUp) ?? SignUp()
+        self.sessions = try container.decode([Session].self, forKey: .sessions)
     }
 }
 

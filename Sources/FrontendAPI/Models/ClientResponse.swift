@@ -17,5 +17,5 @@ import Foundation
  */
 struct ClientResponse<Response: Decodable>: Decodable {
     let response: Response
-    let client: Client?
+    let client: Client
 }

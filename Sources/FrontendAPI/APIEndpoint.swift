@@ -83,13 +83,24 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
 }
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
+    public func id(_ id: String) -> WithID {
+        WithID(path: path + "/\(id)")
+    }
+
+    public struct WithID {
+        /// Path: `/v1/client/sign_ups/{id}`
+        public let path: String
+    }
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     
-    func prepareVerification(id: String) -> PrepareVerificationEndpoint {
-        PrepareVerificationEndpoint(path: path + "/\(id)/prepare_verification")
+    var prepareVerification: PrepareVerificationEndpoint {
+        PrepareVerificationEndpoint(path: path + "/prepare_verification")
     }
     
     struct PrepareVerificationEndpoint {
-        /// Path: `v1/client/sign_ups/(id)/prepare_verification`
+        /// Path: `v1/client/sign_ups/{id}/prepare_verification`
         let path: String
         
         func post(_ params: SignUp.PrepareVerificationParams) -> Request<ClientResponse<SignUp>> {
@@ -104,14 +115,14 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     
-    func attemptVerification(id: String) -> AttemptVerificationEndpoint {
-        AttemptVerificationEndpoint(path: path + "/\(id)/attempt_verification")
+    var attemptVerification: AttemptVerificationEndpoint {
+        AttemptVerificationEndpoint(path: path + "/attempt_verification")
     }
     
     struct AttemptVerificationEndpoint {
-        /// Path: `v1/client/sign_ups/(id)/attempt_verification`
+        /// Path: `v1/client/sign_ups/{id}/attempt_verification`
         let path: String
         
         func post(_ params: SignUp.AttemptVerificationParams) -> Request<ClientResponse<SignUp>> {
