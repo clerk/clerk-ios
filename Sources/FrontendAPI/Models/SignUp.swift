@@ -95,7 +95,7 @@ extension SignUp {
             .post(params)
         
         let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client
+        Clerk.shared.client = client ?? Client()
     }
     
     /**
@@ -119,7 +119,7 @@ extension SignUp {
             .post(params)
         
         let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client
+        Clerk.shared.client = client ?? Client()
     }
     
     /**
@@ -142,6 +142,6 @@ extension SignUp {
             .post(params)
         
         let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client
+        Clerk.shared.client = client ?? Client()
     }
 }
