@@ -104,13 +104,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
         let path: String
         
         func post(_ params: SignUp.PrepareVerificationParams) -> Request<ClientResponse<SignUp>> {
-            .init(
-                path: path,
-                method: .post,
-                body: [
-                    "strategy": params.strategy.stringValue
-                ]
-            )
+            .init(path: path, method: .post, body: params)
         }
     }
 }
@@ -126,14 +120,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
         let path: String
         
         func post(_ params: SignUp.AttemptVerificationParams) -> Request<ClientResponse<SignUp>> {
-            .init(
-                path: path,
-                method: .post,
-                body: [
-                    "strategy": params.strategy.stringValue,
-                    "code": params.code
-                ]
-            )
+            .init(path: path, method: .post, body: params)
         }
     }
 }
@@ -149,6 +136,53 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
         let path: String
         
         func post(_ params: SignIn.CreateParams) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
+    
+    public func id(_ id: String) -> WithID {
+        WithID(path: path + "/\(id)")
+    }
+
+    public struct WithID {
+        /// Path: `/v1/client/sign_ins/{id}`
+        public let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
+    
+    var prepareFirstFactor: PrepareFirstFactorEndpoint {
+        PrepareFirstFactorEndpoint(path: path + "/prepare_first_factor")
+    }
+    
+    struct PrepareFirstFactorEndpoint {
+        /// Path: `v1/client/sign_ins/{id}/prepare_first_factor`
+        let path: String
+        
+        func post(_ params: SignIn.PrepareFirstFactorParams) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
+    
+    var attemptFirstFactor: AttemptFirstFactorEndpoint {
+        AttemptFirstFactorEndpoint(path: path + "/attempt_first_factor")
+    }
+    
+    struct AttemptFirstFactorEndpoint {
+        /// Path: `v1/client/sign_ins/{id}/attempt_first_factor`
+        let path: String
+        
+        func post(_ params: SignIn.AttemptFirstFactorParams) -> Request<ClientResponse<SignIn>> {
             .init(path: path, method: .post, body: params)
         }
     }

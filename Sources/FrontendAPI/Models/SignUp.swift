@@ -52,10 +52,10 @@ extension SignUp {
     
     public struct PrepareVerificationParams: Encodable {
         public init(strategy: VerificationStrategy) {
-            self.strategy = strategy
+            self.strategy = strategy.stringValue
         }
         
-        public var strategy: VerificationStrategy
+        public var strategy: String
     }
     
     public struct AttemptVerificationParams: Encodable {
@@ -63,11 +63,11 @@ extension SignUp {
             strategy: VerificationStrategy,
             code: String
         ) {
-            self.strategy = strategy
+            self.strategy = strategy.stringValue
             self.code = code
         }
         
-        public var strategy: VerificationStrategy
+        public var strategy: String
         public var code: String
     }
     

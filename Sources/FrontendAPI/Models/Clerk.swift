@@ -63,7 +63,37 @@ final public class Clerk: ObservableObject {
 #if DEBUG
 extension Clerk {
     public static var mock: Clerk {
-        Clerk()
+        let clerk = Clerk()
+        
+        let userData = UserData(
+            firstName: "First",
+            lastName: "Last",
+            imageUrl: "",
+            hasImage: true
+        )
+        
+        let signInFactor = SignInFactor(
+            strategy: .emailCode,
+            safeIdentifier: "clerkUser@gmail.com",
+            emailAddressId: "123"
+        )
+        
+        let signIn = SignIn(
+            id: "123",
+            status: "",
+            supportedFirstFactors: [signInFactor],
+            userData: userData
+        )
+        
+        let client = Client(
+            signIn: signIn,
+            signUp: SignUp(),
+            sessions: []
+        )
+        
+        clerk.client = client
+        
+        return clerk
     }
 }
 #endif

@@ -21,11 +21,22 @@ import Foundation
  */
 public struct SignIn: Decodable {
     
-    init(status: String = "") {
+    init(
+        id: String = "",
+        status: String = "",
+        supportedFirstFactors: [SignInFactor] = [],
+        userData: UserData = UserData()
+    ) {
+        self.id = id
         self.status = status
+        self.supportedFirstFactors = supportedFirstFactors
+        self.userData = userData
     }
     
-    private(set) public var status: String = ""
+    let id: String
+    let status: String
+    let supportedFirstFactors: [SignInFactor]
+    let userData: UserData
 }
 
 extension SignIn {
@@ -43,6 +54,32 @@ extension SignIn {
         public let password: String?
     }
     
+    public struct PrepareFirstFactorParams: Encodable {
+        public init(
+            emailAddressId: String? = nil,
+            strategy: VerificationStrategy
+        ) {
+            self.emailAddressId = emailAddressId
+            self.strategy = strategy.stringValue
+        }
+        
+        public let emailAddressId: String?
+        public let strategy: String
+    }
+    
+    public struct AttemptFirstFactorParams: Encodable {
+        public init(
+            code: String? = nil,
+            strategy: VerificationStrategy
+        ) {
+            self.code = code
+            self.strategy = strategy.stringValue
+        }
+        
+        public let code: String?
+        public let strategy: String
+    }
+    
 }
 
 extension SignIn {
@@ -58,6 +95,46 @@ extension SignIn {
             .v1
             .client
             .signIns
+            .post(params)
+        
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client ?? Client()
+    }
+    
+    /**
+     Begins the first factor verification process. This is a required step in order to complete a sign in, as users should be verified at least by one factor of authentication.
+
+     Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
+     */
+    @MainActor
+    public func prepareFirstFactor(_ params: PrepareFirstFactorParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(Clerk.shared.client.signIn.id)
+            .prepareFirstFactor
+            .post(params)
+        
+        let client = try await Clerk.apiClient.send(request).value.client
+        Clerk.shared.client = client ?? Client()
+    }
+    
+    /**
+     Attempts to complete the first factor verification process. This is a required step in order to complete a sign in, as users should be verified at least by one factor of authentication.
+
+     Make sure that a SignIn object already exists before you call this method, either by first calling SignIn.create or SignIn.prepareFirstFactor. The only strategy that does not require a verification to have already been prepared before attempting to complete it, is the password strategy.
+
+     Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
+     */
+    @MainActor
+    public func attemptFirstFactor(_ params: AttemptFirstFactorParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(Clerk.shared.client.signIn.id)
+            .attemptFirstFactor
             .post(params)
         
         let client = try await Clerk.apiClient.send(request).value.client
