@@ -23,8 +23,8 @@ public struct Client: Decodable {
         self.sessions = sessions
     }
     
-    internal(set) public var signIn: SignIn
-    internal(set) public var signUp: SignUp
+    public let signIn: SignIn
+    public let signUp: SignUp
     public let sessions: [Session]
     
     enum CodingKeys: CodingKey {
@@ -36,12 +36,10 @@ public struct Client: Decodable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<Client.CodingKeys> = try decoder.container(keyedBy: Client.CodingKeys.self)
         
-        //
         // SignUp and SignIn can have null values when returned from the server, but should never be nil on the client
-        //
-        
         self.signIn = try container.decodeIfPresent(SignIn.self, forKey: Client.CodingKeys.signIn) ?? SignIn()
         self.signUp = try container.decodeIfPresent(SignUp.self, forKey: Client.CodingKeys.signUp) ?? SignUp()
+        //
         self.sessions = try container.decode([Session].self, forKey: .sessions)
     }
 }

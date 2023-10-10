@@ -16,8 +16,10 @@ import SwiftUI
  */
 struct ClerkProviderModifier: ViewModifier {
     
+    @ObservedObject private var clerk = Clerk.shared
+    
     init(publishableKey: String, frontendAPIURL: String) {
-        Clerk.shared.configure(
+        clerk.configure(
             publishableKey: publishableKey,
             frontendAPIURL: frontendAPIURL
         )
@@ -25,17 +27,17 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .environmentObject(Clerk.shared)
             .task {
                 do {
-                    try await Clerk.shared.client.get()
+                    try await clerk.client.get()
                 } catch {
-                    try? await Clerk.shared.client.create()
+                    try? await clerk.client.create()
                 }
             }
             .task {
-                try? await Clerk.shared.environment.get()
+                try? await clerk.environment.get()
             }
+            .environmentObject(clerk) // this must be the last modifier
     }
 }
 

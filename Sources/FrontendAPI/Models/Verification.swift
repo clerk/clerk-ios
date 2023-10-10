@@ -21,8 +21,8 @@ public enum VerificationStrategy: Encodable {
     case emailCode
     case emailLink
     case saml
-    case oauth(String)
-    case web3(String)
+    case oauth(_ provider: String)
+    case web3(_ signature: String)
     
     // When sending requests, if you need to send a verification strategy in the body
     // do not pass it in its encoded form, manually create the body so you can use the `stringValue`

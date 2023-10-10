@@ -25,17 +25,14 @@ public struct SignUp: Decodable {
     
     init(
         id: String = "",
-        status: String? = nil,
-        unverifiedFields: [String] = []
+        status: String? = nil
     ) {
         self.id = id
         self.status = status
-        self.unverifiedFields = unverifiedFields
     }
     
     private(set) public var id: String = ""
     private(set) public var status: String?
-    private(set) public var unverifiedFields: [String] = []
 }
 
 extension SignUp {
