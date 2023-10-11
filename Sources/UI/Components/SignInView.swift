@@ -104,7 +104,7 @@ public struct SignInViewModifier: ViewModifier {
                             }
                         }
                     }
-                    .transition(.offset(y: UIScreen.main.bounds.height))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.bouncy, value: isPresented)
