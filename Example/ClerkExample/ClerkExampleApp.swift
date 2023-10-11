@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+#if !os(macOS)
+
 @main
 struct ClerkExampleApp: App {
     var body: some Scene {
@@ -19,3 +21,16 @@ struct ClerkExampleApp: App {
         }
     }
 }
+
+#else
+
+@main
+struct ClerkExampleApp: App {
+    var body: some Scene {
+        WindowGroup {
+            Text("MacOS not supported.")
+        }
+    }
+}
+
+#endif

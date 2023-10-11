@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct SignInFirstFactorView: View {
@@ -95,7 +97,7 @@ struct SignInFirstFactorView: View {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
                 })
-                .tint(Color(.clerkPurple))
+                .tint(Color("clerkPurple", bundle: .module))
             }
             
             AsyncButton(action: {
@@ -104,7 +106,7 @@ struct SignInFirstFactorView: View {
                 Text("Use another method")
                     .font(.subheadline)
             })
-            .tint(Color(.clerkPurple))
+            .tint(Color("clerkPurple", bundle: .module))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)
@@ -112,7 +114,11 @@ struct SignInFirstFactorView: View {
     }
 }
 
-#Preview {    
-    SignInFirstFactorView()
-        .environmentObject(Clerk.mock)
+struct SignInFirstFactorView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInFirstFactorView()
+            .environmentObject(Clerk.mock)
+    }
 }
+
+#endif

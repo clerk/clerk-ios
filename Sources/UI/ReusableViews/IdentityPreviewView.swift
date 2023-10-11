@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct IdentityPreviewView: View {
@@ -18,19 +20,19 @@ struct IdentityPreviewView: View {
                 AsyncImage(url: URL(string: imageUrl), transaction: Transaction(animation: .default)) { phase in
                     switch phase {
                     case .empty:
-                        Color(.clerkPurple)
+                        Color("clerkPurple", bundle: .module)
                     case .success(let image):
                         image
                             .resizable()
                             .scaledToFit()
                     case .failure:
-                        Color(.clerkPurple)
+                        Color("clerkPurple", bundle: .module)
                     @unknown default:
-                        Color(.clerkPurple)
+                        Color("clerkPurple", bundle: .module)
                     }
                 }
                 .frame(width: 20, height: 20)
-                .clipShape(.circle)
+                .clipShape(Circle())
             }
             
             Text(label)
@@ -42,7 +44,7 @@ struct IdentityPreviewView: View {
                 }, label: {
                     Image(systemName: "square.and.pencil")
                         .bold()
-                        .foregroundStyle(Color(.clerkPurple))
+                        .foregroundStyle(Color("clerkPurple", bundle: .module))
                 })
             }
         }
@@ -55,10 +57,14 @@ struct IdentityPreviewView: View {
     }
 }
 
-#Preview {
-    IdentityPreviewView(
-        imageUrl: "",
-        label: "clerkuser@gmail.com",
-        action: {}
-    )
+struct IdentityPreviewView_Previews: PreviewProvider {
+    static var previews: some View {
+        IdentityPreviewView(
+            imageUrl: "",
+            label: "clerkuser@gmail.com",
+            action: {}
+        )
+    }
 }
+
+#endif

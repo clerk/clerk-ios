@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/6/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 import Clerk
 
@@ -22,6 +24,11 @@ struct SignInExampleView: View {
     }
 }
 
-#Preview {
-    SignInExampleView()
+struct SignInExampleView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInExampleView()
+            .environmentObject(Clerk.mock)
+    }
 }
+
+#endif

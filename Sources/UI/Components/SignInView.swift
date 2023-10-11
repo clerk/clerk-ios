@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 extension SignInView {
@@ -40,9 +42,10 @@ public struct SignInView: View {
     }
 }
 
-#Preview {
-    SignInView()
-        .environmentObject(Clerk.mock)
+struct SignInView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInView()
+    }
 }
 
 public struct SignInViewModifier: ViewModifier {
@@ -123,3 +126,5 @@ public extension View {
         ))
     }
 }
+
+#endif

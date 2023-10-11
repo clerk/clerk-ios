@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 9/22/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct CustomTextField: View {
@@ -27,9 +29,13 @@ struct CustomTextField: View {
     }
 }
 
-#Preview {
-    CustomTextField(
-        title: "Email address",
-        text: .constant("")
-    )
+struct CustomTextField_Previews: PreviewProvider {
+    static var previews: some View {
+        CustomTextField(
+            title: "Email address",
+            text: .constant("")
+        )
+    }
 }
+
+#endif

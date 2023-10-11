@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct OTPFieldView: View {
@@ -28,7 +30,7 @@ struct OTPFieldView: View {
                     Button("Done") {
                         isKeyboardShowing = false
                     }
-                    .tint(Color(.clerkPurple))
+                    .tint(Color("clerkPurple", bundle: .module))
                 }
             }
         }
@@ -72,7 +74,7 @@ struct OTPFieldView: View {
                 if isSelected {
                     Rectangle()
                         .frame(width: 2, height: 28)
-                        .foregroundStyle(Color(.clerkPurple))
+                        .foregroundStyle(Color("clerkPurple", bundle: .module))
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
                         .onAppear {
@@ -83,7 +85,7 @@ struct OTPFieldView: View {
             
             Rectangle()
                 .frame(height: 2)
-                .foregroundStyle(isSelected ? Color(.clerkPurple) : Color(.systemFill))
+                .foregroundStyle(isSelected ? Color("clerkPurple", bundle: .module) : Color(.systemFill))
         }
         .frame(maxWidth: .infinity)
     }
@@ -100,7 +102,11 @@ private extension Binding where Value == String {
     }
 }
 
-#Preview {
-    OTPFieldView(otpCode: .constant(""))
-        .padding()
+struct OTPFieldView_Previews: PreviewProvider {
+    static var previews: some View {
+        OTPFieldView(otpCode: .constant(""))
+            .padding()
+    }
 }
+
+#endif

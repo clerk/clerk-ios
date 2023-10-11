@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 9/22/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct SignInCreateView: View {
@@ -66,14 +68,14 @@ struct SignInCreateView: View {
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
-                    .tint(Color(.clerkPurple))
+                    .tint(Color("clerkPurple", bundle: .module))
                 AsyncButton(options: [.disableButton, .showProgressView], action: signInAction) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
                         .foregroundStyle(.white)
-                        .background(Color(.clerkPurple))
+                        .background(Color("clerkPurple", bundle: .module))
                         .clipShape(.rect(cornerRadius: 8, style: .continuous))
                 }
             }
@@ -88,7 +90,7 @@ struct SignInCreateView: View {
                     } label: {
                         Text("Sign Up")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(Color(.clerkPurple))
+                            .foregroundStyle(Color("clerkPurple", bundle: .module))
                     }
                     
                     Spacer()
@@ -139,7 +141,11 @@ struct SignInCreateView: View {
     }
 }
 
-#Preview {
-    SignInCreateView()
-        .environmentObject(Clerk.mock)
+struct SignInCreateView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInCreateView()
+            .environmentObject(Clerk.mock)
+    }
 }
+
+#endif
