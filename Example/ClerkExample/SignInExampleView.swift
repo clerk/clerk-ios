@@ -24,8 +24,11 @@ struct SignInExampleView: View {
     }
 }
 
-#Preview {
-    SignInExampleView()
+struct SignInExampleView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInExampleView()
+            .environmentObject(Clerk.mock)
+    }
 }
 
 #endif
