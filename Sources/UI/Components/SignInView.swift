@@ -1,5 +1,5 @@
 //
-//  SignInFlowContainerView.swift
+//  SignInView.swift
 //
 //
 //  Created by Mike Pitre on 10/10/23.
@@ -28,14 +28,14 @@ public struct SignInView: View {
         ZStack {
             switch model.step {
             case .create:
-                CreateSignInView()
+                SignInCreateView()
                     .matchedGeometryEffect(id: "view", in: namespace)
             case .firstFactor:
-                FirstFactorView()
+                SignInFirstFactorView()
                     .matchedGeometryEffect(id: "view", in: namespace)
             }
         }
-        .animation(.easeInOut, value: model.step)
+        .animation(.bouncy, value: model.step)
         .environmentObject(model)
     }
 }

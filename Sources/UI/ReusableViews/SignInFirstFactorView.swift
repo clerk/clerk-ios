@@ -1,5 +1,5 @@
 //
-//  FirstFactorView.swift
+//  SignInFirstFactorView.swift
 //
 //
 //  Created by Mike Pitre on 10/10/23.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct FirstFactorView: View {
+struct SignInFirstFactorView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
     
@@ -37,7 +37,7 @@ struct FirstFactorView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 6) {
                 Image("clerk-logomark", bundle: .module)
                     .resizable()
@@ -113,6 +113,6 @@ struct FirstFactorView: View {
 }
 
 #Preview {    
-    FirstFactorView()
+    SignInFirstFactorView()
         .environmentObject(Clerk.mock)
 }

@@ -13,7 +13,7 @@ struct SignInExampleView: View {
     
     var body: some View {
         Button {
-            clerk.signInIsPresented = true
+            clerk.presentSignIn()
         } label: {
             Text("Sign In!")
         }

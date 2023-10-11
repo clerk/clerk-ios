@@ -61,7 +61,12 @@ final public class Clerk: ObservableObject {
     @Published internal(set) public var environment: Clerk.Environment = .init()
     
     /// Is the sign in flow being displayed.
-    @Published public var signInIsPresented = false
+    @Published var signInIsPresented = false
+    
+    /// Trigger the sign in flow
+    public func presentSignIn() {
+        signInIsPresented = true
+    }
 }
 
 extension Container {

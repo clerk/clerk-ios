@@ -1,5 +1,5 @@
 //
-//  SignInView.swift
+//  SignInCreateView.swift
 //
 //
 //  Created by Mike Pitre on 9/22/23.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct CreateSignInView: View {
+struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
     
@@ -17,7 +17,7 @@ struct CreateSignInView: View {
     let authProviders = ["tornado", "timelapse"]
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 6) {
                 Image("clerk-logomark", bundle: .module)
                     .resizable()
@@ -140,6 +140,6 @@ struct CreateSignInView: View {
 }
 
 #Preview {
-    SignInView()
+    SignInCreateView()
         .environmentObject(Clerk.mock)
 }

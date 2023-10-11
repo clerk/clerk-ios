@@ -19,10 +19,6 @@ struct ExamplesListView: View {
             }
             .navigationTitle("Clerk Examples")
         }
-        .signInView(
-            isPresented: $clerk.signInIsPresented,
-            presentationStyle: .modal
-        )
     }
 }
 
