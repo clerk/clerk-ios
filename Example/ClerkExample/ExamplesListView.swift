@@ -22,6 +22,11 @@ struct ExamplesListView: View {
     }
 }
 
-#Preview {
-    ExamplesListView()
+struct ExamplesListView_Previews: PreviewProvider {
+    static var previews: some View {
+        ExamplesListView()
+            .environmentObject(Clerk.mock)
+    }
 }
+
+

@@ -55,10 +55,12 @@ struct IdentityPreviewView: View {
     }
 }
 
-#Preview {
-    IdentityPreviewView(
-        imageUrl: "",
-        label: "clerkuser@gmail.com",
-        action: {}
-    )
+struct IdentityPreviewView_Previews: PreviewProvider {
+    static var previews: some View {
+        IdentityPreviewView(
+            imageUrl: "",
+            label: "clerkuser@gmail.com",
+            action: {}
+        )
+    }
 }

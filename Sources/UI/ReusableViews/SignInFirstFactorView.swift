@@ -112,7 +112,9 @@ struct SignInFirstFactorView: View {
     }
 }
 
-#Preview {    
-    SignInFirstFactorView()
-        .environmentObject(Clerk.mock)
+struct SignInFirstFactorView_Previews: PreviewProvider {
+    static var previews: some View {
+        SignInFirstFactorView()
+            .environmentObject(Clerk.mock)
+    }
 }

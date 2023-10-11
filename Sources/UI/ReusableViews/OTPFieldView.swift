@@ -100,7 +100,9 @@ private extension Binding where Value == String {
     }
 }
 
-#Preview {
-    OTPFieldView(otpCode: .constant(""))
-        .padding()
+struct OTPFieldView_Previews: PreviewProvider {
+    static var previews: some View {
+        OTPFieldView(otpCode: .constant(""))
+            .padding()
+    }
 }
