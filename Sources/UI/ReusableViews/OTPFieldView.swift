@@ -83,7 +83,7 @@ struct OTPFieldView: View {
             
             Rectangle()
                 .frame(height: 2)
-                .foregroundStyle(isSelected ? Color(.clerkPurple) : Color(.systemFill))
+                .foregroundStyle(isSelected ? Color(.clerkPurple) : Color(.quaternaryLabel))
         }
         .frame(maxWidth: .infinity)
     }

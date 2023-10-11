@@ -29,7 +29,7 @@ struct AuthProviderButton: View {
             .padding(16)
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color(.systemFill), lineWidth: 1)
+                    .strokeBorder(Color(.quaternaryLabel), lineWidth: 1)
             }
             .aspectRatio(1, contentMode: .fit)
     }
@@ -45,7 +45,7 @@ struct AuthProviderButton: View {
         .padding(.horizontal)
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color(.systemFill), lineWidth: 1)
+                .strokeBorder(Color(.quaternaryLabel), lineWidth: 1)
         }
         
     }
