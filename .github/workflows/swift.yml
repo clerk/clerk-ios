@@ -20,7 +20,7 @@ jobs:
         with:
             xcode-version: latest
       - uses: swift-actions/setup-swift@v1
-      - name: Build
-        run: swift build
+#      - name: Build
+#        run: swift build
       - name: Run tests
         run: swift test
