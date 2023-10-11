@@ -66,14 +66,14 @@ struct SignInCreateView: View {
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
-                    .tint(Color(.clerkPurple))
+                    .tint(Color("clerkPurple", bundle: .module))
                 AsyncButton(options: [.disableButton, .showProgressView], action: signInAction) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
                         .foregroundStyle(.white)
-                        .background(Color(.clerkPurple))
+                        .background(Color("clerkPurple", bundle: .module))
                         .clipShape(.rect(cornerRadius: 8, style: .continuous))
                 }
             }
@@ -88,7 +88,7 @@ struct SignInCreateView: View {
                     } label: {
                         Text("Sign Up")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(Color(.clerkPurple))
+                            .foregroundStyle(Color("clerkPurple", bundle: .module))
                     }
                     
                     Spacer()

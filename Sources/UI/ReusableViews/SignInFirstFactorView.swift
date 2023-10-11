@@ -95,7 +95,7 @@ struct SignInFirstFactorView: View {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
                 })
-                .tint(Color(.clerkPurple))
+                .tint(Color("clerkPurple", bundle: .module))
             }
             
             AsyncButton(action: {
@@ -104,7 +104,7 @@ struct SignInFirstFactorView: View {
                 Text("Use another method")
                     .font(.subheadline)
             })
-            .tint(Color(.clerkPurple))
+            .tint(Color("clerkPurple", bundle: .module))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)
