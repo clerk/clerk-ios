@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Factory
 
 /**
  This is the main entrypoint class for the clerk-ios package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -15,7 +16,7 @@ import Foundation
 final public class Clerk: ObservableObject {
     
     /// The shared clerk instance
-    public static let shared = Clerk()
+    public static let shared = Container.shared.clerk()
     
     /**
      Configures the settings for the Clerk package.
@@ -58,6 +59,18 @@ final public class Clerk: ObservableObject {
     
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment = .init()
+    
+    /// Is the sign in flow being displayed.
+    @Published public var signInIsPresented = false
+}
+
+extension Container {
+    
+    var clerk: Factory<Clerk> {
+        self { Clerk() }
+            .singleton
+    }
+    
 }
 
 #if DEBUG

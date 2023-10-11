@@ -31,8 +31,17 @@ public struct SignUp: Decodable {
         self.status = status
     }
     
-    private(set) public var id: String = ""
-    private(set) public var status: String?
+    let id: String
+    
+    /**
+     The status of the current sign-up.
+     
+     The following values are supported:
+     - missing_requirements: There are required fields that are either missing or they are unverified.
+     - complete: All the required fields have been supplied and verified, so the sign-up is complete and a new user and a session have been created.
+     - abandoned: The sign-up has been inactive for a long period of time, thus it's considered as abandoned and need to start over.
+     */
+    let status: String?
 }
 
 extension SignUp {
@@ -96,10 +105,11 @@ extension SignUp {
     }
     
     /**
-     The prepareVerification is used to initiate the verification process for a field that requires it. As mentioned above, there are two fields that need to be verified:
+     The prepareVerification is used to initiate the verification process for a field that requires it. 
      
-     emailAddress: The email address can be verified via an email code. This is a one-time code that is sent to the email already provided to the SignUp object. The prepareVerification sends this email.
-     phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
+     As mentioned above, there are two fields that need to be verified:
+     - emailAddress: The email address can be verified via an email code. This is a one-time code that is sent to the email already provided to the SignUp object. The prepareVerification sends this email.
+     - phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
      */
     @MainActor
     public func prepareVerification(_ params: PrepareVerificationParams) async throws {

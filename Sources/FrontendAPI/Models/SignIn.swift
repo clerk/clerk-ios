@@ -25,17 +25,48 @@ public struct SignIn: Decodable {
         id: String = "",
         status: String = "",
         supportedFirstFactors: [SignInFactor] = [],
+        firstFactorVerification: Verification? = nil,
         userData: UserData = UserData()
     ) {
         self.id = id
         self.status = status
         self.supportedFirstFactors = supportedFirstFactors
+        self.firstFactorVerification = firstFactorVerification
         self.userData = userData
     }
     
     let id: String
+    
+    /**
+     The current status of the sign-in.
+     
+     The following values are supported:
+     - needs_identifier: The authentication identifier hasn't been provided.
+     - needs_first_factor: First factor verification for the provided identifier needs to be prepared and verified.
+     - needs_second_factor: Second factor verification (2FA) for the provided identifier needs to be prepared and verified.
+     - complete: The sign-in is complete and the user is authenticated.
+     - abandoned: The sign-in has been inactive for a long period of time, thus it's considered as abandoned and need to start over.
+     */
     let status: String
+    
+    /**
+     Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
+     
+     For example:
+     - email_code for email addresses
+     - phone_code for phone numbers
+     As well as the identifier that the factor refers to.
+     */
     let supportedFirstFactors: [SignInFactor]
+    
+    /**
+     The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
+     */
+    let firstFactorVerification: Verification?
+    
+    /**
+     An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
+     */
     let userData: UserData
 }
 

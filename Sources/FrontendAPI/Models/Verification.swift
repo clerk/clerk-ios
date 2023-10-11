@@ -7,6 +7,12 @@
 
 import Foundation
 
+struct Verification: Decodable {
+    let status: String
+    let strategy: String
+    let attempts: Int
+}
+
 /**
  The verification strategy to validate the user's sign-up request. The following strategies are supported:
  - phone_code: Send an SMS with a unique token to input.
