@@ -94,9 +94,7 @@ public struct SignInViewModifier: ViewModifier {
                                     .frame(width: geo.size.width, height: geo.size.height)
                                     .foregroundStyle(.background)
                                     .onTapGesture {
-                                        withAnimation(.bouncy.speed(0.75)) {
-                                            isPresented = false
-                                        }
+                                        isPresented = false
                                     }
                                 
                                 SignInView()
