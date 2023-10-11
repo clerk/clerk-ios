@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct OTPFieldView: View {
@@ -104,3 +106,5 @@ private extension Binding where Value == String {
     OTPFieldView(otpCode: .constant(""))
         .padding()
 }
+
+#endif

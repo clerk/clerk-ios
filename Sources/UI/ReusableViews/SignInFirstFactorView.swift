@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 
 struct SignInFirstFactorView: View {
@@ -116,3 +118,5 @@ struct SignInFirstFactorView: View {
     SignInFirstFactorView()
         .environmentObject(Clerk.mock)
 }
+
+#endif

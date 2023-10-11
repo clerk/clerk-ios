@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+#if !os(macOS)
+
 import SwiftUI
 import Clerk
 
@@ -150,3 +152,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
+
+#endif

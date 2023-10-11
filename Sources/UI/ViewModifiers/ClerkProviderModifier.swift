@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/3/23.
 //
 
+#if !os(macOS)
+
 import Foundation
 import SwiftUI
 
@@ -59,3 +61,5 @@ extension View {
         ))
     }
 }
+
+#endif
