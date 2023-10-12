@@ -5,11 +5,25 @@
 //  Created by Mike Pitre on 10/12/23.
 //
 
+#if !os(macOS)
+
 import Foundation
 import SwiftUI
 
 public struct ClerkTheme {
-    public var signInPresentationStyle: SignInViewModifier.PresentationStyle = .sheet
+    public var signIn = SignIn()
+    
+    public struct SignIn {
+        
+        public enum PresentationStyle {
+            case sheet
+            case modal
+        }
+        
+        public var presentationStyle: PresentationStyle = .sheet
+        public var modalBackground: AnyView = AnyView(Color.clear.background(.ultraThinMaterial))
+    }
+    
 }
 
 struct ClerkThemeKey: EnvironmentKey {
@@ -22,3 +36,5 @@ extension EnvironmentValues {
     set { self[ClerkThemeKey.self] = newValue }
   }
 }
+
+#endif

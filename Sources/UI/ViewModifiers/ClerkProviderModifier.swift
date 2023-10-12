@@ -38,7 +38,7 @@ struct ClerkProviderModifier: ViewModifier {
             }
             .signInView(
                 isPresented: $clerk.signInIsPresented,
-                presentationStyle: clerkTheme.signInPresentationStyle
+                presentationStyle: clerkTheme.signIn.presentationStyle
             )
             .environmentObject(clerk) // this must be the last modifier
     }

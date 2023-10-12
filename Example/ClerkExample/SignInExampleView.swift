@@ -14,12 +14,15 @@ struct SignInExampleView: View {
     @EnvironmentObject private var clerk: Clerk
     
     var body: some View {
-        Button {
-            clerk.presentSignIn()
-        } label: {
-            Text("Sign In!")
+        VStack {
+            Button {
+                clerk.presentSignIn()
+            } label: {
+                Text("Sign In!")
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

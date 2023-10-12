@@ -64,7 +64,7 @@ struct SignInFirstFactorView: View {
                     strategy: firstFactorStrategy
                 ))
             
-            dismiss()
+            clerk.signInIsPresented = false
         } catch {
             dump(error)
             isSubmittingOTPCode = false
