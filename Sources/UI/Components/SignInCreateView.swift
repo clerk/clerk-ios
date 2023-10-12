@@ -12,6 +12,9 @@ import SwiftUI
 struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
+    @Environment(\.clerkTheme) private var clerkTheme
+    
+    @FocusState var isKeyboardShowing: Bool
     
     public init() {}
     
@@ -46,6 +49,7 @@ struct SignInCreateView: View {
                         AuthProviderButton(image: providerImage, label: providerImage)
                             .font(.footnote)
                     })
+                    .buttonStyle(.plain)
                 }
             }
             
@@ -68,14 +72,26 @@ struct SignInCreateView: View {
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
-                    .tint(Color("clerkPurple", bundle: .module))
+                    .focused($isKeyboardShowing)
+                    .tint(clerkTheme.colors.primary)
+                    .toolbar {
+                        ToolbarItem(placement: .keyboard) {
+                            HStack {
+                                Spacer()
+                                Button("Done") {
+                                    isKeyboardShowing = false
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
                 AsyncButton(options: [.disableButton, .showProgressView], action: signInAction) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
                         .foregroundStyle(.white)
-                        .background(Color("clerkPurple", bundle: .module))
+                        .background(clerkTheme.colors.primary)
                         .clipShape(.rect(cornerRadius: 8, style: .continuous))
                 }
             }
@@ -90,7 +106,7 @@ struct SignInCreateView: View {
                     } label: {
                         Text("Sign Up")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(Color("clerkPurple", bundle: .module))
+                            .foregroundStyle(clerkTheme.colors.primary)
                     }
                     
                     Spacer()
@@ -114,13 +130,14 @@ struct SignInCreateView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .buttonStyle(.plain)
         .padding(30)
         .background(.background)
     }
     
     private func signInAction() async {
         do {
+            isKeyboardShowing = false
+            
             try await clerk
                 .client
                 .signIn

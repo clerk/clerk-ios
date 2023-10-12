@@ -5,9 +5,11 @@
 //  Created by Mike Pitre on 10/12/23.
 //
 
+#if !os(macOS)
+
 import Combine
 import UIKit
-
+import SwiftUI
 
 /// Publisher to read keyboard changes.
 protocol KeyboardReadable {
@@ -28,3 +30,9 @@ extension KeyboardReadable {
         .eraseToAnyPublisher()
     }
 }
+
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+
+#endif

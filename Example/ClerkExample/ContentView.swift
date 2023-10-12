@@ -12,6 +12,7 @@ import Clerk
 
 struct ContentView: View {
     @EnvironmentObject private var clerk: Clerk
+    @Environment(\.clerkTheme) var clerkTheme
     
     @State private var emailAddress: String = ""
     @State private var password: String = ""
@@ -141,6 +142,7 @@ struct ContentView: View {
                 }
             }
             .padding()
+            .tint(clerkTheme.colors.primary)
         }
     }
 }

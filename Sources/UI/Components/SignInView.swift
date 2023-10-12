@@ -39,6 +39,9 @@ public struct SignInView: View {
         }
         .animation(.bouncy, value: model.step)
         .environmentObject(model)
+        .onChange(of: model.step) { _ in
+            hideKeyboard()
+        }
     }
 }
 

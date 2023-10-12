@@ -17,7 +17,7 @@ import SwiftUI
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
-    @Environment(\.clerkTheme) var clerkTheme
+    @Environment(\.clerkTheme) private var clerkTheme
     
     @ObservedObject private var clerk = Clerk.shared
     

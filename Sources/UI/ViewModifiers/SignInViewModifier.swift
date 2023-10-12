@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 public struct SignInViewModifier: ViewModifier, KeyboardReadable {
-    @Environment(\.clerkTheme) var clerkTheme
+    @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var isPresented: Bool
     var presentationStyle: ClerkTheme.SignIn.PresentationStyle = .sheet
@@ -24,10 +24,16 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
     private var backgroundOpacity: CGFloat { 1 - (gestureState.height / modalDismissThreshold) }
         
     public func body(content: Content) -> some View {
-        switch presentationStyle {
-        case .sheet: sheetStyle(content: content)
-        case .modal: modalStyle(content: content)
+        Group {
+            switch presentationStyle {
+            case .sheet: sheetStyle(content: content)
+            case .modal: modalStyle(content: content)
+            }
         }
+        .onReceive(keyboardPublisher, perform: { showing in
+            keyboardShowing = showing
+        })
+        
     }
     
     @ViewBuilder
@@ -36,8 +42,23 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
                     SignInView()
+                        .interactiveDismissDisabled(keyboardShowing)
                 }
             })
+            // hack to get toolbar to show within sheet
+            .toolbar {
+                if isPresented {
+                    ToolbarItem(placement: .keyboard) {
+                        HStack {
+                            Spacer()
+                            Button("Done") {
+                                hideKeyboard()
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
     }
     
     @ViewBuilder
@@ -73,12 +94,14 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
                                     .clipShape(.rect(cornerRadius: 12, style: .continuous))
                                     .shadow(color: Color(.label).opacity(0.2), radius: 20)
                                     .padding()
-                                    .offset(y: gestureState.height)
+                                    .offset(x: gestureState.width, y: gestureState.height)
                                     .animation(.bouncy, value: gestureState)
                                     .gesture(
                                         DragGesture(minimumDistance: 10, coordinateSpace: .local)
                                             .updating($gestureState, body: { value, state, transaction in
-                                                state = value.translation
+                                                if !keyboardShowing {
+                                                    state = value.translation
+                                                }
                                             })
                                             .onEnded({ value in
                                                 if !keyboardShowing && value.predictedEndTranslation.height > modalDismissThreshold {
@@ -96,9 +119,6 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
             }
             .animation(.bouncy, value: isPresented)
         }
-        .onReceive(keyboardPublisher, perform: { showing in
-            keyboardShowing = showing
-        })
     }
 }
 

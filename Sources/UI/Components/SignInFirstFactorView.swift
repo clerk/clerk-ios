@@ -13,6 +13,7 @@ struct SignInFirstFactorView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.clerkTheme) private var clerkTheme
     
     @State private var otpCode = ""
     @State private var isSubmittingOTPCode = false
@@ -133,8 +134,8 @@ struct SignInFirstFactorView: View {
                 }, label: {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
+                        .foregroundStyle(clerkTheme.colors.primary)
                 })
-                .tint(Color("clerkPurple", bundle: .module))
             }
             
             AsyncButton(action: {
@@ -142,8 +143,8 @@ struct SignInFirstFactorView: View {
             }, label: {
                 Text("Use another method")
                     .font(.subheadline)
+                    .foregroundStyle(clerkTheme.colors.primary)
             })
-            .tint(Color("clerkPurple", bundle: .module))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)

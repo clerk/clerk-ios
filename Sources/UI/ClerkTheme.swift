@@ -11,7 +11,12 @@ import Foundation
 import SwiftUI
 
 public struct ClerkTheme {
-    public var signIn = SignIn()
+    public var signIn: SignIn
+    public var colors: Colors
+    
+    public struct Colors {
+        public var primary: Color
+    }
     
     public struct SignIn {
         
@@ -20,14 +25,28 @@ public struct ClerkTheme {
             case modal
         }
         
-        public var presentationStyle: PresentationStyle = .sheet
-        public var modalBackground: AnyView = AnyView(Color.clear.background(.ultraThinMaterial))
+        public var presentationStyle: PresentationStyle
+        public var modalBackground: AnyView
     }
     
 }
 
+extension ClerkTheme {
+    
+    static let `default` = Self(
+        signIn: .init(
+            presentationStyle: .sheet,
+            modalBackground: AnyView(Color.clear.background(.regularMaterial))
+        ),
+        colors: .init(
+            primary: Color(.clerkPurple)
+        )
+    )
+    
+}
+
 struct ClerkThemeKey: EnvironmentKey {
-    static let defaultValue: ClerkTheme = .init()
+    static let defaultValue: ClerkTheme = .default
 }
 
 extension EnvironmentValues {

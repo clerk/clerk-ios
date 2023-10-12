@@ -10,6 +10,8 @@
 import SwiftUI
 
 struct IdentityPreviewView: View {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     var imageUrl: String?
     var label: String
     var action: (() -> Void)?
@@ -20,15 +22,15 @@ struct IdentityPreviewView: View {
                 AsyncImage(url: URL(string: imageUrl), transaction: Transaction(animation: .default)) { phase in
                     switch phase {
                     case .empty:
-                        Color("clerkPurple", bundle: .module)
+                        clerkTheme.colors.primary
                     case .success(let image):
                         image
                             .resizable()
                             .scaledToFit()
                     case .failure:
-                        Color("clerkPurple", bundle: .module)
+                        clerkTheme.colors.primary
                     @unknown default:
-                        Color("clerkPurple", bundle: .module)
+                        clerkTheme.colors.primary
                     }
                 }
                 .frame(width: 20, height: 20)
@@ -44,7 +46,7 @@ struct IdentityPreviewView: View {
                 }, label: {
                     Image(systemName: "square.and.pencil")
                         .bold()
-                        .foregroundStyle(Color("clerkPurple", bundle: .module))
+                        .foregroundStyle(clerkTheme.colors.primary)
                 })
             }
         }

@@ -10,6 +10,8 @@
 import SwiftUI
 
 struct OTPFieldView: View {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     @Binding var otpCode: String
     var numberOfInputs: Int = 6
     
@@ -30,7 +32,7 @@ struct OTPFieldView: View {
                     Button("Done") {
                         isKeyboardShowing = false
                     }
-                    .tint(Color("clerkPurple", bundle: .module))
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -74,7 +76,7 @@ struct OTPFieldView: View {
                 if isSelected {
                     Rectangle()
                         .frame(width: 2, height: 28)
-                        .foregroundStyle(Color("clerkPurple", bundle: .module))
+                        .foregroundStyle(clerkTheme.colors.primary)
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
                         .onAppear {
@@ -85,7 +87,7 @@ struct OTPFieldView: View {
             
             Rectangle()
                 .frame(height: 2)
-                .foregroundStyle(isSelected ? Color("clerkPurple", bundle: .module) : Color(.systemFill))
+                .foregroundStyle(isSelected ? clerkTheme.colors.primary : Color(.systemFill))
         }
         .frame(maxWidth: .infinity)
     }
