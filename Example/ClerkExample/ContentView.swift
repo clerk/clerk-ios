@@ -64,15 +64,11 @@ struct ContentView: View {
         }
     }
     
-    private func resetClientAction() async {
+    private func deleteClientAction() async {
         do {
             try await clerk
                 .client
                 .destroy()
-            
-            try await clerk
-                .client
-                .create()
         } catch {
             dump(error)
         }
@@ -119,9 +115,9 @@ struct ContentView: View {
                 
                 AsyncButton(
                     options: [.disableButton, .showProgressView],
-                    action: resetClientAction
+                    action: deleteClientAction
                 ) {
-                    Text("Reset Client")
+                    Text("Destroy Client")
                 }
                 .padding()
                 

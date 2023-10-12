@@ -17,6 +17,7 @@ import SwiftUI
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
+    @Environment(\.clerkTheme) var clerkTheme
     
     @ObservedObject private var clerk = Clerk.shared
     
@@ -30,18 +31,14 @@ struct ClerkProviderModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .task {
-                do {
-                    try await clerk.client.get()
-                } catch {
-                    try? await clerk.client.create()
-                }
+                try? await clerk.client.get()
             }
             .task {
                 try? await clerk.environment.get()
             }
             .signInView(
                 isPresented: $clerk.signInIsPresented,
-                presentationStyle: .sheet
+                presentationStyle: clerkTheme.signInPresentationStyle
             )
             .environmentObject(clerk) // this must be the last modifier
     }
