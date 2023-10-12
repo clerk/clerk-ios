@@ -81,7 +81,7 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
                 if isPresented {
                     GeometryReader { geo in
                         ScrollView {
-                            ZStack(alignment: .top) {
+                            ZStack {
                                 Color(.systemBackground).opacity(0.001)
                                     .blendMode(.screen)
                                     .frame(width: geo.size.width, height: geo.size.height)
@@ -113,7 +113,7 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
                         }
                         .scrollDisabled(!keyboardShowing)
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.move(edge: .bottom))
                     .readSize(onChange: { geoSize = $0 })
                 }
             }
