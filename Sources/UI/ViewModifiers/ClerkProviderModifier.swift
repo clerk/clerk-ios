@@ -41,7 +41,7 @@ struct ClerkProviderModifier: ViewModifier {
             }
             .signInView(
                 isPresented: $clerk.signInIsPresented,
-                presentationStyle: .modal
+                presentationStyle: .sheet
             )
             .environmentObject(clerk) // this must be the last modifier
     }

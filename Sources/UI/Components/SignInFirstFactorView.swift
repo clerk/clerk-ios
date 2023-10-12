@@ -12,16 +12,26 @@ import SwiftUI
 struct SignInFirstFactorView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
+    @Environment(\.dismiss) private var dismiss
     
     @State private var otpCode = ""
     @State private var isSubmittingOTPCode = false
+    private let requiredOtpCodeLength = 6
     
     private var userData: UserData {
         clerk.client.signIn.userData
     }
     
+    private var firstFactorStrategy: VerificationStrategy? {
+        if let strategy = clerk.client.signIn.firstFactorVerification?.strategy {
+            return VerificationStrategy(stringValue: strategy)
+        }
+        return nil
+    }
+    
     private var firstFactor: SignInFactor? {
-        clerk.client.signIn.supportedFirstFactors.first(where: { $0.strategy == VerificationStrategy.emailCode.stringValue })
+        clerk.client.signIn.supportedFirstFactors
+            .first(where: { $0.strategy == firstFactorStrategy?.stringValue })
     }
     
     private func prepareFirstFactor() async {
@@ -35,6 +45,29 @@ struct SignInFirstFactorView: View {
                 ))
         } catch {
             dump(error)
+        }
+    }
+    
+    private func attemptFirstFactor() async {
+        isSubmittingOTPCode = true
+        
+        do {
+            guard let firstFactorStrategy else {
+                throw ClerkClientError(message: "Unable to determine the current verification strategy.")
+            }
+            
+            try await clerk
+                .client
+                .signIn
+                .attemptFirstFactor(.init(
+                    code: otpCode,
+                    strategy: firstFactorStrategy
+                ))
+            
+            dismiss()
+        } catch {
+            dump(error)
+            isSubmittingOTPCode = false
         }
     }
     
@@ -88,7 +121,11 @@ struct SignInFirstFactorView: View {
                     }
                 }
                 .onChange(of: otpCode) { newValue in
-                    isSubmittingOTPCode = newValue.count == 6
+                    if newValue.count == requiredOtpCodeLength {
+                        Task {
+                            await attemptFirstFactor()
+                        }
+                    }
                 }
                 
                 AsyncButton(options: [.disableButton], action: {

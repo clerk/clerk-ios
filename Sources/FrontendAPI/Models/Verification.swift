@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RegexBuilder
 
 struct Verification: Decodable {
     let status: String
@@ -44,6 +45,53 @@ public enum VerificationStrategy: Encodable {
             return "oauth_\(provider)"
         case .web3(let signature):
             return "web3_\(signature)_signature"
+        }
+    }
+    
+    init?(stringValue: String) {
+        switch stringValue {
+        case VerificationStrategy.phoneCode.stringValue:
+            self = .phoneCode
+        case VerificationStrategy.emailCode.stringValue:
+            self = .emailCode
+        case VerificationStrategy.emailLink.stringValue:
+            self = .emailLink
+        case VerificationStrategy.saml.stringValue:
+            self = .saml
+        case let value where value.hasPrefix("oauth_"):
+            let regex = Regex {
+                "oauth_"
+                
+                Capture {
+                    OneOrMore(.any)
+                }
+            }
+            
+            if let provider = value.firstMatch(of: regex)?.output.1 {
+                self = .oauth(String(provider))
+            } else {
+                return nil
+            }
+            
+        case let value where value.hasPrefix("web3_"):
+            let regex = Regex {
+                "web3_"
+                
+                Capture {
+                    OneOrMore(.any)
+                }
+                
+                "_signature"
+            }
+            
+            if let signature = value.firstMatch(of: regex)?.output.1 {
+                self = .web3(String(signature))
+            } else {
+                return nil
+            }
+            
+        default:
+            return nil
         }
     }
 }
