@@ -17,7 +17,7 @@ struct SignInViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         Group {
-            switch clerkTheme.signIn.presentationStyle {
+            switch clerkTheme.authPresentationStyle {
             case .sheet: sheetStyle(content: content)
             case .fullScreenCover: fullScreenCoverStyle(content: content)
             }
@@ -60,7 +60,6 @@ extension View {
 #Preview {
     Text("SignIn")
         .signInView(isPresented: .constant(true))
-        .environment(\.clerkTheme.signIn.presentationStyle, .fullScreenCover)
 }
 
 #endif

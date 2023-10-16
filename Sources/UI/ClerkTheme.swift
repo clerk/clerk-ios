@@ -10,47 +10,26 @@
 import SwiftUI
 
 public struct ClerkTheme {
-    public var signUp: SignUp
-    public var signIn: SignIn
     public var colors: Colors
+    public var authPresentationStyle: PresentationStyle
     
     public struct Colors {
         public var primary: Color
     }
     
-    public struct SignIn {
-        
-        public enum PresentationStyle {
-            case sheet
-            case fullScreenCover
-        }
-        
-        public var presentationStyle: PresentationStyle
+    public enum PresentationStyle {
+        case sheet
+        case fullScreenCover
     }
-    
-    public struct SignUp {
-        public enum PresentationStyle {
-            case sheet
-            case fullScreenCover
-        }
-        
-        public var presentationStyle: PresentationStyle
-    }
-    
 }
 
 extension ClerkTheme {
     
     static let `default` = Self(
-        signUp: .init(
-            presentationStyle: .sheet
-        ),
-        signIn: .init(
-            presentationStyle: .sheet
-        ),
         colors: .init(
             primary: Color(.clerkPurple)
-        )
+        ),
+        authPresentationStyle: .sheet
     )
     
 }

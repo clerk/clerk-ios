@@ -29,7 +29,7 @@ struct ClerkExampleApp: App {
 struct ClerkExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            Text("MacOS not supported.")
+            Text("ClerkUI does not support MacOS yet.")
         }
     }
 }
