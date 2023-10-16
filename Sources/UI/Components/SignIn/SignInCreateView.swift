@@ -150,11 +150,9 @@ struct SignInCreateView: View {
     }
 }
 
-struct SignInCreateView_Previews: PreviewProvider {
-    static var previews: some View {
-        SignInCreateView()
-            .environmentObject(Clerk.mock)
-    }
+#Preview {
+    SignInCreateView()
+        .environmentObject(Clerk.mock)
 }
 
 #endif

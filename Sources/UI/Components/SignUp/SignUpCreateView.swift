@@ -170,13 +170,6 @@ struct SignUpCreateView: View {
     }
 }
 
-//struct SignInCreateView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        SignInCreateView()
-//            .environmentObject(Clerk.mock)
-//    }
-//}
-
 #Preview {
     SignUpCreateView()
 }

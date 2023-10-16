@@ -40,13 +40,11 @@ struct CustomTextField: View {
     }
 }
 
-struct CustomTextField_Previews: PreviewProvider {
-    static var previews: some View {
-        CustomTextField(
-            title: "Email address",
-            text: .constant("")
-        )
-    }
+#Preview {
+    CustomTextField(
+        title: "Email address",
+        text: .constant("")
+    )
 }
 
 #endif

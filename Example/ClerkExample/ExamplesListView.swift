@@ -22,10 +22,8 @@ struct ExamplesListView: View {
     }
 }
 
-struct ExamplesListView_Previews: PreviewProvider {
-    static var previews: some View {
-        ExamplesListView()
-    }
+#Preview {
+    ExamplesListView()
 }
 
 #endif

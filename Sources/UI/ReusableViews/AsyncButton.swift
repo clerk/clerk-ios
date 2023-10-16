@@ -58,13 +58,11 @@ struct AsyncButton<Label: View>: View {
     }
 }
 
-struct AsyncButton_Previews: PreviewProvider {
-    static var previews: some View {
-        AsyncButton(options: [.disableButton, .showProgressView]) {
-            try? await Task.sleep(for: .seconds(1))
-        } label: {
-            Text("Button")
-        }
+#Preview {
+    AsyncButton(options: [.disableButton, .showProgressView]) {
+        try? await Task.sleep(for: .seconds(1))
+    } label: {
+        Text("Button")
     }
 }
 

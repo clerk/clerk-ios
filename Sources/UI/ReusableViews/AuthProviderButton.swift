@@ -53,21 +53,19 @@ struct AuthProviderButton: View {
     }
 }
 
-struct AuthProviderButton_Previews: PreviewProvider {
-    static var previews: some View {
+#Preview {
+    VStack {
         VStack {
-            VStack {
-                AuthProviderButton(image: "tornado.circle.fill", label: "GitHub")
-                AuthProviderButton(image: "shield.lefthalf.filled", label: "Google")
-            }
-            
-            HStack {
-                AuthProviderButton(image: "tornado.circle.fill", label: "GitHub", style: .compact)
-                AuthProviderButton(image: "shield.lefthalf.filled", label: "Google", style: .compact)
-            }
+            AuthProviderButton(image: "tornado.circle.fill", label: "GitHub")
+            AuthProviderButton(image: "shield.lefthalf.filled", label: "Google")
         }
-        .padding()
+        
+        HStack {
+            AuthProviderButton(image: "tornado.circle.fill", label: "GitHub", style: .compact)
+            AuthProviderButton(image: "shield.lefthalf.filled", label: "Google", style: .compact)
+        }
     }
+    .padding()
 }
 
 #endif
