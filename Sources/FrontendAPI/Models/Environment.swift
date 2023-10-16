@@ -18,7 +18,7 @@ extension Clerk {
 extension Clerk.Environment {
     
     @MainActor
-    func get() async throws {
+    public func get() async throws {
         let request = APIEndpoint
             .v1
             .environment

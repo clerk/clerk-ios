@@ -14,7 +14,7 @@ import Foundation
  phone_code for phone numbers
  As well as the identifier that the factor refers to.
  */
-struct SignInFactor: Decodable {
+public struct SignInFactor: Decodable {
     init(
         strategy: VerificationStrategy,
         safeIdentifier: String? = nil,
@@ -25,7 +25,7 @@ struct SignInFactor: Decodable {
         self.emailAddressId = emailAddressId
     }
     
-    let strategy: String
-    let safeIdentifier: String?
-    let emailAddressId: String?
+    public let strategy: String
+    public let safeIdentifier: String?
+    public let emailAddressId: String?
 }

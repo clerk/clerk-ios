@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public struct AsyncButton<Label: View>: View {
+struct AsyncButton<Label: View>: View {
     public init(
         options: Set<AsyncButton<Label>.Options> = .init(),
         action: @escaping () async -> Void,

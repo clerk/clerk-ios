@@ -10,6 +10,7 @@
 		8F19AF4A2ACC815A00F3F8C9 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F19AF492ACC815A00F3F8C9 /* Clerk */; };
 		8F38A77A2AD0A9AE00C6E248 /* SignInExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F38A7792AD0A9AE00C6E248 /* SignInExampleView.swift */; };
 		8F38A77E2AD0AC3E00C6E248 /* ExamplesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */; };
+		8F3C07BD2ADB03FB00FEE832 /* ClerkUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3C07BC2ADB03FB00FEE832 /* ClerkUI */; };
 		8F67B6D22ACB0EF60047FFE4 /* ClerkExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */; };
 		8F67B6D42ACB0EF60047FFE4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F67B6D32ACB0EF60047FFE4 /* ContentView.swift */; };
 		8F67B6D62ACB0EF70047FFE4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */; };
@@ -34,6 +35,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F3C07BD2ADB03FB00FEE832 /* ClerkUI in Frameworks */,
 				8F19AF4A2ACC815A00F3F8C9 /* Clerk in Frameworks */,
 				8F67B6E32ACB10970047FFE4 /* Clerk in Frameworks */,
 			);
@@ -42,12 +44,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8F3C07BB2ADB03FB00FEE832 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8F67B6C52ACB0EF60047FFE4 = {
 			isa = PBXGroup;
 			children = (
 				8F67B6E02ACB0FA20047FFE4 /* clerk-ios */,
 				8F67B6D02ACB0EF60047FFE4 /* ClerkExample */,
 				8F67B6CF2ACB0EF60047FFE4 /* Products */,
+				8F3C07BB2ADB03FB00FEE832 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -100,6 +110,7 @@
 			packageProductDependencies = (
 				8F67B6E22ACB10970047FFE4 /* Clerk */,
 				8F19AF492ACC815A00F3F8C9 /* Clerk */,
+				8F3C07BC2ADB03FB00FEE832 /* ClerkUI */,
 			);
 			productName = ClerkExample;
 			productReference = 8F67B6CE2ACB0EF60047FFE4 /* ClerkExample.app */;
@@ -403,6 +414,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8F19AF482ACC815A00F3F8C9 /* XCRemoteSwiftPackageReference "clerk-ios" */;
 			productName = Clerk;
+		};
+		8F3C07BC2ADB03FB00FEE832 /* ClerkUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClerkUI;
 		};
 		8F67B6E22ACB10970047FFE4 /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;

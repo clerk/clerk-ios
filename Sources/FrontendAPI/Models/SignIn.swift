@@ -57,17 +57,17 @@ public struct SignIn: Decodable {
      - phone_code for phone numbers
      As well as the identifier that the factor refers to.
      */
-    @DecodableDefault.EmptyList private(set) var supportedFirstFactors: [SignInFactor]
+    @DecodableDefault.EmptyList internal(set) public var supportedFirstFactors: [SignInFactor]
     
     /**
      The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
      */
-    let firstFactorVerification: Verification?
+    public let firstFactorVerification: Verification?
     
     /**
      An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
      */
-    let userData: UserData
+    public let userData: UserData
 }
 
 extension SignIn {

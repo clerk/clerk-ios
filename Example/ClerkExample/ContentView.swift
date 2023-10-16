@@ -20,7 +20,7 @@ struct ContentView: View {
     @State private var didSendCode = false
     
     private func signUpAction() async {
-        do {                        
+        do {
             try await clerk
                 .client
                 .signUp
@@ -84,7 +84,7 @@ struct ContentView: View {
                         .transition(.scale.animation(.bouncy))
                         .padding()
                 }
-                                
+                
                 TextField("Email", text: $emailAddress)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.emailAddress)
@@ -92,34 +92,31 @@ struct ContentView: View {
                     .autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
                     .padding()
-                            
+                
                 SecureField("Password", text: $password)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.password)
                     .padding()
                 
-                AsyncButton(
-                    options: [.disableButton, .showProgressView],
-                    action: signUpAction
-                ) {
+                Button(action: {
+                    Task { await signUpAction() }
+                }, label: {
                     Text("Sign Up!")
-                }
+                })
                 .padding()
                 
-                AsyncButton(
-                    options: [.disableButton, .showProgressView],
-                    action: signInAction
-                ) {
+                Button(action: {
+                    Task { await signInAction() }
+                }, label: {
                     Text("Sign In!")
-                }
+                })
                 .padding()
                 
-                AsyncButton(
-                    options: [.disableButton, .showProgressView],
-                    action: deleteClientAction
-                ) {
-                    Text("Destroy Client")
-                }
+                Button(action: {
+                    Task { await deleteClientAction() }
+                }, label: {
+                    Text("Delete Client")
+                })
                 .padding()
                 
                 if didSendCode {
@@ -130,12 +127,11 @@ struct ContentView: View {
                             .keyboardType(.numberPad)
                             .padding()
                         
-                        AsyncButton(
-                            options: [.disableButton, .showProgressView],
-                            action: verifyAction
-                        ) {
+                        Button(action: {
+                            Task { await verifyAction() }
+                        }, label: {
                             Text("Verify!")
-                        }
+                        })
                         .padding()
                     }
                     .transition(.slide)

@@ -9,6 +9,7 @@
 
 import Foundation
 import SwiftUI
+import Clerk
 
 /**
  This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.
@@ -30,16 +31,9 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .task {
-                try? await clerk.client.get()
-            }
-            .task {
-                try? await clerk.environment.get()
-            }
-            .signInView(
-                isPresented: $clerk.signInIsPresented,
-                presentationStyle: clerkTheme.signIn.presentationStyle
-            )
+            .task { try? await clerk.client.get() }
+            .task { try? await clerk.environment.get() }
+            .signInView(isPresented: $clerk.signInIsPresented)
             .environmentObject(clerk) // this must be the last modifier
     }
 }

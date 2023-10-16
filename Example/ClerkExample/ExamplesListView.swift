@@ -8,10 +8,8 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
 
 struct ExamplesListView: View {
-    @EnvironmentObject var clerk: Clerk
     
     var body: some View {
         NavigationStack {
@@ -27,7 +25,6 @@ struct ExamplesListView: View {
 struct ExamplesListView_Previews: PreviewProvider {
     static var previews: some View {
         ExamplesListView()
-            .environmentObject(Clerk.mock)
     }
 }
 
