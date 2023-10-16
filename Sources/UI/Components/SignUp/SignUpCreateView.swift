@@ -68,13 +68,13 @@ struct SignUpCreateView: View {
             
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
-                    CustomTextField(title: "First name", text: $emailAddress)
+                    CustomTextField(title: "First name", text: $firstName)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocorrectionDisabled(true)
                         .tint(clerkTheme.colors.primary)
                     
-                    CustomTextField(title: "Last name", text: $emailAddress)
+                    CustomTextField(title: "Last name", text: $lastName)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocorrectionDisabled(true)
