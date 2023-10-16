@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/4/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct AsyncButton<Label: View>: View {
@@ -72,3 +74,5 @@ extension AsyncButton {
         case showProgressView
     }
 }
+
+#endif
