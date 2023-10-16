@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		8F19AF4A2ACC815A00F3F8C9 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F19AF492ACC815A00F3F8C9 /* Clerk */; };
-		8F38A77A2AD0A9AE00C6E248 /* SignInExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F38A7792AD0A9AE00C6E248 /* SignInExampleView.swift */; };
 		8F38A77E2AD0AC3E00C6E248 /* ExamplesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */; };
 		8F3C07BD2ADB03FB00FEE832 /* ClerkUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3C07BC2ADB03FB00FEE832 /* ClerkUI */; };
 		8F67B6D22ACB0EF60047FFE4 /* ClerkExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */; };
@@ -18,7 +17,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		8F38A7792AD0A9AE00C6E248 /* SignInExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInExampleView.swift; sourceTree = "<group>"; };
 		8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesListView.swift; sourceTree = "<group>"; };
 		8F67B6CE2ACB0EF60047FFE4 /* ClerkExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkExampleApp.swift; sourceTree = "<group>"; };
@@ -72,7 +70,6 @@
 			children = (
 				8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */,
 				8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */,
-				8F38A7792AD0A9AE00C6E248 /* SignInExampleView.swift */,
 				8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */,
 				8F67B6D72ACB0EF70047FFE4 /* ClerkExample.entitlements */,
 				8F67B6D82ACB0EF70047FFE4 /* Preview Content */,
@@ -166,7 +163,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8F38A77A2AD0A9AE00C6E248 /* SignInExampleView.swift in Sources */,
 				8F67B6D22ACB0EF60047FFE4 /* ClerkExampleApp.swift in Sources */,
 				8F38A77E2AD0AC3E00C6E248 /* ExamplesListView.swift in Sources */,
 			);
