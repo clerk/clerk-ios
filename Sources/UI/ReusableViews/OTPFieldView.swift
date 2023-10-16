@@ -25,17 +25,6 @@ struct OTPFieldView: View {
             }
         }
         .environment(\.layoutDirection, .leftToRight)
-        .toolbar {
-            ToolbarItem(placement: .keyboard) {
-                HStack {
-                    Spacer()
-                    Button("Done") {
-                        isKeyboardShowing = false
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
         .background {
             TextField("", text: $otpCode.maxLength(numberOfInputs))
                 .textContentType(.oneTimeCode)

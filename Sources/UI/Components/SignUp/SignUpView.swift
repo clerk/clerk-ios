@@ -52,7 +52,7 @@ struct SignUpView: View {
             .tint(.primary)
         }
         .onChange(of: model.step) { _ in
-            hideKeyboard()
+            KeyboardHelpers.dismissKeyboard()
         }
     }
 }

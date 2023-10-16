@@ -9,12 +9,10 @@
 
 import SwiftUI
 
-struct SignUpViewModifier: ViewModifier, KeyboardReadable {
+struct SignUpViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
     @Binding var isPresented: Bool
-    
-    @State private var keyboardShowing = false
-    
+        
     func body(content: Content) -> some View {
         Group {
             switch clerkTheme.signUp.presentationStyle {
@@ -22,9 +20,6 @@ struct SignUpViewModifier: ViewModifier, KeyboardReadable {
             case .fullScreenCover: fullScreenCoverStyle(content: content)
             }
         }
-        .onReceive(keyboardPublisher, perform: { showing in
-            keyboardShowing = showing
-        })
     }
     
     @ViewBuilder
@@ -33,24 +28,9 @@ struct SignUpViewModifier: ViewModifier, KeyboardReadable {
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
                     SignUpView()
-                        .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
             })
-            // hack to get toolbar to show within sheet
-            .toolbar {
-                if isPresented {
-                    ToolbarItem(placement: .keyboard) {
-                        HStack {
-                            Spacer()
-                            Button("Done") {
-                                hideKeyboard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
     }
     
     @ViewBuilder
@@ -59,24 +39,9 @@ struct SignUpViewModifier: ViewModifier, KeyboardReadable {
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
                     SignUpView()
-                        .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
             })
-            // hack to get toolbar to show within fullscreen cover
-            .toolbar {
-                if isPresented {
-                    ToolbarItem(placement: .keyboard) {
-                        HStack {
-                            Spacer()
-                            Button("Done") {
-                                hideKeyboard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
     }
 }
 

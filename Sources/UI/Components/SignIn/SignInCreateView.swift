@@ -75,17 +75,7 @@ struct SignInCreateView: View {
                     .autocorrectionDisabled(true)
                     .focused($isKeyboardShowing)
                     .tint(clerkTheme.colors.primary)
-                    .toolbar {
-                        ToolbarItem(placement: .keyboard) {
-                            HStack {
-                                Spacer()
-                                Button("Done") {
-                                    isKeyboardShowing = false
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
+                
                 AsyncButton(options: [.disableButton, .showProgressView], action: signInAction) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))

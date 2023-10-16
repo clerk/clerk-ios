@@ -52,7 +52,7 @@ struct SignInFirstFactorView: View {
     
     private func attemptFirstFactor() async {
         isSubmittingOTPCode = true
-        hideKeyboard()
+        KeyboardHelpers.dismissKeyboard()
         
         do {
             guard let firstFactorStrategy else {

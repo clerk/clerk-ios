@@ -146,7 +146,7 @@ struct SignUpCreateView: View {
     
     private func signUpAction() async {
         do {
-            hideKeyboard()
+            KeyboardHelpers.dismissKeyboard()
             
             try await clerk
                 .client

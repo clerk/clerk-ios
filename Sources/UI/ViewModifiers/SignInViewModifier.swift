@@ -10,11 +10,10 @@
 import Foundation
 import SwiftUI
 
-struct SignInViewModifier: ViewModifier, KeyboardReadable {
+struct SignInViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var isPresented: Bool
-    @State private var keyboardShowing = false
 
     func body(content: Content) -> some View {
         Group {
@@ -23,10 +22,6 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
             case .fullScreenCover: fullScreenCoverStyle(content: content)
             }
         }
-        .onReceive(keyboardPublisher, perform: { showing in
-            keyboardShowing = showing
-        })
-        
     }
     
     @ViewBuilder
@@ -35,24 +30,9 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
                     SignInView()
-                        .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
             })
-            // hack to get toolbar to show within sheet
-            .toolbar {
-                if isPresented {
-                    ToolbarItem(placement: .keyboard) {
-                        HStack {
-                            Spacer()
-                            Button("Done") {
-                                hideKeyboard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
     }
     
     @ViewBuilder
@@ -61,24 +41,9 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
                     SignInView()
-                        .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
             })
-            // hack to get toolbar to show within fullscreen cover
-            .toolbar {
-                if isPresented {
-                    ToolbarItem(placement: .keyboard) {
-                        HStack {
-                            Spacer()
-                            Button("Done") {
-                                hideKeyboard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
     }
 }
 
