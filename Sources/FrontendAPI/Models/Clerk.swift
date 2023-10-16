@@ -60,13 +60,14 @@ final public class Clerk: ObservableObject {
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment = .init()
     
+    // MARK: - UI Related
+    #if canImport(UIKit)
     /// Is the sign in flow being displayed.
     @Published public var signInIsPresented = false
     
-    /// Trigger the sign in flow
-    public func presentSignIn() {
-        signInIsPresented = true
-    }
+    /// Is the sign up flow being displayed.
+    @Published public var signUpIsPresented = false
+    #endif
 }
 
 extension Container {

@@ -34,6 +34,7 @@ struct ClerkProviderModifier: ViewModifier {
             .task { try? await clerk.client.get() }
             .task { try? await clerk.environment.get() }
             .signInView(isPresented: $clerk.signInIsPresented)
+            .signUpView(isPresented: $clerk.signUpIsPresented)
             .environmentObject(clerk) // this must be the last modifier
     }
 }

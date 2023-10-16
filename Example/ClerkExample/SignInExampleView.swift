@@ -16,7 +16,7 @@ struct SignInExampleView: View {
     var body: some View {
         VStack {
             Button {
-                clerk.presentSignIn()
+                clerk.signInIsPresented = true
             } label: {
                 Text("Sign In!")
             }

@@ -48,13 +48,19 @@ extension SignUp {
     
     public struct CreateParams: Encodable {
         public init(
+            firstName: String? = nil,
+            lastName: String? = nil,
             password: String? = nil,
             emailAddress: String? = nil
         ) {
+            self.firstName = firstName
+            self.lastName = lastName
             self.password = password
             self.emailAddress = emailAddress
         }
         
+        public var firstName: String?
+        public var lastName: String?
         public var password: String?
         public var emailAddress: String?
     }

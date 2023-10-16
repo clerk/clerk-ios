@@ -8,6 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
+import Clerk
 
 extension SignInView {
     final class Model: ObservableObject {
@@ -22,6 +23,7 @@ extension SignInView {
 }
 
 public struct SignInView: View {
+    @EnvironmentObject private var clerk: Clerk
     @StateObject private var model = Model()
     
     @Namespace private var namespace
@@ -39,6 +41,16 @@ public struct SignInView: View {
         }
         .animation(.bouncy, value: model.step)
         .environmentObject(model)
+        .overlay(alignment: .topTrailing) {
+            Button(action: {
+                clerk.signInIsPresented = false
+            }, label: {
+                Text("Cancel")
+                    .font(.caption.weight(.medium))
+            })
+            .padding(30)
+            .tint(.primary)
+        }
         .onChange(of: model.step) { _ in
             hideKeyboard()
         }

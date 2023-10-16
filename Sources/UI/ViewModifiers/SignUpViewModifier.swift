@@ -1,24 +1,23 @@
 //
-//  SignInViewModifier.swift
+//  SignUpViewModifier.swift
 //
 //
-//  Created by Mike Pitre on 10/12/23.
+//  Created by Mike Pitre on 10/16/23.
 //
 
 #if canImport(UIKit)
 
-import Foundation
 import SwiftUI
 
-struct SignInViewModifier: ViewModifier, KeyboardReadable {
+struct SignUpViewModifier: ViewModifier, KeyboardReadable {
     @Environment(\.clerkTheme) private var clerkTheme
-    
     @Binding var isPresented: Bool
+    
     @State private var keyboardShowing = false
-
+    
     func body(content: Content) -> some View {
         Group {
-            switch clerkTheme.signIn.presentationStyle {
+            switch clerkTheme.signUp.presentationStyle {
             case .sheet: sheetStyle(content: content)
             case .fullScreenCover: fullScreenCoverStyle(content: content)
             }
@@ -26,7 +25,6 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
         .onReceive(keyboardPublisher, perform: { showing in
             keyboardShowing = showing
         })
-        
     }
     
     @ViewBuilder
@@ -34,7 +32,7 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
         content
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
-                    SignInView()
+                    SignUpView()
                         .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
@@ -60,7 +58,7 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
         content
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
-                    SignInView()
+                    SignUpView()
                         .interactiveDismissDisabled(keyboardShowing)
                         .presentationDragIndicator(.visible)
                 }
@@ -83,19 +81,20 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
 }
 
 extension View {
-    func signInView(
+    func signUpView(
         isPresented: Binding<Bool>
     ) -> some View {
-        modifier(SignInViewModifier(
+        modifier(SignUpViewModifier(
             isPresented: isPresented
         ))
     }
 }
 
+
 #Preview {
-    Text("SignIn")
-        .signInView(isPresented: .constant(true))
-        .environment(\.clerkTheme.signIn.presentationStyle, .fullScreenCover)
+    Text("SignUp")
+        .signUpView(isPresented: .constant(true))
+        .environment(\.clerkTheme.signUp.presentationStyle, .fullScreenCover)
 }
 
 #endif

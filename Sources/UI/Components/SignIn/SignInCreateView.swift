@@ -97,37 +97,38 @@ struct SignInCreateView: View {
                 }
             }
             
-            HStack {
+            HStack(spacing: 4) {
+                Text("No account?")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button {
+                    clerk.signInIsPresented = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        clerk.signUpIsPresented = true
+                    }
+                } label: {
+                    Text("Sign Up")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(clerkTheme.colors.primary)
+                }
+                
+                Spacer()
+                
                 HStack(spacing: 4) {
-                    Text("No account?")
+                    Text("Secured by ")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Button {
-                        print("Sign Up Tapped")
-                    } label: {
-                        Text("Sign Up")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.primary)
-                    }
-                    
-                    Spacer()
-                    
                     HStack(spacing: 4) {
-                        Text("Secured by ")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 4) {
-                            Image("clerk-logomark", bundle: .module)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 16)
-                            Text("clerk")
-                                .fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
+                        Image("clerk-logomark", bundle: .module)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16)
+                        Text("clerk")
+                            .fontWeight(.semibold)
                     }
-                    
+                    .font(.subheadline)
                 }
+                
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

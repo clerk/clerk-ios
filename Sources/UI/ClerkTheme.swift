@@ -10,6 +10,7 @@
 import SwiftUI
 
 public struct ClerkTheme {
+    public var signUp: SignUp
     public var signIn: SignIn
     public var colors: Colors
     
@@ -22,11 +23,18 @@ public struct ClerkTheme {
         public enum PresentationStyle {
             case sheet
             case fullScreenCover
-//            case modal
         }
         
         public var presentationStyle: PresentationStyle
-        public var modalBackground: AnyView
+    }
+    
+    public struct SignUp {
+        public enum PresentationStyle {
+            case sheet
+            case fullScreenCover
+        }
+        
+        public var presentationStyle: PresentationStyle
     }
     
 }
@@ -34,9 +42,11 @@ public struct ClerkTheme {
 extension ClerkTheme {
     
     static let `default` = Self(
+        signUp: .init(
+            presentationStyle: .sheet
+        ),
         signIn: .init(
-            presentationStyle: .sheet,
-            modalBackground: AnyView(Color.clear.background(.regularMaterial))
+            presentationStyle: .sheet
         ),
         colors: .init(
             primary: Color(.clerkPurple)
