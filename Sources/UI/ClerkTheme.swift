@@ -22,7 +22,7 @@ public struct ClerkTheme {
         public enum PresentationStyle {
             case sheet
             case fullScreenCover
-            case modal
+//            case modal
         }
         
         public var presentationStyle: PresentationStyle

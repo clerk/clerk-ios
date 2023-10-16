@@ -27,7 +27,7 @@ struct SignInViewModifier: ViewModifier, KeyboardReadable {
             switch clerkTheme.signIn.presentationStyle {
             case .sheet: sheetStyle(content: content)
             case .fullScreenCover: fullScreenCoverStyle(content: content)
-            case .modal: modalStyle(content: content)
+//            case .modal: modalStyle(content: content)
             }
         }
         .onReceive(keyboardPublisher, perform: { showing in
