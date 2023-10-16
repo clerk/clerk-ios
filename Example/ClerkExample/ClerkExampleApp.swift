@@ -5,9 +5,9 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import SwiftUI
+#if canImport(UIKit)
 
-#if !os(macOS)
+import SwiftUI
 
 @main
 struct ClerkExampleApp: App {
