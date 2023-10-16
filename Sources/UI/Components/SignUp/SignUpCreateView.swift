@@ -163,7 +163,7 @@ struct SignUpCreateView: View {
                 .signUp
                 .prepareVerification(.init(strategy: .emailCode))
             
-            signUpViewModel.step = .verify
+            signUpViewModel.step = .verification
         } catch {
             dump(error)
         }

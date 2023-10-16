@@ -15,7 +15,7 @@ extension SignUpView {
         
         enum SignInStep {
             case create
-            case verify
+            case verification
         }
         
         @Published var step: SignInStep = .create
@@ -34,8 +34,8 @@ struct SignUpView: View {
             case .create:
                 SignUpCreateView()
                     .matchedGeometryEffect(id: "view", in: namespace)
-            case .verify:
-                EmptyView()
+            case .verification:
+                SignUpVerificationView()
                     .matchedGeometryEffect(id: "view", in: namespace)
             }
         }

@@ -1,8 +1,8 @@
 //
-//  SignInFirstFactorView.swift
+//  SignUpVerificationView.swift
 //
 //
-//  Created by Mike Pitre on 10/10/23.
+//  Created by Mike Pitre on 10/16/23.
 //
 
 #if canImport(UIKit)
@@ -10,31 +10,15 @@
 import SwiftUI
 import Clerk
 
-struct SignInFirstFactorView: View {
+struct SignUpVerificationView: View {
     @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject var signInViewModel: SignInView.Model
+    @EnvironmentObject var signUpViewModel: SignUpView.Model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     
     @State private var otpCode = ""
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
-    
-    private var userData: UserData {
-        clerk.client.signIn.userData
-    }
-    
-    private var firstFactorStrategy: VerificationStrategy? {
-        if let strategy = clerk.client.signIn.firstFactorVerification?.strategy {
-            return VerificationStrategy(stringValue: strategy)
-        }
-        return nil
-    }
-    
-    private var firstFactor: SignInFactor? {
-        clerk.client.signIn.supportedFirstFactors
-            .first(where: { $0.strategy == firstFactorStrategy?.stringValue })
-    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
@@ -55,14 +39,6 @@ struct SignInFirstFactorView: View {
                     .font(.subheadline.weight(.light))
                     .foregroundStyle(.secondary)
             }
-            
-            IdentityPreviewView(
-                imageUrl: userData.imageUrl,
-                label: firstFactor?.safeIdentifier ?? "",
-                action: {
-                    signInViewModel.step = .create
-                }
-            )
             
             VStack(alignment: .leading) {
                 Text("Verification code")
@@ -88,13 +64,13 @@ struct SignInFirstFactorView: View {
                 .onChange(of: otpCode) { newValue in
                     if newValue.count == requiredOtpCodeLength {
                         Task {
-                            await attemptFirstFactor()
+                            await verifyAction()
                         }
                     }
                 }
                 
                 AsyncButton(options: [.disableButton], action: {
-                    await prepareFirstFactor()
+                    await prepareVerification()
                 }, label: {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
@@ -103,7 +79,7 @@ struct SignInFirstFactorView: View {
             }
             
             AsyncButton(action: {
-                signInViewModel.step = .create
+                signUpViewModel.step = .create
             }, label: {
                 Text("Use another method")
                     .font(.subheadline)
@@ -115,13 +91,12 @@ struct SignInFirstFactorView: View {
         .background(.background)
     }
     
-    private func prepareFirstFactor() async {
+    private func prepareVerification() async {
         do {
             try await clerk
                 .client
-                .signIn
-                .prepareFirstFactor(.init(
-                    emailAddressId: firstFactor?.emailAddressId,
+                .signUp
+                .prepareVerification(.init(
                     strategy: .emailCode
                 ))
         } catch {
@@ -129,24 +104,20 @@ struct SignInFirstFactorView: View {
         }
     }
     
-    private func attemptFirstFactor() async {
-        isSubmittingOTPCode = true
+    private func verifyAction() async {
         KeyboardHelpers.dismissKeyboard()
+        isSubmittingOTPCode = true
         
         do {
-            guard let firstFactorStrategy else {
-                throw ClerkClientError(message: "Unable to determine the current verification strategy.")
-            }
-            
             try await clerk
                 .client
-                .signIn
-                .attemptFirstFactor(.init(
-                    code: otpCode,
-                    strategy: firstFactorStrategy
+                .signUp
+                .attemptVerification(.init(
+                    strategy: .emailCode,
+                    code: otpCode
                 ))
             
-            clerk.signInIsPresented = false
+            clerk.signUpIsPresented = false
         } catch {
             dump(error)
             isSubmittingOTPCode = false
@@ -155,8 +126,7 @@ struct SignInFirstFactorView: View {
 }
 
 #Preview {
-    SignInFirstFactorView()
-        .environmentObject(Clerk.mock)
+    SignUpVerificationView()
 }
 
 #endif

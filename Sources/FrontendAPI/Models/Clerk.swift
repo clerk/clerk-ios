@@ -97,10 +97,17 @@ extension Clerk {
             emailAddressId: "123"
         )
         
+        let firstFactorVerification = Verification(
+            status: "",
+            strategy: VerificationStrategy.emailCode.stringValue,
+            attempts: 0
+        )
+        
         let signIn = SignIn(
             id: "123",
             status: "",
             supportedFirstFactors: [signInFactor],
+            firstFactorVerification: firstFactorVerification,
             userData: userData
         )
         
