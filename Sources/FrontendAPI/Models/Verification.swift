@@ -8,9 +8,9 @@
 import Foundation
 import RegexBuilder
 
-struct Verification: Decodable {
+public struct Verification: Decodable {
     let status: String
-    let strategy: String
+    public let strategy: String
     let attempts: Int
 }
 
@@ -31,7 +31,7 @@ public enum VerificationStrategy: Encodable {
     case oauth(_ provider: String)
     case web3(_ signature: String)
     
-    var stringValue: String {
+    public var stringValue: String {
         switch self {
         case .phoneCode:
             return "phone_code"
@@ -48,7 +48,7 @@ public enum VerificationStrategy: Encodable {
         }
     }
     
-    init?(stringValue: String) {
+    public init?(stringValue: String) {
         switch stringValue {
         case VerificationStrategy.phoneCode.stringValue:
             self = .phoneCode

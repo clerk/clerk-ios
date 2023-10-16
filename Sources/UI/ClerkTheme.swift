@@ -7,7 +7,6 @@
 
 #if canImport(UIKit)
 
-import Foundation
 import SwiftUI
 
 public struct ClerkTheme {
@@ -22,6 +21,7 @@ public struct ClerkTheme {
         
         public enum PresentationStyle {
             case sheet
+            case fullScreenCover
             case modal
         }
         

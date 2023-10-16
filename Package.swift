@@ -14,6 +14,10 @@ let package = Package(
         .library(
             name: "Clerk",
             targets: ["Clerk"]),
+        .library(
+            name: "ClerkUI",
+            targets: ["ClerkUI"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
@@ -27,7 +31,12 @@ let package = Package(
         .target(
             name: "Clerk",
             dependencies: ["KeychainAccess", "URLQueryEncoder", "Get", "Factory"],
-            path: "Sources"
+            path: "Sources/FrontendAPI"
+        ),
+        .target(
+            name: "ClerkUI",
+            dependencies: ["Clerk"],
+            path: "Sources/UI"
         ),
         .testTarget(
             name: "ClerkTests",

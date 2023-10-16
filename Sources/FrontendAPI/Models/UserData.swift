@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct UserData: Decodable {
-    var firstName: String?
-    var lastName: String?
-    var imageUrl: String = ""
+public struct UserData: Decodable {
+    public var firstName: String?
+    public var lastName: String?
+    public var imageUrl: String = ""
     var hasImage: Bool = false
 }

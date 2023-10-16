@@ -10,11 +10,10 @@
 import Foundation
 import SwiftUI
 
-public struct SignInViewModifier: ViewModifier, KeyboardReadable {
+struct SignInViewModifier: ViewModifier, KeyboardReadable {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var isPresented: Bool
-    var presentationStyle: ClerkTheme.SignIn.PresentationStyle = .sheet
     
     @State private var geoSize: CGSize = UIScreen.main.bounds.size
     @GestureState private var gestureState: CGSize = .zero
@@ -23,10 +22,11 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
     private var modalDismissThreshold: CGFloat { geoSize.height / 2 }
     private var backgroundOpacity: CGFloat { 1 - (gestureState.height / modalDismissThreshold) }
         
-    public func body(content: Content) -> some View {
+    func body(content: Content) -> some View {
         Group {
-            switch presentationStyle {
+            switch clerkTheme.signIn.presentationStyle {
             case .sheet: sheetStyle(content: content)
+            case .fullScreenCover: fullScreenCoverStyle(content: content)
             case .modal: modalStyle(content: content)
             }
         }
@@ -43,6 +43,33 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
                 ScrollView {
                     SignInView()
                         .interactiveDismissDisabled(keyboardShowing)
+                        .presentationDragIndicator(.visible)
+                }
+            })
+            // hack to get toolbar to show within sheet
+            .toolbar {
+                if isPresented {
+                    ToolbarItem(placement: .keyboard) {
+                        HStack {
+                            Spacer()
+                            Button("Done") {
+                                hideKeyboard()
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+    }
+    
+    @ViewBuilder
+    private func fullScreenCoverStyle(content: Content) -> some View {
+        content
+            .fullScreenCover(isPresented: $isPresented, content: {
+                ScrollView {
+                    SignInView()
+                        .interactiveDismissDisabled(keyboardShowing)
+                        .presentationDragIndicator(.visible)
                 }
             })
             // hack to get toolbar to show within sheet
@@ -124,12 +151,10 @@ public struct SignInViewModifier: ViewModifier, KeyboardReadable {
 
 extension View {
     func signInView(
-        isPresented: Binding<Bool>,
-        presentationStyle: ClerkTheme.SignIn.PresentationStyle = .sheet
+        isPresented: Binding<Bool>
     ) -> some View {
         modifier(SignInViewModifier(
-            isPresented: isPresented,
-            presentationStyle: presentationStyle
+            isPresented: isPresented
         ))
     }
 }
