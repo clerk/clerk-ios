@@ -22,12 +22,15 @@ public struct Session: Decodable {
     
     init(
         id: String,
+        user: User,
         status: String
     ) {
         self.id = id
+        self.user = user
         self.status = status
     }
     
     public let id: String
+    public let user: User
     public let status: String
 }

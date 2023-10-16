@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Clerk
+import ClerkUI
 
 struct ExamplesListView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -37,6 +38,11 @@ struct ExamplesListView: View {
                 }
             }
             .navigationTitle("Clerk Examples")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    UserButton()
+                }
+            }
         }
     }
     
@@ -71,6 +77,7 @@ struct ExamplesListView: View {
 
 #Preview {
     ExamplesListView()
+        .environmentObject(Clerk.mock)
 }
 
 #endif
