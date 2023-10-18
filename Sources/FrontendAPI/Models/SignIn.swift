@@ -23,7 +23,7 @@ public struct SignIn: Decodable {
     
     init(
         id: String = "",
-        status: String = "",
+        status: Status? = nil,
         supportedFirstFactors: [SignInFactor] = [],
         firstFactorVerification: Verification? = nil,
         userData: UserData = UserData()
@@ -47,7 +47,15 @@ public struct SignIn: Decodable {
      - complete: The sign-in is complete and the user is authenticated.
      - abandoned: The sign-in has been inactive for a long period of time, thus it's considered as abandoned and need to start over.
      */
-    let status: String
+    public let status: Status?
+    
+    public enum Status: String, Decodable {
+        case needsIdentifier = "needs_identifier"
+        case needsFirstFactor = "needs_first_factor"
+        case needsSecondFactor = "needs_second_factor"
+        case complete = "complete"
+        case abandoned = "abandoned"
+    }
     
     /**
      Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
@@ -74,15 +82,21 @@ extension SignIn {
     
     public struct CreateParams: Encodable {
         public init(
-            identifier: String,
-            password: String? = nil
+            identifier: String? = nil,
+            strategy: VerificationStrategy,
+            password: String? = nil,
+            redirectUrl: String? = nil
         ) {
             self.identifier = identifier
+            self.strategy = strategy.stringValue
             self.password = password
+            self.redirectUrl = redirectUrl
         }
         
-        public let identifier: String
+        public let identifier: String?
+        public let strategy: String
         public let password: String?
+        public let redirectUrl: String?
     }
     
     public struct PrepareFirstFactorParams: Encodable {
@@ -128,8 +142,8 @@ extension SignIn {
             .signIns
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
     /**
@@ -147,8 +161,8 @@ extension SignIn {
             .prepareFirstFactor
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
     /**
@@ -168,8 +182,8 @@ extension SignIn {
             .attemptFirstFactor
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
 }

@@ -25,10 +25,12 @@ public struct SignUp: Decodable {
     
     init(
         id: String = "",
-        status: String? = nil
+        status: Status? = nil,
+        strategy: VerificationStrategy? = nil
     ) {
         self.id = id
         self.status = status
+        self.strategy = strategy?.stringValue
     }
     
     let id: String
@@ -41,7 +43,23 @@ public struct SignUp: Decodable {
      - complete: All the required fields have been supplied and verified, so the sign-up is complete and a new user and a session have been created.
      - abandoned: The sign-up has been inactive for a long period of time, thus it's considered as abandoned and need to start over.
      */
-    let status: String?
+    public let status: Status?
+    
+    public enum Status: String, Decodable {
+        case missingRequirements = "missing_requirements"
+        case complete
+        case abandoned
+    }
+    
+    /**
+     The strategy to use for the sign-up flow.
+     
+     The following strategies are supported:
+     - oauth_{provider}: The user will be authenticated with their Social login account. See available OAuth Strategies.
+     - saml: The user will be authenticated with SAML.
+     - ticket: The user will be authenticated via the ticket or token generated from the Backend API.
+     */
+    let strategy: String?
 }
 
 extension SignUp {
@@ -106,8 +124,8 @@ extension SignUp {
             .signUps
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
     /**
@@ -131,8 +149,8 @@ extension SignUp {
             .prepareVerification
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
     /**
@@ -154,7 +172,7 @@ extension SignUp {
             .attemptVerification
             .post(params)
         
-        let client = try await Clerk.apiClient.send(request).value.client
-        Clerk.shared.client = client ?? Client()
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
 }
