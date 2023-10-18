@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum OAuthProvider {
+public enum OAuthProvider: CaseIterable {
     case facebook
     case google
     case hubspot
@@ -34,14 +34,22 @@ enum OAuthProvider {
     case slack
     case linear
     
-    struct Data {
+    init?(strategy: String) {
+        if let provider = Self.allCases.first(where: { $0.data.strategy == strategy }) {
+            self = provider
+        } else {
+            return nil
+        }
+    }
+    
+    public struct Data {
         let provider: String
         let strategy: String
-        let name: String
+        public let name: String
         let docsUrl: String
     }
     
-    var data: Data {
+    public var data: Data {
         switch self {
         case .facebook:
             return .init(
@@ -221,7 +229,7 @@ enum OAuthProvider {
         }
     }
     
-    var iconImageUrl: URL? {
+    public var iconImageUrl: URL? {
         URL(string: "https://img.clerk.com/static/\(data.provider).svg")
     }
 }

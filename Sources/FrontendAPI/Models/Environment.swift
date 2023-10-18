@@ -8,9 +8,61 @@
 import Foundation
 
 extension Clerk {
- 
+        
     public struct Environment: Decodable {
         
+        public init(userSettings: UserSettings = .init()) {
+            self.userSettings = userSettings
+        }
+        
+        public var userSettings: UserSettings
+    }
+}
+
+extension Clerk.Environment {
+    
+    public struct UserSettings: Decodable {
+        
+        public init(
+            attributes: [String : AttributesConfig] = [:],
+            social: [String : SocialConfig] = [:]
+        ) {
+            self.attributes = attributes
+            self.social = social
+        }
+        
+        var attributes: [String: AttributesConfig] = [:]
+        /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
+        var social: [String: SocialConfig] = [:]
+        
+        public struct AttributesConfig: Decodable {
+            let enabled: Bool
+            let required: Bool
+            let usedForFirstFactor: Bool
+            let firstFactors: [String]
+            let usedForSecondFactor: Bool
+            let secondFactors: [String]
+            let verifications: [String]
+            let verifyAtSignUp: Bool
+        }
+        
+        public struct SocialConfig: Decodable {
+            let enabled: Bool
+            let required: Bool
+            let authenticatable: Bool
+            let strategy: String
+            let notSelectable: Bool
+        }
+    }
+}
+
+extension Clerk.Environment.UserSettings {
+    
+    public var enabledThirdPartyProviders: [OAuthProvider] {
+        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        return authenticatableStrategies.compactMap { strategy in
+            OAuthProvider(strategy: strategy)
+        }
     }
     
 }

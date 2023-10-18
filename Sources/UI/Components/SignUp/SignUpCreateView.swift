@@ -42,11 +42,11 @@ struct SignUpCreateView: View {
             }
             
             VStack {
-                ForEach(authProviders, id: \.self) { providerImage in
+                ForEach(clerk.environment.userSettings.enabledThirdPartyProviders, id: \.self) { provider in
                     Button(action: {
-                        print("Tapped \(providerImage)")
+                        print("Tapped \(provider.data.name)")
                     }, label: {
-                        AuthProviderButton(image: providerImage, label: providerImage)
+                        AuthProviderButton(provider: provider)
                             .font(.footnote)
                     })
                     .buttonStyle(.plain)

@@ -31,12 +31,20 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Clerk",
-            dependencies: ["KeychainAccess", "URLQueryEncoder", "Get", "Factory"],
+            dependencies: [
+                "KeychainAccess",
+                "URLQueryEncoder",
+                "Get",
+                "Factory"
+            ],
             path: "Sources/FrontendAPI"
         ),
         .target(
             name: "ClerkUI",
-            dependencies: ["Clerk", .product(name: "NukeUI", package: "Nuke")],
+            dependencies: [
+                "Clerk",
+                .product(name: "NukeUI", package: "Nuke")
+            ],
             path: "Sources/UI"
         ),
         .testTarget(

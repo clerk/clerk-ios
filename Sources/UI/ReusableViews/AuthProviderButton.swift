@@ -8,9 +8,11 @@
 #if canImport(UIKit)
 
 import SwiftUI
+import Clerk
+import NukeUI
 
 struct AuthProviderButton: View {
-    let image: String
+    let iconImageUrl: String
     let label: String
     var style: Style = .regular
     
@@ -26,8 +28,11 @@ struct AuthProviderButton: View {
         }
     }
     
+    @MainActor
+    @ViewBuilder
     private var compactStyleButton: some View {
-        Image(systemName: image)
+        LazyImage(url: URL(string: iconImageUrl))
+            .frame(width: 20, height: 20)
             .padding(16)
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -36,10 +41,13 @@ struct AuthProviderButton: View {
             .aspectRatio(1, contentMode: .fit)
     }
     
+    @MainActor
+    @ViewBuilder
     private var regularStyleButton: some View {
         HStack(spacing: 16) {
-            Image(systemName: image)
-            Text("Continue with \(label.capitalized)")
+            LazyImage(url: URL(string: iconImageUrl))
+                .frame(width: 20, height: 20)
+            Text("Continue with \(label)")
                 .lineLimit(1)
             Spacer()
         }
@@ -53,16 +61,26 @@ struct AuthProviderButton: View {
     }
 }
 
+extension AuthProviderButton {
+    
+    init(provider: OAuthProvider, style: Style = .regular) {
+        self.iconImageUrl = provider.iconImageUrl?.absoluteString ?? ""
+        self.label = provider.data.name
+        self.style = style
+    }
+    
+}
+
 #Preview {
     VStack {
         VStack {
-            AuthProviderButton(image: "tornado.circle.fill", label: "GitHub")
-            AuthProviderButton(image: "shield.lefthalf.filled", label: "Google")
+            AuthProviderButton(provider: .apple)
+            AuthProviderButton(provider: .google)
         }
         
         HStack {
-            AuthProviderButton(image: "tornado.circle.fill", label: "GitHub", style: .compact)
-            AuthProviderButton(image: "shield.lefthalf.filled", label: "Google", style: .compact)
+            AuthProviderButton(provider: .apple, style: .compact)
+            AuthProviderButton(provider: .google, style: .compact)
         }
     }
     .padding()

@@ -54,6 +54,9 @@ struct SignUpView: View {
         .onChange(of: model.step) { _ in
             KeyboardHelpers.dismissKeyboard()
         }
+        .task {
+            try? await clerk.environment.get()
+        }
     }
 }
 
