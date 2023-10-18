@@ -8,6 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
+import NukeUI
 
 struct IdentityPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
@@ -19,17 +20,13 @@ struct IdentityPreviewView: View {
     var body: some View {
         HStack(alignment: .center) {
             if let imageUrl {
-                AsyncImage(url: URL(string: imageUrl), transaction: Transaction(animation: .default)) { phase in
-                    switch phase {
-                    case .empty:
-                        clerkTheme.colors.primary
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    case .failure:
-                        clerkTheme.colors.primary
-                    @unknown default:
+                LazyImage(
+                    url: URL(string: imageUrl),
+                    transaction: Transaction(animation: .default)
+                ) { state in
+                    if let image = state.image {
+                        image.resizable().scaledToFit()
+                    } else {
                         clerkTheme.colors.primary
                     }
                 }

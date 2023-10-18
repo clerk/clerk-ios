@@ -62,8 +62,6 @@ final public class Clerk: ObservableObject {
     
     #if canImport(UIKit)
     
-    // MARK: - UI Related
-
     /// Is the sign in flow being displayed.
     @Published public var signInIsPresented = false
     

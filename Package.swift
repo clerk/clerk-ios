@@ -23,7 +23,8 @@ let package = Package(
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/CreateAPI/URLQueryEncoder", from: "0.2.1"),
         .package(url: "https://github.com/kean/Get", from: "2.1.6"),
-        .package(url: "https://github.com/hmlongco/Factory", from: "2.3.1")
+        .package(url: "https://github.com/hmlongco/Factory", from: "2.3.1"),
+        .package(url: "https://github.com/kean/Nuke", from: "12.1.6")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -35,7 +36,7 @@ let package = Package(
         ),
         .target(
             name: "ClerkUI",
-            dependencies: ["Clerk"],
+            dependencies: ["Clerk", .product(name: "NukeUI", package: "Nuke")],
             path: "Sources/UI"
         ),
         .testTarget(

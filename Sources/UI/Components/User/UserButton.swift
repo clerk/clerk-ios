@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Clerk
+import NukeUI
 
 public struct UserButton: View {
     @EnvironmentObject private var clerk: Clerk
@@ -22,33 +23,18 @@ public struct UserButton: View {
         Button(action: {
             userButtonAction()
         }, label: {
-            AsyncImage(
+            LazyImage(
                 url: URL(string: clerk.client.lastActiveSession?.user.imageUrl ?? ""),
-                transaction: Transaction(animation: .bouncy))
-            { phase in
-                switch phase {
-                case .empty:
+                transaction: Transaction(animation: .default)
+            ) { state in
+                if let image = state.image {
+                    image.resizable().aspectRatio(contentMode: .fit)
+                } else {
                     Image(systemName: "person.circle")
                         .resizable()
                         .scaledToFit()
                         .symbolRenderingMode(.monochrome)
-                        .tint(clerkTheme.colors.primary)
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                case .failure:
-                    Image(systemName: "person.circle")
-                        .resizable()
-                        .scaledToFit()
-                        .symbolRenderingMode(.monochrome)
-                        .tint(clerkTheme.colors.primary)
-                @unknown default:
-                    Image(systemName: "person.circle")
-                        .resizable()
-                        .scaledToFit()
-                        .symbolRenderingMode(.monochrome)
-                        .tint(clerkTheme.colors.primary)
+                        .tint(clerkTheme.colors.primary) // Acts as a placeholder
                 }
             }
             .frame(width: 32, height: 32)
