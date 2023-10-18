@@ -22,6 +22,10 @@ struct SignInCreateView: View {
     @State private var emailAddress: String = ""
     let authProviders = ["tornado", "timelapse"]
     
+    private var thirdPartyProviders: [OAuthProvider] {
+        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+    }
+    
     public var body: some View {
         VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 6) {
@@ -43,9 +47,9 @@ struct SignInCreateView: View {
             }
             
             VStack {
-                ForEach(clerk.environment.userSettings.enabledThirdPartyProviders, id: \.self) { provider in
-                    Button(action: {
-                        print("Tapped \(provider.data.name)")
+                ForEach(thirdPartyProviders, id: \.self) { provider in
+                    AsyncButton(options: [.disableButton], action: {
+                        await signInAction(strategy: .oauth(provider))
                     }, label: {
                         AuthProviderButton(provider: provider)
                             .font(.footnote)
@@ -76,7 +80,9 @@ struct SignInCreateView: View {
                     .focused($isKeyboardShowing)
                     .tint(clerkTheme.colors.primary)
                 
-                AsyncButton(options: [.disableButton, .showProgressView], action: signInAction) {
+                AsyncButton(options: [.disableButton, .showProgressView], action: {
+                    await signInAction(strategy: .emailCode)
+                }) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
                         .frame(maxWidth: .infinity)
@@ -126,24 +132,35 @@ struct SignInCreateView: View {
         .background(.background)
     }
     
-    private func signInAction() async {
+    private func createSignInParams(for strategy: VerificationStrategy) -> SignIn.CreateParams {
+        switch strategy {
+        case .phoneCode:
+            return .init(identifier: "", strategy: .phoneCode)
+        case .emailCode:
+            return .init(identifier: emailAddress, strategy: .emailCode)
+        case .emailLink:
+            return .init(identifier: emailAddress, strategy: .emailLink)
+        case .saml:
+            return .init(strategy: .saml)
+        case .oauth(let provider):
+            return .init(strategy: .oauth(provider))
+        case .web3(let signature):
+            return .init(strategy: .web3(signature))
+        }
+    }
+    
+    private func signInAction(strategy: VerificationStrategy) async {
         do {
             isKeyboardShowing = false
             
             try await clerk
                 .client
                 .signIn
-                .create(.init(identifier: emailAddress))
+                .create(createSignInParams(for: strategy))
             
-            try await clerk
-                .client
-                .signIn
-                .prepareFirstFactor(.init(
-                    emailAddressId: clerk.client.signIn.supportedFirstFactors.first(where: { $0.strategy == VerificationStrategy.emailCode.stringValue })?.emailAddressId,
-                    strategy: .emailCode
-                ))
-            
-            signInViewModel.step = .firstFactor
+            if clerk.client.signIn.status == .needsFirstFactor {
+                signInViewModel.step = .firstFactor
+            }
         } catch {
             dump(error)
         }

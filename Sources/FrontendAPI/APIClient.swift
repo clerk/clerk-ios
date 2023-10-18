@@ -68,4 +68,10 @@ extension Clerk {
     enum KeychainKey {
         static let authToken = "authToken"
     }
+    
+    #if DEBUG
+    public static func deleteRefreshToken() {
+        try? Clerk.keychain.remove(Clerk.KeychainKey.authToken)
+    }
+    #endif
 }

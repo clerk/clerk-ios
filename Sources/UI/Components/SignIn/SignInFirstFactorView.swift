@@ -20,9 +20,8 @@ struct SignInFirstFactorView: View {
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
     
-    private var userData: UserData {
-        clerk.client.signIn.userData
-    }
+    @State private var safeIdentifier: String?
+    @State private var userImageUrl: String?
     
     private var firstFactorStrategy: VerificationStrategy? {
         if let strategy = clerk.client.signIn.firstFactorVerification?.strategy {
@@ -57,8 +56,8 @@ struct SignInFirstFactorView: View {
             }
             
             IdentityPreviewView(
-                imageUrl: userData.imageUrl,
-                label: firstFactor?.safeIdentifier ?? "",
+                imageUrl: userImageUrl,
+                label: safeIdentifier,
                 action: {
                     signInViewModel.step = .create
                 }
@@ -113,6 +112,12 @@ struct SignInFirstFactorView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)
         .background(.background)
+        .task {
+            // these need to be set just once. If they update when the client does,
+            // then they disappear
+            self.safeIdentifier = firstFactor?.safeIdentifier
+            self.userImageUrl = clerk.client.signIn.userData.imageUrl
+        }
     }
     
     private func prepareFirstFactor() async {

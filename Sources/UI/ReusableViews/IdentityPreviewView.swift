@@ -14,7 +14,7 @@ struct IdentityPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     var imageUrl: String?
-    var label: String
+    var label: String?
     var action: (() -> Void)?
     
     var body: some View {
@@ -34,8 +34,10 @@ struct IdentityPreviewView: View {
                 .clipShape(Circle())
             }
             
-            Text(label)
-                .font(.footnote.weight(.light))
+            if let label {
+                Text(label)
+                    .font(.footnote.weight(.light))
+            }
             
             if let action {
                 Button(action: {

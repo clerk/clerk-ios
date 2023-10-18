@@ -15,11 +15,14 @@ struct SignUpCreateView: View {
     @EnvironmentObject var signUpViewModel: SignUpView.Model
     @Environment(\.clerkTheme) private var clerkTheme
             
-    let authProviders = ["tornado", "timelapse"]
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var emailAddress: String = ""
     @State private var password: String = ""
+    
+    private var thirdPartyProviders: [OAuthProvider] {
+        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+    }
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 30) {
@@ -42,7 +45,7 @@ struct SignUpCreateView: View {
             }
             
             VStack {
-                ForEach(clerk.environment.userSettings.enabledThirdPartyProviders, id: \.self) { provider in
+                ForEach(thirdPartyProviders, id: \.self) { provider in
                     Button(action: {
                         print("Tapped \(provider.data.name)")
                     }, label: {

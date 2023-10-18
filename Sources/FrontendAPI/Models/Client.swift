@@ -25,9 +25,9 @@ public struct Client: Decodable {
         self.lastActiveSessionId = lastActiveSessionId
     }
     
-    public let signIn: SignIn
-    public let signUp: SignUp
-    public let sessions: [Session]
+    internal(set) public var signIn: SignIn
+    internal(set) public var signUp: SignUp
+    internal(set) public var sessions: [Session]
     internal(set) public var lastActiveSessionId: String?
     
     enum CodingKeys: CodingKey {
@@ -67,8 +67,7 @@ extension Client {
             .client
             .get
         
-        let client = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client = client
+        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response
     }
     
     /// Creates a new client for the current instance along with its cookie.
@@ -79,8 +78,7 @@ extension Client {
             .client
             .put
         
-        let client = try await Clerk.apiClient.send(request).value.response
-        Clerk.shared.client = client
+        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response
     }
     
     /// Deletes the client. All sessions will be reset.

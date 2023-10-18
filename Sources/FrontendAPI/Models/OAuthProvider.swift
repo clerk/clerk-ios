@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum OAuthProvider: CaseIterable {
+public enum OAuthProvider: CaseIterable, Encodable {
     case facebook
     case google
     case hubspot
@@ -231,5 +231,11 @@ public enum OAuthProvider: CaseIterable {
     
     public var iconImageUrl: URL? {
         URL(string: "https://img.clerk.com/static/\(data.provider).svg")
+    }
+}
+
+extension OAuthProvider: Comparable {
+    public static func <(lhs: OAuthProvider, rhs: OAuthProvider) -> Bool {
+        return lhs.data.name < rhs.data.name
     }
 }

@@ -106,7 +106,7 @@ extension Clerk {
         
         let signIn = SignIn(
             id: "123",
-            status: "",
+            status: .needsFirstFactor,
             supportedFirstFactors: [signInFactor],
             firstFactorVerification: firstFactorVerification,
             userData: userData

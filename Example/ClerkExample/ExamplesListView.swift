@@ -13,9 +13,7 @@ import ClerkUI
 
 struct ExamplesListView: View {
     @EnvironmentObject private var clerk: Clerk
-    
-    @State private var isDeletingClient = false
-    
+        
     var body: some View {
         NavigationStack {
             List {
@@ -33,9 +31,27 @@ struct ExamplesListView: View {
                     }
                 }
                 
+                #if DEBUG
                 Section("Settings") {
-                    deleteClientButton
+                    Button {
+                        Task { try? await clerk.client.get() }
+                    } label: {
+                        Text("Get Client")
+                    }
+                    
+                    Button {
+                        Task { try? await clerk.client.destroy() }
+                    } label: {
+                        Text("Delete Client")
+                    }
+
+                    Button {
+                        Clerk.deleteRefreshToken()
+                    } label: {
+                        Text("Delete Refresh Token")
+                    }
                 }
+                #endif
             }
             .navigationTitle("Clerk Examples")
             .toolbar {
@@ -43,34 +59,6 @@ struct ExamplesListView: View {
                     UserButton()
                 }
             }
-        }
-    }
-    
-    @ViewBuilder
-    private var deleteClientButton: some View {
-        Button(action: {
-            Task { await deleteClientAction() }
-        }, label: {
-            ZStack(alignment: .leading) {
-                Text("Delete Client").opacity(isDeletingClient ? 0 : 1)
-                ProgressView().opacity(isDeletingClient ? 1 : 0)
-            }
-        })
-        .disabled(isDeletingClient)
-    }
-    
-    private func deleteClientAction() async {
-        isDeletingClient = true
-        
-        do {
-            try await clerk
-                .client
-                .destroy()
-
-            isDeletingClient = false
-        } catch {
-            dump(error)
-            isDeletingClient = false
         }
     }
 }

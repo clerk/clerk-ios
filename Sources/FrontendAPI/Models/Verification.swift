@@ -23,12 +23,12 @@ public struct Verification: Decodable {
  - oauth_*: Authenticate against various OAuth providers.
  - web3_*_signature: Authenticate against Web3 signatures.
  */
-public enum VerificationStrategy: Encodable {
+public enum VerificationStrategy {
     case phoneCode
     case emailCode
     case emailLink
     case saml
-    case oauth(_ provider: String)
+    case oauth(_ provider: OAuthProvider)
     case web3(_ signature: String)
     
     public var stringValue: String {
@@ -42,7 +42,7 @@ public enum VerificationStrategy: Encodable {
         case .saml:
             return "saml"
         case .oauth(let provider):
-            return "oauth_\(provider)"
+            return provider.data.strategy
         case .web3(let signature):
             return "web3_\(signature)_signature"
         }
@@ -67,8 +67,11 @@ public enum VerificationStrategy: Encodable {
                 }
             }
             
-            if let provider = value.firstMatch(of: regex)?.output.1 {
-                self = .oauth(String(provider))
+            if 
+                let strategy = value.firstMatch(of: regex)?.output.1,
+                let provider = OAuthProvider(strategy: String(strategy))
+            {
+                self = .oauth(provider)
             } else {
                 return nil
             }

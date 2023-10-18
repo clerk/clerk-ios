@@ -32,13 +32,16 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .task { try? await clerk.client.get() }
-            .task { try? await clerk.environment.get() }
             .signInView(isPresented: $clerk.signInIsPresented)
             .signUpView(isPresented: $clerk.signUpIsPresented)
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
-                    Task { try? await clerk.environment.get() }
+                    Task.detached {
+                        try? await clerk.environment.get()
+                    }
+                    Task.detached {
+                        try? await clerk.client.get()
+                    }
                 }
             }
             .environmentObject(clerk) // this must be the last modifier
