@@ -18,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesListView.swift; sourceTree = "<group>"; };
+		8F3C07BE2ADDF8E900FEE832 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8F67B6CE2ACB0EF60047FFE4 /* ClerkExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkExampleApp.swift; sourceTree = "<group>"; };
 		8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -68,6 +69,7 @@
 		8F67B6D02ACB0EF60047FFE4 /* ClerkExample */ = {
 			isa = PBXGroup;
 			children = (
+				8F3C07BE2ADDF8E900FEE832 /* Info.plist */,
 				8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */,
 				8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */,
 				8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */,
@@ -302,6 +304,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ClerkExample/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -341,6 +344,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ClerkExample/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
