@@ -26,12 +26,14 @@ public struct SignIn: Decodable {
         status: Status? = nil,
         supportedFirstFactors: [SignInFactor] = [],
         firstFactorVerification: Verification? = nil,
+        identifier: String = "",
         userData: UserData = UserData()
     ) {
         self.id = id
         self.status = status
         self.supportedFirstFactors = supportedFirstFactors
         self.firstFactorVerification = firstFactorVerification
+        self.identifier = identifier
         self.userData = userData
     }
     
@@ -72,6 +74,12 @@ public struct SignIn: Decodable {
      */
     public let firstFactorVerification: Verification?
     
+    
+    /**
+     The authentication identifier for the sign-in. This can be the value of the user's email address, phone number or username.
+     */
+    public let identifier: String
+    
     /**
      An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
      */
@@ -83,18 +91,18 @@ extension SignIn {
     public struct CreateParams: Encodable {
         public init(
             identifier: String? = nil,
-            strategy: VerificationStrategy,
+            strategy: VerificationStrategy? = nil,
             password: String? = nil,
             redirectUrl: String? = nil
         ) {
             self.identifier = identifier
-            self.strategy = strategy.stringValue
+            self.strategy = strategy?.stringValue
             self.password = password
             self.redirectUrl = redirectUrl
         }
         
         public let identifier: String?
-        public let strategy: String
+        public let strategy: String?
         public let password: String?
         public let redirectUrl: String?
     }

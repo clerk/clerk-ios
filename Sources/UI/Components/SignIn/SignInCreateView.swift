@@ -20,10 +20,14 @@ struct SignInCreateView: View {
     public init() {}
     
     @State private var emailAddress: String = ""
-    let authProviders = ["tornado", "timelapse"]
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+    }
+    
+    private func firstFactor(strategy: VerificationStrategy) -> SignInFactor? {
+        clerk.client.signIn.supportedFirstFactors
+            .first(where: { $0.strategy == strategy.stringValue })
     }
     
     public var body: some View {
@@ -134,12 +138,14 @@ struct SignInCreateView: View {
     
     private func createSignInParams(for strategy: VerificationStrategy) -> SignIn.CreateParams {
         switch strategy {
+        case .password:
+            return .init(identifier: emailAddress, strategy: .password)
         case .phoneCode:
-            return .init(identifier: "", strategy: .phoneCode)
+            return .init(identifier: "")
         case .emailCode:
-            return .init(identifier: emailAddress, strategy: .emailCode)
+            return .init(identifier: emailAddress)
         case .emailLink:
-            return .init(identifier: emailAddress, strategy: .emailLink)
+            return .init(identifier: emailAddress)
         case .saml:
             return .init(strategy: .saml)
         case .oauth(let provider):
@@ -160,6 +166,14 @@ struct SignInCreateView: View {
             
             if clerk.client.signIn.status == .needsFirstFactor {
                 signInViewModel.step = .firstFactor
+                
+                try await clerk
+                    .client
+                    .signIn
+                    .prepareFirstFactor(.init(
+                        emailAddressId: firstFactor(strategy: strategy)?.emailAddressId,
+                        strategy: strategy
+                    ))
             }
         } catch {
             dump(error)

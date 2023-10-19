@@ -24,6 +24,7 @@ public struct Verification: Decodable {
  - web3_*_signature: Authenticate against Web3 signatures.
  */
 public enum VerificationStrategy {
+    case password
     case phoneCode
     case emailCode
     case emailLink
@@ -33,6 +34,8 @@ public enum VerificationStrategy {
     
     public var stringValue: String {
         switch self {
+        case .password:
+            return "password"
         case .phoneCode:
             return "phone_code"
         case .emailCode:
@@ -50,6 +53,8 @@ public enum VerificationStrategy {
     
     public init?(stringValue: String) {
         switch stringValue {
+        case VerificationStrategy.password.stringValue:
+            self = .password
         case VerificationStrategy.phoneCode.stringValue:
             self = .phoneCode
         case VerificationStrategy.emailCode.stringValue:

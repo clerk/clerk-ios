@@ -20,7 +20,7 @@ struct SignInFirstFactorView: View {
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
     
-    @State private var safeIdentifier: String?
+    @State private var identifier: String?
     @State private var userImageUrl: String?
     
     private var firstFactorStrategy: VerificationStrategy? {
@@ -57,7 +57,7 @@ struct SignInFirstFactorView: View {
             
             IdentityPreviewView(
                 imageUrl: userImageUrl,
-                label: safeIdentifier,
+                label: identifier,
                 action: {
                     signInViewModel.step = .create
                 }
@@ -115,19 +115,23 @@ struct SignInFirstFactorView: View {
         .task {
             // these need to be set just once. If they update when the client does,
             // then they disappear
-            self.safeIdentifier = firstFactor?.safeIdentifier
+            self.identifier = clerk.client.signIn.identifier
             self.userImageUrl = clerk.client.signIn.userData.imageUrl
         }
     }
     
     private func prepareFirstFactor() async {
         do {
+            guard let firstFactorStrategy else {
+                throw ClerkClientError(message: "Unable to determine the verification strategy.")
+            }
+            
             try await clerk
                 .client
                 .signIn
                 .prepareFirstFactor(.init(
                     emailAddressId: firstFactor?.emailAddressId,
-                    strategy: .emailCode
+                    strategy: firstFactorStrategy
                 ))
         } catch {
             dump(error)
