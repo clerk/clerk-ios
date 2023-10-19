@@ -149,7 +149,7 @@ struct SignInCreateView: View {
         case .saml:
             return .init(strategy: .saml)
         case .oauth(let provider):
-            return .init(strategy: .oauth(provider))
+            return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
         case .web3(let signature):
             return .init(strategy: .web3(signature))
         }
@@ -159,21 +159,33 @@ struct SignInCreateView: View {
         do {
             isKeyboardShowing = false
             
-            try await clerk
+            let signIn = try await clerk
                 .client
                 .signIn
                 .create(createSignInParams(for: strategy))
             
-            if clerk.client.signIn.status == .needsFirstFactor {
-                signInViewModel.step = .firstFactor
+            switch strategy {
+            case .oauth:
+                guard let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+                    throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
+                }
                 
-                try await clerk
-                    .client
-                    .signIn
-                    .prepareFirstFactor(.init(
-                        emailAddressId: firstFactor(strategy: strategy)?.emailAddressId,
-                        strategy: strategy
-                    ))
+                let authSession = OAuthWebSession(url: url)
+                authSession.start()
+            case .emailCode:
+                if clerk.client.signIn.status == .needsFirstFactor {
+                    signInViewModel.step = .firstFactor
+                    
+                    try await clerk
+                        .client
+                        .signIn
+                        .prepareFirstFactor(.init(
+                            emailAddressId: firstFactor(strategy: strategy)?.emailAddressId,
+                            strategy: strategy
+                        ))
+                }
+            default:
+                return
             }
         } catch {
             dump(error)

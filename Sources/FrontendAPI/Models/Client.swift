@@ -67,7 +67,7 @@ extension Client {
             .client
             .get
         
-        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response
+        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response ?? Client()
     }
     
     /// Creates a new client for the current instance along with its cookie.

@@ -31,7 +31,7 @@ extension APIEndpoint.V1Endpoint {
         /// Path: `/v1/client`
         let path: String
         
-        var get: Request<ClientResponse<Client>> {
+        var get: Request<ClientResponse<Client?>> {
             .init(path: path)
         }
         

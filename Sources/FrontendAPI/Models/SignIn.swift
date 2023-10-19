@@ -26,8 +26,8 @@ public struct SignIn: Decodable {
         status: Status? = nil,
         supportedFirstFactors: [SignInFactor] = [],
         firstFactorVerification: Verification? = nil,
-        identifier: String = "",
-        userData: UserData = UserData()
+        identifier: String? = nil,
+        userData: UserData? = nil
     ) {
         self.id = id
         self.status = status
@@ -78,12 +78,12 @@ public struct SignIn: Decodable {
     /**
      The authentication identifier for the sign-in. This can be the value of the user's email address, phone number or username.
      */
-    public let identifier: String
+    public let identifier: String?
     
     /**
      An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
      */
-    public let userData: UserData
+    public let userData: UserData?
 }
 
 extension SignIn {
@@ -142,16 +142,18 @@ extension SignIn {
 
      Depending on the use-case and the params you pass to the create method, it can either complete the sign in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
+    @discardableResult
     @MainActor
-    public func create(_ params: CreateParams) async throws {
+    public func create(_ params: CreateParams) async throws -> SignIn {
         let request = APIEndpoint
             .v1
             .client
             .signIns
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        let signIn = try await Clerk.apiClient.send(request).value.response
         try await Clerk.shared.client.get()
+        return signIn
     }
     
     /**

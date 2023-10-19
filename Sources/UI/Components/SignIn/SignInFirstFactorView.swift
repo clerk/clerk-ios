@@ -116,7 +116,7 @@ struct SignInFirstFactorView: View {
             // these need to be set just once. If they update when the client does,
             // then they disappear
             self.identifier = clerk.client.signIn.identifier
-            self.userImageUrl = clerk.client.signIn.userData.imageUrl
+            self.userImageUrl = clerk.client.signIn.userData?.imageUrl
         }
     }
     

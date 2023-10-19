@@ -11,7 +11,8 @@ import RegexBuilder
 public struct Verification: Decodable {
     let status: String
     public let strategy: String
-    let attempts: Int
+    let attempts: Int?
+    public var externalVerificationRedirectUrl: String?
 }
 
 /**
