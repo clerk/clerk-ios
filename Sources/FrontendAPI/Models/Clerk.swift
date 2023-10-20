@@ -94,7 +94,6 @@ extension Clerk {
         
         let signInFactor = SignInFactor(
             strategy: .emailCode,
-            safeIdentifier: "clerkUser@gmail.com",
             emailAddressId: "123"
         )
         
@@ -109,6 +108,7 @@ extension Clerk {
             status: .needsFirstFactor,
             supportedFirstFactors: [signInFactor],
             firstFactorVerification: firstFactorVerification,
+            identifier: "ClerkUser@gmail.com",
             userData: userData
         )
         

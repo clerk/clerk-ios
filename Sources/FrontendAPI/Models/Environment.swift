@@ -44,6 +44,10 @@ extension Clerk.Environment {
             let secondFactors: [String]
             let verifications: [String]
             let verifyAtSignUp: Bool
+            
+            public var verificationStrategies: [VerificationStrategy] {
+                verifications.compactMap({ .init(stringValue: $0) })
+            }
         }
         
         public struct SocialConfig: Decodable {
@@ -57,6 +61,10 @@ extension Clerk.Environment {
 }
 
 extension Clerk.Environment.UserSettings {
+    
+    public var enabledAttributes: [AttributesConfig] {
+        attributes.values.filter({ $0.enabled })
+    }
     
     public var enabledThirdPartyProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)

@@ -10,9 +10,15 @@ import RegexBuilder
 
 public struct Verification: Decodable {
     let status: String
-    public let strategy: String
+    let strategy: String
     let attempts: Int?
     public var externalVerificationRedirectUrl: String?
+}
+
+extension Verification {
+    public var verificationStrategy: VerificationStrategy? {
+        .init(stringValue: strategy)
+    }
 }
 
 /**
@@ -24,7 +30,7 @@ public struct Verification: Decodable {
  - oauth_*: Authenticate against various OAuth providers.
  - web3_*_signature: Authenticate against Web3 signatures.
  */
-public enum VerificationStrategy {
+public enum VerificationStrategy: Hashable {
     case password
     case phoneCode
     case emailCode

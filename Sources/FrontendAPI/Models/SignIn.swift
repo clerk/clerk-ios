@@ -109,15 +109,18 @@ extension SignIn {
     
     public struct PrepareFirstFactorParams: Encodable {
         public init(
+            strategy: VerificationStrategy,
             emailAddressId: String? = nil,
-            strategy: VerificationStrategy
+            phoneNumberId: String? = nil
         ) {
-            self.emailAddressId = emailAddressId
             self.strategy = strategy.stringValue
+            self.emailAddressId = emailAddressId
+            self.phoneNumberId = phoneNumberId
         }
         
-        public let emailAddressId: String?
         public let strategy: String
+        public let emailAddressId: String?
+        public let phoneNumberId: String?
     }
     
     public struct AttemptFirstFactorParams: Encodable {
