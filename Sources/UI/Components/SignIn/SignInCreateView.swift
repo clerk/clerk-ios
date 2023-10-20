@@ -15,11 +15,25 @@ struct SignInCreateView: View {
     @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.clerkTheme) private var clerkTheme
     
-    @FocusState var isKeyboardShowing: Bool
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case email, phoneNumber
+    }
     
     public init() {}
     
     @State private var emailAddress: String = ""
+    @State private var phoneNumber: String = ""
+    @State private var displayingEmailEntry = true
+    
+    private var enabledVerificationStrategies: Set<VerificationStrategy> {
+        var strategies: Set<VerificationStrategy> = []
+        clerk.environment.userSettings.enabledAttributes.forEach { attribute in
+            strategies.formUnion(attribute.verificationStrategies)
+        }
+        return strategies
+    }
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
@@ -76,16 +90,51 @@ struct SignInCreateView: View {
             }
             
             VStack(spacing: 16) {
-                CustomTextField(title: "Email address", text: $emailAddress)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .focused($isKeyboardShowing)
-                    .tint(clerkTheme.colors.primary)
+                VStack {
+                    HStack {
+                        Text(displayingEmailEntry ? "Email address" : "Phone number")
+                            .contentTransition(.identity)
+                        Spacer()
+                        Button {
+                            displayingEmailEntry.toggle()
+                        } label: {
+                            Text(displayingEmailEntry ? "Use phone" : "Use email")
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .contentTransition(.identity)
+                        }
+                        .tint(clerkTheme.colors.primary)
+                    }
+                    .font(.footnote.weight(.medium))
+                    
+                    if displayingEmailEntry {
+                        CustomTextField(text: $emailAddress)
+                            .frame(height: 44)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .email)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    } else {
+                        PhoneNumberField(text: $phoneNumber)
+                            .focused($focusedField, equals: .phoneNumber)
+                            .frame(height: 44)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+                .animation(.bouncy, value: displayingEmailEntry)
+                .onChange(of: displayingEmailEntry) { showingEmail in
+                    if focusedField != nil {
+                        focusedField = showingEmail ? .email : .phoneNumber
+                    }
+                }
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: {
-                    await signInAction(strategy: .emailCode)
+                    if displayingEmailEntry {
+                        await signInAction(strategy: .emailCode)
+                    } else {
+                        await signInAction(strategy: .phoneCode)
+                    }
                 }) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
@@ -154,10 +203,30 @@ struct SignInCreateView: View {
             return .init(strategy: .web3(signature))
         }
     }
+//    
+//    private func prepareSignInParams(for strategy: VerificationStrategy) -> SignIn.PrepareFirstFactorParams {
+//        switch strategy {
+//        case .password:
+//            // shouldn't actually get called, not need for password
+//            return .init(strategy: .password)
+//        case .phoneCode:
+//            <#code#>
+//        case .emailCode:
+//            <#code#>
+//        case .emailLink:
+//            <#code#>
+//        case .saml:
+//            <#code#>
+//        case .oauth(let _):
+//            <#code#>
+//        case .web3(let _):
+//            <#code#>
+//        }
+//    }
     
     private func signInAction(strategy: VerificationStrategy) async {
         do {
-            isKeyboardShowing = false
+            KeyboardHelpers.dismissKeyboard()
             
             let signIn = try await clerk
                 .client
@@ -180,8 +249,8 @@ struct SignInCreateView: View {
                         .client
                         .signIn
                         .prepareFirstFactor(.init(
-                            emailAddressId: firstFactor(strategy: strategy)?.emailAddressId,
-                            strategy: strategy
+                            strategy: strategy, 
+                            emailAddressId: firstFactor(strategy: strategy)?.emailAddressId
                         ))
                 }
             default:

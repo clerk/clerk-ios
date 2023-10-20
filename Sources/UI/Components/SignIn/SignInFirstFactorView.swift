@@ -24,8 +24,8 @@ struct SignInFirstFactorView: View {
     @State private var userImageUrl: String?
     
     private var firstFactorStrategy: VerificationStrategy? {
-        if let strategy = clerk.client.signIn.firstFactorVerification?.strategy {
-            return VerificationStrategy(stringValue: strategy)
+        if let strategy = clerk.client.signIn.firstFactorVerification?.verificationStrategy {
+            return strategy
         }
         return nil
     }
@@ -130,8 +130,8 @@ struct SignInFirstFactorView: View {
                 .client
                 .signIn
                 .prepareFirstFactor(.init(
-                    emailAddressId: firstFactor?.emailAddressId,
-                    strategy: firstFactorStrategy
+                    strategy: firstFactorStrategy, 
+                    emailAddressId: firstFactor?.emailAddressId
                 ))
         } catch {
             dump(error)
