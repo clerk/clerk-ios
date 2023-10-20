@@ -188,3 +188,37 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
     }
     
 }
+
+extension APIEndpoint.V1Endpoint {
+    
+    var me: MeEndpoint {
+        MeEndpoint(path: path + "/me")
+    }
+    
+    struct MeEndpoint {
+        /// Path: `v1/me`
+        let path: String
+        
+        func get() -> Request<User> {
+            .init(path: path)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
+    var phoneNumbers: PhoneNumbersEndpoint {
+        PhoneNumbersEndpoint(path: path + "/phone_numbers")
+    }
+    
+    struct PhoneNumbersEndpoint {
+        /// Path: `v1/me/phone_numbers`
+        let path: String
+        
+        func get() -> Request<User> {
+            .init(path: path)
+        }
+    }
+    
+}
