@@ -30,7 +30,6 @@ struct SignInViewModifier: ViewModifier {
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
                     SignInView()
-                        .presentationDragIndicator(.visible)
                         .interactiveDismissDisabled(true)
                 }
             })
@@ -42,7 +41,6 @@ struct SignInViewModifier: ViewModifier {
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
                     SignInView()
-                        .presentationDragIndicator(.visible)
                         .interactiveDismissDisabled(true)
                 }
             })

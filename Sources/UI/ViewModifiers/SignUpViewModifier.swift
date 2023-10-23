@@ -28,7 +28,6 @@ struct SignUpViewModifier: ViewModifier {
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
                     SignUpView()
-                        .presentationDragIndicator(.visible)
                         .interactiveDismissDisabled()
                 }
             })
@@ -40,7 +39,6 @@ struct SignUpViewModifier: ViewModifier {
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
                     SignUpView()
-                        .presentationDragIndicator(.visible)
                         .interactiveDismissDisabled()
                 }
             })
