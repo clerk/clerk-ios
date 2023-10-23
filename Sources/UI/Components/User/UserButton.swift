@@ -46,7 +46,7 @@ public struct UserButton: View {
     }
     
     private func userButtonAction() {
-        if let lastSession = clerk.client.lastActiveSession {
+        if clerk.client.lastActiveSession != nil {
             profileIsPresented = true
         } else {
             clerk.signInIsPresented = true

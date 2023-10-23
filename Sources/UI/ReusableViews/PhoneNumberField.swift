@@ -4,6 +4,7 @@
 //
 //  Created by Mike Pitre on 10/20/23.
 //
+#if canImport(UIKit)
 
 import SwiftUI
 import PhoneNumberKit
@@ -100,3 +101,5 @@ struct PhoneNumberField: View {
         .frame(height: 44)
         .padding()
 }
+
+#endif

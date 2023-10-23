@@ -6,7 +6,6 @@
 //
 
 import AuthenticationServices
-import RegexBuilder
 
 public final class OAuthWebSession: NSObject, ObservableObject {
     var webAuthSession: ASWebAuthenticationSession?
