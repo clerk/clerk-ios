@@ -20,25 +20,33 @@ import Foundation
  Information about the user and the provided authentication identifier value (email address, phone number or username). Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
 public struct SignIn: Decodable {
-    
-    init(
+    public init(
         id: String = "",
-        status: Status? = nil,
+        status: SignIn.Status? = nil,
+        supportedIdentifiers: [String] = [],
         supportedFirstFactors: [SignInFactor] = [],
+        supportedSecondFactors: [String]? = nil,
         firstFactorVerification: Verification? = nil,
+        secondFactorVerification: Verification? = nil,
         identifier: String? = nil,
-        userData: UserData? = nil
+        userData: UserData? = nil,
+        createdSessionId: String? = nil,
+        abandonAt: Date = .now
     ) {
         self.id = id
         self.status = status
+        self.supportedIdentifiers = supportedIdentifiers
         self.supportedFirstFactors = supportedFirstFactors
+        self.supportedSecondFactors = supportedSecondFactors
         self.firstFactorVerification = firstFactorVerification
+        self.secondFactorVerification = secondFactorVerification
         self.identifier = identifier
         self.userData = userData
+        self.createdSessionId = createdSessionId
+        self.abandonAt = abandonAt
     }
     
     let id: String
-    
     /**
      The current status of the sign-in.
      
@@ -60,30 +68,48 @@ public struct SignIn: Decodable {
     }
     
     /**
+     Array of all the authentication identifiers that are supported for this sign in.
+     
+     Examples of this could be:
+     - email_address
+     - phone_number
+     - web3_wallet
+     - username
+     */
+    let supportedIdentifiers: [String]
+    /**
      Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
      
      For example:
      - email_code for email addresses
      - phone_code for phone numbers
+     
      As well as the identifier that the factor refers to.
      */
-    @DecodableDefault.EmptyList internal(set) public var supportedFirstFactors: [SignInFactor]
+    @DecodableDefault.EmptyList private(set) public var supportedFirstFactors: [SignInFactor]
     
     /**
-     The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
+     Array of the second factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
+     
+     For example:
+     - email_code for email addresses
+     - phone_code for phone numbers
+     
+     As well as the identifier that the factor refers to. Please note that this property is populated only when the first factor is verified.
      */
+    let supportedSecondFactors: [String]?
+    /// The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
     public let firstFactorVerification: Verification?
-    
-    
-    /**
-     The authentication identifier for the sign-in. This can be the value of the user's email address, phone number or username.
-     */
+    /// The state of the verification process for the selected second factor. Similar to firstFactorVerification, this property contains an empty verification object initially, since there is no second factor selected. For the phone_code strategy, you need to call the prepareSecondFactor method in order to start the verification process. For the totp strategy, you can directly attempt.
+    let secondFactorVerification: Verification?
+    /// The authentication identifier value for the current sign-in.
     public let identifier: String?
-    
-    /**
-     An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
-     */
+    /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
     public let userData: UserData?
+    /// The identifier of the session that was created upon completion of the current sign-in. The value of this property is null if the sign-in status is not complete.
+    let createdSessionId: String?
+    ///
+    let abandonAt: Date
 }
 
 extension SignIn {
@@ -109,15 +135,18 @@ extension SignIn {
     
     public struct PrepareFirstFactorParams: Encodable {
         public init(
+            strategy: VerificationStrategy,
             emailAddressId: String? = nil,
-            strategy: VerificationStrategy
+            phoneNumberId: String? = nil
         ) {
-            self.emailAddressId = emailAddressId
             self.strategy = strategy.stringValue
+            self.emailAddressId = emailAddressId
+            self.phoneNumberId = phoneNumberId
         }
         
-        public let emailAddressId: String?
         public let strategy: String
+        public let emailAddressId: String?
+        public let phoneNumberId: String?
     }
     
     public struct AttemptFirstFactorParams: Encodable {
@@ -131,6 +160,65 @@ extension SignIn {
         
         public let code: String?
         public let strategy: String
+    }
+    
+}
+
+extension SignIn {
+    
+    /**
+    Creates the paramaters needed to create a new sign in object.
+     
+     Examples of identifier could be the user's:
+     - email_address
+     - phone_number
+     - web3_wallet
+     - username
+     */
+    public func createParams(for strategy: VerificationStrategy, identifier: String) -> CreateParams {
+        switch strategy {
+        case .password:
+            return .init(identifier: identifier, strategy: strategy)
+        case .phoneCode:
+            return .init(identifier: identifier)
+        case .emailCode:
+            return .init(identifier: identifier)
+        case .emailLink:
+            return .init(identifier: identifier)
+        case .saml:
+            return .init(strategy: strategy)
+        case .oauth:
+            return .init(strategy: strategy, redirectUrl: "clerk://")
+        case .web3:
+            return .init(strategy: strategy)
+        }
+    }
+    
+    private func emailAddressId(for strategy: VerificationStrategy) -> String? {
+        Clerk.shared.client
+            .signIn
+            .supportedFirstFactors
+            .first(where: { $0.strategy == strategy.stringValue })?
+            .emailAddressId
+    }
+    
+    public func prepareParams(for strategy: VerificationStrategy) -> SignIn.PrepareFirstFactorParams {
+        switch strategy {
+        case .password:
+            return .init(strategy: strategy)
+        case .phoneCode:
+            return .init(strategy: strategy, phoneNumberId: identifier)
+        case .emailCode:
+            return .init(strategy: strategy, emailAddressId: emailAddressId(for: strategy))
+        case .emailLink:
+            return .init(strategy: strategy, emailAddressId: emailAddressId(for: strategy))
+        case .saml:
+            return .init(strategy: strategy)
+        case .oauth:
+            return .init(strategy: strategy)
+        case .web3:
+            return .init(strategy: strategy)
+        }
     }
     
 }
@@ -191,6 +279,19 @@ extension SignIn {
             .id(Clerk.shared.client.signIn.id)
             .attemptFirstFactor
             .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    @MainActor
+    public func get(rotatingTokenNonce: String? = nil) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(Clerk.shared.client.signIn.id)
+            .get(rotatingTokenNonce: rotatingTokenNonce)
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

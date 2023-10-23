@@ -14,20 +14,33 @@ struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(\.dismiss) private var dismiss
     
-    @FocusState var isKeyboardShowing: Bool
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case email, phoneNumber
+    }
     
     public init() {}
     
     @State private var emailAddress: String = ""
+    @State private var phoneNumber: String = ""
+    @State private var displayingEmailEntry = true
     
-    private var thirdPartyProviders: [OAuthProvider] {
-        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+    private var enabledVerificationStrategies: Set<VerificationStrategy> {
+        var strategies: Set<VerificationStrategy> = []
+        clerk.environment.userSettings.enabledAttributes.forEach { attribute in
+            strategies.formUnion(attribute.verificationStrategies)
+        }
+        return strategies
     }
     
-    private func firstFactor(strategy: VerificationStrategy) -> SignInFactor? {
-        clerk.client.signIn.supportedFirstFactors
-            .first(where: { $0.strategy == strategy.stringValue })
+    private var thirdPartyProviders: [OAuthProvider] {
+        clerk.environment
+            .userSettings
+            .enabledThirdPartyProviders
+            .sorted()
     }
     
     public var body: some View {
@@ -76,16 +89,50 @@ struct SignInCreateView: View {
             }
             
             VStack(spacing: 16) {
-                CustomTextField(title: "Email address", text: $emailAddress)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .focused($isKeyboardShowing)
-                    .tint(clerkTheme.colors.primary)
+                VStack {
+                    HStack {
+                        Text(displayingEmailEntry ? "Email address" : "Phone number")
+                            .contentTransition(.identity)
+                        Spacer()
+                        Button {
+                            displayingEmailEntry.toggle()
+                        } label: {
+                            Text(displayingEmailEntry ? "Use phone" : "Use email")
+                                .contentTransition(.identity)
+                        }
+                        .tint(clerkTheme.colors.primary)
+                    }
+                    .font(.footnote.weight(.medium))
+                    
+                    if displayingEmailEntry {
+                        CustomTextField(text: $emailAddress)
+                            .frame(height: 44)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .email)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    } else {
+                        PhoneNumberField(text: $phoneNumber)
+                            .focused($focusedField, equals: .phoneNumber)
+                            .frame(height: 44)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+                .animation(.bouncy, value: displayingEmailEntry)
+                .onChange(of: displayingEmailEntry) { showingEmail in
+                    if focusedField != nil {
+                        focusedField = showingEmail ? .email : .phoneNumber
+                    }
+                }
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: {
-                    await signInAction(strategy: .emailCode)
+                    if displayingEmailEntry {
+                        await signInAction(strategy: .emailCode)
+                    } else {
+                        await signInAction(strategy: .phoneCode)
+                    }
                 }) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
@@ -136,42 +183,39 @@ struct SignInCreateView: View {
         .background(.background)
     }
     
-    private func createSignInParams(for strategy: VerificationStrategy) -> SignIn.CreateParams {
-        switch strategy {
-        case .password:
-            return .init(identifier: emailAddress, strategy: .password)
-        case .phoneCode:
-            return .init(identifier: "")
-        case .emailCode:
-            return .init(identifier: emailAddress)
-        case .emailLink:
-            return .init(identifier: emailAddress)
-        case .saml:
-            return .init(strategy: .saml)
-        case .oauth(let provider):
-            return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
-        case .web3(let signature):
-            return .init(strategy: .web3(signature))
-        }
+    private var identifier: String {
+        displayingEmailEntry ? emailAddress : phoneNumber
     }
     
     private func signInAction(strategy: VerificationStrategy) async {
         do {
-            isKeyboardShowing = false
+            KeyboardHelpers.dismissKeyboard()
             
             let signIn = try await clerk
                 .client
                 .signIn
-                .create(createSignInParams(for: strategy))
+                .create(clerk.client.signIn.createParams(
+                    for: strategy,
+                    identifier: identifier
+                ))
             
             switch strategy {
+                
             case .oauth:
-                guard let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+                guard 
+                    let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+                    let url = URL(string: redirectUrl)
+                else {
                     throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
                 }
                 
-                let authSession = OAuthWebSession(url: url)
+                let authSession = OAuthWebSession(url: url) {
+                    DispatchQueue.main.async {
+                        dismiss()
+                    }
+                }
                 authSession.start()
+                
             case .emailCode:
                 if clerk.client.signIn.status == .needsFirstFactor {
                     signInViewModel.step = .firstFactor
@@ -179,11 +223,11 @@ struct SignInCreateView: View {
                     try await clerk
                         .client
                         .signIn
-                        .prepareFirstFactor(.init(
-                            emailAddressId: firstFactor(strategy: strategy)?.emailAddressId,
-                            strategy: strategy
-                        ))
+                        .prepareFirstFactor(
+                            signIn.prepareParams(for: strategy)
+                        )
                 }
+                
             default:
                 return
             }

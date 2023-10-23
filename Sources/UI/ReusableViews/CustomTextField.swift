@@ -10,24 +10,23 @@
 import SwiftUI
 
 struct CustomTextField: View {
-    let title: String
+    @FocusState private var isFocused: Bool
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     @Binding var text: String
     var isSecureField: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-            
-            inputField
-                .font(.subheadline)
-                .frame(height: 36)
-                .padding(.horizontal)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(.quaternary, lineWidth: 1)
-                }
-        }
+        inputField
+            .frame(maxHeight: .infinity)
+            .focused($isFocused)
+            .font(.subheadline)
+            .padding(.horizontal)
+            .tint(clerkTheme.colors.primary)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(isFocused ? clerkTheme.colors.primary : Color(.systemFill), lineWidth: 1)
+            }
     }
     
     @ViewBuilder 
@@ -41,10 +40,8 @@ struct CustomTextField: View {
 }
 
 #Preview {
-    CustomTextField(
-        title: "Email address",
-        text: .constant("")
-    )
+    CustomTextField(text: .constant(""))
+        .frame(height: 44)
 }
 
 #endif

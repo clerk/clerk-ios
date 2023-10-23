@@ -71,29 +71,41 @@ struct SignUpCreateView: View {
             
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
-                    CustomTextField(title: "First name", text: $firstName)
-                        .textContentType(.givenName)
-                        .autocorrectionDisabled(true)
-                        .tint(clerkTheme.colors.primary)
+                    VStack(alignment: .leading) {
+                        Text("First name").font(.footnote.weight(.medium))
+                        CustomTextField(text: $firstName)
+                            .frame(height: 36)
+                            .textContentType(.givenName)
+                            .autocorrectionDisabled(true)
+                    }
                     
-                    CustomTextField(title: "Last name", text: $lastName)
-                        .textContentType(.familyName)
-                        .autocorrectionDisabled(true)
-                        .tint(clerkTheme.colors.primary)
+                    VStack(alignment: .leading) {
+                        Text("Last name").font(.footnote.weight(.medium))
+                        CustomTextField(text: $lastName)
+                            .frame(height: 36)
+                            .textContentType(.familyName)
+                            .autocorrectionDisabled(true)
+                    }
                 }
                 
-                CustomTextField(title: "Email address", text: $emailAddress)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .tint(clerkTheme.colors.primary)
+                VStack(alignment: .leading) {
+                    Text("Email Address").font(.footnote.weight(.medium))
+                    CustomTextField(text: $emailAddress)
+                        .frame(height: 44)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                }
                 
-                CustomTextField(title: "Password", text: $password, isSecureField: true)
-                    .textContentType(.newPassword)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .tint(clerkTheme.colors.primary)
+                VStack(alignment: .leading) {
+                    Text("Password").font(.footnote.weight(.medium))
+                    CustomTextField(text: $password, isSecureField: true)
+                        .frame(height: 44)
+                        .textContentType(.newPassword)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                }
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: signUpAction) {
                     Text("CONTINUE")

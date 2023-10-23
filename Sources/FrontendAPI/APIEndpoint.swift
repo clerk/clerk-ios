@@ -151,6 +151,14 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     public struct WithID {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
+        
+        func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
+            if let rotatingTokenNonce {
+                return .init(path: path, query: [("rotating_token_nonce", rotatingTokenNonce)])
+            } else {
+                return .init(path: path)
+            }
+        }
     }
     
 }
@@ -184,6 +192,40 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
         
         func post(_ params: SignIn.AttemptFirstFactorParams) -> Request<ClientResponse<SignIn>> {
             .init(path: path, method: .post, body: params)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint {
+    
+    var me: MeEndpoint {
+        MeEndpoint(path: path + "/me")
+    }
+    
+    struct MeEndpoint {
+        /// Path: `v1/me`
+        let path: String
+        
+        func get() -> Request<User> {
+            .init(path: path)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
+    var phoneNumbers: PhoneNumbersEndpoint {
+        PhoneNumbersEndpoint(path: path + "/phone_numbers")
+    }
+    
+    struct PhoneNumbersEndpoint {
+        /// Path: `v1/me/phone_numbers`
+        let path: String
+        
+        func get() -> Request<User> {
+            .init(path: path)
         }
     }
     
