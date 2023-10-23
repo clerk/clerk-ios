@@ -51,7 +51,7 @@ public struct User: Decodable {
     /// An array of all the Web3Wallet objects associated with the user. Includes the primary.
     let web3Wallets: [String]
     /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
-    let externalAccounts: [ExternalAccount]
+//    let externalAccounts: [ExternalAccount]
     /// An experimental list of saml accounts associated with the user.
     let samlAccounts: [String]
     /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .

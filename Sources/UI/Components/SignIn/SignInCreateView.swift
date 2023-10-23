@@ -14,6 +14,7 @@ struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(\.dismiss) private var dismiss
     
     @FocusState private var focusedField: Field?
     
@@ -36,12 +37,10 @@ struct SignInCreateView: View {
     }
     
     private var thirdPartyProviders: [OAuthProvider] {
-        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
-    }
-    
-    private func firstFactor(strategy: VerificationStrategy) -> SignInFactor? {
-        clerk.client.signIn.supportedFirstFactors
-            .first(where: { $0.strategy == strategy.stringValue })
+        clerk.environment
+            .userSettings
+            .enabledThirdPartyProviders
+            .sorted()
     }
     
     public var body: some View {
@@ -99,7 +98,6 @@ struct SignInCreateView: View {
                             displayingEmailEntry.toggle()
                         } label: {
                             Text(displayingEmailEntry ? "Use phone" : "Use email")
-                                .frame(maxWidth: .infinity, alignment: .trailing)
                                 .contentTransition(.identity)
                         }
                         .tint(clerkTheme.colors.primary)
@@ -185,44 +183,9 @@ struct SignInCreateView: View {
         .background(.background)
     }
     
-    private func createSignInParams(for strategy: VerificationStrategy) -> SignIn.CreateParams {
-        switch strategy {
-        case .password:
-            return .init(identifier: emailAddress, strategy: .password)
-        case .phoneCode:
-            return .init(identifier: "")
-        case .emailCode:
-            return .init(identifier: emailAddress)
-        case .emailLink:
-            return .init(identifier: emailAddress)
-        case .saml:
-            return .init(strategy: .saml)
-        case .oauth(let provider):
-            return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
-        case .web3(let signature):
-            return .init(strategy: .web3(signature))
-        }
+    private var identifier: String {
+        displayingEmailEntry ? emailAddress : phoneNumber
     }
-//    
-//    private func prepareSignInParams(for strategy: VerificationStrategy) -> SignIn.PrepareFirstFactorParams {
-//        switch strategy {
-//        case .password:
-//            // shouldn't actually get called, not need for password
-//            return .init(strategy: .password)
-//        case .phoneCode:
-//            <#code#>
-//        case .emailCode:
-//            <#code#>
-//        case .emailLink:
-//            <#code#>
-//        case .saml:
-//            <#code#>
-//        case .oauth(let _):
-//            <#code#>
-//        case .web3(let _):
-//            <#code#>
-//        }
-//    }
     
     private func signInAction(strategy: VerificationStrategy) async {
         do {
@@ -231,16 +194,28 @@ struct SignInCreateView: View {
             let signIn = try await clerk
                 .client
                 .signIn
-                .create(createSignInParams(for: strategy))
+                .create(clerk.client.signIn.createParams(
+                    for: strategy,
+                    identifier: identifier
+                ))
             
             switch strategy {
+                
             case .oauth:
-                guard let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+                guard 
+                    let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+                    let url = URL(string: redirectUrl)
+                else {
                     throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
                 }
                 
-                let authSession = OAuthWebSession(url: url)
+                let authSession = OAuthWebSession(url: url) {
+                    DispatchQueue.main.async {
+                        dismiss()
+                    }
+                }
                 authSession.start()
+                
             case .emailCode:
                 if clerk.client.signIn.status == .needsFirstFactor {
                     signInViewModel.step = .firstFactor
@@ -248,11 +223,11 @@ struct SignInCreateView: View {
                     try await clerk
                         .client
                         .signIn
-                        .prepareFirstFactor(.init(
-                            strategy: strategy, 
-                            emailAddressId: firstFactor(strategy: strategy)?.emailAddressId
-                        ))
+                        .prepareFirstFactor(
+                            signIn.prepareParams(for: strategy)
+                        )
                 }
+                
             default:
                 return
             }

@@ -151,6 +151,14 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     public struct WithID {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
+        
+        func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
+            if let rotatingTokenNonce {
+                return .init(path: path, query: [("rotating_token_nonce", rotatingTokenNonce)])
+            } else {
+                return .init(path: path)
+            }
+        }
     }
     
 }
