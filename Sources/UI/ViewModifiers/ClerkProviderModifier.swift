@@ -23,11 +23,8 @@ struct ClerkProviderModifier: ViewModifier {
     
     @ObservedObject private var clerk = Clerk.shared
     
-    init(publishableKey: String, frontendAPIURL: String) {
-        clerk.configure(
-            publishableKey: publishableKey,
-            frontendAPIURL: frontendAPIURL
-        )
+    init(publishableKey: String) {
+        clerk.configure(publishableKey: publishableKey)
     }
     
     func body(content: Content) -> some View {
@@ -55,11 +52,8 @@ extension View {
      
      You should apply this modifier to the root view of your application. Most likely in your `App` file.
      */
-    public func clerkProvider(publishableKey: String, frontendAPIURL: String) -> some View {
-        modifier(ClerkProviderModifier(
-            publishableKey: publishableKey,
-            frontendAPIURL: frontendAPIURL
-        ))
+    public func clerkProvider(publishableKey: String) -> some View {
+        modifier(ClerkProviderModifier(publishableKey: publishableKey))
     }
 }
 

@@ -7,6 +7,7 @@
 
 import Foundation
 import Factory
+import RegexBuilder
 
 /**
  This is the main entrypoint class for the clerk-ios package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -27,7 +28,6 @@ final public class Clerk: ObservableObject {
      
      - Parameters:
      - publishableKey: Formatted as pk_test_ in development and pk_live_ in production.
-     - frontendAPIURL: The URL of the frontend API.
      
      - Note:
      It's essential to call this function with the appropriate values before using any other package functionality. 
@@ -35,21 +35,39 @@ final public class Clerk: ObservableObject {
      
      Example Usage:
      ```swift
-     Clerk.shared.configure(
-       publishableKey: "pk_your_publishable_key",
-       frontendAPIURL: "[your-domain].clerk.accounts.dev"
-     )
+     Clerk.shared.configure(publishableKey: "pk_your_publishable_key")
      */
-    public func configure(
-        publishableKey: String,
-        frontendAPIURL: String
-    ) {
+    public func configure(publishableKey: String) {
         self.publishableKey = publishableKey
-        self.frontendAPIURL = frontendAPIURL
     }
     
     /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.
-    private(set) public var publishableKey: String = ""
+    private(set) public var publishableKey: String = "" {
+        didSet {
+            let liveRegex = Regex {
+                "pk_live_"
+                Capture {
+                    OneOrMore(.any)
+                }
+                "k"
+            }
+            
+            let testRegex = Regex {
+                "pk_test_"
+                Capture {
+                    OneOrMore(.any)
+                }
+                "k"
+            }
+            
+            if
+                let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
+                let apiUrl = String(match).base64Decoded()
+            {
+                frontendAPIURL = "https://\(apiUrl)"
+            }
+        }
+    }
     
     /// Frontend API URL
     private(set) public var frontendAPIURL: String = ""
