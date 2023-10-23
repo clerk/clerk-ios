@@ -31,6 +31,7 @@ struct SignInViewModifier: ViewModifier {
                 ScrollView {
                     SignInView()
                         .presentationDragIndicator(.visible)
+                        .interactiveDismissDisabled(true)
                 }
             })
     }
@@ -42,6 +43,7 @@ struct SignInViewModifier: ViewModifier {
                 ScrollView {
                     SignInView()
                         .presentationDragIndicator(.visible)
+                        .interactiveDismissDisabled(true)
                 }
             })
     }

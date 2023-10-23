@@ -19,12 +19,16 @@ import Foundation
 public struct EmailAddress: Decodable {
     /// A unique identifier for this email address.
     let id: String
+    
     /// The value of this email address.
     let emailAddress: String
+    
     ///
     let reserved: Bool
+    
     /// An object holding information on the verification of this email address.
     let verification: Verification
+    
     /// An array of objects containing information about any identifications that might be linked to this email address.
     let linkedTo: [JSON]?
 }

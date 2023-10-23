@@ -25,9 +25,16 @@ public struct Client: Decodable {
         self.lastActiveSessionId = lastActiveSessionId
     }
     
+    /// The current sign in attempt.
     internal(set) public var signIn: SignIn
+    
+    /// The current sign up attempt.
     internal(set) public var signUp: SignUp
+    
+    /// A list of sessions that have been created on this client.
     internal(set) public var sessions: [Session]
+    
+    /// Unique identifier of the last active Session on this client.
     internal(set) public var lastActiveSessionId: String?
     
     enum CodingKeys: CodingKey {

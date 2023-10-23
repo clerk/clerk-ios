@@ -29,6 +29,7 @@ struct SignUpViewModifier: ViewModifier {
                 ScrollView {
                     SignUpView()
                         .presentationDragIndicator(.visible)
+                        .interactiveDismissDisabled()
                 }
             })
     }
@@ -40,6 +41,7 @@ struct SignUpViewModifier: ViewModifier {
                 ScrollView {
                     SignUpView()
                         .presentationDragIndicator(.visible)
+                        .interactiveDismissDisabled()
                 }
             })
     }

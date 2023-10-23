@@ -47,6 +47,7 @@ public struct SignIn: Decodable {
     }
     
     let id: String
+    
     /**
      The current status of the sign-in.
      
@@ -77,6 +78,7 @@ public struct SignIn: Decodable {
      - username
      */
     let supportedIdentifiers: [String]
+    
     /**
      Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
      
@@ -98,16 +100,22 @@ public struct SignIn: Decodable {
      As well as the identifier that the factor refers to. Please note that this property is populated only when the first factor is verified.
      */
     let supportedSecondFactors: [String]?
+    
     /// The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
     public let firstFactorVerification: Verification?
+    
     /// The state of the verification process for the selected second factor. Similar to firstFactorVerification, this property contains an empty verification object initially, since there is no second factor selected. For the phone_code strategy, you need to call the prepareSecondFactor method in order to start the verification process. For the totp strategy, you can directly attempt.
     let secondFactorVerification: Verification?
+    
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?
+    
     /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
     public let userData: UserData?
+    
     /// The identifier of the session that was created upon completion of the current sign-in. The value of this property is null if the sign-in status is not complete.
     let createdSessionId: String?
+    
     ///
     let abandonAt: Date
 }
