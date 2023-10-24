@@ -25,26 +25,31 @@ public final class OAuthWebSession: NSObject, ObservableObject {
                 guard let callbackUrl else { return }
                 Task {
                     do {
-                        try await Clerk.shared.client.get()
-                        
                         switch authAction {
+                            
                         case .signIn:
-                            if Clerk.shared.client.signIn.firstFactorVerification?.status == .transferable {
-                                try await Clerk.shared.client.signUp.create(.init(transfer: true))
-                            } else {
-                                let nonce = self.nonceFromCallbackUrl(url: callbackUrl)
+                            if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
                                 try await Clerk.shared.client.signIn.get(.init(rotatingTokenNonce: nonce))
+                                
+                            } else {
+                                try await Clerk.shared.client.get()
+                                if Clerk.shared.client.signIn.firstFactorVerification?.status == .transferable {
+                                    try await Clerk.shared.client.signUp.create(.init(transfer: true))
+                                }
                             }
                             
                         case .signUp:
-                            if
-                                let verification = Clerk.shared.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-                                verification.status == .transferable
-                            {
-                                try await Clerk.shared.client.signIn.create(.init(transfer: true))
-                            } else {
-                                let nonce = self.nonceFromCallbackUrl(url: callbackUrl)
+                            if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
                                 try await Clerk.shared.client.signUp.get(.init(rotatingTokenNonce: nonce))
+                                
+                            } else {
+                                try await Clerk.shared.client.get()
+                                if
+                                    let verification = Clerk.shared.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+                                    verification.status == .transferable
+                                {
+                                    try await Clerk.shared.client.signIn.create(.init(transfer: true))
+                                }
                             }
                         }
                         

@@ -92,9 +92,9 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
         /// Path: `/v1/client/sign_ups/{id}`
         public let path: String
         
-        func get(params: SignUp.GetParams) -> Request<ClientResponse<SignUp>> {
+        func get(params: SignUp.GetParams?) -> Request<ClientResponse<SignUp>> {
             let encoder = URLQueryEncoder()
-            encoder.encode(params.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            encoder.encode(params?.rotatingTokenNonce, forKey: "rotating_token_nonce")
             return .init(path: path, query: encoder.items)
         }
     }
@@ -159,9 +159,9 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
         
-        func get(params: SignIn.GetParams) -> Request<ClientResponse<SignIn>> {
+        func get(params: SignIn.GetParams?) -> Request<ClientResponse<SignIn>> {
             let encoder = URLQueryEncoder()
-            encoder.encode(params.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            encoder.encode(params?.rotatingTokenNonce, forKey: "rotating_token_nonce")
             return .init(path: path, query: encoder.items)
         }
     }

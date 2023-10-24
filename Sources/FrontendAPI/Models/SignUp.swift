@@ -285,7 +285,7 @@ extension SignUp {
     }
     
     @MainActor
-    public func get(_ params: GetParams) async throws {
+    public func get(_ params: GetParams? = nil) async throws {
         let request = APIEndpoint
             .v1
             .client
