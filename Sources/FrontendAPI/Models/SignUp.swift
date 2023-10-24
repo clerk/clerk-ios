@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 /**
  The SignUp object holds the state of the current sign up and provides helper methods to navigate and complete the sign up flow. Once a sign up is complete, a new user is created.
  
@@ -23,14 +24,50 @@ import Foundation
  */
 public struct SignUp: Decodable {
     
-    init(
+    public init(
         id: String = "",
-        status: Status? = nil,
-        strategy: VerificationStrategy? = nil
+        status: SignUp.Status? = nil,
+        requiredFields: [String] = [],
+        optionalFields: [String] = [],
+        missingFields: [String] = [],
+        unverifiedFields: [String] = [],
+        verifications: [String: Verification] = [:],
+        username: String? = nil,
+        emailAddress: String? = nil,
+        phoneNumber: String? = nil, 
+        web3Wallet: String? = nil,
+        passwordEnabled: Bool = false,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        unsafeMetadata: JSON = nil,
+        publicMetadata: JSON = nil,
+        customAction: Bool = false,
+        externalId: String? = nil,
+        createdSessionId: String? = nil,
+        createdUserId: String? = nil,
+        abandonAt: Date = .now
     ) {
         self.id = id
         self.status = status
-        self.strategy = strategy?.stringValue
+        self.requiredFields = requiredFields
+        self.optionalFields = optionalFields
+        self.missingFields = missingFields
+        self.unverifiedFields = unverifiedFields
+        self.verifications = verifications
+        self.username = username
+        self.emailAddress = emailAddress
+        self.phoneNumber = phoneNumber
+        self.web3Wallet = web3Wallet
+        self.passwordEnabled = passwordEnabled
+        self.firstName = firstName
+        self.lastName = lastName
+        self.unsafeMetadata = unsafeMetadata
+        self.publicMetadata = publicMetadata
+        self.customAction = customAction
+        self.externalId = externalId
+        self.createdSessionId = createdSessionId
+        self.createdUserId = createdUserId
+        self.abandonAt = abandonAt
     }
     
     let id: String
@@ -51,36 +88,99 @@ public struct SignUp: Decodable {
         case abandoned
     }
     
-    /**
-     The strategy to use for the sign-up flow.
-     
-     The following strategies are supported:
-     - oauth_{provider}: The user will be authenticated with their Social login account. See available OAuth Strategies.
-     - saml: The user will be authenticated with SAML.
-     - ticket: The user will be authenticated via the ticket or token generated from the Backend API.
-     */
-    let strategy: String?
+    /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
+    let requiredFields: [String]
+    
+    /// An array of all the fields that can be supplied to the sign-up, but their absence does not prevent the sign-up from being marked as complete.
+    let optionalFields: [String]
+    
+    /// An array of all the fields whose values are not supplied yet but they are mandatory in order for a sign-up to be marked as complete.
+    let missingFields: [String]
+    
+    /// An array of all the fields whose values have been supplied, but they need additional verification in order for them to be accepted. Examples of such fields are emailAddress and phoneNumber.
+    let unverifiedFields: [String]
+    
+    /// An object that contains information about all the verifications that are in-flight.
+    public let verifications: [String: Verification?]
+    
+    /// The username supplied to the current sign-up. This attribute is available only if usernames are enabled. Check the available instance settings in your Clerk Dashboard for more information.
+    let username: String?
+    
+    /// The email address supplied to the current sign-up. This attribute is available only if the selected contact information includes email address. Check the available instance settings for more information.
+    let emailAddress: String?
+    
+    /// The phone number supplied to the current sign-up. This attribute is available only if the selected contact information includes phone number. Check the available instance settings for more information.
+    let phoneNumber: String?
+    
+    /// The Web3 wallet public address supplied to the current sign-up. In Ethereum, the address is made up of 0x + 40 hexadecimal characters.
+    let web3Wallet: String?
+    
+    ///
+    let passwordEnabled: Bool
+    
+    /// The first name supplied to the current sign-up. This attribute is available only if name is enabled in personal information. Check the available for more information. lastName
+    let firstName: String?
+    
+    /// The last name supplied to the current sign-up. This attribute is available only if name is enabled in personal information. Check the available instance settings for more information.
+    let lastName: String?
+    
+    /// Metadata that can be read and set from the frontend. Once the sign-up is complete, the value of this field will be automatically copied to the newly created user's unsafe metadata. One common use case for this attribute is to use it to implement custom fields that can be collected during sign-up and will automatically be attached to the created User object.
+    let unsafeMetadata: JSON?
+    
+    ///
+    let publicMetadata: JSON?
+    
+    ///
+    let customAction: Bool
+    
+    ///
+    let externalId: String?
+    
+    /// The identifier of the newly-created session. This attribute is populated only when the sign-up is complete.
+    let createdSessionId: String?
+    
+    /// The identifier of the newly-created user. This attribute is populated only when the sign-up is complete.
+    let createdUserId: String?
+    
+    /// The epoch numerical time when the sign-up was abandoned by the user.
+    let abandonAt: Date
 }
 
 extension SignUp {
     
     public struct CreateParams: Encodable {
+        
         public init(
             firstName: String? = nil,
             lastName: String? = nil,
             password: String? = nil,
-            emailAddress: String? = nil
+            emailAddress: String? = nil,
+            phoneNumber: String? = nil,
+            strategy: VerificationStrategy? = nil,
+            redirectUrl: String? = nil,
+            actionCompleteRedirectUrl: String? = nil,
+            transfer: Bool? = nil
         ) {
             self.firstName = firstName
             self.lastName = lastName
             self.password = password
             self.emailAddress = emailAddress
+            self.phoneNumber = phoneNumber
+            self.strategy = strategy?.stringValue
+            self.redirectUrl = redirectUrl
+            self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
+            self.transfer = transfer
         }
         
         public var firstName: String?
         public var lastName: String?
         public var password: String?
         public var emailAddress: String?
+        public var phoneNumber: String?
+        public var strategy: String?
+        public var redirectUrl: String?
+        public var actionCompleteRedirectUrl: String?
+        public var transfer: Bool?
     }
     
     public struct PrepareVerificationParams: Encodable {
@@ -102,6 +202,14 @@ extension SignUp {
         
         public var strategy: String
         public var code: String
+    }
+    
+    public struct GetParams: Encodable {
+        public init(rotatingTokenNonce: String? = nil) {
+            self.rotatingTokenNonce = rotatingTokenNonce
+        }
+        
+        public var rotatingTokenNonce: String?
     }
     
 }
@@ -171,6 +279,19 @@ extension SignUp {
             .id(Clerk.shared.client.signUp.id)
             .attemptVerification
             .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    @MainActor
+    public func get(_ params: GetParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signUps
+            .id(Clerk.shared.client.signUp.id)
+            .get(params: params)
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

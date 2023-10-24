@@ -57,7 +57,7 @@ struct SignInCreateView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Sign in")
                     .font(.title2.weight(.semibold))
-                Text("to continue to Clerk")
+                Text("to continue to \(clerk.environment.displayConfig.applicationName)")
                     .font(.subheadline.weight(.light))
                     .foregroundStyle(.secondary)
             }
@@ -190,7 +190,7 @@ struct SignInCreateView: View {
         do {
             KeyboardHelpers.dismissKeyboard()
             
-            let signIn = try await clerk
+            try await clerk
                 .client
                 .signIn
                 .create(clerk.client.signIn.createParams(
@@ -202,13 +202,13 @@ struct SignInCreateView: View {
                 
             case .oauth:
                 guard 
-                    let redirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+                    let redirectUrl = clerk.client.signIn.firstFactorVerification?.externalVerificationRedirectUrl,
                     let url = URL(string: redirectUrl)
                 else {
                     throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
                 }
                 
-                let authSession = OAuthWebSession(url: url) {
+                let authSession = OAuthWebSession(url: url, authAction: .signIn) {
                     DispatchQueue.main.async {
                         dismiss()
                     }
@@ -223,7 +223,7 @@ struct SignInCreateView: View {
                         .client
                         .signIn
                         .prepareFirstFactor(
-                            signIn.prepareParams(for: strategy)
+                            clerk.client.signIn.prepareParams(for: strategy)
                         )
                 }
                 

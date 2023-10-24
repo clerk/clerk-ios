@@ -27,6 +27,7 @@ struct CustomTextField: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(isFocused ? clerkTheme.colors.primary : Color(.systemFill), lineWidth: 1)
             }
+            .animation(.bouncy, value: isFocused)
     }
     
     @ViewBuilder 

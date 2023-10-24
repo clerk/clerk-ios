@@ -37,6 +37,9 @@ struct ClerkProviderModifier: ViewModifier {
                     }
                     Task.detached {
                         try? await clerk.client.get()
+                        if await clerk.client.isPlaceholder {
+                            try? await clerk.client.create()
+                        }
                     }
                 }
             }

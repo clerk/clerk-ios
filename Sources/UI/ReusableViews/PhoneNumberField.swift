@@ -84,6 +84,7 @@ struct PhoneNumberField: View {
                         lineWidth: 1
                     )
                 }
+                .animation(.bouncy, value: isFocused)
                 .onChange(of: displayNumber) { newValue in
                     displayNumber = model.phoneNumberFormattedForDisplay(newValue)
                     text = model.phoneNumberFormattedForE164(newValue)

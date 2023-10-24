@@ -128,9 +128,11 @@ extension Clerk {
         )
         
         let firstFactorVerification = Verification(
-            status: "",
+            status: .unverified,
             strategy: VerificationStrategy.emailCode.stringValue,
-            attempts: 0
+            attempts: 0,
+            expireAt: .distantFuture, 
+            error: nil
         )
         
         let signIn = SignIn(
@@ -147,6 +149,39 @@ extension Clerk {
             signUp: SignUp(),
             sessions: []
         )
+        
+        let userSettings = Environment.UserSettings(
+            attributes: [
+                "phone_number": .init(
+                    enabled: true,
+                    required: false,
+                    usedForFirstFactor: true,
+                    firstFactors: [],
+                    usedForSecondFactor: false,
+                    secondFactors: [],
+                    verifications: ["phone_code"],
+                    verifyAtSignUp: true
+                )
+            ],
+            social: [
+                "oauth_apple": .init(
+                    enabled: true,
+                    required: false,
+                    authenticatable: true,
+                    strategy: "oauth_apple",
+                    notSelectable: false
+                ),
+                "oauth_google": .init(
+                    enabled: true,
+                    required: false,
+                    authenticatable: true,
+                    strategy: "oauth_google",
+                    notSelectable: false
+                )
+            ]
+        )
+        
+        clerk.environment.userSettings = userSettings
         
         clerk.client = client
         

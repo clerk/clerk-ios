@@ -11,12 +11,32 @@ extension Clerk {
         
     public struct Environment: Decodable {
         
-        public init(userSettings: UserSettings = .init()) {
+        public init(
+            userSettings: UserSettings = .init(),
+            displayConfig: DisplayConfig = .init()
+        ) {
             self.userSettings = userSettings
+            self.displayConfig = displayConfig
         }
         
         public var userSettings: UserSettings
+        public var displayConfig: DisplayConfig
     }
+}
+
+extension Clerk.Environment {
+    
+    public struct DisplayConfig: Decodable {
+        
+        public init(
+            applicationName: String = ""
+        ) {
+            self.applicationName = applicationName
+        }
+        
+        public let applicationName: String
+    }
+    
 }
 
 extension Clerk.Environment {

@@ -13,11 +13,19 @@ import Clerk
 struct SignUpCreateView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(\.dismiss) private var dismiss
             
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var emailAddress: String = ""
+    @State private var phoneNumber: String = ""
     @State private var password: String = ""
+    
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case firstName, lastName, email, phoneNumber, password
+    }
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
@@ -38,15 +46,15 @@ struct SignUpCreateView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create your account")
                     .font(.title2.weight(.semibold))
-                Text("to continue to Clerk")
+                Text("to continue to \(clerk.environment.displayConfig.applicationName)")
                     .font(.subheadline.weight(.light))
                     .foregroundStyle(.secondary)
             }
             
             VStack {
                 ForEach(thirdPartyProviders, id: \.self) { provider in
-                    Button(action: {
-                        print("Tapped \(provider.data.name)")
+                    AsyncButton(options: [.disableButton], action: {
+                        await signUpAction(strategy: .oauth(provider))
                     }, label: {
                         AuthProviderButton(provider: provider)
                             .font(.footnote)
@@ -71,31 +79,62 @@ struct SignUpCreateView: View {
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                     VStack(alignment: .leading) {
-                        Text("First name").font(.footnote.weight(.medium))
+                        HStack {
+                            Text("First name").font(.footnote.weight(.medium))
+                            Spacer()
+                            Text("Optional")
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
                         CustomTextField(text: $firstName)
                             .frame(height: 36)
                             .textContentType(.givenName)
                             .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .firstName)
                     }
                     
                     VStack(alignment: .leading) {
-                        Text("Last name").font(.footnote.weight(.medium))
+                        HStack {
+                            Text("Last name").font(.footnote.weight(.medium))
+                            Spacer()
+                            Text("Optional")
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
                         CustomTextField(text: $lastName)
                             .frame(height: 36)
                             .textContentType(.familyName)
                             .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .lastName)
                     }
                 }
                 
                 VStack(alignment: .leading) {
-                    Text("Email Address").font(.footnote.weight(.medium))
+                    Text("Email address").font(.footnote.weight(.medium))
                     CustomTextField(text: $emailAddress)
                         .frame(height: 44)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .email)
                 }
+                
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Phone number").font(.footnote.weight(.medium))
+                        Spacer()
+                        Text("Optional")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    PhoneNumberField(text: $phoneNumber)
+                        .frame(height: 44)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .focused($focusedField, equals: .phoneNumber)
+                }
+                
                 
                 VStack(alignment: .leading) {
                     Text("Password").font(.footnote.weight(.medium))
@@ -104,9 +143,15 @@ struct SignUpCreateView: View {
                         .textContentType(.newPassword)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .password)
                 }
                 
-                AsyncButton(options: [.disableButton, .showProgressView], action: signUpAction) {
+                AsyncButton(
+                    options: [.disableButton, .showProgressView],
+                    action: {
+                        await signUpAction(strategy: .emailCode)
+                    }
+                ) {
                     Text("CONTINUE")
                         .font(.caption2.weight(.bold))
                         .frame(maxWidth: .infinity)
@@ -156,25 +201,62 @@ struct SignUpCreateView: View {
         .background(.background)
     }
     
-    private func signUpAction() async {
+    private func signUpAction(strategy: VerificationStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
             
-            try await clerk
-                .client
-                .signUp
-                .create(.init(
-                    firstName: firstName.isEmpty ? nil : firstName,
-                    lastName: lastName.isEmpty ? nil : lastName,
-                    password: password,
-                    emailAddress: emailAddress
-                ))
-            
-            try await clerk
-                .client
-                .signUp
-                .prepareVerification(.init(strategy: .emailCode))
+            switch strategy {
+                
+            case .oauth(let provider):
+                
+                try await clerk
+                    .client
+                    .signUp
+                    .create(.init(
+                        strategy: .oauth(provider),
+                        redirectUrl: "clerk://",
+                        actionCompleteRedirectUrl: "clerk://"
+                    ))
+                
+                guard
+                    let verification = clerk.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+                    let redirectUrl = verification.externalVerificationRedirectUrl,
+                    let url = URL(string: redirectUrl)
+                else {
+                    throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
+                }
+                
+                let authSession = OAuthWebSession(url: url, authAction: .signUp) {
+                    DispatchQueue.main.async {
+                        dismiss()
+                    }
+                }
+                
+                authSession.start()
+                
+            case .emailCode:
+                
+                try await clerk
+                    .client
+                    .signUp
+                    .create(.init(
+                        firstName: firstName.isEmpty ? nil : firstName,
+                        lastName: lastName.isEmpty ? nil : lastName,
+                        password: password,
+                        emailAddress: emailAddress,
+                        phoneNumber: phoneNumber.isEmpty ? nil : phoneNumber
+                    ))
+                
+                try await clerk
+                    .client
+                    .signUp
+                    .prepareVerification(.init(strategy: .emailCode))
+                
                 clerk.presentedAuthStep = .signUpVerification
+                
+            default:
+                return
+            }
             
         } catch {
             dump(error)
@@ -184,6 +266,7 @@ struct SignUpCreateView: View {
 
 #Preview {
     SignUpCreateView()
+        .environmentObject(Clerk.mock)
 }
 
 #endif

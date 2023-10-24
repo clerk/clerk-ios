@@ -19,11 +19,15 @@ public struct Client: Decodable {
         sessions: [Session] = [],
         lastActiveSessionId: String? = nil
     ) {
+        self.isPlaceholder = true
         self.signIn = signIn
         self.signUp = signUp
         self.sessions = sessions
         self.lastActiveSessionId = lastActiveSessionId
     }
+
+    /// Indicates that this client object was created client side and is not created by the server
+    public let isPlaceholder: Bool
     
     /// The current sign in attempt.
     internal(set) public var signIn: SignIn
@@ -46,6 +50,7 @@ public struct Client: Decodable {
     
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<Client.CodingKeys> = try decoder.container(keyedBy: Client.CodingKeys.self)
+        self.isPlaceholder = false
         
         // SignUp and SignIn can have null values when returned from the server, but should never be nil on the client
         self.signIn = try container.decodeIfPresent(SignIn.self, forKey: Client.CodingKeys.signIn) ?? SignIn()

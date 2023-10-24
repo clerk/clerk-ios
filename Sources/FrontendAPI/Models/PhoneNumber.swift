@@ -16,7 +16,7 @@ import Foundation
 
  Finally, phone numbers are used as part of multi-factor authentication. Users receive an SMS message with a one-time code that they need to provide as an extra verification step.
  */
-struct PhoneNumber: Decodable {
+public struct PhoneNumber: Decodable {
     /// A unique identifier for this phone number.
     let id: String
     

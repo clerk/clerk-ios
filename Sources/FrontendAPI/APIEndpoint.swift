@@ -7,6 +7,7 @@
 
 import Foundation
 import Get
+import URLQueryEncoder
     
 enum APIEndpoint {}
 
@@ -90,6 +91,12 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
     public struct WithID {
         /// Path: `/v1/client/sign_ups/{id}`
         public let path: String
+        
+        func get(params: SignUp.GetParams) -> Request<ClientResponse<SignUp>> {
+            let encoder = URLQueryEncoder()
+            encoder.encode(params.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            return .init(path: path, query: encoder.items)
+        }
     }
 }
 
@@ -152,12 +159,10 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
         
-        func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
-            if let rotatingTokenNonce {
-                return .init(path: path, query: [("rotating_token_nonce", rotatingTokenNonce)])
-            } else {
-                return .init(path: path)
-            }
+        func get(params: SignIn.GetParams) -> Request<ClientResponse<SignIn>> {
+            let encoder = URLQueryEncoder()
+            encoder.encode(params.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            return .init(path: path, query: encoder.items)
         }
     }
     

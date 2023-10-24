@@ -127,18 +127,21 @@ extension SignIn {
             identifier: String? = nil,
             strategy: VerificationStrategy? = nil,
             password: String? = nil,
-            redirectUrl: String? = nil
+            redirectUrl: String? = nil,
+            transfer: Bool? = nil
         ) {
             self.identifier = identifier
             self.strategy = strategy?.stringValue
             self.password = password
             self.redirectUrl = redirectUrl
+            self.transfer = transfer
         }
         
         public let identifier: String?
         public let strategy: String?
         public let password: String?
         public let redirectUrl: String?
+        public let transfer: Bool?
     }
     
     public struct PrepareFirstFactorParams: Encodable {
@@ -168,6 +171,14 @@ extension SignIn {
         
         public let code: String?
         public let strategy: String
+    }
+    
+    public struct GetParams: Encodable {
+        public init(rotatingTokenNonce: String? = nil) {
+            self.rotatingTokenNonce = rotatingTokenNonce
+        }
+        
+        public var rotatingTokenNonce: String?
     }
     
 }
@@ -238,18 +249,16 @@ extension SignIn {
 
      Depending on the use-case and the params you pass to the create method, it can either complete the sign in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
-    @discardableResult
     @MainActor
-    public func create(_ params: CreateParams) async throws -> SignIn {
+    public func create(_ params: CreateParams) async throws {
         let request = APIEndpoint
             .v1
             .client
             .signIns
             .post(params)
         
-        let signIn = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()
-        return signIn
     }
     
     /**
@@ -293,13 +302,13 @@ extension SignIn {
     }
     
     @MainActor
-    public func get(rotatingTokenNonce: String? = nil) async throws {
+    public func get(_ params: GetParams) async throws {
         let request = APIEndpoint
             .v1
             .client
             .signIns
             .id(Clerk.shared.client.signIn.id)
-            .get(rotatingTokenNonce: rotatingTokenNonce)
+            .get(params: params)
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

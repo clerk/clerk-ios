@@ -15,8 +15,9 @@ struct ClerkErrorResponse: Decodable {
 
 /// Custom error return by the Clerk API
 struct ClerkAPIError: Error, LocalizedError, Decodable {
-    var message: String?
-    var longMessage: String?
+    let code: String
+    let message: String?
+    let longMessage: String?
     
     var errorDescription: String? { longMessage ?? message }
 }
