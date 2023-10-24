@@ -12,7 +12,6 @@ import Clerk
 
 struct SignUpCreateView: View {
     @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject var signUpViewModel: SignUpView.Model
     @Environment(\.clerkTheme) private var clerkTheme
             
     @State private var firstName: String = ""
@@ -123,10 +122,10 @@ struct SignUpCreateView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button {
-                    clerk.signUpIsPresented = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        clerk.signInIsPresented = true
-                    }
+                    clerk.authIsPresented = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: {
+                        clerk.presentedAuthStep = .signInCreate
+                    })
                 } label: {
                     Text("Sign In")
                         .font(.footnote.weight(.medium))
@@ -175,8 +174,8 @@ struct SignUpCreateView: View {
                 .client
                 .signUp
                 .prepareVerification(.init(strategy: .emailCode))
+                clerk.presentedAuthStep = .signUpVerification
             
-            signUpViewModel.step = .verification
         } catch {
             dump(error)
         }

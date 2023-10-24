@@ -12,7 +12,6 @@ import Clerk
 
 struct SignInFirstFactorView: View {
     @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -59,7 +58,7 @@ struct SignInFirstFactorView: View {
                 imageUrl: userImageUrl,
                 label: identifier,
                 action: {
-                    signInViewModel.step = .create
+                    clerk.presentedAuthStep = .signInCreate
                 }
             )
             
@@ -102,7 +101,7 @@ struct SignInFirstFactorView: View {
             }
             
             AsyncButton(action: {
-                signInViewModel.step = .create
+                clerk.presentedAuthStep = .signInCreate
             }, label: {
                 Text("Use another method")
                     .font(.subheadline)
@@ -155,7 +154,7 @@ struct SignInFirstFactorView: View {
                     strategy: firstFactorStrategy
                 ))
             
-            clerk.signInIsPresented = false
+            clerk.authIsPresented = false
         } catch {
             dump(error)
             isSubmittingOTPCode = false

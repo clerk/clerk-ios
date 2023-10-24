@@ -19,13 +19,13 @@ struct ExamplesListView: View {
             List {
                 Section("Components") {
                     Button {
-                        clerk.signInIsPresented = true
+                        clerk.presentedAuthStep = .signInCreate
                     } label: {
                         Text("Sign In")
                     }
                     
                     Button {
-                        clerk.signUpIsPresented = true
+                        clerk.presentedAuthStep = .signUpCreate
                     } label: {
                         Text("Sign Up")
                     }

@@ -49,7 +49,7 @@ public struct UserButton: View {
         if clerk.client.lastActiveSession != nil {
             profileIsPresented = true
         } else {
-            clerk.signInIsPresented = true
+            clerk.presentedAuthStep = .signInCreate
         }
     }
 }

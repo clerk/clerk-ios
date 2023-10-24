@@ -1,8 +1,8 @@
 //
-//  SignUpView.swift
+//  SignInView.swift
 //
 //
-//  Created by Mike Pitre on 10/16/23.
+//  Created by Mike Pitre on 10/10/23.
 //
 
 #if canImport(UIKit)
@@ -10,40 +10,31 @@
 import SwiftUI
 import Clerk
 
-extension SignUpView {
-    final class Model: ObservableObject {
-        
-        enum SignInStep {
-            case create
-            case verification
-        }
-        
-        @Published var step: SignInStep = .create
-    }
-}
-
-struct SignUpView: View {
+public struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
-    @StateObject private var model = Model()
-    
     @Namespace private var namespace
     
     public var body: some View {
         ZStack {
-            switch model.step {
-            case .create:
+            switch clerk.presentedAuthStep {
+            case .signInCreate:
+                SignInCreateView()
+                    .matchedGeometryEffect(id: "view", in: namespace)
+            case .signInFirstFactor:
+                SignInFirstFactorView()
+                    .matchedGeometryEffect(id: "view", in: namespace)
+            case .signUpCreate:
                 SignUpCreateView()
                     .matchedGeometryEffect(id: "view", in: namespace)
-            case .verification:
+            case .signUpVerification:
                 SignUpVerificationView()
                     .matchedGeometryEffect(id: "view", in: namespace)
             }
         }
-        .animation(.bouncy, value: model.step)
-        .environmentObject(model)
+        .animation(.bouncy, value: clerk.presentedAuthStep)
         .overlay(alignment: .topTrailing) {
             Button(action: {
-                clerk.signUpIsPresented = false
+                clerk.authIsPresented = false
             }, label: {
                 Text("Cancel")
                     .font(.caption.weight(.medium))
@@ -51,7 +42,7 @@ struct SignUpView: View {
             .padding(30)
             .tint(.primary)
         }
-        .onChange(of: model.step) { _ in
+        .onChange(of: clerk.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
         }
         .task {
@@ -61,7 +52,7 @@ struct SignUpView: View {
 }
 
 #Preview {
-    SignUpView()
+    AuthView()
 }
 
 #endif

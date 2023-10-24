@@ -1,18 +1,21 @@
 //
-//  SignUpViewModifier.swift
+//  SignInViewModifier.swift
 //
 //
-//  Created by Mike Pitre on 10/16/23.
+//  Created by Mike Pitre on 10/12/23.
 //
 
 #if canImport(UIKit)
 
+import Foundation
 import SwiftUI
+import Clerk
 
-struct SignUpViewModifier: ViewModifier {
+struct AuthViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
+    
     @Binding var isPresented: Bool
-        
+
     func body(content: Content) -> some View {
         Group {
             switch clerkTheme.authPresentationStyle {
@@ -27,8 +30,8 @@ struct SignUpViewModifier: ViewModifier {
         content
             .sheet(isPresented: $isPresented, content: {
                 ScrollView {
-                    SignUpView()
-                        .interactiveDismissDisabled()
+                    AuthView()
+                        .interactiveDismissDisabled(true)
                 }
             })
     }
@@ -38,27 +41,26 @@ struct SignUpViewModifier: ViewModifier {
         content
             .fullScreenCover(isPresented: $isPresented, content: {
                 ScrollView {
-                    SignUpView()
-                        .interactiveDismissDisabled()
+                    AuthView()
+                        .interactiveDismissDisabled(true)
                 }
             })
     }
 }
 
 extension View {
-    func signUpView(
+    func authView(
         isPresented: Binding<Bool>
     ) -> some View {
-        modifier(SignUpViewModifier(
+        modifier(AuthViewModifier(
             isPresented: isPresented
         ))
     }
 }
 
-
 #Preview {
-    Text("SignUp")
-        .signUpView(isPresented: .constant(true))
+    Text("SignIn")
+        .authView(isPresented: .constant(true))
 }
 
 #endif

@@ -29,8 +29,7 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .signInView(isPresented: $clerk.signInIsPresented)
-            .signUpView(isPresented: $clerk.signUpIsPresented)
+            .authView(isPresented: $clerk.authIsPresented)
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
                     Task.detached {

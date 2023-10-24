@@ -12,7 +12,6 @@ import Clerk
 
 struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject var signInViewModel: SignInView.Model
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
@@ -149,10 +148,10 @@ struct SignInCreateView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button {
-                    clerk.signInIsPresented = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        clerk.signUpIsPresented = true
-                    }
+                    clerk.authIsPresented = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: {
+                        clerk.presentedAuthStep = .signUpCreate
+                    })
                 } label: {
                     Text("Sign Up")
                         .font(.footnote.weight(.medium))
@@ -218,7 +217,7 @@ struct SignInCreateView: View {
                 
             case .emailCode:
                 if clerk.client.signIn.status == .needsFirstFactor {
-                    signInViewModel.step = .firstFactor
+                    clerk.presentedAuthStep = .signInFirstFactor
                     
                     try await clerk
                         .client

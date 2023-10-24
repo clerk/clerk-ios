@@ -80,11 +80,23 @@ final public class Clerk: ObservableObject {
     
     #if canImport(UIKit)
     
-    /// Is the sign in flow being displayed.
-    @Published public var signInIsPresented = false
+    /// Is the auth view  being displayed.
+    @Published public var authIsPresented = false
+
+    public enum AuthStep: Identifiable {
+        public var id: Self { self }
+        
+        case signInCreate
+        case signInFirstFactor
+        case signUpCreate
+        case signUpVerification
+    }
     
-    /// Is the sign up flow being displayed.
-    @Published public var signUpIsPresented = false
+    @Published public var presentedAuthStep: AuthStep = .signInCreate {
+        willSet {
+            authIsPresented = true
+        }
+    }
     
     #endif
 }
