@@ -31,14 +31,23 @@ struct AuthProviderButton: View {
     @MainActor
     @ViewBuilder
     private var compactStyleButton: some View {
-        LazyImage(url: URL(string: iconImageUrl))
-            .frame(width: 20, height: 20)
-            .padding(16)
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color(.systemFill), lineWidth: 1)
+        LazyImage(url: URL(string: iconImageUrl), content: { state in
+            if let image = state.image {
+                image
+                    .resizable()
+                    .frame(width: 20, height: 20)
+            } else {
+                Text(label)
+                    .lineLimit(1)
             }
-            .aspectRatio(1, contentMode: .fit)
+        })
+        .frame(minHeight: 48)
+        .frame(maxWidth: .infinity)
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color(.systemFill), lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
     
     @MainActor
@@ -51,13 +60,13 @@ struct AuthProviderButton: View {
                 .lineLimit(1)
             Spacer()
         }
-        .padding(.vertical, 12)
         .padding(.horizontal)
+        .frame(minHeight: 42)
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(Color(.systemFill), lineWidth: 1)
         }
-        
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -72,18 +81,29 @@ extension AuthProviderButton {
 }
 
 #Preview {
-    VStack {
-        VStack {
-            AuthProviderButton(provider: .apple)
-            AuthProviderButton(provider: .google)
+    let limitedProviders: [OAuthProvider] = Array(OAuthProvider.allCases.prefix(2))
+    let limitedColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(limitedProviders.count, limitedProviders.count <= 2 ? 1 : 4))
+    
+    let manyProviders: [OAuthProvider] = Array(OAuthProvider.allCases)
+    let manyColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(manyProviders.count, manyProviders.count <= 2 ? 1 : 4))
+    
+    return VStack {
+        LazyVGrid(columns: limitedColumns) {
+            ForEach(limitedProviders, id: \.self) { provider in
+                AuthProviderButton(provider: provider, style: limitedProviders.count <= 2 ? .regular : .compact)
+                    .font(.footnote)
+            }
         }
         
-        HStack {
-            AuthProviderButton(provider: .apple, style: .compact)
-            AuthProviderButton(provider: .google, style: .compact)
+        LazyVGrid(columns: manyColumns) {
+            ForEach(manyProviders, id: \.self) { provider in
+                AuthProviderButton(provider: provider, style: manyProviders.count <= 2 ? .regular : .compact)
+                    .font(.footnote)
+            }
         }
     }
     .padding()
+    
 }
 
 #endif

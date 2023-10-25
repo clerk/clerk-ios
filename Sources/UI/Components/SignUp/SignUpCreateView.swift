@@ -52,17 +52,21 @@ struct SignUpCreateView: View {
                     .foregroundStyle(.secondary)
             }
             
-            VStack {
-                ForEach(thirdPartyProviders, id: \.self) { provider in
-                    AsyncButton(options: [.disableButton], action: {
-                        await signUpAction(strategy: .oauth(provider))
-                    }, label: {
-                        AuthProviderButton(provider: provider)
-                            .font(.footnote)
-                    })
-                    .buttonStyle(.plain)
+            LazyVGrid(
+                columns: Array(repeating: .init(.flexible()), count: min(thirdPartyProviders.count, thirdPartyProviders.count <= 2 ? 1 : 6)),
+                alignment: .leading,
+                content: {
+                    ForEach(thirdPartyProviders, id: \.self) { provider in
+                        AsyncButton(options: [.disableButton], action: {
+                            await signUpAction(strategy: .oauth(provider))
+                        }, label: {
+                            AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
+                                .font(.footnote)
+                        })
+                        .buttonStyle(.plain)
+                    }
                 }
-            }
+            )
             
             HStack {
                 Rectangle()
