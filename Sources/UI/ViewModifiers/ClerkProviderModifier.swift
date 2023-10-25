@@ -22,6 +22,7 @@ struct ClerkProviderModifier: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     
     @ObservedObject private var clerk = Clerk.shared
+    @StateObject private var clerkUIState = ClerkUIState()
     
     init(publishableKey: String) {
         clerk.configure(publishableKey: publishableKey)
@@ -29,7 +30,7 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .authView(isPresented: $clerk.authIsPresented)
+            .authView(isPresented: $clerkUIState.authIsPresented)
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
                     Task.detached {
@@ -43,7 +44,9 @@ struct ClerkProviderModifier: ViewModifier {
                     }
                 }
             }
-            .environmentObject(clerk) // this must be the last modifier
+            // these must be the last modifiers
+            .environmentObject(clerk)
+            .environmentObject(clerkUIState)
     }
 }
 

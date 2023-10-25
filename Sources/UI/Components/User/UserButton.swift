@@ -13,6 +13,7 @@ import NukeUI
 
 public struct UserButton: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
     
     @State private var profileIsPresented = false
@@ -49,7 +50,7 @@ public struct UserButton: View {
         if clerk.client.lastActiveSession != nil {
             profileIsPresented = true
         } else {
-            clerk.presentedAuthStep = .signInCreate
+            clerkUIState.presentedAuthStep = .signInCreate
         }
     }
 }

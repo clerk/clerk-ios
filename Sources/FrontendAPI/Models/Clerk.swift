@@ -77,28 +77,6 @@ final public class Clerk: ObservableObject {
     
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment = .init()
-    
-    #if canImport(UIKit)
-    
-    /// Is the auth view  being displayed.
-    @Published public var authIsPresented = false
-
-    public enum AuthStep: Identifiable {
-        public var id: Self { self }
-        
-        case signInCreate
-        case signInFirstFactor
-        case signUpCreate
-        case signUpVerification
-    }
-    
-    @Published public var presentedAuthStep: AuthStep = .signInCreate {
-        willSet {
-            authIsPresented = true
-        }
-    }
-    
-    #endif
 }
 
 extension Container {

@@ -13,19 +13,20 @@ import ClerkUI
 
 struct ExamplesListView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
         
     var body: some View {
         NavigationStack {
             List {
                 Section("Components") {
                     Button {
-                        clerk.presentedAuthStep = .signInCreate
+                        clerkUIState.presentedAuthStep = .signInCreate
                     } label: {
                         Text("Sign In")
                     }
                     
                     Button {
-                        clerk.presentedAuthStep = .signUpCreate
+                        clerkUIState.presentedAuthStep = .signUpCreate
                     } label: {
                         Text("Sign Up")
                     }

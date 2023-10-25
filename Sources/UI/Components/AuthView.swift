@@ -12,11 +12,12 @@ import Clerk
 
 public struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     @Namespace private var namespace
     
     public var body: some View {
         ZStack {
-            switch clerk.presentedAuthStep {
+            switch clerkUIState.presentedAuthStep {
             case .signInCreate:
                 SignInCreateView()
                     .matchedGeometryEffect(id: "view", in: namespace)
@@ -31,10 +32,10 @@ public struct AuthView: View {
                     .matchedGeometryEffect(id: "view", in: namespace)
             }
         }
-        .animation(.bouncy, value: clerk.presentedAuthStep)
+        .animation(.bouncy, value: clerkUIState.presentedAuthStep)
         .overlay(alignment: .topTrailing) {
             Button(action: {
-                clerk.authIsPresented = false
+                clerkUIState.authIsPresented = false
             }, label: {
                 Text("Cancel")
                     .font(.caption.weight(.medium))
@@ -42,7 +43,7 @@ public struct AuthView: View {
             .padding(30)
             .tint(.primary)
         }
-        .onChange(of: clerk.presentedAuthStep) { _ in
+        .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
         }
         .task {

@@ -12,6 +12,7 @@ import Clerk
 
 struct SignInCreateView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
@@ -148,9 +149,9 @@ struct SignInCreateView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button {
-                    clerk.authIsPresented = false
+                    clerkUIState.authIsPresented = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: {
-                        clerk.presentedAuthStep = .signUpCreate
+                        clerkUIState.presentedAuthStep = .signUpCreate
                     })
                 } label: {
                     Text("Sign Up")
@@ -217,7 +218,7 @@ struct SignInCreateView: View {
                 
             case .emailCode:
                 if clerk.client.signIn.status == .needsFirstFactor {
-                    clerk.presentedAuthStep = .signInFirstFactor
+                    clerkUIState.presentedAuthStep = .signInFirstFactor
                     
                     try await clerk
                         .client

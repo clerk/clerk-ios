@@ -12,6 +12,7 @@ import Clerk
 
 struct SignUpVerificationView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -78,7 +79,7 @@ struct SignUpVerificationView: View {
             }
             
             AsyncButton(action: {
-                clerk.presentedAuthStep = .signUpCreate
+                clerkUIState.presentedAuthStep = .signUpCreate
             }, label: {
                 Text("Use another method")
                     .font(.subheadline)
@@ -116,7 +117,7 @@ struct SignUpVerificationView: View {
                     code: otpCode
                 ))
             
-            clerk.authIsPresented = false
+            clerkUIState.authIsPresented = false
         } catch {
             dump(error)
             isSubmittingOTPCode = false

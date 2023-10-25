@@ -12,6 +12,7 @@ import Clerk
 
 struct SignUpCreateView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
             
@@ -110,17 +111,6 @@ struct SignUpCreateView: View {
                 }
                 
                 VStack(alignment: .leading) {
-                    Text("Email address").font(.footnote.weight(.medium))
-                    CustomTextField(text: $emailAddress)
-                        .frame(height: 44)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .focused($focusedField, equals: .email)
-                }
-                
-                VStack(alignment: .leading) {
                     HStack {
                         Text("Phone number").font(.footnote.weight(.medium))
                         Spacer()
@@ -135,6 +125,16 @@ struct SignUpCreateView: View {
                         .focused($focusedField, equals: .phoneNumber)
                 }
                 
+                VStack(alignment: .leading) {
+                    Text("Email address").font(.footnote.weight(.medium))
+                    CustomTextField(text: $emailAddress)
+                        .frame(height: 44)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .email)
+                }
                 
                 VStack(alignment: .leading) {
                     Text("Password").font(.footnote.weight(.medium))
@@ -167,9 +167,9 @@ struct SignUpCreateView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button {
-                    clerk.authIsPresented = false
+                    clerkUIState.authIsPresented = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: {
-                        clerk.presentedAuthStep = .signInCreate
+                        clerkUIState.presentedAuthStep = .signInCreate
                     })
                 } label: {
                     Text("Sign In")
@@ -252,7 +252,7 @@ struct SignUpCreateView: View {
                     .signUp
                     .prepareVerification(.init(strategy: .emailCode))
                 
-                clerk.presentedAuthStep = .signUpVerification
+                clerkUIState.presentedAuthStep = .signUpVerification
                 
             default:
                 return
