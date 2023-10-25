@@ -35,7 +35,7 @@ struct SignUpVerificationView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Check your email")
                     .font(.title2.weight(.semibold))
-                Text("to continue to Clerk")
+                Text("to continue to \(clerk.environment.displayConfig.applicationName)")
                     .font(.subheadline.weight(.light))
                     .foregroundStyle(.secondary)
             }
