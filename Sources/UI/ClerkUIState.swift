@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/25/23.
 //
 
+#if canImport(UIKit)
+
 import Foundation
 
 public final class ClerkUIState: ObservableObject {
@@ -28,3 +30,5 @@ public final class ClerkUIState: ObservableObject {
     }
     
 }
+
+#endif
