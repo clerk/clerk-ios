@@ -65,7 +65,7 @@ extension Clerk.Environment {
             let verifications: [String]
             let verifyAtSignUp: Bool
             
-            public var verificationStrategies: [VerificationStrategy] {
+            public var verificationStrategies: [Strategy] {
                 verifications.compactMap({ .init(stringValue: $0) })
             }
         }

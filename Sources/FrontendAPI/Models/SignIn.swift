@@ -121,11 +121,11 @@ public struct SignIn: Decodable {
 }
 
 extension SignIn {
-    
+        
     public struct CreateParams: Encodable {
         public init(
             identifier: String? = nil,
-            strategy: VerificationStrategy? = nil,
+            strategy: Strategy? = nil,
             password: String? = nil,
             redirectUrl: String? = nil,
             transfer: Bool? = nil
@@ -146,7 +146,7 @@ extension SignIn {
     
     public struct PrepareFirstFactorParams: Encodable {
         public init(
-            strategy: VerificationStrategy,
+            strategy: Strategy,
             emailAddressId: String? = nil,
             phoneNumberId: String? = nil
         ) {
@@ -163,7 +163,7 @@ extension SignIn {
     public struct AttemptFirstFactorParams: Encodable {
         public init(
             code: String? = nil,
-            strategy: VerificationStrategy
+            strategy: Strategy
         ) {
             self.code = code
             self.strategy = strategy.stringValue
@@ -185,58 +185,64 @@ extension SignIn {
 
 extension SignIn {
     
-    /**
-    Creates the paramaters needed to create a new sign in object.
-     
-     Examples of identifier could be the user's:
-     - email_address
-     - phone_number
-     - web3_wallet
-     - username
-     */
-    public func createParams(for strategy: VerificationStrategy, identifier: String) -> CreateParams {
+    public enum CreateStrategy {
+        case emailCode(_ email: String)
+        case phoneCode(_ phoneNumber: String)
+        case oauth(_ provider: OAuthProvider, _ transfer: Bool? = nil)
+    }
+    
+    public func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
-        case .password:
-            return .init(identifier: identifier, strategy: strategy)
-        case .phoneCode:
+        case .emailCode(let identifier):
             return .init(identifier: identifier)
-        case .emailCode:
-            return .init(identifier: identifier)
-        case .emailLink:
-            return .init(identifier: identifier)
-        case .saml:
-            return .init(strategy: strategy)
-        case .oauth:
-            return .init(strategy: strategy, redirectUrl: "clerk://")
-        case .web3:
-            return .init(strategy: strategy)
+        case .phoneCode(let phoneNumber):
+            return .init(identifier: phoneNumber)
+        case .oauth(let provider, let transfer):
+            return .init(strategy: .oauth(provider), redirectUrl: "clerk://", transfer: transfer)
         }
     }
     
-    private func emailAddressId(for strategy: VerificationStrategy) -> String? {
-        Clerk.shared.client
-            .signIn
-            .supportedFirstFactors
-            .first(where: { $0.strategy == strategy.stringValue })?
-            .emailAddressId
+    public enum PrepareStrategy {
+        case emailCode
+        case phoneCode
     }
     
-    public func prepareParams(for strategy: VerificationStrategy) -> SignIn.PrepareFirstFactorParams {
+    public func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
         switch strategy {
-        case .password:
-            return .init(strategy: strategy)
-        case .phoneCode:
-            return .init(strategy: strategy, phoneNumberId: identifier)
         case .emailCode:
-            return .init(strategy: strategy, emailAddressId: emailAddressId(for: strategy))
-        case .emailLink:
-            return .init(strategy: strategy, emailAddressId: emailAddressId(for: strategy))
-        case .saml:
-            return .init(strategy: strategy)
-        case .oauth:
-            return .init(strategy: strategy)
-        case .web3:
-            return .init(strategy: strategy)
+            return .init(strategy: .emailCode, emailAddressId: factorId(for: .emailCode))
+        case .phoneCode:
+            return .init(strategy: .phoneCode, phoneNumberId: factorId(for: .phoneCode))
+        }
+    }
+    
+    public enum AttemptStrategy {
+        case emailCode(_ code: String)
+        case phoneCode(_ code: String)
+    }
+    
+    public func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
+        switch strategy {
+        case .emailCode(let code):
+            return .init(code: code, strategy: .emailCode)
+        case .phoneCode(let code):
+            return .init(code: code, strategy: .phoneCode)
+        }
+    }
+    
+    private func factorId(for strategy: Strategy) -> String? {
+        let factor = Clerk.shared.client
+            .signIn
+            .supportedFirstFactors
+            .first(where: { $0.strategy == strategy.stringValue })
+        
+        switch strategy {
+        case .emailCode:
+            return factor?.emailAddressId
+        case .phoneCode:
+            return factor?.phoneNumberId
+        default:
+            return nil
         }
     }
     

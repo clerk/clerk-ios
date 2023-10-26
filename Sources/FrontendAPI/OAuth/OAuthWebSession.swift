@@ -15,7 +15,7 @@ public final class OAuthWebSession: NSObject, ObservableObject {
         case signIn, signUp
     }
         
-    public init(url: URL, authAction: AuthAction, onSuccess: (() -> Void)? = nil) {
+    public init(url: URL, authAction: AuthAction, completion: ((Result<Void, Error>) -> Void)?) {
         super.init()
         
         self.webAuthSession = ASWebAuthenticationSession(
@@ -53,9 +53,9 @@ public final class OAuthWebSession: NSObject, ObservableObject {
                             }
                         }
                         
-                        onSuccess?()
+                        completion?(.success(()))
                     } catch {
-                        dump(error)
+                        completion?(.failure(error))
                     }
                 }
             }

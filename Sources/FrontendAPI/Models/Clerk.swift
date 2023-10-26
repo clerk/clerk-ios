@@ -107,7 +107,7 @@ extension Clerk {
         
         let firstFactorVerification = Verification(
             status: .unverified,
-            strategy: VerificationStrategy.emailCode.stringValue,
+            strategy: Strategy.emailCode.stringValue,
             attempts: 0,
             expireAt: .distantFuture, 
             error: nil

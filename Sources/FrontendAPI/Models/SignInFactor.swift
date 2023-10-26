@@ -16,16 +16,19 @@ import Foundation
  */
 public struct SignInFactor: Decodable {
     init(
-        strategy: VerificationStrategy,
+        strategy: Strategy,
         safeIdentifier: String? = nil,
-        emailAddressId: String? = nil
+        emailAddressId: String? = nil,
+        phoneNumberId: String? = nil
     ) {
         self.strategy = strategy.stringValue
         self.safeIdentifier = safeIdentifier
         self.emailAddressId = emailAddressId
+        self.phoneNumberId = phoneNumberId
     }
     
     public let strategy: String
     public let safeIdentifier: String?
     public let emailAddressId: String?
+    public let phoneNumberId: String?
 }

@@ -205,7 +205,7 @@ struct SignUpCreateView: View {
         .background(.background)
     }
     
-    private func signUpAction(strategy: VerificationStrategy) async {
+    private func signUpAction(strategy: Strategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
             
@@ -230,9 +230,14 @@ struct SignUpCreateView: View {
                     throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
                 }
                 
-                let authSession = OAuthWebSession(url: url, authAction: .signUp) {
-                    DispatchQueue.main.async {
-                        dismiss()
+                let authSession = OAuthWebSession(url: url, authAction: .signUp) { result in
+                    switch result {
+                    case .success:
+                        DispatchQueue.main.async {
+                            dismiss()
+                        }
+                    case .failure(let error):
+                        dump(error)
                     }
                 }
                 

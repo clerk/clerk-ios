@@ -36,7 +36,7 @@ public struct PhoneNumber: Decodable {
     let linkedTo: JSON
     
     ///
-    let backupCodes: [String]
+    let backupCodes: [String]?
 }
 
 extension PhoneNumber {

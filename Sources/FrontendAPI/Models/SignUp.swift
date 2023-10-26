@@ -156,7 +156,7 @@ extension SignUp {
             password: String? = nil,
             emailAddress: String? = nil,
             phoneNumber: String? = nil,
-            strategy: VerificationStrategy? = nil,
+            strategy: Strategy? = nil,
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil
@@ -184,7 +184,7 @@ extension SignUp {
     }
     
     public struct PrepareVerificationParams: Encodable {
-        public init(strategy: VerificationStrategy) {
+        public init(strategy: Strategy) {
             self.strategy = strategy.stringValue
         }
         
@@ -193,7 +193,7 @@ extension SignUp {
     
     public struct AttemptVerificationParams: Encodable {
         public init(
-            strategy: VerificationStrategy,
+            strategy: Strategy,
             code: String
         ) {
             self.strategy = strategy.stringValue

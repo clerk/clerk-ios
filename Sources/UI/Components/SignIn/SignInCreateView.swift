@@ -28,8 +28,8 @@ struct SignInCreateView: View {
     @State private var phoneNumber: String = ""
     @State private var displayingEmailEntry = true
     
-    private var enabledVerificationStrategies: Set<VerificationStrategy> {
-        var strategies: Set<VerificationStrategy> = []
+    private var enabledVerificationStrategies: Set<Strategy> {
+        var strategies: Set<Strategy> = []
         clerk.environment.userSettings.enabledAttributes.forEach { attribute in
             strategies.formUnion(attribute.verificationStrategies)
         }
@@ -133,9 +133,9 @@ struct SignInCreateView: View {
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: {
                     if displayingEmailEntry {
-                        await signInAction(strategy: .emailCode)
+                        await signInAction(strategy: .emailCode(emailAddress))
                     } else {
-                        await signInAction(strategy: .phoneCode)
+                        await signInAction(strategy: .phoneCode(phoneNumber))
                     }
                 }) {
                     Text("CONTINUE")
@@ -190,50 +190,59 @@ struct SignInCreateView: View {
     private var identifier: String {
         displayingEmailEntry ? emailAddress : phoneNumber
     }
-    
-    private func signInAction(strategy: VerificationStrategy) async {
+            
+    private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
             
             try await clerk
                 .client
                 .signIn
-                .create(clerk.client.signIn.createParams(
-                    for: strategy,
-                    identifier: identifier
-                ))
+                .create(clerk.client.signIn.createParams(for: strategy))
             
             switch strategy {
                 
             case .oauth:
-                guard 
+                
+                guard
                     let redirectUrl = clerk.client.signIn.firstFactorVerification?.externalVerificationRedirectUrl,
                     let url = URL(string: redirectUrl)
                 else {
                     throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
                 }
                 
-                let authSession = OAuthWebSession(url: url, authAction: .signIn) {
-                    DispatchQueue.main.async {
-                        dismiss()
+                let authSession = OAuthWebSession(url: url, authAction: .signIn) { result in
+                    switch result {
+                    case .success:
+                        DispatchQueue.main.async {
+                            dismiss()
+                        }
+                    case .failure(let error):
+                        dump(error)
                     }
                 }
+                
                 authSession.start()
                 
             case .emailCode:
+                
+                try await clerk
+                    .client
+                    .signIn
+                    .prepareFirstFactor(clerk.client.signIn.prepareParams(for: .emailCode))
+                
                 if clerk.client.signIn.status == .needsFirstFactor {
                     clerkUIState.presentedAuthStep = .signInFirstFactor
-                    
-                    try await clerk
-                        .client
-                        .signIn
-                        .prepareFirstFactor(
-                            clerk.client.signIn.prepareParams(for: strategy)
-                        )
                 }
                 
-            default:
-                return
+            case .phoneCode:
+                
+                try await clerk.client.signIn.prepareFirstFactor(clerk.client.signIn.prepareParams(for: .phoneCode))
+                
+                if clerk.client.signIn.status == .needsFirstFactor {
+                    clerkUIState.presentedAuthStep = .signInFirstFactor
+                }
+                
             }
         } catch {
             dump(error)

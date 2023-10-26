@@ -23,7 +23,7 @@ struct SignInFirstFactorView: View {
     @State private var identifier: String?
     @State private var userImageUrl: String?
     
-    private var firstFactorStrategy: VerificationStrategy? {
+    private var firstFactorStrategy: Strategy? {
         if let strategy = clerk.client.signIn.firstFactorVerification?.verificationStrategy {
             return strategy
         }
@@ -122,17 +122,16 @@ struct SignInFirstFactorView: View {
     
     private func prepareFirstFactor() async {
         do {
-            guard let firstFactorStrategy else {
-                throw ClerkClientError(message: "Unable to determine the verification strategy.")
+            let params: SignIn.PrepareFirstFactorParams = switch firstFactorStrategy {
+            case .emailCode:
+                clerk.client.signIn.prepareParams(for: .emailCode)
+            case .phoneCode:
+                clerk.client.signIn.prepareParams(for: .phoneCode)
+            default:
+                throw ClerkClientError(message: "Unable to prepare verification.")
             }
             
-            try await clerk
-                .client
-                .signIn
-                .prepareFirstFactor(.init(
-                    strategy: firstFactorStrategy, 
-                    emailAddressId: firstFactor?.emailAddressId
-                ))
+            try await clerk.client.signIn.prepareFirstFactor(params)
         } catch {
             dump(error)
         }
@@ -143,18 +142,16 @@ struct SignInFirstFactorView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            guard let firstFactorStrategy else {
-                throw ClerkClientError(message: "Unable to determine the current verification strategy.")
+            let params: SignIn.AttemptFirstFactorParams = switch firstFactorStrategy {
+            case .emailCode:
+                clerk.client.signIn.attemptParams(for: .emailCode(otpCode))
+            case .phoneCode:
+                clerk.client.signIn.attemptParams(for: .phoneCode(otpCode))
+            default:
+                throw ClerkClientError(message: "Unable to attempt verification.")
             }
             
-            try await clerk
-                .client
-                .signIn
-                .attemptFirstFactor(.init(
-                    code: otpCode,
-                    strategy: firstFactorStrategy
-                ))
-            
+            try await clerk.client.signIn.attemptFirstFactor(params)
             clerkUIState.authIsPresented = false
         } catch {
             dump(error)
