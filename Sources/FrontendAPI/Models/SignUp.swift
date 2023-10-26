@@ -216,6 +216,58 @@ extension SignUp {
 
 extension SignUp {
     
+    public enum CreateStrategy {
+        case emailCode(emailAddress: String, password: String, firstName: String? = nil, lastName: String? = nil, phoneNumber: String? = nil)
+        case phoneCode(phoneNumber: String, firstName: String? = nil, lastName: String? = nil)
+        case oauth(provider: OAuthProvider)
+        case transfer
+    }
+    
+    private func createParams(for strategy: CreateStrategy) -> CreateParams {
+        switch strategy {
+        case .emailCode(let emailAddress, let password, let firstName, let lastName, let phoneNumber):
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber)
+        case .phoneCode(let phoneNumber, let firstName, let lastName):
+            return .init(firstName: firstName, lastName: lastName, phoneNumber: phoneNumber)
+        case .oauth(let provider):
+            return .init(strategy: .oauth(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
+        case .transfer:
+            return .init(transfer: true)
+        }
+    }
+    
+    public enum PrepareStrategy {
+        case emailCode
+        case phoneCode
+    }
+    
+    private func prepareParams(for strategy: PrepareStrategy) -> PrepareVerificationParams {
+        switch strategy {
+        case .emailCode:
+            return .init(strategy: .emailCode)
+        case .phoneCode:
+            return .init(strategy: .phoneCode)
+        }
+    }
+    
+    public enum AttemptStrategy {
+        case emailCode(code: String)
+        case phoneCode(code: String)
+    }
+    
+    private func attemptParams(for strategy: AttemptStrategy) -> AttemptVerificationParams {
+        switch strategy {
+        case .emailCode(let code):
+            return .init(strategy: .emailCode, code: code)
+        case .phoneCode(let code):
+            return .init(strategy: .phoneCode, code: code)
+        }
+    }
+    
+}
+
+extension SignUp {
+    
     /**
      This method initiates a new sign-up flow. It creates a new SignUp object and de-activates any existing SignUp that the client might already had in progress.
      
@@ -225,7 +277,8 @@ extension SignUp {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @MainActor
-    public func create(_ params: CreateParams) async throws {
+    public func create(_ strategy: CreateStrategy) async throws {
+        let params = createParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
@@ -244,16 +297,13 @@ extension SignUp {
      - phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
      */
     @MainActor
-    public func prepareVerification(_ params: PrepareVerificationParams) async throws {
-        guard !Clerk.shared.client.signUp.id.isEmpty else {
-            throw ClerkClientError(message: "Please initiate a sign up before attempting to verify.")
-        }
-        
+    public func prepareVerification(_ strategy: PrepareStrategy) async throws {
+        let params = prepareParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
             .signUps
-            .id(Clerk.shared.client.signUp.id)
+            .id(id)
             .prepareVerification
             .post(params)
         
@@ -267,16 +317,13 @@ extension SignUp {
      Depending on the strategy, the method parameters could differ.
      */
     @MainActor
-    public func attemptVerification(_ params: AttemptVerificationParams) async throws {
-        guard !Clerk.shared.client.signUp.id.isEmpty else {
-            throw ClerkClientError(message: "Please initiate a sign up before attempting to verify.")
-        }
-        
+    public func attemptVerification(_ strategy: AttemptStrategy) async throws {
+        let params = attemptParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
             .signUps
-            .id(Clerk.shared.client.signUp.id)
+            .id(id)
             .attemptVerification
             .post(params)
         
@@ -290,7 +337,7 @@ extension SignUp {
             .v1
             .client
             .signUps
-            .id(Clerk.shared.client.signUp.id)
+            .id(id)
             .get(params: params)
         
         try await Clerk.apiClient.send(request)

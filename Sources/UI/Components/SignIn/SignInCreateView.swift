@@ -28,6 +28,10 @@ struct SignInCreateView: View {
     @State private var phoneNumber: String = ""
     @State private var displayingEmailEntry = true
     
+    private var signIn: SignIn {
+        clerk.client.signIn
+    }
+    
     private var enabledVerificationStrategies: Set<Strategy> {
         var strategies: Set<Strategy> = []
         clerk.environment.userSettings.enabledAttributes.forEach { attribute in
@@ -69,7 +73,7 @@ struct SignInCreateView: View {
                 content: {
                     ForEach(thirdPartyProviders, id: \.self) { provider in
                         AsyncButton(options: [.disableButton], action: {
-                            await signInAction(strategy: .oauth(provider))
+                            await signInAction(strategy: .oauth(provider: provider))
                         }, label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
                                 .font(.footnote)
@@ -133,9 +137,9 @@ struct SignInCreateView: View {
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: {
                     if displayingEmailEntry {
-                        await signInAction(strategy: .emailCode(emailAddress))
+                        await signInAction(strategy: .emailCode(email: emailAddress))
                     } else {
-                        await signInAction(strategy: .phoneCode(phoneNumber))
+                        await signInAction(strategy: .phoneCode(phoneNumber: phoneNumber))
                     }
                 }) {
                     Text("CONTINUE")
@@ -194,56 +198,30 @@ struct SignInCreateView: View {
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            
-            try await clerk
-                .client
-                .signIn
-                .create(clerk.client.signIn.createParams(for: strategy))
+            try await signIn.create(strategy)
             
             switch strategy {
                 
             case .oauth:
-                
-                guard
-                    let redirectUrl = clerk.client.signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-                    let url = URL(string: redirectUrl)
-                else {
-                    throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
-                }
-                
-                let authSession = OAuthWebSession(url: url, authAction: .signIn) { result in
+                try signIn.startOAuth { result in
                     switch result {
-                    case .success:
-                        DispatchQueue.main.async {
-                            dismiss()
-                        }
-                    case .failure(let error):
-                        dump(error)
+                    case .success: dismiss()
+                    case .failure(let error): dump(error)
                     }
                 }
                 
-                authSession.start()
-                
             case .emailCode:
-                
-                try await clerk
-                    .client
-                    .signIn
-                    .prepareFirstFactor(clerk.client.signIn.prepareParams(for: .emailCode))
-                
-                if clerk.client.signIn.status == .needsFirstFactor {
-                    clerkUIState.presentedAuthStep = .signInFirstFactor
-                }
+                try await signIn.prepareFirstFactor(.emailCode)
+                clerkUIState.presentedAuthStep = .signInFirstFactor
                 
             case .phoneCode:
+                try await signIn.prepareFirstFactor(.phoneCode)
+                clerkUIState.presentedAuthStep = .signInFirstFactor
                 
-                try await clerk.client.signIn.prepareFirstFactor(clerk.client.signIn.prepareParams(for: .phoneCode))
-                
-                if clerk.client.signIn.status == .needsFirstFactor {
-                    clerkUIState.presentedAuthStep = .signInFirstFactor
-                }
-                
+            case .transfer:
+                break
             }
+            
         } catch {
             dump(error)
         }

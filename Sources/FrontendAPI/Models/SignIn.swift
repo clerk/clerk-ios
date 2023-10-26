@@ -186,19 +186,22 @@ extension SignIn {
 extension SignIn {
     
     public enum CreateStrategy {
-        case emailCode(_ email: String)
-        case phoneCode(_ phoneNumber: String)
-        case oauth(_ provider: OAuthProvider, _ transfer: Bool? = nil)
+        case emailCode(email: String)
+        case phoneCode(phoneNumber: String)
+        case oauth(provider: OAuthProvider)
+        case transfer
     }
     
-    public func createParams(for strategy: CreateStrategy) -> CreateParams {
+    private func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .emailCode(let identifier):
             return .init(identifier: identifier)
         case .phoneCode(let phoneNumber):
             return .init(identifier: phoneNumber)
-        case .oauth(let provider, let transfer):
-            return .init(strategy: .oauth(provider), redirectUrl: "clerk://", transfer: transfer)
+        case .oauth(let provider):
+            return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
+        case .transfer:
+            return .init(transfer: true)
         }
     }
     
@@ -207,7 +210,7 @@ extension SignIn {
         case phoneCode
     }
     
-    public func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
+    private func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
         switch strategy {
         case .emailCode:
             return .init(strategy: .emailCode, emailAddressId: factorId(for: .emailCode))
@@ -217,11 +220,11 @@ extension SignIn {
     }
     
     public enum AttemptStrategy {
-        case emailCode(_ code: String)
-        case phoneCode(_ code: String)
+        case emailCode(code: String)
+        case phoneCode(code: String)
     }
     
-    public func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
+    private func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
         switch strategy {
         case .emailCode(let code):
             return .init(code: code, strategy: .emailCode)
@@ -256,7 +259,8 @@ extension SignIn {
      Depending on the use-case and the params you pass to the create method, it can either complete the sign in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
     @MainActor
-    public func create(_ params: CreateParams) async throws {
+    public func create(_ strategy: CreateStrategy) async throws {
+        let params = createParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
@@ -273,12 +277,13 @@ extension SignIn {
      Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
      */
     @MainActor
-    public func prepareFirstFactor(_ params: PrepareFirstFactorParams) async throws {
+    public func prepareFirstFactor(_ strategy: PrepareStrategy) async throws {
+        let params = prepareParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
             .signIns
-            .id(Clerk.shared.client.signIn.id)
+            .id(id)
             .prepareFirstFactor
             .post(params)
         
@@ -294,12 +299,13 @@ extension SignIn {
      Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
      */
     @MainActor
-    public func attemptFirstFactor(_ params: AttemptFirstFactorParams) async throws {
+    public func attemptFirstFactor(_ strategy: AttemptStrategy) async throws {
+        let params = attemptParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
             .signIns
-            .id(Clerk.shared.client.signIn.id)
+            .id(id)
             .attemptFirstFactor
             .post(params)
         
@@ -313,7 +319,7 @@ extension SignIn {
             .v1
             .client
             .signIns
-            .id(Clerk.shared.client.signIn.id)
+            .id(id)
             .get(params: params)
         
         try await Clerk.apiClient.send(request)

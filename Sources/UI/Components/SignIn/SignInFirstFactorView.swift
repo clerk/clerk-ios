@@ -23,15 +23,19 @@ struct SignInFirstFactorView: View {
     @State private var identifier: String?
     @State private var userImageUrl: String?
     
+    private var signIn: SignIn {
+        clerk.client.signIn
+    }
+    
     private var firstFactorStrategy: Strategy? {
-        if let strategy = clerk.client.signIn.firstFactorVerification?.verificationStrategy {
+        if let strategy = signIn.firstFactorVerification?.verificationStrategy {
             return strategy
         }
         return nil
     }
     
     private var firstFactor: SignInFactor? {
-        clerk.client.signIn.supportedFirstFactors
+        signIn.supportedFirstFactors
             .first(where: { $0.strategy == firstFactorStrategy?.stringValue })
     }
     
@@ -115,23 +119,22 @@ struct SignInFirstFactorView: View {
         .task {
             // these need to be set just once. If they update when the client does,
             // then they disappear
-            self.identifier = clerk.client.signIn.identifier
-            self.userImageUrl = clerk.client.signIn.userData?.imageUrl
+            self.identifier = signIn.identifier
+            self.userImageUrl = signIn.userData?.imageUrl
         }
     }
     
     private func prepareFirstFactor() async {
         do {
-            let params: SignIn.PrepareFirstFactorParams = switch firstFactorStrategy {
+            switch firstFactorStrategy {
             case .emailCode:
-                clerk.client.signIn.prepareParams(for: .emailCode)
+                try await signIn.prepareFirstFactor(.emailCode)
             case .phoneCode:
-                clerk.client.signIn.prepareParams(for: .phoneCode)
+                try await signIn.prepareFirstFactor(.phoneCode)
             default:
                 throw ClerkClientError(message: "Unable to prepare verification.")
             }
             
-            try await clerk.client.signIn.prepareFirstFactor(params)
         } catch {
             dump(error)
         }
@@ -142,16 +145,15 @@ struct SignInFirstFactorView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            let params: SignIn.AttemptFirstFactorParams = switch firstFactorStrategy {
+            switch firstFactorStrategy {
             case .emailCode:
-                clerk.client.signIn.attemptParams(for: .emailCode(otpCode))
+                try await signIn.attemptFirstFactor(.emailCode(code: otpCode))
             case .phoneCode:
-                clerk.client.signIn.attemptParams(for: .phoneCode(otpCode))
+                try await signIn.attemptFirstFactor(.phoneCode(code: otpCode))
             default:
                 throw ClerkClientError(message: "Unable to attempt verification.")
             }
             
-            try await clerk.client.signIn.attemptFirstFactor(params)
             clerkUIState.authIsPresented = false
         } catch {
             dump(error)

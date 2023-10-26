@@ -32,6 +32,10 @@ struct SignUpCreateView: View {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
     }
     
+    private var signUp: SignUp {
+        clerk.client.signUp
+    }
+    
     public var body: some View {
         VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 6) {
@@ -58,7 +62,7 @@ struct SignUpCreateView: View {
                 content: {
                     ForEach(thirdPartyProviders, id: \.self) { provider in
                         AsyncButton(options: [.disableButton], action: {
-                            await signUpAction(strategy: .oauth(provider))
+                            await signUpAction(strategy: .oauth(provider: provider))
                         }, label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
                                 .font(.footnote)
@@ -153,7 +157,13 @@ struct SignUpCreateView: View {
                 AsyncButton(
                     options: [.disableButton, .showProgressView],
                     action: {
-                        await signUpAction(strategy: .emailCode)
+                        await signUpAction(strategy: .emailCode(
+                            emailAddress: emailAddress,
+                            password: password,
+                            firstName: firstName,
+                            lastName: lastName,
+                            phoneNumber: phoneNumber
+                        ))
                     }
                 ) {
                     Text("CONTINUE")
@@ -205,68 +215,33 @@ struct SignUpCreateView: View {
         .background(.background)
     }
     
-    private func signUpAction(strategy: Strategy) async {
+    private func signUpAction(strategy: SignUp.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
+            try await signUp.create(strategy)
             
             switch strategy {
                 
-            case .oauth(let provider):
-                
-                try await clerk
-                    .client
-                    .signUp
-                    .create(.init(
-                        strategy: .oauth(provider),
-                        redirectUrl: "clerk://",
-                        actionCompleteRedirectUrl: "clerk://"
-                    ))
-                
-                guard
-                    let verification = clerk.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-                    let redirectUrl = verification.externalVerificationRedirectUrl,
-                    let url = URL(string: redirectUrl)
-                else {
-                    throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
-                }
-                
-                let authSession = OAuthWebSession(url: url, authAction: .signUp) { result in
+            case .oauth:
+                try signUp.startOAuth { result in
                     switch result {
-                    case .success:
-                        DispatchQueue.main.async {
-                            dismiss()
-                        }
-                    case .failure(let error):
-                        dump(error)
+                    case .success: dismiss()
+                    case .failure(let error): dump(error)
                     }
                 }
                 
-                authSession.start()
-                
             case .emailCode:
-                
-                try await clerk
-                    .client
-                    .signUp
-                    .create(.init(
-                        firstName: firstName.isEmpty ? nil : firstName,
-                        lastName: lastName.isEmpty ? nil : lastName,
-                        password: password,
-                        emailAddress: emailAddress,
-                        phoneNumber: phoneNumber.isEmpty ? nil : phoneNumber
-                    ))
-                
-                try await clerk
-                    .client
-                    .signUp
-                    .prepareVerification(.init(strategy: .emailCode))
-                
+                try await signUp.prepareVerification(.emailCode)
                 clerkUIState.presentedAuthStep = .signUpVerification
                 
-            default:
-                return
+            case .phoneCode:
+                try await signUp.prepareVerification(.phoneCode)
+                clerkUIState.presentedAuthStep = .signUpVerification
+                
+            case .transfer:
+                break
             }
-            
+                        
         } catch {
             dump(error)
         }

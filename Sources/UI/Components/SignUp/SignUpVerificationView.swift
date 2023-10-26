@@ -20,6 +20,10 @@ struct SignUpVerificationView: View {
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
     
+    private var signUp: SignUp {
+        clerk.client.signUp
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 6) {
@@ -64,13 +68,13 @@ struct SignUpVerificationView: View {
                 .onChange(of: otpCode) { newValue in
                     if newValue.count == requiredOtpCodeLength {
                         Task {
-                            await verifyAction()
+                            await verifyAction(strategy: .emailCode(code: otpCode))
                         }
                     }
                 }
                 
                 AsyncButton(options: [.disableButton], action: {
-                    await prepareVerification()
+                    await prepareVerification(strategy: .emailCode)
                 }, label: {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
@@ -91,32 +95,20 @@ struct SignUpVerificationView: View {
         .background(.background)
     }
     
-    private func prepareVerification() async {
+    private func prepareVerification(strategy: SignUp.PrepareStrategy) async {
         do {
-            try await clerk
-                .client
-                .signUp
-                .prepareVerification(.init(
-                    strategy: .emailCode
-                ))
+            try await signUp.prepareVerification(strategy)
         } catch {
             dump(error)
         }
     }
     
-    private func verifyAction() async {
+    private func verifyAction(strategy: SignUp.AttemptStrategy) async {
         KeyboardHelpers.dismissKeyboard()
         isSubmittingOTPCode = true
         
         do {
-            try await clerk
-                .client
-                .signUp
-                .attemptVerification(.init(
-                    strategy: .emailCode,
-                    code: otpCode
-                ))
-            
+            try await signUp.attemptVerification(strategy)
             clerkUIState.authIsPresented = false
         } catch {
             dump(error)

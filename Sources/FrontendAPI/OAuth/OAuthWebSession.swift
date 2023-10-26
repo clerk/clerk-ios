@@ -34,7 +34,7 @@ public final class OAuthWebSession: NSObject, ObservableObject {
                             } else {
                                 try await Clerk.shared.client.get()
                                 if Clerk.shared.client.signIn.firstFactorVerification?.status == .transferable {
-                                    try await Clerk.shared.client.signUp.create(.init(transfer: true))
+                                    try await Clerk.shared.client.signUp.create(.transfer)
                                 }
                             }
                             
@@ -48,7 +48,7 @@ public final class OAuthWebSession: NSObject, ObservableObject {
                                     let verification = Clerk.shared.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
                                     verification.status == .transferable
                                 {
-                                    try await Clerk.shared.client.signIn.create(.init(transfer: true))
+                                    try await Clerk.shared.client.signIn.create(.transfer)
                                 }
                             }
                         }
