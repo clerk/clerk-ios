@@ -203,7 +203,7 @@ struct SignInCreateView: View {
             switch strategy {
                 
             case .oauth:
-                try signIn.startOAuth { result in
+                signIn.startOAuth { result in
                     switch result {
                     case .success: dismiss()
                     case .failure(let error): dump(error)

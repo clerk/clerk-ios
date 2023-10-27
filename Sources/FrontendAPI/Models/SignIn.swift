@@ -19,7 +19,7 @@ import Foundation
  Information about the current sign in status in general and which authentication identifiers, authentication methods and verifications are supported.
  Information about the user and the provided authentication identifier value (email address, phone number or username). Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
-public struct SignIn: Decodable {
+public class SignIn: Decodable {
     public init(
         id: String = "",
         status: SignIn.Status? = nil,

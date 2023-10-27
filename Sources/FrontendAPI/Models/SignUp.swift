@@ -22,7 +22,7 @@ import Foundation
  Those that hold the different values that we supply to the sign-up. Examples of these are username, emailAddress, firstName, etc.
  Those that contain references to the created resources once the sign-up is complete, i.e. createdSessionId and createdUserId.
  */
-public struct SignUp: Decodable {
+public class SignUp: Decodable {
     
     public init(
         id: String = "",

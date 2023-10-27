@@ -11,7 +11,7 @@ import Foundation
  The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
  The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
  */
-public struct Client: Decodable {
+public class Client: Decodable {
     
     init(
         signIn: SignIn = SignIn(),
@@ -48,7 +48,7 @@ public struct Client: Decodable {
         case lastActiveSessionId
     }
     
-    public init(from decoder: Decoder) throws {
+    required public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<Client.CodingKeys> = try decoder.container(keyedBy: Client.CodingKeys.self)
         self.isPlaceholder = false
         

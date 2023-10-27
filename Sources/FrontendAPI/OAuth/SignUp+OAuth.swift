@@ -9,14 +9,15 @@ import Foundation
 
 extension SignUp {
     
-    public func startOAuth(completion: @escaping (Result<Void, Error>) -> Void) throws {
+    public func startOAuth(completion: @escaping (Result<Void, Error>) -> Void) {
         
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
         else {
-            throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
+            completion(.failure(ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")))
+            return
         }
         
         let authSession = OAuthWebSession(url: url, authAction: .signUp) { result in
