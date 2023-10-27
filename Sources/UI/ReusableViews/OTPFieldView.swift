@@ -25,19 +25,16 @@ struct OTPFieldView: View {
             }
         }
         .environment(\.layoutDirection, .leftToRight)
-        .background {
+        .overlay {
             TextField("", text: $otpCode.maxLength(numberOfInputs))
                 .textContentType(.oneTimeCode)
                 .keyboardType(.numberPad)
-                .frame(width: 1, height: 1)
-                .opacity(0.001)
-                .blendMode(.screen)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .foregroundStyle(.clear)
+                .tint(.clear)
                 .focused($isKeyboardShowing)
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            isKeyboardShowing = true
-        }
         .onAppear {
             isKeyboardShowing = true
         }
@@ -79,6 +76,7 @@ struct OTPFieldView: View {
                 .foregroundStyle(isSelected ? clerkTheme.colors.primary : Color(.systemFill))
         }
         .frame(maxWidth: .infinity)
+        .allowsHitTesting(false)
     }
 }
 
