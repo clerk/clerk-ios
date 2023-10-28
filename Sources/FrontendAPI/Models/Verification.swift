@@ -8,7 +8,22 @@
 import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
-public struct Verification: Decodable {
+public class Verification: Decodable {
+    public init(
+        status: Verification.Status? = nil,
+        strategy: String? = nil,
+        attempts: Int? = nil,
+        expireAt: Date? = nil,
+        error: ClerkAPIError? = nil,
+        externalVerificationRedirectUrl: String? = nil
+    ) {
+        self.status = status
+        self.strategy = strategy
+        self.attempts = attempts
+        self.expireAt = expireAt
+        self.error = error
+        self.externalVerificationRedirectUrl = externalVerificationRedirectUrl
+    }
     
     /// The state of the verification.
     let status: Status?
@@ -28,7 +43,7 @@ public struct Verification: Decodable {
     /// The redirect URL for an external verification.
     public var externalVerificationRedirectUrl: String?
     
-    enum Status: String, Decodable {
+    public enum Status: String, Decodable {
         case unverified
         case verified
         case transferable
@@ -41,5 +56,14 @@ extension Verification {
     public var verificationStrategy: Strategy? {
         guard let strategy else { return nil }
         return .init(stringValue: strategy)
+    }
+}
+
+public class SignUpVerification: Verification {
+    let nextAction: String = ""
+    let supportedStrategies: [String] = []
+    
+    var strategies: [Strategy] {
+        supportedStrategies.compactMap({ .init(stringValue: $0) })
     }
 }

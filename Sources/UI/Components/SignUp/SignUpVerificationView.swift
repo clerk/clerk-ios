@@ -20,8 +20,57 @@ struct SignUpVerificationView: View {
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
     
+    @State private var strategy: SignUp.PrepareStrategy = .emailCode
+    
     private var signUp: SignUp {
         clerk.client.signUp
+    }
+    
+    private var titleString: String {
+        switch strategy {
+        case .emailLink, .emailCode:
+            return "Verify your email"
+        case .phoneCode:
+            return "Verify your phone number"
+        }
+    }
+    
+    private var identityPreviewString: String {
+        switch strategy {
+        case .emailLink, .emailCode:
+            return signUp.emailAddress ?? ""
+        case .phoneCode:
+            return signUp.phoneNumber ?? ""
+        }
+    }
+    
+    private var strategyTitleString: String {
+        switch strategy {
+        case .emailLink:
+            return "Email link"
+        case .emailCode, .phoneCode:
+            return "Verification code"
+        }
+    }
+    
+    private var strategySubtitleString: String {
+        switch strategy {
+        case .emailLink:
+            return "Check your email for you verification link"
+        case .emailCode:
+            return "Enter the verification code sent to your email address"
+        case .phoneCode:
+            return "Enter the verification code sent to your phone number"
+        }
+    }
+    
+    private var displaysOTPCodeField: Bool {
+        switch strategy {
+        case .emailLink:
+            return false
+        case .emailCode, .phoneCode:
+            return true
+        }
     }
     
     var body: some View {
@@ -37,44 +86,61 @@ struct SignUpVerificationView: View {
             .font(.title3.weight(.medium))
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Check your email")
+                Text(titleString)
                     .font(.title2.weight(.semibold))
                 Text("to continue to \(clerk.environment.displayConfig.applicationName)")
                     .font(.subheadline.weight(.light))
                     .foregroundStyle(.secondary)
             }
             
+            IdentityPreviewView(
+                imageUrl: nil,
+                label: identityPreviewString,
+                action: {
+                    clerkUIState.presentedAuthStep = .signUpCreate
+                }
+            )
+            
             VStack(alignment: .leading) {
-                Text("Verification code")
+                Text(strategyTitleString)
                     .font(.subheadline.weight(.medium))
                     .padding(.bottom, 8)
                 
-                Text("Enter the verification code sent to your email address")
+                Text(strategySubtitleString)
                     .fixedSize(horizontal: false, vertical: true)
                     .font(.footnote.weight(.light))
                     .foregroundStyle(.secondary)
                 
-                HStack(alignment: .lastTextBaseline, spacing: 20) {
-                    OTPFieldView(otpCode: $otpCode)
-                        .frame(maxWidth: 250)
-                        .padding(.vertical)
-                        .padding(.bottom)
-                    
-                    if isSubmittingOTPCode {
-                        ProgressView()
-                            .offset(y: 4)
+                if displaysOTPCodeField {
+                    HStack(alignment: .lastTextBaseline, spacing: 20) {
+                        OTPFieldView(otpCode: $otpCode)
+                            .frame(maxWidth: 250)
+                            .padding(.vertical)
+                            .padding(.bottom)
+                        
+                        if isSubmittingOTPCode {
+                            ProgressView()
+                                .offset(y: 4)
+                        }
                     }
-                }
-                .onChange(of: otpCode) { newValue in
-                    if newValue.count == requiredOtpCodeLength {
-                        Task {
-                            await verifyAction(strategy: .emailCode(code: otpCode))
+                    .onChange(of: otpCode) { newValue in
+                        if newValue.count == requiredOtpCodeLength {
+                            Task {
+                                switch strategy {
+                                case .emailCode:
+                                    await verifyAction(strategy: .emailCode(code: otpCode))
+                                case .phoneCode:
+                                    await verifyAction(strategy: .phoneCode(code: otpCode))
+                                default:
+                                    break
+                                }
+                            }
                         }
                     }
                 }
                 
                 AsyncButton(options: [.disableButton], action: {
-                    await prepareVerification(strategy: .emailCode)
+                    await prepareVerification(strategy: strategy)
                 }, label: {
                     Text("Didn't recieve a code? Resend")
                         .font(.subheadline)
@@ -93,6 +159,21 @@ struct SignUpVerificationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)
         .background(.background)
+        .id(strategy)
+        .transition(.offset(y: 50).combined(with: .opacity))
+        .animation(.bouncy, value: strategy)
+        .task {
+            switch signUp.nextStrategyToVerify {
+            case .emailCode:
+                self.strategy = .emailCode
+            case .emailLink:
+                self.strategy = .emailLink
+            case .phoneCode:
+                self.strategy = .phoneCode
+            default:
+                clerkUIState.authIsPresented = false
+            }
+        }
     }
     
     private func prepareVerification(strategy: SignUp.PrepareStrategy) async {
@@ -109,16 +190,36 @@ struct SignUpVerificationView: View {
         
         do {
             try await signUp.attemptVerification(strategy)
-            clerkUIState.authIsPresented = false
+            
+            otpCode = ""
+            isSubmittingOTPCode = false
+
+            switch signUp.nextStrategyToVerify {
+            case .emailCode:
+                self.strategy = .emailCode
+                await prepareVerification(strategy: .emailCode)
+            case .emailLink:
+                self.strategy = .emailLink
+                await prepareVerification(strategy: .emailLink)
+            case .phoneCode:
+                self.strategy = .phoneCode
+                await prepareVerification(strategy: .phoneCode)
+            default:
+                clerkUIState.authIsPresented = false
+            }
         } catch {
             dump(error)
             isSubmittingOTPCode = false
+            otpCode = ""
         }
+        
     }
 }
 
 #Preview {
     SignUpVerificationView()
+        .environmentObject(Clerk.mock)
+        .environmentObject(ClerkUIState())
 }
 
 #endif

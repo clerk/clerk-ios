@@ -13,7 +13,8 @@ import Clerk
 
 /**
  This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.
- You can observe changes to the Clerk object via `EnvironmentObject var clerk: Clerk` from any descendant view.
+ 
+ It also performs some Clerk specific setup.
  
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */

@@ -93,6 +93,10 @@ extension Clerk.Environment.UserSettings {
         }
     }
     
+    public var attributesToVerifyAtSignUp: [String: AttributesConfig] {
+        attributes.filter({ $0.value.verifyAtSignUp })
+    }
+    
 }
 
 extension Clerk.Environment {

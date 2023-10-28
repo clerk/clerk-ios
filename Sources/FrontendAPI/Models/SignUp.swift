@@ -31,7 +31,7 @@ public class SignUp: Decodable {
         optionalFields: [String] = [],
         missingFields: [String] = [],
         unverifiedFields: [String] = [],
-        verifications: [String: Verification] = [:],
+        verifications: [String: SignUpVerification] = [:],
         username: String? = nil,
         emailAddress: String? = nil,
         phoneNumber: String? = nil, 
@@ -98,19 +98,19 @@ public class SignUp: Decodable {
     let missingFields: [String]
     
     /// An array of all the fields whose values have been supplied, but they need additional verification in order for them to be accepted. Examples of such fields are emailAddress and phoneNumber.
-    let unverifiedFields: [String]
+    public let unverifiedFields: [String]
     
     /// An object that contains information about all the verifications that are in-flight.
-    public let verifications: [String: Verification?]
+    public let verifications: [String: SignUpVerification?]
     
     /// The username supplied to the current sign-up. This attribute is available only if usernames are enabled. Check the available instance settings in your Clerk Dashboard for more information.
     let username: String?
     
     /// The email address supplied to the current sign-up. This attribute is available only if the selected contact information includes email address. Check the available instance settings for more information.
-    let emailAddress: String?
+    public let emailAddress: String?
     
     /// The phone number supplied to the current sign-up. This attribute is available only if the selected contact information includes phone number. Check the available instance settings for more information.
-    let phoneNumber: String?
+    public let phoneNumber: String?
     
     /// The Web3 wallet public address supplied to the current sign-up. In Ethereum, the address is made up of 0x + 40 hexadecimal characters.
     let web3Wallet: String?
@@ -237,12 +237,15 @@ extension SignUp {
     }
     
     public enum PrepareStrategy {
+        case emailLink
         case emailCode
         case phoneCode
     }
     
     private func prepareParams(for strategy: PrepareStrategy) -> PrepareVerificationParams {
         switch strategy {
+        case .emailLink:
+            return .init(strategy: .emailLink)
         case .emailCode:
             return .init(strategy: .emailCode)
         case .phoneCode:
@@ -261,6 +264,25 @@ extension SignUp {
             return .init(strategy: .emailCode, code: code)
         case .phoneCode(let code):
             return .init(strategy: .phoneCode, code: code)
+        }
+    }
+    
+}
+
+extension SignUp {
+    
+    /// Returns the next attribute that needs to verified at sign up
+    public var nextStrategyToVerify: Strategy? {
+        let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
+        
+        if unverifiedFields.contains(where: { $0 == "email_address" }) {
+            return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies.first
+            
+        } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
+            return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationStrategies.first
+            
+        } else {
+            return nil
         }
     }
     

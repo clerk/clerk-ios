@@ -14,9 +14,7 @@ public final class ClerkUIState: ObservableObject {
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false
 
-    public enum AuthStep: Identifiable {
-        public var id: Self { self }
-        
+    public enum AuthStep {        
         case signInCreate
         case signInFirstFactor
         case signUpCreate

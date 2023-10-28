@@ -10,7 +10,6 @@ import Foundation
 extension SignUp {
     
     public func startOAuth(completion: @escaping (Result<Void, Error>) -> Void) {
-        
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,

@@ -159,8 +159,12 @@ extension Clerk {
             ]
         )
         
-        clerk.environment.userSettings = userSettings
+        let displayConfig = Environment.DisplayConfig(
+            applicationName: "Test"
+        )
         
+        clerk.environment.userSettings = userSettings
+        clerk.environment.displayConfig = displayConfig
         clerk.client = client
         
         return clerk
