@@ -20,12 +20,12 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
-        .package(url: "https://github.com/CreateAPI/URLQueryEncoder", from: "0.2.1"),
-        .package(url: "https://github.com/kean/Get", from: "2.1.6"),
-        .package(url: "https://github.com/hmlongco/Factory", from: "2.3.1"),
-        .package(url: "https://github.com/kean/Nuke", from: "12.1.6"),
-        .package(url: "https://github.com/marmelroy/PhoneNumberKit", from: "3.7.4")
+        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", .upToNextMajor(from: "4.2.2")),
+        .package(url: "https://github.com/CreateAPI/URLQueryEncoder", .upToNextMajor(from: "0.2.1")),
+        .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.1.6")),
+        .package(url: "https://github.com/hmlongco/Factory", .upToNextMajor(from: "2.3.1")),
+        .package(url: "https://github.com/kean/Nuke", .upToNextMajor(from: "12.1.6")),
+        .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "3.7.4"))
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
