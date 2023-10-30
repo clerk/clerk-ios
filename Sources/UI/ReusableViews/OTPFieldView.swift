@@ -13,7 +13,7 @@ struct OTPFieldView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var otpCode: String
-    var numberOfInputs: Int = 6
+    let numberOfInputs: Int = 6
     
     @FocusState private var isKeyboardShowing: Bool
     @State var cursorAnimating = false

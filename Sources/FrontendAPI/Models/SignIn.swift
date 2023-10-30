@@ -253,6 +253,28 @@ extension SignIn {
 
 extension SignIn {
     
+    public var firstFactorPrepareStrategy: PrepareStrategy? {
+        if let strategy = firstFactorVerification?.verificationStrategy {
+            switch strategy {
+            case .emailCode:
+                return .emailCode
+            case .phoneCode:
+                return .phoneCode
+            default:
+                return nil
+            }
+        }
+        return nil
+    }
+    
+    public var firstFactor: SignInFactor? {
+        supportedFirstFactors.first(where: { $0.strategy == firstFactorVerification?.strategy })
+    }
+    
+}
+
+extension SignIn {
+    
     /**
      Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign in lifecycle state.
 

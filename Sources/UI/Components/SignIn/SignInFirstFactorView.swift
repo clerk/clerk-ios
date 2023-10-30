@@ -20,23 +20,28 @@ struct SignInFirstFactorView: View {
     @State private var isSubmittingOTPCode = false
     private let requiredOtpCodeLength = 6
     
-    @State private var identifier: String?
-    @State private var userImageUrl: String?
+    @State private var firstFactorStrategy: SignIn.PrepareStrategy = .emailCode
     
     private var signIn: SignIn {
         clerk.client.signIn
     }
     
-    private var firstFactorStrategy: Strategy? {
-        if let strategy = signIn.firstFactorVerification?.verificationStrategy {
-            return strategy
+    private var titleString: String {
+        switch firstFactorStrategy {
+        case .emailCode:
+            return "Check your email"
+        case .phoneCode:
+            return "Verify your phone"
         }
-        return nil
     }
     
-    private var firstFactor: SignInFactor? {
-        signIn.supportedFirstFactors
-            .first(where: { $0.strategy == firstFactorStrategy?.stringValue })
+    private var instructionsString: String {
+        switch firstFactorStrategy {
+        case .emailCode:
+            return "Enter the verification code sent to your email address"
+        case .phoneCode:
+            return "Enter the verification code sent to your phone number"
+        }
     }
     
     var body: some View {
@@ -52,7 +57,7 @@ struct SignInFirstFactorView: View {
             .font(.title3.weight(.medium))
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Check your email")
+                Text(titleString)
                     .font(.title2.weight(.semibold))
                 Text("to continue to \(clerk.environment.displayConfig.applicationName)")
                     .font(.subheadline.weight(.light))
@@ -60,8 +65,8 @@ struct SignInFirstFactorView: View {
             }
             
             IdentityPreviewView(
-                imageUrl: userImageUrl,
-                label: identifier,
+                imageUrl: signIn.userData?.imageUrl ?? "",
+                label: signIn.firstFactor?.safeIdentifier ?? "",
                 action: {
                     clerkUIState.presentedAuthStep = .signInCreate
                 }
@@ -72,7 +77,7 @@ struct SignInFirstFactorView: View {
                     .font(.subheadline.weight(.medium))
                     .padding(.bottom, 8)
                 
-                Text("Enter the verification code sent to your email address")
+                Text(instructionsString)
                     .fixedSize(horizontal: false, vertical: true)
                     .font(.footnote.weight(.light))
                     .foregroundStyle(.secondary)
@@ -117,16 +122,13 @@ struct SignInFirstFactorView: View {
         .padding(30)
         .background(.background)
         .task {
-            // these need to be set just once. If they update when the client does,
-            // then they disappear
-            self.identifier = signIn.identifier
-            self.userImageUrl = signIn.userData?.imageUrl
+            self.firstFactorStrategy = signIn.firstFactorPrepareStrategy ?? .emailCode
         }
     }
     
     private func prepareFirstFactor() async {
         do {
-            switch firstFactorStrategy {
+            switch signIn.firstFactorPrepareStrategy {
             case .emailCode:
                 try await signIn.prepareFirstFactor(.emailCode)
             case .phoneCode:
@@ -145,7 +147,7 @@ struct SignInFirstFactorView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            switch firstFactorStrategy {
+            switch signIn.firstFactorPrepareStrategy {
             case .emailCode:
                 try await signIn.attemptFirstFactor(.emailCode(code: otpCode))
             case .phoneCode:

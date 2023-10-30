@@ -102,6 +102,7 @@ extension Clerk {
         
         let signInFactor = SignInFactor(
             strategy: .emailCode,
+            safeIdentifier: "ClerkUser@clerk.dev", 
             emailAddressId: "123"
         )
         
