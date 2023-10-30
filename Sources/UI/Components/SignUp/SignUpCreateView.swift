@@ -182,7 +182,7 @@ struct SignUpCreateView: View {
                     .foregroundStyle(.secondary)
                 Button {
                     clerkUIState.authIsPresented = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
                         clerkUIState.presentedAuthStep = .signInCreate
                     })
                 } label: {

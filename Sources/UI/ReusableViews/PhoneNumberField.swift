@@ -10,26 +10,50 @@ import SwiftUI
 import PhoneNumberKit
 
 extension PhoneNumberField {
-    struct Model {
-        
+    final class Model: ObservableObject {
         private let phoneNumberKit = PhoneNumberKit()
-        private let partialFormatter = PartialFormatter()
+        let textField: PhoneNumberTextField
         
-        func phoneNumberFormattedForDisplay(_ text: String) -> String {
-            if let parsedText = try? phoneNumberKit.parse(text) {
-                return phoneNumberKit.format(parsedText, toType: .national)
+        private var partialFormatter: PartialFormatter {
+            textField.partialFormatter
+        }
+        
+        init() {
+            self.textField = .init(withPhoneNumberKit: phoneNumberKit)
+        }
+        
+        lazy var allCountries = phoneNumberKit
+            .allCountries()
+            .compactMap({ CountryCodePickerViewController.Country(for: $0, with: self.phoneNumberKit) })
+            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+        
+        var exampleNumber: String {
+            phoneNumberKit.getFormattedExampleNumber(forCountry: textField.currentRegion, withPrefix: false) ?? ""
+        }
+        
+        func phoneNumberFormattedForDisplay() -> String {
+            if let phoneNumber = textField.phoneNumber {
+                return phoneNumberKit.format(phoneNumber, toType: .national)
             } else {
-                return partialFormatter.formatPartial(text)
+                return partialFormatter.formatPartial(textField.text ?? "")
             }
         }
         
-        func phoneNumberFormattedForE164(_ text: String) -> String {
-            do {
-                let phoneNumber = try phoneNumberKit.parse(text)
+        func phoneNumberFormattedForData() -> String {
+            if let phoneNumber = textField.phoneNumber {
                 return phoneNumberKit.format(phoneNumber, toType: .e164)
-            } catch {
-                return partialFormatter.formatPartial(text)
+            } else {
+                return partialFormatter.formatPartial(textField.text ?? "")
             }
+        }
+        
+        var currentCountry: CountryCodePickerViewController.Country? {
+            .init(for: textField.currentRegion, with: phoneNumberKit)
+        }
+        
+        func setNewCountry(_ country: CountryCodePickerViewController.Country) {
+            partialFormatter.defaultRegion = country.code
+            objectWillChange.send()
         }
     }
 }
@@ -38,7 +62,7 @@ struct PhoneNumberField: View {
     @Binding var text: String
     @State private var displayNumber = ""
     
-    private let model = Model()
+    @StateObject var model = Model()
     @FocusState private var isFocused: Bool
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -48,25 +72,41 @@ struct PhoneNumberField: View {
                 // show country picker
             } label: {
                 HStack {
-                    Text("🇺🇸")
-                    Text("+1")
-                        .font(.subheadline.weight(.medium))
-                    Image(systemName: "chevron.down")
-                        .font(.subheadline.weight(.medium))
-                }
-                .padding(.horizontal)
-                .frame(maxHeight: .infinity)
-                .background {
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 8,
-                        bottomLeadingRadius: 8
-                    )
-                    .foregroundStyle(Color(.quaternarySystemFill))
+                    if let currentCountry = model.currentCountry {
+                        Menu {
+                            ForEach(model.allCountries, id: \.name) { country in
+                                Button {
+                                    model.setNewCountry(country)
+                                    textDidUpdate(text: displayNumber)
+                                } label: {
+                                    Text("\(country.flag) \(country.name) \(country.prefix)")
+                                        .lineLimit(1)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(currentCountry.flag)
+                                Text(currentCountry.prefix)
+                                    .font(.subheadline.weight(.medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.caption2.weight(.medium))
+                            }
+                            .padding(.horizontal)
+                            .frame(maxHeight: .infinity)
+                            .background {
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 8,
+                                    bottomLeadingRadius: 8
+                                )
+                                .foregroundStyle(Color(.quaternarySystemFill))
+                            }
+                        }
+                    }
                 }
             }
             .buttonStyle(.plain)
             
-            TextField("", text: $displayNumber)
+            TextField(model.exampleNumber, text: $displayNumber)
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
                 .focused($isFocused)
@@ -85,14 +125,21 @@ struct PhoneNumberField: View {
                     )
                 }
                 .onChange(of: displayNumber) { newValue in
-                    displayNumber = model.phoneNumberFormattedForDisplay(newValue)
-                    text = model.phoneNumberFormattedForE164(newValue)
+                    textDidUpdate(text: newValue)
                 }
+
         }
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color(.systemFill), lineWidth: 1)
         }
+    }
+    
+    private func textDidUpdate(text: String) {
+        model.textField.text = text
+        self.displayNumber = model.phoneNumberFormattedForDisplay()
+        self.text = model.phoneNumberFormattedForData()
+        model.objectWillChange.send()
     }
 }
 
