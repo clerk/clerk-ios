@@ -14,18 +14,18 @@ extension PhoneNumberField {
         private let phoneNumberKit = PhoneNumberKit()
         let textField: PhoneNumberTextField
         
-        private var partialFormatter: PartialFormatter {
-            textField.partialFormatter
-        }
-        
         init() {
             self.textField = .init(withPhoneNumberKit: phoneNumberKit)
         }
         
-        lazy var allCountries = phoneNumberKit
+        lazy var allCountries: [CountryCodePickerViewController.Country] = phoneNumberKit
             .allCountries()
             .compactMap({ CountryCodePickerViewController.Country(for: $0, with: self.phoneNumberKit) })
             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+        
+        var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
+            allCountries.filter({ $0.code != defaultCountry?.code })
+        }
         
         var exampleNumber: String {
             phoneNumberKit.getFormattedExampleNumber(forCountry: textField.currentRegion, withPrefix: false) ?? ""
@@ -35,7 +35,7 @@ extension PhoneNumberField {
             if let phoneNumber = textField.phoneNumber {
                 return phoneNumberKit.format(phoneNumber, toType: .national)
             } else {
-                return partialFormatter.formatPartial(textField.text ?? "")
+                return textField.partialFormatter.formatPartial(textField.text ?? "")
             }
         }
         
@@ -43,8 +43,12 @@ extension PhoneNumberField {
             if let phoneNumber = textField.phoneNumber {
                 return phoneNumberKit.format(phoneNumber, toType: .e164)
             } else {
-                return partialFormatter.formatPartial(textField.text ?? "")
+                return textField.partialFormatter.formatPartial(textField.text ?? "")
             }
+        }
+        
+        var defaultCountry: CountryCodePickerViewController.Country? {
+            .init(for: textField.defaultRegion, with: phoneNumberKit)
         }
         
         var currentCountry: CountryCodePickerViewController.Country? {
@@ -52,8 +56,11 @@ extension PhoneNumberField {
         }
         
         func setNewCountry(_ country: CountryCodePickerViewController.Country) {
-            partialFormatter.defaultRegion = country.code
-            objectWillChange.send()
+            textField.partialFormatter.defaultRegion = country.code
+        }
+        
+        func stringForCountry(_ country: CountryCodePickerViewController.Country) -> String {
+            "\(country.flag) \(country.name) \(country.prefix)"
         }
     }
 }
@@ -74,13 +81,27 @@ struct PhoneNumberField: View {
                 HStack {
                     if let currentCountry = model.currentCountry {
                         Menu {
-                            ForEach(model.allCountries, id: \.name) { country in
-                                Button {
-                                    model.setNewCountry(country)
-                                    textDidUpdate(text: displayNumber)
-                                } label: {
-                                    Text("\(country.flag) \(country.name) \(country.prefix)")
-                                        .lineLimit(1)
+                            Section("Default") {
+                                if let defaultCountry = model.defaultCountry {
+                                    Button {
+                                        model.setNewCountry(defaultCountry)
+                                        textDidUpdate(text: displayNumber)
+                                    } label: {
+                                        Text(model.stringForCountry(defaultCountry))
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                            
+                            Section("International") {
+                                ForEach(model.allCountriesExceptDefault, id: \.code) { country in
+                                    Button {
+                                        model.setNewCountry(country)
+                                        textDidUpdate(text: displayNumber)
+                                    } label: {
+                                        Text(model.stringForCountry(country))
+                                            .lineLimit(1)
+                                    }
                                 }
                             }
                         } label: {
