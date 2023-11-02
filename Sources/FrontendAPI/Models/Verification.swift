@@ -11,14 +11,14 @@ import Foundation
 public class Verification: Decodable {
     public init(
         status: Verification.Status? = nil,
-        strategy: String? = nil,
+        strategy: Strategy? = nil,
         attempts: Int? = nil,
         expireAt: Date? = nil,
         error: ClerkAPIError? = nil,
         externalVerificationRedirectUrl: String? = nil
     ) {
         self.status = status
-        self.strategy = strategy
+        self.strategy = strategy?.stringValue
         self.attempts = attempts
         self.expireAt = expireAt
         self.error = error
@@ -53,10 +53,12 @@ public class Verification: Decodable {
 }
 
 extension Verification {
+    
     public var verificationStrategy: Strategy? {
         guard let strategy else { return nil }
         return .init(stringValue: strategy)
     }
+    
 }
 
 public class SignUpVerification: Verification {

@@ -5,11 +5,14 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 
 struct SignInFactorOnePhoneCodeView: View {
     @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var otpCode: String = ""
     
@@ -25,8 +28,43 @@ struct SignInFactorOnePhoneCodeView: View {
                 subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
                 formTitle: "Verification code",
                 formSubtitle: "Enter the verification code sent to your phone number",
-                safeIdentifier: signIn.firstFactor?.safeIdentifier
+                safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
+                profileImageUrl: signIn.userData?.imageUrl
             )
+            .onIdentityPreviewTapped {
+                clerkUIState.presentedAuthStep = .signInStart
+            }
+            .onCodeEntry {
+                await attempt()
+            }
+            .onResend {
+                await prepare()
+            }
+            .onUseAlernateMethod {
+                clerkUIState.presentedAuthStep = .signInStart
+            }
+            .task {
+                await prepare()
+            }
+        }
+    }
+    
+    private func prepare() async {
+        do {
+            guard let phoneNumberId = signIn.supportedFirstFactors.first(where: { $0.verificationStrategy == .phoneCode })?.phoneNumberId else {
+                throw ClerkClientError(message: "Unable to find an phone number id for this verification strategy.")
+            }
+            try await signIn.prepareFirstFactor(.phoneCode(phoneNumberId: phoneNumberId))
+        } catch {
+            dump(error)
+        }
+    }
+    
+    private func attempt() async {
+        do {
+            try await signIn.attemptFirstFactor(.phoneCode(code: otpCode))
+        } catch {
+            dump(error)
         }
     }
 }
@@ -35,3 +73,5 @@ struct SignInFactorOnePhoneCodeView: View {
     SignInFactorOnePhoneCodeView()
         .environmentObject(Clerk.mock)
 }
+
+#endif

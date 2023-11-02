@@ -24,7 +24,7 @@ public class SignIn: Decodable {
         id: String = "",
         status: SignIn.Status? = nil,
         supportedIdentifiers: [String] = [],
-        supportedFirstFactors: [SignInFactor] = [],
+        supportedFirstFactors: [Factor] = [],
         supportedSecondFactors: [String]? = nil,
         firstFactorVerification: Verification? = nil,
         secondFactorVerification: Verification? = nil,
@@ -88,7 +88,7 @@ public class SignIn: Decodable {
      
      As well as the identifier that the factor refers to.
      */
-    @DecodableDefault.EmptyList private(set) public var supportedFirstFactors: [SignInFactor]
+    @DecodableDefault.EmptyList private(set) public var supportedFirstFactors: [Factor]
     
     /**
      Array of the second factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
@@ -209,8 +209,8 @@ extension SignIn {
     }
     
     public enum PrepareStrategy {
-        case emailCode
-        case phoneCode
+        case emailCode(emailAddressId: String)
+        case phoneCode(phoneNumberId: String)
     }
     
     private func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
@@ -243,7 +243,7 @@ extension SignIn {
         let factor = Clerk.shared.client
             .signIn
             .supportedFirstFactors
-            .first(where: { $0.strategy == strategy.stringValue })
+            .first(where: { $0.verificationStrategy == strategy })
         
         switch strategy {
         case .emailCode:
@@ -260,9 +260,7 @@ extension SignIn {
 extension SignIn {
     
     public var firstFactorStrategy: Strategy? {
-        if supportedFirstFactors.contains(where: { $0.strategy == "password" }) {
-            return .password
-        }
+        guard status == .needsFirstFactor else { return nil }
         
         if let strategy = firstFactorVerification?.verificationStrategy {
             switch strategy {
@@ -274,11 +272,18 @@ extension SignIn {
                 return nil
             }
         }
-        return nil
+        
+        if supportedFirstFactors.contains(where: { $0.verificationStrategy == .password }) {
+            return .password
+        } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailCode }) {
+            return .emailCode
+        } else {
+            return nil
+        }
     }
     
-    public var firstFactor: SignInFactor? {
-        supportedFirstFactors.first(where: { $0.strategy == firstFactorVerification?.strategy })
+    public var currentFactor: Factor? {
+        supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification?.verificationStrategy })
     }
     
 }

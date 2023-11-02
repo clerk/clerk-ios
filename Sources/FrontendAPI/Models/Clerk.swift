@@ -100,15 +100,19 @@ extension Clerk {
             hasImage: true
         )
         
-        let signInFactor = SignInFactor(
+        let factor = Factor(
             strategy: .emailCode,
             safeIdentifier: "ClerkUser@clerk.dev", 
-            emailAddressId: "123"
+            emailAddressId: "123",
+            phoneNumberId: nil,
+            web3WalletId: nil,
+            primary: true,
+            default: nil
         )
         
         let firstFactorVerification = Verification(
             status: .unverified,
-            strategy: Strategy.emailCode.stringValue,
+            strategy: .emailCode,
             attempts: 0,
             expireAt: .distantFuture, 
             error: nil
@@ -117,7 +121,7 @@ extension Clerk {
         let signIn = SignIn(
             id: "123",
             status: .needsFirstFactor,
-            supportedFirstFactors: [signInFactor],
+            supportedFirstFactors: [factor],
             firstFactorVerification: firstFactorVerification,
             identifier: "ClerkUser@clerk.dev",
             userData: userData

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 
@@ -72,3 +74,5 @@ extension SignInSocialProvidersView {
         .padding()
         .environmentObject(Clerk.mock)
 }
+
+#endif
