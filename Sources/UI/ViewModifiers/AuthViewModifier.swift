@@ -29,10 +29,7 @@ struct AuthViewModifier: ViewModifier {
     private func sheetStyle(content: Content) -> some View {
         content
             .sheet(isPresented: $isPresented, content: {
-                ScrollView {
-                    AuthView()
-                        .interactiveDismissDisabled(true)
-                }
+                AuthView()
             })
     }
     
@@ -40,10 +37,7 @@ struct AuthViewModifier: ViewModifier {
     private func fullScreenCoverStyle(content: Content) -> some View {
         content
             .fullScreenCover(isPresented: $isPresented, content: {
-                ScrollView {
-                    AuthView()
-                        .interactiveDismissDisabled(true)
-                }
+                AuthView()
             })
     }
 }

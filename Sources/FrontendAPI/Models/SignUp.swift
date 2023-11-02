@@ -237,15 +237,12 @@ extension SignUp {
     }
     
     public enum PrepareStrategy {
-        case emailLink
         case emailCode
         case phoneCode
     }
     
     private func prepareParams(for strategy: PrepareStrategy) -> PrepareVerificationParams {
         switch strategy {
-        case .emailLink:
-            return .init(strategy: .emailLink)
         case .emailCode:
             return .init(strategy: .emailCode)
         case .phoneCode:
@@ -276,7 +273,15 @@ extension SignUp {
         let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
         
         if unverifiedFields.contains(where: { $0 == "email_address" }) {
-            return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies.first
+            guard let emailVerifications = attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies else {
+                return nil
+            }
+            
+            if emailVerifications.contains(where: { $0 == .emailCode }) {
+                return .emailCode
+            } else {
+                return nil
+            }
             
         } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
             return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationStrategies.first

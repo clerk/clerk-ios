@@ -20,13 +20,13 @@ struct ExamplesListView: View {
             List {
                 Section("Components") {
                     Button {
-                        clerkUIState.presentedAuthStep = .signInCreate
+                        clerkUIState.presentedAuthStep = .signInStart
                     } label: {
                         Text("Sign In")
                     }
                     
                     Button {
-                        clerkUIState.presentedAuthStep = .signUpCreate
+                        clerkUIState.presentedAuthStep = .signUpStart
                     } label: {
                         Text("Sign Up")
                     }

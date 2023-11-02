@@ -15,16 +15,29 @@ public final class ClerkUIState: ObservableObject {
     @Published public var authIsPresented = false
 
     public enum AuthStep {        
-        case signInCreate
+        case signInStart
         case signInFirstFactor
-        case signUpCreate
+        case signUpStart
         case signUpVerification
     }
     
-    @Published public var presentedAuthStep: AuthStep = .signInCreate {
+    @Published public var presentedAuthStep: AuthStep = .signInStart {
         willSet {
             authIsPresented = true
         }
+    }
+    
+    public enum SignInRoute {
+        case start
+        case verifyEmailAddress
+        case verifyPhone
+        case password
+    }
+    
+    public enum SignUpRoute {
+        case start
+        case verifyEmailAddress
+        case verifyPhone
     }
     
 }

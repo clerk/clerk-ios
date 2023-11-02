@@ -162,15 +162,18 @@ extension SignIn {
     
     public struct AttemptFirstFactorParams: Encodable {
         public init(
+            strategy: Strategy,
             code: String? = nil,
-            strategy: Strategy
+            password: String? = nil
         ) {
-            self.code = code
             self.strategy = strategy.stringValue
+            self.code = code
+            self.password = password
         }
         
-        public let code: String?
         public let strategy: String
+        public let code: String?
+        public let password: String?
     }
     
     public struct GetParams: Encodable {
@@ -220,16 +223,19 @@ extension SignIn {
     }
     
     public enum AttemptStrategy {
+        case password(password: String)
         case emailCode(code: String)
         case phoneCode(code: String)
     }
     
     private func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
         switch strategy {
+        case .password(let password):
+            return .init(strategy: .password, password: password)
         case .emailCode(let code):
-            return .init(code: code, strategy: .emailCode)
+            return .init(strategy: .emailCode, code: code)
         case .phoneCode(let code):
-            return .init(code: code, strategy: .phoneCode)
+            return .init(strategy: .phoneCode, code: code)
         }
     }
     
@@ -253,7 +259,11 @@ extension SignIn {
 
 extension SignIn {
     
-    public var firstFactorPrepareStrategy: PrepareStrategy? {
+    public var strategy: Strategy? {
+        if supportedFirstFactors.contains(where: { $0.strategy == "password" }) {
+            return .password
+        }
+        
         if let strategy = firstFactorVerification?.verificationStrategy {
             switch strategy {
             case .emailCode:

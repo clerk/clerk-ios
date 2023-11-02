@@ -81,7 +81,7 @@ final public class Clerk: ObservableObject {
 
 extension Container {
     
-    var clerk: Factory<Clerk> {
+    public var clerk: Factory<Clerk> {
         self { Clerk() }
             .singleton
     }
@@ -119,13 +119,22 @@ extension Clerk {
             status: .needsFirstFactor,
             supportedFirstFactors: [signInFactor],
             firstFactorVerification: firstFactorVerification,
-            identifier: "ClerkUser@gmail.com",
+            identifier: "ClerkUser@clerk.dev",
             userData: userData
+        )
+        
+        let signUp = SignUp(
+            unverifiedFields: [
+                "email_address",
+                "phone_number"
+            ], 
+            emailAddress: "ClerkUser@clerk.dev",
+            phoneNumber: "+12015550123"
         )
         
         let client = Client(
             signIn: signIn,
-            signUp: SignUp(),
+            signUp: signUp,
             sessions: []
         )
         
@@ -139,6 +148,16 @@ extension Clerk {
                     usedForSecondFactor: false,
                     secondFactors: [],
                     verifications: ["phone_code"],
+                    verifyAtSignUp: true
+                ),
+                "email_address": .init(
+                    enabled: true,
+                    required: false,
+                    usedForFirstFactor: true,
+                    firstFactors: [],
+                    usedForSecondFactor: false,
+                    secondFactors: [],
+                    verifications: ["email_code"],
                     verifyAtSignUp: true
                 )
             ],

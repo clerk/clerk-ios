@@ -13,25 +13,23 @@ import Clerk
 public struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
-    @Namespace private var namespace
     
     public var body: some View {
-        ZStack {
+        Group {
             switch clerkUIState.presentedAuthStep {
-            case .signInCreate:
-                SignInCreateView()
-                    .matchedGeometryEffect(id: "view", in: namespace)
+            case .signInStart:
+                SignInStartView()
             case .signInFirstFactor:
-                SignInFirstFactorView()
-                    .matchedGeometryEffect(id: "view", in: namespace)
-            case .signUpCreate:
-                SignUpCreateView()
-                    .matchedGeometryEffect(id: "view", in: namespace)
+                SignInFactorOneView()
+            case .signUpStart:
+                SignUpStartView()
             case .signUpVerification:
                 SignUpVerificationView()
-                    .matchedGeometryEffect(id: "view", in: namespace)
             }
         }
+        .frame(maxWidth: .infinity)
+        .background(.background)
+        .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.bouncy, value: clerkUIState.presentedAuthStep)
         .overlay(alignment: .topTrailing) {
             Button(action: {
@@ -54,6 +52,8 @@ public struct AuthView: View {
 
 #Preview {
     AuthView()
+        .environmentObject(Clerk.mock)
+        .environmentObject(ClerkUIState())
 }
 
 #endif

@@ -26,7 +26,7 @@ public class Verification: Decodable {
     }
     
     /// The state of the verification.
-    let status: Status?
+    public let status: Status?
     
     /// The strategy pertaining to the parent sign-up or sign-in attempt.
     let strategy: String?
