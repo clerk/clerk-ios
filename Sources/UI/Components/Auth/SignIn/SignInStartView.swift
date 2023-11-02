@@ -30,70 +30,18 @@ struct SignInStartView: View {
         clerk.client.signIn
     }
     
-    private var enabledVerificationStrategies: Set<Strategy> {
-        var strategies: Set<Strategy> = []
-        clerk.environment.userSettings.enabledAttributes.forEach { attribute in
-            strategies.formUnion(attribute.verificationStrategies)
-        }
-        return strategies
-    }
-    
-    private var thirdPartyProviders: [OAuthProvider] {
-        clerk.environment
-            .userSettings
-            .enabledThirdPartyProviders
-            .sorted()
-    }
-    
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                HStack(spacing: 6) {
-                    Image("clerk-logomark", bundle: .module)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20)
-                    Text("clerk")
-                        .font(.title3.weight(.semibold))
-                }
-                .font(.title3.weight(.medium))
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sign in")
-                        .font(.title2.weight(.semibold))
-                    Text("to continue to \(clerk.environment.displayConfig.applicationName)")
-                        .font(.subheadline.weight(.light))
-                        .foregroundStyle(.secondary)
-                }
-                
-                LazyVGrid(
-                    columns: Array(repeating: .init(.flexible()), count: min(thirdPartyProviders.count, thirdPartyProviders.count <= 2 ? 1 : 6)),
-                    alignment: .leading,
-                    content: {
-                        ForEach(thirdPartyProviders, id: \.self) { provider in
-                            AsyncButton(options: [.disableButton], action: {
-                                await signInAction(strategy: .oauth(provider: provider))
-                            }, label: {
-                                AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
-                                    .font(.footnote)
-                            })
-                            .buttonStyle(.plain)
-                        }
-                    }
+                HeaderView(
+                    title: "Sign in",
+                    subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)"
                 )
                 
-                HStack {
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundStyle(.quaternary)
-                    Text("or")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundStyle(.quaternary)
-                    
-                }
+                SignInSocialProvidersView()
+                    .onSuccess { dismiss() }
+                
+                OrDivider()
                 
                 VStack(spacing: 16) {
                     VStack {
@@ -113,7 +61,7 @@ struct SignInStartView: View {
                         
                         if displayingEmailEntry {
                             CustomTextField(text: $emailAddress)
-                                .frame(height: 44)
+                                .frame(height: 42)
                                 .textContentType(.emailAddress)
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
@@ -123,7 +71,7 @@ struct SignInStartView: View {
                         } else {
                             PhoneNumberField(text: $phoneNumber)
                                 .focused($focusedField, equals: .phoneNumber)
-                                .frame(height: 44)
+                                .frame(height: 42)
                                 .transition(.move(edge: .trailing).combined(with: .opacity))
                         }
                     }
@@ -187,7 +135,7 @@ struct SignInStartView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(30)
-        .background(.background)
+            .background(.background)
         }
     }
     
@@ -199,27 +147,7 @@ struct SignInStartView: View {
         do {
             KeyboardHelpers.dismissKeyboard()
             try await signIn.create(strategy)
-            
-            switch strategy {
-                
-            case .oauth:
-                signIn.startOAuth { result in
-                    switch result {
-                    case .success: dismiss()
-                    case .failure(let error): dump(error)
-                    }
-                }
-                
-            case .emailCode:
-                clerkUIState.presentedAuthStep = .signInFirstFactor
-                
-            case .phoneCode:
-                clerkUIState.presentedAuthStep = .signInFirstFactor
-                
-            case .transfer:
-                break
-            }
-            
+            clerkUIState.presentedAuthStep = .signInFactorOne
         } catch {
             dump(error)
         }

@@ -259,7 +259,7 @@ extension SignIn {
 
 extension SignIn {
     
-    public var strategy: Strategy? {
+    public var firstFactorStrategy: Strategy? {
         if supportedFirstFactors.contains(where: { $0.strategy == "password" }) {
             return .password
         }

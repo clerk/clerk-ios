@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/1/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct VerificationCodeView: View {
@@ -30,23 +32,10 @@ struct VerificationCodeView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
-            HStack(spacing: 6) {
-                Image("clerk-logomark", bundle: .module)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20)
-                Text("clerk")
-                    .font(.title3.weight(.semibold))
-            }
-            .font(.title3.weight(.medium))
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.title2.weight(.semibold))
-                Text(subtitle)
-                    .font(.subheadline.weight(.light))
-                    .foregroundStyle(.secondary)
-            }
+            HeaderView(
+                title: title,
+                subtitle: subtitle
+            )
             
             IdentityPreviewView(
                 imageUrl: profileImageUrl,
@@ -91,7 +80,7 @@ struct VerificationCodeView: View {
                     Task { await onResend?() }
                 }, label: {
                     Text("Didn't recieve a code? Resend")
-                        .font(.subheadline)
+                        .font(.footnote.weight(.medium))
                         .foregroundStyle(clerkTheme.colors.primary)
                 })
             }
@@ -100,7 +89,7 @@ struct VerificationCodeView: View {
                 await onUseAlernateMethod?()
             }, label: {
                 Text("Use another method")
-                    .font(.subheadline)
+                    .font(.footnote.weight(.medium))
                     .foregroundStyle(clerkTheme.colors.primary)
             })
         }
@@ -154,3 +143,5 @@ extension VerificationCodeView {
         safeIdentifier: "ClerkUser@clerk.dev"
     )
 }
+
+#endif

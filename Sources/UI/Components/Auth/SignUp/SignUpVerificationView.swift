@@ -28,11 +28,22 @@ struct SignUpVerificationView: View {
                 SignUpEmailCodeView()
             default:
                 ProgressView()
-                    .task { clerkUIState.authIsPresented = false }
+                    .task {
+                        switch signUp.status {
+                        case .missingRequirements:
+                            break // missing requirements
+                        default:
+                            clerkUIState.authIsPresented = false
+                        }
+                    }
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.bouncy, value: signUp.nextStrategyToVerify)
+        .onChange(of: signUp.nextStrategyToVerify) { _ in
+            KeyboardHelpers.dismissKeyboard()
+            FeedbackGenerator.success()
+        }
     }
 }
 

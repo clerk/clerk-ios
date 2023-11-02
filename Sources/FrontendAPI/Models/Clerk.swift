@@ -180,7 +180,7 @@ extension Clerk {
         )
         
         let displayConfig = Environment.DisplayConfig(
-            applicationName: "Test"
+            applicationName: "Clerk"
         )
         
         clerk.environment.userSettings = userSettings

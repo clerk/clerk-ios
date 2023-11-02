@@ -16,7 +16,8 @@ public final class ClerkUIState: ObservableObject {
 
     public enum AuthStep {        
         case signInStart
-        case signInFirstFactor
+        case signInFactorOne
+        case signInFactorTwo
         case signUpStart
         case signUpVerification
     }
@@ -25,19 +26,6 @@ public final class ClerkUIState: ObservableObject {
         willSet {
             authIsPresented = true
         }
-    }
-    
-    public enum SignInRoute {
-        case start
-        case verifyEmailAddress
-        case verifyPhone
-        case password
-    }
-    
-    public enum SignUpRoute {
-        case start
-        case verifyEmailAddress
-        case verifyPhone
     }
     
 }

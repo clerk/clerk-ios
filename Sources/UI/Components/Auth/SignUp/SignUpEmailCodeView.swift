@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/1/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 import Factory
@@ -36,7 +38,7 @@ struct SignUpEmailCodeView: View {
                 await attempt()
             }
             .onResend {
-               await prepare()
+                await prepare()
             }
             .onUseAlernateMethod {
                 clerkUIState.presentedAuthStep = .signUpStart
@@ -75,3 +77,5 @@ struct SignUpEmailCodeView: View {
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }
+
+#endif

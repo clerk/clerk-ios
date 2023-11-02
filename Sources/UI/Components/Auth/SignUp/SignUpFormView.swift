@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/1/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 
@@ -92,11 +94,7 @@ struct SignUpFormView: View {
             
             VStack(alignment: .leading) {
                 Text("Password").font(.footnote.weight(.medium))
-                CustomTextField(text: $password, isSecureField: true)
-                    .frame(height: 44)
-                    .textContentType(.newPassword)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
+                PasswordInputView(password: $password)
                     .focused($focusedField, equals: .password)
             }
             
@@ -136,5 +134,7 @@ struct SignUpFormView: View {
 
 #Preview {
     SignUpFormView()
-    .padding()
+        .padding()
 }
+
+#endif

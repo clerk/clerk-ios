@@ -19,8 +19,10 @@ public struct AuthView: View {
             switch clerkUIState.presentedAuthStep {
             case .signInStart:
                 SignInStartView()
-            case .signInFirstFactor:
+            case .signInFactorOne:
                 SignInFactorOneView()
+            case .signInFactorTwo:
+                SignInFactorTwoView()
             case .signUpStart:
                 SignUpStartView()
             case .signUpVerification:
@@ -31,18 +33,9 @@ public struct AuthView: View {
         .background(.background)
         .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.bouncy, value: clerkUIState.presentedAuthStep)
-        .overlay(alignment: .topTrailing) {
-            Button(action: {
-                clerkUIState.authIsPresented = false
-            }, label: {
-                Text("Cancel")
-                    .font(.caption.weight(.medium))
-            })
-            .padding(30)
-            .tint(.primary)
-        }
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
+            FeedbackGenerator.success()
         }
         .task {
             try? await clerk.environment.get()
