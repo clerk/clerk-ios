@@ -62,7 +62,7 @@ struct SignInFactorOnePasswordView: View {
                             .font(.caption2.weight(.bold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 36)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
                             .background(clerkTheme.colors.primary)
                             .clipShape(.rect(cornerRadius: 8, style: .continuous))
                     }

@@ -12,11 +12,11 @@ import SwiftUI
 struct OTPFieldView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
-    @Binding var otpCode: String
+    @Binding var code: String
     let numberOfInputs: Int = 6
     
     @FocusState private var isKeyboardShowing: Bool
-    @State var cursorAnimating = false
+    @State private var cursorAnimating = false
     
     var body: some View {
         HStack {
@@ -26,7 +26,7 @@ struct OTPFieldView: View {
         }
         .environment(\.layoutDirection, .leftToRight)
         .overlay {
-            TextField("", text: $otpCode.maxLength(numberOfInputs))
+            TextField("", text: $code.maxLength(numberOfInputs))
                 .textContentType(.oneTimeCode)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -43,15 +43,15 @@ struct OTPFieldView: View {
     @ViewBuilder 
     func otpFieldInput(index: Int) -> some View {
         var isSelected: Bool {
-            isKeyboardShowing && otpCode.count == index
+            isKeyboardShowing && code.count == index
         }
                 
         VStack(spacing: 12) {
             ZStack {
-                if otpCode.count > index {
-                    let startIndex = otpCode.startIndex
-                    let charIndex = otpCode.index(startIndex, offsetBy: index)
-                    let charToString = String(otpCode[charIndex])
+                if code.count > index {
+                    let startIndex = code.startIndex
+                    let charIndex = code.index(startIndex, offsetBy: index)
+                    let charToString = String(code[charIndex])
                     Text(charToString)
                 } else {
                     Text(" ")
@@ -66,7 +66,9 @@ struct OTPFieldView: View {
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
                         .onAppear {
-                            cursorAnimating.toggle()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                cursorAnimating.toggle()
+                            }
                         }
                 }
             }
@@ -92,7 +94,7 @@ private extension Binding where Value == String {
 }
 
 #Preview {
-    OTPFieldView(otpCode: .constant(""))
+    OTPFieldView(code: .constant(""))
         .padding()
 }
 

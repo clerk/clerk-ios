@@ -14,7 +14,7 @@ struct SignInFactorOneEmailCodeView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
-    @State private var otpCode: String = ""
+    @State private var code: String = ""
     
     private var signIn: SignIn {
         clerk.client.signIn
@@ -23,7 +23,7 @@ struct SignInFactorOneEmailCodeView: View {
     var body: some View {
         ScrollView {
             VerificationCodeView(
-                otpCode: $otpCode,
+                code: $code,
                 title: "Check your email",
                 subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
                 formTitle: "Verification code",
@@ -62,7 +62,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptFirstFactor(.emailCode(code: otpCode))
+            try await signIn.attemptFirstFactor(.emailCode(code: code))
         } catch {
             dump(error)
         }

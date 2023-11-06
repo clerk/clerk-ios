@@ -97,6 +97,23 @@ extension Clerk.Environment.UserSettings {
         attributes.filter({ $0.value.verifyAtSignUp })
     }
     
+    private func userAttribute(key: String) -> AttributesConfig? {
+        return attributes.first(where: { $0.key == key && $0.value.enabled })?.value
+    }
+    
+    public var preferredEmailVerificationStrategy: Strategy? {
+        let emailAttribute = userAttribute(key: "email_address")
+        let strategies = emailAttribute?.verificationStrategies ?? []
+        
+        if strategies.contains(where: { $0 == .emailCode }) {
+            return .emailCode
+        } else if strategies.contains(where: { $0 == .emailLink }) {
+            return .emailLink
+        }
+        
+        return nil
+    }
+    
 }
 
 extension Clerk.Environment {

@@ -8,11 +8,12 @@
 #if canImport(UIKit)
 
 import SwiftUI
+import Factory
 import PhoneNumberKit
 
 extension PhoneNumberField {
     final class Model: ObservableObject {
-        private let phoneNumberKit = PhoneNumberKit()
+        private let phoneNumberKit = Container.shared.phoneNumberKit()
         let textField: PhoneNumberTextField
         
         init() {

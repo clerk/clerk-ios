@@ -9,6 +9,7 @@
 
 import SwiftUI
 import NukeUI
+import PhoneNumberKit
 
 struct IdentityPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
@@ -16,6 +17,8 @@ struct IdentityPreviewView: View {
     var imageUrl: String?
     var label: String?
     var action: (() -> Void)?
+    
+    private let phoneNumberKit = PhoneNumberKit()
     
     var body: some View {
         HStack(alignment: .center) {
@@ -27,11 +30,17 @@ struct IdentityPreviewView: View {
                     if let image = state.image {
                         image.resizable().scaledToFit()
                     } else {
-                        clerkTheme.colors.primary
+                        Color(.secondarySystemBackground)
                     }
                 }
                 .frame(width: 20, height: 20)
                 .clipShape(Circle())
+            } else if 
+                let label,
+                let phoneNumber = try? phoneNumberKit.parse(label),
+                let country = CountryCodePickerViewController.Country(for: phoneNumber.regionID ?? "", with: phoneNumberKit)
+            {
+                Text(country.flag)
             }
             
             if let label {

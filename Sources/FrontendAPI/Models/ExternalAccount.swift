@@ -12,9 +12,10 @@ import Foundation
 
  External account must be verified, so that you can make sure they can be assigned to their rightful owners. The ExternalAccount object holds all necessary state around the verification process.
  */
-public struct ExternalAccount: Decodable {
+public struct ExternalAccount: Decodable, Identifiable {
+    
     /// A unique identifier for this external account.
-    let id: String
+    public let id: String
     
     /// The provider name e.g. google
     let provider: String
@@ -29,7 +30,7 @@ public struct ExternalAccount: Decodable {
     let approvedScopes: String
     
     /// The provided email address of the user.
-    let emailAddress: String
+    public let emailAddress: String
     
     /// The provided first name of the user.
     let firstName: String
@@ -54,4 +55,12 @@ public struct ExternalAccount: Decodable {
     
     /// An object holding information on the verification of this external account.
     let verification: Verification
+}
+
+extension ExternalAccount {
+    
+    public var externalProvider: OAuthProvider? {
+        .init(strategy: provider)
+    }
+    
 }

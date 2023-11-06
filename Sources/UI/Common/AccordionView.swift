@@ -26,8 +26,9 @@ struct AccordionView<Content: View, ExpandedContent: View>: View {
                     content
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.down")
-                        .font(.subheadline.weight(.medium))
+                        .imageScale(.small)
                         .foregroundStyle(.secondary)
+                        .font(.system(size: 16).weight(.medium))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
                 .contentShape(Rectangle())

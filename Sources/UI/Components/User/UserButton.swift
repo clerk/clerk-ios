@@ -42,7 +42,7 @@ public struct UserButton: View {
             .clipShape(Circle())
         })
         .sheet(isPresented: $profileIsPresented, content: {
-            Text("Profile goes here.")
+            UserProfileView()
         })
     }
     
@@ -58,6 +58,7 @@ public struct UserButton: View {
 #Preview {
     UserButton()
         .environmentObject(Clerk.mock)
+        .environmentObject(ClerkUIState())
 }
 
 #endif

@@ -15,7 +15,7 @@ struct SignUpPhoneCodeView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
-    @State private var otpCode: String = ""
+    @State private var code: String = ""
     
     private var signUp: SignUp {
         clerk.client.signUp
@@ -24,7 +24,7 @@ struct SignUpPhoneCodeView: View {
     var body: some View {
         ScrollView {
             VerificationCodeView(
-                otpCode: $otpCode,
+                code: $code,
                 title: "Verify your phone number",
                 subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
                 formTitle: "Verification code",
@@ -64,7 +64,7 @@ struct SignUpPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp.attemptVerification(.phoneCode(code: otpCode))
+            try await signUp.attemptVerification(.phoneCode(code: code))
         } catch {
             dump(error)
         }

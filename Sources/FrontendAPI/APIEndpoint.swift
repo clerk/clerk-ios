@@ -221,6 +221,76 @@ extension APIEndpoint.V1Endpoint {
 
 extension APIEndpoint.V1Endpoint.MeEndpoint {
     
+    var emailAddresses: EmailAddressesEndpoint {
+        EmailAddressesEndpoint(path: path + "/email_addresses")
+    }
+    
+    struct EmailAddressesEndpoint {
+        /// Path: `v1/me/email_addresses`
+        let path: String
+        
+        func post(_ params: EmailAddress.CreateParams) -> Request<ClientResponse<EmailAddress>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
+    
+    public func id(_ id: String) -> WithID {
+        WithID(path: path + "/\(id)")
+    }
+
+    public struct WithID {
+        /// Path: `/v1/client/email_addresses/{id}`
+        public let path: String
+        
+        var get: Request<ClientResponse<EmailAddress>> {
+            .init(path: path)
+        }
+        
+        var delete: Request<Void> {
+            .init(path: path, method: .delete)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
+    
+    var prepareVerification: PrepareVerificationEndpoint {
+        PrepareVerificationEndpoint(path: path + "/prepare_verification")
+    }
+    
+    struct PrepareVerificationEndpoint {
+        /// Path: `v1/me/email_addresses/{id}/prepare_verification`
+        let path: String
+        
+        func post(_ params: EmailAddress.PrepareParams) -> Request<ClientResponse<EmailAddress>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
+    
+    var attemptVerification: AttemptVerificationEndpoint {
+        AttemptVerificationEndpoint(path: path + "/attempt_verification")
+    }
+    
+    struct AttemptVerificationEndpoint {
+        /// Path: `v1/me/email_addresses/{id}/attempt_verification`
+        let path: String
+        
+        func post(_ params: EmailAddress.AttemptParams) -> Request<ClientResponse<EmailAddress>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
     var phoneNumbers: PhoneNumbersEndpoint {
         PhoneNumbersEndpoint(path: path + "/phone_numbers")
     }
@@ -229,9 +299,58 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/phone_numbers`
         let path: String
         
-        func get() -> Request<User> {
-            .init(path: path)
+        func post(_ params: PhoneNumber.CreateParams) -> Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .post, body: params)
         }
     }
     
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
+    
+    public func id(_ id: String) -> WithID {
+        WithID(path: path + "/\(id)")
+    }
+
+    public struct WithID {
+        /// Path: `/v1/me/phone_numbers/{id}`
+        public let path: String
+        
+        var get: Request<ClientResponse<PhoneNumber>> {
+            return .init(path: path)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
+    
+    var prepareVerification: PrepareVerificationEndpoint {
+        PrepareVerificationEndpoint(path: path + "/prepare_verification")
+    }
+    
+    struct PrepareVerificationEndpoint {
+        /// Path: `v1/me/phone_numbers/{id}/prepare_verification`
+        let path: String
+        
+        func post(_ params: PhoneNumber.PrepareParams) -> Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
+    
+    var attemptVerification: AttemptVerificationEndpoint {
+        AttemptVerificationEndpoint(path: path + "/attempt_verification")
+    }
+    
+    struct AttemptVerificationEndpoint {
+        /// Path: `v1/me/phone_numbers/{id}/attempt_verification`
+        let path: String
+        
+        func post(_ params: PhoneNumber.AttemptParams) -> Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
 }

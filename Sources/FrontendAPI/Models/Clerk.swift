@@ -135,11 +135,50 @@ extension Clerk {
             emailAddress: "ClerkUser@clerk.dev",
             phoneNumber: "+12015550123"
         )
+                
+        let emailAddresses = [
+            EmailAddress(
+                id: "123",
+                emailAddress: "ClerkUser@clerk.dev",
+                reserved: false,
+                verification: .init(),
+                linkedTo: nil
+            )
+        ]
+        
+        let phoneNumbers = [
+            PhoneNumber(
+                id: "123",
+                phoneNumber: "+12015550123",
+                reservedForSecondFactor: false,
+                defaultSecondFactor: false,
+                verification: .init(),
+                linkedTo: nil,
+                backupCodes: nil
+            )
+        ]
+        
+        let user = User(
+            firstName: "Clerk", 
+            lastName: "User",
+            imageUrl: "image",
+            primaryEmailAddressId: "123",
+            primaryPhoneNumberId: "123",
+            emailAddresses: emailAddresses,
+            phoneNumbers: phoneNumbers
+        )
+        
+        let session = Session(
+            id: "123",
+            user: user,
+            status: "active"
+        )
         
         let client = Client(
             signIn: signIn,
             signUp: signUp,
-            sessions: []
+            sessions: [session],
+            lastActiveSessionId: "123"
         )
         
         let userSettings = Environment.UserSettings(

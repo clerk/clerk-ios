@@ -11,9 +11,8 @@ import SwiftUI
 
 struct VerificationCodeView: View {
     @Environment(\.clerkTheme) private var clerkTheme
-    @State private var isSubmittingCode: Bool = false
     
-    @Binding var otpCode: String
+    @Binding var code: String
     
     let title: String
     let subtitle: String
@@ -27,9 +26,7 @@ struct VerificationCodeView: View {
     var onIdentityPreviewTapped: (() async -> Void)?
     var onUseAlernateMethod: (() async -> Void)?
     var onCancel: (() async -> Void)?
-    
-    private let requiredOtpCodeLength = 6
-    
+        
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
             HeaderView(
@@ -45,45 +42,11 @@ struct VerificationCodeView: View {
                 }
             )
             
-            VStack(alignment: .leading) {
-                Text(formTitle)
-                    .font(.subheadline.weight(.medium))
-                    .padding(.bottom, 8)
-                
-                Text(formSubtitle)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .font(.footnote.weight(.light))
-                    .foregroundStyle(.secondary)
-                
-                HStack(alignment: .lastTextBaseline, spacing: 20) {
-                    OTPFieldView(otpCode: $otpCode)
-                        .frame(maxWidth: 250)
-                        .padding(.vertical)
-                        .padding(.bottom)
-                    
-                    if isSubmittingCode {
-                        ProgressView()
-                            .offset(y: 4)
-                    }
-                }
-                .onChange(of: otpCode) { newValue in
-                    if newValue.count == requiredOtpCodeLength {
-                        Task {
-                            isSubmittingCode = true
-                            await onCodeEntry?()
-                            isSubmittingCode = false
-                        }
-                    }
-                }
-                
-                AsyncButton(options: [.disableButton], action: {
-                    Task { await onResend?() }
-                }, label: {
-                    Text("Didn't recieve a code? Resend")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.primary)
-                })
-            }
+            CodeFormView(
+                code: $code,
+                title: formTitle,
+                subtitle: formSubtitle
+            )
             
             AsyncButton(action: {
                 await onUseAlernateMethod?()
@@ -135,7 +98,7 @@ extension VerificationCodeView {
 
 #Preview {
     VerificationCodeView(
-        otpCode: .constant(""),
+        code: .constant(""),
         title: "Check your email",
         subtitle: "to continue to Test 1",
         formTitle: "Verification code",

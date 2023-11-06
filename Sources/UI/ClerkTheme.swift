@@ -15,6 +15,7 @@ public struct ClerkTheme {
     
     public struct Colors {
         public var primary: Color
+        public var primaryButtonTextColor: Color
     }
     
     public enum PresentationStyle {
@@ -27,7 +28,8 @@ extension ClerkTheme {
     
     static let `default` = Self(
         colors: .init(
-            primary: Color(.clerkPurple)
+            primary: Color(.label),
+            primaryButtonTextColor: Color(.systemBackground)
         ),
         authPresentationStyle: .sheet
     )

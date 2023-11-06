@@ -32,6 +32,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         
         // Required for native application flow on all requests
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
+        request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.63.0")])
         
         // Encode body with url-encoded form
         if let data = request.httpBody {

@@ -15,6 +15,70 @@ import Foundation
  Finally, a User object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally to store arbitrary information. The metadata are split into publicMetadata and privateMetadata. Both types are set from the Backend API, but public metadata can also be accessed from the Frontend API.
  */
 public struct User: Decodable {
+    init(
+        id: String = "",
+        username: String? = nil,
+        firstName: String? = nil, 
+        lastName: String? = nil,
+        gender: String? = nil,
+        birthday: String? = nil,
+        imageUrl: String = "",
+        hasImage: Bool = false,
+        primaryEmailAddressId: String? = nil,
+        primaryPhoneNumberId: String? = nil,
+        primaryWeb3WalletId: String? = nil,
+        passwordEnabled: Bool = false,
+        twoFactorEnabled: Bool = false,
+        totpEnabled: Bool = false,
+        backupCodeEnabled: Bool = false,
+        emailAddresses: [EmailAddress] = [],
+        phoneNumbers: [PhoneNumber] = [],
+        web3Wallets: [String] = [],
+        externalAccounts: [ExternalAccount] = [],
+        samlAccounts: [String] = [],
+        publicMetadata: JSON? = nil,
+        unsafeMetadata: JSON? = nil,
+        externalId: String? = nil,
+        lastSignInAt: Date? = nil,
+        banned: Bool = false,
+        locked: Bool = false,
+        createdAt: Date = .now,
+        updatedAt: Date? = nil,
+        deleteSelfEnabled: Bool = false,
+        createOrganizationEnabled: Bool = false
+    ) {
+        self.id = id
+        self.username = username
+        self.firstName = firstName
+        self.lastName = lastName
+        self.gender = gender
+        self.birthday = birthday
+        self.imageUrl = imageUrl
+        self.hasImage = hasImage
+        self.primaryEmailAddressId = primaryEmailAddressId
+        self.primaryPhoneNumberId = primaryPhoneNumberId
+        self.primaryWeb3WalletId = primaryWeb3WalletId
+        self.passwordEnabled = passwordEnabled
+        self.twoFactorEnabled = twoFactorEnabled
+        self.totpEnabled = totpEnabled
+        self.backupCodeEnabled = backupCodeEnabled
+        self.emailAddresses = emailAddresses
+        self.phoneNumbers = phoneNumbers
+        self.web3Wallets = web3Wallets
+        self.externalAccounts = externalAccounts
+        self.samlAccounts = samlAccounts
+        self.publicMetadata = publicMetadata
+        self.unsafeMetadata = unsafeMetadata
+        self.externalId = externalId
+        self.lastSignInAt = lastSignInAt
+        self.banned = banned
+        self.locked = locked
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.deleteSelfEnabled = deleteSelfEnabled
+        self.createOrganizationEnabled = createOrganizationEnabled
+    }
+    
     /// A unique identifier for the user.
     let id: String
     
@@ -61,16 +125,16 @@ public struct User: Decodable {
     let backupCodeEnabled: Bool
     
     /// An array of all the EmailAddress objects associated with the user. Includes the primary.
-    let emailAddresses: [EmailAddress]
+    @DecodableDefault.EmptyList private(set) public var emailAddresses: [EmailAddress]
     
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
-    let phoneNumbers: [PhoneNumber]
+    @DecodableDefault.EmptyList private(set) public var phoneNumbers: [PhoneNumber]
     
     /// An array of all the Web3Wallet objects associated with the user. Includes the primary.
     let web3Wallets: [String]
     
     /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
-//    let externalAccounts: [ExternalAccount]
+    public let externalAccounts: [ExternalAccount]
     
     /// An experimental list of saml accounts associated with the user.
     let samlAccounts: [String]
@@ -97,7 +161,7 @@ public struct User: Decodable {
     let locked: Bool
     
     /// Date when the user was first created.
-    let createdAt: Int
+    let createdAt: Date
     
     /// Date of the last time the user was updated.
     let updatedAt: Date?
@@ -107,4 +171,70 @@ public struct User: Decodable {
     
     /// A boolean indicating whether the organization creation is enabled for the user or not.
     let createOrganizationEnabled: Bool
+}
+
+extension User {
+    
+    public var fullName: String? {
+        [firstName, lastName]
+            .compactMap { $0 }
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    public var initials: String? {
+        [firstName, lastName]
+            .compactMap { $0?.first }
+            .map { String($0) }
+            .joined()
+    }
+    
+    public var primaryEmailAddress: EmailAddress? {
+        guard let primaryEmailAddressId else { return nil }
+        return emailAddresses.first(where: { $0.id == primaryEmailAddressId })
+    }
+    
+    public var primaryPhoneNumber: PhoneNumber? {
+        guard let primaryPhoneNumberId else { return nil }
+        return phoneNumbers.first(where: { $0.id == primaryPhoneNumberId })
+    }
+    
+    public var identifier: String? {
+        username ?? primaryEmailAddress?.emailAddress ?? primaryPhoneNumber?.phoneNumber
+    }
+    
+}
+
+extension User {
+    
+    @discardableResult
+    @MainActor
+    public func addEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
+        let params = EmailAddress.CreateParams(emailAddress: emailAddress)
+        let request = APIEndpoint
+            .v1
+            .me
+            .emailAddresses
+            .post(params)
+        
+        let newEmail = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.shared.client.get()
+        return newEmail
+    }
+    
+    @discardableResult
+    @MainActor
+    public func addPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
+        let params = PhoneNumber.CreateParams(phoneNumber: phoneNumber)
+        let request = APIEndpoint
+            .v1
+            .me
+            .phoneNumbers
+            .post(params)
+        
+        let newPhoneNumber = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.shared.client.get()
+        return newPhoneNumber
+    }
+    
 }
