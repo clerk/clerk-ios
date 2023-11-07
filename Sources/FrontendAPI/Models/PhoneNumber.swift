@@ -41,6 +41,8 @@ public struct PhoneNumber: Decodable, Identifiable {
     let backupCodes: [String]?
 }
 
+extension PhoneNumber: Equatable {}
+
 extension Container {
     
     public var phoneNumberKit: Factory<PhoneNumberKit> {

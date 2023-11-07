@@ -57,6 +57,8 @@ public struct ExternalAccount: Decodable, Identifiable {
     let verification: Verification
 }
 
+extension ExternalAccount: Equatable {}
+
 extension ExternalAccount {
     
     public var externalProvider: OAuthProvider? {

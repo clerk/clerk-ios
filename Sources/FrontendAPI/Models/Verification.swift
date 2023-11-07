@@ -9,6 +9,7 @@ import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
 public class Verification: Decodable {
+    
     public init(
         status: Verification.Status? = nil,
         strategy: Strategy? = nil,
@@ -43,12 +44,32 @@ public class Verification: Decodable {
     /// The redirect URL for an external verification.
     public var externalVerificationRedirectUrl: String?
     
-    public enum Status: String, Decodable {
+    public enum Status: String, Decodable, Equatable {
         case unverified
         case verified
         case transferable
         case failed
         case expired
+    }
+}
+
+extension Verification: Equatable, Hashable {
+    public static func == (lhs: Verification, rhs: Verification) -> Bool {
+        lhs.status == rhs.status &&
+        lhs.strategy == rhs.strategy &&
+        lhs.attempts == rhs.attempts &&
+        lhs.expireAt == rhs.expireAt &&
+        lhs.error == rhs.error &&
+        lhs.externalVerificationRedirectUrl == rhs.externalVerificationRedirectUrl
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(status)
+        hasher.combine(strategy)
+        hasher.combine(attempts)
+        hasher.combine(expireAt)
+        hasher.combine(error)
+        hasher.combine(externalVerificationRedirectUrl)
     }
 }
 

@@ -39,7 +39,7 @@ struct SignUpVerificationView: View {
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))
-        .animation(.bouncy, value: signUp.nextStrategyToVerify)
+        .animation(.snappy, value: signUp.nextStrategyToVerify)
         .onChange(of: signUp.nextStrategyToVerify) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()

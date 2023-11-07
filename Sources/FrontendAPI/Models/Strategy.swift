@@ -17,7 +17,7 @@ import RegexBuilder
  - `oauth_{provider}`: Authenticate against various OAuth providers.
  - `web3_{signature}_signature`: Authenticate against Web3 signatures.
  */
-public enum Strategy: Hashable {
+public enum Strategy: Hashable, Equatable {
     case password
     case phoneCode
     case emailCode

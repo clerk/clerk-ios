@@ -40,7 +40,7 @@ struct SignInFactorOneView: View {
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))
-        .animation(.bouncy, value: signIn.firstFactorStrategy)
+        .animation(.snappy, value: signIn.firstFactorStrategy)
     }
 }
 

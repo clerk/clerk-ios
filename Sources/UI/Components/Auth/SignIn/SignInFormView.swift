@@ -60,7 +60,7 @@ struct SignInFormView: View {
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .animation(.bouncy, value: displayingEmailEntry)
+            .animation(.snappy, value: displayingEmailEntry)
             .onChange(of: displayingEmailEntry) { showingEmail in
                 if focusedField != nil {
                     focusedField = showingEmail ? .email : .phoneNumber

@@ -8,13 +8,13 @@
 import Foundation
 
 /// The body of Clerk API Error responses, can contain multiple `ClerkAPIError`.
-struct ClerkErrorResponse: Decodable {
+struct ClerkErrorResponse: Decodable, Equatable {
     let errors: [ClerkAPIError]
     let clerkTraceId: String
 }
 
 /// Custom error return by the Clerk API
-public struct ClerkAPIError: Error, LocalizedError, Decodable {
+public struct ClerkAPIError: Error, LocalizedError, Decodable, Equatable, Hashable {
     let code: String
     let message: String?
     let longMessage: String?

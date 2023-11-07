@@ -42,15 +42,17 @@ public struct EmailAddress: Decodable, Identifiable {
     let reserved: Bool
     
     /// An object holding information on the verification of this email address.
-    let verification: Verification?
+    public let verification: Verification?
     
     /// An array of objects containing information about any identifications that might be linked to this email address.
     let linkedTo: [JSON]?
 }
 
+extension EmailAddress: Equatable, Hashable {}
+
 extension EmailAddress {
     
-    var isPrimary: Bool {
+    public var isPrimary: Bool {
         Clerk.shared.client.lastActiveSession?.user.primaryEmailAddressId == id
     }
     
@@ -153,6 +155,17 @@ extension EmailAddress {
             .emailAddresses
             .id(id)
             .delete
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    @MainActor
+    public func setAsPrimary() async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .update(.init(primaryEmailAddressId: id))
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

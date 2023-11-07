@@ -14,7 +14,7 @@ struct UserProfileSectionHeader: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text(title).font(.callout.weight(.medium))
+            Text(title).font(.body.weight(.semibold))
             Divider()
         }
     }

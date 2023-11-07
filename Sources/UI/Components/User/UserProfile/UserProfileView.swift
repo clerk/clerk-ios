@@ -31,9 +31,7 @@ public struct UserProfileView: View {
                 UserProfileExternalAccountSection()
             }
             .padding(30)
-            .animation(.bouncy, value: user?.emailAddresses.count)
-            .animation(.bouncy, value: user?.phoneNumbers.count)
-            .animation(.bouncy, value: user?.externalAccounts.count)
+            .animation(.snappy, value: user)
         }
         .task {
             try? await clerk.client.get()

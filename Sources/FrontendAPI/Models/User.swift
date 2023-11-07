@@ -173,6 +173,8 @@ public struct User: Decodable {
     let createOrganizationEnabled: Bool
 }
 
+extension User: Equatable {}
+
 extension User {
     
     public var fullName: String? {
@@ -206,6 +208,41 @@ extension User {
 }
 
 extension User {
+    
+    public struct UpdateParams: Encodable {
+        /// The user's username.
+        var username: String?
+        /// The user's first name.
+        var firstName: String?
+        /// The user's last name.
+        var lastName: String?
+        /// The unique identifier for the EmailAddress that the user has set as primary.
+        var primaryEmailAddressId: String?
+        /// The unique identifier for the PhoneNumber that the user has set as primary.
+        var primaryPhoneNumberId: String?
+        /// The unique identifier for the Web3Wallet that the user signed up with.
+        var primaryWeb3WalletId: String?
+        /**
+        Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
+        Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
+         */
+        var unsafeMetadata: JSON?
+    }
+    
+}
+
+extension User {
+    
+    @MainActor
+    public func update(_ params: User.UpdateParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .update(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
     
     @discardableResult
     @MainActor

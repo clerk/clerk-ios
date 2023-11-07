@@ -11,9 +11,11 @@ import SwiftUI
 import Clerk
 
 extension UserProfileAddEmailView {
-    enum Step {
+    public enum Step: Hashable, Identifiable {
         case add
-        case code
+        case code(emailAddress: EmailAddress)
+        
+        var id: Self { self }
     }
 }
 
@@ -22,7 +24,7 @@ struct UserProfileAddEmailView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
-    @State private var step: Step = .add
+    @State private var step: Step
     @State private var email = ""
     @State private var code = ""
     
@@ -30,6 +32,13 @@ struct UserProfileAddEmailView: View {
     @State private var emailAddress: EmailAddress?
     
     @FocusState var isFocused: Bool
+    
+    init(initialStep: Step = .add) {
+        self._step = State(initialValue: initialStep)
+        if case .code(let emailAddress) = initialStep {
+            self._emailAddress = State(initialValue: emailAddress)
+        }
+    }
     
     private var user: User? {
         clerk.client.lastActiveSession?.user
@@ -105,13 +114,16 @@ struct UserProfileAddEmailView: View {
         CodeFormView(
             code: $code,
             title: "Verification code",
-            subtitle: "Enter the verification code sent to \(email)"
+            subtitle: "Enter the verification code sent to \(emailAddress?.emailAddress ?? "the email address provided.")"
         )
         .onCodeEntry {
             await attempt()
         }
         .onResend {
             await prepare()
+        }
+        .task {
+           await prepare()
         }
     }
     
@@ -122,7 +134,7 @@ struct UserProfileAddEmailView: View {
                     .font(.title2.weight(.bold))
                 
                 content
-                    .animation(.bouncy, value: step)
+                    .animation(.snappy, value: step)
                 
                 HStack {
                     Spacer()
@@ -138,7 +150,9 @@ struct UserProfileAddEmailView: View {
                     
                     if step == .add {
                         AsyncButton(options: [.disableButton, .showProgressView], action: {
-                            await prepare()
+                            await create()
+                            guard let emailAddress else { return }
+                            step = .code(emailAddress: emailAddress)
                         }, label: {
                             Text("CONTINUE")
                                 .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
@@ -152,18 +166,24 @@ struct UserProfileAddEmailView: View {
                         })
                     }
                 }
-                .animation(.bouncy, value: step)
+                .animation(.snappy, value: step)
             }
             .padding(30)
         }
     }
     
-    private func prepare() async {
+    private func create() async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             self.emailAddress = try await user.addEmailAddress(email)
+        } catch {
+            dump(error)
+        }
+    }
+    
+    private func prepare() async {
+        do {
             try await self.emailAddress?.prepareVerification(strategy: prepareStrategy)
-            self.step = .code
         } catch {
             dump(error)
         }

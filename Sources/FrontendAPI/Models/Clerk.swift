@@ -140,9 +140,12 @@ extension Clerk {
             EmailAddress(
                 id: "123",
                 emailAddress: "ClerkUser@clerk.dev",
-                reserved: false,
-                verification: .init(),
-                linkedTo: nil
+                verification: .init(status: .verified)
+            ),
+            EmailAddress(
+                id: "456",
+                emailAddress: "ClerkUser2@clerk.dev",
+                verification: .init(status: .unverified)
             )
         ]
         

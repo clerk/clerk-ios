@@ -32,7 +32,7 @@ public struct AuthView: View {
         .frame(maxWidth: .infinity)
         .background(.background)
         .transition(.offset(y: 50).combined(with: .opacity))
-        .animation(.bouncy, value: clerkUIState.presentedAuthStep)
+        .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()

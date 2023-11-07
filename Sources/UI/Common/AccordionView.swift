@@ -18,7 +18,7 @@ struct AccordionView<Content: View, ExpandedContent: View>: View {
     var body: some View {
         VStack(spacing: 20) {
             Button(action: {
-                withAnimation(.bouncy) {
+                withAnimation(.snappy) {
                     isExpanded.toggle()
                 }
             }, label: {

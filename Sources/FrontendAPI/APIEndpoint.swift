@@ -212,8 +212,12 @@ extension APIEndpoint.V1Endpoint {
         /// Path: `v1/me`
         let path: String
         
-        func get() -> Request<User> {
+        func get() -> Request<ClientResponse<User>> {
             .init(path: path)
+        }
+        
+        func update(_ params: User.UpdateParams) -> Request<ClientResponse<User>> {
+            .init(path: path, method: .patch, body: params)
         }
     }
     
