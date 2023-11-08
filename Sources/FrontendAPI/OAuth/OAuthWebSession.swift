@@ -7,7 +7,7 @@
 
 import AuthenticationServices
 
-public final class OAuthWebSession: NSObject, ObservableObject {
+public final class OAuthWebSession: NSObject {
     var webAuthSession: ASWebAuthenticationSession?
     var authAction: AuthAction = .signIn
     

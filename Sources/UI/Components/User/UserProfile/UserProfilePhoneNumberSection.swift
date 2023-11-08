@@ -29,6 +29,77 @@ struct UserProfilePhoneNumberSection: View {
         user?.phoneNumbers ?? []
     }
     
+    @ViewBuilder
+    private func primaryCallout(phoneNumber: PhoneNumber) -> some View {
+        if phoneNumber.isPrimary {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Primary phone number")
+                    .font(.subheadline.weight(.medium))
+                Text("This phone number is the primary phone number")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } else if phoneNumber.verification?.status == .verified {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Set as primary phone number")
+                    .font(.subheadline.weight(.medium))
+                Text("Set this phone number as the primary to receive communications regarding your account")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                AsyncButton(options: [.disableButton, .showProgressView], action: {
+                    await setAsPrimary(phoneNumber: phoneNumber)
+                }, label: {
+                    Text("Set as primary")
+                        .font(.footnote.weight(.medium))
+                })
+                .tint(clerkTheme.colors.primary)
+            }
+        }
+    }
+    
+    private func setAsPrimary(phoneNumber: PhoneNumber) async {
+        do {
+            try await phoneNumber.setAsPrimary()
+        } catch {
+            dump(error)
+        }
+    }
+    
+    @ViewBuilder
+    private func unverifiedCallout(phoneNumber: PhoneNumber) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Verify phone number")
+                .font(.subheadline.weight(.medium))
+            Text("Complete verification to access all features with this phone number")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: {
+                addPhoneNumberStep = .code(phoneNumber: phoneNumber)
+            }, label: {
+                Text("Verify phone number")
+                    .font(.footnote.weight(.medium))
+            })
+            .tint(clerkTheme.colors.primary)
+        }
+    }
+    
+    @ViewBuilder
+    private func removeCallout(phoneNumber: PhoneNumber) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Remove")
+                .font(.subheadline.weight(.medium))
+            Text("Delete this phone number and remove it from your account")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Button("Remove phone number", role: .destructive) {
+                confirmDeletePhoneNumber = phoneNumber
+            }
+            .font(.footnote.weight(.medium))
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             UserProfileSectionHeader(title: "Phone numbers")
@@ -39,20 +110,28 @@ struct UserProfilePhoneNumberSection: View {
                             Text(flag)
                         }
                         Text(verbatim: phoneNumber.formatted(.national))
+                        
+                        if phoneNumber.isPrimary {
+                            CapsuleTag(text: "Primary")
+                                .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
+                        }
+                        
+                        if phoneNumber.verification?.status != .verified {
+                            CapsuleTag(text: "Unverified", style: .warning)
+                        }
                     }
                     .font(.footnote.weight(.medium))
                 } expandedContent: {
-                    VStack(alignment: .leading) {
-                        Text("Remove")
-                            .font(.footnote.weight(.medium))
-                        Text("Delete this phone number and remove it from your account")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Button("Remove phone number", role: .destructive) {
-                            confirmDeletePhoneNumber = phoneNumber
+                    VStack(alignment: .leading, spacing: 16) {
+                        
+                        primaryCallout(phoneNumber: phoneNumber)
+                            .matchedGeometryEffect(id: "\(phoneNumber.id)", in: namespace)
+                        
+                        if phoneNumber.verification?.status != .verified {
+                            unverifiedCallout(phoneNumber: phoneNumber)
                         }
-                        .font(.footnote)
-                        .padding(.vertical, 4)
+                        
+                        removeCallout(phoneNumber: phoneNumber)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading)

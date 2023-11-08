@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/8/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 
@@ -79,3 +81,5 @@ struct UserProfileRemoveResourceView: View {
         UserProfileRemoveResourceView(resource: .phoneNumber(.init(id: "123", phoneNumber: "+12015550123")))
     }
 }
+
+#endif

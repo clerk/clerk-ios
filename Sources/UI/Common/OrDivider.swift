@@ -21,7 +21,6 @@ struct OrDivider: View {
             Rectangle()
                 .frame(height: 1)
                 .foregroundStyle(.quaternary)
-            
         }
     }
 }

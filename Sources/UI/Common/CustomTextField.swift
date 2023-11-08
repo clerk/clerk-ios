@@ -42,6 +42,7 @@ struct CustomTextField: View {
 #Preview {
     CustomTextField(text: .constant(""))
         .frame(height: 44)
+        .padding()
 }
 
 #endif

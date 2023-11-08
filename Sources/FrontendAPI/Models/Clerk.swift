@@ -153,11 +153,12 @@ extension Clerk {
             PhoneNumber(
                 id: "123",
                 phoneNumber: "+12015550123",
-                reservedForSecondFactor: false,
-                defaultSecondFactor: false,
-                verification: .init(),
-                linkedTo: nil,
-                backupCodes: nil
+                verification: .init(status: .verified)
+            ),
+            PhoneNumber(
+                id: "456",
+                phoneNumber: "+12015550456",
+                verification: .init(status: .unverified)
             )
         ]
         

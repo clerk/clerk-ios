@@ -32,26 +32,6 @@ struct UserProfileEmailSection: View {
     }
     
     @ViewBuilder
-    private var primaryCapsule: some View {
-        Text("Primary")
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-            .background(clerkTheme.colors.primary.opacity(0.6), in: Capsule())
-    }
-    
-    @ViewBuilder
-    private var unverifiedCapsule: some View {
-        Text("Unverified")
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(.red)
-            .background(.red.opacity(0.1), in: Capsule())
-    }
-    
-    @ViewBuilder
     private func primaryCallout(emailAddress: EmailAddress) -> some View {
         if emailAddress.isPrimary {
             VStack(alignment: .leading, spacing: 6) {
@@ -133,12 +113,12 @@ struct UserProfileEmailSection: View {
                                 .font(.footnote.weight(.medium))
                             
                             if emailAddress.isPrimary {
-                                primaryCapsule
+                                CapsuleTag(text: "Primary")
                                     .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
                             }
                             
                             if emailAddress.verification?.status != .verified {
-                                unverifiedCapsule
+                                CapsuleTag(text: "Unverified", style: .warning)
                             }
                         }
                     } expandedContent: {

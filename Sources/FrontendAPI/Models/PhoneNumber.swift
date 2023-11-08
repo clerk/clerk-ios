@@ -50,7 +50,7 @@ public struct PhoneNumber: Decodable, Identifiable {
     let defaultSecondFactor: Bool
     
     /// An object holding information on the verification of this phone number.
-    let verification: Verification?
+    public let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
     let linkedTo: JSON?
@@ -176,6 +176,17 @@ extension PhoneNumber {
             .id(id)
             .attemptVerification
             .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    @MainActor
+    public func setAsPrimary() async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .update(.init(primaryPhoneNumberId: id))
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()
