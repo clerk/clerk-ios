@@ -25,7 +25,7 @@ struct CapsuleTag: View {
     private var foregroundStyle: Color {
         switch style {
         case .primary:
-            return clerkTheme.colors.primaryButtonTextColor
+            return clerkTheme.colors.primary
         case .warning:
             return .red
         }
@@ -34,7 +34,7 @@ struct CapsuleTag: View {
     private var background: Color {
         switch style {
         case .primary:
-            return clerkTheme.colors.primary.opacity(0.6)
+            return clerkTheme.colors.primary.opacity(0.1)
         case .warning:
             return .red.opacity(0.1)
         }

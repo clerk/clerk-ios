@@ -105,7 +105,7 @@ struct UserProfileEmailSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             UserProfileSectionHeader(title: "Email addresses")
-            VStack(spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
                 ForEach(emailAddresses) { emailAddress in
                     AccordionView {
                         HStack {
@@ -144,17 +144,16 @@ struct UserProfileEmailSection: View {
                             .presentationDetents([.height(deleteSheetHeight)])
                     }
                 }
+                
+                Button(action: {
+                    addEmailAddressStep = .add
+                }, label: {
+                    Text("+ Add an email address")
+                })
+                .font(.footnote.weight(.medium))
+                .tint(clerkTheme.colors.primary)
+                .padding(.leading, 8)
             }
-
-            Button(action: {
-                addEmailAddressStep = .add
-            }, label: {
-                Text("+ Add an email address")
-            })
-            .font(.footnote.weight(.medium))
-            .tint(clerkTheme.colors.primary)
-            .padding(.vertical, 4)
-            .padding(.leading, 8)
         }
         .sheet(item: $addEmailAddressStep) { step in
             UserProfileAddEmailView(initialStep: step)

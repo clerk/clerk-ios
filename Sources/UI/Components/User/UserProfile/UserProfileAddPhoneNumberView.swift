@@ -89,7 +89,7 @@ struct UserProfileAddPhoneNumberView: View {
         CodeFormView(
             code: $code,
             title: "Verification code",
-            subtitle: "Enter the verification code sent to \(phoneNumber?.formatted(.national) ?? "the phone number provided.")"
+            subtitle: "Enter the verification code sent to \(phoneNumber?.formatted(.international) ?? "the phone number provided.")"
         )
         .onCodeEntry {
             await attempt()

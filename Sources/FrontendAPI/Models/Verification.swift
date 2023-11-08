@@ -51,6 +51,27 @@ public class Verification: Decodable {
         case failed
         case expired
     }
+    
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case strategy
+        case attempts
+        case expireAt = "expire_at"
+        case error
+        case externalVerificationRedirectUrl = "external_verification_redirect_url"
+    }
+    
+    required public init(from decoder: Decoder) throws {
+        let container: KeyedDecodingContainer<Verification.CodingKeys> = try decoder.container(keyedBy: Verification.CodingKeys.self)
+        
+        self.status = try container.decodeIfPresent(Verification.Status.self, forKey: Verification.CodingKeys.status)
+        self.strategy = try container.decodeIfPresent(String.self, forKey: Verification.CodingKeys.strategy)
+        self.attempts = try container.decodeIfPresent(Int.self, forKey: Verification.CodingKeys.attempts)
+        self.expireAt = try container.decodeIfPresent(Date.self, forKey: Verification.CodingKeys.expireAt)
+        self.error = try container.decodeIfPresent(ClerkAPIError.self, forKey: Verification.CodingKeys.error)
+        self.externalVerificationRedirectUrl = try container.decodeIfPresent(String.self, forKey: Verification.CodingKeys.externalVerificationRedirectUrl)
+        
+    }
 }
 
 extension Verification: Equatable, Hashable {
@@ -83,8 +104,43 @@ extension Verification {
 }
 
 public class SignUpVerification: Verification {
-    let nextAction: String = ""
-    let supportedStrategies: [String] = []
+    public init(
+        status: Verification.Status? = nil,
+        strategy: Strategy? = nil,
+        attempts: Int? = nil,
+        expireAt: Date? = nil,
+        error: ClerkAPIError? = nil,
+        externalVerificationRedirectUrl: String? = nil,
+        nextAction: String = "",
+        supportedStrategies: [String] = []
+    ) {
+        self.nextAction = nextAction
+        self.supportedStrategies = supportedStrategies
+        super.init(
+            status: status,
+            strategy: strategy,
+            attempts: attempts,
+            expireAt: expireAt,
+            error: error,
+            externalVerificationRedirectUrl: externalVerificationRedirectUrl
+        )
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case nextAction = "next_action"
+        case supportedStrategies = "supported_strategies"
+    }
+       
+    required public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.nextAction = try container.decode(String.self, forKey: .nextAction)
+        self.supportedStrategies = try container.decode([String].self, forKey: .supportedStrategies)
+        let superDecoder = try container.superDecoder()
+        try super.init(from: superDecoder)
+    }
+    
+    var nextAction: String = ""
+    var supportedStrategies: [String] = []
     
     var strategies: [Strategy] {
         supportedStrategies.compactMap({ .init(stringValue: $0) })

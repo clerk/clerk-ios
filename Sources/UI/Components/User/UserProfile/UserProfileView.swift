@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Clerk
+import Factory
 
 public struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -40,7 +41,8 @@ public struct UserProfileView: View {
 }
 
 #Preview {
-    UserProfileView()
+    _ = Container.shared.clerk.register { .mock }
+    return UserProfileView()
         .environmentObject(Clerk.mock)
 }
 

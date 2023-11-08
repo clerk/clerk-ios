@@ -65,4 +65,9 @@ extension ExternalAccount {
         .init(strategy: provider)
     }
     
+    /// Username if available, otherwise email address
+    public var displayName: String {
+        username ?? emailAddress
+    }
+    
 }

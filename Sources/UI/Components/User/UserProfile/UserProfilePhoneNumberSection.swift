@@ -26,7 +26,9 @@ struct UserProfilePhoneNumberSection: View {
     }
     
     private var phoneNumbers: [PhoneNumber] {
-        user?.phoneNumbers ?? []
+        (user?.phoneNumbers ?? []).sorted { lhs, rhs in
+            return lhs.isPrimary
+        }
     }
     
     @ViewBuilder
@@ -103,57 +105,58 @@ struct UserProfilePhoneNumberSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             UserProfileSectionHeader(title: "Phone numbers")
-            ForEach(phoneNumbers) { phoneNumber in
-                AccordionView {
-                    HStack(spacing: 8) {
-                        if let flag = phoneNumber.flag {
-                            Text(flag)
+            VStack(alignment: .leading, spacing: 24) {
+                ForEach(phoneNumbers) { phoneNumber in
+                    AccordionView {
+                        HStack(spacing: 8) {
+                            if let flag = phoneNumber.flag {
+                                Text(flag)
+                            }
+                            Text(verbatim: phoneNumber.formatted(.international))
+                            
+                            if phoneNumber.isPrimary {
+                                CapsuleTag(text: "Primary")
+                                    .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
+                            }
+                            
+                            if phoneNumber.verification?.status != .verified {
+                                CapsuleTag(text: "Unverified", style: .warning)
+                            }
                         }
-                        Text(verbatim: phoneNumber.formatted(.national))
-                        
-                        if phoneNumber.isPrimary {
-                            CapsuleTag(text: "Primary")
-                                .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
+                        .font(.footnote.weight(.medium))
+                    } expandedContent: {
+                        VStack(alignment: .leading, spacing: 16) {
+                            
+                            primaryCallout(phoneNumber: phoneNumber)
+                                .matchedGeometryEffect(id: "\(phoneNumber.id)", in: namespace)
+                            
+                            if phoneNumber.verification?.status != .verified {
+                                unverifiedCallout(phoneNumber: phoneNumber)
+                            }
+                            
+                            removeCallout(phoneNumber: phoneNumber)
                         }
-                        
-                        if phoneNumber.verification?.status != .verified {
-                            CapsuleTag(text: "Unverified", style: .warning)
-                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading)
                     }
-                    .font(.footnote.weight(.medium))
-                } expandedContent: {
-                    VStack(alignment: .leading, spacing: 16) {
-                        
-                        primaryCallout(phoneNumber: phoneNumber)
-                            .matchedGeometryEffect(id: "\(phoneNumber.id)", in: namespace)
-                        
-                        if phoneNumber.verification?.status != .verified {
-                            unverifiedCallout(phoneNumber: phoneNumber)
-                        }
-                        
-                        removeCallout(phoneNumber: phoneNumber)
+                    .sheet(item: $confirmDeletePhoneNumber) { phoneNumber in
+                        UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
+                            .padding(.top)
+                            .readSize { deleteSheetHeight = $0.height }
+                            .presentationDragIndicator(.visible)
+                            .presentationDetents([.height(deleteSheetHeight)])
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading)
                 }
-                .sheet(item: $confirmDeletePhoneNumber) { phoneNumber in
-                    UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
-                        .padding(.top)
-                        .readSize { deleteSheetHeight = $0.height }
-                        .presentationDragIndicator(.visible)
-                        .presentationDetents([.height(deleteSheetHeight)])
-                }
+                
+                Button(action: {
+                    addPhoneNumberStep = .add
+                }, label: {
+                    Text("+ Add a phone number")
+                })
+                .font(.footnote.weight(.medium))
+                .tint(clerkTheme.colors.primary)
+                .padding(.leading, 8)
             }
-            
-            Button(action: {
-                addPhoneNumberStep = .add
-            }, label: {
-                Text("+ Add a phone number")
-            })
-            .font(.footnote.weight(.medium))
-            .tint(clerkTheme.colors.primary)
-            .padding(.vertical, 4)
-            .padding(.leading, 8)
         }
         .sheet(item: $addPhoneNumberStep) { step in
             UserProfileAddPhoneNumberView(initialStep: step)

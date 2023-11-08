@@ -35,7 +35,7 @@ extension PhoneNumberField {
         
         func phoneNumberFormattedForDisplay() -> String {
             if let phoneNumber = textField.phoneNumber {
-                return phoneNumberKit.format(phoneNumber, toType: .national)
+                return phoneNumberKit.format(phoneNumber, toType: .international, withPrefix: false)
             } else {
                 return textField.partialFormatter.formatPartial(textField.text ?? "")
             }

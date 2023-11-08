@@ -29,7 +29,7 @@ extension UserProfileRemoveResourceView {
             case .email(let emailAddress):
                 return "\(emailAddress.emailAddress) will be removed from this account."
             case .phoneNumber(let phoneNumber):
-                return "\(phoneNumber.flag ?? "") \(phoneNumber.formatted(.national)) will be removed from this account."
+                return "\(phoneNumber.flag ?? "") \(phoneNumber.formatted(.international)) will be removed from this account."
             }
         }
         
