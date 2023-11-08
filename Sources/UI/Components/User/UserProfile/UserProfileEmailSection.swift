@@ -157,7 +157,7 @@ struct UserProfileEmailSection: View {
                         .padding(.leading)
                     }
                     .sheet(item: $confirmDeleteEmailAddress) { emailAddress in
-                        UserProfileDeleteEmailView(emailAddress: emailAddress)
+                        UserProfileRemoveResourceView(resource: .email(emailAddress))
                             .padding(.top)
                             .readSize { deleteSheetHeight = $0.height }
                             .presentationDragIndicator(.visible)

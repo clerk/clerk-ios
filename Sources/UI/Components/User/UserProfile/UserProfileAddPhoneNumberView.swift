@@ -1,8 +1,8 @@
 //
-//  UserProfileAddEmailView.swift
+//  UserProfileAddPhoneNumberView.swift
 //
 //
-//  Created by Mike Pitre on 11/6/23.
+//  Created by Mike Pitre on 11/8/23.
 //
 
 #if canImport(UIKit)
@@ -10,64 +10,38 @@
 import SwiftUI
 import Clerk
 
-extension UserProfileAddEmailView {
+extension UserProfileAddPhoneNumberView {
     public enum Step: Hashable, Identifiable {
         case add
-        case code(emailAddress: EmailAddress)
+        case code(phoneNumber: PhoneNumber)
         
         var id: Self { self }
     }
 }
 
-struct UserProfileAddEmailView: View {
+struct UserProfileAddPhoneNumberView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
     @State private var step: Step
-    @State private var email = ""
+    @State private var phone = ""
     @State private var code = ""
     
     // The email address object returned by the create call or
     // provided on init in the case of going straight to verification
-    @State private var emailAddress: EmailAddress?
+    @State private var phoneNumber: PhoneNumber?
     
     @FocusState var isFocused: Bool
-    
-    init(initialStep: Step = .add) {
-        self._step = State(initialValue: initialStep)
-        if case .code(let emailAddress) = initialStep {
-            self._emailAddress = State(initialValue: emailAddress)
-        }
-    }
     
     private var user: User? {
         clerk.client.lastActiveSession?.user
     }
     
-    private var preferredEmailVerificationStrategy: Strategy {
-        clerk.environment.userSettings.preferredEmailVerificationStrategy ?? .emailCode
-    }
-    
-    private var prepareStrategy: EmailAddress.PrepareStrategy {
-        switch preferredEmailVerificationStrategy {
-        case .emailCode:
-            return .emailCode
-        case .emailLink:
-            return .emailLink
-        default:
-            return .emailCode
-        }
-    }
-    
-    private var instructionsString: String {
-        switch preferredEmailVerificationStrategy {
-        case .emailCode:
-            return "An email containing a verification code will be sent to this email address."
-        case .emailLink:
-            return "An email containing a verification link will be sent to this email address."
-        default:
-            return ""
+    init(initialStep: Step = .add) {
+        self._step = State(initialValue: initialStep)
+        if case .code(let phoneNumber) = initialStep {
+            self._phoneNumber = State(initialValue: phoneNumber)
         }
     }
     
@@ -91,23 +65,23 @@ struct UserProfileAddEmailView: View {
     @ViewBuilder
     private var addContent: some View {
         VStack(alignment: .leading) {
-            Text("Email address")
+            Text("Phone number")
                 .font(.footnote.weight(.medium))
-            CustomTextField(text: $email)
+            PhoneNumberField(text: $phone)
                 .frame(height: 44)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
                 .focused($isFocused)
                 .task {
                     isFocused = true
                 }
         }
         
-        Text(instructionsString)
+        Text("A text message containing a verification code will be sent to this phone number.")
             .fixedSize(horizontal: false, vertical: true)
             .font(.footnote)
+        
+        Text("Message and data rates may apply.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
     
     @ViewBuilder
@@ -115,7 +89,7 @@ struct UserProfileAddEmailView: View {
         CodeFormView(
             code: $code,
             title: "Verification code",
-            subtitle: "Enter the verification code sent to \(emailAddress?.emailAddress ?? "the email address provided.")"
+            subtitle: "Enter the verification code sent to \(phoneNumber?.formatted(.national) ?? "the phone number provided.")"
         )
         .onCodeEntry {
             await attempt()
@@ -131,7 +105,7 @@ struct UserProfileAddEmailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Add email address")
+                Text("Add phone number")
                     .font(.title2.weight(.bold))
                 
                 content
@@ -152,8 +126,8 @@ struct UserProfileAddEmailView: View {
                     if step == .add {
                         AsyncButton(options: [.disableButton, .showProgressView], action: {
                             await create()
-                            guard let emailAddress else { return }
-                            step = .code(emailAddress: emailAddress)
+                            guard let phoneNumber else { return }
+                            step = .code(phoneNumber: phoneNumber)
                         }, label: {
                             Text("CONTINUE")
                                 .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
@@ -176,7 +150,7 @@ struct UserProfileAddEmailView: View {
     private func create() async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            self.emailAddress = try await user.addEmailAddress(email)
+            self.phoneNumber = try await user.addPhoneNumber(phone)
         } catch {
             dump(error)
         }
@@ -184,7 +158,7 @@ struct UserProfileAddEmailView: View {
     
     private func prepare() async {
         do {
-            try await self.emailAddress?.prepareVerification(strategy: prepareStrategy)
+            try await self.phoneNumber?.prepareVerification(strategy: .phoneCode)
         } catch {
             dump(error)
         }
@@ -192,7 +166,7 @@ struct UserProfileAddEmailView: View {
     
     private func attempt() async {
         do {
-            try await self.emailAddress?.attemptVerification(strategy: .emailCode(code: code))
+            try await self.phoneNumber?.attemptVerification(strategy: .phoneCode(code: code))
             dismiss()
         } catch {
             dump(error)
@@ -201,7 +175,7 @@ struct UserProfileAddEmailView: View {
 }
 
 #Preview {
-    UserProfileAddEmailView()
+    UserProfileAddPhoneNumberView()
         .environmentObject(Clerk.mock)
 }
 

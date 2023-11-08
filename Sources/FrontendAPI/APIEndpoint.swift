@@ -323,6 +323,10 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
         var get: Request<ClientResponse<PhoneNumber>> {
             return .init(path: path)
         }
+        
+        var delete: Request<Void> {
+            .init(path: path, method: .delete)
+        }
     }
     
 }

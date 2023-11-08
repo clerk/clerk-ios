@@ -19,6 +19,24 @@ import Factory
  Finally, phone numbers are used as part of multi-factor authentication. Users receive an SMS message with a one-time code that they need to provide as an extra verification step.
  */
 public struct PhoneNumber: Decodable, Identifiable {
+    public init(
+        id: String,
+        phoneNumber: String,
+        reservedForSecondFactor: Bool = false,
+        defaultSecondFactor: Bool = false,
+        verification: Verification? = nil,
+        linkedTo: JSON? = nil,
+        backupCodes: [String]? = nil
+    ) {
+        self.id = id
+        self.phoneNumber = phoneNumber
+        self.reservedForSecondFactor = reservedForSecondFactor
+        self.defaultSecondFactor = defaultSecondFactor
+        self.verification = verification
+        self.linkedTo = linkedTo
+        self.backupCodes = backupCodes
+    }
+    
     /// A unique identifier for this phone number.
     public let id: String
     
@@ -32,7 +50,7 @@ public struct PhoneNumber: Decodable, Identifiable {
     let defaultSecondFactor: Bool
     
     /// An object holding information on the verification of this phone number.
-    let verification: Verification
+    let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
     let linkedTo: JSON?
@@ -41,7 +59,7 @@ public struct PhoneNumber: Decodable, Identifiable {
     let backupCodes: [String]?
 }
 
-extension PhoneNumber: Equatable {}
+extension PhoneNumber: Equatable, Hashable {}
 
 extension Container {
     
@@ -158,6 +176,19 @@ extension PhoneNumber {
             .id(id)
             .attemptVerification
             .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    @MainActor
+    public func delete() async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .phoneNumbers
+            .id(id)
+            .delete
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

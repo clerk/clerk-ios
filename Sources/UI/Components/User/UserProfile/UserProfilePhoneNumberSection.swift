@@ -15,7 +15,11 @@ struct UserProfilePhoneNumberSection: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     
-    private let phoneNumberKit = Container.shared.phoneNumberKit
+    @State private var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
+    @State private var confirmDeletePhoneNumber: PhoneNumber?
+    
+    @State private var deleteSheetHeight: CGFloat = .zero
+    @Namespace private var namespace
     
     private var user: User? {
         clerk.client.lastActiveSession?.user
@@ -45,7 +49,7 @@ struct UserProfilePhoneNumberSection: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                         Button("Remove phone number", role: .destructive) {
-                            // delete email
+                            confirmDeletePhoneNumber = phoneNumber
                         }
                         .font(.footnote)
                         .padding(.vertical, 4)
@@ -53,10 +57,17 @@ struct UserProfilePhoneNumberSection: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading)
                 }
+                .sheet(item: $confirmDeletePhoneNumber) { phoneNumber in
+                    UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
+                        .padding(.top)
+                        .readSize { deleteSheetHeight = $0.height }
+                        .presentationDragIndicator(.visible)
+                        .presentationDetents([.height(deleteSheetHeight)])
+                }
             }
             
             Button(action: {
-                // add phone number
+                addPhoneNumberStep = .add
             }, label: {
                 Text("+ Add a phone number")
             })
@@ -65,11 +76,15 @@ struct UserProfilePhoneNumberSection: View {
             .padding(.vertical, 4)
             .padding(.leading, 8)
         }
+        .sheet(item: $addPhoneNumberStep) { step in
+            UserProfileAddPhoneNumberView(initialStep: step)
+        }
     }
 }
 
 #Preview {
-    UserProfilePhoneNumberSection()
+    _ = Container.shared.clerk.register { Clerk.mock }
+    return UserProfilePhoneNumberSection()
         .padding()
         .environmentObject(Clerk.mock)
 }

@@ -1,30 +1,30 @@
 //
-//  UserProfileDeleteEmailView.swift
+//  RemoveResourceView.swift
 //
 //
-//  Created by Mike Pitre on 11/6/23.
+//  Created by Mike Pitre on 11/8/23.
 //
-
-#if canImport(UIKit)
 
 import SwiftUI
-import Clerk
 
-struct UserProfileDeleteEmailView: View {
+struct RemoveResourceView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     
-    let emailAddress: EmailAddress
-    
+    var title: String
+    var messageLine1: String
+    var messageLine2: String
+    var onDelete: (() async -> Void)?
+        
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Remove email address")
+            Text(title)
                 .font(.title2.weight(.bold))
                 .padding(.bottom)
-            Text("\(emailAddress.emailAddress) will be removed from this account.")
+            Text(messageLine1)
                 .font(.footnote)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("You will no longer be able to sign in using this email address.")
+            Text(messageLine2)
                 .font(.footnote)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
@@ -40,7 +40,7 @@ struct UserProfileDeleteEmailView: View {
                 }
                 
                 AsyncButton(options: [.disableButton, .showProgressView], action: {
-                    await delete(emailAddress: emailAddress)
+                    await onDelete?()
                 }, label: {
                     Text("REMOVE")
                         .foregroundStyle(.white)
@@ -56,21 +56,20 @@ struct UserProfileDeleteEmailView: View {
         .padding()
     }
     
-    private func delete(emailAddress: EmailAddress) async {
-        do {
-            try await emailAddress.delete()
-            dismiss()
-        } catch {
-            dump(error)
-        }
+    func onDelete(perform action: @escaping () async -> Void) -> Self {
+        var copy = self
+        copy.onDelete = action
+        return copy
     }
 }
 
 #Preview {
-    UserProfileDeleteEmailView(emailAddress: .init(
-        id: "123",
-        emailAddress: "ClerkUser@clerk.dev"
-    ))
+    RemoveResourceView(
+        title: "Remove email address",
+        messageLine1: "ClerkUser@clerk.dev will be removed from this account.",
+        messageLine2: "You will no longer be able to sign in using this email address."
+    )
+    .onDelete {
+        print("DELETED")
+    }
 }
-
-#endif
