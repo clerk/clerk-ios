@@ -78,6 +78,9 @@ struct UserProfileAddExternalAccountView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(30)
         }
+        .task {
+            try? await clerk.environment.get()
+        }
     }
 }
 
