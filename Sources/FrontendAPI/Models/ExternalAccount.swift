@@ -37,11 +37,8 @@ public struct ExternalAccount: Decodable, Identifiable {
     
     /// The provided last name of the user.
     let lastName: String?
-    
-    /// The provided avatar URL of the user.
-    public let avatarUrl: String?
-    
-    ///
+        
+    /// The provided image URL of the user.
     public let imageUrl: String?
     
     /// The provided username of the user.
@@ -81,9 +78,12 @@ extension ExternalAccount {
     }
     
     public var fullName: String? {
-        [firstName, lastName]
+        let fullName = [firstName, lastName]
             .compactMap { $0 }
+            .filter({ !$0.isEmpty })
             .joined(separator: " ")
+        
+        return fullName.isEmpty ? nil : fullName
     }
     
 }
