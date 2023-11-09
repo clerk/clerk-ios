@@ -36,7 +36,7 @@ struct UserProfileEmailSection: View {
         if emailAddress.isPrimary {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Primary email address")
-                    .font(.subheadline)
+                    .font(.footnote)
                 Text("This email address is the primary email address")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -44,7 +44,7 @@ struct UserProfileEmailSection: View {
         } else if emailAddress.verification?.status == .verified {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Set as primary email address")
-                    .font(.subheadline)
+                    .font(.footnote)
                 Text("Set this email address as the primary to receive communications regarding your account")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -72,7 +72,7 @@ struct UserProfileEmailSection: View {
     private func unverifiedCallout(emailAddress: EmailAddress) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Verify email address")
-                .font(.subheadline)
+                .font(.footnote)
             Text("Complete verification to access all features with this email address")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -91,7 +91,7 @@ struct UserProfileEmailSection: View {
     private func removeCallout(emailAddress: EmailAddress) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Remove")
-                .font(.subheadline)
+                .font(.footnote)
             Text("Delete this email address and remove it from your account")
                 .font(.footnote)
                 .foregroundStyle(.secondary)

@@ -36,7 +36,7 @@ struct UserProfilePhoneNumberSection: View {
         if phoneNumber.isPrimary {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Primary phone number")
-                    .font(.subheadline)
+                    .font(.footnote)
                 Text("This phone number is the primary phone number")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -44,7 +44,7 @@ struct UserProfilePhoneNumberSection: View {
         } else if phoneNumber.verification?.status == .verified {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Set as primary phone number")
-                    .font(.subheadline)
+                    .font(.footnote)
                 Text("Set this phone number as the primary to receive communications regarding your account")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -72,7 +72,7 @@ struct UserProfilePhoneNumberSection: View {
     private func unverifiedCallout(phoneNumber: PhoneNumber) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Verify phone number")
-                .font(.subheadline)
+                .font(.footnote)
             Text("Complete verification to access all features with this phone number")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -91,7 +91,7 @@ struct UserProfilePhoneNumberSection: View {
     private func removeCallout(phoneNumber: PhoneNumber) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Remove")
-                .font(.subheadline)
+                .font(.footnote)
             Text("Delete this phone number and remove it from your account")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
