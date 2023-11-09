@@ -97,6 +97,7 @@ struct UserProfileExternalAccountSection: View {
                 }
                 .font(.footnote.weight(.medium))
                 .padding(.vertical, 4)
+                .tint(clerkTheme.colors.primary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
