@@ -19,12 +19,6 @@ struct UserProfileAddExternalAccountView: View {
     private var user: User? {
         clerk.client.lastActiveSession?.user
     }
-
-    private var unconnectedProviders: [OAuthProvider] {
-        let allExternalProviders = clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
-        let verifiedExternalProviders = user?.verifiedExternalAccounts.compactMap(\.externalProvider) ?? []
-        return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
-    }
     
     private func create(provider: OAuthProvider) async {
         do {
@@ -53,7 +47,7 @@ struct UserProfileAddExternalAccountView: View {
                     .font(.footnote)
                 
                 VStack {
-                    ForEach(unconnectedProviders) { provider in
+                    ForEach(user?.unconnectedProviders ?? []) { provider in
                         AsyncButton(options: [.disableButton, .showProgressView]) {
                             await create(provider: provider)
                         } label: {

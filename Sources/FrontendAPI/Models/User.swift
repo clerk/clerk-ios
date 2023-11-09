@@ -209,6 +209,12 @@ extension User {
         externalAccounts.filter { $0.verification.status == .verified }
     }
     
+    public var unconnectedProviders: [OAuthProvider] {
+        let allExternalProviders = Clerk.shared.environment.userSettings.enabledThirdPartyProviders.sorted()
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.externalProvider)
+        return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
+    }
+    
 }
 
 extension User {

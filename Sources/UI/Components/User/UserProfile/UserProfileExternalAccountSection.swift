@@ -171,14 +171,16 @@ struct UserProfileExternalAccountSection: View {
                     }
                 }
                 
-                Button(action: {
-                    addExternalAccountIsPresented = true
-                }, label: {
-                    Text("+ Connect account")
-                })
-                .font(.footnote.weight(.medium))
-                .tint(clerkTheme.colors.primary)
-                .padding(.leading, 8)
+                if let user, !user.unconnectedProviders.isEmpty {
+                    Button(action: {
+                        addExternalAccountIsPresented = true
+                    }, label: {
+                        Text("+ Connect account")
+                    })
+                    .font(.footnote.weight(.medium))
+                    .tint(clerkTheme.colors.primary)
+                    .padding(.leading, 8)
+                }
             }
         }
         .sheet(isPresented: $addExternalAccountIsPresented) {
