@@ -158,23 +158,64 @@ extension Clerk.Environment.UserSettings.SocialConfig {
 
 extension ExternalAccount {
     
-    static var mock: ExternalAccount {
-        return ExternalAccount(
-            id: "mock_id",
-            provider: "mock_provider",
-            identificationId: "mock_identification_id",
-            providerUserId: "mock_provider_user_id",
-            approvedScopes: "mock_approved_scopes",
-            emailAddress: "mock_email@example.com",
-            firstName: "Mock",
-            lastName: "User",
-            avatarUrl: "https://example.com/avatar.png",
-            imageUrl: "https://example.com/image.png",
-            username: "mock_username",
-            publicMetadata: [:],
-            label: "mock_label",
-            verification: .mock
-        )
+    static var mockGithub: ExternalAccount {
+        let jsonData = """
+        {
+          "object": "external_account",
+          "id": "123",
+          "provider": "oauth_github",
+          "identification_id": "123",
+          "provider_user_id": "123",
+          "approved_scopes": "read:user user:email",
+          "email_address": "ClerkUser@clerk.dev",
+          "first_name": "Clerk",
+          "last_name": "User",
+          "avatar_url": "https://avatars.com",
+          "image_url": "https://img.clerk.com",
+          "username": "clerkuser",
+          "public_metadata": {},
+          "label": null,
+          "verification": {
+            "status": "verified",
+            "strategy": "oauth_github",
+            "attempts": null,
+            "expire_at": 1699475468572
+          }
+        }
+        """.data(using: .utf8)!
+
+        let externalAccount = try! JSONDecoder.snakeCaseDecoder.decode(ExternalAccount.self, from: jsonData)
+        return externalAccount
+    }
+    
+    static var mockGoogle: ExternalAccount {
+        let jsonData = """
+        {
+          "object": "external_account",
+          "id": "456",
+          "provider": "oauth_google",
+          "identification_id": "456",
+          "provider_user_id": "123",
+          "approved_scopes": "email https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid profile",
+          "email_address": "ClerkUser@clerk.dev",
+          "first_name": "Clerk",
+          "last_name": "User",
+          "avatar_url": "https://lh3.googleusercontent.com/a/123",
+          "image_url": "https://img.clerk.com",
+          "username": null,
+          "public_metadata": {},
+          "label": null,
+          "verification": {
+            "status": "verified",
+            "strategy": "oauth_google",
+            "attempts": null,
+            "expire_at": 1699475321830
+          }
+        }
+        """.data(using: .utf8)!
+
+        let externalAccount = try! JSONDecoder.snakeCaseDecoder.decode(ExternalAccount.self, from: jsonData)
+        return externalAccount
     }
     
 }
@@ -284,7 +325,8 @@ extension User {
             primaryEmailAddressId: "123",
             primaryPhoneNumberId: "123",
             emailAddresses: [.mock1, .mock2],
-            phoneNumbers: [.mock1, .mock2]
+            phoneNumbers: [.mock1, .mock2],
+            externalAccounts: [.mockGoogle, .mockGithub]
         )
     }
     

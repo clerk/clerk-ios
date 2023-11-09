@@ -33,16 +33,16 @@ public struct ExternalAccount: Decodable, Identifiable {
     public let emailAddress: String
     
     /// The provided first name of the user.
-    let firstName: String
+    let firstName: String?
     
     /// The provided last name of the user.
-    let lastName: String
+    let lastName: String?
     
     /// The provided avatar URL of the user.
-    let avatarUrl: String
+    let avatarUrl: String?
     
     ///
-    let imageUrl: String
+    public let imageUrl: String
     
     /// The provided username of the user.
     let username: String?
@@ -68,6 +68,29 @@ extension ExternalAccount {
     /// Username if available, otherwise email address
     public var displayName: String {
         username ?? emailAddress
+    }
+    
+    public var fullName: String? {
+        [firstName, lastName]
+            .compactMap { $0 }
+            .joined(separator: " ")
+    }
+    
+}
+
+extension ExternalAccount {
+    
+    @MainActor
+    public func delete() async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .externalAccounts
+            .id(id)
+            .delete
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
 }

@@ -14,6 +14,7 @@ extension UserProfileRemoveResourceView {
     enum Resource {
         case email(EmailAddress)
         case phoneNumber(PhoneNumber)
+        case externalAccount(ExternalAccount)
         
         var title: String {
             switch self {
@@ -21,6 +22,8 @@ extension UserProfileRemoveResourceView {
                 return "Remove email address"
             case .phoneNumber:
                 return "Remove phone number"
+            case .externalAccount:
+                return "Remove connected account"
             }
         }
         
@@ -30,6 +33,8 @@ extension UserProfileRemoveResourceView {
                 return "\(emailAddress.emailAddress) will be removed from this account."
             case .phoneNumber(let phoneNumber):
                 return "\(phoneNumber.flag ?? "") \(phoneNumber.formatted(.international)) will be removed from this account."
+            case .externalAccount(let externalAccount):
+                return "\(externalAccount.externalProvider?.data.name ?? "This provider") will be removed from this account."
             }
         }
         
@@ -39,6 +44,8 @@ extension UserProfileRemoveResourceView {
                 return "You will no longer be able to sign in using this email address."
             case .phoneNumber:
                 return "You will no longer be able to sign in using this phone number."
+            case .externalAccount:
+                return "You will no longer be able to use this connected account and any dependent features will no longer work."
             }
         }
         
@@ -48,6 +55,8 @@ extension UserProfileRemoveResourceView {
                 try await emailAddress.delete()
             case .phoneNumber(let phoneNumber):
                 try await phoneNumber.delete()
+            case .externalAccount(let externalAccount):
+                try await externalAccount.delete()
             }
         }
     }

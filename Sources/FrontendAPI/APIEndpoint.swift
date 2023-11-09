@@ -362,3 +362,37 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
         }
     }
 }
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
+    var externalAccounts: ExternalAccountsEndpoint {
+        ExternalAccountsEndpoint(path: path + "/external_accounts")
+    }
+    
+    struct ExternalAccountsEndpoint {
+        /// Path: `v1/me/external_accounts`
+        let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
+    
+    public func id(_ id: String) -> WithID {
+        WithID(path: path + "/\(id)")
+    }
+
+    public struct WithID {
+        /// Path: `/v1/me/external_accounts/{id}`
+        public let path: String
+        
+        var get: Request<ClientResponse<ExternalAccount>> {
+            return .init(path: path)
+        }
+        
+        var delete: Request<Void> {
+            .init(path: path, method: .delete)
+        }
+    }
+    
+}
