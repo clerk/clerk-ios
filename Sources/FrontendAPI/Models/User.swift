@@ -205,6 +205,10 @@ extension User {
         username ?? primaryEmailAddress?.emailAddress ?? primaryPhoneNumber?.phoneNumber
     }
     
+    public var verifiedExternalAccounts: [ExternalAccount] {
+        externalAccounts.filter { $0.verification.status == .verified }
+    }
+    
 }
 
 extension User {
@@ -272,6 +276,21 @@ extension User {
         let newPhoneNumber = try await Clerk.apiClient.send(request).value.response
         try await Clerk.shared.client.get()
         return newPhoneNumber
+    }
+    
+    @discardableResult
+    @MainActor
+    public func addExternalAccount(_ provider: OAuthProvider) async throws -> ExternalAccount {
+        let params = ExternalAccount.CreateParams(oauthProvider: provider, redirectUrl: "clerk://")
+        let request = APIEndpoint
+            .v1
+            .me
+            .externalAccounts
+            .create(params)
+        
+        let newExternalAccount = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.shared.client.get()
+        return newExternalAccount
     }
     
 }

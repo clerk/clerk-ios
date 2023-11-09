@@ -372,6 +372,10 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     struct ExternalAccountsEndpoint {
         /// Path: `v1/me/external_accounts`
         let path: String
+        
+        func create(_ params: ExternalAccount.CreateParams) -> Request<ClientResponse<ExternalAccount>> {
+            .init(path: path, method: .post, body: params)
+        }
     }
     
 }

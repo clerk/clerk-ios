@@ -12,7 +12,7 @@ public final class OAuthWebSession: NSObject {
     var authAction: AuthAction = .signIn
     
     public enum AuthAction {
-        case signIn, signUp
+        case signIn, signUp, verify
     }
         
     public init(url: URL, authAction: AuthAction, completion: ((Result<Void, Error>) -> Void)?) {
@@ -51,6 +51,9 @@ public final class OAuthWebSession: NSObject {
                                     try await Clerk.shared.client.signIn.create(.transfer)
                                 }
                             }
+                            
+                        case .verify:
+                            try await Clerk.shared.client.get()
                         }
                         
                         completion?(.success(()))

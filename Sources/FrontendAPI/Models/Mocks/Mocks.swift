@@ -176,7 +176,7 @@ extension ExternalAccount {
           "public_metadata": {},
           "label": null,
           "verification": {
-            "status": "verified",
+            "status": "unverified",
             "strategy": "oauth_github",
             "attempts": null,
             "expire_at": 1699475468572

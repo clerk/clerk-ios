@@ -51,27 +51,6 @@ public class Verification: Decodable {
         case failed
         case expired
     }
-    
-    private enum CodingKeys: String, CodingKey {
-        case status
-        case strategy
-        case attempts
-        case expireAt = "expire_at"
-        case error
-        case externalVerificationRedirectUrl = "external_verification_redirect_url"
-    }
-    
-    required public init(from decoder: Decoder) throws {
-        let container: KeyedDecodingContainer<Verification.CodingKeys> = try decoder.container(keyedBy: Verification.CodingKeys.self)
-        
-        self.status = try container.decodeIfPresent(Verification.Status.self, forKey: Verification.CodingKeys.status)
-        self.strategy = try container.decodeIfPresent(String.self, forKey: Verification.CodingKeys.strategy)
-        self.attempts = try container.decodeIfPresent(Int.self, forKey: Verification.CodingKeys.attempts)
-        self.expireAt = try container.decodeIfPresent(Date.self, forKey: Verification.CodingKeys.expireAt)
-        self.error = try container.decodeIfPresent(ClerkAPIError.self, forKey: Verification.CodingKeys.error)
-        self.externalVerificationRedirectUrl = try container.decodeIfPresent(String.self, forKey: Verification.CodingKeys.externalVerificationRedirectUrl)
-        
-    }
 }
 
 extension Verification: Equatable, Hashable {
@@ -127,8 +106,8 @@ public class SignUpVerification: Verification {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case nextAction = "next_action"
-        case supportedStrategies = "supported_strategies"
+        case nextAction
+        case supportedStrategies
     }
        
     required public init(from decoder: Decoder) throws {

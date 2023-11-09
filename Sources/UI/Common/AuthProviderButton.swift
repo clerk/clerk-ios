@@ -13,7 +13,7 @@ import NukeUI
 
 struct AuthProviderButton: View {
     let iconImageUrl: String
-    let label: String
+    var label: String
     var style: Style = .regular
     
     enum Style {
@@ -56,7 +56,7 @@ struct AuthProviderButton: View {
         HStack(spacing: 16) {
             LazyImage(url: URL(string: iconImageUrl))
                 .frame(width: 20, height: 20)
-            Text("Continue with \(label)")
+            Text("\(label)")
                 .lineLimit(1)
             Spacer()
         }
@@ -72,10 +72,14 @@ struct AuthProviderButton: View {
 
 extension AuthProviderButton {
     
-    init(provider: OAuthProvider, style: Style = .regular) {
+    init(provider: OAuthProvider, label: String? = nil, style: Style = .regular) {
         self.iconImageUrl = provider.iconImageUrl?.absoluteString ?? ""
-        self.label = provider.data.name
         self.style = style
+        if let label {
+            self.label = label
+        } else {
+            self.label = style == .regular ? "Continue with \(provider.data.name)" : provider.data.name
+        }
     }
     
 }

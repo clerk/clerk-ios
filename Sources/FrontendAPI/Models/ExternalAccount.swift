@@ -39,10 +39,10 @@ public struct ExternalAccount: Decodable, Identifiable {
     let lastName: String?
     
     /// The provided avatar URL of the user.
-    let avatarUrl: String?
+    public let avatarUrl: String?
     
     ///
-    public let imageUrl: String
+    public let imageUrl: String?
     
     /// The provided username of the user.
     let username: String?
@@ -54,10 +54,20 @@ public struct ExternalAccount: Decodable, Identifiable {
     let label: String?
     
     /// An object holding information on the verification of this external account.
-    let verification: Verification
+    public let verification: Verification
 }
 
 extension ExternalAccount: Equatable {}
+
+extension ExternalAccount: Comparable {
+    public static func < (lhs: ExternalAccount, rhs: ExternalAccount) -> Bool {
+        if lhs.verification.status != rhs.verification.status  {
+            return lhs.verification.status == .verified
+        } else {
+            return (lhs.externalProvider?.data.name ?? "") < (rhs.externalProvider?.data.name ?? "")
+        }
+    }
+}
 
 extension ExternalAccount {
     
@@ -74,6 +84,26 @@ extension ExternalAccount {
         [firstName, lastName]
             .compactMap { $0 }
             .joined(separator: " ")
+    }
+    
+}
+
+extension ExternalAccount {
+    
+    struct CreateParams: Encodable {
+        init(
+            oauthProvider: OAuthProvider,
+            redirectUrl: String,
+            additionalScopes: [String]? = nil
+        ) {
+            self.strategy = oauthProvider.data.strategy
+            self.redirectUrl = redirectUrl
+            self.additionalScopes = additionalScopes
+        }
+        
+        let strategy: String
+        let redirectUrl: String
+        let additionalScopes: [String]?
     }
     
 }

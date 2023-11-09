@@ -7,7 +7,9 @@
 
 import Foundation
 
-public enum OAuthProvider: CaseIterable, Encodable {
+public enum OAuthProvider: CaseIterable, Encodable, Identifiable {
+    public var id: Self { self }
+    
     case facebook
     case google
     case hubspot

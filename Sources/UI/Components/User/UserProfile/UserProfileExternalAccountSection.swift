@@ -16,6 +16,7 @@ struct UserProfileExternalAccountSection: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     
+    @State private var addExternalAccountIsPresented = false
     @State private var confirmDeleteExternalAccount: ExternalAccount?
     
     @State private var deleteSheetHeight: CGFloat = .zero
@@ -26,13 +27,26 @@ struct UserProfileExternalAccountSection: View {
     }
     
     private var externalAccounts: [ExternalAccount] {
-        user?.externalAccounts ?? []
+        (user?.externalAccounts ?? []).sorted()
+    }
+    
+    private func externalAccountRowString(_ externalAccount: ExternalAccount) -> String {
+        var string = ""
+        if let provider = externalAccount.externalProvider {
+            string += provider.data.name
+        }
+        
+        if !externalAccount.displayName.isEmpty {
+            string += " (\(externalAccount.displayName))"
+        }
+        
+        return string
     }
     
     @ViewBuilder
     private func externalInfoCalloutView(_ externalAccount: ExternalAccount) -> some View {
         HStack(spacing: 16) {
-            LazyImage(url: URL(string: externalAccount.imageUrl)) { state in
+            LazyImage(url: URL(string: externalAccount.imageUrl ?? externalAccount.avatarUrl ?? "")) { state in
                 if let image = state.image {
                     image.resizable().scaledToFit()
                 } else {
@@ -68,6 +82,39 @@ struct UserProfileExternalAccountSection: View {
     }
     
     @ViewBuilder
+    private func retryConnectionCalloutView(_ externalAccount: ExternalAccount) -> some View {
+        VStack(alignment: .leading) {
+            Text("Retry failed connection")
+                .font(.footnote)
+            Text("You did not grant access to your \(externalAccount.externalProvider?.data.name ?? "external") account")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if let provider = externalAccount.externalProvider {
+                AsyncButton(options: [.disableButton, .showProgressView]) {
+                    await retryConnection(provider)
+                } label: {
+                    Text("Try again")
+                }
+                .font(.footnote.weight(.medium))
+                .padding(.vertical, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading)
+    }
+    
+    private func retryConnection(_ provider: OAuthProvider) async {
+        do {
+            let externalAccount = try await user?.addExternalAccount(provider)
+            externalAccount?.startOAuth(completion: { result in
+                if case .failure(let error) = result { dump(error) }
+            })
+        } catch {
+            dump(error)
+        }
+    }
+    
+    @ViewBuilder
     private func removeCalloutView(_ externalAccount: ExternalAccount) -> some View {
         VStack(alignment: .leading) {
             Text("Remove")
@@ -95,12 +142,24 @@ struct UserProfileExternalAccountSection: View {
                             if let provider = externalAccount.externalProvider {
                                 LazyImage(url: provider.iconImageUrl)
                                     .frame(width: 16, height: 16)
-                                Text(provider.data.name) + Text(verbatim: " (\(externalAccount.displayName))")
+                            }
+                            
+                            Text(externalAccountRowString(externalAccount))
+                            
+                            if externalAccount.verification.status != .verified {
+                                CapsuleTag(text: "Requires action", style: .warning)
                             }
                         }
                         .font(.footnote)
                     } expandedContent: {
-                        externalInfoCalloutView(externalAccount)
+                        if externalAccount.verification.status == .verified {
+                            externalInfoCalloutView(externalAccount)
+                        }
+                        
+                        if externalAccount.verification.status != .verified {
+                            retryConnectionCalloutView(externalAccount)
+                        }
+                        
                         removeCalloutView(externalAccount)
                     }
                     .sheet(item: $confirmDeleteExternalAccount) { externalAccount in
@@ -113,7 +172,7 @@ struct UserProfileExternalAccountSection: View {
                 }
                 
                 Button(action: {
-                    // add email address
+                    addExternalAccountIsPresented = true
                 }, label: {
                     Text("+ Connect account")
                 })
@@ -121,6 +180,9 @@ struct UserProfileExternalAccountSection: View {
                 .tint(clerkTheme.colors.primary)
                 .padding(.leading, 8)
             }
+        }
+        .sheet(isPresented: $addExternalAccountIsPresented) {
+            UserProfileAddExternalAccountView()
         }
     }
 }

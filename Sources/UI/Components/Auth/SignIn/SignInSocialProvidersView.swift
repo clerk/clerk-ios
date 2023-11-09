@@ -32,8 +32,11 @@ struct SignInSocialProvidersView: View {
                     AsyncButton(options: [.disableButton], action: {
                         await signIn(provider: provider)
                     }, label: {
-                        AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
-                            .font(.footnote)
+                        AuthProviderButton(
+                            provider: provider,
+                            style: thirdPartyProviders.count <= 2 ? .regular : .compact
+                        )
+                        .font(.footnote)
                     })
                     .buttonStyle(.plain)
                 }
