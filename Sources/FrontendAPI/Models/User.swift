@@ -299,4 +299,18 @@ extension User {
         return newExternalAccount
     }
     
+    /// Retrieves all active sessions for this user.
+    @discardableResult
+    @MainActor
+    public func getSessions() async throws -> [Session] {
+        let request = APIEndpoint
+            .v1
+            .me
+            .sessions
+            .active
+            .get
+        
+        return try await Clerk.apiClient.send(request).value
+    }
+    
 }

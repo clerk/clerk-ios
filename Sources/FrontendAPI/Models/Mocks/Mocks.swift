@@ -25,8 +25,8 @@ extension Client {
         return Client(
             signIn: .mock,
             signUp: .mock,
-            sessions: [.mock],
-            lastActiveSessionId: "123"
+            sessions: [.mockSession1],
+            lastActiveSessionId: "1"
         )
     }
     
@@ -184,7 +184,7 @@ extension ExternalAccount {
         }
         """.data(using: .utf8)!
 
-        let externalAccount = try! JSONDecoder.snakeCaseDecoder.decode(ExternalAccount.self, from: jsonData)
+        let externalAccount = try! JSONDecoder.clerkDecoder.decode(ExternalAccount.self, from: jsonData)
         return externalAccount
     }
     
@@ -214,7 +214,7 @@ extension ExternalAccount {
         }
         """.data(using: .utf8)!
 
-        let externalAccount = try! JSONDecoder.snakeCaseDecoder.decode(ExternalAccount.self, from: jsonData)
+        let externalAccount = try! JSONDecoder.clerkDecoder.decode(ExternalAccount.self, from: jsonData)
         return externalAccount
     }
     
@@ -258,13 +258,77 @@ extension PhoneNumber {
 
 extension Session {
     
-    static var mock: Self {
-        .init(
-            id: "123",
-            user: .mock,
-            status: "active"
-        )
-    }
+    public static let mockSession1 = Session(
+        id: "1",
+        status: .active,
+        expireAt: Date().addingTimeInterval(3600), // expires in 1 hour
+        abandonAt: .distantPast,
+        lastActiveAt: Date().addingTimeInterval(-300), // last active 5 minutes ago
+        latestActivity: SessionActivity(
+            id: "activity1",
+            browserName: "Safari",
+            browserVersion: "15.0",
+            deviceType: "Macintosh",
+            ipAddress: "192.168.0.1",
+            city: "New York",
+            country: "USA",
+            isMobile: false
+        ),
+        lastActiveOrganizationId: "org123",
+        actor: "user123",
+        user: User(id: "user123", username: "john_doe"),
+        publicUserData: ["name": "John Doe", "email": "john.doe@example.com"],
+        createdAt: Date().addingTimeInterval(-3600), // created 1 hour ago
+        updatedAt: Date().addingTimeInterval(-2400) // updated 40 minutes ago
+    )
+
+    public static let mockSession2 = Session(
+        id: "2",
+        status: .expired,
+        expireAt: Date().addingTimeInterval(-3600), // expired 1 hour ago
+        abandonAt: .distantPast,
+        lastActiveAt: Date().addingTimeInterval(-7200), // last active 2 hours ago
+        latestActivity: SessionActivity(
+            id: "activity3",
+            browserName: "Chrome",
+            browserVersion: "94.0",
+            deviceType: nil,
+            ipAddress: "172.16.0.1",
+            city: "San Francisco",
+            country: "USA",
+            isMobile: false
+        ),
+        lastActiveOrganizationId: nil,
+        actor: "user456",
+        user: User(id: "user456", username: "jane_smith"),
+        publicUserData: ["name": "Jane Smith", "email": "jane.smith@example.com"],
+        createdAt: Date().addingTimeInterval(-10800), // created 3 hours ago
+        updatedAt: Date().addingTimeInterval(-8100) // updated 2.25 hours ago
+    )
+
+    public static let mockSession3 = Session(
+        id: "3",
+        status: .revoked,
+        expireAt: Date().addingTimeInterval(1800), // expires in 30 minutes
+        abandonAt: .distantPast,
+        lastActiveAt: Date().addingTimeInterval(-600), // last active 10 minutes ago
+        latestActivity: SessionActivity(
+            id: "activity2",
+            browserName: "Chrome",
+            browserVersion: "94.0",
+            deviceType: "iPhone",
+            ipAddress: "172.16.0.1",
+            city: "San Francisco",
+            country: "USA",
+            isMobile: true
+        ),
+        lastActiveOrganizationId: "org456",
+        actor: "user789",
+        user: User(id: "user123", username: "john_doe"),
+        publicUserData: nil,
+        createdAt: Date().addingTimeInterval(-2700), // created 45 minutes ago
+        updatedAt: Date().addingTimeInterval(-1200) // updated 20 minutes ago
+    )
     
 }
 

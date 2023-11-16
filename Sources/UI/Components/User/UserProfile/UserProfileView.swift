@@ -1,48 +1,83 @@
 //
 //  UserProfileView.swift
+//  
 //
-//
-//  Created by Mike Pitre on 11/3/23.
+//  Created by Mike Pitre on 11/16/23.
 //
 
 #if canImport(UIKit)
 
 import SwiftUI
 import Clerk
-import Factory
 
-public struct UserProfileView: View {
-    @EnvironmentObject private var clerk: Clerk
+struct UserProfileView: View {
+    @State private var selectedTab: Tab = .account
+    @Namespace private var namespace
     
-    private var user: User? {
-        clerk.client.lastActiveSession?.user
+    var body: some View {
+        VStack(spacing: .zero) {
+            VStack(spacing: .zero) {
+                HStack(spacing: 20) {
+                    Button {
+                        withAnimation { selectedTab = .account }
+                    } label: {
+                        Text("Account")
+                            .fontWeight(selectedTab == .account ? .semibold : .regular)
+                            .animation(.none, value: selectedTab)
+                    }
+                    .overlay(alignment: .bottom) {
+                        if selectedTab == .account {
+                            Rectangle()
+                                .frame(height: 2)
+                                .offset(y: 16)
+                                .matchedGeometryEffect(id: "underline", in: namespace)
+                        }
+                    }
+                    
+                    Button {
+                        withAnimation { selectedTab = .security }
+                    } label: {
+                        Text("Security")
+                            .fontWeight(selectedTab == .security ? .semibold : .regular)
+                            .animation(.none, value: selectedTab)
+                    }
+                    .overlay(alignment: .bottom) {
+                        if selectedTab == .security {
+                            Rectangle()
+                                .frame(height: 2)
+                                .offset(y: 16)
+                                .matchedGeometryEffect(id: "underline", in: namespace)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(30)
+                .frame(height: 50)
+                
+                Divider()
+            }
+            
+            TabView(selection: $selectedTab) {
+                UserProfileAccountView()
+                    .tag(Tab.account)
+                UserProfileSecurityView()
+                    .tag(Tab.security)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
+        }
+        .animation(.snappy, value: selectedTab)
     }
     
-    public var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-                HeaderView(
-                    title: "Account",
-                    subtitle: "Manage your account information"
-                )
-                
-                UserProfileSection()
-                UserProfileEmailSection()
-                UserProfilePhoneNumberSection()
-                UserProfileExternalAccountSection()
-            }
-            .padding(30)
-            .animation(.snappy, value: user)
-        }
-        .task {
-            try? await clerk.client.get()
-        }
+    enum Tab {
+        case account, security
     }
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { .mock }
-    return UserProfileView()
+    UserProfileView()
         .environmentObject(Clerk.mock)
 }
 

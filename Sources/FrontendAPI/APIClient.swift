@@ -14,7 +14,7 @@ extension Clerk {
     /// The Clerk API Client
     static var apiClient = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
         client.delegate = ClerkAPIClientDelegate()
-        client.decoder = JSONDecoder.snakeCaseDecoder
+        client.decoder = JSONDecoder.clerkDecoder
         client.sessionConfiguration.httpAdditionalHeaders = [
             "Content-Type": "application/x-www-form-urlencoded"
         ]
@@ -36,7 +36,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         
         // Encode body with url-encoded form
         if let data = request.httpBody {
-            let json = try JSONDecoder.snakeCaseDecoder.decode(JSON.self, from: data)
+            let json = try JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
             request.httpBody = try URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(json)
         }
     }
@@ -45,7 +45,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         // If our response is an error status code...
         guard (200..<300).contains(response.statusCode) else {
             // and the response has a ClerkError body throw a custom clerk error
-            if let clerkErrorResponse = try? JSONDecoder.snakeCaseDecoder.decode(ClerkErrorResponse.self, from: data),
+            if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
                 let clerkError = clerkErrorResponse.errors.first {
                 throw clerkError
             }

@@ -25,7 +25,7 @@ public struct UserButton: View {
             userButtonAction()
         }, label: {
             LazyImage(
-                url: URL(string: clerk.client.lastActiveSession?.user.imageUrl ?? ""),
+                url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""),
                 transaction: Transaction(animation: .default)
             ) { state in
                 if let image = state.image {

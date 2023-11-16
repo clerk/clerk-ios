@@ -386,7 +386,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
         WithID(path: path + "/\(id)")
     }
 
-    public struct WithID {
+    struct WithID {
         /// Path: `/v1/me/external_accounts/{id}`
         public let path: String
         
@@ -396,6 +396,36 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
         
         var delete: Request<Void> {
             .init(path: path, method: .delete)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
+    var sessions: SessionsEndpoint {
+        SessionsEndpoint(path: path + "/sessions")
+    }
+    
+    struct SessionsEndpoint {
+        /// Path: `/v1/me/sessions`
+        let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+    
+    var active: ActiveEndpoint {
+        ActiveEndpoint(path: path + "/active")
+    }
+    
+    struct ActiveEndpoint {
+        /// Path: `/v1/me/sessions/active`
+        let path: String
+        
+        var get: Request<[Session]> {
+            .init(path: path)
         }
     }
     

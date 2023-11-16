@@ -53,7 +53,7 @@ extension EmailAddress: Equatable, Hashable {}
 extension EmailAddress {
     
     public var isPrimary: Bool {
-        Clerk.shared.client.lastActiveSession?.user.primaryEmailAddressId == id
+        Clerk.shared.client.lastActiveSession?.user?.primaryEmailAddressId == id
     }
     
 }
