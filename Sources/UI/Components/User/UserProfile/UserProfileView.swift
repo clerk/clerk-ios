@@ -19,7 +19,7 @@ struct UserProfileView: View {
             VStack(spacing: .zero) {
                 HStack(spacing: 20) {
                     Button {
-                        withAnimation { selectedTab = .account }
+                        withAnimation(.snappy) { selectedTab = .account }
                     } label: {
                         Text("Account")
                             .fontWeight(selectedTab == .account ? .semibold : .regular)
@@ -35,7 +35,7 @@ struct UserProfileView: View {
                     }
                     
                     Button {
-                        withAnimation { selectedTab = .security }
+                        withAnimation(.snappy) { selectedTab = .security }
                     } label: {
                         Text("Security")
                             .fontWeight(selectedTab == .security ? .semibold : .regular)
@@ -59,16 +59,14 @@ struct UserProfileView: View {
                 Divider()
             }
             
-            TabView(selection: $selectedTab) {
+            TabView(selection: $selectedTab.animation(.snappy)) {
                 UserProfileAccountView()
                     .tag(Tab.account)
                 UserProfileSecurityView()
                     .tag(Tab.security)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .ignoresSafeArea()
         }
-        .animation(.snappy, value: selectedTab)
     }
     
     enum Tab {

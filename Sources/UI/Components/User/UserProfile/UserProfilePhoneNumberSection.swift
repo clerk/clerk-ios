@@ -157,6 +157,7 @@ struct UserProfilePhoneNumberSection: View {
                 .tint(clerkTheme.colors.primary)
                 .padding(.leading, 8)
             }
+            .animation(.snappy, value: user)
         }
         .sheet(item: $addPhoneNumberStep) { step in
             UserProfileAddPhoneNumberView(initialStep: step)

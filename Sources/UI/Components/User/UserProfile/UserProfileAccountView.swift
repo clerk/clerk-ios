@@ -33,7 +33,6 @@ public struct UserProfileAccountView: View {
                 UserProfileExternalAccountSection()
             }
             .padding(30)
-            .animation(.snappy, value: user)
         }
         .task {
             if !didFetchClient {

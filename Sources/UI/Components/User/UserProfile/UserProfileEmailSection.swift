@@ -154,6 +154,7 @@ struct UserProfileEmailSection: View {
                 .tint(clerkTheme.colors.primary)
                 .padding(.leading, 8)
             }
+            .animation(.snappy, value: user)
         }
         .sheet(item: $addEmailAddressStep) { step in
             UserProfileAddEmailView(initialStep: step)

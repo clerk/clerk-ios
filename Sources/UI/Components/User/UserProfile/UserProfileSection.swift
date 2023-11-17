@@ -42,6 +42,7 @@ struct UserProfileSection: View {
                 }
             }
         }
+        .animation(.snappy, value: user)
     }
 }
 

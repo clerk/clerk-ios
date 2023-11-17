@@ -136,10 +136,7 @@ extension Session {
     
 }
 
-extension Session: Equatable, Comparable {
-    public static func == (lhs: Session, rhs: Session) -> Bool {
-        lhs.id == rhs.id
-    }
+extension Session: Comparable {
     
     public static func < (lhs: Session, rhs: Session) -> Bool {
         if lhs.isThisDevice != rhs.isThisDevice  {
@@ -150,7 +147,7 @@ extension Session: Equatable, Comparable {
     }
 }
 
-public struct SessionActivity: Decodable {
+public struct SessionActivity: Decodable, Equatable {
     /// A unique identifier for the session activity record.
     let id: String
     
