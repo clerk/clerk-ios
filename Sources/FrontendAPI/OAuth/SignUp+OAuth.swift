@@ -9,25 +9,17 @@ import Foundation
 
 extension SignUp {
     
-    public func startOAuth(completion: @escaping (Result<Void, Error>) -> Void) {
+    public func startOAuth() async throws {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
         else {
-            completion(.failure(ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")))
-            return
+            throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
         }
         
-        let authSession = OAuthWebSession(url: url, authAction: .signUp) { result in
-            DispatchQueue.main.async {
-                completion(result)
-            }
-        }
-        
-        DispatchQueue.main.async {
-            authSession.start()
-        }
+        let authSession = OAuthWebSession(url: url, authAction: .signUp)
+        try await authSession.start()
     }
     
 }

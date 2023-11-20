@@ -45,14 +45,8 @@ struct SignUpSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         do {
             try await signUp.create(.oauth(provider: provider))
-            signUp.startOAuth { result in
-                switch result {
-                case .success: 
-                    onSuccess?()
-                case .failure(let error):
-                    dump(error)
-                }
-            }
+            try await signUp.startOAuth()
+            onSuccess?()
         } catch {
             dump(error)
         }

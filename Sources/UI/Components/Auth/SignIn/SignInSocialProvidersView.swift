@@ -48,14 +48,8 @@ struct SignInSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         do {
             try await signIn.create(.oauth(provider: provider))
-            signIn.startOAuth { result in
-                switch result {
-                case .success:
-                    onSuccess?()
-                case .failure(let error):
-                    dump(error)
-                }
-            }
+            try await signIn.startOAuth()
+            onSuccess?()
         } catch {
             dump(error)
         }
