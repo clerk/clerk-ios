@@ -48,7 +48,7 @@ extension EmailAddress {
     
     static var mock1: EmailAddress {
         .init(
-            id: "123",
+            id: "1",
             emailAddress: "ClerkUser@clerk.dev",
             verification: .init(status: .verified)
         )
@@ -56,7 +56,7 @@ extension EmailAddress {
     
     static var mock2: EmailAddress {
         .init(
-            id: "456",
+            id: "2",
             emailAddress: "ClerkUser2@clerk.dev",
             verification: .init(status: .unverified)
         )
@@ -162,10 +162,10 @@ extension ExternalAccount {
         let jsonData = """
         {
           "object": "external_account",
-          "id": "123",
+          "id": "1",
           "provider": "oauth_github",
-          "identification_id": "123",
-          "provider_user_id": "123",
+          "identification_id": "1",
+          "provider_user_id": "1",
           "approved_scopes": "read:user user:email",
           "email_address": "ClerkUser@clerk.dev",
           "first_name": "Clerk",
@@ -192,15 +192,15 @@ extension ExternalAccount {
         let jsonData = """
         {
           "object": "external_account",
-          "id": "456",
+          "id": "2",
           "provider": "oauth_google",
-          "identification_id": "456",
-          "provider_user_id": "123",
+          "identification_id": "2",
+          "provider_user_id": "1",
           "approved_scopes": "email https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid profile",
           "email_address": "ClerkUser@clerk.dev",
           "first_name": "Clerk",
           "last_name": "User",
-          "avatar_url": "https://lh3.googleusercontent.com/a/123",
+          "avatar_url": "https://lh3.googleusercontent.com/a/1",
           "image_url": "https://img.clerk.com",
           "username": null,
           "public_metadata": {},
@@ -226,8 +226,8 @@ extension Factor {
         .init(
             strategy: .emailCode,
             safeIdentifier: "ClerkUser@clerk.dev",
-            emailAddressId: "123",
-            phoneNumberId: "123",
+            emailAddressId: "1",
+            phoneNumberId: "1",
             web3WalletId: nil,
             primary: true,
             default: nil
@@ -240,7 +240,7 @@ extension PhoneNumber {
     
     static var mock1: PhoneNumber {
         .init(
-            id: "123",
+            id: "1",
             phoneNumber: "+12015550123",
             verification: .init(status: .verified)
         )
@@ -248,7 +248,7 @@ extension PhoneNumber {
     
     static var mock2: PhoneNumber {
         .init(
-            id: "456",
+            id: "2",
             phoneNumber: "+12015550456",
             verification: .init(status: .unverified)
         )
@@ -265,7 +265,7 @@ extension Session {
         abandonAt: .distantPast,
         lastActiveAt: Date().addingTimeInterval(-300), // last active 5 minutes ago
         latestActivity: SessionActivity(
-            id: "activity1",
+            id: "1",
             browserName: "Safari",
             browserVersion: "15.0",
             deviceType: "Macintosh",
@@ -274,9 +274,9 @@ extension Session {
             country: "USA",
             isMobile: false
         ),
-        lastActiveOrganizationId: "org123",
-        actor: "user123",
-        user: User(id: "user123", username: "john_doe"),
+        lastActiveOrganizationId: "1",
+        actor: "1",
+        user: .mock,
         publicUserData: ["name": "John Doe", "email": "john.doe@example.com"],
         createdAt: Date().addingTimeInterval(-3600), // created 1 hour ago
         updatedAt: Date().addingTimeInterval(-2400) // updated 40 minutes ago
@@ -289,7 +289,7 @@ extension Session {
         abandonAt: .distantPast,
         lastActiveAt: Date().addingTimeInterval(-7200), // last active 2 hours ago
         latestActivity: SessionActivity(
-            id: "activity3",
+            id: "2",
             browserName: "Chrome",
             browserVersion: "94.0",
             deviceType: nil,
@@ -299,8 +299,8 @@ extension Session {
             isMobile: false
         ),
         lastActiveOrganizationId: nil,
-        actor: "user456",
-        user: User(id: "user456", username: "jane_smith"),
+        actor: "2",
+        user: .mock,
         publicUserData: ["name": "Jane Smith", "email": "jane.smith@example.com"],
         createdAt: Date().addingTimeInterval(-10800), // created 3 hours ago
         updatedAt: Date().addingTimeInterval(-8100) // updated 2.25 hours ago
@@ -323,8 +323,8 @@ extension Session {
             isMobile: true
         ),
         lastActiveOrganizationId: "org456",
-        actor: "user789",
-        user: User(id: "user123", username: "john_doe"),
+        actor: "3",
+        user: .mock,
         publicUserData: nil,
         createdAt: Date().addingTimeInterval(-2700), // created 45 minutes ago
         updatedAt: Date().addingTimeInterval(-1200) // updated 20 minutes ago
@@ -336,7 +336,7 @@ extension SignIn {
     
     static var mock: SignIn {
         .init(
-            id: "123",
+            id: "1",
             status: .needsFirstFactor,
             supportedFirstFactors: [.mock],
             firstFactorVerification: .mock,
@@ -381,13 +381,13 @@ extension SignUpVerification {
 
 extension User {
     
-    static var mock: Self {
+    static var mock: User {
         .init(
             firstName: "Clerk",
             lastName: "User",
             imageUrl: "image",
-            primaryEmailAddressId: "123",
-            primaryPhoneNumberId: "123",
+            primaryEmailAddressId: "1",
+            primaryPhoneNumberId: "1",
             emailAddresses: [.mock1, .mock2],
             phoneNumbers: [.mock1, .mock2],
             externalAccounts: [.mockGoogle, .mockGithub]

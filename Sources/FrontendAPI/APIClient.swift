@@ -16,7 +16,8 @@ extension Clerk {
         client.delegate = ClerkAPIClientDelegate()
         client.decoder = JSONDecoder.clerkDecoder
         client.sessionConfiguration.httpAdditionalHeaders = [
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": UserAgentHelpers.userAgentString
         ]
     }
     

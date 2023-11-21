@@ -302,7 +302,7 @@ extension User {
     /// Retrieves all active sessions for this user.
     @discardableResult
     @MainActor
-    public func getSessions() async throws -> [Session] {
+    public func getSessions(ignoreCache: Bool = false) async throws -> [Session] {
         let request = APIEndpoint
             .v1
             .me

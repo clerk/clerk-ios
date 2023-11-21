@@ -416,6 +416,37 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
 
 extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
+    func withId(id: String) -> WithIdEndpoint {
+        WithIdEndpoint(path: path + "/\(id)")
+    }
+    
+    struct WithIdEndpoint {
+        /// Path: `v1/me/sessions/{id}`
+        let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
+    
+    var revoke: RevokeEndpoint {
+        RevokeEndpoint(path: path + "/revoke")
+    }
+    
+    struct RevokeEndpoint {
+        /// Path: `v1/me/sessions/{id}/revoke`
+        let path: String
+        
+        var post: Request<ClientResponse<Session>> {
+            .init(path: path, method: .post)
+        }
+        
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+    
     var active: ActiveEndpoint {
         ActiveEndpoint(path: path + "/active")
     }

@@ -206,3 +206,23 @@ public enum SessionStatus: String, Decodable {
     /// The application ended the session, and the Session was removed from the Client object.
     case revoked
 }
+
+extension Session {
+    
+    @MainActor
+    @discardableResult
+    public func revoke() async throws -> Session {
+        let request = APIEndpoint
+            .v1
+            .me
+            .sessions
+            .withId(id: id)
+            .revoke
+            .post
+        
+        let revokedSession = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.shared.client.get()
+        return revokedSession
+    }
+    
+}

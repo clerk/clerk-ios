@@ -21,9 +21,14 @@ struct UserProfileView: View {
                     Button {
                         withAnimation(.snappy) { selectedTab = .account }
                     } label: {
-                        Text("Account")
-                            .fontWeight(selectedTab == .account ? .semibold : .regular)
-                            .animation(.none, value: selectedTab)
+                        HStack {
+                            Image(systemName: "person.fill")
+                                .frame(width: 16, height: 16)
+                            
+                            Text("Account")
+                                .animation(.none, value: selectedTab)
+                        }
+                        .foregroundStyle(selectedTab == .account ? .primary : .secondary)
                     }
                     .overlay(alignment: .bottom) {
                         if selectedTab == .account {
@@ -37,9 +42,14 @@ struct UserProfileView: View {
                     Button {
                         withAnimation(.snappy) { selectedTab = .security }
                     } label: {
-                        Text("Security")
-                            .fontWeight(selectedTab == .security ? .semibold : .regular)
-                            .animation(.none, value: selectedTab)
+                        HStack {
+                            Image(systemName: "checkmark.shield.fill")
+                                .frame(width: 16, height: 16)
+                            
+                            Text("Security")
+                                .animation(.none, value: selectedTab)
+                        }
+                        .foregroundStyle(selectedTab == .security ? .primary : .secondary)
                     }
                     .overlay(alignment: .bottom) {
                         if selectedTab == .security {
@@ -51,7 +61,7 @@ struct UserProfileView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .font(.subheadline)
+                .font(.subheadline.weight(.medium))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(30)
                 .frame(height: 50)
