@@ -99,6 +99,13 @@ struct UserProfileEmailSection: View {
                 confirmDeleteEmailAddress = emailAddress
             }
             .font(.footnote.weight(.medium))
+            .popover(item: $confirmDeleteEmailAddress) { emailAddress in
+                UserProfileRemoveResourceView(resource: .email(emailAddress))
+                    .padding(.top)
+                    .readSize { deleteSheetHeight = $0.height }
+                    .presentationDragIndicator(.visible)
+                    .presentationDetents([.height(deleteSheetHeight)])
+            }
         }
     }
     
@@ -135,13 +142,6 @@ struct UserProfileEmailSection: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading)
-                    }
-                    .sheet(item: $confirmDeleteEmailAddress) { emailAddress in
-                        UserProfileRemoveResourceView(resource: .email(emailAddress))
-                            .padding(.top)
-                            .readSize { deleteSheetHeight = $0.height }
-                            .presentationDragIndicator(.visible)
-                            .presentationDetents([.height(deleteSheetHeight)])
                     }
                 }
                 

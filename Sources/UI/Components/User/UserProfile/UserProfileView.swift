@@ -13,61 +13,62 @@ import Clerk
 struct UserProfileView: View {
     @State private var selectedTab: Tab = .account
     @Namespace private var namespace
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         VStack(spacing: .zero) {
-            VStack(spacing: .zero) {
-                HStack(spacing: 20) {
-                    Button {
-                        withAnimation(.snappy) { selectedTab = .account }
-                    } label: {
-                        HStack {
-                            Image(systemName: "person.fill")
-                                .frame(width: 16, height: 16)
-                            
-                            Text("Account")
-                                .animation(.none, value: selectedTab)
-                        }
-                        .foregroundStyle(selectedTab == .account ? .primary : .secondary)
+            HStack(spacing: 20) {
+                Button {
+                    withAnimation(.snappy) { selectedTab = .account }
+                } label: {
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .frame(width: 16, height: 16)
+                        
+                        Text("Account")
+                            .animation(.none, value: selectedTab)
                     }
-                    .overlay(alignment: .bottom) {
-                        if selectedTab == .account {
-                            Rectangle()
-                                .frame(height: 2)
-                                .offset(y: 16)
-                                .matchedGeometryEffect(id: "underline", in: namespace)
-                        }
-                    }
-                    
-                    Button {
-                        withAnimation(.snappy) { selectedTab = .security }
-                    } label: {
-                        HStack {
-                            Image(systemName: "checkmark.shield.fill")
-                                .frame(width: 16, height: 16)
-                            
-                            Text("Security")
-                                .animation(.none, value: selectedTab)
-                        }
-                        .foregroundStyle(selectedTab == .security ? .primary : .secondary)
-                    }
-                    .overlay(alignment: .bottom) {
-                        if selectedTab == .security {
-                            Rectangle()
-                                .frame(height: 2)
-                                .offset(y: 16)
-                                .matchedGeometryEffect(id: "underline", in: namespace)
-                        }
+                    .foregroundStyle(selectedTab == .account ? .primary : .secondary)
+                    .frame(maxHeight: .infinity)
+                }
+                .overlay(alignment: .bottom) {
+                    if selectedTab == .account {
+                        Rectangle()
+                            .frame(height: 2)
+                            .matchedGeometryEffect(id: "underline", in: namespace)
                     }
                 }
-                .buttonStyle(.plain)
-                .font(.subheadline.weight(.medium))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(30)
-                .frame(height: 50)
                 
+                Button {
+                    withAnimation(.snappy) { selectedTab = .security }
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark.shield.fill")
+                            .frame(width: 16, height: 16)
+                        
+                        Text("Security")
+                            .animation(.none, value: selectedTab)
+                    }
+                    .foregroundStyle(selectedTab == .security ? .primary : .secondary)
+                    .frame(maxHeight: .infinity)
+                }
+                .overlay(alignment: .bottom) {
+                    if selectedTab == .security {
+                        Rectangle()
+                            .frame(height: 2)
+                            .matchedGeometryEffect(id: "underline", in: namespace)
+                    }
+                }
+            }
+            .frame(height: 50)
+            .buttonStyle(.plain)
+            .font(.subheadline.weight(.medium))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 30)
+            .background(alignment: .bottom) {
                 Divider()
             }
+            .padding(.top)
             
             TabView(selection: $selectedTab.animation(.snappy)) {
                 UserProfileAccountView()
@@ -77,6 +78,7 @@ struct UserProfileView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
+        .dismissButtonOverlay()
     }
     
     enum Tab {

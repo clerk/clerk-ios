@@ -126,6 +126,13 @@ struct UserProfileExternalAccountSection: View {
             }
             .font(.footnote.weight(.medium))
             .padding(.vertical, 4)
+            .popover(item: $confirmDeleteExternalAccount) { externalAccount in
+                UserProfileRemoveResourceView(resource: .externalAccount(externalAccount))
+                    .padding(.top)
+                    .readSize { deleteSheetHeight = $0.height }
+                    .presentationDragIndicator(.visible)
+                    .presentationDetents([.height(deleteSheetHeight)])
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading)
@@ -160,13 +167,6 @@ struct UserProfileExternalAccountSection: View {
                         }
                         
                         removeCalloutView(externalAccount)
-                    }
-                    .sheet(item: $confirmDeleteExternalAccount) { externalAccount in
-                        UserProfileRemoveResourceView(resource: .externalAccount(externalAccount))
-                            .padding(.top)
-                            .readSize { deleteSheetHeight = $0.height }
-                            .presentationDragIndicator(.visible)
-                            .presentationDetents([.height(deleteSheetHeight)])
                     }
                 }
                 

@@ -13,6 +13,7 @@ import Clerk
 public struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @Environment(\.dismiss) private var dismiss
     
     public var body: some View {
         Group {
@@ -33,6 +34,7 @@ public struct AuthView: View {
         .background(.background)
         .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
+        .dismissButtonOverlay()
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()

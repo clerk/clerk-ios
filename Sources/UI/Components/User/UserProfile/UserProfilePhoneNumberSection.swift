@@ -99,6 +99,13 @@ struct UserProfilePhoneNumberSection: View {
                 confirmDeletePhoneNumber = phoneNumber
             }
             .font(.footnote.weight(.medium))
+            .popover(item: $confirmDeletePhoneNumber) { phoneNumber in
+                UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
+                    .padding(.top)
+                    .readSize { deleteSheetHeight = $0.height }
+                    .presentationDragIndicator(.visible)
+                    .presentationDetents([.height(deleteSheetHeight)])
+            }
         }
     }
     
@@ -138,13 +145,6 @@ struct UserProfilePhoneNumberSection: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading)
-                    }
-                    .sheet(item: $confirmDeletePhoneNumber) { phoneNumber in
-                        UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
-                            .padding(.top)
-                            .readSize { deleteSheetHeight = $0.height }
-                            .presentationDragIndicator(.visible)
-                            .presentationDetents([.height(deleteSheetHeight)])
                     }
                 }
                 
