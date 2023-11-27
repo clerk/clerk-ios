@@ -144,6 +144,7 @@ struct UserProfileAddPhoneNumberView: View {
                 .animation(.snappy, value: step)
             }
             .padding(30)
+            .dismissButtonOverlay()
         }
     }
     

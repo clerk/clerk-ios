@@ -14,12 +14,24 @@ import NukeUI
 struct UserProfileActiveDevicesSection: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var didFetchSessions = false
-    
-    // TODO: MIKE - This is ugly, find a way to get rid of this
-    @State private var sessions: [Session] = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" ? [.mockSession1, .mockSession2, .mockSession3] : []
         
     private var user: User? {
         clerk.client.lastActiveSession?.user
+    }
+    
+    private var sessions: [Session] {
+        guard let user else { return [] }
+        return clerk.sessionsByUserId[user.id, default: []].sorted()
+    }
+    
+    private func getSessions() async {
+        do {
+            guard let user else { return }
+            try await user.getSessions()
+            didFetchSessions = true
+        } catch {
+            dump(error)
+        }
     }
     
     var body: some View {
@@ -29,22 +41,13 @@ struct UserProfileActiveDevicesSection: View {
             VStack(alignment: .leading, spacing: 24) {
                 ForEach(sessions) { session in
                     ActiveDeviceView(session: session)
-                        .onRevoke { revokedSession in
-                            sessions.removeAll(where: { $0.id == revokedSession.id })
-                        }
                 }
             }
         }
         .animation(.snappy, value: sessions.count)
         .task {
             if !didFetchSessions {
-                do {
-                    guard let user else { return }
-                    self.sessions = try await user.getSessions().sorted()
-                    didFetchSessions = true
-                } catch {
-                    dump(error)
-                }
+                await getSessions()
             }
         }
     }
@@ -53,7 +56,6 @@ struct UserProfileActiveDevicesSection: View {
         @EnvironmentObject private var clerk: Clerk
 
         let session: Session
-        var onRevoke: ((Session) async -> ())?
         
         var body: some View {
             AccordionView {
@@ -105,7 +107,7 @@ struct UserProfileActiveDevicesSection: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     AsyncButton(options: [.disableButton, .showProgressView], action: {
-                        await revokeSession(session)
+                        await revokeSession()
                     }, label: {
                         Text("Sign out of device")
                             .font(.footnote.weight(.medium))
@@ -115,19 +117,13 @@ struct UserProfileActiveDevicesSection: View {
             }
         }
         
-        private func revokeSession(_ session: Session) async {
+        private func revokeSession() async {
             do {
-                let revokedSession = try await session.revoke()
-                await onRevoke?(revokedSession)
+                try await session.revoke()
+                try await clerk.client.lastActiveSession?.user?.getSessions()
             } catch {
                 dump(error)
             }
-        }
-        
-        func onRevoke(perform action: @escaping (Session) -> Void) -> Self {
-            var copy = self
-            copy.onRevoke = action
-            return copy
         }
     }
 }

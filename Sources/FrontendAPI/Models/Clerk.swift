@@ -77,6 +77,11 @@ final public class Clerk: ObservableObject {
     
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment = .init()
+    
+    /// The retrieved active sessions for this user.
+    ///
+    /// Is set by the `getSessions` function on a user.
+    @Published internal(set) public var sessionsByUserId: [String: [Session]] = .init()
 }
 
 extension Container {

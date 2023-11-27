@@ -15,6 +15,7 @@ extension Clerk {
         let clerk = Clerk()
         clerk.client = .mock
         clerk.environment = .mock
+        clerk.sessionsByUserId[User.mock.id] = [.mockSession1, .mockSession2, .mockSession3]
         return clerk
     }
 }

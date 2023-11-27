@@ -80,7 +80,7 @@ public struct Session: Decodable, Identifiable {
     let actor: String?
     
     /// The user associated with the session.
-    public let user: User?
+    public var user: User?
     
     /// Public information about the user that this session belongs to.
     let publicUserData: JSON?

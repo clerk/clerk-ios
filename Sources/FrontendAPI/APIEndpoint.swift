@@ -416,6 +416,23 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
 
 extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
+    var active: ActiveEndpoint {
+        ActiveEndpoint(path: path + "/active")
+    }
+    
+    struct ActiveEndpoint {
+        /// Path: `/v1/me/sessions/active`
+        let path: String
+        
+        var get: Request<[Session]> {
+            .init(path: path)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+    
     func withId(id: String) -> WithIdEndpoint {
         WithIdEndpoint(path: path + "/\(id)")
     }
@@ -445,19 +462,19 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+extension APIEndpoint.V1Endpoint.MeEndpoint {
     
-    var active: ActiveEndpoint {
-        ActiveEndpoint(path: path + "/active")
+    var changePassword: ChangePasswordEndpoint {
+        ChangePasswordEndpoint(path: path + "/change_password")
     }
     
-    struct ActiveEndpoint {
-        /// Path: `/v1/me/sessions/active`
+    struct ChangePasswordEndpoint {
+        /// Path: `v1/me/change_password`
         let path: String
         
-        var get: Request<[Session]> {
-            .init(path: path)
+        func post(_ params: User.UpdateUserPasswordParams) -> Request<ClientResponse<User>> {
+            .init(path: path, method: .post, body: params)
         }
+        
     }
-    
 }

@@ -80,7 +80,7 @@ public struct User: Decodable {
     }
     
     /// A unique identifier for the user.
-    let id: String
+    public let id: String
     
     /// The user's username.
     let username: String?
@@ -220,6 +220,24 @@ extension User {
 extension User {
     
     public struct UpdateParams: Encodable {
+        public init(
+            username: String? = nil,
+            firstName: String? = nil,
+            lastName: String? = nil,
+            primaryEmailAddressId: String? = nil,
+            primaryPhoneNumberId: String? = nil,
+            primaryWeb3WalletId: String? = nil,
+            unsafeMetadata: JSON? = nil
+        ) {
+            self.username = username
+            self.firstName = firstName
+            self.lastName = lastName
+            self.primaryEmailAddressId = primaryEmailAddressId
+            self.primaryPhoneNumberId = primaryPhoneNumberId
+            self.primaryWeb3WalletId = primaryWeb3WalletId
+            self.unsafeMetadata = unsafeMetadata
+        }
+        
         /// The user's username.
         var username: String?
         /// The user's first name.
@@ -237,6 +255,34 @@ extension User {
         Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
          */
         var unsafeMetadata: JSON?
+    }
+    
+    public struct UpdateUserPasswordParams: Encodable {
+        public init(
+            newPassword: String,
+            currentPassword: String,
+            signOutOfOtherSessions: Bool
+        ) {
+            self.newPassword = newPassword
+            self.currentPassword = currentPassword
+            self.signOutOfOtherSessions = signOutOfOtherSessions
+        }
+        
+        /// The user's new password.
+        let newPassword: String
+        /// The user's current password.
+        let currentPassword: String
+        /// If set to true, all sessions will be signed out.
+        let signOutOfOtherSessions: Bool
+    }
+    
+    public struct RemoveUserPasswordParams: Encodable {
+        public init(currentPassword: String) {
+            self.currentPassword = currentPassword
+        }
+        
+        /// The user's current password.
+        let currentPassword: String
     }
     
 }
@@ -300,9 +346,8 @@ extension User {
     }
     
     /// Retrieves all active sessions for this user.
-    @discardableResult
     @MainActor
-    public func getSessions(ignoreCache: Bool = false) async throws -> [Session] {
+    public func getSessions() async throws {
         let request = APIEndpoint
             .v1
             .me
@@ -310,7 +355,21 @@ extension User {
             .active
             .get
         
-        return try await Clerk.apiClient.send(request).value
+        let sessions = try await Clerk.apiClient.send(request).value
+        Clerk.shared.sessionsByUserId[id] = sessions
+    }
+    
+    /// Updates the user's password.
+    @MainActor
+    public func updatePassword(_ params: UpdateUserPasswordParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .changePassword
+            .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
 }

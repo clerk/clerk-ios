@@ -19,6 +19,7 @@ struct UserProfileSecurityView: View {
                     subtitle: "Manage your security preferences"
                 )
                 
+                UserProfilePasswordSection()
                 UserProfileActiveDevicesSection()
             }
             .padding(30)
