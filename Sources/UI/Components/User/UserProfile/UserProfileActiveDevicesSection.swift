@@ -13,25 +13,10 @@ import NukeUI
 
 struct UserProfileActiveDevicesSection: View {
     @EnvironmentObject private var clerk: Clerk
-    @State private var didFetchSessions = false
-        
-    private var user: User? {
-        clerk.client.lastActiveSession?.user
-    }
     
     private var sessions: [Session] {
-        guard let user else { return [] }
+        guard let user = clerk.client.lastActiveSession?.user else { return [] }
         return clerk.sessionsByUserId[user.id, default: []].sorted()
-    }
-    
-    private func getSessions() async {
-        do {
-            guard let user else { return }
-            try await user.getSessions()
-            didFetchSessions = true
-        } catch {
-            dump(error)
-        }
     }
     
     var body: some View {
@@ -45,11 +30,6 @@ struct UserProfileActiveDevicesSection: View {
             }
         }
         .animation(.snappy, value: sessions.count)
-        .task {
-            if !didFetchSessions {
-                await getSessions()
-            }
-        }
     }
     
     private struct ActiveDeviceView: View {

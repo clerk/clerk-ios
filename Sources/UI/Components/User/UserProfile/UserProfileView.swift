@@ -11,6 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileView: View {
+    @EnvironmentObject private var clerk: Clerk
     @State private var selectedTab: Tab = .account
     @Namespace private var namespace
     @Environment(\.dismiss) private var dismiss
@@ -79,6 +80,20 @@ struct UserProfileView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .dismissButtonOverlay()
+        .task {
+            do {
+                try await clerk.client.get()
+            } catch {
+                dump(error)
+            }
+        }
+        .task {
+            do {
+                try await clerk.client.lastActiveSession?.user?.getSessions()
+            } catch {
+                dump(error)
+            }
+        }
     }
     
     enum Tab {

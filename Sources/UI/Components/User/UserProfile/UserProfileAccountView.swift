@@ -9,16 +9,8 @@
 
 import SwiftUI
 import Clerk
-import Factory
 
 public struct UserProfileAccountView: View {
-    @EnvironmentObject private var clerk: Clerk
-    @State private var didFetchClient = false
-    
-    private var user: User? {
-        clerk.client.lastActiveSession?.user
-    }
-    
     public var body: some View {
         ScrollView {
             VStack(spacing: 30) {
@@ -34,19 +26,11 @@ public struct UserProfileAccountView: View {
             }
             .padding(30)
         }
-        .task {
-            if !didFetchClient {
-                try? await clerk.client.get()
-                didFetchClient = true
-            }
-        }
     }
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { .mock }
     return UserProfileAccountView()
-        .environmentObject(Clerk.mock)
 }
 
 #endif
