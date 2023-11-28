@@ -492,6 +492,10 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
         var post: Request<ClientResponse<ImageResource>> {
             .init(path: path, method: .post)
         }
+        
+        var delete: Request<ClientResponse<ImageResource>> {
+            .init(path: path, method: .delete)
+        }
     }
     
 }

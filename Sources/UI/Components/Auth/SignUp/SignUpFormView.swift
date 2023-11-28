@@ -98,10 +98,9 @@ struct SignUpFormView: View {
                     .focused($focusedField, equals: .password)
             }
             
-            AsyncButton(
-                options: [.disableButton, .showProgressView],
-                action: { await continueAction() }
-            ) {
+            AsyncButton {
+                await continueAction()
+            } label: {
                 Text("CONTINUE")
                     .font(.caption2.weight(.bold))
                     .frame(maxWidth: .infinity)

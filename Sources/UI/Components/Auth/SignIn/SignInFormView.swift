@@ -67,13 +67,13 @@ struct SignInFormView: View {
                 }
             }
             
-            AsyncButton(options: [.disableButton, .showProgressView], action: {
+            AsyncButton {
                 if displayingEmailEntry {
                     await signInAction(strategy: .emailCode(email: emailAddress))
                 } else {
                     await signInAction(strategy: .phoneCode(phoneNumber: phoneNumber))
                 }
-            }) {
+            } label: {
                 Text("CONTINUE")
                     .font(.caption2.weight(.bold))
                     .frame(maxWidth: .infinity)

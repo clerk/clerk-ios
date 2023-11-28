@@ -4,6 +4,7 @@
 //
 //  Created by Mike Pitre on 11/28/23.
 //
+
 #if canImport(UIKit)
 
 import SwiftUI
@@ -57,6 +58,7 @@ struct UserProfileUpdateProfileView: View {
                             .font(.footnote)
                             .tint(clerkTheme.colors.primary)
                             .onChange(of: photosPickerItem) { newValue in
+                                if newValue == nil { return }
                                 Task {
                                     do {
                                         guard let imageData = try await photosPickerItem?.loadTransferable(type: Data.self) else {
@@ -66,13 +68,22 @@ struct UserProfileUpdateProfileView: View {
                                     } catch {
                                         dump(error)
                                     }
+                                    
+                                    photosPickerItem = nil
                                 }
                             }
 
-                            Button("Remove image", role: .destructive) {
-                                // remove image
+                            AsyncButton {
+                                do {
+                                    try await user?.deleteProfileImage()
+                                } catch {
+                                    dump(error)
+                                }
+                            } label: {
+                                Text("Remove image")
+                                    .font(.footnote)
+                                    .tint(.red)
                             }
-                            .font(.footnote)
                         }
                     }
                 }
@@ -113,9 +124,9 @@ struct UserProfileUpdateProfileView: View {
                             .font(.caption.weight(.bold))
                     }
                     
-                    AsyncButton(options: [.disableButton, .showProgressView], action: {
+                    AsyncButton {
                         //
-                    }, label: {
+                    } label: {
                         Text("CONTINUE")
                             .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
                             .font(.caption.weight(.bold))
@@ -125,7 +136,7 @@ struct UserProfileUpdateProfileView: View {
                                 clerkTheme.colors.primary,
                                 in: .rect(cornerRadius: 6, style: .continuous)
                             )
-                    })
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

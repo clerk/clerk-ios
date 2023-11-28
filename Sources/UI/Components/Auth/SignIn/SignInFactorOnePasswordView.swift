@@ -54,10 +54,7 @@ struct SignInFactorOnePasswordView: View {
                         PasswordInputView(password: $password)
                     }
                     
-                    AsyncButton(
-                        options: [.disableButton, .showProgressView],
-                        action: attempt
-                    ) {
+                    AsyncButton(action: attempt) {
                         Text("CONTINUE")
                             .font(.caption2.weight(.bold))
                             .frame(maxWidth: .infinity)
@@ -68,13 +65,13 @@ struct SignInFactorOnePasswordView: View {
                     }
                 }
                 
-                AsyncButton(action: {
+                AsyncButton {
                     clerkUIState.presentedAuthStep = .signInStart
-                }, label: {
+                } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
                         .foregroundStyle(clerkTheme.colors.primary)
-                })
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(30)

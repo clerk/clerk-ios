@@ -399,4 +399,16 @@ extension User {
         return imageResource
     }
     
+    @MainActor
+    public func deleteProfileImage() async throws {
+        let request = APIEndpoint
+            .v1
+            .me
+            .profileImage
+            .delete
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
 }

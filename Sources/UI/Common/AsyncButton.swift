@@ -11,7 +11,7 @@ import SwiftUI
 
 struct AsyncButton<Label: View>: View {
     public init(
-        options: Set<AsyncButton<Label>.Options> = .init(),
+        options: Set<AsyncButton<Label>.Options> = [.disableButton, .showProgressView],
         action: @escaping () async -> Void,
         label: @escaping () -> Label
     ) {
@@ -45,9 +45,9 @@ struct AsyncButton<Label: View>: View {
                 }
             },
             label: {
-                ZStack {
-                    label().opacity(showProgressView ? 0 : 1)
-                    
+                label()
+                .opacity(showProgressView ? 0 : 1)
+                .overlay {
                     if showProgressView {
                         ProgressView()
                     }
@@ -61,7 +61,7 @@ struct AsyncButton<Label: View>: View {
 }
 
 #Preview {
-    AsyncButton(options: [.disableButton, .showProgressView]) {
+    AsyncButton {
         try? await Task.sleep(for: .seconds(1))
     } label: {
         Text("Button")

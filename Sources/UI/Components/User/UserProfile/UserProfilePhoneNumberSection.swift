@@ -49,12 +49,12 @@ struct UserProfilePhoneNumberSection: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                AsyncButton(options: [.disableButton, .showProgressView], action: {
+                AsyncButton {
                     await setAsPrimary(phoneNumber: phoneNumber)
-                }, label: {
+                } label: {
                     Text("Set as primary")
                         .font(.footnote.weight(.medium))
-                })
+                }
                 .tint(clerkTheme.colors.primary)
             }
         }

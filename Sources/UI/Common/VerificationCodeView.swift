@@ -48,13 +48,13 @@ struct VerificationCodeView: View {
                 subtitle: formSubtitle
             )
             
-            AsyncButton(action: {
+            AsyncButton {
                 await onUseAlernateMethod?()
-            }, label: {
+            } label: {
                 Text("Use another method")
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(clerkTheme.colors.primary)
-            })
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(30)

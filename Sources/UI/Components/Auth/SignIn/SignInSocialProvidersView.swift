@@ -29,15 +29,15 @@ struct SignInSocialProvidersView: View {
             alignment: .leading,
             content: {
                 ForEach(thirdPartyProviders, id: \.self) { provider in
-                    AsyncButton(options: [.disableButton], action: {
+                    AsyncButton {
                         await signIn(provider: provider)
-                    }, label: {
+                    } label: {
                         AuthProviderButton(
                             provider: provider,
                             style: thirdPartyProviders.count <= 2 ? .regular : .compact
                         )
                         .font(.footnote)
-                    })
+                    }
                     .buttonStyle(.plain)
                 }
             }

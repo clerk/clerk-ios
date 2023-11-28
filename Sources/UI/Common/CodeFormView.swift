@@ -53,13 +53,13 @@ struct CodeFormView: View {
                 }
             }
             
-            AsyncButton(options: [.disableButton], action: {
-                Task { await onResend?() }
-            }, label: {
+            AsyncButton {
+                await onResend?()
+            } label: {
                 Text("Didn't recieve a code? Resend")
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(clerkTheme.colors.primary)
-            })
+            }
         }
     }
 }

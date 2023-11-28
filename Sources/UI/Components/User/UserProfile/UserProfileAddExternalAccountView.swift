@@ -42,7 +42,7 @@ struct UserProfileAddExternalAccountView: View {
                 
                 VStack {
                     ForEach(user?.unconnectedProviders ?? []) { provider in
-                        AsyncButton(options: [.disableButton, .showProgressView]) {
+                        AsyncButton {
                             await create(provider: provider)
                         } label: {
                             AuthProviderButton(

@@ -39,16 +39,16 @@ struct RemoveResourceView: View {
                         .font(.caption.weight(.bold))
                 }
                 
-                AsyncButton(options: [.disableButton, .showProgressView], action: {
+                AsyncButton {
                     await onDelete?()
-                }, label: {
+                } label: {
                     Text("REMOVE")
                         .foregroundStyle(.white)
                         .font(.caption.weight(.bold))
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                         .background(.red, in: .rect(cornerRadius: 6, style: .continuous))
-                })
+                }
             }
             .padding(.vertical)
         }

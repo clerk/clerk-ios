@@ -90,7 +90,7 @@ struct UserProfileExternalAccountSection: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             if let provider = externalAccount.externalProvider {
-                AsyncButton(options: [.disableButton, .showProgressView]) {
+                AsyncButton {
                     await retryConnection(provider)
                 } label: {
                     Text("Try again")

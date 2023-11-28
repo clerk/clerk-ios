@@ -110,9 +110,9 @@ struct UserProfileChangePasswordView: View {
                             .font(.caption.weight(.bold))
                     }
                     
-                    AsyncButton(options: [.disableButton, .showProgressView], action: {
+                    AsyncButton {
                         await updatePassword()
-                    }, label: {
+                    } label: {
                         Text("CONTINUE")
                             .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
                             .font(.caption.weight(.bold))
@@ -122,7 +122,7 @@ struct UserProfileChangePasswordView: View {
                                 clerkTheme.colors.primary,
                                 in: .rect(cornerRadius: 6, style: .continuous)
                             )
-                    })
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

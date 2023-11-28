@@ -150,11 +150,11 @@ struct UserProfileAddEmailView: View {
                     }
                     
                     if step == .add {
-                        AsyncButton(options: [.disableButton, .showProgressView], action: {
+                        AsyncButton {
                             await create()
                             guard let emailAddress else { return }
                             step = .code(emailAddress: emailAddress)
-                        }, label: {
+                        } label: {
                             Text("CONTINUE")
                                 .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
                                 .font(.caption.weight(.bold))
@@ -164,7 +164,7 @@ struct UserProfileAddEmailView: View {
                                     clerkTheme.colors.primary,
                                     in: .rect(cornerRadius: 6, style: .continuous)
                                 )
-                        })
+                        }
                     }
                 }
                 .animation(.snappy, value: step)

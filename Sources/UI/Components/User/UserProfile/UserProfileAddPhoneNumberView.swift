@@ -124,11 +124,11 @@ struct UserProfileAddPhoneNumberView: View {
                     }
                     
                     if step == .add {
-                        AsyncButton(options: [.disableButton, .showProgressView], action: {
+                        AsyncButton {
                             await create()
                             guard let phoneNumber else { return }
                             step = .code(phoneNumber: phoneNumber)
-                        }, label: {
+                        } label: {
                             Text("CONTINUE")
                                 .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
                                 .font(.caption.weight(.bold))
@@ -138,7 +138,7 @@ struct UserProfileAddPhoneNumberView: View {
                                     clerkTheme.colors.primary,
                                     in: .rect(cornerRadius: 6, style: .continuous)
                                 )
-                        })
+                        }
                     }
                 }
                 .animation(.snappy, value: step)

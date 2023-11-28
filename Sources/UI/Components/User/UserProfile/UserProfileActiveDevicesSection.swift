@@ -86,12 +86,12 @@ struct UserProfileActiveDevicesSection: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    AsyncButton(options: [.disableButton, .showProgressView], action: {
+                    AsyncButton {
                         await revokeSession()
-                    }, label: {
+                    } label: {
                         Text("Sign out of device")
                             .font(.footnote.weight(.medium))
-                    })
+                    }
                     .tint(.red)
                 }
             }
