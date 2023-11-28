@@ -28,7 +28,7 @@ extension ClerkTheme {
     
     static let `default` = Self(
         colors: .init(
-            primary: Color(.label),
+            primary: .primary,
             primaryButtonTextColor: Color(.systemBackground)
         ),
         authPresentationStyle: .sheet

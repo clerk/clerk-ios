@@ -91,8 +91,8 @@ struct UserProfileActiveDevicesSection: View {
                     } label: {
                         Text("Sign out of device")
                             .font(.footnote.weight(.medium))
+                            .tint(.red)
                     }
-                    .tint(.red)
                 }
             }
         }

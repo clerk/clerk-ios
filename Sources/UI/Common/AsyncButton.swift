@@ -26,6 +26,12 @@ struct AsyncButton<Label: View>: View {
     
     @State private var isDisabled = false
     @State private var showProgressView = false
+    @Environment(\.isEnabled) private var isEnabled
+    
+    // Combines environment value and local state
+    private var disabled: Bool {
+        !isEnabled || isDisabled
+    }
     
     public var body: some View {
         Button(
@@ -46,16 +52,17 @@ struct AsyncButton<Label: View>: View {
             },
             label: {
                 label()
-                .opacity(showProgressView ? 0 : 1)
-                .overlay {
-                    if showProgressView {
-                        ProgressView()
+                    .opacity(disabled ? 0.3 : 1)
+                    .opacity(showProgressView ? 0 : 1)
+                    .overlay {
+                        if showProgressView {
+                            ProgressView()
+                        }
                     }
-                }
             }
         )
-        .disabled(isDisabled)
-        .animation(.default, value: isDisabled)
+        .disabled(disabled)
+        .animation(.default, value: disabled)
         .animation(.default, value: showProgressView)
     }
 }

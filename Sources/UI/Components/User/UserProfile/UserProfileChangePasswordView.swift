@@ -28,9 +28,11 @@ struct UserProfileChangePasswordView: View {
         clerk.client.lastActiveSession?.user
     }
     
-    private var canContinue: Bool {
-        !currentPassword.isEmpty &&
-        (newPassword == confirmPassword)
+    private var continueDisabled: Bool {
+        currentPassword.isEmpty ||
+        newPassword.isEmpty ||
+        confirmPassword.isEmpty ||
+        (newPassword != confirmPassword)
     }
     
     private func updatePassword() async {
@@ -123,6 +125,7 @@ struct UserProfileChangePasswordView: View {
                                 in: .rect(cornerRadius: 6, style: .continuous)
                             )
                     }
+                    .disabled(continueDisabled)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -134,6 +137,7 @@ struct UserProfileChangePasswordView: View {
 
 #Preview {
     UserProfileChangePasswordView()
+        .environment(\.clerkTheme.colors.primary, Color(.clerkPurple))
 }
 
 #endif

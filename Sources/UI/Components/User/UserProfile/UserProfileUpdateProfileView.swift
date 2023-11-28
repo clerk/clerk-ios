@@ -24,6 +24,11 @@ struct UserProfileUpdateProfileView: View {
         clerk.client.lastActiveSession?.user
     }
     
+    private var continueButtonDisabled: Bool {
+        user?.firstName == firstName &&
+        user?.lastName == lastName
+    }
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -94,7 +99,7 @@ struct UserProfileUpdateProfileView: View {
                     CustomTextField(text: $firstName)
                         .frame(height: 44)
                         .textContentType(.givenName)
-                        .autocorrectionDisabled(true)
+                        .autocorrectionDisabled()
                         .task {
                             firstName = user?.firstName ?? ""
                         }
@@ -106,7 +111,7 @@ struct UserProfileUpdateProfileView: View {
                     CustomTextField(text: $lastName)
                         .frame(height: 44)
                         .textContentType(.familyName)
-                        .autocorrectionDisabled(true)
+                        .autocorrectionDisabled()
                         .task {
                             lastName = user?.lastName ?? ""
                         }
@@ -137,6 +142,7 @@ struct UserProfileUpdateProfileView: View {
                                 in: .rect(cornerRadius: 6, style: .continuous)
                             )
                     }
+                    .disabled(continueButtonDisabled)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
