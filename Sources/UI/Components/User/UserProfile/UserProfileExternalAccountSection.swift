@@ -48,7 +48,7 @@ struct UserProfileExternalAccountSection: View {
         HStack(spacing: 16) {
             LazyImage(url: URL(string: externalAccount.imageUrl ?? "")) { state in
                 if let image = state.image {
-                    image.resizable().scaledToFit()
+                    image.resizable().scaledToFill()
                 } else {
                     Color(.secondarySystemBackground)
                 }
@@ -58,7 +58,7 @@ struct UserProfileExternalAccountSection: View {
             .overlay(alignment: .bottomLeading) {
                 LazyImage(url: externalAccount.externalProvider?.iconImageUrl) { state in
                     if let image = state.image {
-                        image.resizable().scaledToFit()
+                        image.resizable().scaledToFill()
                     } else {
                         Color(.secondarySystemBackground)
                     }

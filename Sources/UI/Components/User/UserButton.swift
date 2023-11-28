@@ -26,10 +26,10 @@ public struct UserButton: View {
         }, label: {
             LazyImage(
                 url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""),
-                transaction: Transaction(animation: .default)
+                transaction: .init(animation: .default)
             ) { state in
                 if let image = state.image {
-                    image.resizable().aspectRatio(contentMode: .fit)
+                    image.resizable().scaledToFill()
                 } else {
                     Image(systemName: "person.circle")
                         .resizable()

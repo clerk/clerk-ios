@@ -478,3 +478,20 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
         
     }
 }
+
+extension APIEndpoint.V1Endpoint.MeEndpoint {
+    
+    var profileImage: ProfileImageEndpoint {
+        ProfileImageEndpoint(path: path + "/profile_image")
+    }
+    
+    struct ProfileImageEndpoint {
+        /// Path: `v1/me/profile_image`
+        let path: String
+        
+        var post: Request<ClientResponse<ImageResource>> {
+            .init(path: path, method: .post)
+        }
+    }
+    
+}

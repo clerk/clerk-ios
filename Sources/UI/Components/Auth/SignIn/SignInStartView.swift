@@ -55,7 +55,7 @@ struct SignInStartView: View {
                         HStack(spacing: 4) {
                             Image("clerk-logomark", bundle: .module)
                                 .resizable()
-                                .aspectRatio(contentMode: .fit)
+                                .scaledToFit()
                                 .frame(width: 16)
                             Text("clerk")
                                 .fontWeight(.semibold)

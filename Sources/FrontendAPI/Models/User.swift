@@ -86,10 +86,10 @@ public struct User: Decodable {
     let username: String?
     
     /// The user's first name.
-    let firstName: String?
+    public let firstName: String?
     
     /// The user's last name.
-    let lastName: String?
+    public let lastName: String?
     
     ///
     let gender: String?
@@ -370,6 +370,33 @@ extension User {
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()
+    }
+    
+    /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
+    @discardableResult
+    @MainActor
+    public func setProfileImage(_ imageData: Data) async throws -> ImageResource {
+        let request = APIEndpoint
+            .v1
+            .me
+            .profileImage
+            .post
+        
+        let boundary = UUID().uuidString
+        var data = Data()
+        
+        data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        data.append(imageData)
+        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+                        
+        let imageResource = try await Clerk.apiClient.upload(for: request, from: data) { urlRequest in
+            urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        }.value.response
+        
+        try await Clerk.shared.client.get()
+        return imageResource
     }
     
 }

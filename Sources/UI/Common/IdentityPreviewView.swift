@@ -28,7 +28,7 @@ struct IdentityPreviewView: View {
                     transaction: Transaction(animation: .default)
                 ) { state in
                     if let image = state.image {
-                        image.resizable().scaledToFit()
+                        image.resizable().scaledToFill()
                     } else {
                         Color(.secondarySystemBackground)
                     }

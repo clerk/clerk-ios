@@ -30,7 +30,7 @@ public struct UserProfileAccountView: View {
 }
 
 #Preview {
-    return UserProfileAccountView()
+    UserProfileAccountView()
 }
 
 #endif
