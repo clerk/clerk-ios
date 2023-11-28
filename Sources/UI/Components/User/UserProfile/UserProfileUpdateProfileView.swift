@@ -29,6 +29,17 @@ struct UserProfileUpdateProfileView: View {
         user?.lastName == lastName
     }
     
+    private func updateUser() async {
+        do {
+            try await user?.update(.init(
+                firstName: firstName,
+                lastName: lastName
+            ))
+        } catch {
+            dump(error)
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -130,7 +141,8 @@ struct UserProfileUpdateProfileView: View {
                     }
                     
                     AsyncButton {
-                        //
+                        await updateUser()
+                        dismiss()
                     } label: {
                         Text("CONTINUE")
                             .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
