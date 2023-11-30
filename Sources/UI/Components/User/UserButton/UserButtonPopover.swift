@@ -117,6 +117,7 @@ struct UserButtonPopover: View {
             .padding(.vertical)
             .padding(.vertical)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .dismissButtonOverlay()
         }
     }
 }

@@ -397,8 +397,9 @@ extension User {
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
                         
-        let imageResource = try await Clerk.apiClient.upload(for: request, from: data) { urlRequest in
-            urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let imageResource = try await Clerk.apiClient.upload(for: request, from: data) {
+            $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
         
         try await Clerk.shared.client.get()
