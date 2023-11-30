@@ -77,8 +77,19 @@ extension Clerk.Environment {
     
     static var mock: Clerk.Environment {
         return Clerk.Environment(
+            authConfig: .mock,
             userSettings: .mock,
             displayConfig: .mock
+        )
+    }
+    
+}
+
+extension Clerk.Environment.AuthConfig {
+    
+    static var mock: Clerk.Environment.AuthConfig {
+        return Clerk.Environment.AuthConfig(
+            singleSessionMode: false
         )
     }
     

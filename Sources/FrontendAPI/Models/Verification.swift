@@ -112,7 +112,7 @@ public class SignUpVerification: Verification {
        
     required public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.nextAction = try container.decode(String.self, forKey: .nextAction)
+        self.nextAction = try container.decodeIfPresent(String.self, forKey: .nextAction)
         self.supportedStrategies = try container.decode([String].self, forKey: .supportedStrategies)
         let superDecoder = try container.superDecoder()
         try super.init(from: superDecoder)
