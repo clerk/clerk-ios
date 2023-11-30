@@ -54,7 +54,7 @@ public struct ExternalAccount: Decodable, Identifiable {
     public let verification: Verification
 }
 
-extension ExternalAccount: Equatable {}
+extension ExternalAccount: Equatable, Hashable {}
 
 extension ExternalAccount: Comparable {
     public static func < (lhs: ExternalAccount, rhs: ExternalAccount) -> Bool {
@@ -119,7 +119,9 @@ extension ExternalAccount {
             .id(id)
             .delete
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     

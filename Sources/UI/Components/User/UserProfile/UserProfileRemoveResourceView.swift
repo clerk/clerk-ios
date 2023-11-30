@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 extension UserProfileRemoveResourceView {
-    enum Resource {
+    enum Resource {        
         case email(EmailAddress)
         case phoneNumber(PhoneNumber)
         case externalAccount(ExternalAccount)
@@ -68,17 +68,19 @@ struct UserProfileRemoveResourceView: View {
     let resource: Resource
     
     var body: some View {
-        RemoveResourceView(
-            title: resource.title,
-            messageLine1: resource.messageLine1,
-            messageLine2: resource.messageLine2
-        )
-        .onDelete {
-            do {
-                try await resource.deleteAction()
-                dismiss()
-            } catch {
-                dump(error)
+        ScrollView {
+            RemoveResourceView(
+                title: resource.title,
+                messageLine1: resource.messageLine1,
+                messageLine2: resource.messageLine2
+            )
+            .onDelete {
+                do {
+                    try await resource.deleteAction()
+                    dismiss()
+                } catch {
+                    dump(error)
+                }
             }
         }
     }

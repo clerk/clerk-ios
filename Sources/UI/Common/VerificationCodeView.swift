@@ -47,6 +47,9 @@ struct VerificationCodeView: View {
                 title: formTitle,
                 subtitle: formSubtitle
             )
+            .onCodeEntry {
+                await onCodeEntry?()
+            }
             
             AsyncButton {
                 await onUseAlernateMethod?()

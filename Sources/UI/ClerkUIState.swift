@@ -28,6 +28,8 @@ public final class ClerkUIState: ObservableObject {
         }
     }
     
+    /// Is the user profile view being displayed
+    @Published public var userProfileIsPresented = false    
 }
 
 #endif

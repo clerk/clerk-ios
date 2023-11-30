@@ -19,7 +19,6 @@ struct UserProfileExternalAccountSection: View {
     @State private var addExternalAccountIsPresented = false
     @State private var confirmDeleteExternalAccount: ExternalAccount?
     
-    @State private var deleteSheetHeight: CGFloat = .zero
     @Namespace private var namespace
     
     private var user: User? {
@@ -78,7 +77,6 @@ struct UserProfileExternalAccountSection: View {
             
             Spacer()
         }
-        .padding(.leading)
     }
     
     @ViewBuilder
@@ -100,8 +98,6 @@ struct UserProfileExternalAccountSection: View {
                 .tint(clerkTheme.colors.primary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading)
     }
     
     private func retryConnection(_ provider: OAuthProvider) async {
@@ -113,29 +109,29 @@ struct UserProfileExternalAccountSection: View {
         }
     }
     
-    @ViewBuilder
-    private func removeCalloutView(_ externalAccount: ExternalAccount) -> some View {
-        VStack(alignment: .leading) {
-            Text("Remove")
-                .font(.footnote)
-            Text("Remove this connected account from your account")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Button("Remove connected account", role: .destructive) {
-                confirmDeleteExternalAccount = externalAccount
-            }
-            .font(.footnote.weight(.medium))
-            .padding(.vertical, 4)
-            .popover(item: $confirmDeleteExternalAccount) { externalAccount in
-                UserProfileRemoveResourceView(resource: .externalAccount(externalAccount))
-                    .padding(.top)
-                    .readSize { deleteSheetHeight = $0.height }
-                    .presentationDragIndicator(.visible)
-                    .presentationDetents([.height(deleteSheetHeight)])
+    private struct RemoveExternalAccountView: View {
+        let externalAccount: ExternalAccount
+        @State private var confirmationSheetIsPresented = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Remove")
+                    .font(.footnote)
+                Text("Remove this connected account from your account")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button("Remove connected account", role: .destructive) {
+                    confirmationSheetIsPresented = true
+                }
+                .font(.footnote.weight(.medium))
+                .popover(isPresented: $confirmationSheetIsPresented) {
+                    UserProfileRemoveResourceView(resource: .externalAccount(externalAccount))
+                        .padding(.top)
+                        .presentationDragIndicator(.visible)
+                        .presentationDetents([.height(250)])
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading)
     }
     
     var body: some View {
@@ -158,15 +154,19 @@ struct UserProfileExternalAccountSection: View {
                         }
                         .font(.footnote)
                     } expandedContent: {
-                        if externalAccount.verification.status == .verified {
-                            externalInfoCalloutView(externalAccount)
+                        VStack(alignment: .leading, spacing: 16) {
+                            if externalAccount.verification.status == .verified {
+                                externalInfoCalloutView(externalAccount)
+                            }
+                            
+                            if externalAccount.verification.status != .verified {
+                                retryConnectionCalloutView(externalAccount)
+                            }
+                            
+                            RemoveExternalAccountView(externalAccount: externalAccount)
                         }
-                        
-                        if externalAccount.verification.status != .verified {
-                            retryConnectionCalloutView(externalAccount)
-                        }
-                        
-                        removeCalloutView(externalAccount)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading)
                     }
                 }
                 

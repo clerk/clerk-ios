@@ -90,7 +90,7 @@ public class SignUpVerification: Verification {
         expireAt: Date? = nil,
         error: ClerkAPIError? = nil,
         externalVerificationRedirectUrl: String? = nil,
-        nextAction: String = "",
+        nextAction: String? = "",
         supportedStrategies: [String] = []
     ) {
         self.nextAction = nextAction
@@ -118,7 +118,7 @@ public class SignUpVerification: Verification {
         try super.init(from: superDecoder)
     }
     
-    var nextAction: String = ""
+    var nextAction: String? = ""
     var supportedStrategies: [String] = []
     
     var strategies: [Strategy] {

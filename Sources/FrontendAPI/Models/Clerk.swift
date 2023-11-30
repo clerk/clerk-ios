@@ -84,6 +84,26 @@ final public class Clerk: ObservableObject {
     @Published internal(set) public var sessionsByUserId: [String: [Session]] = .init()
 }
 
+extension Clerk {
+    
+    public var session: Session? {
+        client.lastActiveSession
+    }
+    
+    public var user: User? {
+        client.lastActiveSession?.user
+    }
+    
+    /**
+     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
+     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
+     */
+    public func signOut(sessionId: String? = nil) {
+        
+    }
+    
+}
+
 extension Container {
     
     public var clerk: Factory<Clerk> {

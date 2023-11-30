@@ -16,7 +16,7 @@ public struct UserButton: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
     
-    @State private var profileIsPresented = false
+    @State private var popoverIsPresented = false
     
     public init() {}
     
@@ -41,14 +41,18 @@ public struct UserButton: View {
             .frame(width: 32, height: 32)
             .clipShape(Circle())
         })
-        .sheet(isPresented: $profileIsPresented, content: {
-            UserProfileView()
+        .onChange(of: clerk.client.lastActiveSession?.user) { user in
+            if user == nil { popoverIsPresented = false }
+        }
+        .popover(isPresented: $popoverIsPresented, content: {
+            UserButtonPopover()
+                .presentationDetents([.medium, .large])
         })
     }
     
     private func userButtonAction() {
-        if clerk.client.lastActiveSession != nil {
-            profileIsPresented = true
+        if clerk.client.lastActiveSession?.user != nil {
+            popoverIsPresented = true
         } else {
             clerkUIState.presentedAuthStep = .signInStart
         }

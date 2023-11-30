@@ -134,6 +134,10 @@ extension Session {
         return string
     }
     
+    public var identifier: String? {
+        publicUserData?["identifier"]?.stringValue
+    }
+    
 }
 
 extension Session: Comparable {
@@ -220,7 +224,10 @@ extension Session {
             .revoke
             .post
         
-        let revokedSession = try await Clerk.apiClient.send(request).value.response
+        let revokedSession = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        
         try await Clerk.shared.client.get()
         return revokedSession
     }

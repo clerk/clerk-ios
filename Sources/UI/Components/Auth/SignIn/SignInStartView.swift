@@ -48,21 +48,7 @@ struct SignInStartView: View {
                     
                     Spacer()
                     
-                    HStack(spacing: 4) {
-                        Text("Secured by ")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 4) {
-                            Image("clerk-logomark", bundle: .module)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16)
-                            Text("clerk")
-                                .fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                    }
-                    
+                    SecuredByClerkView()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -24,31 +24,16 @@ struct UserProfileSection: View {
         VStack(alignment: .leading, spacing: 16) {
             UserProfileSectionHeader(title: "Profile")
             
-            Button {
-                updateProfileIsPresented = true
-            } label: {
-                HStack(spacing: 16) {
-                    if let imageUrl = user?.imageUrl {
-                        LazyImage(url: URL(string: imageUrl)) { imageState in
-                            if let image = imageState.image {
-                                image.resizable().scaledToFill()
-                            } else {
-                                Color(.secondarySystemBackground)
-                            }
-                        }
-                        .frame(width: 50, height: 50)
-                        .clipShape(.circle)
-                    }
-                    
-                    if let fullName = user?.fullName {
-                        Text(fullName)
-                            .font(.footnote)
-                    }
+            if let user {
+                Button {
+                    updateProfileIsPresented = true
+                } label: {
+                    UserPreviewView(user: user, hideSubtitle: true)
                 }
-            }
-            .buttonStyle(.plain)
-            .sheet(isPresented: $updateProfileIsPresented) {
-                UserProfileUpdateProfileView()
+                .buttonStyle(.plain)
+                .sheet(isPresented: $updateProfileIsPresented) {
+                    UserProfileUpdateProfileView()
+                }
             }
         }
         .animation(.snappy, value: user)

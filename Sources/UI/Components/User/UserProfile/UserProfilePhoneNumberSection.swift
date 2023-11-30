@@ -18,7 +18,6 @@ struct UserProfilePhoneNumberSection: View {
     @State private var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
     @State private var confirmDeletePhoneNumber: PhoneNumber?
     
-    @State private var deleteSheetHeight: CGFloat = .zero
     @Namespace private var namespace
     
     private var user: User? {
@@ -87,24 +86,27 @@ struct UserProfilePhoneNumberSection: View {
         }
     }
     
-    @ViewBuilder
-    private func removeCallout(phoneNumber: PhoneNumber) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Remove")
-                .font(.footnote)
-            Text("Delete this phone number and remove it from your account")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Button("Remove phone number", role: .destructive) {
-                confirmDeletePhoneNumber = phoneNumber
-            }
-            .font(.footnote.weight(.medium))
-            .popover(item: $confirmDeletePhoneNumber) { phoneNumber in
-                UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
-                    .padding(.top)
-                    .readSize { deleteSheetHeight = $0.height }
-                    .presentationDragIndicator(.visible)
-                    .presentationDetents([.height(deleteSheetHeight)])
+    private struct RemovePhoneNumberView: View {
+        let phoneNumber: PhoneNumber
+        @State private var confirmationSheetIsPresented = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Remove")
+                    .font(.footnote)
+                Text("Delete this phone number and remove it from your account")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button("Remove phone number", role: .destructive) {
+                    confirmationSheetIsPresented = true
+                }
+                .font(.footnote.weight(.medium))
+                .popover(isPresented: $confirmationSheetIsPresented) {
+                    UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
+                        .padding(.top)
+                        .presentationDragIndicator(.visible)
+                        .presentationDetents([.height(250)])
+                }
             }
         }
     }
@@ -141,7 +143,7 @@ struct UserProfilePhoneNumberSection: View {
                                 unverifiedCallout(phoneNumber: phoneNumber)
                             }
                             
-                            removeCallout(phoneNumber: phoneNumber)
+                            RemovePhoneNumberView(phoneNumber: phoneNumber)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading)
@@ -156,11 +158,11 @@ struct UserProfilePhoneNumberSection: View {
                 .font(.footnote.weight(.medium))
                 .tint(clerkTheme.colors.primary)
                 .padding(.leading, 8)
+                .sheet(item: $addPhoneNumberStep) { step in
+                    UserProfileAddPhoneNumberView(initialStep: step)
+                }
             }
             .animation(.snappy, value: user)
-        }
-        .sheet(item: $addPhoneNumberStep) { step in
-            UserProfileAddPhoneNumberView(initialStep: step)
         }
     }
 }

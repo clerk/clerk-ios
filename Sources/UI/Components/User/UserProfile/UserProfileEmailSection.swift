@@ -18,7 +18,6 @@ struct UserProfileEmailSection: View {
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
     @State private var confirmDeleteEmailAddress: EmailAddress?
     
-    @State private var deleteSheetHeight: CGFloat = .zero
     @Namespace private var namespace
     
     private var user: User? {
@@ -87,24 +86,27 @@ struct UserProfileEmailSection: View {
         }
     }
     
-    @ViewBuilder
-    private func removeCallout(emailAddress: EmailAddress) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Remove")
-                .font(.footnote)
-            Text("Delete this email address and remove it from your account")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Button("Remove email address", role: .destructive) {
-                confirmDeleteEmailAddress = emailAddress
-            }
-            .font(.footnote.weight(.medium))
-            .popover(item: $confirmDeleteEmailAddress) { emailAddress in
-                UserProfileRemoveResourceView(resource: .email(emailAddress))
-                    .padding(.top)
-                    .readSize { deleteSheetHeight = $0.height }
-                    .presentationDragIndicator(.visible)
-                    .presentationDetents([.height(deleteSheetHeight)])
+    private struct RemoveEmailView: View {
+        let emailAddress: EmailAddress
+        @State private var confirmationSheetIsPresented = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Remove")
+                    .font(.footnote)
+                Text("Delete this email address and remove it from your account")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button("Remove email address", role: .destructive) {
+                    confirmationSheetIsPresented = true
+                }
+                .font(.footnote.weight(.medium))
+                .popover(isPresented: $confirmationSheetIsPresented) {
+                    UserProfileRemoveResourceView(resource: .email(emailAddress))
+                        .padding(.top)
+                        .presentationDragIndicator(.visible)
+                        .presentationDetents([.height(250)])
+                }
             }
         }
     }
@@ -138,7 +140,7 @@ struct UserProfileEmailSection: View {
                                 unverifiedCallout(emailAddress: emailAddress)
                             }
                             
-                            removeCallout(emailAddress: emailAddress)
+                            RemoveEmailView(emailAddress: emailAddress)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading)

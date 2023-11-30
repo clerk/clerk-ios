@@ -26,7 +26,7 @@ extension Client {
         return Client(
             signIn: .mock,
             signUp: .mock,
-            sessions: [.mockSession1],
+            sessions: [.mockSession1, .mockSession4],
             lastActiveSessionId: "1"
         )
     }
@@ -60,6 +60,14 @@ extension EmailAddress {
             id: "2",
             emailAddress: "ClerkUser2@clerk.dev",
             verification: .init(status: .unverified)
+        )
+    }
+    
+    static var mock3: EmailAddress {
+        .init(
+            id: "3",
+            emailAddress: "ClerkUser3@clerk.dev",
+            verification: .init(status: .verified)
         )
     }
     
@@ -255,6 +263,14 @@ extension PhoneNumber {
         )
     }
     
+    static var mock3: PhoneNumber {
+        .init(
+            id: "3",
+            phoneNumber: "+12015550789",
+            verification: .init(status: .verified)
+        )
+    }
+    
 }
 
 extension Session {
@@ -278,7 +294,7 @@ extension Session {
         lastActiveOrganizationId: "1",
         actor: "1",
         user: .mock,
-        publicUserData: ["name": "John Doe", "email": "john.doe@example.com"],
+        publicUserData: ["name": "John Doe", "identifier": "john.doe@example.com"],
         createdAt: Date().addingTimeInterval(-3600), // created 1 hour ago
         updatedAt: Date().addingTimeInterval(-2400) // updated 40 minutes ago
     )
@@ -302,7 +318,7 @@ extension Session {
         lastActiveOrganizationId: nil,
         actor: "2",
         user: .mock,
-        publicUserData: ["name": "Jane Smith", "email": "jane.smith@example.com"],
+        publicUserData: ["name": "Jane Smith", "identifier": "jane.smith@example.com"],
         createdAt: Date().addingTimeInterval(-10800), // created 3 hours ago
         updatedAt: Date().addingTimeInterval(-8100) // updated 2.25 hours ago
     )
@@ -329,6 +345,30 @@ extension Session {
         publicUserData: nil,
         createdAt: Date().addingTimeInterval(-2700), // created 45 minutes ago
         updatedAt: Date().addingTimeInterval(-1200) // updated 20 minutes ago
+    )
+    
+    public static let mockSession4 = Session(
+        id: "4",
+        status: .active,
+        expireAt: Date().addingTimeInterval(3600), // expires in 1 hour
+        abandonAt: .distantPast,
+        lastActiveAt: Date().addingTimeInterval(-300), // last active 5 minutes ago
+        latestActivity: SessionActivity(
+            id: "1",
+            browserName: "Safari",
+            browserVersion: "15.0",
+            deviceType: "Macintosh",
+            ipAddress: "192.168.0.1",
+            city: "New York",
+            country: "USA",
+            isMobile: false
+        ),
+        lastActiveOrganizationId: "2",
+        actor: "2",
+        user: .mock2,
+        publicUserData: ["name": "John Doe", "identifier": "john.doe2@example.com"],
+        createdAt: Date().addingTimeInterval(-3600), // created 1 hour ago
+        updatedAt: Date().addingTimeInterval(-2400) // updated 40 minutes ago
     )
     
 }
@@ -382,7 +422,7 @@ extension SignUpVerification {
 
 extension User {
     
-    static var mock: User {
+    public static var mock: User {
         .init(
             firstName: "Clerk",
             lastName: "User",
@@ -391,6 +431,19 @@ extension User {
             primaryPhoneNumberId: "1",
             emailAddresses: [.mock1, .mock2],
             phoneNumbers: [.mock1, .mock2],
+            externalAccounts: [.mockGoogle, .mockGithub]
+        )
+    }
+    
+    public static var mock2: User {
+        .init(
+            firstName: "Clerk2",
+            lastName: "User2",
+            imageUrl: "image",
+            primaryEmailAddressId: "2",
+            primaryPhoneNumberId: "2",
+            emailAddresses: [.mock3],
+            phoneNumbers: [.mock3],
             externalAccounts: [.mockGoogle, .mockGithub]
         )
     }

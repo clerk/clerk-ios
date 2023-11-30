@@ -32,6 +32,7 @@ struct ClerkProviderModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
+            .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
                     Task.detached {

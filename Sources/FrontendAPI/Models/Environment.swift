@@ -12,16 +12,34 @@ extension Clerk {
     public struct Environment: Decodable {
         
         public init(
+            authConfig: AuthConfig = .init(),
             userSettings: UserSettings = .init(),
             displayConfig: DisplayConfig = .init()
         ) {
+            self.authConfig = authConfig
             self.userSettings = userSettings
             self.displayConfig = displayConfig
         }
         
+        public var authConfig: AuthConfig
         public var userSettings: UserSettings
         public var displayConfig: DisplayConfig
     }
+}
+
+extension Clerk.Environment {
+    
+    public struct AuthConfig: Decodable {
+        
+        public init(
+            singleSessionMode: Bool = true
+        ) {
+            self.singleSessionMode = singleSessionMode
+        }
+        
+        public let singleSessionMode: Bool
+    }
+    
 }
 
 extension Clerk.Environment {

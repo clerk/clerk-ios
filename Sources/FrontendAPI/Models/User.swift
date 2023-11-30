@@ -340,7 +340,10 @@ extension User {
             .externalAccounts
             .create(params)
         
-        let newExternalAccount = try await Clerk.apiClient.send(request).value.response
+        let newExternalAccount = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        
         try await Clerk.shared.client.get()
         return newExternalAccount
     }
@@ -354,8 +357,11 @@ extension User {
             .sessions
             .active
             .get
+                        
+        let sessions = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value
         
-        let sessions = try await Clerk.apiClient.send(request).value
         Clerk.shared.sessionsByUserId[id] = sessions
     }
     

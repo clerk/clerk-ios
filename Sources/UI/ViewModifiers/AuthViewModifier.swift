@@ -43,12 +43,8 @@ struct AuthViewModifier: ViewModifier {
 }
 
 extension View {
-    func authView(
-        isPresented: Binding<Bool>
-    ) -> some View {
-        modifier(AuthViewModifier(
-            isPresented: isPresented
-        ))
+    func authView(isPresented: Binding<Bool>) -> some View {
+        modifier(AuthViewModifier(isPresented: isPresented))
     }
 }
 
