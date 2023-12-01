@@ -14,10 +14,29 @@ struct UserButtonPopover: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
+    @Namespace private var namespace
     
     private var otherSessions: [Session] {
         clerk.client.sessions.filter({ $0.id != clerk.session?.id })
     }
+    
+    private func setActiveSession(_ session: Session) async {
+        do {
+            try await clerk.setActive(.init(sessionId: session.id, organizationId: nil))
+        } catch {
+            dump(error)
+        }
+    }
+    
+    private func signOut(_ session: Session?) async {
+        do {
+            try await clerk.signOut(sessionId: session?.id)
+        } catch {
+            dump(error)
+        }
+    }
+    
+    @State private var scaleCurrentSession = 1.0
     
     var body: some View {
         ScrollView {
@@ -25,6 +44,7 @@ struct UserButtonPopover: View {
                 if let currentSession = clerk.session {
                     VStack(alignment: .leading, spacing: 20) {
                         UserPreviewView(session: currentSession)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Button {
                             dismiss()
@@ -38,11 +58,12 @@ struct UserButtonPopover: View {
                                     .font(.footnote)
                             }
                             .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
                         
-                        Button {
-                            //
+                        AsyncButton {
+                            await signOut(currentSession)
                         } label: {
                             HStack(spacing: 16) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -53,17 +74,30 @@ struct UserButtonPopover: View {
                                     .font(.footnote)
                             }
                             .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 30)
                 }
                 
                 if !clerk.environment.authConfig.singleSessionMode {
                     VStack(alignment: .leading, spacing: 20) {
                         ForEach(otherSessions) { session in
-                            UserPreviewView(session: session)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            AsyncButton {
+                                await setActiveSession(session)
+                            } label: {
+                                HStack {
+                                    UserPreviewView(session: session)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    Image(systemName: "arrow.left.arrow.right")
+                                        .foregroundStyle(.secondary)
+                                        .imageScale(.medium)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
                         
                         Button {
@@ -83,7 +117,8 @@ struct UserButtonPopover: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding()
+                    .padding(.horizontal, 30)
+                    .padding(.vertical)
                     .background(.quinary)
                     .overlay(alignment: .top, content: {
                         Divider()
@@ -92,21 +127,23 @@ struct UserButtonPopover: View {
                         Divider()
                     }
                     
-                    Button {
-                        //
-                    } label: {
-                        HStack(spacing: 16) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .frame(width: 50)
-                                .imageScale(.medium)
+                    if otherSessions.count > 0 {
+                        Button {
+                            //
+                        } label: {
+                            HStack(spacing: 16) {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .frame(width: 50)
+                                    .imageScale(.medium)
 
-                            Text("Sign out of all accounts")
-                                .font(.footnote)
+                                Text("Sign out of all accounts")
+                                    .font(.footnote)
+                            }
+                            .foregroundStyle(.secondary)
                         }
-                        .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 30)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal)
                 }
                 
                 SecuredByClerkView()
@@ -114,10 +151,14 @@ struct UserButtonPopover: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top)
             }
-            .padding(.vertical)
-            .padding(.vertical)
+            .animation(.snappy, value: clerk.session)
+            .padding(.vertical, 30)
             .frame(maxWidth: .infinity, alignment: .leading)
             .dismissButtonOverlay()
+            .onChange(of: clerk.session) { session in
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                if session == nil { dismiss() }
+            }
         }
     }
 }

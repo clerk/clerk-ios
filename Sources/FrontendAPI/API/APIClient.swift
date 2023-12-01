@@ -31,7 +31,6 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
             request.setValue(authToken, forHTTPHeaderField: "Authorization")
         }
         
-        // Required for native application flow on all requests
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
         request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.65.0")])
 

@@ -98,8 +98,51 @@ extension Clerk {
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
-    public func signOut(sessionId: String? = nil) {
+    public func signOut(sessionId: String? = nil) async throws {
+        if let sessionId {
+            let request = APIEndpoint
+                .v1
+                .client
+                .sessions
+                .id(sessionId)
+                .remove
+                .post
+            
+            try await Clerk.apiClient.send(request)
+        } else {
+            return
+        }
         
+        try await Clerk.shared.client.get()
+    }
+    
+    public struct SetActiveParams: Encodable {
+        public init(
+            sessionId: String? = nil,
+            organizationId: String? = nil
+        ) {
+            self.sessionId = sessionId
+            self.organizationId = organizationId
+        }
+        
+        /// The session ID to be set as active. If null, the current session is deleted.
+        var sessionId: String?
+        /// The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+        var organizationId: String?
+    }
+    
+    /// A method used to set the active session and/or organization.
+    public func setActive(_ params: SetActiveParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .sessions
+            .id(params.sessionId ?? "")
+            .touch
+            .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
     }
     
 }

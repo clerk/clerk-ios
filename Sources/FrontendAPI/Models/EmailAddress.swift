@@ -128,7 +128,9 @@ extension EmailAddress {
             .prepareVerification
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -143,7 +145,9 @@ extension EmailAddress {
             .attemptVerification
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -156,7 +160,9 @@ extension EmailAddress {
             .id(id)
             .delete
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -167,7 +173,9 @@ extension EmailAddress {
             .me
             .update(.init(primaryEmailAddressId: id))
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     

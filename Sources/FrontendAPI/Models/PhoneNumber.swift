@@ -162,7 +162,9 @@ extension PhoneNumber {
             .prepareVerification
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -177,7 +179,9 @@ extension PhoneNumber {
             .attemptVerification
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -188,7 +192,9 @@ extension PhoneNumber {
             .me
             .update(.init(primaryPhoneNumberId: id))
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -201,7 +207,9 @@ extension PhoneNumber {
             .id(id)
             .delete
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     

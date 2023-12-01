@@ -178,17 +178,22 @@ extension User: Equatable {}
 extension User {
     
     public var fullName: String? {
-        [firstName, lastName]
+        let joinedString = [firstName, lastName]
             .compactMap { $0 }
+            .filter({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false })
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        return joinedString.isEmpty ? nil : joinedString
     }
     
     public var initials: String? {
-        [firstName, lastName]
+        let joinedString = [firstName, lastName]
             .compactMap { $0?.first }
             .map { String($0) }
             .joined()
+        
+        return joinedString.isEmpty ? nil : joinedString
     }
     
     public var primaryEmailAddress: EmailAddress? {
@@ -296,7 +301,9 @@ extension User {
             .me
             .update(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -310,7 +317,10 @@ extension User {
             .emailAddresses
             .post(params)
         
-        let newEmail = try await Clerk.apiClient.send(request).value.response
+        let newEmail = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        
         try await Clerk.shared.client.get()
         return newEmail
     }
@@ -325,7 +335,10 @@ extension User {
             .phoneNumbers
             .post(params)
         
-        let newPhoneNumber = try await Clerk.apiClient.send(request).value.response
+        let newPhoneNumber = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        
         try await Clerk.shared.client.get()
         return newPhoneNumber
     }
@@ -374,7 +387,9 @@ extension User {
             .changePassword
             .post(params)
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     
@@ -414,7 +429,9 @@ extension User {
             .profileImage
             .delete
         
-        try await Clerk.apiClient.send(request)
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
         try await Clerk.shared.client.get()
     }
     

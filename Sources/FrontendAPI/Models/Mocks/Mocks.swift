@@ -419,7 +419,7 @@ extension SignUpVerification {
     static var signUpVerificationMock: SignUpVerification {
         return SignUpVerification(
             status: .verified,
-            strategy: .emailCode,
+            strategy: "email_code",
             attempts: 1,
             expireAt: Date(),
             error: nil,

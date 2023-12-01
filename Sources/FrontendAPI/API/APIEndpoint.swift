@@ -151,11 +151,11 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
-    public func id(_ id: String) -> WithID {
-        WithID(path: path + "/\(id)")
+    public func id(_ id: String) -> WithIDEndpoint {
+        WithIDEndpoint(path: path + "/\(id)")
     }
 
-    public struct WithID {
+    public struct WithIDEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
         
@@ -168,7 +168,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var prepareFirstFactor: PrepareFirstFactorEndpoint {
         PrepareFirstFactorEndpoint(path: path + "/prepare_first_factor")
@@ -185,7 +185,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var attemptFirstFactor: AttemptFirstFactorEndpoint {
         AttemptFirstFactorEndpoint(path: path + "/attempt_first_factor")
@@ -201,6 +201,67 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithID {
     }
     
 }
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint {
+    
+    var sessions: SessionsEndpoint {
+        SessionsEndpoint(path: path + "/sessions")
+    }
+    
+    struct SessionsEndpoint {
+        /// Path: `v1/client/sessions`
+        let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint {
+    
+    func id(_ id: String) -> WithIdEndpoint {
+        WithIdEndpoint(path: path + "/\(id)")
+    }
+    
+    struct WithIdEndpoint {
+        /// Path: `v1/client/sessions/{id}`
+        let path: String
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+    
+    var touch: TouchEndpoint {
+        TouchEndpoint(path: path + "/touch")
+    }
+    
+    struct TouchEndpoint {
+        /// Path: `v1/client/sessions/{id}/touch`
+        let path: String
+        
+        func post(_ params: Clerk.SetActiveParams) -> Request<ClientResponse<Session>> {
+            .init(path: path, method: .post, body: params.organizationId)
+        }
+    }
+    
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+    
+    var remove: RemoveEndpoint {
+        RemoveEndpoint(path: path + "/remove")
+    }
+    
+    struct RemoveEndpoint {
+        /// Path: `v1/client/sessions/{id}/remove`
+        let path: String
+        
+        var post: Request<ClientResponse<Session>> {
+            .init(path: path, method: .post)
+        }
+    }
+    
+}
+
 
 extension APIEndpoint.V1Endpoint {
     

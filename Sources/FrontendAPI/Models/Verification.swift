@@ -11,7 +11,7 @@ import Foundation
 public class Verification: Decodable {
     
     public init(
-        status: Verification.Status? = nil,
+        status: VerificationStatus? = nil,
         strategy: Strategy? = nil,
         attempts: Int? = nil,
         expireAt: Date? = nil,
@@ -27,7 +27,7 @@ public class Verification: Decodable {
     }
     
     /// The state of the verification.
-    public let status: Status?
+    public let status: VerificationStatus?
     
     /// The strategy pertaining to the parent sign-up or sign-in attempt.
     let strategy: String?
@@ -43,14 +43,14 @@ public class Verification: Decodable {
     
     /// The redirect URL for an external verification.
     public var externalVerificationRedirectUrl: String?
-    
-    public enum Status: String, Decodable, Equatable {
-        case unverified
-        case verified
-        case transferable
-        case failed
-        case expired
-    }
+}
+
+public enum VerificationStatus: String, Decodable, Equatable {
+    case unverified
+    case verified
+    case transferable
+    case failed
+    case expired
 }
 
 extension Verification: Equatable, Hashable {
@@ -82,46 +82,59 @@ extension Verification {
     
 }
 
-public class SignUpVerification: Verification {
+public class SignUpVerification: Decodable {
     public init(
-        status: Verification.Status? = nil,
-        strategy: Strategy? = nil,
+        status: VerificationStatus? = nil,
+        strategy: String? = nil,
         attempts: Int? = nil,
         expireAt: Date? = nil,
         error: ClerkAPIError? = nil,
         externalVerificationRedirectUrl: String? = nil,
-        nextAction: String? = "",
-        supportedStrategies: [String] = []
+        nextAction: String? = nil,
+        supportedStrategies: [String]? = nil
     ) {
         self.nextAction = nextAction
         self.supportedStrategies = supportedStrategies
-        super.init(
-            status: status,
-            strategy: strategy,
-            attempts: attempts,
-            expireAt: expireAt,
-            error: error,
-            externalVerificationRedirectUrl: externalVerificationRedirectUrl
-        )
+        self.status = status
+        self.strategy = strategy
+        self.attempts = attempts
+        self.expireAt = expireAt
+        self.error = error
+        self.externalVerificationRedirectUrl = externalVerificationRedirectUrl
     }
     
-    private enum CodingKeys: String, CodingKey {
-        case nextAction
-        case supportedStrategies
-    }
-       
-    required public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.nextAction = try container.decodeIfPresent(String.self, forKey: .nextAction)
-        self.supportedStrategies = try container.decode([String].self, forKey: .supportedStrategies)
-        let superDecoder = try container.superDecoder()
-        try super.init(from: superDecoder)
+    /// The state of the verification.
+    public let status: VerificationStatus?
+    
+    /// The strategy pertaining to the parent sign-up or sign-in attempt.
+    var strategy: String?
+    
+    /// The number of attempts related to the verification.
+    let attempts: Int?
+    
+    /// The time the verification will expire at.
+    let expireAt: Date?
+    
+    /// The last error the verification attempt ran into.
+    let error: ClerkAPIError?
+    
+    /// The redirect URL for an external verification.
+    public var externalVerificationRedirectUrl: String?
+    
+    var nextAction: String? = nil
+    
+    var supportedStrategies: [String]? = nil
+}
+
+extension SignUpVerification {
+    
+    private var verificationStrategy: Strategy? {
+        guard let strategy else { return nil }
+        return .init(stringValue: strategy)
     }
     
-    var nextAction: String? = ""
-    var supportedStrategies: [String] = []
-    
-    var strategies: [Strategy] {
-        supportedStrategies.compactMap({ .init(stringValue: $0) })
+    var strategies: [Strategy]? {
+        supportedStrategies?.compactMap({ .init(stringValue: $0) })
     }
+    
 }
