@@ -11,14 +11,11 @@ import SwiftUI
 import ClerkUI
 
 @main
-struct ClerkExampleApp: App {
+struct ClerkExampleApp: App {    
     var body: some Scene {
         WindowGroup {
             ExamplesListView()
-                .clerkProvider(
-                    publishableKey: "",
-                    frontendAPIURL: ""
-                )
+                .clerkProvider(publishableKey: "")
         }
     }
 }
