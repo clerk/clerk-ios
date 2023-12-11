@@ -15,11 +15,17 @@ struct DismissButtonOverlayModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: alignment) {
-                Button("", systemImage: "xmark", action: dismiss.callAsFunction)
-                    .imageScale(.small)
-                    .padding(.vertical)
-                    .padding(.horizontal, 30)
-                    .tint(.secondary)
+                Button(action: {
+                    dismiss()
+                }, label: {
+                    Image(systemName: "xmark")
+                        .imageScale(.small)
+                        .tint(.secondary)
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: Circle())
+                })
+                .padding(.vertical)
+                .padding(.horizontal, 30)
             }
     }
     
@@ -29,4 +35,9 @@ extension View {
     public func dismissButtonOverlay(alignment: Alignment = .topTrailing) -> some View {
         modifier(DismissButtonOverlayModifier(alignment: alignment))
     }
+}
+
+#Preview {
+    Color(.systemBackground)
+        .dismissButtonOverlay()
 }

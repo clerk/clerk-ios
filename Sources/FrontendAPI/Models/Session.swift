@@ -24,7 +24,7 @@ import Foundation
 
  While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
  */
-public struct Session: Decodable, Identifiable {
+public struct Session: Codable, Identifiable {
     public init(
         id: String,
         status: SessionStatus,
@@ -151,7 +151,7 @@ extension Session: Comparable {
     }
 }
 
-public struct SessionActivity: Decodable, Equatable {
+public struct SessionActivity: Codable, Equatable {
     /// A unique identifier for the session activity record.
     let id: String
     
@@ -188,7 +188,7 @@ public struct SessionActivity: Decodable, Equatable {
  - replaced: The session has been replaced by another one, but the Session remains in the Client object.
  - revoked: The application ended the session, and the Session was removed from the Client object.
  */
-public enum SessionStatus: String, Decodable {
+public enum SessionStatus: String, Codable {
     /// The session was abandoned client-side.
     case abandoned
     

@@ -11,6 +11,7 @@ import SwiftUI
 
 struct AccordionView<Content: View, ExpandedContent: View>: View {
     @State private var isExpanded = false
+    var horizontalSpacing: CGFloat? = nil
     
     @ViewBuilder var content: Content
     @ViewBuilder var expandedContent: ExpandedContent
@@ -22,9 +23,9 @@ struct AccordionView<Content: View, ExpandedContent: View>: View {
                     isExpanded.toggle()
                 }
             }, label: {
-                HStack {
+                HStack(spacing: .zero) {
                     content
-                    Spacer(minLength: 0)
+                    Spacer(minLength: horizontalSpacing)
                     Image(systemName: "chevron.down")
                         .imageScale(.small)
                         .foregroundStyle(.secondary)

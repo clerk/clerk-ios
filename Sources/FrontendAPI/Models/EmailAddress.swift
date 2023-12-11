@@ -16,7 +16,7 @@ import Foundation
 
  Finally, email addresses can be linked to other identifications.
  */
-public struct EmailAddress: Decodable, Identifiable {
+public struct EmailAddress: Codable, Identifiable {
     
     public init(
         id: String,

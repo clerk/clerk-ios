@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk {
         
-    public struct Environment: Decodable {
+    public struct Environment: Codable {
         
         public init(
             authConfig: AuthConfig = .init(),
@@ -29,7 +29,7 @@ extension Clerk {
 
 extension Clerk.Environment {
     
-    public struct AuthConfig: Decodable {
+    public struct AuthConfig: Codable {
         
         public init(
             singleSessionMode: Bool = true
@@ -44,7 +44,7 @@ extension Clerk.Environment {
 
 extension Clerk.Environment {
     
-    public struct DisplayConfig: Decodable {
+    public struct DisplayConfig: Codable {
         
         public init(
             applicationName: String = ""
@@ -59,7 +59,7 @@ extension Clerk.Environment {
 
 extension Clerk.Environment {
     
-    public struct UserSettings: Decodable {
+    public struct UserSettings: Codable {
         
         public init(
             attributes: [String : AttributesConfig] = [:],
@@ -73,7 +73,7 @@ extension Clerk.Environment {
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
         var social: [String: SocialConfig] = [:]
         
-        public struct AttributesConfig: Decodable {
+        public struct AttributesConfig: Codable {
             let enabled: Bool
             let required: Bool
             let usedForFirstFactor: Bool
@@ -88,7 +88,7 @@ extension Clerk.Environment {
             }
         }
         
-        public struct SocialConfig: Decodable {
+        public struct SocialConfig: Codable {
             let enabled: Bool
             let required: Bool
             let authenticatable: Bool

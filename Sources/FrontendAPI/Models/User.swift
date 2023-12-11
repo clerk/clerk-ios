@@ -14,7 +14,7 @@ import Foundation
 
  Finally, a User object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally to store arbitrary information. The metadata are split into publicMetadata and privateMetadata. Both types are set from the Backend API, but public metadata can also be accessed from the Frontend API.
  */
-public struct User: Decodable {
+public struct User: Codable {
     init(
         id: String = "",
         username: String? = nil,

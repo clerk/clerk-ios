@@ -8,7 +8,7 @@
 import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
-public class Verification: Decodable {
+public class Verification: Codable {
     
     public init(
         status: VerificationStatus? = nil,
@@ -45,7 +45,7 @@ public class Verification: Decodable {
     public var externalVerificationRedirectUrl: String?
 }
 
-public enum VerificationStatus: String, Decodable, Equatable {
+public enum VerificationStatus: String, Codable, Equatable {
     case unverified
     case verified
     case transferable
@@ -82,7 +82,7 @@ extension Verification {
     
 }
 
-public class SignUpVerification: Decodable {
+public class SignUpVerification: Codable {
     public init(
         status: VerificationStatus? = nil,
         strategy: String? = nil,

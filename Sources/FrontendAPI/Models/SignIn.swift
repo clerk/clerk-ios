@@ -19,7 +19,7 @@ import Foundation
  Information about the current sign in status in general and which authentication identifiers, authentication methods and verifications are supported.
  Information about the user and the provided authentication identifier value (email address, phone number or username). Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
-public class SignIn: Decodable {
+public class SignIn: Codable {
     public init(
         id: String = "",
         status: SignIn.Status? = nil,
@@ -60,7 +60,7 @@ public class SignIn: Decodable {
      */
     public let status: Status?
     
-    public enum Status: String, Decodable {
+    public enum Status: String, Codable {
         case needsIdentifier = "needs_identifier"
         case needsFirstFactor = "needs_first_factor"
         case needsSecondFactor = "needs_second_factor"

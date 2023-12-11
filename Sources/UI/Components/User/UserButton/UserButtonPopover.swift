@@ -154,12 +154,12 @@ struct UserButtonPopover: View {
             .animation(.snappy, value: clerk.session)
             .padding(.vertical, 30)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .dismissButtonOverlay()
             .onChange(of: clerk.session) { session in
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 if session == nil { dismiss() }
             }
         }
+        .dismissButtonOverlay()
     }
 }
 

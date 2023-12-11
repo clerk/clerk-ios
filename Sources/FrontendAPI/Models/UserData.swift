@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct UserData: Decodable {
+public struct UserData: Codable {
     public var firstName: String?
     public var lastName: String?
     public var imageUrl: String = ""

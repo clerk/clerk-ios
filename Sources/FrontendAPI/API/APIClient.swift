@@ -7,7 +7,6 @@
 
 import Foundation
 import Get
-import KeychainAccess
 
 extension Clerk {
     
@@ -26,8 +25,8 @@ extension Clerk {
 final class ClerkAPIClientDelegate: APIClientDelegate {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
-        // Set the auth token on every request
-        if let authToken = Clerk.keychain[Clerk.KeychainKey.authToken] {
+        // Set the device token on every request
+        if let authToken = Clerk.keychain[Clerk.KeychainKey.deviceToken] {
             request.setValue(authToken, forHTTPHeaderField: "Authorization")
         }
         
@@ -54,25 +53,10 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
             throw APIError.unacceptableStatusCode(response.statusCode)
         }
         
-        // Set the auth token from the response headers whenever recieved in the response headers
-        if let authToken = response.value(forHTTPHeaderField: "Authorization") {
-            Clerk.keychain[Clerk.KeychainKey.authToken] = authToken
+        // Set the device token from the response headers whenever recieved in the response headers
+        if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
+            Clerk.keychain[Clerk.KeychainKey.deviceToken] = deviceToken
         }
     }
     
-}
-
-extension Clerk {
-    
-    static let keychain = Keychain(service: "com.clerk")
-    
-    enum KeychainKey {
-        static let authToken = "authToken"
-    }
-    
-    #if DEBUG
-    public static func deleteRefreshToken() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.authToken)
-    }
-    #endif
 }

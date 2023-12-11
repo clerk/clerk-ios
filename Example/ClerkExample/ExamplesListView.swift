@@ -51,6 +51,12 @@ struct ExamplesListView: View {
                     } label: {
                         Text("Delete Refresh Token")
                     }
+                    
+                    Button {
+                        Clerk.clearKeychain()
+                    } label: {
+                        Text("Clear Keychain")
+                    }
                 }
                 #endif
             }

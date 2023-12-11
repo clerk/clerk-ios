@@ -22,7 +22,7 @@ import Foundation
  Those that hold the different values that we supply to the sign-up. Examples of these are username, emailAddress, firstName, etc.
  Those that contain references to the created resources once the sign-up is complete, i.e. createdSessionId and createdUserId.
  */
-public class SignUp: Decodable {
+public class SignUp: Codable {
     
     public init(
         id: String = "",
@@ -82,7 +82,7 @@ public class SignUp: Decodable {
      */
     public let status: Status?
     
-    public enum Status: String, Decodable {
+    public enum Status: String, Codable {
         case missingRequirements = "missing_requirements"
         case complete
         case abandoned

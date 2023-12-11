@@ -24,10 +24,7 @@ public struct UserButton: View {
         Button(action: {
             userButtonAction()
         }, label: {
-            LazyImage(
-                url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""),
-                transaction: .init(animation: .default)
-            ) { state in
+            LazyImage(url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? "")) { state in
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {

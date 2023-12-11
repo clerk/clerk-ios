@@ -11,7 +11,7 @@ import Foundation
  The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
  The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
  */
-public class Client: Decodable {
+public class Client: Codable {
     
     init(
         signIn: SignIn = SignIn(),

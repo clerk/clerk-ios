@@ -14,7 +14,7 @@ import Foundation
  phone_code for phone numbers
  As well as the identifier that the factor refers to.
  */
-public struct Factor: Decodable {
+public struct Factor: Codable {
     init(
         strategy: Strategy,
         safeIdentifier: String? = nil,

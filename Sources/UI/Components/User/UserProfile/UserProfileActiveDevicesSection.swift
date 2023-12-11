@@ -44,6 +44,7 @@ struct UserProfileActiveDevicesSection: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 60)
+                    
                     VStack(alignment: .leading) {
                         HStack {
                             Text(session.latestActivity?.deviceType ?? "\(session.latestActivity?.isMobile == true ? "Mobile" : "Desktop") device")

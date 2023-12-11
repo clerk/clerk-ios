@@ -21,8 +21,8 @@ final public class Clerk: ObservableObject {
     
     /**
      Configures the settings for the Clerk package.
-          
-     To use the Clerk package, you'll need to copy your Publishable Key from the API Keys page in the Clerk Dashboard. 
+     
+     To use the Clerk package, you'll need to copy your Publishable Key from the API Keys page in the Clerk Dashboard.
      On this same page, click on the Advanced dropdown and copy your Frontend API URL.
      If you are signed into your Clerk Dashboard, your Publishable key should be visible.
      
@@ -30,7 +30,7 @@ final public class Clerk: ObservableObject {
      - publishableKey: Formatted as pk_test_ in development and pk_live_ in production.
      
      - Note:
-     It's essential to call this function with the appropriate values before using any other package functionality. 
+     It's essential to call this function with the appropriate values before using any other package functionality.
      Failure to configure the package may result in unexpected behavior or errors.
      
      Example Usage:
@@ -39,6 +39,7 @@ final public class Clerk: ObservableObject {
      */
     public func configure(publishableKey: String) {
         self.publishableKey = publishableKey
+        self.loadPersistedData()
     }
     
     /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.
@@ -73,15 +74,39 @@ final public class Clerk: ObservableObject {
     private(set) public var frontendAPIURL: String = ""
     
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client = .init()
+    @Published internal(set) public var client: Client = .init() {
+        didSet {
+            do {
+                Clerk.keychain[data: Clerk.KeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
+            } catch {
+                dump(error)
+            }
+        }
+    }
     
     /// The Environment for the clerk instance.
-    @Published internal(set) public var environment: Clerk.Environment = .init()
+    @Published internal(set) public var environment: Clerk.Environment = .init() {
+        didSet {
+            do {
+                Clerk.keychain[data: Clerk.KeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
+            } catch {
+                dump(error)
+            }
+        }
+    }
     
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    @Published internal(set) public var sessionsByUserId: [String: [Session]] = .init()
+    @Published internal(set) public var sessionsByUserId: [String: [Session]] = .init() {
+        didSet {
+            do {
+                Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
+            } catch {
+                dump(error)
+            }
+        }
+    }
 }
 
 extension Clerk {
@@ -152,6 +177,37 @@ extension Container {
     public var clerk: Factory<Clerk> {
         self { Clerk() }
             .singleton
+    }
+    
+}
+
+extension Clerk {
+    
+    private func loadPersistedData() {
+        
+        do {
+            if let data = Clerk.keychain[data: Clerk.KeychainKey.client] {
+                self.client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
+            }
+        } catch {
+            dump(error)
+        }
+        
+        do {
+            if let data = Clerk.keychain[data: Clerk.KeychainKey.environment] {
+                self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
+            }
+        } catch {
+            dump(error)
+        }
+        
+        do {
+            if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] {
+                self.sessionsByUserId = try JSONDecoder.clerkDecoder.decode([String: [Session]].self, from: data)
+            }
+        } catch {
+            dump(error)
+        }
     }
     
 }
