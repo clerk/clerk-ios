@@ -34,6 +34,7 @@ struct UserProfileActiveDevicesSection: View {
     
     private struct ActiveDeviceView: View {
         @EnvironmentObject private var clerk: Clerk
+        @State private var errorWrapper: ErrorWrapper?
 
         let session: Session
         
@@ -67,6 +68,7 @@ struct UserProfileActiveDevicesSection: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading)
             }
+            .clerkErrorPresenting($errorWrapper)
         }
         
         @ViewBuilder
@@ -103,7 +105,8 @@ struct UserProfileActiveDevicesSection: View {
                 try await session.revoke()
                 try await clerk.client.lastActiveSession?.user?.getSessions()
             } catch {
-                dump(error)
+                errorWrapper = ErrorWrapper(error: error)
+            dump(error)
             }
         }
     }

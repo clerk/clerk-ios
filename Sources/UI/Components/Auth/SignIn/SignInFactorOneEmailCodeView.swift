@@ -15,6 +15,7 @@ struct SignInFactorOneEmailCodeView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var code: String = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     private var signIn: SignIn {
         clerk.client.signIn
@@ -43,6 +44,7 @@ struct SignInFactorOneEmailCodeView: View {
             .onUseAlernateMethod {
                 clerkUIState.presentedAuthStep = .signInStart
             }
+            .clerkErrorPresenting($errorWrapper)
             .task {
                 await prepare()
             }
@@ -56,6 +58,7 @@ struct SignInFactorOneEmailCodeView: View {
             }
             try await signIn.prepareFirstFactor(.emailCode(emailAddressId: emailAddressId))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -64,6 +67,7 @@ struct SignInFactorOneEmailCodeView: View {
         do {
             try await signIn.attemptFirstFactor(.emailCode(code: code))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

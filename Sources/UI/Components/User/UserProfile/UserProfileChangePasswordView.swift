@@ -18,6 +18,7 @@ struct UserProfileChangePasswordView: View {
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var signOutOfOtherDevices = true
+    @State private var errorWrapper: ErrorWrapper?
     @FocusState private var focusedField: Field?
     
     enum Field {
@@ -45,6 +46,7 @@ struct UserProfileChangePasswordView: View {
             
             dismiss()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -132,6 +134,7 @@ struct UserProfileChangePasswordView: View {
             .padding(30)
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 

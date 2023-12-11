@@ -64,6 +64,7 @@ extension UserProfileRemoveResourceView {
 
 struct UserProfileRemoveResourceView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var errorWrapper: ErrorWrapper?
 
     let resource: Resource
     
@@ -79,10 +80,12 @@ struct UserProfileRemoveResourceView: View {
                     try await resource.deleteAction()
                     dismiss()
                 } catch {
+                    errorWrapper = ErrorWrapper(error: error)
                     dump(error)
                 }
             }
         }
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 

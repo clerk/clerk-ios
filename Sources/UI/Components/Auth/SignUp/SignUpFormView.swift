@@ -23,6 +23,7 @@ struct SignUpFormView: View {
     @State private var lastName: String = ""
     @State private var password: String = ""
     @State private var ticket: String = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password, ticket
@@ -110,6 +111,7 @@ struct SignUpFormView: View {
                     .clipShape(.rect(cornerRadius: 8, style: .continuous))
             }
         }
+        .clerkErrorPresenting($errorWrapper)
     }
     
     private func continueAction() async {
@@ -126,6 +128,7 @@ struct SignUpFormView: View {
             
             clerkUIState.presentedAuthStep = .signUpVerification
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

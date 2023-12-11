@@ -12,6 +12,7 @@ import Clerk
 
 struct SignUpSocialProvidersView: View {
     @EnvironmentObject private var clerk: Clerk
+    @State private var errorWrapper: ErrorWrapper?
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
@@ -39,6 +40,7 @@ struct SignUpSocialProvidersView: View {
                 }
             }
         )
+        .clerkErrorPresenting($errorWrapper)
     }
     
     private func signUp(provider: OAuthProvider) async {
@@ -48,6 +50,7 @@ struct SignUpSocialProvidersView: View {
             try await signUp.startOAuth()
             onSuccess?()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

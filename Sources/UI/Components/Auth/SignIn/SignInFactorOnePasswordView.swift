@@ -16,6 +16,7 @@ struct SignInFactorOnePasswordView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @State private var password: String = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     var signIn: SignIn {
         clerk.client.signIn
@@ -76,6 +77,7 @@ struct SignInFactorOnePasswordView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(30)
             .background(.background)
+            .clerkErrorPresenting($errorWrapper)
         }
     }
     
@@ -83,6 +85,7 @@ struct SignInFactorOnePasswordView: View {
         do {
             try await signIn.attemptFirstFactor(.password(password: password))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

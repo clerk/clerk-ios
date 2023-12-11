@@ -12,9 +12,10 @@ import Clerk
 
 struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
-    @State private var selectedTab: Tab = .account
-    @Namespace private var namespace
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedTab: Tab = .account
+    @State private var errorWrapper: ErrorWrapper?
+    @Namespace private var namespace
     
     var body: some View {
         VStack(spacing: .zero) {
@@ -80,10 +81,12 @@ struct UserProfileView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
         .task {
             do {
                 try await clerk.client.get()
             } catch {
+                errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }
         }
@@ -91,6 +94,7 @@ struct UserProfileView: View {
             do {
                 try await clerk.client.lastActiveSession?.user?.getSessions()
             } catch {
+                errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }
         }

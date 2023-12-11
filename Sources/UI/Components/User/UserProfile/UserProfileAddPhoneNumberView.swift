@@ -27,6 +27,7 @@ struct UserProfileAddPhoneNumberView: View {
     @State private var step: Step
     @State private var phone = ""
     @State private var code = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     // The email address object returned by the create call or
     // provided on init in the case of going straight to verification
@@ -146,6 +147,7 @@ struct UserProfileAddPhoneNumberView: View {
             .padding(30)
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
     }
     
     private func create() async {
@@ -153,6 +155,7 @@ struct UserProfileAddPhoneNumberView: View {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             self.phoneNumber = try await user.addPhoneNumber(phone)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -161,6 +164,7 @@ struct UserProfileAddPhoneNumberView: View {
         do {
             try await self.phoneNumber?.prepareVerification(strategy: .phoneCode)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -170,6 +174,7 @@ struct UserProfileAddPhoneNumberView: View {
             try await self.phoneNumber?.attemptVerification(strategy: .phoneCode(code: code))
             dismiss()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

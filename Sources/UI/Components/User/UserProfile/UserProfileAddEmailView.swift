@@ -27,6 +27,7 @@ struct UserProfileAddEmailView: View {
     @State private var step: Step
     @State private var email = ""
     @State private var code = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     // The email address object returned by the create call or
     // provided on init in the case of going straight to verification
@@ -172,6 +173,7 @@ struct UserProfileAddEmailView: View {
             .padding(30)
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
     }
     
     private func create() async {
@@ -179,6 +181,7 @@ struct UserProfileAddEmailView: View {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             self.emailAddress = try await user.addEmailAddress(email)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -187,6 +190,7 @@ struct UserProfileAddEmailView: View {
         do {
             try await self.emailAddress?.prepareVerification(strategy: prepareStrategy)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -196,6 +200,7 @@ struct UserProfileAddEmailView: View {
             try await self.emailAddress?.attemptVerification(strategy: .emailCode(code: code))
             dismiss()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

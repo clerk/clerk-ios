@@ -15,6 +15,7 @@ struct UserProfileAddExternalAccountView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
+    @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
         clerk.client.lastActiveSession?.user
@@ -27,6 +28,7 @@ struct UserProfileAddExternalAccountView: View {
             try await newExternalAccount.startOAuth()
             dismiss()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -72,6 +74,7 @@ struct UserProfileAddExternalAccountView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(30)
         }
+        .clerkErrorPresenting($errorWrapper)
         .task {
             try? await clerk.environment.get()
         }

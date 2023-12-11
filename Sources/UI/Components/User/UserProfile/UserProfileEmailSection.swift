@@ -17,6 +17,7 @@ struct UserProfileEmailSection: View {
     
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
     @State private var confirmDeleteEmailAddress: EmailAddress?
+    @State private var errorWrapper: ErrorWrapper?
     
     @Namespace private var namespace
     
@@ -63,6 +64,7 @@ struct UserProfileEmailSection: View {
         do {
             try await emailAddress.setAsPrimary()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -158,6 +160,7 @@ struct UserProfileEmailSection: View {
             }
             .animation(.snappy, value: user)
         }
+        .clerkErrorPresenting($errorWrapper)
         .sheet(item: $addEmailAddressStep) { step in
             UserProfileAddEmailView(initialStep: step)
         }

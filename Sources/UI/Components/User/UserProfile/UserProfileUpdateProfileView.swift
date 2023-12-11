@@ -19,6 +19,7 @@ struct UserProfileUpdateProfileView: View {
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var photosPickerItem: PhotosPickerItem?
+    @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
         clerk.client.lastActiveSession?.user
@@ -36,6 +37,7 @@ struct UserProfileUpdateProfileView: View {
                 lastName: lastName
             ))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -82,6 +84,7 @@ struct UserProfileUpdateProfileView: View {
                                         }
                                         try await user?.setProfileImage(imageData)
                                     } catch {
+                                        errorWrapper = ErrorWrapper(error: error)
                                         dump(error)
                                     }
                                     
@@ -93,6 +96,7 @@ struct UserProfileUpdateProfileView: View {
                                 do {
                                     try await user?.deleteProfileImage()
                                 } catch {
+                                    errorWrapper = ErrorWrapper(error: error)
                                     dump(error)
                                 }
                             } label: {
@@ -161,6 +165,7 @@ struct UserProfileUpdateProfileView: View {
             .padding(30)
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 

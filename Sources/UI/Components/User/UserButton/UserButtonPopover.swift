@@ -14,6 +14,7 @@ struct UserButtonPopover: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
+    @State private var errorWrapper: ErrorWrapper?
     @Namespace private var namespace
     
     private var otherSessions: [Session] {
@@ -24,6 +25,7 @@ struct UserButtonPopover: View {
         do {
             try await clerk.setActive(.init(sessionId: session.id, organizationId: nil))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -32,6 +34,7 @@ struct UserButtonPopover: View {
         do {
             try await clerk.signOut(sessionId: session?.id)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -160,6 +163,7 @@ struct UserButtonPopover: View {
             }
         }
         .dismissButtonOverlay()
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 

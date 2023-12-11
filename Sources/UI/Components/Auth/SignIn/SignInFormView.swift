@@ -16,6 +16,7 @@ struct SignInFormView: View {
     @State private var emailAddress: String = ""
     @State private var phoneNumber: String = ""
     @State private var displayingEmailEntry = true
+    @State private var errorWrapper: ErrorWrapper?
     
     @FocusState private var focusedField: Field?
     
@@ -83,6 +84,7 @@ struct SignInFormView: View {
                     .clipShape(.rect(cornerRadius: 8, style: .continuous))
             }
         }
+        .clerkErrorPresenting($errorWrapper)
     }
     
     private func signInAction(strategy: SignIn.CreateStrategy) async {
@@ -91,6 +93,7 @@ struct SignInFormView: View {
             try await signIn.create(strategy)
             clerkUIState.presentedAuthStep = .signInFactorOne
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

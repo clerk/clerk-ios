@@ -16,6 +16,7 @@ struct SignUpEmailCodeView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var code: String = ""
+    @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp {
         clerk.client.signUp
@@ -43,6 +44,7 @@ struct SignUpEmailCodeView: View {
             .onUseAlernateMethod {
                 clerkUIState.presentedAuthStep = .signUpStart
             }
+            .clerkErrorPresenting($errorWrapper)
             .task {
                 await prepare()
             }
@@ -58,6 +60,7 @@ struct SignUpEmailCodeView: View {
         do {
             try await signUp.prepareVerification(.emailCode)
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -66,6 +69,7 @@ struct SignUpEmailCodeView: View {
         do {
             try await signUp.attemptVerification(.emailCode(code: code))
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }

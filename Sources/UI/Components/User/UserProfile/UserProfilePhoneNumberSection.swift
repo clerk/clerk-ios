@@ -17,6 +17,7 @@ struct UserProfilePhoneNumberSection: View {
     
     @State private var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
     @State private var confirmDeletePhoneNumber: PhoneNumber?
+    @State private var errorWrapper: ErrorWrapper?
     
     @Namespace private var namespace
     
@@ -63,6 +64,7 @@ struct UserProfilePhoneNumberSection: View {
         do {
             try await phoneNumber.setAsPrimary()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -164,6 +166,7 @@ struct UserProfilePhoneNumberSection: View {
             }
             .animation(.snappy, value: user)
         }
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 

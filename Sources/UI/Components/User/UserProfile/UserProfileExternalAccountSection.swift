@@ -18,6 +18,7 @@ struct UserProfileExternalAccountSection: View {
     
     @State private var addExternalAccountIsPresented = false
     @State private var confirmDeleteExternalAccount: ExternalAccount?
+    @State private var errorWrapper: ErrorWrapper?
     
     @Namespace private var namespace
     
@@ -105,6 +106,7 @@ struct UserProfileExternalAccountSection: View {
             let externalAccount = try await user?.addExternalAccount(provider)
             try await externalAccount?.startOAuth()
         } catch {
+            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
@@ -183,6 +185,7 @@ struct UserProfileExternalAccountSection: View {
             }
             .animation(.snappy, value: user)
         }
+        .clerkErrorPresenting($errorWrapper)
         .sheet(isPresented: $addExternalAccountIsPresented) {
             UserProfileAddExternalAccountView()
         }
