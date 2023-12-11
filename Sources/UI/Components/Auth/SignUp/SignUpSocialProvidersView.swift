@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Clerk
+import AuthenticationServices
 
 struct SignUpSocialProvidersView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -50,6 +51,10 @@ struct SignUpSocialProvidersView: View {
             try await signUp.startOAuth()
             onSuccess?()
         } catch {
+            if case ASWebAuthenticationSessionError.canceledLogin = error {
+                return
+            }
+            
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }

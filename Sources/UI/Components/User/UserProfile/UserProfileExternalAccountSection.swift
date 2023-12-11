@@ -11,6 +11,7 @@ import SwiftUI
 import Clerk
 import NukeUI
 import Factory
+import AuthenticationServices
 
 struct UserProfileExternalAccountSection: View {
     @EnvironmentObject private var clerk: Clerk
@@ -106,6 +107,10 @@ struct UserProfileExternalAccountSection: View {
             let externalAccount = try await user?.addExternalAccount(provider)
             try await externalAccount?.startOAuth()
         } catch {
+            if case ASWebAuthenticationSessionError.canceledLogin = error {
+                return
+            }
+            
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
