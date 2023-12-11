@@ -47,6 +47,8 @@ struct ErrorView: View {
             }
         }
         .padding(30)
+        .padding(.top, 20)
+        .dismissButtonOverlay()
     }
 }
 
