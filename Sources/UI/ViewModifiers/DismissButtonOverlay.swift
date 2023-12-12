@@ -11,29 +11,35 @@ import SwiftUI
 struct DismissButtonOverlayModifier: ViewModifier {
     @Environment(\.dismiss) private var dismiss
     let alignment: Alignment
+    let hidden: Bool
     
     func body(content: Content) -> some View {
-        content
-            .overlay(alignment: alignment) {
-                Button(action: {
-                    dismiss()
-                }, label: {
-                    Image(systemName: "xmark")
-                        .imageScale(.small)
-                        .tint(.secondary)
-                        .padding(10)
-                        .background(.ultraThinMaterial, in: Circle())
-                })
-                .padding(.vertical)
-                .padding(.horizontal, 30)
-            }
+        if hidden {
+            content
+        } else {
+            content
+                .overlay(alignment: alignment) {
+                    Button(action: {
+                        dismiss()
+                    }, label: {
+                        Image(systemName: "xmark")
+                            .imageScale(.small)
+                            .tint(.secondary)
+                            .padding(10)
+                            .background(.ultraThinMaterial, in: Circle())
+                    })
+                    .padding(.vertical)
+                    .padding(.horizontal, 30)
+                }
+        }
+        
     }
     
 }
 
 extension View {
-    public func dismissButtonOverlay(alignment: Alignment = .topTrailing) -> some View {
-        modifier(DismissButtonOverlayModifier(alignment: alignment))
+    public func dismissButtonOverlay(alignment: Alignment = .topTrailing, hidden: Bool = false) -> some View {
+        modifier(DismissButtonOverlayModifier(alignment: alignment, hidden: hidden))
     }
 }
 

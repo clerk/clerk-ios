@@ -12,24 +12,24 @@ import Clerk
 
 struct UserProfileSecurityView: View {
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-                HeaderView(
-                    title: "Security",
-                    subtitle: "Manage your security preferences"
-                )
-                
-                UserProfilePasswordSection()
-                UserProfileActiveDevicesSection()
-            }
-            .padding(30)
+        VStack(spacing: 30) {
+            HeaderView(
+                title: "Security",
+                subtitle: "Manage your security preferences"
+            )
+            
+            UserProfilePasswordSection()
+            UserProfileActiveDevicesSection()
         }
     }
 }
 
 #Preview {
-    UserProfileSecurityView()
-        .environmentObject(Clerk.mock)
+    ScrollView {
+        UserProfileSecurityView()
+            .padding(30)
+    }
+    .environmentObject(Clerk.mock)
 }
 
 #endif

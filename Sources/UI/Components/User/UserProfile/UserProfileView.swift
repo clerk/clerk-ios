@@ -10,14 +10,18 @@
 import SwiftUI
 import Clerk
 
-struct UserProfileView: View {
+public struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: Tab = .account
     @State private var errorWrapper: ErrorWrapper?
     @Namespace private var namespace
     
-    var body: some View {
+    private var removeDismissButton: Bool = false
+    
+    public init() {}
+    
+    public var body: some View {
         VStack(spacing: .zero) {
             HStack(spacing: 20) {
                 Button {
@@ -70,17 +74,17 @@ struct UserProfileView: View {
             .background(alignment: .bottom) {
                 Divider()
             }
-            .padding(.top)
+            .padding(.top, removeDismissButton ? nil : 40)
             
-            TabView(selection: $selectedTab.animation(.snappy)) {
-                UserProfileAccountView()
-                    .tag(Tab.account)
-                UserProfileSecurityView()
-                    .tag(Tab.security)
+            ScrollView {
+                VStack(spacing: 30) {
+                    UserProfileAccountView()
+                    UserProfileSecurityView()
+                }
+                .padding(30)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
-        .dismissButtonOverlay()
+        .dismissButtonOverlay(hidden: removeDismissButton)
         .clerkErrorPresenting($errorWrapper)
         .task {
             do {
@@ -103,6 +107,16 @@ struct UserProfileView: View {
     enum Tab {
         case account, security
     }
+}
+
+extension UserProfileView {
+    
+    public func removeDismissButton(_ remove: Bool = true) -> Self {
+        var copy = self
+        copy.removeDismissButton = remove
+        return copy
+    }
+    
 }
 
 #Preview {
