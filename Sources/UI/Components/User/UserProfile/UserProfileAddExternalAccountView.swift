@@ -32,7 +32,7 @@ struct UserProfileAddExternalAccountView: View {
             dump(error)
         }
     }
-        
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
@@ -72,7 +72,8 @@ struct UserProfileAddExternalAccountView: View {
             }
             .animation(.snappy, value: user)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(30)
+            .padding()
+            .padding(.vertical)
         }
         .clerkErrorPresenting($errorWrapper)
         .task {

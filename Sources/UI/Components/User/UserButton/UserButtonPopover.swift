@@ -81,7 +81,7 @@ struct UserButtonPopover: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal)
                 }
                 
                 if !clerk.environment.authConfig.singleSessionMode {
@@ -120,7 +120,7 @@ struct UserButtonPopover: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal)
                     .padding(.vertical)
                     .background(.quinary)
                     .overlay(alignment: .top, content: {
@@ -145,7 +145,7 @@ struct UserButtonPopover: View {
                             .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 30)
+                        .padding(.horizontal)
                     }
                 }
                 

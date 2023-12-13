@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ClerkUI
+import Clerk
 
 struct ExampleTabView: View {
     @State private var selectedTab: Tab = .home
@@ -20,24 +21,24 @@ struct ExampleTabView: View {
         TabView(selection: $selectedTab) {
             ExamplesListView()
                 .tag(Tab.home)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
+                .tabItem { Label("Home", systemImage: "house.fill") }
                 .toolbarBackground(.visible, for: .tabBar)
                 .toolbarBackground(Material.ultraThinMaterial, for: .tabBar)
             
-            UserProfileView()
-                .removeDismissButton()
-                .tag(Tab.profile)
-                .tabItem {
-                    Label("Account", systemImage: "person.fill")
-                }
-                .toolbarBackground(.visible, for: .tabBar)
-                .toolbarBackground(Material.ultraThinMaterial, for: .tabBar)
+            NavigationStack {
+                UserProfileView()
+                    .removeDismissButton()
+                    .navigationTitle("Account")
+            }
+            .tag(Tab.profile)
+            .tabItem { Label("Account", systemImage: "person.fill") }
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(Material.ultraThinMaterial, for: .tabBar)
         }
     }
 }
 
 #Preview {
     ExampleTabView()
+        .environmentObject(Clerk.mock)
 }

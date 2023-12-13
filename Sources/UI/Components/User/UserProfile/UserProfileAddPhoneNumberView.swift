@@ -144,7 +144,8 @@ struct UserProfileAddPhoneNumberView: View {
                 }
                 .animation(.snappy, value: step)
             }
-            .padding(30)
+            .padding()
+            .padding(.vertical)
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)

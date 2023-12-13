@@ -46,8 +46,9 @@ struct ErrorView: View {
                     .clipShape(.rect(cornerRadius: 8, style: .continuous))
             }
         }
-        .padding(30)
-        .padding(.top, 20)
+        .padding()
+        .padding(.vertical)
+        .padding(.top)
         .dismissButtonOverlay()
     }
 }

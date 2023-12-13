@@ -25,7 +25,8 @@ public struct UserProfileDetailsView: View {
 #Preview {
     ScrollView {
         UserProfileDetailsView()
-            .padding(30)
+            .padding()
+            .padding(.vertical)
     }
     .environmentObject(Clerk.mock)
 }

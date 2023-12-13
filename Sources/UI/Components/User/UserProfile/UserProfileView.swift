@@ -24,8 +24,8 @@ public struct UserProfileView: View {
                 UserProfileDetailsView()
                 UserProfileSecurityView()
             }
-            .padding(30)
-            .padding(.top, removeDismissButton ? 0 : 30)
+            .padding()
+            .padding(.top, removeDismissButton ? 0 : nil)
         }
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay(hidden: removeDismissButton)

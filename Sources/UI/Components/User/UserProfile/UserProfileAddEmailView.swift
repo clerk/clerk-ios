@@ -125,7 +125,7 @@ struct UserProfileAddEmailView: View {
             await prepare()
         }
         .task {
-           await prepare()
+            await prepare()
         }
     }
     
@@ -170,7 +170,8 @@ struct UserProfileAddEmailView: View {
                 }
                 .animation(.snappy, value: step)
             }
-            .padding(30)
+            .padding()
+            .padding(.vertical)
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)

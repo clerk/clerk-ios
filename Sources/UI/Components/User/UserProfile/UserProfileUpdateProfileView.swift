@@ -162,7 +162,8 @@ struct UserProfileUpdateProfileView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(30)
+            .padding()
+            .padding(.vertical)
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)

@@ -60,7 +60,8 @@ struct VerificationCodeView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(30)
+        .padding()
+        .padding(.vertical)
         .background(.background)
     }
 }

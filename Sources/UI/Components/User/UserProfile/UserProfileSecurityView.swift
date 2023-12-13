@@ -23,7 +23,8 @@ struct UserProfileSecurityView: View {
 #Preview {
     ScrollView {
         UserProfileSecurityView()
-            .padding(30)
+            .padding()
+            .padding(.vertical)
     }
     .environmentObject(Clerk.mock)
 }

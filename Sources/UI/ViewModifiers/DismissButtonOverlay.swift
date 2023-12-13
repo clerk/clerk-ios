@@ -20,8 +20,7 @@ struct DismissButtonOverlayModifier: ViewModifier {
             content
                 .overlay(alignment: alignment) {
                     DismissButton()
-                        .padding(.vertical)
-                        .padding(.horizontal, 30)
+                        .padding()
                 }
         }
         
