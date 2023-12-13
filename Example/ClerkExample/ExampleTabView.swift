@@ -29,6 +29,11 @@ struct ExampleTabView: View {
                 UserProfileView()
                     .removeDismissButton()
                     .navigationTitle("Account")
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            UserButton()
+                        }
+                    }
             }
             .tag(Tab.profile)
             .tabItem { Label("Account", systemImage: "person.fill") }
