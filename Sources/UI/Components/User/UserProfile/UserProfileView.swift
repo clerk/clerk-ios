@@ -12,80 +12,23 @@ import Clerk
 
 public struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedTab: Tab = .account
     @State private var errorWrapper: ErrorWrapper?
-    @Namespace private var namespace
     
     private var removeDismissButton: Bool = false
     
     public init() {}
     
     public var body: some View {
-        VStack(spacing: .zero) {
-            HStack(spacing: 20) {
-                Button {
-                    withAnimation(.snappy) { selectedTab = .account }
-                } label: {
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .frame(width: 16, height: 16)
-                        
-                        Text("Account")
-                            .animation(.none, value: selectedTab)
-                    }
-                    .foregroundStyle(selectedTab == .account ? .primary : .secondary)
-                    .frame(maxHeight: .infinity)
-                }
-                .overlay(alignment: .bottom) {
-                    if selectedTab == .account {
-                        Rectangle()
-                            .frame(height: 2)
-                            .matchedGeometryEffect(id: "underline", in: namespace)
-                    }
-                }
-                
-                Button {
-                    withAnimation(.snappy) { selectedTab = .security }
-                } label: {
-                    HStack {
-                        Image(systemName: "checkmark.shield.fill")
-                            .frame(width: 16, height: 16)
-                        
-                        Text("Security")
-                            .animation(.none, value: selectedTab)
-                    }
-                    .foregroundStyle(selectedTab == .security ? .primary : .secondary)
-                    .frame(maxHeight: .infinity)
-                }
-                .overlay(alignment: .bottom) {
-                    if selectedTab == .security {
-                        Rectangle()
-                            .frame(height: 2)
-                            .matchedGeometryEffect(id: "underline", in: namespace)
-                    }
-                }
+        ScrollView {
+            VStack(spacing: 30) {
+                UserProfileDetailsView()
+                UserProfileSecurityView()
             }
-            .frame(height: 50)
-            .buttonStyle(.plain)
-            .font(.subheadline.weight(.medium))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 30)
-            .background(alignment: .bottom) {
-                Divider()
-            }
-            .padding(.top, removeDismissButton ? nil : 40)
-            
-            ScrollView {
-                VStack(spacing: 30) {
-                    UserProfileAccountView()
-                    UserProfileSecurityView()
-                }
-                .padding(30)
-            }
+            .padding(30)
+            .padding(.top, removeDismissButton ? 0 : 30)
         }
-        .dismissButtonOverlay(hidden: removeDismissButton)
         .clerkErrorPresenting($errorWrapper)
+        .dismissButtonOverlay(hidden: removeDismissButton)
         .task {
             do {
                 try await clerk.client.get()
@@ -102,10 +45,6 @@ public struct UserProfileView: View {
                 dump(error)
             }
         }
-    }
-    
-    enum Tab {
-        case account, security
     }
 }
 

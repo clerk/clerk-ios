@@ -19,17 +19,9 @@ struct DismissButtonOverlayModifier: ViewModifier {
         } else {
             content
                 .overlay(alignment: alignment) {
-                    Button(action: {
-                        dismiss()
-                    }, label: {
-                        Image(systemName: "xmark")
-                            .imageScale(.small)
-                            .tint(.secondary)
-                            .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
-                    })
-                    .padding(.vertical)
-                    .padding(.horizontal, 30)
+                    DismissButton()
+                        .padding(.vertical)
+                        .padding(.horizontal, 30)
                 }
         }
         

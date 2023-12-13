@@ -13,11 +13,7 @@ import Clerk
 struct UserProfileSecurityView: View {
     public var body: some View {
         VStack(spacing: 30) {
-            HeaderView(
-                title: "Security",
-                subtitle: "Manage your security preferences"
-            )
-            
+            HeaderView(title: "Security")
             UserProfilePasswordSection()
             UserProfileActiveDevicesSection()
         }

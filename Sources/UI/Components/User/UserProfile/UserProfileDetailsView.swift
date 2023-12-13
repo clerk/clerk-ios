@@ -1,5 +1,5 @@
 //
-//  UserProfileAccountView.swift
+//  UserProfileDetailsView.swift
 //
 //
 //  Created by Mike Pitre on 11/3/23.
@@ -10,14 +10,10 @@
 import SwiftUI
 import Clerk
 
-public struct UserProfileAccountView: View {
+public struct UserProfileDetailsView: View {
     public var body: some View {
         VStack(spacing: 30) {
-            HeaderView(
-                title: "Account",
-                subtitle: "Manage your account information"
-            )
-            
+            HeaderView(title: "Profile Details")
             UserProfileSection()
             UserProfileEmailSection()
             UserProfilePhoneNumberSection()
@@ -28,7 +24,7 @@ public struct UserProfileAccountView: View {
 
 #Preview {
     ScrollView {
-        UserProfileAccountView()
+        UserProfileDetailsView()
             .padding(30)
     }
     .environmentObject(Clerk.mock)
