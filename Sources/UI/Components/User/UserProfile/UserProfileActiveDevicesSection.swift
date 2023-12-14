@@ -34,17 +34,25 @@ struct UserProfileActiveDevicesSection: View {
     
     private struct ActiveDeviceView: View {
         @EnvironmentObject private var clerk: Clerk
+        @Environment(\.colorScheme) private var colorScheme
         @State private var errorWrapper: ErrorWrapper?
 
         let session: Session
         
         var body: some View {
             AccordionView {
-                HStack(spacing: 30) {
+                HStack(spacing: 20) {
                     Image(session.latestActivity?.isMobile == true ? .deviceMobile : .deviceLaptop)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 60)
+                        .frame(width: 60, height: 60)
+                        .padding(8)
+                        .background {
+                            if colorScheme == .dark {
+                                Color(.secondarySystemBackground)
+                                    .clipShape(.rect(cornerRadius: 8, style: .continuous))
+                            }
+                        }
                     
                     VStack(alignment: .leading) {
                         HStack {
