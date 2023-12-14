@@ -39,8 +39,8 @@ final public class Clerk: ObservableObject {
      */
     public func configure(publishableKey: String) {
         self.publishableKey = publishableKey
-        self.loadPersistedData()
-        self.startSessionTokenPolling()
+        loadPersistedData()
+        startSessionTokenPolling()
     }
     
     /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.

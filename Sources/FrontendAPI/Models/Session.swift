@@ -249,10 +249,9 @@ extension Session {
     @discardableResult
     public func getToken(_ options: GetTokenOptions? = nil) async throws -> TokenResource? {
         
-        if 
-            options?.skipCache == false,
-            let token = Clerk.shared.tokensBySessionId[id],
-            token.decodedJWT?.expired == false
+        if options?.skipCache == false,
+           let token = Clerk.shared.tokensBySessionId[id],
+           token.decodedJWT?.expired == false
         {
             return token
         }
