@@ -109,13 +109,14 @@ final public class Clerk: ObservableObject {
         }
     }
     
-    /// The session token for the session.
+    /// The cached session tokens. Key is the session id + template name if there is one.
+    /// e.g. `sess_abc12345` or `sess_abc12345-supabase`
     ///
     /// Is set by the `getToken` function on a session.
-    var tokensBySessionId: [String: TokenResource] = .init() {
+    var sessionTokensByCacheKey: [String: TokenResource] = .init() {
         didSet {
             do {
-                Clerk.keychain[data: Clerk.KeychainKey.tokensBySessionId] = try JSONEncoder.clerkEncoder.encode(tokensBySessionId)
+                Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
             } catch {
                 dump(error)
             }
@@ -235,8 +236,8 @@ extension Clerk {
         }
         
         do {
-            if let data = Clerk.keychain[data: Clerk.KeychainKey.tokensBySessionId] {
-                self.tokensBySessionId = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
+            if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] {
+                self.sessionTokensByCacheKey = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
             }
         } catch {
             dump(error)
