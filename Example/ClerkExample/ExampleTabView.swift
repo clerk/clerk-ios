@@ -21,9 +21,11 @@ struct ExampleTabView: View {
         TabView(selection: $selectedTab) {
             ExamplesListView()
                 .tag(Tab.home)
-                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
                 .toolbarBackground(.visible, for: .tabBar)
-                .toolbarBackground(Material.ultraThinMaterial, for: .tabBar)
+                .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
             
             NavigationStack {
                 UserProfileView()
@@ -34,11 +36,14 @@ struct ExampleTabView: View {
                             UserButton()
                         }
                     }
+                    .toolbarBackground(Material.ultraThinMaterial, for: .navigationBar)
             }
             .tag(Tab.profile)
-            .tabItem { Label("Account", systemImage: "person.fill") }
+            .tabItem {
+                Label("Account", systemImage: "person.fill")
+            }
             .toolbarBackground(.visible, for: .tabBar)
-            .toolbarBackground(Material.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
         }
     }
 }
