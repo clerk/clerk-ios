@@ -11,6 +11,8 @@ import Clerk
 
 struct ExampleTabView: View {
     @State private var selectedTab: Tab = .home
+    @EnvironmentObject private var clerk: Clerk
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     enum Tab {
         case home
@@ -28,15 +30,24 @@ struct ExampleTabView: View {
                 .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
             
             NavigationStack {
-                UserProfileView()
-                    .removeDismissButton()
-                    .navigationTitle("Account")
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            UserButton()
-                        }
+                Group {
+                    if clerk.user == nil {
+                        Button(action: {
+                            clerkUIState.presentedAuthStep = .signInStart
+                        }, label: {
+                            Text("Sign In")
+                        })
+                    } else {
+                        UserProfileView()
+                            .removeDismissButton()
                     }
-                    .toolbarBackground(Material.ultraThinMaterial, for: .navigationBar)
+                }
+                .navigationTitle("Account")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        UserButton()
+                    }
+                }
             }
             .tag(Tab.profile)
             .tabItem {

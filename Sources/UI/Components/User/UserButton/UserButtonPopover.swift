@@ -18,7 +18,7 @@ struct UserButtonPopover: View {
     @Namespace private var namespace
     
     private var otherSessions: [Session] {
-        clerk.client.sessions.filter({ $0.id != clerk.session?.id })
+        clerk.client.sessions.filter({ $0.id != clerk.session?.id && $0.status == .active })
     }
     
     private func setActiveSession(_ session: Session) async {
@@ -30,7 +30,7 @@ struct UserButtonPopover: View {
         }
     }
     
-    private func signOut(_ session: Session?) async {
+    private func signOut(_ session: Session? = nil) async {
         do {
             try await clerk.signOut(sessionId: session?.id)
         } catch {
@@ -131,8 +131,8 @@ struct UserButtonPopover: View {
                     }
                     
                     if otherSessions.count > 0 {
-                        Button {
-                            //
+                        AsyncButton {
+                            await signOut()
                         } label: {
                             HStack(spacing: 16) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -143,6 +143,7 @@ struct UserButtonPopover: View {
                                     .font(.footnote)
                             }
                             .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal)

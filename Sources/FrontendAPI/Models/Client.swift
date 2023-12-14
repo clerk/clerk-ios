@@ -93,7 +93,7 @@ extension Client {
         Clerk.shared.client = try await Clerk.apiClient.send(request).value.response
     }
     
-    /// Deletes the client. All sessions will be reset.
+    /// Deletes the client from the device. Does not delete the client on the server. All sessions will be set to ended.
     @MainActor
     public func destroy() async throws {
         let request = APIEndpoint
@@ -102,6 +102,8 @@ extension Client {
             .delete
         
         try await Clerk.apiClient.send(request)
+        try Clerk.keychain.remove(Clerk.KeychainKey.deviceToken)
+        try Clerk.keychain.remove(Clerk.KeychainKey.client)
         Clerk.shared.client = Client()
     }
     

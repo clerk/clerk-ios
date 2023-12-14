@@ -59,7 +59,7 @@ public struct Session: Codable, Identifiable {
     public let id: String
     
     /// The current state of the session.
-    let status: SessionStatus
+    public let status: SessionStatus
     
     /// The time the session expires and will cease to be active.
     let expireAt: Date

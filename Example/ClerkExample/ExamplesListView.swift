@@ -31,34 +31,6 @@ struct ExamplesListView: View {
                         Text("Sign Up")
                     }
                 }
-                
-                #if DEBUG
-                Section("Settings") {
-                    Button {
-                        Task { try? await clerk.client.get() }
-                    } label: {
-                        Text("Get Client")
-                    }
-                    
-                    Button {
-                        Task { try? await clerk.client.destroy() }
-                    } label: {
-                        Text("Delete Client")
-                    }
-
-                    Button {
-                        Clerk.deleteRefreshToken()
-                    } label: {
-                        Text("Delete Refresh Token")
-                    }
-                    
-                    Button {
-                        Clerk.clearKeychain()
-                    } label: {
-                        Text("Clear Keychain")
-                    }
-                }
-                #endif
             }
             .navigationTitle("Clerk Examples")
             .toolbar {

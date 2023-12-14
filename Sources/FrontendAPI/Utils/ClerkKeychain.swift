@@ -19,30 +19,4 @@ extension Clerk {
         static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
         static let environment = "environment"
     }
-    
-    #if DEBUG
-    public static func deleteRefreshToken() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.deviceToken)
-    }
-    
-    public static func deleteClient() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.client)
-    }
-    
-    public static func deleteSessions() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.sessionsByUserId)
-    }
-    
-    public static func deleteTokens() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.sessionTokensByCacheKey)
-    }
-    
-    public static func deleteEnvironment() {
-        try? Clerk.keychain.remove(Clerk.KeychainKey.environment)
-    }
-    
-    public static func clearKeychain() {
-        try? Clerk.keychain.removeAll()
-    }
-    #endif
 }

@@ -164,7 +164,7 @@ extension Clerk {
             
             try await Clerk.apiClient.send(request)
         } else {
-            return
+           try await Clerk.shared.client.destroy()
         }
         
         try await Clerk.shared.client.get()
