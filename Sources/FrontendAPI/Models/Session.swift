@@ -232,13 +232,23 @@ extension Session {
         return revokedSession
     }
     
-    public struct GetTokenOptions {
-        /// The number of seconds to allow the token to be cached for.
-        var leewayInSeconds: Int?
+    public struct GetTokenOptions: Hashable {
+        public init(
+            expirationBuffer: Double = 10,
+            template: String? = nil,
+            skipCache: Bool = false
+        ) {
+            self.expirationBuffer = expirationBuffer
+            self.template = template
+            self.skipCache = skipCache
+        }
+
+        /// If the cached token will expire within X seconds (the buffer), fetch a new token instead.
+        var expirationBuffer: Double
         /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
         var template: String?
         /// Whether to skip the cache lookup and force a call to the server instead, even within the TTL. Useful if the token claims are time-sensitive or depend on data that can be updated (e.g. user fields). Defaults to false.
-        var skipCache: Bool = false
+        var skipCache: Bool
     }
     
     /**
@@ -248,10 +258,61 @@ extension Session {
      */
     @discardableResult
     public func getToken(_ options: GetTokenOptions? = nil) async throws -> TokenResource? {
+        let getTokenOptions = options ?? GetTokenOptions()
+        return try await SessionTokenFetcher.shared.getToken(self, options: getTokenOptions)
+    }
+    
+}
+
+// The purpose of this actor is to not trigger refreshes of tokens if a refresh is already in progress.
+// This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
+actor SessionTokenFetcher {
+    static let shared = SessionTokenFetcher()
+    
+    private var tokenTasks: [SessionWithGetOptions: Task<TokenResource?, Error>] = [:]
+    
+    func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+        let sessionWithOptions = SessionWithGetOptions(session: session, options: options)
         
-        if options?.skipCache == false,
-           let token = Clerk.shared.tokensBySessionId[id],
-           token.decodedJWT?.expired == false
+        if let inProgressTask = tokenTasks[sessionWithOptions] {
+            return try await inProgressTask.value
+        }
+        
+        let task: Task<TokenResource?, Error> = Task {
+            return try await fetchToken(session, options: options)
+        }
+
+        tokenTasks[sessionWithOptions] = task
+        
+        let token = try await task.value
+        
+        tokenTasks[sessionWithOptions] = nil
+        
+        return token
+    }
+    
+    // This object is used as the key in the in progress tasks dictionary of the actor.
+    // Using just the session id is not sufficient, as the request can have different get options for the same session.
+    struct SessionWithGetOptions: Hashable {
+        let session: Session
+        let options: Session.GetTokenOptions
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(session.id)
+            hasher.combine(options)
+        }
+    }
+    
+    /**
+     Internal function to get the session token. Checks the cache first.
+     */
+    @discardableResult
+    func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+        
+        if options.skipCache == false,
+           let token = Clerk.shared.tokensBySessionId[session.id],
+           let expiresAt = token.decodedJWT?.expiresAt,
+           Date.now.distance(to: expiresAt) > options.expirationBuffer
         {
             return token
         }
@@ -262,10 +323,10 @@ extension Session {
             .v1
             .client
             .sessions
-            .id(id)
+            .id(session.id)
             .tokens
         
-        if let template = options?.template {
+        if let template = options.template {
             let templateTokenRequest = tokensRequest
                 .template(template)
                 .post()
@@ -279,8 +340,9 @@ extension Session {
         }
         
         if let token {
-            Clerk.shared.tokensBySessionId[id] = token
+            Clerk.shared.tokensBySessionId[session.id] = token
         }
+        
         return token
     }
     
