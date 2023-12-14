@@ -186,11 +186,16 @@ extension Clerk {
     
     /// A method used to set the active session and/or organization.
     public func setActive(_ params: SetActiveParams) async throws {
+        guard let sessionId = params.sessionId else {
+            // TODO: Delete Session if sessionId is nil
+            return
+        }
+        
         let request = APIEndpoint
             .v1
             .client
             .sessions
-            .id(params.sessionId ?? "")
+            .id(sessionId)
             .touch
             .post(params)
         
