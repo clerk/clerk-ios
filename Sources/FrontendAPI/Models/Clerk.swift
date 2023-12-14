@@ -40,6 +40,7 @@ final public class Clerk: ObservableObject {
     public func configure(publishableKey: String) {
         self.publishableKey = publishableKey
         self.loadPersistedData()
+        self.startSessionTokenPolling()
     }
     
     /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.
@@ -107,6 +108,19 @@ final public class Clerk: ObservableObject {
             }
         }
     }
+    
+    /// The session token for the session.
+    ///
+    /// Is set by the `getToken` function on a session.
+    var tokensBySessionId: [String: TokenResource] = .init() {
+        didSet {
+            do {
+                Clerk.keychain[data: Clerk.KeychainKey.tokensBySessionId] = try JSONEncoder.clerkEncoder.encode(tokensBySessionId)
+            } catch {
+                dump(error)
+            }
+        }
+    }
 }
 
 extension Clerk {
@@ -117,6 +131,20 @@ extension Clerk {
     
     public var user: User? {
         client.lastActiveSession?.user
+    }
+    
+    public func startSessionTokenPolling() {
+        Timer.scheduledTimer(withTimeInterval: 50, repeats: true) { _ in
+            Task(priority: .background) { [weak self] in
+                guard let self, let session else { return }
+                
+                do {
+                    try await session.getToken(.init(skipCache: true))
+                } catch {
+                    dump(error)
+                }
+            }
+        }
     }
     
     /**
@@ -196,6 +224,14 @@ extension Clerk {
         do {
             if let data = Clerk.keychain[data: Clerk.KeychainKey.environment] {
                 self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
+            }
+        } catch {
+            dump(error)
+        }
+        
+        do {
+            if let data = Clerk.keychain[data: Clerk.KeychainKey.tokensBySessionId] {
+                self.tokensBySessionId = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
             }
         } catch {
             dump(error)

@@ -16,6 +16,7 @@ extension Clerk {
         static let deviceToken = "deviceToken"
         static let client = "client"
         static let sessionsByUserId = "sessionsByUserId"
+        static let tokensBySessionId = "tokensBySessionId"
         static let environment = "environment"
     }
     
@@ -32,6 +33,10 @@ extension Clerk {
         try? Clerk.keychain.remove(Clerk.KeychainKey.sessionsByUserId)
     }
     
+    public static func deleteTokens() {
+        try? Clerk.keychain.remove(Clerk.KeychainKey.tokensBySessionId)
+    }
+    
     public static func deleteEnvironment() {
         try? Clerk.keychain.remove(Clerk.KeychainKey.environment)
     }
@@ -40,6 +45,7 @@ extension Clerk {
         deleteRefreshToken()
         deleteClient()
         deleteSessions()
+        deleteTokens()
         deleteEnvironment()
     }
     #endif

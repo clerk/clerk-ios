@@ -38,7 +38,7 @@ public struct Session: Codable, Identifiable {
         publicUserData: JSON? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
-        lastActiveToken: String? = nil
+        lastActiveToken: TokenResource? = nil
     ) {
         self.id = id
         self.status = status
@@ -52,7 +52,7 @@ public struct Session: Codable, Identifiable {
         self.publicUserData = publicUserData
         self.createdAt = createdAt
         self.updatedAt = updatedAt
-//        self.lastActiveToken = lastActiveToken
+        self.lastActiveToken = lastActiveToken
     }
     
     /// A unique identifier for the session.
@@ -92,7 +92,7 @@ public struct Session: Codable, Identifiable {
     let updatedAt: Date
     
     /// The last active token for the session.
-//    let lastActiveToken: JSON?
+    public let lastActiveToken: TokenResource?
 }
 
 extension Session {
@@ -230,6 +230,59 @@ extension Session {
         
         try await Clerk.shared.client.get()
         return revokedSession
+    }
+    
+    public struct GetTokenOptions {
+        /// The number of seconds to allow the token to be cached for.
+        var leewayInSeconds: Int?
+        /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
+        var template: String?
+        /// Whether to skip the cache lookup and force a call to the server instead, even within the TTL. Useful if the token claims are time-sensitive or depend on data that can be updated (e.g. user fields). Defaults to false.
+        var skipCache: Bool = false
+    }
+    
+    /**
+     Retrieves the user's session token for the given template or the default clerk token.
+     This method uses a cache so a network request will only be made if the token in memory is expired.
+     The TTL for clerk token is one minute.
+     */
+    @discardableResult
+    public func getToken(_ options: GetTokenOptions? = nil) async throws -> TokenResource? {
+        
+        if 
+            options?.skipCache == false,
+            let token = Clerk.shared.tokensBySessionId[id],
+            token.decodedJWT?.expired == false
+        {
+            return token
+        }
+                    
+        var token: TokenResource?
+        
+        let tokensRequest = APIEndpoint
+            .v1
+            .client
+            .sessions
+            .id(id)
+            .tokens
+        
+        if let template = options?.template {
+            let templateTokenRequest = tokensRequest
+                .template(template)
+                .post()
+            
+            token = try await Clerk.apiClient.send(templateTokenRequest).value
+        } else {
+            let defaultTokenRequest = tokensRequest
+                .post()
+            
+            token = try await Clerk.apiClient.send(defaultTokenRequest).value
+        }
+        
+        if let token {
+            Clerk.shared.tokensBySessionId[id] = token
+        }
+        return token
     }
     
 }

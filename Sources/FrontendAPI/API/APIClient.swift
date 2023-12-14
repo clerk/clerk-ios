@@ -31,7 +31,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         }
         
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
-        request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.65.0")])
+        request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.67.0")])
 
         // Encode body with url-encoded form
         if let data = request.httpBody {

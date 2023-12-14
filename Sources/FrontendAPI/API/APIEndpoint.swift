@@ -247,6 +247,38 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint 
 
 extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
     
+    var tokens: TokensEndpoint {
+        TokensEndpoint(path: path + "/tokens")
+    }
+    
+    struct TokensEndpoint {
+        /// Path: `v1/client/sessions/{id}/tokens`
+        let path: String
+        
+        func post() -> Request<TokenResource?> {
+            .init(path: path, method: .post)
+        }
+    }
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint.TokensEndpoint {
+    
+    func template(_ template: String) -> TemplateEndpoint {
+        TemplateEndpoint(path: path + "/\(template)")
+    }
+    
+    struct TemplateEndpoint {
+        /// Path: `v1/client/sessions/{id}/tokens/{template}`
+        let path: String
+        
+        func post() -> Request<TokenResource?> {
+            .init(path: path, method: .post)
+        }
+    }
+}
+
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+    
     var remove: RemoveEndpoint {
         RemoveEndpoint(path: path + "/remove")
     }
