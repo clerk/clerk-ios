@@ -11,16 +11,18 @@ import SwiftUI
 
 public struct ClerkTheme {
     public var colors: Colors
-    public var authPresentationStyle: PresentationStyle
     
     public struct Colors {
+        // Customizable
         public var primary: Color
-        public var primaryButtonTextColor: Color
-    }
-    
-    public enum PresentationStyle {
-        case sheet
-        case fullScreenCover
+        public var textPrimary: Color
+        public var textSecondary: Color
+        public var textOnPrimaryBackground: Color = .white
+        public var borderPrimary: Color
+        
+        // Constants
+        public let gray700: Color = Color(.clerkGray700)
+        public let red500: Color = Color(.clerkRed500)
     }
 }
 
@@ -28,10 +30,11 @@ extension ClerkTheme {
     
     static let `default` = Self(
         colors: .init(
-            primary: .primary,
-            primaryButtonTextColor: Color(.systemBackground)
-        ),
-        authPresentationStyle: .sheet
+            primary: Color(.clerkPrimary),
+            textPrimary: Color(.clerkTextPrimary),
+            textSecondary: Color(.clerkTextSecondary),
+            borderPrimary: Color(.clerkBorderPrimary)
+        )
     )
     
 }

@@ -55,7 +55,7 @@ struct UserProfilePhoneNumberSection: View {
                     Text("Set as primary")
                         .font(.footnote.weight(.medium))
                 }
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
         }
     }
@@ -84,7 +84,7 @@ struct UserProfilePhoneNumberSection: View {
                 Text("Verify phone number")
                     .font(.footnote.weight(.medium))
             })
-            .tint(clerkTheme.colors.primary)
+            .tint(clerkTheme.colors.textPrimary)
         }
     }
     
@@ -158,7 +158,7 @@ struct UserProfilePhoneNumberSection: View {
                     Text("+ Add a phone number")
                 })
                 .font(.footnote.weight(.medium))
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
                 .padding(.leading, 8)
                 .sheet(item: $addPhoneNumberStep) { step in
                     UserProfileAddPhoneNumberView(initialStep: step)

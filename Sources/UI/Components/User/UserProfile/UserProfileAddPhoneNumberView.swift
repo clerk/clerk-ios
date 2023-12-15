@@ -113,16 +113,13 @@ struct UserProfileAddPhoneNumberView: View {
                     .animation(.snappy, value: step)
                 
                 HStack {
-                    Spacer()
                     Button {
                         dismiss()
                     } label: {
-                        Text("CANCEL")
-                            .foregroundStyle(clerkTheme.colors.primary)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .font(.caption.weight(.bold))
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(ClerkSecondaryButtonStyle())
                     
                     if step == .add {
                         AsyncButton {
@@ -130,16 +127,10 @@ struct UserProfileAddPhoneNumberView: View {
                             guard let phoneNumber else { return }
                             step = .code(phoneNumber: phoneNumber)
                         } label: {
-                            Text("CONTINUE")
-                                .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-                                .font(.caption.weight(.bold))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(
-                                    clerkTheme.colors.primary,
-                                    in: .rect(cornerRadius: 6, style: .continuous)
-                                )
+                            Text("Continue")
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(ClerkPrimaryButtonStyle())
                     }
                 }
                 .animation(.snappy, value: step)

@@ -74,7 +74,7 @@ struct UserProfileUpdateProfileView: View {
                                 matching: .images
                             )
                             .font(.footnote)
-                            .tint(clerkTheme.colors.primary)
+                            .tint(clerkTheme.colors.textPrimary)
                             .onChange(of: photosPickerItem) { newValue in
                                 if newValue == nil { return }
                                 Task {
@@ -133,31 +133,22 @@ struct UserProfileUpdateProfileView: View {
                 }
                 
                 HStack {
-                    Spacer()
                     Button {
                         dismiss()
                     } label: {
-                        Text("CANCEL")
-                            .foregroundStyle(clerkTheme.colors.primary)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .font(.caption.weight(.bold))
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(ClerkSecondaryButtonStyle())
                     
                     AsyncButton {
                         await updateUser()
                         dismiss()
                     } label: {
-                        Text("CONTINUE")
-                            .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                clerkTheme.colors.primary,
-                                in: .rect(cornerRadius: 6, style: .continuous)
-                            )
+                        Text("Continue")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(ClerkPrimaryButtonStyle())
                     .disabled(continueButtonDisabled)
                 }
             }
@@ -173,7 +164,6 @@ struct UserProfileUpdateProfileView: View {
 #Preview {
     UserProfileUpdateProfileView()
         .environmentObject(Clerk.mock)
-        .environment(\.clerkTheme.colors.primary, Color(.clerkPurple))
 }
 
 #endif

@@ -54,7 +54,7 @@ struct IdentityPreviewView: View {
                 }, label: {
                     Image(systemName: "square.and.pencil")
                         .bold()
-                        .foregroundStyle(clerkTheme.colors.primary)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                 })
             }
         }

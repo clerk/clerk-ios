@@ -97,7 +97,7 @@ struct UserProfileExternalAccountSection: View {
                 }
                 .font(.footnote.weight(.medium))
                 .padding(.vertical, 4)
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
         }
     }
@@ -184,7 +184,7 @@ struct UserProfileExternalAccountSection: View {
                         Text("+ Connect account")
                     })
                     .font(.footnote.weight(.medium))
-                    .tint(clerkTheme.colors.primary)
+                    .tint(clerkTheme.colors.textPrimary)
                     .padding(.leading, 8)
                 }
             }

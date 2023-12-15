@@ -102,14 +102,10 @@ struct SignUpFormView: View {
             AsyncButton {
                 await continueAction()
             } label: {
-                Text("CONTINUE")
-                    .font(.caption2.weight(.bold))
+                Text("Continue")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 36)
-                    .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-                    .background(clerkTheme.colors.primary)
-                    .clipShape(.rect(cornerRadius: 8, style: .continuous))
             }
+            .buttonStyle(ClerkPrimaryButtonStyle())
         }
         .clerkErrorPresenting($errorWrapper)
     }

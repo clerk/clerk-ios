@@ -24,6 +24,8 @@ public struct AuthView: View {
                 SignInFactorOneView()
             case .signInFactorTwo:
                 SignInFactorTwoView()
+            case .signInForgotPassword:
+                SignInForgotPasswordView()
             case .signUpStart:
                 SignUpStartView()
             case .signUpVerification:
@@ -32,7 +34,10 @@ public struct AuthView: View {
         }
         .frame(maxWidth: .infinity)
         .background(.background)
-        .transition(.offset(y: 50).combined(with: .opacity))
+        .transition(.asymmetric(
+            insertion: .offset(y: 50).combined(with: .opacity),
+            removal: .opacity
+        ))
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
         .onChange(of: clerkUIState.presentedAuthStep) { _ in

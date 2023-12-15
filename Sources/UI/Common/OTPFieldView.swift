@@ -62,7 +62,7 @@ struct OTPFieldView: View {
                 if isSelected {
                     Rectangle()
                         .frame(width: 2, height: 28)
-                        .foregroundStyle(clerkTheme.colors.primary)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
                         .onAppear {
@@ -75,7 +75,7 @@ struct OTPFieldView: View {
             
             Rectangle()
                 .frame(height: 2)
-                .foregroundStyle(isSelected ? clerkTheme.colors.primary : Color(.systemFill))
+                .foregroundStyle(isSelected ? clerkTheme.colors.textPrimary : Color(.systemFill))
         }
         .frame(maxWidth: .infinity)
         .allowsHitTesting(false)

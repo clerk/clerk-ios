@@ -58,7 +58,7 @@ struct CodeFormView: View {
             } label: {
                 Text("Didn't recieve a code? Resend")
                     .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.primary)
+                    .foregroundStyle(clerkTheme.colors.textPrimary)
             }
         }
     }

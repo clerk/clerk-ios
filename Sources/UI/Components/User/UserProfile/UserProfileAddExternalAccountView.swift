@@ -58,21 +58,18 @@ struct UserProfileAddExternalAccountView: View {
                             )
                             .font(.footnote)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ClerkSecondaryButtonStyle())
                     }
                 }
                 
                 HStack {
-                    Spacer()
                     Button {
                         dismiss()
                     } label: {
-                        Text("CANCEL")
-                            .foregroundStyle(clerkTheme.colors.primary)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .font(.caption.weight(.bold))
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(ClerkSecondaryButtonStyle())
                 }
             }
             .animation(.snappy, value: user)

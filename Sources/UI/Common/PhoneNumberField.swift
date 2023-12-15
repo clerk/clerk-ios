@@ -136,14 +136,14 @@ struct PhoneNumberField: View {
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .padding(.horizontal)
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
                 .overlay {
                     UnevenRoundedRectangle(
                         bottomTrailingRadius: 8,
                         topTrailingRadius: 8
                     )
                     .strokeBorder(
-                        isFocused ? clerkTheme.colors.primary : .clear,
+                        isFocused ? clerkTheme.colors.textPrimary : .clear,
                         lineWidth: 1
                     )
                 }

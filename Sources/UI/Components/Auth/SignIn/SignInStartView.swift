@@ -27,7 +27,7 @@ struct SignInStartView: View {
                 SignInSocialProvidersView()
                     .onSuccess { dismiss() }
                 
-                OrDivider()
+                TextDivider(text: "or")
                 
                 SignInFormView()
                                 
@@ -43,7 +43,7 @@ struct SignInStartView: View {
                     } label: {
                         Text("Sign Up")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.primary)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                     }
                     
                     Spacer()

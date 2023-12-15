@@ -40,7 +40,7 @@ struct SignInSocialProvidersView: View {
                         )
                         .font(.footnote)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ClerkSecondaryButtonStyle())
                 }
             }
         )

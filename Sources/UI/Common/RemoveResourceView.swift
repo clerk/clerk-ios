@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Clerk
 
 struct RemoveResourceView: View {
     @Environment(\.dismiss) private var dismiss
@@ -28,27 +29,21 @@ struct RemoveResourceView: View {
                 .font(.footnote)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Spacer()
                 Button {
                     dismiss()
                 } label: {
-                    Text("CANCEL")
-                        .foregroundStyle(clerkTheme.colors.primary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .font(.caption.weight(.bold))
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(ClerkSecondaryButtonStyle())
                 
                 AsyncButton {
                     await onDelete?()
                 } label: {
-                    Text("REMOVE")
-                        .foregroundStyle(.white)
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(.red, in: .rect(cornerRadius: 6, style: .continuous))
+                    Text("Remove")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(ClerkDangerButtonStyle())
             }
             .padding(.vertical)
         }

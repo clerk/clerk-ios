@@ -38,13 +38,9 @@ struct ErrorView: View {
                 dismiss()
             } label: {
                 Text("OK")
-                    .font(.caption2.weight(.bold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 36)
-                    .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-                    .background(clerkTheme.colors.primary)
-                    .clipShape(.rect(cornerRadius: 8, style: .continuous))
             }
+            .buttonStyle(ClerkPrimaryButtonStyle())
         }
         .padding()
         .padding(.vertical)

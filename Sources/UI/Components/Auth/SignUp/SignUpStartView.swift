@@ -31,8 +31,8 @@ struct SignUpStartView: View {
                 SignUpSocialProvidersView()
                     .onSuccess { dismiss() }
                 
-                OrDivider()
-                
+                TextDivider(text: "or")
+
                 SignUpFormView()
                 
                 HStack(spacing: 4) {
@@ -47,7 +47,7 @@ struct SignUpStartView: View {
                     } label: {
                         Text("Sign In")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.primary)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                     }
                     
                     Spacer()

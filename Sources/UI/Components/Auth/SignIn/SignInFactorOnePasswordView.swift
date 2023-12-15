@@ -44,26 +44,22 @@ struct SignInFactorOnePasswordView: View {
                             Text("Password")
                             Spacer()
                             Button(action: {
-                                // forgot password
+                                clerkUIState.presentedAuthStep = .signInForgotPassword
                             }, label: {
                                 Text("Forgot password?")
                             })
                         }
                         .font(.footnote.weight(.medium))
-                        .tint(clerkTheme.colors.primary)
+                        .tint(clerkTheme.colors.textPrimary)
                         
                         PasswordInputView(password: $password)
                     }
                     
                     AsyncButton(action: attempt) {
-                        Text("CONTINUE")
-                            .font(.caption2.weight(.bold))
+                        Text("Continue")
                             .frame(maxWidth: .infinity)
-                            .frame(height: 36)
-                            .foregroundStyle(clerkTheme.colors.primaryButtonTextColor)
-                            .background(clerkTheme.colors.primary)
-                            .clipShape(.rect(cornerRadius: 8, style: .continuous))
                     }
+                    .buttonStyle(ClerkPrimaryButtonStyle())
                 }
                 
                 AsyncButton {
@@ -71,7 +67,7 @@ struct SignInFactorOnePasswordView: View {
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.primary)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

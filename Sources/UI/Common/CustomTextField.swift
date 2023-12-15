@@ -22,10 +22,10 @@ struct CustomTextField: View {
             .focused($isFocused)
             .font(.subheadline)
             .padding(.horizontal)
-            .tint(clerkTheme.colors.primary)
+            .tint(clerkTheme.colors.textPrimary)
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(isFocused ? clerkTheme.colors.primary : Color(.systemFill), lineWidth: 1)
+                    .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : Color(.systemFill), lineWidth: 1)
             }
     }
     

@@ -17,26 +17,8 @@ struct AuthViewModifier: ViewModifier {
     @Binding var isPresented: Bool
 
     func body(content: Content) -> some View {
-        Group {
-            switch clerkTheme.authPresentationStyle {
-            case .sheet: sheetStyle(content: content)
-            case .fullScreenCover: fullScreenCoverStyle(content: content)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func sheetStyle(content: Content) -> some View {
         content
             .sheet(isPresented: $isPresented, content: {
-                AuthView()
-            })
-    }
-    
-    @ViewBuilder
-    private func fullScreenCoverStyle(content: Content) -> some View {
-        content
-            .fullScreenCover(isPresented: $isPresented, content: {
                 AuthView()
             })
     }

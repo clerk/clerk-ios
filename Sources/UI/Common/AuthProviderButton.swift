@@ -41,13 +41,8 @@ struct AuthProviderButton: View {
                     .lineLimit(1)
             }
         })
-        .frame(minHeight: 48)
+        .frame(minHeight: 32)
         .frame(maxWidth: .infinity)
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color(.systemFill), lineWidth: 1)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
     
     @MainActor
@@ -58,15 +53,8 @@ struct AuthProviderButton: View {
                 .frame(width: 20, height: 20)
             Text("\(label)")
                 .lineLimit(1)
-            Spacer()
         }
-        .padding(.horizontal)
-        .frame(minHeight: 42)
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color(.systemFill), lineWidth: 1)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -94,15 +82,19 @@ extension AuthProviderButton {
     return VStack {
         LazyVGrid(columns: limitedColumns) {
             ForEach(limitedProviders, id: \.self) { provider in
-                AuthProviderButton(provider: provider, style: limitedProviders.count <= 2 ? .regular : .compact)
-                    .font(.footnote)
+                Button(action: {}) {
+                    AuthProviderButton(provider: provider, style: limitedProviders.count <= 2 ? .regular : .compact)
+                }
+                .buttonStyle(ClerkSecondaryButtonStyle())
             }
         }
         
         LazyVGrid(columns: manyColumns) {
             ForEach(manyProviders, id: \.self) { provider in
-                AuthProviderButton(provider: provider, style: manyProviders.count <= 2 ? .regular : .compact)
-                    .font(.footnote)
+                Button(action: {}) {
+                    AuthProviderButton(provider: provider, style: manyProviders.count <= 2 ? .regular : .compact)
+                }
+                .buttonStyle(ClerkSecondaryButtonStyle())
             }
         }
     }

@@ -27,6 +27,7 @@ struct AsyncButton<Label: View>: View {
     @State private var isDisabled = false
     @State private var showProgressView = false
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.clerkTheme) private var clerkTheme
     
     // Combines environment value and local state
     private var disabled: Bool {
@@ -57,6 +58,7 @@ struct AsyncButton<Label: View>: View {
                     .overlay {
                         if showProgressView {
                             ProgressView()
+                                .tint(clerkTheme.colors.textOnPrimaryBackground)
                         }
                     }
             }
@@ -73,6 +75,7 @@ struct AsyncButton<Label: View>: View {
     } label: {
         Text("Button")
     }
+    .buttonStyle(ClerkPrimaryButtonStyle())
 }
 
 extension AsyncButton {

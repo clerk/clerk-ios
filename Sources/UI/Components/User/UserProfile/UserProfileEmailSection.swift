@@ -55,7 +55,7 @@ struct UserProfileEmailSection: View {
                     Text("Set as primary")
                         .font(.footnote.weight(.medium))
                 }
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
         }
     }
@@ -84,7 +84,7 @@ struct UserProfileEmailSection: View {
                 Text("Verify email address")
                     .font(.footnote.weight(.medium))
             })
-            .tint(clerkTheme.colors.primary)
+            .tint(clerkTheme.colors.textPrimary)
         }
     }
     
@@ -155,7 +155,7 @@ struct UserProfileEmailSection: View {
                     Text("+ Add an email address")
                 })
                 .font(.footnote.weight(.medium))
-                .tint(clerkTheme.colors.primary)
+                .tint(clerkTheme.colors.textPrimary)
                 .padding(.leading, 8)
             }
             .animation(.snappy, value: user)

@@ -242,7 +242,11 @@ extension ExternalAccount {
 
 extension Factor {
     
-    static var mock: Factor {
+    static var mockPassword: Factor {
+        .init(strategy: .password)
+    }
+    
+    static var mockEmailCode: Factor {
         .init(
             strategy: .emailCode,
             safeIdentifier: "ClerkUser@clerk.dev",
@@ -390,8 +394,8 @@ extension SignIn {
         .init(
             id: "1",
             status: .needsFirstFactor,
-            supportedFirstFactors: [.mock],
-            firstFactorVerification: .mock,
+            supportedFirstFactors: [.mockPassword, .mockEmailCode],
+            firstFactorVerification: nil,
             identifier: "ClerkUser@clerk.dev",
             userData: .mock
         )

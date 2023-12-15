@@ -56,7 +56,7 @@ struct VerificationCodeView: View {
             } label: {
                 Text("Use another method")
                     .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.primary)
+                    .foregroundStyle(clerkTheme.colors.textPrimary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

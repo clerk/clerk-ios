@@ -22,7 +22,7 @@ struct UserProfilePasswordSection: View {
                 changePasswordIsPresented = true
             }
             .font(.footnote.weight(.medium))
-            .tint(clerkTheme.colors.primary)
+            .tint(clerkTheme.colors.textPrimary)
             .sheet(isPresented: $changePasswordIsPresented, content: {
                 UserProfileChangePasswordView()
             })
