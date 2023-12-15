@@ -78,8 +78,8 @@ struct SignInForgotPasswordView: View {
                             .frame(minHeight: ClerkStyleConstants.textMinHeight)
                     }
                 }
-                .frame(maxWidth: 320)
-                .padding(32)
+                .padding()
+                .padding(.vertical)
             }
             
             SecuredByClerkView()
