@@ -15,29 +15,51 @@ public struct AuthView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
     
+    // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
+    
     public var body: some View {
         Group {
             switch clerkUIState.presentedAuthStep {
             case .signInStart:
                 SignInStartView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .signInFactorOne:
                 SignInFactorOneView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .signInFactorTwo:
                 SignInFactorTwoView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .signInForgotPassword:
                 SignInForgotPasswordView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .signUpStart:
                 SignUpStartView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .signUpVerification:
                 SignUpVerificationView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             }
         }
         .frame(maxWidth: .infinity)
         .background(.background)
-        .transition(.asymmetric(
-            insertion: .offset(y: 50).combined(with: .opacity),
-            removal: .opacity
-        ))
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
