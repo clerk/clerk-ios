@@ -18,23 +18,28 @@ struct SignInStartView: View {
     
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
                 HeaderView(
-                    title: "Sign in",
-                    subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)"
+                    title: "Sign in to \(clerk.environment.displayConfig.applicationName)",
+                    subtitle: "Welcome back! Please sign in to continue"
                 )
+                .padding(.bottom, 32)
                 
                 SignInSocialProvidersView()
                     .onSuccess { dismiss() }
                 
                 TextDivider(text: "or")
+                    .padding(.vertical, 24)
                 
                 SignInFormView()
+                    .padding(.bottom, 32)
                                 
                 HStack(spacing: 4) {
-                    Text("No account?")
+                    Text("Don't have an account?")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(clerkTheme.colors.gray500)
                     Button {
                         clerkUIState.authIsPresented = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
@@ -43,18 +48,20 @@ struct SignInStartView: View {
                     } label: {
                         Text("Sign Up")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                            .foregroundStyle(clerkTheme.colors.gray700)
                     }
-                    
-                    Spacer()
-                    
-                    SecuredByClerkView()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .padding(.vertical)
             .background(.background)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
 }

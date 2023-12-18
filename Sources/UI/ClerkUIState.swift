@@ -19,6 +19,7 @@ public final class ClerkUIState: ObservableObject {
         case signInFactorOne
         case signInFactorTwo
         case signInForgotPassword
+        case signInResetPassword
         case signUpStart
         case signUpVerification
     }

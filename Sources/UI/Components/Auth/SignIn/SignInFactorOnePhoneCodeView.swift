@@ -23,40 +23,49 @@ struct SignInFactorOnePhoneCodeView: View {
     
     var body: some View {
         ScrollView {
-            VerificationCodeView(
-                code: $code,
-                title: "Check your phone",
-                subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
-                formTitle: "Verification code",
-                formSubtitle: "Enter the verification code sent to your phone number",
-                safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
-                profileImageUrl: signIn.userData?.imageUrl
-            )
-            .onIdentityPreviewTapped {
-                clerkUIState.presentedAuthStep = .signInStart
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
+                VerificationCodeView(
+                    code: $code,
+                    title: "Check your phone",
+                    subtitle: "Enter the verification code sent to your phone number",
+                    safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
+                    profileImageUrl: signIn.userData?.imageUrl
+                )
+                .onIdentityPreviewTapped {
+                    clerkUIState.presentedAuthStep = .signInStart
+                }
+                .onCodeEntry {
+                    await attempt()
+                }
+                .onResend {
+                    await prepare()
+                }
+                .onUseAlernateMethod {
+                    clerkUIState.presentedAuthStep = .signInStart
+                }
+                .clerkErrorPresenting($errorWrapper)
+                .task {
+                    if !signIn.firstFactorHasBeenPrepared {
+                        await prepare()
+                    }
+                }
             }
-            .onCodeEntry {
-                await attempt()
-            }
-            .onResend {
-                await prepare()
-            }
-            .onUseAlernateMethod {
-                clerkUIState.presentedAuthStep = .signInStart
-            }
-            .clerkErrorPresenting($errorWrapper)
-            .task {
-                await prepare()
-            }
+            .padding(.horizontal)
+            .padding(.vertical, 32)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
     
     private func prepare() async {
         do {
-            guard let phoneNumberId = signIn.supportedFirstFactors.first(where: { $0.verificationStrategy == .phoneCode })?.phoneNumberId else {
-                throw ClerkClientError(message: "Unable to find an phone number id for this verification strategy.")
-            }
-            try await signIn.prepareFirstFactor(.phoneCode(phoneNumberId: phoneNumberId))
+            try await signIn.prepareFirstFactor(.phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

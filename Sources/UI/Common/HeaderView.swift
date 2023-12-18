@@ -10,20 +10,23 @@
 import SwiftUI
 
 struct HeaderView: View {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     let title: String
     var subtitle: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 4) {
             Text(title)
-                .font(.title2.weight(.semibold))
+                .font(.body.weight(.bold))
+                .frame(minHeight: 24)
+                .foregroundStyle(clerkTheme.colors.textPrimary)
             if let subtitle {
                 Text(subtitle)
-                    .font(.subheadline.weight(.light))
-                    .foregroundStyle(.secondary)
+                    .font(.footnote)
+                    .foregroundStyle(clerkTheme.colors.gray500)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -23,40 +23,49 @@ struct SignInFactorOneEmailCodeView: View {
     
     var body: some View {
         ScrollView {
-            VerificationCodeView(
-                code: $code,
-                title: "Check your email",
-                subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
-                formTitle: "Verification code",
-                formSubtitle: "Enter the verification code sent to your email address",
-                safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
-                profileImageUrl: signIn.userData?.imageUrl
-            )
-            .onIdentityPreviewTapped {
-                clerkUIState.presentedAuthStep = .signInStart
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
+                VerificationCodeView(
+                    code: $code,
+                    title: "Check your email",
+                    subtitle: "Enter the verification code sent to your email address",
+                    safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
+                    profileImageUrl: signIn.userData?.imageUrl
+                )
+                .onIdentityPreviewTapped {
+                    clerkUIState.presentedAuthStep = .signInStart
+                }
+                .onCodeEntry {
+                    await attempt()
+                }
+                .onResend {
+                    await prepare()
+                }
+                .onUseAlernateMethod {
+                    clerkUIState.presentedAuthStep = .signInStart
+                }
+                .clerkErrorPresenting($errorWrapper)
+                .task {
+                    if !signIn.firstFactorHasBeenPrepared {
+                        await prepare()
+                    }
+                }
             }
-            .onCodeEntry {
-                await attempt()
-            }
-            .onResend {
-                await prepare()
-            }
-            .onUseAlernateMethod {
-                clerkUIState.presentedAuthStep = .signInStart
-            }
-            .clerkErrorPresenting($errorWrapper)
-            .task {
-                await prepare()
-            }
+            .padding(.horizontal)
+            .padding(.vertical, 32)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
     
     private func prepare() async {
         do {
-            guard let emailAddressId = signIn.supportedFirstFactors.first(where: { $0.verificationStrategy == .emailCode })?.emailAddressId else {
-                throw ClerkClientError(message: "Unable to find an email address id for this verification strategy.")
-            }
-            try await signIn.prepareFirstFactor(.emailCode(emailAddressId: emailAddressId))
+            try await signIn.prepareFirstFactor(.emailCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

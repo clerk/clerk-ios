@@ -66,6 +66,7 @@ public class SignIn: Codable {
         case needsSecondFactor = "needs_second_factor"
         case complete = "complete"
         case abandoned = "abandoned"
+        case needsNewPassword = "needs_new_password"
     }
     
     /**
@@ -209,23 +210,31 @@ extension SignIn {
     }
     
     public enum PrepareStrategy {
-        case emailCode(emailAddressId: String)
-        case phoneCode(phoneNumberId: String)
+        case emailCode
+        case emailLink
+        case phoneCode
+        case resetPasswordEmailCode
+        case resetPasswordPhoneCode
     }
     
     private func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
-        switch strategy {
-        case .emailCode:
-            return .init(strategy: .emailCode, emailAddressId: factorId(for: .emailCode))
-        case .phoneCode:
-            return .init(strategy: .phoneCode, phoneNumberId: factorId(for: .phoneCode))
+        let strategy: Strategy = switch strategy {
+        case .emailCode: .emailCode
+        case .emailLink: .emailLink
+        case .phoneCode: .phoneCode
+        case .resetPasswordEmailCode: .resetPasswordEmailCode
+        case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
+        
+        return .init(strategy: strategy, emailAddressId: factorId(for: strategy), phoneNumberId: factorId(for: strategy))
     }
     
     public enum AttemptStrategy {
         case password(password: String)
         case emailCode(code: String)
         case phoneCode(code: String)
+        case resetEmailCode(code: String)
+        case resetPhoneCode(code: String)
     }
     
     private func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
@@ -236,6 +245,10 @@ extension SignIn {
             return .init(strategy: .emailCode, code: code)
         case .phoneCode(let code):
             return .init(strategy: .phoneCode, code: code)
+        case .resetEmailCode(let code):
+            return  .init(strategy: .resetPasswordEmailCode, code: code)
+        case .resetPhoneCode(let code):
+            return .init(strategy: .resetPasswordPhoneCode, code: code)
         }
     }
     
@@ -246,9 +259,9 @@ extension SignIn {
             .first(where: { $0.verificationStrategy == strategy })
         
         switch strategy {
-        case .emailCode:
+        case .emailCode, .emailLink, .resetPasswordEmailCode:
             return factor?.emailAddressId
-        case .phoneCode:
+        case .phoneCode, .resetPasswordPhoneCode:
             return factor?.phoneNumberId
         default:
             return nil
@@ -258,8 +271,8 @@ extension SignIn {
 }
 
 extension SignIn {
-    
-    public var firstFactorStrategy: Strategy? {
+        
+    public var nextFirstFactorStrategy: Strategy? {
         guard status == .needsFirstFactor else { return nil }
         
         if let strategy = firstFactorVerification?.verificationStrategy {
@@ -268,22 +281,57 @@ extension SignIn {
                 return .emailCode
             case .phoneCode:
                 return .phoneCode
+            case .emailLink:
+                return .emailLink
+            case .resetPasswordEmailCode:
+                return .resetPasswordEmailCode
+            case .resetPasswordPhoneCode:
+                return .resetPasswordPhoneCode
             default:
                 return nil
             }
         }
-        
+                
         if supportedFirstFactors.contains(where: { $0.verificationStrategy == .password }) {
             return .password
         } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailCode }) {
             return .emailCode
+        } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailLink }) {
+            return .emailLink
         } else {
             return nil
         }
     }
     
+    public var firstFactorHasBeenPrepared: Bool {
+        firstFactorVerification != nil
+    }
+    
     public var currentFactor: Factor? {
         supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification?.verificationStrategy })
+    }
+    
+    public func alternativeFirstFactors(currentStrategy: Strategy) -> [Factor] {
+        // Remove the current factor, reset factors, oauth factors
+        let firstFactors = supportedFirstFactors.filter { factor in
+            factor.verificationStrategy != currentStrategy &&
+            !factor.isResetStrategy
+            && !(factor.verificationStrategy?.stringValue ?? "").hasPrefix("oauth_")
+        }
+                
+        return firstFactors
+    }
+    
+    public var resetPasswordStrategy: SignIn.PrepareStrategy? {
+        if supportedFirstFactors.contains(where: { $0.verificationStrategy == .resetPasswordEmailCode }) {
+            return .resetPasswordEmailCode
+        }
+        
+        if supportedFirstFactors.contains(where: { $0.verificationStrategy == .resetPasswordPhoneCode }) {
+            return .resetPasswordPhoneCode
+        }
+        
+        return nil
     }
     
 }

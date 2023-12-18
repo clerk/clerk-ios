@@ -22,7 +22,7 @@ struct SignInFactorOneView: View {
     
     var body: some View {
         Group {
-            switch signIn.firstFactorStrategy {
+            switch signIn.nextFirstFactorStrategy {
             case .password:
                 SignInFactorOnePasswordView()
                     .transition(.asymmetric(
@@ -41,19 +41,28 @@ struct SignInFactorOneView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+            case .resetPasswordEmailCode, .resetPasswordPhoneCode:
+                SignInFactorOneResetPasswordView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+
             default:
                 ProgressView()
                     .task {
                         switch signIn.status {
                         case .needsSecondFactor:
                             clerkUIState.presentedAuthStep = .signInFactorTwo
+                        case .needsNewPassword:
+                            clerkUIState.presentedAuthStep = .signInResetPassword
                         default:
                             clerkUIState.authIsPresented = false
                         }
                     }
             }
         }
-        .animation(.snappy, value: signIn.firstFactorStrategy)
+        .animation(.snappy, value: signIn.nextFirstFactorStrategy)
     }
 }
 

@@ -34,18 +34,21 @@ struct SignUpFormView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("First name").font(.footnote.weight(.medium))
+                        Text("First name")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.gray700)
                         Spacer()
                         Text("Optional")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.tertiary)
                     }
+                    
                     CustomTextField(text: $firstName)
-                        .frame(height: 36)
+                        .frame(height: 30)
                         .textContentType(.givenName)
                         .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .firstName)
@@ -53,14 +56,17 @@ struct SignUpFormView: View {
                 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Last name").font(.footnote.weight(.medium))
+                        Text("Last name")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.gray700)
                         Spacer()
                         Text("Optional")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.tertiary)
                     }
+
                     CustomTextField(text: $lastName)
-                        .frame(height: 36)
+                        .frame(height: 30)
                         .textContentType(.familyName)
                         .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .lastName)
@@ -69,23 +75,28 @@ struct SignUpFormView: View {
             
             VStack(alignment: .leading) {
                 HStack {
-                    Text("Phone number").font(.footnote.weight(.medium))
+                    Text("Phone number")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(clerkTheme.colors.gray700)
                     Spacer()
                     Text("Optional")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.tertiary)
                 }
                 
                 PhoneNumberField(text: $phoneNumber)
-                    .frame(height: 44)
+                    .frame(height: 30)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                     .focused($focusedField, equals: .phoneNumber)
             }
             
             VStack(alignment: .leading) {
-                Text("Email address").font(.footnote.weight(.medium))
+                Text("Email address")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(clerkTheme.colors.gray700)
+                
                 CustomTextField(text: $emailAddress)
-                    .frame(height: 44)
+                    .frame(height: 30)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -94,7 +105,10 @@ struct SignUpFormView: View {
             }
             
             VStack(alignment: .leading) {
-                Text("Password").font(.footnote.weight(.medium))
+                Text("Password")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(clerkTheme.colors.gray700)
+                
                 PasswordInputView(password: $password)
                     .focused($focusedField, equals: .password)
             }
@@ -106,6 +120,7 @@ struct SignUpFormView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
     }

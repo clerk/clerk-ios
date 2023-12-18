@@ -15,6 +15,7 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
             .frame(minHeight: ClerkStyleConstants.textMinHeight)
             .font(.footnote.weight(.medium))
             .foregroundStyle(clerkTheme.colors.textOnPrimaryBackground)
+            .tint(clerkTheme.colors.textOnPrimaryBackground)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(
@@ -39,7 +40,7 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
 }
 
 #Preview {
-    Button {
+    AsyncButton {
         //
     } label: {
         Text("Continue")

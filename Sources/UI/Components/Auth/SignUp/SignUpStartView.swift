@@ -22,23 +22,28 @@ struct SignUpStartView: View {
     
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
                 HeaderView(
                     title: "Create your account",
-                    subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)"
+                    subtitle: "Welcome! Please fill in the details to get started."
                 )
+                .padding(.bottom, 32)
                 
                 SignUpSocialProvidersView()
                     .onSuccess { dismiss() }
                 
                 TextDivider(text: "or")
+                    .padding(.vertical, 24)
 
                 SignUpFormView()
+                    .padding(.bottom, 32)
                 
                 HStack(spacing: 4) {
-                    Text("Have an account?")
+                    Text("Already have an account?")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(clerkTheme.colors.gray500)
                     Button {
                         clerkUIState.authIsPresented = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
@@ -47,32 +52,20 @@ struct SignUpStartView: View {
                     } label: {
                         Text("Sign In")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                            .foregroundStyle(clerkTheme.colors.gray700)
                     }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 4) {
-                        Text("Secured by ")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 4) {
-                            Image("clerk-logomark", bundle: .module)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16)
-                            Text("clerk")
-                                .fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                    }
-                    
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .padding(.vertical)
+            .padding(.horizontal)
+            .padding(.vertical, 32)
             .background(.background)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
 }

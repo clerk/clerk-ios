@@ -20,12 +20,12 @@ struct CustomTextField: View {
         inputField
             .frame(maxHeight: .infinity)
             .focused($isFocused)
-            .font(.subheadline)
+            .font(.footnote)
             .padding(.horizontal)
             .tint(clerkTheme.colors.textPrimary)
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : Color(.systemFill), lineWidth: 1)
+                    .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : clerkTheme.colors.borderPrimary, lineWidth: 1)
             }
     }
     
@@ -41,7 +41,7 @@ struct CustomTextField: View {
 
 #Preview {
     CustomTextField(text: .constant(""))
-        .frame(height: 44)
+        .frame(height: 30)
         .padding()
 }
 

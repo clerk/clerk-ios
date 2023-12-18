@@ -38,7 +38,6 @@ struct SignInSocialProvidersView: View {
                             provider: provider,
                             style: thirdPartyProviders.count <= 2 ? .regular : .compact
                         )
-                        .font(.footnote)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())
                 }

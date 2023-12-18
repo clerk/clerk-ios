@@ -58,7 +58,6 @@ struct AsyncButton<Label: View>: View {
                     .overlay {
                         if showProgressView {
                             ProgressView()
-                                .tint(clerkTheme.colors.textOnPrimaryBackground)
                         }
                     }
             }
@@ -70,12 +69,22 @@ struct AsyncButton<Label: View>: View {
 }
 
 #Preview {
-    AsyncButton {
-        try? await Task.sleep(for: .seconds(1))
-    } label: {
-        Text("Button")
+    VStack {
+        AsyncButton {
+            try? await Task.sleep(for: .seconds(1))
+        } label: {
+            Text("Button")
+        }
+        .buttonStyle(ClerkPrimaryButtonStyle())
+        
+        AsyncButton {
+            try? await Task.sleep(for: .seconds(1))
+        } label: {
+            Text("Button")
+        }
+        .buttonStyle(ClerkSecondaryButtonStyle())
     }
-    .buttonStyle(ClerkPrimaryButtonStyle())
+    
 }
 
 extension AsyncButton {

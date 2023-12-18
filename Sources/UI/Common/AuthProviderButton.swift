@@ -35,13 +35,13 @@ struct AuthProviderButton: View {
             if let image = state.image {
                 image
                     .resizable()
-                    .frame(width: 20, height: 20)
+                    .frame(width: 16, height: 16)
+                    .scaledToFit()
             } else {
                 Text(label)
                     .lineLimit(1)
             }
         })
-        .frame(minHeight: 32)
         .frame(maxWidth: .infinity)
     }
     
@@ -49,8 +49,17 @@ struct AuthProviderButton: View {
     @ViewBuilder
     private var regularStyleButton: some View {
         HStack(spacing: 16) {
-            LazyImage(url: URL(string: iconImageUrl))
-                .frame(width: 20, height: 20)
+            LazyImage(url: URL(string: iconImageUrl)) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Color(.secondarySystemBackground)
+                }
+            }
+            .frame(width: 16, height: 16)
+                
             Text("\(label)")
                 .lineLimit(1)
         }

@@ -14,7 +14,7 @@ import Foundation
  phone_code for phone numbers
  As well as the identifier that the factor refers to.
  */
-public struct Factor: Codable {
+public struct Factor: Codable, Hashable {
     init(
         strategy: Strategy,
         safeIdentifier: String? = nil,
@@ -45,7 +45,46 @@ public struct Factor: Codable {
 extension Factor {
     
     public var verificationStrategy: Strategy? {
-        .init(stringValue: strategy)
+        Strategy(stringValue: strategy)
+    }
+    
+    var isResetStrategy: Bool {
+        [
+            Strategy.resetPasswordEmailCode,
+            Strategy.resetPasswordPhoneCode
+        ]
+        .contains(verificationStrategy)
+    }
+    
+    public var actionText: String? {
+        switch verificationStrategy {
+        case .phoneCode:
+            guard let safeIdentifier else { return nil }
+            return "Send SMS code to \(safeIdentifier)"
+        case .emailCode:
+            guard let safeIdentifier else { return nil }
+            return "Email code to \(safeIdentifier)"
+        case .emailLink:
+            guard let safeIdentifier else { return nil }
+            return "Email link to \(safeIdentifier)"
+        case .password:
+            return "Sign in with your password"
+        default:
+            return nil
+        }
+    }
+    
+    public var prepareFirstFactorStrategy: SignIn.PrepareStrategy? {
+        switch verificationStrategy {
+        case .phoneCode:
+            return .phoneCode
+        case .emailCode:
+            return .emailCode
+        case .emailLink:
+            return .emailLink
+        default:
+            return nil
+        }
     }
     
 }

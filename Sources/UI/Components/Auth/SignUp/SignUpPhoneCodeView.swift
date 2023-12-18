@@ -24,30 +24,40 @@ struct SignUpPhoneCodeView: View {
     
     var body: some View {
         ScrollView {
-            VerificationCodeView(
-                code: $code,
-                title: "Verify your phone number",
-                subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)",
-                formTitle: "Verification code",
-                formSubtitle: "Enter the verification code sent to your phone number",
-                safeIdentifier: signUp.phoneNumber
-            )
-            .onIdentityPreviewTapped {
-                clerkUIState.presentedAuthStep = .signUpStart
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
+                VerificationCodeView(
+                    code: $code,
+                    title: "Verify your phone number",
+                    subtitle: "Enter the verification code sent to your phone number",
+                    safeIdentifier: signUp.phoneNumber
+                )
+                .onIdentityPreviewTapped {
+                    clerkUIState.presentedAuthStep = .signUpStart
+                }
+                .onCodeEntry {
+                    await attempt()
+                }
+                .onResend {
+                    await prepare()
+                }
+                .onUseAlernateMethod {
+                    clerkUIState.presentedAuthStep = .signUpStart
+                }
+                .clerkErrorPresenting($errorWrapper)
+                .task {
+                    await prepare()
+                }
             }
-            .onCodeEntry {
-                await attempt()
-            }
-            .onResend {
-                await prepare()
-            }
-            .onUseAlernateMethod {
-                clerkUIState.presentedAuthStep = .signUpStart
-            }
-            .clerkErrorPresenting($errorWrapper)
-            .task {
-                await prepare()
-            }
+            .padding(.horizontal)
+            .padding(.vertical, 32)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
     

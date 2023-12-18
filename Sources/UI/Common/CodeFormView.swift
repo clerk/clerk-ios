@@ -14,29 +14,32 @@ struct CodeFormView: View {
     @State private var isSubmittingCode: Bool = false
     
     @Binding var code: String
-    let title: String
-    let subtitle: String
+    var title: String?
+    var subtitle: String?
     var onCodeEntry: (() async -> Void)?
     var onResend: (() async -> Void)?
     
     private let requiredOtpCodeLength = 6
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .padding(.bottom, 8)
+        VStack {
+            if let title {
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                    .padding(.bottom, 8)
+            }
             
-            Text(subtitle)
-                .fixedSize(horizontal: false, vertical: true)
-                .font(.footnote.weight(.light))
-                .foregroundStyle(.secondary)
+            if let subtitle {
+                Text(subtitle)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .font(.footnote.weight(.light))
+                    .foregroundStyle(.secondary)
+            }
             
             HStack(alignment: .lastTextBaseline, spacing: 20) {
                 OTPFieldView(code: $code)
                     .frame(maxWidth: 250)
                     .padding(.vertical)
-                    .padding(.bottom)
                 
                 if isSubmittingCode {
                     ProgressView()
@@ -56,9 +59,13 @@ struct CodeFormView: View {
             AsyncButton {
                 await onResend?()
             } label: {
-                Text("Didn't recieve a code? Resend")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.textPrimary)
+                HStack(spacing: 4) {
+                    Text("Didn't recieve a code?")
+                        .foregroundStyle(clerkTheme.colors.gray500)
+                    Text("Resend")
+                        .foregroundStyle(clerkTheme.colors.gray700)
+                }
+                .font(.footnote)
             }
         }
     }

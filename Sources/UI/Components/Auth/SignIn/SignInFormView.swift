@@ -29,11 +29,12 @@ struct SignInFormView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             VStack {
                 HStack {
                     Text(displayingEmailEntry ? "Email address" : "Phone number")
                         .contentTransition(.identity)
+                        .foregroundStyle(clerkTheme.colors.gray700)
                     Spacer()
                     Button {
                         displayingEmailEntry.toggle()
@@ -47,7 +48,7 @@ struct SignInFormView: View {
                 
                 if displayingEmailEntry {
                     CustomTextField(text: $emailAddress)
-                        .frame(height: 42)
+                        .frame(height: 30)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -57,7 +58,7 @@ struct SignInFormView: View {
                 } else {
                     PhoneNumberField(text: $phoneNumber)
                         .focused($focusedField, equals: .phoneNumber)
-                        .frame(height: 42)
+                        .frame(height: 30)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
@@ -79,6 +80,7 @@ struct SignInFormView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
     }

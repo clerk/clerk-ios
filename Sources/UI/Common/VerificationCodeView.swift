@@ -16,8 +16,6 @@ struct VerificationCodeView: View {
     
     let title: String
     let subtitle: String
-    let formTitle: String
-    let formSubtitle: String
     let safeIdentifier: String?
     var profileImageUrl: String?
     
@@ -28,40 +26,38 @@ struct VerificationCodeView: View {
     var onCancel: (() async -> Void)?
         
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
-            HeaderView(
-                title: title,
-                subtitle: subtitle
-            )
-            
-            IdentityPreviewView(
-                imageUrl: profileImageUrl,
-                label: safeIdentifier,
-                action: {
-                    Task { await onIdentityPreviewTapped?() }
-                }
-            )
-            
-            CodeFormView(
-                code: $code,
-                title: formTitle,
-                subtitle: formSubtitle
-            )
-            .onCodeEntry {
-                await onCodeEntry?()
+        VStack {
+            VStack(spacing: .zero) {
+                HeaderView(
+                    title: title,
+                    subtitle: subtitle
+                )
+                .padding(.bottom, 4)
+                
+                IdentityPreviewView(
+                    imageUrl: profileImageUrl,
+                    label: safeIdentifier,
+                    action: {
+                        Task { await onIdentityPreviewTapped?() }
+                    }
+                )
             }
             
-            AsyncButton {
-                await onUseAlernateMethod?()
-            } label: {
-                Text("Use another method")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.textPrimary)
+            CodeFormView(code: $code)
+                .onCodeEntry { await onCodeEntry?() }
+                .onResend { await onResend?() }
+                .padding(.bottom, 32)
+            
+            if let onUseAlernateMethod {
+                AsyncButton {
+                    await onUseAlernateMethod()
+                } label: {
+                    Text("Use another method")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .padding(.vertical)
         .background(.background)
     }
 }
@@ -104,11 +100,12 @@ extension VerificationCodeView {
     VerificationCodeView(
         code: .constant(""),
         title: "Check your email",
-        subtitle: "to continue to Test 1",
-        formTitle: "Verification code",
-        formSubtitle: "Enter the verification code sent to your email address",
+        subtitle: "Enter the verification code sent to your email address",
         safeIdentifier: "ClerkUser@clerk.dev"
     )
+    .onUseAlernateMethod {
+        //
+    }
 }
 
 #endif

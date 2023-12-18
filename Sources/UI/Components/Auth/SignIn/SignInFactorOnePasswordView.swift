@@ -24,11 +24,14 @@ struct SignInFactorOnePasswordView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                
                 HeaderView(
-                    title: "Enter your password",
-                    subtitle: "to continue to \(clerk.environment.displayConfig.applicationName)"
+                    title: "Enter password",
+                    subtitle: "Enter the password associated with your ID"
                 )
+                .padding(.bottom, 4)
                 
                 IdentityPreviewView(
                     imageUrl: signIn.userData?.imageUrl,
@@ -37,20 +40,22 @@ struct SignInFactorOnePasswordView: View {
                         clerkUIState.presentedAuthStep = .signInStart
                     }
                 )
+                .padding(.bottom, 32)
                 
-                VStack(spacing: 16) {
+                VStack(spacing: 32) {
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Password")
+                                .foregroundStyle(clerkTheme.colors.gray700)
                             Spacer()
                             Button(action: {
                                 clerkUIState.presentedAuthStep = .signInForgotPassword
                             }, label: {
                                 Text("Forgot password?")
                             })
+                            .tint(clerkTheme.colors.textPrimary)
                         }
                         .font(.footnote.weight(.medium))
-                        .tint(clerkTheme.colors.textPrimary)
                         
                         PasswordInputView(password: $password)
                     }
@@ -61,13 +66,14 @@ struct SignInFactorOnePasswordView: View {
                     }
                     .buttonStyle(ClerkPrimaryButtonStyle())
                 }
+                .padding(.bottom, 18)
                 
                 AsyncButton {
                     clerkUIState.presentedAuthStep = .signInStart
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .foregroundStyle(clerkTheme.colors.gray700)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -75,6 +81,12 @@ struct SignInFactorOnePasswordView: View {
             .padding(.vertical)
             .background(.background)
             .clerkErrorPresenting($errorWrapper)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
         }
     }
     

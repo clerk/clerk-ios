@@ -60,6 +60,21 @@ public enum Strategy: Hashable, Equatable {
         }
     }
     
+    public var icon: String? {
+        switch self {
+        case .password:
+            return "lock.fill"
+        case .phoneCode:
+            return "text.bubble.fill"
+        case .emailCode:
+            return "envelope.fill"
+        case .emailLink:
+            return "link"
+        default:
+            return nil
+        }
+    }
+    
     public init?(stringValue: String) {
         switch stringValue {
         case Strategy.password.stringValue:

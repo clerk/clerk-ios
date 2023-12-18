@@ -77,76 +77,58 @@ struct PhoneNumberField: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            Button {
-                // show country picker
-            } label: {
-                HStack {
-                    if let currentCountry = model.currentCountry {
-                        Menu {
-                            Section("Default") {
-                                if let defaultCountry = model.defaultCountry {
-                                    Button {
-                                        model.setNewCountry(defaultCountry)
-                                        textDidUpdate(text: displayNumber)
-                                    } label: {
-                                        Text(model.stringForCountry(defaultCountry))
-                                            .lineLimit(1)
-                                    }
-                                }
-                            }
-                            
-                            Section("International") {
-                                ForEach(model.allCountriesExceptDefault, id: \.code) { country in
-                                    Button {
-                                        model.setNewCountry(country)
-                                        textDidUpdate(text: displayNumber)
-                                    } label: {
-                                        Text(model.stringForCountry(country))
-                                            .lineLimit(1)
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Text(currentCountry.flag)
-                                Text(currentCountry.prefix)
-                                    .font(.subheadline.weight(.medium))
-                                Image(systemName: "chevron.down")
-                                    .font(.caption2.weight(.medium))
-                            }
-                            .padding(.horizontal)
-                            .frame(maxHeight: .infinity)
-                            .background {
-                                UnevenRoundedRectangle(
-                                    topLeadingRadius: 8,
-                                    bottomLeadingRadius: 8
-                                )
-                                .foregroundStyle(Color(.quaternarySystemFill))
+            if let currentCountry = model.currentCountry {
+                Menu {
+                    Section("Default") {
+                        if let defaultCountry = model.defaultCountry {
+                            Button {
+                                model.setNewCountry(defaultCountry)
+                                textDidUpdate(text: displayNumber)
+                            } label: {
+                                Text(model.stringForCountry(defaultCountry))
+                                    .lineLimit(1)
                             }
                         }
                     }
+                    
+                    Section("International") {
+                        ForEach(model.allCountriesExceptDefault, id: \.code) { country in
+                            Button {
+                                model.setNewCountry(country)
+                                textDidUpdate(text: displayNumber)
+                            } label: {
+                                Text(model.stringForCountry(country))
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(currentCountry.code)
+                            .font(.footnote)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .frame(maxHeight: .infinity)
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            
+            Text(model.currentCountry?.prefix ?? "")
+                .font(.footnote)
+                .foregroundStyle(clerkTheme.colors.textPrimary)
             
             TextField(model.exampleNumber, text: $displayNumber)
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
                 .focused($isFocused)
-                .font(.subheadline)
+                .font(.footnote)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .padding(.horizontal)
                 .tint(clerkTheme.colors.textPrimary)
-                .overlay {
-                    UnevenRoundedRectangle(
-                        bottomTrailingRadius: 8,
-                        topTrailingRadius: 8
-                    )
-                    .strokeBorder(
-                        isFocused ? clerkTheme.colors.textPrimary : .clear,
-                        lineWidth: 1
-                    )
-                }
                 .onChange(of: displayNumber) { newValue in
                     textDidUpdate(text: newValue)
                 }
@@ -154,7 +136,7 @@ struct PhoneNumberField: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color(.systemFill), lineWidth: 1)
+                .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : Color(.systemFill), lineWidth: 1)
         }
     }
     
@@ -168,7 +150,7 @@ struct PhoneNumberField: View {
 
 #Preview {
     PhoneNumberField(text: .constant(""))
-        .frame(height: 44)
+        .frame(height: 30)
         .padding()
 }
 

@@ -21,6 +21,7 @@ public struct ClerkTheme {
         public var borderPrimary: Color
         
         // Constants
+        public let gray500: Color = Color(.clerkGray500)
         public let gray700: Color = Color(.clerkGray700)
         public let red500: Color = Color(.clerkRed500)
     }
@@ -33,7 +34,7 @@ extension ClerkTheme {
             primary: Color(.clerkPrimary),
             textPrimary: Color(.clerkTextPrimary),
             textSecondary: Color(.clerkTextSecondary),
-            borderPrimary: Color(.clerkBorderPrimary)
+            borderPrimary: Color(.systemFill)
         )
     )
     
