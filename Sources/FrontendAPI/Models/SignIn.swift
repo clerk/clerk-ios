@@ -185,6 +185,19 @@ extension SignIn {
         public var rotatingTokenNonce: String?
     }
     
+    public struct ResetPasswordParams: Encodable {
+        public init(
+            password: String,
+            signOutOfOtherSessions: Bool
+        ) {
+            self.password = password
+            self.signOutOfOtherSessions = signOutOfOtherSessions
+        }
+        
+        let password: String
+        let signOutOfOtherSessions: Bool
+    }
+    
 }
 
 extension SignIn {
@@ -387,6 +400,21 @@ extension SignIn {
             .signIns
             .id(id)
             .get(params: params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    /// Resets a user's password.
+    @MainActor
+    public func resetPassword(_ params: ResetPasswordParams) async throws {
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(id)
+            .resetPassword
+            .post(params)
         
         try await Clerk.apiClient.send(request)
         try await Clerk.shared.client.get()

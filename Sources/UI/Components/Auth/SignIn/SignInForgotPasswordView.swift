@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 12/15/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 import NukeUI
@@ -147,3 +149,5 @@ struct SignInForgotPasswordView: View {
     SignInForgotPasswordView()
         .environmentObject(Clerk.mock)
 }
+
+#endif

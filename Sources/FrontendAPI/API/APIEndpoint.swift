@@ -202,6 +202,23 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
+extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+    
+    var resetPassword: ResetPasswordEndpoint {
+        ResetPasswordEndpoint(path: path + "/reset_password")
+    }
+        
+    struct ResetPasswordEndpoint {
+        /// Path: `v1/client/sign_ins/{id}/reset_password`
+        let path: String
+        
+        func post(_ params: SignIn.ResetPasswordParams) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: params)
+        }
+    }
+    
+}
+
 extension APIEndpoint.V1Endpoint.ClientEndpoint {
     
     var sessions: SessionsEndpoint {

@@ -1,5 +1,5 @@
 //
-//  SignInFactorOneView.swift
+//  SignInFactorOneVerificationView.swift
 //
 //
 //  Created by Mike Pitre on 10/10/23.
@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInFactorOneVerifyView: View {
+struct SignInFactorOneVerificationView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
         
@@ -36,7 +36,7 @@ struct SignInFactorOneVerifyView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-                SignInFactorOneResetPasswordView()
+                SignInFactorOneResetView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -46,6 +46,8 @@ struct SignInFactorOneVerifyView: View {
                 ProgressView()
                     .task {
                         switch signIn.status {
+                        case .needsFirstFactor:
+                            clerkUIState.presentedAuthStep = .signInFactorOneVerify
                         case .needsSecondFactor:
                             clerkUIState.presentedAuthStep = .signInFactorTwoVerify
                         case .needsNewPassword:
@@ -61,7 +63,7 @@ struct SignInFactorOneVerifyView: View {
 }
 
 #Preview {
-    SignInFactorOneVerifyView()
+    SignInFactorOneVerificationView()
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }

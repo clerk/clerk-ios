@@ -1,18 +1,16 @@
 //
-//  SignInResetPasswordView.swift
+//  SignInFactorOneResetView.swift
 //
 //
 //  Created by Mike Pitre on 12/18/23.
 //
-
-import SwiftUI
 
 #if canImport(UIKit)
 
 import SwiftUI
 import Clerk
 
-struct SignInFactorOneResetPasswordView: View {
+struct SignInFactorOneResetView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
@@ -48,6 +46,11 @@ struct SignInFactorOneResetPasswordView: View {
                 }
                 .onResend {
                     await prepare()
+                }
+                .task {
+                    if !signIn.firstFactorHasBeenPrepared {
+                        await prepare()
+                    }
                 }
                 
                 Button {
@@ -105,6 +108,8 @@ struct SignInFactorOneResetPasswordView: View {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
             
+            clerkUIState.presentedAuthStep = .signInResetPassword
+            
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -113,7 +118,7 @@ struct SignInFactorOneResetPasswordView: View {
 }
 
 #Preview {
-    SignInFactorOneResetPasswordView()
+    SignInFactorOneResetView()
         .environmentObject(Clerk.mock)
 }
 

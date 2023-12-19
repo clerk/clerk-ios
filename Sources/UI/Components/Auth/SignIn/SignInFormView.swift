@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 
@@ -113,3 +115,5 @@ struct SignInFormView: View {
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }
+
+#endif

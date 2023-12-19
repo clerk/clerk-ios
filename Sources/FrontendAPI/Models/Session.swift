@@ -278,7 +278,7 @@ extension Session {
     
 }
 
-// The purpose of this actor is to not trigger refreshes of tokens if a refresh is already in progress.
+// The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
 // This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
 actor SessionTokenFetcher {
     static let shared = SessionTokenFetcher()

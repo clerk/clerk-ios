@@ -33,7 +33,7 @@ public struct AuthView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorOneVerify:
-                SignInFactorOneVerifyView()
+                SignInFactorOneVerificationView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -51,7 +51,7 @@ public struct AuthView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .signInResetPassword:
-                SignInNewPasswordView()
+                SignInResetPasswordView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
