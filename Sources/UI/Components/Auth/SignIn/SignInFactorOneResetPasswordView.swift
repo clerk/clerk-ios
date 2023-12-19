@@ -59,10 +59,16 @@ struct SignInFactorOneResetPasswordView: View {
                         .frame(minHeight: ClerkStyleConstants.textMinHeight)
                 }
             }
-            .padding()
-            .padding(.vertical)
+            .padding(.horizontal)
+            .padding(.vertical, 32)
         }
         .clerkErrorPresenting($errorWrapper)
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background()
+        }
     }
     
     private func prepare() async {
