@@ -271,27 +271,8 @@ extension SignIn {
 }
 
 extension SignIn {
-        
-    public var nextFirstFactorStrategy: Strategy? {
-        guard status == .needsFirstFactor else { return nil }
-        
-        if let strategy = firstFactorVerification?.verificationStrategy {
-            switch strategy {
-            case .emailCode:
-                return .emailCode
-            case .phoneCode:
-                return .phoneCode
-            case .emailLink:
-                return .emailLink
-            case .resetPasswordEmailCode:
-                return .resetPasswordEmailCode
-            case .resetPasswordPhoneCode:
-                return .resetPasswordPhoneCode
-            default:
-                return nil
-            }
-        }
-                
+    
+    public var defaultSignInStrategy: Strategy? {
         if supportedFirstFactors.contains(where: { $0.verificationStrategy == .password }) {
             return .password
         } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailCode }) {

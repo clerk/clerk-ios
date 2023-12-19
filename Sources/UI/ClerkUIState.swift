@@ -16,8 +16,9 @@ public final class ClerkUIState: ObservableObject {
 
     public enum AuthStep {        
         case signInStart
-        case signInFactorOne
-        case signInFactorTwo
+        case signInPassword
+        case signInFactorOneVerify
+        case signInFactorTwoVerify
         case signInForgotPassword
         case signInResetPassword
         case signUpStart

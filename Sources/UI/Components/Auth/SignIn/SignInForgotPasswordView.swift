@@ -40,7 +40,7 @@ struct SignInForgotPasswordView: View {
                 try await signIn.prepareFirstFactor(prepareStrategy)
             }
             
-            clerkUIState.presentedAuthStep = .signInFactorOne
+            clerkUIState.presentedAuthStep = .signInFactorOneVerify
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -53,7 +53,7 @@ struct SignInForgotPasswordView: View {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
             try await signIn.prepareFirstFactor(resetPasswordStrategy)
-            clerkUIState.presentedAuthStep = .signInFactorOne
+            clerkUIState.presentedAuthStep = .signInFactorOneVerify
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -122,7 +122,7 @@ struct SignInForgotPasswordView: View {
                 .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne
+                    clerkUIState.presentedAuthStep = .signInPassword
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))

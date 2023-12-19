@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInFactorOneView: View {
+struct SignInFactorOneVerifyView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
         
@@ -22,13 +22,7 @@ struct SignInFactorOneView: View {
     
     var body: some View {
         Group {
-            switch signIn.nextFirstFactorStrategy {
-            case .password:
-                SignInFactorOnePasswordView()
-                    .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
+            switch signIn.firstFactorVerification?.verificationStrategy {
             case .emailCode:
                 SignInFactorOneEmailCodeView()
                     .transition(.asymmetric(
@@ -53,7 +47,7 @@ struct SignInFactorOneView: View {
                     .task {
                         switch signIn.status {
                         case .needsSecondFactor:
-                            clerkUIState.presentedAuthStep = .signInFactorTwo
+                            clerkUIState.presentedAuthStep = .signInFactorTwoVerify
                         case .needsNewPassword:
                             clerkUIState.presentedAuthStep = .signInResetPassword
                         default:
@@ -62,12 +56,12 @@ struct SignInFactorOneView: View {
                     }
             }
         }
-        .animation(.snappy, value: signIn.nextFirstFactorStrategy)
+        .animation(.snappy, value: signIn.firstFactorVerification?.verificationStrategy)
     }
 }
 
 #Preview {
-    SignInFactorOneView()
+    SignInFactorOneVerifyView()
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }

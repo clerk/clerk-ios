@@ -60,21 +60,6 @@ public enum Strategy: Hashable, Equatable {
         }
     }
     
-    public var icon: String? {
-        switch self {
-        case .password:
-            return "lock.fill"
-        case .phoneCode:
-            return "text.bubble.fill"
-        case .emailCode:
-            return "envelope.fill"
-        case .emailLink:
-            return "link"
-        default:
-            return nil
-        }
-    }
-    
     public init?(stringValue: String) {
         switch stringValue {
         case Strategy.password.stringValue:
@@ -136,4 +121,36 @@ public enum Strategy: Hashable, Equatable {
             return nil
         }
     }
+}
+
+extension Strategy {
+    
+    public var icon: String? {
+        switch self {
+        case .password:
+            return "lock.fill"
+        case .phoneCode:
+            return "text.bubble.fill"
+        case .emailCode:
+            return "envelope.fill"
+        case .emailLink:
+            return "link"
+        default:
+            return nil
+        }
+    }
+    
+    public var signInPrepareStrategy: SignIn.PrepareStrategy? {
+        switch self {
+        case .phoneCode:
+            return .phoneCode
+        case .emailCode:
+            return .emailCode
+        case .emailLink:
+            return .emailLink
+        default:
+            return nil
+        }
+    }
+    
 }

@@ -51,7 +51,7 @@ struct SignInFactorOneResetPasswordView: View {
                 }
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInStart
+                    clerkUIState.presentedAuthStep = .signInForgotPassword
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
@@ -67,7 +67,7 @@ struct SignInFactorOneResetPasswordView: View {
     
     private func prepare() async {
         do {
-            switch signIn.nextFirstFactorStrategy {
+            switch signIn.firstFactorVerification?.verificationStrategy {
                 
             case .resetPasswordEmailCode:
                 try await signIn.prepareFirstFactor(.resetPasswordEmailCode)

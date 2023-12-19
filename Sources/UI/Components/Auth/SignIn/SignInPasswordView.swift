@@ -1,5 +1,5 @@
 //
-//  SignInFactorOnePasswordView.swift
+//  SignInPasswordView.swift
 //
 //
 //  Created by Mike Pitre on 11/2/23.
@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInFactorOnePasswordView: View {
+struct SignInPasswordView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
@@ -101,7 +101,7 @@ struct SignInFactorOnePasswordView: View {
 }
 
 #Preview {
-    SignInFactorOnePasswordView()
+    SignInPasswordView()
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }

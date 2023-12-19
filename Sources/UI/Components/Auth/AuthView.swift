@@ -26,13 +26,19 @@ public struct AuthView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInFactorOne:
-                SignInFactorOneView()
+            case .signInPassword:
+                SignInPasswordView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInFactorTwo:
+            case .signInFactorOneVerify:
+                SignInFactorOneVerifyView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+            case .signInFactorTwoVerify:
                 SignInFactorTwoView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
