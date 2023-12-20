@@ -21,9 +21,10 @@ public struct ClerkTheme {
         public var borderPrimary: Color
         
         // Constants
-        public let gray500: Color = Color(.clerkGray500)
-        public let gray700: Color = Color(.clerkGray700)
-        public let red500: Color = Color(.clerkRed500)
+        public let gray50 = Color(.clerkGray50)
+        public let gray500 = Color(.clerkGray500)
+        public let gray700 = Color(.clerkGray700)
+        public let red500 = Color(.clerkRed500)
     }
 }
 

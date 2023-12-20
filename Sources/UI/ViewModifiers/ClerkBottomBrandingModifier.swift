@@ -6,22 +6,30 @@
 //
 
 import SwiftUI
+import Clerk
 
 struct ClerkBottomBrandingModifier: ViewModifier {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     func body(content: Content) -> some View {
-        content
-            .safeAreaInset(edge: .bottom, content: {
-                SecuredByClerkView()
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background()
-            })
-//            .keyboardAvoidingBottomView {
-//                SecuredByClerkView()
-//                    .padding()
-//                    .frame(maxWidth: .infinity)
-//                    .background()
-//            }
+        VStack(spacing: -8) {
+            content
+                .background {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                        .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8), style: .continuous))
+                        .shadow(color: .primary.opacity(0.08), radius: 0.5, x: 0, y: 1)
+                        .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.06), radius: 1, x: 0, y: 1)
+                        .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.04), radius: 0, x: 0, y: 0)
+                }
+                    
+            SecuredByClerkView()
+                .padding(.vertical, 16)
+                .padding(.top, 8)
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial)
+                .zIndex(-1)
+        }
     }
 }
 
@@ -32,8 +40,7 @@ extension View {
 }
 
 #Preview {
-    ScrollView {
-        Text("Hello, World!")
-    }
-    .clerkBottomBranding()
+    AuthView()
+        .environmentObject(Clerk.mock)
+        .environmentObject(ClerkUIState())
 }

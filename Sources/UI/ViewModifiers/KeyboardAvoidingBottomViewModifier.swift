@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct KeyboardAvoidingBottomModifier<BottomView: View>: ViewModifier {
+struct KeyboardAvoidingBottomViewModifier<BottomView: View>: ViewModifier {
     @State private var bottomViewSize: CGSize?
     @Environment(\.keyboardShowing) private var keyboardShowing
     
@@ -29,8 +29,8 @@ struct KeyboardAvoidingBottomModifier<BottomView: View>: ViewModifier {
 }
 
 extension View {
-    func keyboardAvoidingBottomView<BottomView: View>(content: () -> BottomView) -> some View {
-        modifier(KeyboardAvoidingBottomModifier(bottomView: content))
+    func keyboardAvoidingBottomView<BottomView: View>(@ViewBuilder content: () -> BottomView) -> some View {
+        modifier(KeyboardAvoidingBottomViewModifier(bottomView: content))
     }
 }
 

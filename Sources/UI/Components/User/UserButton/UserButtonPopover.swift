@@ -38,9 +38,7 @@ struct UserButtonPopover: View {
             dump(error)
         }
     }
-    
-    @State private var scaleCurrentSession = 1.0
-    
+        
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -151,9 +149,8 @@ struct UserButtonPopover: View {
                 }
                 
                 SecuredByClerkView()
-                    .opacity(0.4)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
             }
             .animation(.snappy, value: clerk.session)
             .padding(.vertical, 30)

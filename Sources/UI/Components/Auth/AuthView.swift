@@ -71,7 +71,6 @@ public struct AuthView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .background(.background)
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .clerkBottomBranding()
         .dismissButtonOverlay()

@@ -90,6 +90,7 @@ struct SignInPasswordView: View {
     private func attempt() async {
         do {
             try await signIn.attemptFirstFactor(.password(password: password))
+            clerkUIState.authIsPresented = false
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
