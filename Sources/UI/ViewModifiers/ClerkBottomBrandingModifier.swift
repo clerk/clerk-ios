@@ -16,11 +16,11 @@ struct ClerkBottomBrandingModifier: ViewModifier {
             content
                 .background {
                     Color(.systemBackground)
-                        .ignoresSafeArea()
                         .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8), style: .continuous))
                         .shadow(color: .primary.opacity(0.08), radius: 0.5, x: 0, y: 1)
                         .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.06), radius: 1, x: 0, y: 1)
                         .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.04), radius: 0, x: 0, y: 0)
+                        .ignoresSafeArea()
                 }
                     
             SecuredByClerkView()
