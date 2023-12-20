@@ -33,6 +33,7 @@ struct ClerkProviderModifier: ViewModifier {
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
+            .addKeyboardVisibilityToEnvironment()
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
                     Task.detached {

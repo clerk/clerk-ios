@@ -57,12 +57,6 @@ struct SignInStartView: View {
             .padding(.vertical)
             .background(.background)
         }
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
-        }
     }
 }
 

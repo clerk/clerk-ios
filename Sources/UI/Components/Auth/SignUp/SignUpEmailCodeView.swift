@@ -53,12 +53,6 @@ struct SignUpEmailCodeView: View {
             .padding(.horizontal)
             .padding(.vertical, 32)
         }
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
-        }
     }
     
     private func prepare() async {

@@ -66,12 +66,6 @@ struct SignInFactorOneResetView: View {
             .padding(.vertical, 32)
         }
         .clerkErrorPresenting($errorWrapper)
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
-        }
     }
     
     private func prepare() async {

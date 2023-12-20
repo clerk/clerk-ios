@@ -61,12 +61,6 @@ struct SignUpStartView: View {
             .padding(.vertical, 32)
             .background(.background)
         }
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
-        }
     }
 }
 

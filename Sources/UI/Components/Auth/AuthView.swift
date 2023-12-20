@@ -73,6 +73,7 @@ public struct AuthView: View {
         .frame(maxWidth: .infinity)
         .background(.background)
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
+        .clerkBottomBranding()
         .dismissButtonOverlay()
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()

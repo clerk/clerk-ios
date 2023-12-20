@@ -136,12 +136,6 @@ struct SignInForgotPasswordView: View {
             .padding(.vertical)
         }
         .clerkErrorPresenting($errorWrapper)
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
-        }
     }
 }
 

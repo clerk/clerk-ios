@@ -17,6 +17,7 @@ struct SignInPasswordView: View {
     
     @State private var password: String = ""
     @State private var errorWrapper: ErrorWrapper?
+    @FocusState private var isFocused: Bool
     
     var signIn: SignIn {
         clerk.client.signIn
@@ -58,6 +59,8 @@ struct SignInPasswordView: View {
                         .font(.footnote.weight(.medium))
                         
                         PasswordInputView(password: $password)
+                            .focused($isFocused)
+                            .task { isFocused = true }
                     }
                     
                     AsyncButton(action: attempt) {
@@ -81,12 +84,6 @@ struct SignInPasswordView: View {
             .padding(.vertical)
             .background(.background)
             .clerkErrorPresenting($errorWrapper)
-        }
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background()
         }
     }
     
