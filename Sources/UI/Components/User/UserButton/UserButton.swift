@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Clerk
+import Nuke
 import NukeUI
 
 public struct UserButton: View {
@@ -24,7 +25,9 @@ public struct UserButton: View {
         Button(action: {
             userButtonAction()
         }, label: {
-            LazyImage(url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? "")) { state in
+            LazyImage(
+                request: .init(url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""), processors: [ImageProcessors.Circle()])
+            ) { state in
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {
@@ -36,7 +39,7 @@ public struct UserButton: View {
                 }
             }
             .frame(width: 32, height: 32)
-            .clipShape(Circle())
+            .clipShape(.circle)
         })
         .onChange(of: clerk.client.lastActiveSession?.user) { user in
             if user == nil { popoverIsPresented = false }

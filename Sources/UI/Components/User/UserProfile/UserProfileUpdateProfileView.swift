@@ -9,6 +9,7 @@
 
 import SwiftUI
 import NukeUI
+import Nuke
 import Clerk
 import PhotosUI
 
@@ -51,7 +52,7 @@ struct UserProfileUpdateProfileView: View {
                 HStack(spacing: 16) {
                     if let imageUrl = user?.imageUrl {
                         LazyImage(
-                            url: URL(string: imageUrl),
+                            request: .init(url: URL(string: imageUrl), processors: [ImageProcessors.Circle()]),
                             transaction: .init(animation: .default)
                         ) { imageState in
                             if let image = imageState.image {

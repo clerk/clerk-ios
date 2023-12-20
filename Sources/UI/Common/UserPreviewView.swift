@@ -10,6 +10,7 @@
 import SwiftUI
 import NukeUI
 import Clerk
+import Nuke
 
 struct UserPreviewView: View {
     var title: String?
@@ -19,7 +20,9 @@ struct UserPreviewView: View {
     var body: some View {
         HStack(spacing: 16) {
             if let imageUrl {
-                LazyImage(url: URL(string: imageUrl)) { imageState in
+                LazyImage(
+                    request: .init(url: URL(string: imageUrl), processors: [ImageProcessors.Circle()])
+                ) { imageState in
                     if let image = imageState.image {
                         image.resizable().scaledToFill()
                     } else {
