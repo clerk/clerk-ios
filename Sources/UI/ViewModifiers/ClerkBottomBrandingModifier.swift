@@ -10,12 +10,18 @@ import SwiftUI
 struct ClerkBottomBrandingModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .keyboardAvoidingBottomView {
+            .safeAreaInset(edge: .bottom, content: {
                 SecuredByClerkView()
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background()
-            }
+            })
+//            .keyboardAvoidingBottomView {
+//                SecuredByClerkView()
+//                    .padding()
+//                    .frame(maxWidth: .infinity)
+//                    .background()
+//            }
     }
 }
 
