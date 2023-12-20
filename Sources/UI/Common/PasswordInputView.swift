@@ -14,7 +14,6 @@ struct PasswordInputView: View {
     
     var body: some View {
         CustomTextField(text: $password, isSecureField: true)
-            .frame(height: 30)
             .textContentType(.newPassword)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled(true)

@@ -17,14 +17,12 @@ struct ClerkBottomBrandingModifier: ViewModifier {
                 .background {
                     Color(.systemBackground)
                         .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8), style: .continuous))
-                        .shadow(color: .primary.opacity(0.08), radius: 0.5, x: 0, y: 1)
-                        .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.06), radius: 1, x: 0, y: 1)
-                        .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.04), radius: 0, x: 0, y: 0)
+                        .shadow(radius: 1)
                         .ignoresSafeArea()
                 }
                     
             SecuredByClerkView()
-                .padding(.vertical, 16)
+                .padding(.vertical, 8)
                 .padding(.top, 8)
                 .frame(maxWidth: .infinity)
                 .background(.ultraThinMaterial)

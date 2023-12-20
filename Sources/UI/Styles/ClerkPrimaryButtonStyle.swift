@@ -31,9 +31,7 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
             .background(clerkTheme.colors.primary)
             .clipShape(.rect(cornerRadius: 6, style: .continuous))
             .contentShape(.rect(cornerRadius: 6, style: .continuous))
-            .shadow(color: Color(red: 0.18, green: 0.19, blue: 0.22), radius: 0, x: 0, y: 0)
-            .shadow(color: Color(red: 0.13, green: 0.16, blue: 0.21).opacity(0.2), radius: 1.5, x: 0, y: 2)
-            .shadow(color: .black.opacity(0.24), radius: 0.5, x: 0, y: 1)
+            .shadow(radius: 1, y: 1)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.bouncy, value: configuration.isPressed)
     }

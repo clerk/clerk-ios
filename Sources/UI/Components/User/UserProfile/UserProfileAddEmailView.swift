@@ -95,7 +95,6 @@ struct UserProfileAddEmailView: View {
             Text("Email address")
                 .font(.footnote.weight(.medium))
             CustomTextField(text: $email)
-                .frame(height: 44)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)

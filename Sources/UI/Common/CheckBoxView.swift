@@ -27,8 +27,7 @@ struct CheckBoxView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .fontWeight(.bold)
                         .foregroundStyle(Color(.systemBackground))
-                        .shadow(color: Color(.systemBackground).opacity(0.14), radius: 0.5, x: 0, y: 0)
-                        .shadow(color: Color(.systemBackground).opacity(0.08), radius: 1, x: 0, y: 1.5)
+                        .shadow(radius: 1, y: 1)
                         .padding(4)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -44,9 +43,7 @@ struct CheckBoxView: View {
                                 )
                                 .background(clerkTheme.colors.primary)
                                 .clipShape(.rect(cornerRadius: 4, style: .continuous))
-                                .shadow(color: Color(red: 0.18, green: 0.19, blue: 0.22), radius: 0, x: 0, y: 0)
-                                .shadow(color: Color(red: 0.13, green: 0.16, blue: 0.21).opacity(0.2), radius: 1.5, x: 0, y: 2)
-                                .shadow(color: Color(.systemBackground).opacity(0.24), radius: 0.5, x: 0, y: 1)
+                                .shadow(radius: 1, y: 1)
                         }
                         .transition(.scale)
                 }

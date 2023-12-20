@@ -30,9 +30,7 @@ struct ClerkDangerButtonStyle: ButtonStyle {
             .background(clerkTheme.colors.red500)
             .clipShape(.rect(cornerRadius: 6, style: .continuous))
             .contentShape(.rect(cornerRadius: 6, style: .continuous))
-            .shadow(color: Color(red: 0.94, green: 0.27, blue: 0.27), radius: 0, x: 0, y: 0)
-            .shadow(color: .black.opacity(0.12), radius: 1.5, x: 0, y: 2)
-            .shadow(color: .black.opacity(0.08), radius: 0.5, x: 0, y: 1)
+            .shadow(radius: 1, y: 1)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.bouncy, value: configuration.isPressed)
     }

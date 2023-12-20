@@ -69,7 +69,6 @@ struct UserProfileAddPhoneNumberView: View {
             Text("Phone number")
                 .font(.footnote.weight(.medium))
             PhoneNumberField(text: $phone)
-                .frame(height: 44)
                 .focused($isFocused)
                 .task {
                     isFocused = true

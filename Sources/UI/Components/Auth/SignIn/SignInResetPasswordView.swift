@@ -63,7 +63,6 @@ struct SignInResetPasswordView: View {
                             isSecureField: true
                         )
                         .textContentType(.newPassword)
-                        .frame(height: 30)
                     }
                     
                     VStack(spacing: 8) {
@@ -79,7 +78,6 @@ struct SignInResetPasswordView: View {
                             isSecureField: true
                         )
                         .textContentType(.newPassword)
-                        .frame(height: 30)
                     }
                 }
                 .padding(.bottom, 24)

@@ -48,7 +48,6 @@ struct SignUpFormView: View {
                     }
                     
                     CustomTextField(text: $firstName)
-                        .frame(height: 30)
                         .textContentType(.givenName)
                         .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .firstName)
@@ -66,7 +65,6 @@ struct SignUpFormView: View {
                     }
 
                     CustomTextField(text: $lastName)
-                        .frame(height: 30)
                         .textContentType(.familyName)
                         .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .lastName)
@@ -85,7 +83,6 @@ struct SignUpFormView: View {
                 }
                 
                 PhoneNumberField(text: $phoneNumber)
-                    .frame(height: 30)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                     .focused($focusedField, equals: .phoneNumber)
             }
@@ -96,7 +93,6 @@ struct SignUpFormView: View {
                     .foregroundStyle(clerkTheme.colors.gray700)
                 
                 CustomTextField(text: $emailAddress)
-                    .frame(height: 30)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)

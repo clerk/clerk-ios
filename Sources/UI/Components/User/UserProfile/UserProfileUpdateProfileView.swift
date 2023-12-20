@@ -113,7 +113,6 @@ struct UserProfileUpdateProfileView: View {
                     Text("First name")
                         .font(.footnote.weight(.medium))
                     CustomTextField(text: $firstName)
-                        .frame(height: 44)
                         .textContentType(.givenName)
                         .autocorrectionDisabled()
                         .task {
@@ -125,7 +124,6 @@ struct UserProfileUpdateProfileView: View {
                     Text("Last name")
                         .font(.footnote.weight(.medium))
                     CustomTextField(text: $lastName)
-                        .frame(height: 44)
                         .textContentType(.familyName)
                         .autocorrectionDisabled()
                         .task {

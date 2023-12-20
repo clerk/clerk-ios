@@ -60,7 +60,6 @@ struct UserProfileChangePasswordView: View {
                 VStack(alignment: .leading) {
                     Text("Current password").font(.footnote.weight(.medium))
                     CustomTextField(text: $currentPassword, isSecureField: true)
-                        .frame(height: 44)
                         .textContentType(.password)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -73,7 +72,6 @@ struct UserProfileChangePasswordView: View {
                 VStack(alignment: .leading) {
                     Text("New password").font(.footnote.weight(.medium))
                     CustomTextField(text: $newPassword, isSecureField: true)
-                        .frame(height: 44)
                         .textContentType(.newPassword)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -83,7 +81,6 @@ struct UserProfileChangePasswordView: View {
                 VStack(alignment: .leading) {
                     Text("Confirm password").font(.footnote.weight(.medium))
                     CustomTextField(text: $confirmPassword, isSecureField: true)
-                        .frame(height: 44)
                         .textContentType(.newPassword)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()

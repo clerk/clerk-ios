@@ -50,7 +50,6 @@ struct SignInFormView: View {
                 
                 if displayingEmailEntry {
                     CustomTextField(text: $emailAddress)
-                        .frame(height: 30)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -60,7 +59,6 @@ struct SignInFormView: View {
                 } else {
                     PhoneNumberField(text: $phoneNumber)
                         .focused($focusedField, equals: .phoneNumber)
-                        .frame(height: 30)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }

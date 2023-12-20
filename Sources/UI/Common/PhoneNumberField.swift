@@ -112,7 +112,7 @@ struct PhoneNumberField: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
-                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -126,7 +126,7 @@ struct PhoneNumberField: View {
                 .keyboardType(.phonePad)
                 .focused($isFocused)
                 .font(.footnote)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
                 .padding(.horizontal)
                 .tint(clerkTheme.colors.textPrimary)
                 .onChange(of: displayNumber) { newValue in
@@ -135,7 +135,7 @@ struct PhoneNumberField: View {
 
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : Color(.systemFill), lineWidth: 1)
         }
     }
@@ -150,7 +150,6 @@ struct PhoneNumberField: View {
 
 #Preview {
     PhoneNumberField(text: .constant(""))
-        .frame(height: 30)
         .padding()
 }
 
