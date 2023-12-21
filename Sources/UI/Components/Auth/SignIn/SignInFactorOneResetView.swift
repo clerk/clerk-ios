@@ -30,6 +30,7 @@ struct SignInFactorOneResetView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 VerificationCodeView(
                     code: $code,
@@ -46,6 +47,9 @@ struct SignInFactorOneResetView: View {
                 }
                 .onResend {
                     await prepare()
+                }
+                .onContinueAction {
+                    //
                 }
                 .task {
                     if !signIn.firstFactorHasBeenPrepared {
@@ -106,6 +110,7 @@ struct SignInFactorOneResetView: View {
             
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }

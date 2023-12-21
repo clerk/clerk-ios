@@ -24,6 +24,7 @@ struct SignUpStartView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 HeaderView(
                     title: "Create your account",

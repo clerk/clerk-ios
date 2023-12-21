@@ -13,6 +13,7 @@ struct VerificationCodeView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var code: String
+    @State private var isSubmittingCode: Bool = false
     
     let title: String
     let subtitle: String
@@ -23,6 +24,7 @@ struct VerificationCodeView: View {
     var onResend: (() async -> Void)?
     var onIdentityPreviewTapped: (() async -> Void)?
     var onUseAlernateMethod: (() async -> Void)?
+    var onContinueAction: (() async -> Void)?
     var onCancel: (() async -> Void)?
         
     var body: some View {
@@ -43,10 +45,28 @@ struct VerificationCodeView: View {
                 )
             }
             
-            CodeFormView(code: $code)
+            CodeFormView(code: $code, isSubmittingCode: $isSubmittingCode)
                 .onCodeEntry { await onCodeEntry?() }
                 .onResend { await onResend?() }
                 .padding(.bottom, 32)
+            
+            if let onContinueAction {
+                AsyncButton {
+                    await onContinueAction()
+                } label: {
+                    Text("Continue")
+                        .opacity(isSubmittingCode ? 0 : 1)
+                        .overlay {
+                            if isSubmittingCode {
+                                ProgressView()
+                            }
+                        }
+                        .animation(.snappy, value: isSubmittingCode)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(ClerkPrimaryButtonStyle())
+                .padding(.bottom, 18)
+            }
             
             if let onUseAlernateMethod {
                 AsyncButton {
@@ -82,6 +102,12 @@ extension VerificationCodeView {
         return copy
     }
     
+    func onContinueAction(perform action: @escaping () async -> Void) -> Self {
+        var copy = self
+        copy.onContinueAction = action
+        return copy
+    }
+    
     func onUseAlernateMethod(perform action: @escaping () async -> Void) -> Self {
         var copy = self
         copy.onUseAlernateMethod = action
@@ -103,9 +129,13 @@ extension VerificationCodeView {
         subtitle: "Enter the verification code sent to your email address",
         safeIdentifier: "ClerkUser@clerk.dev"
     )
+    .onContinueAction {
+        //
+    }
     .onUseAlernateMethod {
         //
     }
+    .padding()
 }
 
 #endif

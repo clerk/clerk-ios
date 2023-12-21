@@ -24,6 +24,7 @@ struct SignInUseAnotherMethodView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 HeaderView(
                     title: "Use another method",

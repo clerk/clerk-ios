@@ -27,6 +27,7 @@ struct SignInPasswordView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 HeaderView(
                     title: "Enter password",

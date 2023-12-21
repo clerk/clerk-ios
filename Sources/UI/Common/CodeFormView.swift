@@ -11,50 +11,28 @@ import SwiftUI
 
 struct CodeFormView: View {
     @Environment(\.clerkTheme) private var clerkTheme
-    @State private var isSubmittingCode: Bool = false
     
     @Binding var code: String
-    var title: String?
-    var subtitle: String?
+    @Binding var isSubmittingCode: Bool
     var onCodeEntry: (() async -> Void)?
     var onResend: (() async -> Void)?
     
     private let requiredOtpCodeLength = 6
     
     var body: some View {
-        VStack {
-            if let title {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .padding(.bottom, 8)
-            }
-            
-            if let subtitle {
-                Text(subtitle)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .font(.footnote.weight(.light))
-                    .foregroundStyle(.secondary)
-            }
-            
-            HStack(alignment: .lastTextBaseline, spacing: 20) {
-                OTPFieldView(code: $code)
-                    .frame(maxWidth: 250)
-                    .padding(.vertical)
-                
-                if isSubmittingCode {
-                    ProgressView()
-                        .offset(y: 4)
-                }
-            }
-            .onChange(of: code) { newValue in
-                if newValue.count == requiredOtpCodeLength {
-                    Task {
-                        isSubmittingCode = true
-                        await onCodeEntry?()
-                        isSubmittingCode = false
+        VStack(spacing: 12) {
+            OTPFieldView(code: $code)
+                .frame(maxWidth: 250)
+                .padding(.vertical)
+                .onChange(of: code) { newValue in
+                    if newValue.count == requiredOtpCodeLength {
+                        Task {
+                            isSubmittingCode = true
+                            await onCodeEntry?()
+                            isSubmittingCode = false
+                        }
                     }
                 }
-            }
             
             AsyncButton {
                 await onResend?()
@@ -89,11 +67,7 @@ extension CodeFormView {
 }
 
 #Preview {
-    CodeFormView(
-        code: .constant(""),
-        title: "Verification code",
-        subtitle: "Enter the verification code sent to your email address"
-    )
+    CodeFormView(code: .constant(""), isSubmittingCode: .constant(true))
 }
 
 #endif

@@ -18,6 +18,7 @@ struct SignInStartView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 HeaderView(
                     title: "Sign in to \(clerk.environment.displayConfig.applicationName)",

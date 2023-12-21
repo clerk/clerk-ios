@@ -164,7 +164,6 @@ struct UserProfilePhoneNumberSection: View {
                     UserProfileAddPhoneNumberView(initialStep: step)
                 }
             }
-            .animation(.snappy, value: user)
         }
         .clerkErrorPresenting($errorWrapper)
     }

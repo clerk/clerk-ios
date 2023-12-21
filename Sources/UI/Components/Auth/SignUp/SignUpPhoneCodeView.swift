@@ -26,6 +26,7 @@ struct SignUpPhoneCodeView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 VerificationCodeView(
                     code: $code,
@@ -74,6 +75,7 @@ struct SignUpPhoneCodeView: View {
             try await signUp.attemptVerification(.phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }

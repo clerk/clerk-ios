@@ -72,7 +72,6 @@ struct UserProfileAddExternalAccountView: View {
                     .buttonStyle(ClerkSecondaryButtonStyle())
                 }
             }
-            .animation(.snappy, value: user)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .padding(.vertical)

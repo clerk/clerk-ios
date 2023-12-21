@@ -42,6 +42,7 @@ struct SignInForgotPasswordView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 Text("Forgot password?")
                     .font(.body.weight(.bold))

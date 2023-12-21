@@ -191,7 +191,6 @@ struct UserProfileExternalAccountSection: View {
                     .padding(.leading, 8)
                 }
             }
-            .animation(.snappy, value: user)
         }
         .clerkErrorPresenting($errorWrapper)
         .sheet(isPresented: $addExternalAccountIsPresented) {

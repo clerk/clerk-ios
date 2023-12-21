@@ -25,6 +25,7 @@ struct SignInFactorOneEmailCodeView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 VerificationCodeView(
                     code: $code,
@@ -41,6 +42,9 @@ struct SignInFactorOneEmailCodeView: View {
                 }
                 .onResend {
                     await prepare()
+                }
+                .onContinueAction {
+                    //
                 }
                 .onUseAlernateMethod {
                     clerkUIState.presentedAuthStep = .signInUseAnotherMethod(.emailCode)
@@ -71,6 +75,7 @@ struct SignInFactorOneEmailCodeView: View {
             try await signIn.attemptFirstFactor(.emailCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }

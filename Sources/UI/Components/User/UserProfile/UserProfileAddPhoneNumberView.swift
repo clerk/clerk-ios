@@ -56,7 +56,6 @@ struct UserProfileAddPhoneNumberView: View {
                 codeContent
             }
         }
-        .transition(.offset(y: 50).combined(with: .opacity))
         .onChange(of: step) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
@@ -65,31 +64,47 @@ struct UserProfileAddPhoneNumberView: View {
     
     @ViewBuilder
     private var addContent: some View {
-        VStack(alignment: .leading) {
-            Text("Phone number")
-                .font(.footnote.weight(.medium))
-            PhoneNumberField(text: $phone)
-                .focused($isFocused)
-                .task {
-                    isFocused = true
-                }
+        VStack(spacing: 20) {
+            VStack(alignment: .leading) {
+                Text("Phone number")
+                    .font(.footnote.weight(.medium))
+                PhoneNumberField(text: $phone)
+                    .focused($isFocused)
+                    .task {
+                        isFocused = true
+                    }
+            }
+            
+            Text("A text message containing a verification code will be sent to this phone number.")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .font(.footnote)
+            
+            Text("Message and data rates may apply.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            AsyncButton {
+                await create()
+                guard let phoneNumber else { return }
+                step = .code(phoneNumber: phoneNumber)
+            } label: {
+                Text("Continue")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding(.bottom, 20)
         }
-        
-        Text("A text message containing a verification code will be sent to this phone number.")
-            .fixedSize(horizontal: false, vertical: true)
-            .font(.footnote)
-        
-        Text("Message and data rates may apply.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
     }
     
     @ViewBuilder
     private var codeContent: some View {
-        CodeFormView(
+        VerificationCodeView(
             code: $code,
-            title: "Verification code",
-            subtitle: "Enter the verification code sent to \(phoneNumber?.formatted(.international) ?? "the phone number provided.")"
+            title: "Check your phone",
+            subtitle: "Enter the verification code sent to your phone",
+            safeIdentifier: phoneNumber?.formatted(.international)
         )
         .onCodeEntry {
             await attempt()
@@ -97,46 +112,40 @@ struct UserProfileAddPhoneNumberView: View {
         .onResend {
             await prepare()
         }
+        .onContinueAction {
+            //
+        }
         .task {
-           await prepare()
+            await prepare()
         }
     }
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Add phone number")
-                    .font(.title2.weight(.bold))
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 content
                     .animation(.snappy, value: step)
                 
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(ClerkSecondaryButtonStyle())
-                    
-                    if step == .add {
-                        AsyncButton {
-                            await create()
-                            guard let phoneNumber else { return }
-                            step = .code(phoneNumber: phoneNumber)
-                        } label: {
-                            Text("Continue")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(ClerkPrimaryButtonStyle())
-                    }
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
                 }
-                .animation(.snappy, value: step)
+                .buttonStyle(ClerkSecondaryButtonStyle())
             }
             .padding()
             .padding(.vertical)
         }
+        .transition(.asymmetric(
+            insertion: .offset(y: 50).combined(with: .opacity),
+            removal: .opacity.animation(nil)
+        ))
+        .id(step)
+        .animation(.snappy, value: step)
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
     }
@@ -166,6 +175,7 @@ struct UserProfileAddPhoneNumberView: View {
             dismiss()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }

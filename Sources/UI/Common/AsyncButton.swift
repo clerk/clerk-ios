@@ -83,6 +83,13 @@ struct AsyncButton<Label: View>: View {
             Text("Button")
         }
         .buttonStyle(ClerkSecondaryButtonStyle())
+        
+        AsyncButton {
+            try? await Task.sleep(for: .seconds(1))
+        } label: {
+            Text("Button")
+        }
+        .buttonStyle(ClerkDangerButtonStyle())
     }
     
 }

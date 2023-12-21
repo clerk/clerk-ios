@@ -158,7 +158,6 @@ struct UserProfileEmailSection: View {
                 .tint(clerkTheme.colors.textPrimary)
                 .padding(.leading, 8)
             }
-            .animation(.snappy, value: user)
         }
         .clerkErrorPresenting($errorWrapper)
         .sheet(item: $addEmailAddressStep) { step in

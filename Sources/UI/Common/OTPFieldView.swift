@@ -19,7 +19,7 @@ struct OTPFieldView: View {
     @State private var cursorAnimating = false
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             ForEach(0..<numberOfInputs, id: \.self) { index in
                 otpFieldInput(index: index)
             }
@@ -55,28 +55,34 @@ struct OTPFieldView: View {
                     Text(" ")
                 }
             }
-            .font(.title2.weight(.semibold))
+            .foregroundStyle(clerkTheme.colors.textPrimary)
             .overlay {
                 if isSelected {
                     Rectangle()
-                        .frame(width: 2, height: 28)
+                        .frame(width: 2, height: 17)
                         .foregroundStyle(clerkTheme.colors.textPrimary)
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
-                        .onAppear {
+                        .task {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                 cursorAnimating.toggle()
                             }
                         }
                 }
             }
-            
-            Rectangle()
-                .frame(height: 2)
-                .foregroundStyle(isSelected ? clerkTheme.colors.textPrimary : Color(.systemFill))
         }
-        .frame(maxWidth: .infinity)
+        .frame(minWidth: 40, minHeight: 40)
         .allowsHitTesting(false)
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(clerkTheme.colors.borderPrimary)
+        }
+        .overlay {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color(.lightGray), lineWidth: 4)
+            }
+        }
     }
 }
 

@@ -82,7 +82,6 @@ struct UserProfileAddEmailView: View {
                 codeContent
             }
         }
-        .transition(.offset(y: 50).combined(with: .opacity))
         .onChange(of: step) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
@@ -91,37 +90,55 @@ struct UserProfileAddEmailView: View {
     
     @ViewBuilder
     private var addContent: some View {
-        VStack(alignment: .leading) {
-            Text("Email address")
-                .font(.footnote.weight(.medium))
-            CustomTextField(text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .focused($isFocused)
-                .task {
-                    isFocused = true
-                }
+        VStack(spacing: 20) {
+            VStack(alignment: .leading) {
+                Text("Email address")
+                    .font(.footnote.weight(.medium))
+                CustomTextField(text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .focused($isFocused)
+                    .task {
+                        isFocused = true
+                    }
+            }
+            
+            Text(instructionsString)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .font(.footnote)
+            
+            AsyncButton {
+                await create()
+                guard let emailAddress else { return }
+                step = .code(emailAddress: emailAddress)
+            } label: {
+                Text("Continue")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding(.bottom, 20)
         }
-        
-        Text(instructionsString)
-            .fixedSize(horizontal: false, vertical: true)
-            .font(.footnote)
     }
     
     @ViewBuilder
     private var codeContent: some View {
-        CodeFormView(
+        VerificationCodeView(
             code: $code,
             title: "Verification code",
-            subtitle: "Enter the verification code sent to \(emailAddress?.emailAddress ?? "the email address provided.")"
+            subtitle: "Enter the verification code sent to your email",
+            safeIdentifier: emailAddress?.emailAddress
         )
         .onCodeEntry {
             await attempt()
         }
         .onResend {
             await prepare()
+        }
+        .onContinueAction {
+            //
         }
         .task {
             await prepare()
@@ -130,39 +147,29 @@ struct UserProfileAddEmailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Add email address")
-                    .font(.title2.weight(.bold))
+            VStack(spacing: .zero) {
+                OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 content
-                    .animation(.snappy, value: step)
                 
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(ClerkSecondaryButtonStyle())
-                    
-                    if step == .add {
-                        AsyncButton {
-                            await create()
-                            guard let emailAddress else { return }
-                            step = .code(emailAddress: emailAddress)
-                        } label: {
-                            Text("Continue")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(ClerkPrimaryButtonStyle())
-                    }
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
                 }
-                .animation(.snappy, value: step)
+                .buttonStyle(ClerkSecondaryButtonStyle())
             }
             .padding()
             .padding(.vertical)
         }
+        .transition(.asymmetric(
+            insertion: .offset(y: 50).combined(with: .opacity),
+            removal: .opacity.animation(nil)
+        ))
+        .id(step)
+        .animation(.snappy, value: step)
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
     }
@@ -192,6 +199,7 @@ struct UserProfileAddEmailView: View {
             dismiss()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }

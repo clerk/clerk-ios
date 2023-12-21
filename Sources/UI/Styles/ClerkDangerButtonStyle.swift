@@ -15,6 +15,7 @@ struct ClerkDangerButtonStyle: ButtonStyle {
             .foregroundStyle(clerkTheme.colors.textOnPrimaryBackground)
             .frame(minHeight: ClerkStyleConstants.textMinHeight)
             .font(.footnote.weight(.medium))
+            .tint(clerkTheme.colors.textOnPrimaryBackground)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(

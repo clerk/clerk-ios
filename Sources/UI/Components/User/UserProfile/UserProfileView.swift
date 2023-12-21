@@ -18,6 +18,10 @@ public struct UserProfileView: View {
     
     public init() {}
     
+    private var user: User? {
+        clerk.user
+    }
+    
     public var body: some View {
         ScrollView {
             VStack(spacing: 30) {
@@ -26,6 +30,7 @@ public struct UserProfileView: View {
             }
             .padding()
             .padding(.top, removeDismissButton ? 0 : nil)
+            .animation(.snappy, value: user)
         }
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay(hidden: removeDismissButton)

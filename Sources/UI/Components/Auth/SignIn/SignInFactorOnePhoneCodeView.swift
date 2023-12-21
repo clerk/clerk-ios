@@ -25,6 +25,7 @@ struct SignInFactorOnePhoneCodeView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
+                    .padding(.bottom, 24)
                 
                 VerificationCodeView(
                     code: $code,
@@ -42,8 +43,11 @@ struct SignInFactorOnePhoneCodeView: View {
                 .onResend {
                     await prepare()
                 }
+                .onContinueAction {
+                    //
+                }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInUseAnotherMethod(.phoneCode)
+                    //
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
@@ -71,6 +75,7 @@ struct SignInFactorOnePhoneCodeView: View {
             try await signIn.attemptFirstFactor(.phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            code = ""
             dump(error)
         }
     }
