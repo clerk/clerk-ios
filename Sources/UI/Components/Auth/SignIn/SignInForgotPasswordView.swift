@@ -26,29 +26,6 @@ struct SignInForgotPasswordView: View {
         clerk.client.signIn
     }
     
-    private func signIn(provider: OAuthProvider) async {
-        do {
-            try await signIn.create(.oauth(provider: provider))
-            try await signIn.startOAuth()
-        } catch {
-            clerkUIState.presentedAuthStep = .signInStart
-            dump(error)
-        }
-    }
-    
-    private func startAlternateFirstFactor(_ factor: Factor) async {
-        do {
-            if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                try await signIn.prepareFirstFactor(prepareStrategy)
-            }
-            
-            clerkUIState.presentedAuthStep = .signInFactorOneVerify
-        } catch {
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-    }
-    
     private func resetPassword() async {
         do {
             guard let resetPasswordStrategy = signIn.resetPasswordStrategy else {
@@ -82,46 +59,8 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                VStack(spacing: 8) {
-                    ForEach(thirdPartyProviders) { provider in
-                        AsyncButton {
-                            await signIn(provider: provider)
-                        } label: {
-                            HStack {
-                                LazyImage(url: provider.iconImageUrl) { state in
-                                    if let image = state.image {
-                                        image.resizable().scaledToFit()
-                                    } else {
-                                        Color(.secondarySystemBackground)
-                                    }
-                                }
-                                .frame(width: 16, height: 16)
-                                
-                                Text("Continue with \(provider.data.name)")
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(ClerkSecondaryButtonStyle())
-                    }
-                    
-                    ForEach(signIn.alternativeFirstFactors(currentStrategy: .password), id: \.self) { factor in
-                        if let actionText = factor.actionText {
-                            AsyncButton {
-                                await startAlternateFirstFactor(factor)
-                            } label: {
-                                HStack {
-                                    Image(systemName: factor.verificationStrategy?.icon ?? "")
-                                        .frame(width: 16, height: 16)
-                                    
-                                    Text(actionText)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(ClerkSecondaryButtonStyle())
-                        }
-                    }
-                }
-                .padding(.bottom, 18)
+                SignInAlternativeMethodsView(currentStrategy: .password)
+                    .padding(.bottom, 18)
                 
                 Button {
                     clerkUIState.presentedAuthStep = .signInPassword

@@ -305,12 +305,12 @@ extension SignIn {
         supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification?.verificationStrategy })
     }
     
-    public func alternativeFirstFactors(currentStrategy: Strategy) -> [Factor] {
+    public func alternativeFirstFactors(currentStrategy: Strategy?) -> [Factor] {
         // Remove the current factor, reset factors, oauth factors
         let firstFactors = supportedFirstFactors.filter { factor in
             factor.verificationStrategy != currentStrategy &&
-            !factor.isResetStrategy
-            && !(factor.verificationStrategy?.stringValue ?? "").hasPrefix("oauth_")
+            !factor.isResetStrategy &&
+            !(factor.verificationStrategy?.stringValue ?? "").hasPrefix("oauth_")
         }
                 
         return firstFactors
