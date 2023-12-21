@@ -47,7 +47,10 @@ struct UserProfileExternalAccountSection: View {
     @ViewBuilder
     private func externalInfoCalloutView(_ externalAccount: ExternalAccount) -> some View {
         HStack(spacing: 16) {
-            LazyImage(url: URL(string: externalAccount.imageUrl ?? "")) { state in
+            LazyImage(
+                url: URL(string: externalAccount.imageUrl ?? ""),
+                transaction: .init(animation: .default)
+            ) { state in
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {

@@ -21,13 +21,18 @@ public struct UserButton: View {
     
     public init() {}
     
+    private var imageRequest: ImageRequest {
+        .init(
+            url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""),
+            processors: [ImageProcessors.Circle()]
+        )
+    }
+    
     public var body: some View {
         Button(action: {
             userButtonAction()
         }, label: {
-            LazyImage(
-                request: .init(url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""), processors: [ImageProcessors.Circle()])
-            ) { state in
+            LazyImage(request: imageRequest) { state in
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {

@@ -10,11 +10,13 @@
 import SwiftUI
 
 struct SecuredByClerkView: View {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     var body: some View {
         HStack(spacing: 4) {
             Text("Secured by ")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(clerkTheme.colors.gray500)
             HStack(spacing: 0) {
                 Image("clerk-logomark-gray", bundle: .module)
                     .resizable()

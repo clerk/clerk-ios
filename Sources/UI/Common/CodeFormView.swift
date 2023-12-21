@@ -61,12 +61,13 @@ struct CodeFormView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text("Didn't recieve a code?")
-                        .foregroundStyle(clerkTheme.colors.gray500)
+                        .foregroundStyle(.secondary)
                     Text("Resend")
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(.foreground)
                 }
                 .font(.footnote)
             }
+            .buttonStyle(.plain)
         }
     }
 }

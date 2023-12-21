@@ -18,23 +18,6 @@ enum KeyboardHelpers {
     
 }
 
-extension View {
-    var keyboardPublisher: AnyPublisher<Bool, Never> {
-        Publishers
-            .Merge(
-                NotificationCenter
-                    .default
-                    .publisher(for: UIResponder.keyboardWillShowNotification)
-                    .map { _ in true },
-                NotificationCenter
-                    .default
-                    .publisher(for: UIResponder.keyboardWillHideNotification)
-                    .map { _ in false })
-            .debounce(for: .seconds(0.1), scheduler: RunLoop.main)
-            .eraseToAnyPublisher()
-    }
-}
-
 public extension View {
     
     /// Sets an environment value for keyboardShowing
@@ -56,7 +39,7 @@ extension EnvironmentValues {
     }
 }
 
-private struct KeyboardVisibility:ViewModifier {
+private struct KeyboardVisibility: ViewModifier {
     
 #if os(macOS)
     

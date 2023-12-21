@@ -21,7 +21,8 @@ struct UserPreviewView: View {
         HStack(spacing: 16) {
             if let imageUrl {
                 LazyImage(
-                    request: .init(url: URL(string: imageUrl), processors: [ImageProcessors.Circle()])
+                    request: .init(url: URL(string: imageUrl), processors: [ImageProcessors.Circle()]),
+                    transaction: .init(animation: .default)
                 ) { imageState in
                     if let image = imageState.image {
                         image.resizable().scaledToFill()
