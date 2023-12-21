@@ -54,7 +54,7 @@ struct SignInFactorOneResetView: View {
                 }
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInForgotPassword
+                    clerkUIState.presentedAuthStep = .signInPassword
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))

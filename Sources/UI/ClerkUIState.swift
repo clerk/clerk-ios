@@ -8,15 +8,17 @@
 #if canImport(UIKit)
 
 import Foundation
+import Clerk
 
 public final class ClerkUIState: ObservableObject {
     
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false
 
-    public enum AuthStep {        
+    public enum AuthStep: Equatable {
         case signInStart
         case signInPassword
+        case signInUseAnotherMethod(_ currentStrategy: Strategy)
         case signInFactorOneVerify
         case signInFactorTwoVerify
         case signInForgotPassword

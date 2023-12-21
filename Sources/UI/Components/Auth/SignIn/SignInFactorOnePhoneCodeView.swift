@@ -43,7 +43,7 @@ struct SignInFactorOnePhoneCodeView: View {
                     await prepare()
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInStart
+                    clerkUIState.presentedAuthStep = .signInUseAnotherMethod(.phoneCode)
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {

@@ -25,6 +25,7 @@ struct HeaderView: View {
                 Text(subtitle)
                     .font(.footnote)
                     .foregroundStyle(clerkTheme.colors.gray500)
+                    .multilineTextAlignment(.center)
             }
         }
     }

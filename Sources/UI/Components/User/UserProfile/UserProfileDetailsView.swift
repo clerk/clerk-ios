@@ -14,6 +14,7 @@ public struct UserProfileDetailsView: View {
     public var body: some View {
         VStack(spacing: 30) {
             HeaderView(title: "Profile Details")
+                .frame(maxWidth: .infinity, alignment: .leading)
             UserProfileSection()
             UserProfileEmailSection()
             UserProfilePhoneNumberSection()

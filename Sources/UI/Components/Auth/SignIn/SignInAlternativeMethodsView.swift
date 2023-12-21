@@ -36,11 +36,17 @@ struct SignInAlternativeMethodsView: View {
     
     private func startAlternateFirstFactor(_ factor: Factor) async {
         do {
-            if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                try await signIn.prepareFirstFactor(prepareStrategy)
+            switch factor.verificationStrategy {
+            case .password:
+                clerkUIState.presentedAuthStep = .signInPassword
+            default:
+                if let prepareStrategy = factor.prepareFirstFactorStrategy {
+                    try await signIn.prepareFirstFactor(prepareStrategy)
+                    clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                } else {
+                    throw ClerkClientError(message: "Unable to start this sign in method.")
+                }
             }
-            
-            clerkUIState.presentedAuthStep = .signInFactorOneVerify
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

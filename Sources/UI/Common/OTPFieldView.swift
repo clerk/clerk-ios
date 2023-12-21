@@ -15,7 +15,7 @@ struct OTPFieldView: View {
     @Binding var code: String
     let numberOfInputs: Int = 6
     
-    @FocusState private var isKeyboardShowing: Bool
+    @FocusState private var isFocused: Bool
     @State private var cursorAnimating = false
     
     var body: some View {
@@ -32,18 +32,16 @@ struct OTPFieldView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .foregroundStyle(.clear)
                 .tint(.clear)
-                .focused($isKeyboardShowing)
+                .focused($isFocused)
         }
         .contentShape(Rectangle())
-        .onAppear {
-            isKeyboardShowing = true
-        }
+        .task { isFocused = true }
     }
     
     @ViewBuilder 
     func otpFieldInput(index: Int) -> some View {
         var isSelected: Bool {
-            isKeyboardShowing && code.count == index
+            isFocused && code.count == index
         }
                 
         VStack(spacing: 12) {

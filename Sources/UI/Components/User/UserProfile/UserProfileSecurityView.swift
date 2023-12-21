@@ -14,6 +14,7 @@ struct UserProfileSecurityView: View {
     public var body: some View {
         VStack(spacing: 30) {
             HeaderView(title: "Security")
+                .frame(maxWidth: .infinity, alignment: .leading)
             UserProfilePasswordSection()
             UserProfileActiveDevicesSection()
         }

@@ -72,7 +72,7 @@ struct SignInPasswordView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInStart
+                    clerkUIState.presentedAuthStep = .signInUseAnotherMethod(.password)
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))

@@ -12,8 +12,6 @@ import Clerk
 
 struct SignInStartView: View {
     @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
     public var body: some View {
