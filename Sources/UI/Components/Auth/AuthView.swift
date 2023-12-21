@@ -103,6 +103,8 @@ public struct AuthView: View {
         })
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
+        .interactiveDismissDisabled()
+        .scrollDismissesKeyboard(.interactively)
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
