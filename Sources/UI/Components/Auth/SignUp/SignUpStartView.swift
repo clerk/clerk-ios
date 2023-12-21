@@ -39,22 +39,6 @@ struct SignUpStartView: View {
 
                 SignUpFormView()
                     .padding(.bottom, 32)
-                
-                HStack(spacing: 4) {
-                    Text("Already have an account?")
-                        .font(.footnote)
-                        .foregroundStyle(clerkTheme.colors.gray500)
-                    Button {
-                        clerkUIState.authIsPresented = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-                            clerkUIState.presentedAuthStep = .signInStart
-                        })
-                    } label: {
-                        Text("Sign In")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
-                    }
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)

@@ -14,6 +14,7 @@ public struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.clerkTheme) private var clerkTheme
     
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
@@ -71,8 +72,30 @@ public struct AuthView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .background {
+            Color(.systemBackground)
+                .raisedCardBottom()
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+        }
+        .keyboardAvoidingBottomView(inFrontOfContent: false, content: {
+            VStack(spacing: 0) {
+                switch clerkUIState.presentedAuthStep {
+                case .signInStart:
+                    dontHaveAnAccountView
+                case .signUpStart:
+                    alreadyHaveAnAccountView
+                default:
+                    EmptyView()
+                }
+                
+                SecuredByClerkView()
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+            }
+            .background(.ultraThinMaterial)
+        })
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
-        .clerkBottomBranding()
         .dismissButtonOverlay()
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
             KeyboardHelpers.dismissKeyboard()
@@ -81,6 +104,50 @@ public struct AuthView: View {
         .task {
             try? await clerk.environment.get()
         }
+    }
+    
+    @ViewBuilder
+    private var dontHaveAnAccountView: some View {
+        HStack(spacing: 4) {
+            Text("Don't have an account?")
+                .font(.footnote)
+                .foregroundStyle(clerkTheme.colors.gray500)
+            Button {
+                clerkUIState.authIsPresented = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                    clerkUIState.presentedAuthStep = .signUpStart
+                })
+            } label: {
+                Text("Sign Up")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(clerkTheme.colors.gray700)
+            }
+        }
+        .padding(.vertical, 16)
+        
+        Divider()
+    }
+    
+    @ViewBuilder
+    private var alreadyHaveAnAccountView: some View {
+        HStack(spacing: 4) {
+            Text("Already have an account?")
+                .font(.footnote)
+                .foregroundStyle(clerkTheme.colors.gray500)
+            Button {
+                clerkUIState.authIsPresented = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                    clerkUIState.presentedAuthStep = .signInStart
+                })
+            } label: {
+                Text("Sign In")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(clerkTheme.colors.gray700)
+            }
+        }
+        .padding(.vertical, 16)
+        
+        Divider()
     }
 }
 
