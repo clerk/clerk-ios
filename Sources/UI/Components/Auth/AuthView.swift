@@ -86,15 +86,7 @@ public struct AuthView: View {
         }
         .keyboardAvoidingBottomView(inFrontOfContent: false, content: {
             VStack(spacing: 0) {
-                switch clerkUIState.presentedAuthStep {
-                case .signInStart:
-                    dontHaveAnAccountView
-                case .signUpStart:
-                    alreadyHaveAnAccountView
-                default:
-                    EmptyView()
-                }
-                
+                footerView
                 SecuredByClerkView()
                     .padding(.vertical, 16)
                     .frame(maxWidth: .infinity)
@@ -115,47 +107,31 @@ public struct AuthView: View {
     }
     
     @ViewBuilder
-    private var dontHaveAnAccountView: some View {
-        HStack(spacing: 4) {
-            Text("Don't have an account?")
-                .font(.footnote)
-                .foregroundStyle(clerkTheme.colors.gray500)
-            Button {
-                clerkUIState.authIsPresented = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-                    clerkUIState.presentedAuthStep = .signUpStart
-                })
-            } label: {
-                Text("Sign Up")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.gray700)
-            }
+    private var footerView: some View {
+        var isSignIn: Bool {
+            clerkUIState.presentedAuthStep == .signInStart
         }
-        .padding(.vertical, 16)
         
-        Divider()
-    }
-    
-    @ViewBuilder
-    private var alreadyHaveAnAccountView: some View {
-        HStack(spacing: 4) {
-            Text("Already have an account?")
-                .font(.footnote)
-                .foregroundStyle(clerkTheme.colors.gray500)
-            Button {
-                clerkUIState.authIsPresented = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-                    clerkUIState.presentedAuthStep = .signInStart
-                })
-            } label: {
-                Text("Sign In")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.gray700)
+        if [.signInStart, .signUpStart].contains(clerkUIState.presentedAuthStep) {
+            HStack(spacing: 4) {
+                Text(isSignIn ? "Don't have an account?" : "Already have an account?")
+                    .font(.footnote)
+                    .foregroundStyle(clerkTheme.colors.gray500)
+                Button {
+                    clerkUIState.authIsPresented = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                        clerkUIState.presentedAuthStep = isSignIn ? .signUpStart : .signInStart
+                    })
+                } label: {
+                    Text(isSignIn ? "Sign Up" : "Sign In")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(clerkTheme.colors.gray700)
+                }
             }
+            .padding(.vertical, 16)
+            
+            Divider()
         }
-        .padding(.vertical, 16)
-        
-        Divider()
     }
 }
 
