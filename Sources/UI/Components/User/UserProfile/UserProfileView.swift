@@ -42,7 +42,7 @@ public struct UserProfileView: View {
                 dump(error)
             }
         }
-        .task {
+        .task(id: user?.id) {
             do {
                 try await clerk.client.lastActiveSession?.user?.getSessions()
             } catch {
