@@ -25,12 +25,11 @@ struct ClerkProviderModifier: ViewModifier {
     @ObservedObject private var clerk = Clerk.shared
     @StateObject private var clerkUIState = ClerkUIState()
     
-    init(publishableKey: String) {
-        clerk.configure(publishableKey: publishableKey)
-    }
+    let publishableKey: String
     
     func body(content: Content) -> some View {
         content
+            .task { clerk.configure(publishableKey: publishableKey) }
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             .addKeyboardVisibilityToEnvironment()
