@@ -84,7 +84,7 @@ public struct AuthView: View {
                 .background(.ultraThinMaterial)
                 .ignoresSafeArea()
         }
-        .keyboardAvoidingBottomView(inFrontOfContent: false, content: {
+        .keyboardIgnoringBottomView(inFrontOfContent: false, content: {
             VStack(spacing: 0) {
                 footerView
                 SecuredByClerkView()

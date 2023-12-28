@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-struct KeyboardAvoidingBottomViewModifier<BottomView: View>: ViewModifier {
-    @State private var bottomViewSize: CGSize?
-    @Environment(\.keyboardShowing) private var keyboardShowing
+struct KeyboardIgnoringBottomViewModifier<BottomView: View>: ViewModifier, KeyboardReadable {
+    @State private var bottomViewSize: CGSize = .zero
+    @State private var keyboardIsVisible: Bool = false
     
     var inFrontOfContent: Bool = true
     @ViewBuilder var bottomView: BottomView
@@ -26,7 +26,10 @@ struct KeyboardAvoidingBottomViewModifier<BottomView: View>: ViewModifier {
             }
             
             content
-                .padding(.bottom, keyboardShowing ? 0 : bottomViewSize?.height ?? 0)
+                .onReceive(keyboardPublisher) { keyboardIsVisible in
+                    self.keyboardIsVisible = keyboardIsVisible
+                }
+                .padding(.bottom, keyboardIsVisible ? 0 : bottomViewSize.height)
 
             if inFrontOfContent {
                 VStack {
@@ -41,8 +44,8 @@ struct KeyboardAvoidingBottomViewModifier<BottomView: View>: ViewModifier {
 }
 
 extension View {
-    func keyboardAvoidingBottomView<BottomView: View>(inFrontOfContent: Bool = true, @ViewBuilder content: () -> BottomView) -> some View {
-        modifier(KeyboardAvoidingBottomViewModifier(inFrontOfContent: inFrontOfContent, bottomView: content))
+    func keyboardIgnoringBottomView<BottomView: View>(inFrontOfContent: Bool = true, @ViewBuilder content: () -> BottomView) -> some View {
+        modifier(KeyboardIgnoringBottomViewModifier(inFrontOfContent: inFrontOfContent, bottomView: content))
     }
 }
 
@@ -50,7 +53,7 @@ extension View {
     ScrollView {
         TextField("Text Field", text: .constant("Text"))
     }
-    .keyboardAvoidingBottomView {
+    .keyboardIgnoringBottomView {
         SecuredByClerkView()
     }
 }
