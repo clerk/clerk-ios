@@ -31,6 +31,16 @@ struct ExamplesListView: View {
                         Text("Sign Up")
                     }
                 }
+                
+                #if DEBUG
+                Section("Debug Tools") {
+                    Button {
+                        Clerk.removeAllFromKeychain()
+                    } label: {
+                        Text("Remove All from Keychain")
+                    }
+                }
+                #endif
             }
             .navigationTitle("Clerk Examples")
             .toolbar {
