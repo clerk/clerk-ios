@@ -147,10 +147,6 @@ struct UserButtonPopover: View {
                         .padding(.horizontal)
                     }
                 }
-                
-                SecuredByClerkView()
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
             }
             .animation(.snappy, value: clerk.session)
             .padding(.vertical, 30)
@@ -162,6 +158,12 @@ struct UserButtonPopover: View {
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
+        .safeAreaInset(edge: .bottom) {
+            SecuredByClerkView()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+                .background()
+        }
     }
 }
 

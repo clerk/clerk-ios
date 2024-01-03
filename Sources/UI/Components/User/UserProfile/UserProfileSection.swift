@@ -29,6 +29,14 @@ struct UserProfileSection: View {
                     updateProfileIsPresented = true
                 } label: {
                     UserPreviewView(user: user, hideSubtitle: true)
+                        .overlay(alignment: .bottomLeading) {
+                            Image(systemName: "pencil.circle.fill")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 16, height: 16)
+                                .background()
+                                .clipShape(.circle)
+                        }
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $updateProfileIsPresented) {

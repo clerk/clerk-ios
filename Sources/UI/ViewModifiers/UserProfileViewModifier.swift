@@ -17,6 +17,7 @@ struct UserProfileViewModifier: ViewModifier {
         content
             .sheet(isPresented: $isPresented) {
                 UserProfileView()
+                    .presentationDragIndicator(.visible)
             }
     }
 }

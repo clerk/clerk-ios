@@ -156,6 +156,7 @@ extension SignUp {
             password: String? = nil,
             emailAddress: String? = nil,
             phoneNumber: String? = nil,
+            username: String? = nil,
             strategy: Strategy? = nil,
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
@@ -166,6 +167,7 @@ extension SignUp {
             self.password = password
             self.emailAddress = emailAddress
             self.phoneNumber = phoneNumber
+            self.username = username
             self.strategy = strategy?.stringValue
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
@@ -177,6 +179,7 @@ extension SignUp {
         public var password: String?
         public var emailAddress: String?
         public var phoneNumber: String?
+        public var username: String?
         public var strategy: String?
         public var redirectUrl: String?
         public var actionCompleteRedirectUrl: String?
@@ -217,18 +220,15 @@ extension SignUp {
 extension SignUp {
     
     public enum CreateStrategy {
-        case emailCode(emailAddress: String, password: String, firstName: String? = nil, lastName: String? = nil, phoneNumber: String? = nil)
-        case phoneCode(phoneNumber: String, firstName: String? = nil, lastName: String? = nil)
+        case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
         case oauth(provider: OAuthProvider)
         case transfer
     }
     
     private func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
-        case .emailCode(let emailAddress, let password, let firstName, let lastName, let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber)
-        case .phoneCode(let phoneNumber, let firstName, let lastName):
-            return .init(firstName: firstName, lastName: lastName, phoneNumber: phoneNumber)
+        case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
         case .oauth(let provider):
             return .init(strategy: .oauth(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
         case .transfer:

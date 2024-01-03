@@ -14,7 +14,7 @@ struct SignInStartView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.dismiss) private var dismiss
     
-    private var showThirdPartyProviders: Bool {
+    private var socialProvidersEnabled: Bool {
         !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
     }
     
@@ -38,12 +38,12 @@ struct SignInStartView: View {
                 )
                 .padding(.bottom, 32)
                 
-                if showThirdPartyProviders {
+                if socialProvidersEnabled {
                     SignInSocialProvidersView()
                         .onSuccess { dismiss() }
                 }
                 
-                if showThirdPartyProviders && showSignInForm {
+                if socialProvidersEnabled && showSignInForm {
                     TextDivider(text: "or")
                         .padding(.vertical, 24)
                 }

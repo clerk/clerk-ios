@@ -14,6 +14,7 @@ import Factory
 struct SignUpVerificationView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @State private var errorWrapper: ErrorWrapper?
         
     private var signUp: SignUp {
         clerk.client.signUp
@@ -28,10 +29,12 @@ struct SignUpVerificationView: View {
                 SignUpEmailCodeView()
             default:
                 ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .task {
                         switch signUp.status {
                         case .missingRequirements:
-                            break // missing requirements
+                            dump("MISSING REQUIREMENTS")
+                            clerkUIState.presentedAuthStep = .signUpStart
                         default:
                             clerkUIState.authIsPresented = false
                         }

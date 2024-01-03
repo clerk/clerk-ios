@@ -23,6 +23,9 @@ struct CustomTextField: View {
             .font(.footnote)
             .padding(.horizontal)
             .tint(clerkTheme.colors.textPrimary)
+            .background()
+            .clipShape(.rect(cornerRadius: 6, style: .continuous))
+            .shadow(color: Color(red: 0.1, green: 0.11, blue: 0.13).opacity(0.06), radius: 0.5, x: 0, y: 1)
             .overlay {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : clerkTheme.colors.borderPrimary, lineWidth: 1)

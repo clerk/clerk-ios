@@ -20,6 +20,17 @@ struct SignUpStartView: View {
         clerk.client.signUp
     }
     
+    private var socialProvidersEnabled: Bool {
+        !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
+    }
+    
+    private var contactInfoEnabled: Bool {
+        clerk.environment.userSettings.enabledAttributes.contains {
+            $0.key == .emailAddress ||
+            $0.key == .phoneNumber
+        }
+    }
+    
     public var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
@@ -32,14 +43,20 @@ struct SignUpStartView: View {
                 )
                 .padding(.bottom, 32)
                 
-                SignUpSocialProvidersView()
-                    .onSuccess { dismiss() }
+                if socialProvidersEnabled {
+                    SignUpSocialProvidersView()
+                        .onSuccess { dismiss() }
+                }
                 
-                TextDivider(text: "or")
-                    .padding(.vertical, 24)
+                if socialProvidersEnabled && contactInfoEnabled {
+                    TextDivider(text: "or")
+                        .padding(.vertical, 24)
+                }
 
-                SignUpFormView()
-                    .padding(.bottom, 32)
+                if contactInfoEnabled {
+                    SignUpFormView()
+                        .padding(.bottom, 32)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)

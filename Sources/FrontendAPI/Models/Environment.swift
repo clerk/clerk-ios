@@ -87,14 +87,14 @@ extension Clerk.Environment {
         }
         
         public struct AttributesConfig: Codable, Equatable {
-            let enabled: Bool
-            let required: Bool
-            let usedForFirstFactor: Bool
-            let firstFactors: [String]
-            let usedForSecondFactor: Bool
-            let secondFactors: [String]
-            let verifications: [String]
-            let verifyAtSignUp: Bool
+            public let enabled: Bool
+            public let required: Bool
+            public let usedForFirstFactor: Bool
+            public let firstFactors: [String]
+            public let usedForSecondFactor: Bool
+            public let secondFactors: [String]
+            public let verifications: [String]
+            public let verifyAtSignUp: Bool
             
             public var verificationStrategies: [Strategy] {
                 verifications.compactMap({ .init(stringValue: $0) })
@@ -102,11 +102,11 @@ extension Clerk.Environment {
         }
         
         public struct SocialConfig: Codable, Equatable {
-            let enabled: Bool
-            let required: Bool
-            let authenticatable: Bool
-            let strategy: String
-            let notSelectable: Bool
+            public let enabled: Bool
+            public let required: Bool
+            public let authenticatable: Bool
+            public let strategy: String
+            public let notSelectable: Bool
         }
     }
 }
@@ -137,11 +137,11 @@ extension Clerk.Environment.UserSettings {
     }
     
     public var attributesToVerifyAtSignUp: [Attribute: AttributesConfig] {
-        attributes.filter({ $0.value.verifyAtSignUp })
+        enabledAttributes.filter({ $0.value.verifyAtSignUp })
     }
     
     private func userAttributeConfig(for key: Attribute) -> AttributesConfig? {
-        return attributes.first(where: { $0.key == key && $0.value.enabled })?.value
+        return enabledAttributes.first(where: { $0.key == key && $0.value.enabled })?.value
     }
     
     public var preferredEmailVerificationStrategy: Strategy? {
