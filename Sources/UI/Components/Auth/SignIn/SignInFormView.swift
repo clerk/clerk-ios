@@ -15,63 +15,98 @@ struct SignInFormView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
-    @State private var emailAddress: String = ""
+    @State private var emailAddressOrUsername: String = ""
     @State private var phoneNumber: String = ""
-    @State private var displayingEmailEntry = true
+    @State private var displayingEmailOrUsernameEntry = true
     @State private var errorWrapper: ErrorWrapper?
     
     @FocusState private var focusedField: Field?
     
     private enum Field {
-        case email, phoneNumber
+        case emailOrUsername, phoneNumber
     }
     
     private var signIn: SignIn {
         clerk.client.signIn
     }
     
+    // returns true if email OR username is used for sign in AND phone number is used for sign in
+    private var showPhoneNumberToggle: Bool {
+        (clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .emailAddress } ||
+        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .username }) &&
+        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber }
+    }
+    
+    // returns true if phone number is enabled, and both email and username are NOT
+    private var shouldDefaultToPhoneNumber: Bool {
+        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber } &&
+        (clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .emailAddress }) == false &&
+        clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .username }) == false)
+    }
+    
+    private var emailOrUsernameLabel: String {
+        var stringComponents = [String]()
+        if clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .emailAddress }) {
+            stringComponents.append("email address")
+        }
+        
+        if clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .username }) {
+            stringComponents.append("username")
+        }
+        
+        let string = stringComponents.joined(separator: " or ")
+        return string
+    }
+        
     var body: some View {
         VStack(spacing: 24) {
             VStack {
                 HStack {
-                    Text(displayingEmailEntry ? "Email address" : "Phone number")
-                        .contentTransition(.identity)
+                    Text(displayingEmailOrUsernameEntry ? emailOrUsernameLabel.capitalizedSentence : "Phone number")
                         .foregroundStyle(clerkTheme.colors.gray700)
+                        .animation(nil, value: displayingEmailOrUsernameEntry)
                     Spacer()
-                    Button {
-                        displayingEmailEntry.toggle()
-                    } label: {
-                        Text(displayingEmailEntry ? "Use phone" : "Use email")
-                            .contentTransition(.identity)
+                    
+                    if showPhoneNumberToggle {
+                        Button {
+                            withAnimation(.snappy) {
+                                displayingEmailOrUsernameEntry.toggle()
+                            }
+                        } label: {
+                            Text(displayingEmailOrUsernameEntry ? "Use phone" : "Use \(emailOrUsernameLabel)".capitalizedSentence)
+                                .frame(alignment: .trailing)
+                                .animation(nil, value: displayingEmailOrUsernameEntry)
+                        }
+                        .tint(clerkTheme.colors.textPrimary)
                     }
-                    .tint(clerkTheme.colors.textPrimary)
                 }
                 .font(.footnote.weight(.medium))
                 
-                if displayingEmailEntry {
-                    CustomTextField(text: $emailAddress)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .focused($focusedField, equals: .email)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                } else {
-                    PhoneNumberField(text: $phoneNumber)
-                        .focused($focusedField, equals: .phoneNumber)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                ZStack {
+                    if displayingEmailOrUsernameEntry {
+                        CustomTextField(text: $emailAddressOrUsername)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .emailOrUsername)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    } else {
+                        PhoneNumberField(text: $phoneNumber)
+                            .focused($focusedField, equals: .phoneNumber)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
                 }
-            }
-            .animation(.snappy, value: displayingEmailEntry)
-            .onChange(of: displayingEmailEntry) { showingEmail in
-                if focusedField != nil {
-                    focusedField = showingEmail ? .email : .phoneNumber
+                .onChange(of: displayingEmailOrUsernameEntry) { showingEmail in
+                    if focusedField != nil {
+                        focusedField = showingEmail ? .emailOrUsername : .phoneNumber
+                    }
                 }
             }
             
             AsyncButton {
-                if displayingEmailEntry {
-                    await signInAction(strategy: .emailCode(email: emailAddress))
+                if displayingEmailOrUsernameEntry {
+                    await signInAction(strategy: .emailCode(email: emailAddressOrUsername))
                 } else {
                     await signInAction(strategy: .phoneCode(phoneNumber: phoneNumber))
                 }
@@ -83,6 +118,9 @@ struct SignInFormView: View {
             .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
+        .task(id: clerk.environment.userSettings) {
+            displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
+        }
     }
     
     private func signInAction(strategy: SignIn.CreateStrategy) async {

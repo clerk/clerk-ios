@@ -14,6 +14,18 @@ struct SignInStartView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.dismiss) private var dismiss
     
+    private var showThirdPartyProviders: Bool {
+        !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
+    }
+    
+    private var showSignInForm: Bool {
+        clerk.environment.userSettings.firstFactorAttributes.contains {
+            $0.key == .emailAddress ||
+            $0.key == .username ||
+            $0.key == .phoneNumber
+        }
+    }
+    
     public var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
@@ -26,14 +38,20 @@ struct SignInStartView: View {
                 )
                 .padding(.bottom, 32)
                 
-                SignInSocialProvidersView()
-                    .onSuccess { dismiss() }
+                if showThirdPartyProviders {
+                    SignInSocialProvidersView()
+                        .onSuccess { dismiss() }
+                }
                 
-                TextDivider(text: "or")
-                    .padding(.vertical, 24)
+                if showThirdPartyProviders && showSignInForm {
+                    TextDivider(text: "or")
+                        .padding(.vertical, 24)
+                }
                 
-                SignInFormView()
-                    .padding(.bottom, 32)
+                if showSignInForm {
+                    SignInFormView()
+                        .padding(.bottom, 32)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()

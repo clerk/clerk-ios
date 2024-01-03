@@ -22,4 +22,10 @@ extension String {
         guard let data = Data(base64Encoded: stringWithPadding) else { return nil }
         return String(data: data, encoding: .utf8)
     }
+    
+    public var capitalizedSentence: String {
+        let firstLetter = self.prefix(1).capitalized
+        let remainingLetters = self.dropFirst().lowercased()
+        return firstLetter + remainingLetters
+    }
 }

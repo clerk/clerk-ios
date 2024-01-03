@@ -59,21 +59,34 @@ extension Clerk.Environment {
 
 extension Clerk.Environment {
     
-    public struct UserSettings: Codable {
+    public struct UserSettings: Codable, Equatable {
         
         public init(
-            attributes: [String : AttributesConfig] = [:],
+            attributes: [Attribute : AttributesConfig] = [:],
             social: [String : SocialConfig] = [:]
         ) {
             self.attributes = attributes
             self.social = social
         }
         
-        var attributes: [String: AttributesConfig] = [:]
+        var attributes: [Attribute: AttributesConfig] = [:]
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
         var social: [String: SocialConfig] = [:]
         
-        public struct AttributesConfig: Codable {
+        public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable {
+            case emailAddress
+            case phoneNumber
+            case username
+            case web3Wallet
+            case firstName
+            case lastName
+            case password
+            case authenticatorApp
+            case ticket
+            case backupCode
+        }
+        
+        public struct AttributesConfig: Codable, Equatable {
             let enabled: Bool
             let required: Bool
             let usedForFirstFactor: Bool
@@ -88,7 +101,7 @@ extension Clerk.Environment {
             }
         }
         
-        public struct SocialConfig: Codable {
+        public struct SocialConfig: Codable, Equatable {
             let enabled: Bool
             let required: Bool
             let authenticatable: Bool
@@ -100,10 +113,22 @@ extension Clerk.Environment {
 
 extension Clerk.Environment.UserSettings {
     
-    public var enabledAttributes: [AttributesConfig] {
-        attributes.values.filter({ $0.enabled })
+    public func config(for attribute: Attribute) -> AttributesConfig? {
+        attributes[attribute]
     }
     
+    public var enabledAttributes: [Attribute: AttributesConfig] {
+        attributes.filter({ $0.value.enabled })
+    }
+    
+    public var firstFactorAttributes: [Attribute: AttributesConfig] {
+        enabledAttributes.filter({ $0.value.usedForFirstFactor })
+    }
+    
+    public var requiredAttributes: [Attribute: AttributesConfig] {
+        enabledAttributes.filter({ $0.value.required })
+    }
+        
     public var enabledThirdPartyProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         return authenticatableStrategies.compactMap { strategy in
@@ -111,16 +136,16 @@ extension Clerk.Environment.UserSettings {
         }
     }
     
-    public var attributesToVerifyAtSignUp: [String: AttributesConfig] {
+    public var attributesToVerifyAtSignUp: [Attribute: AttributesConfig] {
         attributes.filter({ $0.value.verifyAtSignUp })
     }
     
-    private func userAttribute(key: String) -> AttributesConfig? {
+    private func userAttributeConfig(for key: Attribute) -> AttributesConfig? {
         return attributes.first(where: { $0.key == key && $0.value.enabled })?.value
     }
     
     public var preferredEmailVerificationStrategy: Strategy? {
-        let emailAttribute = userAttribute(key: "email_address")
+        let emailAttribute = userAttributeConfig(for: .emailAddress)
         let strategies = emailAttribute?.verificationStrategies ?? []
         
         if strategies.contains(where: { $0 == .emailCode }) {

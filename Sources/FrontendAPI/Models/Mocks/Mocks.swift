@@ -110,8 +110,8 @@ extension Clerk.Environment.UserSettings {
     static var mock: Self {
         .init(
             attributes: [
-                "phone_number": .mockPhoneNumber,
-                "email_address": .mockEmail
+                .phoneNumber: .mockPhoneNumber,
+                .emailAddress: .mockEmail
             ],
             social: [
                 "oauth_apple": .mockApple,

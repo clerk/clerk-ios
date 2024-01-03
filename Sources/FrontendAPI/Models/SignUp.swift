@@ -273,7 +273,7 @@ extension SignUp {
         let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
         
         if unverifiedFields.contains(where: { $0 == "email_address" }) {
-            guard let emailVerifications = attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies else {
+            guard let emailVerifications = attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies else {
                 return nil
             }
             
@@ -284,7 +284,7 @@ extension SignUp {
             }
             
         } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
-            return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationStrategies.first
+            return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
             
         } else {
             return nil
