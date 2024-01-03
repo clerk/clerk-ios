@@ -102,8 +102,7 @@ extension Client {
             .delete
         
         try await Clerk.apiClient.send(request)
-        try Clerk.keychain.remove(Clerk.KeychainKey.deviceToken)
-        try Clerk.keychain.remove(Clerk.KeychainKey.client)
+        try Clerk.keychain.removeAll()
         Clerk.shared.client = Client()
     }
     

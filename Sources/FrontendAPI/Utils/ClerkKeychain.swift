@@ -19,10 +19,4 @@ extension Clerk {
         static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
         static let environment = "environment"
     }
-    
-    #if DEBUG
-    public static func removeAllFromKeychain() {
-        try? keychain.removeAll()
-    }
-    #endif
 }
