@@ -163,11 +163,13 @@ extension Clerk {
                 .post
             
             try await Clerk.apiClient.send(request)
+            try await Clerk.shared.client.get()
+            if Clerk.shared.client.sessions.isEmpty {
+                try await Clerk.shared.client.destroy()
+            }
         } else {
-           try await Clerk.shared.client.destroy()
+            try await Clerk.shared.client.destroy()
         }
-        
-        try await Clerk.shared.client.get()
     }
     
     public struct SetActiveParams: Encodable {
