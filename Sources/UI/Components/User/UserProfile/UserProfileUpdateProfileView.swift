@@ -31,6 +31,14 @@ struct UserProfileUpdateProfileView: View {
         user?.lastName == lastName
     }
     
+    private var firstNameIsEnabled: Bool {
+        clerk.environment.userSettings.enabledAttributes.contains { $0.key == .firstName }
+    }
+    
+    private var lastNameIsEnabled: Bool {
+        clerk.environment.userSettings.enabledAttributes.contains { $0.key == .lastName }
+    }
+    
     private func updateUser() async {
         do {
             try await user?.update(.init(
@@ -109,26 +117,30 @@ struct UserProfileUpdateProfileView: View {
                     }
                 }
                 
-                VStack(alignment: .leading) {
-                    Text("First name")
-                        .font(.footnote.weight(.medium))
-                    CustomTextField(text: $firstName)
-                        .textContentType(.givenName)
-                        .autocorrectionDisabled()
-                        .task {
-                            firstName = user?.firstName ?? ""
-                        }
+                if firstNameIsEnabled {
+                    VStack(alignment: .leading) {
+                        Text("First name")
+                            .font(.footnote.weight(.medium))
+                        CustomTextField(text: $firstName)
+                            .textContentType(.givenName)
+                            .autocorrectionDisabled()
+                            .task {
+                                firstName = user?.firstName ?? ""
+                            }
+                    }
                 }
                 
-                VStack(alignment: .leading) {
-                    Text("Last name")
-                        .font(.footnote.weight(.medium))
-                    CustomTextField(text: $lastName)
-                        .textContentType(.familyName)
-                        .autocorrectionDisabled()
-                        .task {
-                            lastName = user?.lastName ?? ""
-                        }
+                if lastNameIsEnabled {
+                    VStack(alignment: .leading) {
+                        Text("Last name")
+                            .font(.footnote.weight(.medium))
+                        CustomTextField(text: $lastName)
+                            .textContentType(.familyName)
+                            .autocorrectionDisabled()
+                            .task {
+                                lastName = user?.lastName ?? ""
+                            }
+                    }
                 }
                 
                 HStack {

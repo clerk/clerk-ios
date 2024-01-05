@@ -25,10 +25,8 @@ struct SignUpStartView: View {
     }
     
     private var contactInfoEnabled: Bool {
-        clerk.environment.userSettings.enabledAttributes.contains {
-            $0.key == .emailAddress ||
-            $0.key == .phoneNumber
-        }
+        clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true ||
+        clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
     }
     
     public var body: some View {

@@ -43,9 +43,6 @@ struct SignUpEmailCodeView: View {
                 .onResend {
                     await prepare()
                 }
-                .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signUpStart
-                }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
                     await prepare()

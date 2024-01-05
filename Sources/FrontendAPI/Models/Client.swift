@@ -26,7 +26,7 @@ public class Client: Codable {
         self.lastActiveSessionId = lastActiveSessionId
     }
 
-    /// Indicates that this client object was created client side and is not created by the server
+    /// Indicates that this client object was created client side as a placeholder and is not created by the server
     public let isPlaceholder: Bool
     
     /// The current sign in attempt.

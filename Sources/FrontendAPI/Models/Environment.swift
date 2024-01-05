@@ -128,6 +128,21 @@ extension Clerk.Environment.UserSettings {
     public var requiredAttributes: [Attribute: AttributesConfig] {
         enabledAttributes.filter({ $0.value.required })
     }
+    
+    public var instanceIsPasswordBased: Bool {
+        guard let passwordConfig = config(for: .password) else { return false }
+        return passwordConfig.enabled && passwordConfig.required
+    }
+    
+    public var hasValidAuthFactor: Bool {
+        if enabledAttributes.contains(where: { $0.key == .emailAddress || $0.key == .phoneNumber }) {
+            return true
+        }
+        
+        if instanceIsPasswordBased { return true }
+        
+        return false
+     }
         
     public var enabledThirdPartyProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)

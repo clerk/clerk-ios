@@ -50,6 +50,9 @@ public struct UserProfileView: View {
                 dump(error)
             }
         }
+        .task {
+            try? await clerk.environment.get()
+        }
     }
 }
 

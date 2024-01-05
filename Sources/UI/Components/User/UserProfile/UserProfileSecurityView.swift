@@ -11,11 +11,17 @@ import SwiftUI
 import Clerk
 
 struct UserProfileSecurityView: View {
+    @EnvironmentObject private var clerk: Clerk
+    
     public var body: some View {
         VStack(spacing: 30) {
             HeaderView(title: "Security")
                 .frame(maxWidth: .infinity, alignment: .leading)
-            UserProfilePasswordSection()
+            
+            if clerk.environment.userSettings.instanceIsPasswordBased {
+                UserProfilePasswordSection()
+            }
+            
             UserProfileActiveDevicesSection()
         }
     }

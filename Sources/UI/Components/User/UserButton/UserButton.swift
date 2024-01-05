@@ -40,7 +40,6 @@ public struct UserButton: View {
                         .resizable()
                         .scaledToFit()
                         .symbolRenderingMode(.monochrome)
-                        .tint(clerkTheme.colors.primary) // Acts as a placeholder
                 }
             }
             .frame(width: 32, height: 32)

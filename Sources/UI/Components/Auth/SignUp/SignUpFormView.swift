@@ -34,10 +34,12 @@ struct SignUpFormView: View {
     }
     
     private var nameEnabled: Bool {
-        clerk.environment.userSettings.enabledAttributes.contains {
-            $0.key == .firstName ||
-            $0.key == .lastName
-        }
+        clerk.environment.userSettings.config(for: .firstName)?.enabled == true ||
+        clerk.environment.userSettings.config(for: .lastName)?.enabled == true
+    }
+    
+    private var usernameEnabled: Bool {
+        clerk.environment.userSettings.config(for: .username)?.enabled == true
     }
     
     var body: some View {
@@ -153,18 +155,13 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let password = clerk.environment.userSettings.config(for: .password), password.enabled {
+            if clerk.environment.userSettings.instanceIsPasswordBased {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Password")
                             .font(.footnote.weight(.medium))
                             .foregroundStyle(clerkTheme.colors.gray700)
                         Spacer()
-                        if !password.required {
-                            Text("Optional")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(.tertiary)
-                        }
                     }
                     
                     PasswordInputView(password: $password)
@@ -193,7 +190,7 @@ struct SignUpFormView: View {
                 password: password,
                 firstName: firstName,
                 lastName: lastName,
-                username: username,
+                username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumber
             ))
             
