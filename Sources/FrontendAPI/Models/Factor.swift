@@ -87,4 +87,24 @@ extension Factor {
         }
     }
     
+    public var sortOrderPasswordPreferred: Int {
+        switch self.verificationStrategy {
+        case .password: 0
+        case .emailCode: 1
+        case .phoneCode: 2
+        case .emailLink: 3
+        default: 100
+        }
+    }
+    
+    public var sortOrderOTPPreferred: Int {
+        switch self.verificationStrategy {
+        case .emailCode: 0
+        case .phoneCode: 1
+        case .emailLink: 2
+        case .password: 3
+        default: 100
+        }
+    }
+    
 }

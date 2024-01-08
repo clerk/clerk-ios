@@ -285,15 +285,20 @@ extension SignIn {
 
 extension SignIn {
     
-    public var defaultSignInStrategy: Strategy? {
-        if supportedFirstFactors.contains(where: { $0.verificationStrategy == .password }) {
-            return .password
-        } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailCode }) {
-            return .emailCode
-        } else if supportedFirstFactors.contains(where: { $0.verificationStrategy == .emailLink }) {
-            return .emailLink
-        } else {
-            return nil
+    public func startingSignInFactor(preferredStrategy: Clerk.Environment.DisplayConfig.PreferredSignInStrategy) -> Factor? {
+        let firstFactors = alternativeFirstFactors(currentStrategy: nil) // filters out reset strategies and oauth
+        
+        switch preferredStrategy {
+        case .password:
+            let sortedFactors = firstFactors.sorted { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }
+            if let passwordFactor = sortedFactors.first(where: { $0.verificationStrategy == .password }) {
+                return passwordFactor
+            }
+            
+            return sortedFactors.first(where: { $0.safeIdentifier == identifier })
+        case .otp:
+            let sortedFactors = firstFactors.sorted { $0.sortOrderOTPPreferred < $1.sortOrderOTPPreferred }
+            return sortedFactors.first(where: { $0.safeIdentifier == identifier })
         }
     }
     

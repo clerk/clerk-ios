@@ -47,12 +47,19 @@ extension Clerk.Environment {
     public struct DisplayConfig: Codable {
         
         public init(
-            applicationName: String = ""
+            applicationName: String = "",
+            preferredSignInStrategy: PreferredSignInStrategy = .password
         ) {
             self.applicationName = applicationName
+            self.preferredSignInStrategy = preferredSignInStrategy
         }
         
         public let applicationName: String
+        public let preferredSignInStrategy: PreferredSignInStrategy
+        
+        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable {
+            case password, otp
+        }
     }
     
 }

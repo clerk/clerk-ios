@@ -128,10 +128,12 @@ struct SignInFormView: View {
             KeyboardHelpers.dismissKeyboard()
             try await signIn.create(strategy)
             
-            if signIn.defaultSignInStrategy == .password {
+            let startingFactorStrategy = signIn.startingSignInFactor(preferredStrategy: clerk.environment.displayConfig.preferredSignInStrategy)?.verificationStrategy
+            
+            if startingFactorStrategy == .password {
                 clerkUIState.presentedAuthStep = .signInPassword
             } else {
-                if let prepareStrategy = signIn.defaultSignInStrategy?.signInPrepareStrategy {
+                if let prepareStrategy = startingFactorStrategy?.signInPrepareStrategy {
                     try await signIn.prepareFirstFactor(prepareStrategy)
                     clerkUIState.presentedAuthStep = .signInFactorOneVerify
                 } else {

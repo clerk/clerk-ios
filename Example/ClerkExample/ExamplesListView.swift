@@ -36,6 +36,7 @@ struct ExamplesListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     UserButton()
+                        .tint(.primary)
                 }
             }
         }
