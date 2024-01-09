@@ -128,18 +128,10 @@ struct SignInFormView: View {
             KeyboardHelpers.dismissKeyboard()
             try await signIn.create(strategy)
             
-            let startingFactorStrategy = signIn.currentFirstFactor?.verificationStrategy
-            
-            if startingFactorStrategy == .password {
-                clerkUIState.presentedAuthStep = .signInPassword
-            } else {
-                if let prepareStrategy = startingFactorStrategy?.signInPrepareStrategy {
-                    try await signIn.prepareFirstFactor(prepareStrategy)
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
-                } else {
-                    throw ClerkClientError(message: "Unable to determine the first factor strategy.")
-                }
+            if let prepareStrategy = signIn.currentFirstFactor?.verificationStrategy?.signInPrepareStrategy {
+                try await signIn.prepareFirstFactor(prepareStrategy)
             }
+            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

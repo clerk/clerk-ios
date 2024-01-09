@@ -64,7 +64,7 @@ struct SignInForgotPasswordView: View {
                     .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInPassword
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.firstFactor(for: .password))
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))

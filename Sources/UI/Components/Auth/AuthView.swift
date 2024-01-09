@@ -27,14 +27,8 @@ public struct AuthView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInPassword:
-                SignInPasswordView()
-                    .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
             case .signInFactorOne:
-                SignInFactorOneVerificationView()
+                SignInFactorOneView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -46,7 +40,7 @@ public struct AuthView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorTwo:
-                SignInFactorTwoVerificationView()
+                SignInFactorTwoView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)

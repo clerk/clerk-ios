@@ -38,16 +38,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
                     .padding(.bottom, 18)
                 
                 Button {
-                    switch currentFactor?.verificationStrategy {
-                    case .password:
-                        clerkUIState.presentedAuthStep = .signInPassword
-                    default:
-                        if signIn.firstFactorHasBeenPrepared {
-                            clerkUIState.presentedAuthStep = .signInFactorOne(currentFactor)
-                        } else {
-                            clerkUIState.presentedAuthStep = .signInStart
-                        }
-                    }
+                    clerkUIState.presentedAuthStep = .signInFactorOne(currentFactor)
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))

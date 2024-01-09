@@ -1,8 +1,8 @@
 //
-//  SignInFactorTwoVerificationView.swift
+//  SignInFactorOneView.swift
 //
 //
-//  Created by Mike Pitre on 11/2/23.
+//  Created by Mike Pitre on 10/10/23.
 //
 
 #if canImport(UIKit)
@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInFactorTwoVerificationView: View {
+struct SignInFactorOneView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
         
@@ -19,8 +19,8 @@ struct SignInFactorTwoVerificationView: View {
     }
     
     private var strategy: Strategy? {
-        guard signIn.status == .needsSecondFactor else { return nil }
-        if case .signInFactorTwo(let factor) = clerkUIState.presentedAuthStep {
+        guard signIn.status == .needsFirstFactor else { return nil }
+        if case .signInFactorOne(let factor) = clerkUIState.presentedAuthStep {
             return factor?.verificationStrategy
         }
         return nil
@@ -31,24 +31,31 @@ struct SignInFactorTwoVerificationView: View {
     var body: some View {
         Group {
             switch strategy {
+            case .password:
+                SignInPasswordView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+            case .emailCode:
+                SignInFactorOneEmailCodeView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .phoneCode:
-                SignInFactorTwoPhoneCodeView()
+                SignInFactorOnePhoneCodeView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .totp:
-                Text("TOTP")
+            case .resetPasswordEmailCode, .resetPasswordPhoneCode:
+                SignInFactorOneResetView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .backupCode:
-                SignInFactorTwoBackupCodeView()
-                    .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
+
             default:
                 ProgressView()
                     .task {
@@ -65,12 +72,14 @@ struct SignInFactorTwoVerificationView: View {
                     }
             }
         }
-        .animation(.snappy, value: signIn.secondFactorVerification?.verificationStrategy)
+        .animation(.snappy, value: signIn.firstFactorVerification?.verificationStrategy)
     }
 }
 
 #Preview {
-    SignInFactorTwoVerificationView()
+    SignInFactorOneView()
+        .environmentObject(Clerk.mock)
+        .environmentObject(ClerkUIState())
 }
 
 #endif
