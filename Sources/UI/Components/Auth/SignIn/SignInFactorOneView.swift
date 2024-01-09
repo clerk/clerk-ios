@@ -58,21 +58,10 @@ struct SignInFactorOneView: View {
 
             default:
                 ProgressView()
-                    .task {
-                        switch signIn.status {
-                        case .needsFirstFactor:
-                            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
-                        case .needsSecondFactor:
-                            clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
-                        case .needsNewPassword:
-                            clerkUIState.presentedAuthStep = .signInResetPassword
-                        default:
-                            clerkUIState.authIsPresented = false
-                        }
-                    }
+                    .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
             }
         }
-        .animation(.snappy, value: signIn.firstFactorVerification?.verificationStrategy)
+        .animation(.snappy, value: strategy)
     }
 }
 

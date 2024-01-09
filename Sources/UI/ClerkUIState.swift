@@ -39,6 +39,7 @@ public final class ClerkUIState: ObservableObject {
 
 extension ClerkUIState {
     
+    /// Sets the current auth step to the status determined by the API
     public func setAuthStepToCurrentStatus(for signIn: SignIn) {
         switch signIn.status {
         case .needsIdentifier:
