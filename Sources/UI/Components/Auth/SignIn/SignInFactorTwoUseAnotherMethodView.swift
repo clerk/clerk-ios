@@ -20,7 +20,7 @@ struct SignInFactorTwoUseAnotherMethodView: View {
         clerk.client.signIn
     }
     
-    let currentStrategy: Strategy
+    let currentFactor: Factor?
     
     public var body: some View {
         ScrollView {
@@ -34,20 +34,11 @@ struct SignInFactorTwoUseAnotherMethodView: View {
                 )
                 .padding(.bottom, 32)
                 
-                SignInFactorTwoAlternativeMethodsView(currentStrategy: currentStrategy)
+                SignInFactorTwoAlternativeMethodsView(currentFactor: currentFactor)
                     .padding(.bottom, 18)
                 
                 Button {
-                    switch currentStrategy {
-                    case .backupCode:
-                        clerkUIState.presentedAuthStep = .signInFactorTwoBackupCode
-                    default:
-                        if signIn.secondFactorHasBeenPrepared {
-                            clerkUIState.presentedAuthStep = .signInFactorTwoVerify
-                        } else {
-                            clerkUIState.presentedAuthStep = .signInStart
-                        }
-                    }
+                    clerkUIState.presentedAuthStep = .signInFactorTwo(currentFactor)
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
@@ -63,7 +54,7 @@ struct SignInFactorTwoUseAnotherMethodView: View {
 }
 
 #Preview {
-    SignInFactorTwoUseAnotherMethodView(currentStrategy: .totp)
+    SignInFactorTwoUseAnotherMethodView(currentFactor: nil)
 }
 
 #endif

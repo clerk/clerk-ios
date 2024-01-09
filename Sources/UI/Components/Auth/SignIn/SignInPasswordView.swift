@@ -73,7 +73,7 @@ struct SignInPasswordView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(.password)
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .password))
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
@@ -92,7 +92,7 @@ struct SignInPasswordView: View {
         do {
             try await signIn.attemptFirstFactor(.password(password: password))
             if signIn.status == .needsSecondFactor {
-                clerkUIState.presentedAuthStep = .signInFactorTwoVerify
+                clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
             } else {
                 clerkUIState.authIsPresented = false
             }

@@ -135,7 +135,7 @@ struct SignInFormView: View {
             } else {
                 if let prepareStrategy = startingFactorStrategy?.signInPrepareStrategy {
                     try await signIn.prepareFirstFactor(prepareStrategy)
-                    clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
                 } else {
                     throw ClerkClientError(message: "Unable to determine the first factor strategy.")
                 }

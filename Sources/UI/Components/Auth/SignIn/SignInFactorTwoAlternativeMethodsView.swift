@@ -16,7 +16,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let currentStrategy: Strategy?
+    let currentFactor: Factor?
     
     private var signIn: SignIn {
         clerk.client.signIn
@@ -24,15 +24,10 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     
     private func startAlternateSecondFactor(_ factor: Factor) async {
         do {
-            switch factor.verificationStrategy {
-            case .backupCode:
-                clerkUIState.presentedAuthStep = .signInFactorTwoBackupCode
-            default:
-                if let prepareStrategy = factor.prepareSecondFactorStrategy {
-                    try await signIn.prepareSecondFactor(prepareStrategy)
-                }
-                clerkUIState.presentedAuthStep = .signInFactorTwoVerify
+            if let prepareStrategy = factor.prepareSecondFactorStrategy {
+                try await signIn.prepareSecondFactor(prepareStrategy)
             }
+            clerkUIState.presentedAuthStep = .signInFactorTwo(factor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -41,7 +36,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(signIn.alternativeSecondFactors(currentStrategy: currentStrategy), id: \.self) { factor in
+            ForEach(signIn.alternativeSecondFactors(currentStrategy: currentFactor?.verificationStrategy), id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateSecondFactor(factor)
@@ -65,7 +60,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
 }
 
 #Preview {
-    SignInFactorTwoAlternativeMethodsView(currentStrategy: .password)
+    SignInFactorTwoAlternativeMethodsView(currentFactor: nil)
         .environmentObject(Clerk.mock)
 }
 

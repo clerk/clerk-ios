@@ -20,7 +20,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
         clerk.client.signIn
     }
     
-    let currentStrategy: Strategy
+    let currentFactor: Factor?
     
     public var body: some View {
         ScrollView {
@@ -34,16 +34,16 @@ struct SignInFactorOneUseAnotherMethodView: View {
                 )
                 .padding(.bottom, 32)
                 
-                SignInFactorOneAlternativeMethodsView(currentStrategy: currentStrategy)
+                SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
                     .padding(.bottom, 18)
                 
                 Button {
-                    switch currentStrategy {
+                    switch currentFactor?.verificationStrategy {
                     case .password:
                         clerkUIState.presentedAuthStep = .signInPassword
                     default:
                         if signIn.firstFactorHasBeenPrepared {
-                            clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                            clerkUIState.presentedAuthStep = .signInFactorOne(currentFactor)
                         } else {
                             clerkUIState.presentedAuthStep = .signInStart
                         }
@@ -63,7 +63,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
 }
 
 #Preview {
-    SignInFactorOneUseAnotherMethodView(currentStrategy: .password)
+    SignInFactorOneUseAnotherMethodView(currentFactor: nil)
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }

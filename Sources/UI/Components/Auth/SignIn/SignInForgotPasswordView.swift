@@ -32,7 +32,7 @@ struct SignInForgotPasswordView: View {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
             try await signIn.prepareFirstFactor(resetPasswordStrategy)
-            clerkUIState.presentedAuthStep = .signInFactorOneVerify
+            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -60,7 +60,7 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                SignInFactorOneAlternativeMethodsView(currentStrategy: .password)
+                SignInFactorOneAlternativeMethodsView(currentFactor: signIn.firstFactor(for: .password))
                     .padding(.bottom, 18)
                 
                 Button {

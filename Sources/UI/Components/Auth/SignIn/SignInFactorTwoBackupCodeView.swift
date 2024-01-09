@@ -55,7 +55,7 @@ struct SignInFactorTwoBackupCodeView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(.backupCode)
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn.secondFactor(for: .backupCode))
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))

@@ -18,11 +18,19 @@ struct SignInFactorOneVerificationView: View {
         clerk.client.signIn
     }
     
+    private var strategy: Strategy? {
+        guard signIn.status == .needsFirstFactor else { return nil }
+        if case .signInFactorOne(let factor) = clerkUIState.presentedAuthStep {
+            return factor?.verificationStrategy
+        }
+        return nil
+    }
+    
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
     var body: some View {
         Group {
-            switch signIn.firstFactorVerification?.verificationStrategy {
+            switch strategy {
             case .emailCode:
                 SignInFactorOneEmailCodeView()
                     .transition(.asymmetric(
@@ -47,9 +55,9 @@ struct SignInFactorOneVerificationView: View {
                     .task {
                         switch signIn.status {
                         case .needsFirstFactor:
-                            clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
                         case .needsSecondFactor:
-                            clerkUIState.presentedAuthStep = .signInFactorTwoVerify
+                            clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
                         case .needsNewPassword:
                             clerkUIState.presentedAuthStep = .signInResetPassword
                         default:

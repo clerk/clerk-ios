@@ -33,32 +33,26 @@ public struct AuthView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInFactorOneUseAnotherMethod(let currentStrategy):
-                SignInFactorOneUseAnotherMethodView(currentStrategy: currentStrategy)
-                    .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorOneVerify:
+            case .signInFactorOne:
                 SignInFactorOneVerificationView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInFactorTwoVerify:
+            case .signInFactorOneUseAnotherMethod(let currentFactor):
+                SignInFactorOneUseAnotherMethodView(currentFactor: currentFactor)
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+            case .signInFactorTwo:
                 SignInFactorTwoVerificationView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInFactorTwoBackupCode:
-                SignInFactorTwoBackupCodeView()
-                    .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorTwoUseAnotherMethod(let currentStrategy):
-                SignInFactorTwoUseAnotherMethodView(currentStrategy: currentStrategy)
+            case .signInFactorTwoUseAnotherMethod(let currentFactor):
+                SignInFactorTwoUseAnotherMethodView(currentFactor: currentFactor)
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)

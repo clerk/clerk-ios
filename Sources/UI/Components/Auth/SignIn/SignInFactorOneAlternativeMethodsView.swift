@@ -16,7 +16,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let currentStrategy: Strategy?
+    let currentFactor: Factor?
     
     private var signIn: SignIn {
         clerk.client.signIn
@@ -44,7 +44,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
             default:
                 if let prepareStrategy = factor.prepareFirstFactorStrategy {
                     try await signIn.prepareFirstFactor(prepareStrategy)
-                    clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                    clerkUIState.presentedAuthStep = .signInFactorOne(factor)
                 } else {
                     throw ClerkClientError(message: "Unable to start this sign in method.")
                 }
@@ -78,7 +78,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             
-            ForEach(signIn.alternativeFirstFactors(currentStrategy: currentStrategy), id: \.self) { factor in
+            ForEach(signIn.alternativeFirstFactors(currentStrategy: currentFactor?.verificationStrategy), id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateFirstFactor(factor)
@@ -102,7 +102,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
 }
 
 #Preview {
-    SignInFactorOneAlternativeMethodsView(currentStrategy: .password)
+    SignInFactorOneAlternativeMethodsView(currentFactor: nil)
 }
 
 #endif
