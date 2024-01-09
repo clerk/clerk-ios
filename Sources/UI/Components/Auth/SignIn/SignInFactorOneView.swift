@@ -32,7 +32,7 @@ struct SignInFactorOneView: View {
         Group {
             switch strategy {
             case .password:
-                SignInPasswordView()
+                SignInFactorOnePasswordView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)

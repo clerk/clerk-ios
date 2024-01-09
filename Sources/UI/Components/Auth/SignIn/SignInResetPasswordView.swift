@@ -31,7 +31,6 @@ struct SignInResetPasswordView: View {
                 signOutOfOtherSessions: signOutOfAllDevices
             ))
             
-            
             clerkUIState.authIsPresented = false
         } catch {
             errorWrapper = ErrorWrapper(error: error)

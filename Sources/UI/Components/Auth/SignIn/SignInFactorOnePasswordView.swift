@@ -1,5 +1,5 @@
 //
-//  SignInPasswordView.swift
+//  SignInFactorOnePasswordView.swift
 //
 //
 //  Created by Mike Pitre on 11/2/23.
@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInPasswordView: View {
+struct SignInFactorOnePasswordView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
@@ -36,7 +36,6 @@ struct SignInPasswordView: View {
                 .padding(.bottom, 4)
                 
                 IdentityPreviewView(
-                    imageUrl: signIn.userData?.imageUrl,
                     label: signIn.identifier,
                     action: {
                         clerkUIState.presentedAuthStep = .signInStart
@@ -104,7 +103,7 @@ struct SignInPasswordView: View {
 }
 
 #Preview {
-    SignInPasswordView()
+    SignInFactorOnePasswordView()
         .environmentObject(Clerk.mock)
         .environmentObject(ClerkUIState())
 }

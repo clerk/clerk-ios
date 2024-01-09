@@ -38,7 +38,7 @@ struct SignInFactorTwoView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .totp:
-                Text("TOTP")
+                SignInFactorTwoTotpCodeView()
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)

@@ -13,7 +13,6 @@ import PhoneNumberKit
 struct IdentityPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
-    var imageUrl: String?
     var label: String?
     var action: (() -> Void)?
     
@@ -40,11 +39,7 @@ struct IdentityPreviewView: View {
 }
 
 #Preview {
-    IdentityPreviewView(
-        imageUrl: "",
-        label: "clerkuser@gmail.com",
-        action: {}
-    )
+    IdentityPreviewView(label: "clerkuser@gmail.com")
 }
 
 #endif

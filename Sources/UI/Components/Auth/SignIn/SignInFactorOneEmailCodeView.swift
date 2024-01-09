@@ -47,7 +47,7 @@ struct SignInFactorOneEmailCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .emailCode))
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {

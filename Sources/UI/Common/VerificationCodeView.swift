@@ -17,7 +17,7 @@ struct VerificationCodeView: View {
     
     let title: String
     let subtitle: String
-    let safeIdentifier: String?
+    var safeIdentifier: String?
     var profileImageUrl: String?
     
     var onCodeEntry: (() async -> Void)?
@@ -26,7 +26,7 @@ struct VerificationCodeView: View {
     var onUseAlernateMethod: (() async -> Void)?
     var onContinueAction: (() async -> Void)?
     var onCancel: (() async -> Void)?
-        
+    
     var body: some View {
         VStack {
             VStack(spacing: .zero) {
@@ -37,18 +37,18 @@ struct VerificationCodeView: View {
                 .padding(.bottom, 4)
                 
                 IdentityPreviewView(
-                    imageUrl: profileImageUrl,
                     label: safeIdentifier,
-                    action: {
-                        Task { await onIdentityPreviewTapped?() }
-                    }
+                    action: onIdentityPreviewTapped == nil ? nil : { Task { await onIdentityPreviewTapped?() }}
                 )
             }
             
-            CodeFormView(code: $code, isSubmittingCode: $isSubmittingCode)
-                .onCodeEntry { await onCodeEntry?() }
-                .onResend { await onResend?() }
-                .padding(.bottom, 32)
+            CodeFormView(
+                code: $code,
+                isSubmittingCode: $isSubmittingCode,
+                onCodeEntry: onCodeEntry == nil ? nil : { await onCodeEntry?() },
+                onResend: onResend == nil ? nil : { await onResend?() }
+            )
+            .padding(.bottom, 32)
             
             if let onContinueAction {
                 AsyncButton {

@@ -34,18 +34,20 @@ struct CodeFormView: View {
                     }
                 }
             
-            AsyncButton {
-                await onResend?()
-            } label: {
-                HStack(spacing: 4) {
-                    Text("Didn't recieve a code?")
-                        .foregroundStyle(.secondary)
-                    Text("Resend")
-                        .foregroundStyle(.foreground)
+            if let onResend {
+                AsyncButton {
+                    await onResend()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Didn't recieve a code?")
+                            .foregroundStyle(.secondary)
+                        Text("Resend")
+                            .foregroundStyle(.foreground)
+                    }
+                    .font(.footnote)
                 }
-                .font(.footnote)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 }

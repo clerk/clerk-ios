@@ -95,8 +95,6 @@ extension Factor {
         switch verificationStrategy {
         case .phoneCode:
             return .phoneCode
-        case .totp:
-            return .totp
         default:
             return nil
         }
