@@ -60,7 +60,7 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                SignInAlternativeMethodsView(currentStrategy: .password)
+                SignInFactorOneAlternativeMethodsView(currentStrategy: .password)
                     .padding(.bottom, 18)
                 
                 Button {

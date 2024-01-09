@@ -45,6 +45,7 @@ public struct UserButton: View {
             .frame(width: 32, height: 32)
             .clipShape(.circle)
         })
+        .tint(.primary)
         .onChange(of: clerk.client.lastActiveSession?.user) { user in
             if user == nil { popoverIsPresented = false }
         }

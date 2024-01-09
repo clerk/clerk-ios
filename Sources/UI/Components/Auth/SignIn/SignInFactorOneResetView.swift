@@ -36,7 +36,7 @@ struct SignInFactorOneResetView: View {
                     code: $code,
                     title: "Reset your password",
                     subtitle: "First, enter the code sent to your \(useEmailCodeStrategy ? "email address" : "phone")",
-                    safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
+                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
                     profileImageUrl: signIn.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
@@ -94,7 +94,7 @@ struct SignInFactorOneResetView: View {
     
     private func attempt() async {
         do {
-            switch signIn.currentFactor?.verificationStrategy {
+            switch signIn.currentFirstFactor?.verificationStrategy {
                 
             case .resetPasswordEmailCode:
                 try await signIn.attemptFirstFactor(.resetEmailCode(code: code))

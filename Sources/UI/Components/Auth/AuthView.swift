@@ -33,8 +33,8 @@ public struct AuthView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .signInUseAnotherMethod(let currentStrategy):
-                SignInUseAnotherMethodView(currentStrategy: currentStrategy)
+            case .signInFactorOneUseAnotherMethod(let currentStrategy):
+                SignInFactorOneUseAnotherMethodView(currentStrategy: currentStrategy)
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -46,7 +46,19 @@ public struct AuthView: View {
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorTwoVerify:
-                SignInFactorTwoView()
+                SignInFactorTwoVerificationView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+            case .signInFactorTwoBackupCode:
+                SignInFactorTwoBackupCodeView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
+            case .signInFactorTwoUseAnotherMethod(let currentStrategy):
+                SignInFactorTwoUseAnotherMethodView(currentStrategy: currentStrategy)
                     .transition(.asymmetric(
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)

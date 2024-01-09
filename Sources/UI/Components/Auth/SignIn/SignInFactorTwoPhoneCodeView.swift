@@ -1,8 +1,8 @@
 //
-//  SignInFactorOneEmailCodeView.swift
+//  SignInFactorTwoPhoneCodeView.swift
 //
 //
-//  Created by Mike Pitre on 11/2/23.
+//  Created by Mike Pitre on 1/8/24.
 //
 
 #if canImport(UIKit)
@@ -10,7 +10,7 @@
 import SwiftUI
 import Clerk
 
-struct SignInFactorOneEmailCodeView: View {
+struct SignInFactorTwoPhoneCodeView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
@@ -29,9 +29,9 @@ struct SignInFactorOneEmailCodeView: View {
                 
                 VerificationCodeView(
                     code: $code,
-                    title: "Check your email",
-                    subtitle: "Enter the verification code sent to your email address",
-                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
+                    title: "Two-step verification",
+                    subtitle: "To continue, please enter the verification code sent to your phone",
+                    safeIdentifier: signIn.currentSecondFactor?.safeIdentifier ?? signIn.identifier,
                     profileImageUrl: signIn.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
@@ -47,11 +47,11 @@ struct SignInFactorOneEmailCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(.emailCode)
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(.phoneCode)
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
-                    if !signIn.firstFactorHasBeenPrepared {
+                    if !signIn.secondFactorHasBeenPrepared {
                         await prepare()
                     }
                 }
@@ -63,7 +63,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareFirstFactor(.emailCode)
+            try await signIn.prepareSecondFactor(.phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,7 +72,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptFirstFactor(.emailCode(code: code))
+            try await signIn.attemptSecondFactor(.phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""
@@ -82,7 +82,7 @@ struct SignInFactorOneEmailCodeView: View {
 }
 
 #Preview {
-    SignInFactorOneEmailCodeView()
+    SignInFactorTwoPhoneCodeView()
         .environmentObject(Clerk.mock)
 }
 

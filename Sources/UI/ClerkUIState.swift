@@ -18,9 +18,11 @@ public final class ClerkUIState: ObservableObject {
     public enum AuthStep: Equatable {
         case signInStart
         case signInPassword
-        case signInUseAnotherMethod(_ currentStrategy: Strategy)
         case signInFactorOneVerify
+        case signInFactorOneUseAnotherMethod(_ currentStrategy: Strategy)
         case signInFactorTwoVerify
+        case signInFactorTwoUseAnotherMethod(_ currentStrategy: Strategy)
+        case signInFactorTwoBackupCode
         case signInForgotPassword
         case signInResetPassword
         case signUpStart

@@ -69,12 +69,16 @@ extension Factor {
             return "Email link to \(safeIdentifier)"
         case .password:
             return "Sign in with your password"
+        case .totp:
+            return "Use your authenticator app"
+        case .backupCode:
+            return "Use a backup code"
         default:
             return nil
         }
     }
     
-    public var prepareFirstFactorStrategy: SignIn.PrepareStrategy? {
+    public var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy? {
         switch verificationStrategy {
         case .phoneCode:
             return .phoneCode
@@ -87,7 +91,18 @@ extension Factor {
         }
     }
     
-    public var sortOrderPasswordPreferred: Int {
+    public var prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy? {
+        switch verificationStrategy {
+        case .phoneCode:
+            return .phoneCode
+        case .totp:
+            return .totp
+        default:
+            return nil
+        }
+    }
+    
+    var sortOrderPasswordPreferred: Int {
         switch self.verificationStrategy {
         case .password: 0
         case .emailCode: 1
@@ -97,7 +112,7 @@ extension Factor {
         }
     }
     
-    public var sortOrderOTPPreferred: Int {
+    var sortOrderOTPPreferred: Int {
         switch self.verificationStrategy {
         case .emailCode: 0
         case .phoneCode: 1

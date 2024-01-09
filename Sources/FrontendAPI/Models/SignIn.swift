@@ -25,7 +25,7 @@ public class SignIn: Codable {
         status: SignIn.Status? = nil,
         supportedIdentifiers: [String] = [],
         supportedFirstFactors: [Factor] = [],
-        supportedSecondFactors: [String]? = nil,
+        supportedSecondFactors: [Factor] = [],
         firstFactorVerification: Verification? = nil,
         secondFactorVerification: Verification? = nil,
         identifier: String? = nil,
@@ -100,13 +100,13 @@ public class SignIn: Codable {
      
      As well as the identifier that the factor refers to. Please note that this property is populated only when the first factor is verified.
      */
-    let supportedSecondFactors: [String]?
+    @DecodableDefault.EmptyList private(set) public var supportedSecondFactors: [Factor]
     
     /// The state of the verification process for the selected first factor. Please note that this property contains an empty verification object initially, since there is no first factor selected. You need to call the prepareFirstFactor method in order to start the verification process.
     public let firstFactorVerification: Verification?
     
     /// The state of the verification process for the selected second factor. Similar to firstFactorVerification, this property contains an empty verification object initially, since there is no second factor selected. For the phone_code strategy, you need to call the prepareSecondFactor method in order to start the verification process. For the totp strategy, you can directly attempt.
-    let secondFactorVerification: Verification?
+    public let secondFactorVerification: Verification?
     
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?
@@ -177,6 +177,27 @@ extension SignIn {
         public let password: String?
     }
     
+    public struct PrepareSecondFactorParams: Encodable {
+        public init(strategy: Strategy) {
+            self.strategy = strategy.stringValue
+        }
+        
+        public let strategy: String
+    }
+    
+    public struct AttemptSecondFactorParams: Encodable {
+        public init(
+            strategy: Strategy,
+            code: String? = nil
+        ) {
+            self.strategy = strategy.stringValue
+            self.code = code
+        }
+        
+        public let strategy: String
+        public let code: String?
+    }
+    
     public struct GetParams: Encodable {
         public init(rotatingTokenNonce: String? = nil) {
             self.rotatingTokenNonce = rotatingTokenNonce
@@ -222,7 +243,7 @@ extension SignIn {
         }
     }
     
-    public enum PrepareStrategy {
+    public enum PrepareFirstFactorStrategy {
         case emailCode
         case emailLink
         case phoneCode
@@ -230,8 +251,8 @@ extension SignIn {
         case resetPasswordPhoneCode
     }
     
-    private func prepareParams(for strategy: PrepareStrategy) -> PrepareFirstFactorParams {
-        let strategy: Strategy = switch strategy {
+    private func prepareFirstFactorParams(for prepareStrategy: PrepareFirstFactorStrategy) -> PrepareFirstFactorParams {
+        let strategy: Strategy = switch prepareStrategy {
         case .emailCode: .emailCode
         case .emailLink: .emailLink
         case .phoneCode: .phoneCode
@@ -239,10 +260,15 @@ extension SignIn {
         case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
         
-        return .init(strategy: strategy, emailAddressId: factorId(for: strategy), phoneNumberId: factorId(for: strategy))
+        switch prepareStrategy {
+        case .emailCode, .emailLink, .resetPasswordEmailCode:
+            return .init(strategy: strategy, emailAddressId: factorId(for: strategy))
+        case .phoneCode, .resetPasswordPhoneCode:
+            return .init(strategy: strategy, phoneNumberId: factorId(for: strategy))
+        }
     }
     
-    public enum AttemptStrategy {
+    public enum AttemptFirstFactorStrategy {
         case password(password: String)
         case emailCode(code: String)
         case phoneCode(code: String)
@@ -250,7 +276,7 @@ extension SignIn {
         case resetPhoneCode(code: String)
     }
     
-    private func attemptParams(for strategy: AttemptStrategy) -> AttemptFirstFactorParams {
+    private func attemptFirstFactorParams(for strategy: AttemptFirstFactorStrategy) -> AttemptFirstFactorParams {
         switch strategy {
         case .password(let password):
             return .init(strategy: .password, password: password)
@@ -265,11 +291,41 @@ extension SignIn {
         }
     }
     
+    public enum PrepareSecondFactorStrategy {
+        case phoneCode
+        case totp
+    }
+    
+    private func prepareSecondFactorParams(for prepareStrategy: PrepareSecondFactorStrategy) -> PrepareSecondFactorParams {
+        switch prepareStrategy {
+        case .phoneCode:
+            return .init(strategy: .phoneCode)
+        case .totp:
+            return .init(strategy: .totp)
+        }
+    }
+    
+    public enum AttemptSecondFactorStrategy {
+        case phoneCode(code: String)
+        case totp(code: String)
+        case backupCode(code: String)
+    }
+    
+    private func attemptSecondFactorParams(for strategy: AttemptSecondFactorStrategy) -> AttemptSecondFactorParams {
+        switch strategy {
+        case .phoneCode(let code):
+            return .init(strategy: .phoneCode, code: code)
+        case .totp(let code):
+            return .init(strategy: .totp, code: code)
+        case .backupCode(let code):
+            return .init(strategy: .backupCode, code: code)
+        }
+    }
+    
     private func factorId(for strategy: Strategy) -> String? {
-        let factor = Clerk.shared.client
-            .signIn
-            .supportedFirstFactors
-            .first(where: { $0.verificationStrategy == strategy })
+        let signIn = Clerk.shared.client.signIn
+        let allSignInFactors = signIn.supportedFirstFactors + signIn.supportedSecondFactors
+        let factor = allSignInFactors.first(where: { $0.verificationStrategy == strategy })
         
         switch strategy {
         case .emailCode, .emailLink, .resetPasswordEmailCode:
@@ -285,7 +341,20 @@ extension SignIn {
 
 extension SignIn {
     
-    public func startingSignInFactor(preferredStrategy: Clerk.Environment.DisplayConfig.PreferredSignInStrategy) -> Factor? {
+    // First Factor
+    
+    public var currentFirstFactor: Factor? {
+        guard status == .needsFirstFactor else { return nil }
+
+        if let firstFactorVerification, let currentFirstFactor = supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification.verificationStrategy }) {
+            return currentFirstFactor
+        }
+        
+        return startingSignInFirstFactor
+    }
+    
+    private var startingSignInFirstFactor: Factor? {
+        let preferredStrategy = Clerk.shared.environment.displayConfig.preferredSignInStrategy
         let firstFactors = alternativeFirstFactors(currentStrategy: nil) // filters out reset strategies and oauth
         
         switch preferredStrategy {
@@ -306,10 +375,6 @@ extension SignIn {
         firstFactorVerification != nil
     }
     
-    public var currentFactor: Factor? {
-        supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification?.verificationStrategy })
-    }
-    
     public func alternativeFirstFactors(currentStrategy: Strategy?) -> [Factor] {
         // Remove the current factor, reset factors, oauth factors
         let firstFactors = supportedFirstFactors.filter { factor in
@@ -321,7 +386,46 @@ extension SignIn {
         return firstFactors
     }
     
-    public var resetPasswordStrategy: SignIn.PrepareStrategy? {
+    // Second Factor
+    
+    public var currentSecondFactor: Factor? {
+        guard status == .needsSecondFactor else { return nil }
+
+        if let secondFactorVerification, let currentSecondFactor = supportedSecondFactors.first(where: { $0.verificationStrategy == secondFactorVerification.verificationStrategy }) {
+            return currentSecondFactor
+        }
+
+        return startingSignInSecondFactor
+    }
+    
+    // The priority of second factors is: TOTP -> Phone code -> any other factor
+    private var startingSignInSecondFactor: Factor? {
+        if let totp = supportedSecondFactors.first(where: { $0.verificationStrategy == .totp }) {
+            return totp
+        }
+        
+        if let phoneCode = supportedSecondFactors.first(where: { $0.verificationStrategy == .phoneCode }) {
+            return phoneCode
+        }
+        
+        return supportedSecondFactors.first
+    }
+    
+    public var secondFactorHasBeenPrepared: Bool {
+        secondFactorVerification != nil
+    }
+    
+    public func alternativeSecondFactors(currentStrategy: Strategy?) -> [Factor] {
+        supportedSecondFactors.filter { $0.verificationStrategy != currentStrategy }
+    }
+    
+    public var defaultSecondFactor: Factor? {
+        supportedSecondFactors.first(where: { $0.default == true })
+    }
+        
+    // Reset Password
+    
+    public var resetPasswordStrategy: SignIn.PrepareFirstFactorStrategy? {
         if supportedFirstFactors.contains(where: { $0.verificationStrategy == .resetPasswordEmailCode }) {
             return .resetPasswordEmailCode
         }
@@ -361,8 +465,8 @@ extension SignIn {
      Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
      */
     @MainActor
-    public func prepareFirstFactor(_ strategy: PrepareStrategy) async throws {
-        let params = prepareParams(for: strategy)
+    public func prepareFirstFactor(_ strategy: PrepareFirstFactorStrategy) async throws {
+        let params = prepareFirstFactorParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
@@ -383,14 +487,58 @@ extension SignIn {
      Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
      */
     @MainActor
-    public func attemptFirstFactor(_ strategy: AttemptStrategy) async throws {
-        let params = attemptParams(for: strategy)
+    public func attemptFirstFactor(_ strategy: AttemptFirstFactorStrategy) async throws {
+        let params = attemptFirstFactorParams(for: strategy)
         let request = APIEndpoint
             .v1
             .client
             .signIns
             .id(id)
             .attemptFirstFactor
+            .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    /**
+     Begins the second factor verification process. This step is optional in order to complete a sign in.
+     
+     A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
+     
+     While the phone_code strategy requires preparation, the totp strategy does not - the user can directly attempt the second factor verification in that case.
+     */
+    @MainActor
+    public func prepareSecondFactor(_ strategy: PrepareSecondFactorStrategy) async throws {
+        let params = prepareSecondFactorParams(for: strategy)
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(id)
+            .prepareSecondFactor
+            .post(params)
+        
+        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.client.get()
+    }
+    
+    /**
+     Attempts to complete the second factor verification process (2FA). This step is optional in order to complete a sign in.
+
+     For the phone_code strategy, make sure that a verification has already been prepared before you call this method, by first calling SignIn.prepareSecondFactor. Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
+
+     The totp strategy can directly be attempted, without the need for preparation.
+     */
+    @MainActor
+    public func attemptSecondFactor(_ strategy: AttemptSecondFactorStrategy) async throws {
+        let params = attemptSecondFactorParams(for: strategy)
+        let request = APIEndpoint
+            .v1
+            .client
+            .signIns
+            .id(id)
+            .attemptSecondFactor
             .post(params)
         
         try await Clerk.apiClient.send(request)

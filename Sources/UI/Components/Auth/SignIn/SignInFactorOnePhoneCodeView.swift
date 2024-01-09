@@ -31,7 +31,7 @@ struct SignInFactorOnePhoneCodeView: View {
                     code: $code,
                     title: "Check your phone",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signIn.currentFactor?.safeIdentifier ?? signIn.identifier,
+                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
                     profileImageUrl: signIn.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
@@ -47,7 +47,7 @@ struct SignInFactorOnePhoneCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInUseAnotherMethod(.phoneCode)
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(.phoneCode)
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {

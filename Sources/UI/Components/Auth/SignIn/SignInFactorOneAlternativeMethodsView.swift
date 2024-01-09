@@ -1,15 +1,17 @@
 //
-//  SignInAlternativeMethodsView.swift
+//  SignInFactorOneAlternativeMethodsView.swift
 //
 //
 //  Created by Mike Pitre on 12/21/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import Clerk
 import NukeUI
 
-struct SignInAlternativeMethodsView: View {
+struct SignInFactorOneAlternativeMethodsView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
@@ -82,8 +84,10 @@ struct SignInAlternativeMethodsView: View {
                         await startAlternateFirstFactor(factor)
                     } label: {
                         HStack {
-                            Image(systemName: factor.verificationStrategy?.icon ?? "")
-                                .frame(width: 16, height: 16)
+                            if let icon = factor.verificationStrategy?.icon {
+                                Image(systemName: icon)
+                                    .frame(width: 16, height: 16)
+                            }
                             
                             Text(actionText)
                         }
@@ -93,9 +97,12 @@ struct SignInAlternativeMethodsView: View {
                 }
             }
         }
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 
 #Preview {
-    SignInAlternativeMethodsView(currentStrategy: .password)
+    SignInFactorOneAlternativeMethodsView(currentStrategy: .password)
 }
+
+#endif

@@ -258,6 +258,27 @@ extension Factor {
         )
     }
     
+    static var mockPhoneCode: Factor {
+        .init(
+            strategy: .phoneCode,
+            safeIdentifier: "+12015551234",
+            emailAddressId: "1",
+            phoneNumberId: "1",
+            primary: true,
+            default: false
+        )
+    }
+    
+    static var mockTotp: Factor {
+        .init(
+            strategy: .totp,
+            emailAddressId: "1",
+            phoneNumberId: "1",
+            primary: true,
+            default: true
+        )
+    }
+    
 }
 
 extension PhoneNumber {
@@ -395,6 +416,7 @@ extension SignIn {
             id: "1",
             status: .needsFirstFactor,
             supportedFirstFactors: [.mockPassword, .mockEmailCode],
+            supportedSecondFactors: [],
             firstFactorVerification: nil,
             identifier: "ClerkUser@clerk.dev",
             userData: .mock

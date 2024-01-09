@@ -1,14 +1,16 @@
 //
-//  SignInUseAnotherMethodView.swift
+//  SignInFactorTwoUseAnotherMethodView.swift
 //
 //
-//  Created by Mike Pitre on 12/21/23.
+//  Created by Mike Pitre on 1/8/24.
 //
+
+#if canImport(UIKit)
 
 import SwiftUI
 import Clerk
 
-struct SignInUseAnotherMethodView: View {
+struct SignInFactorTwoUseAnotherMethodView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
@@ -32,16 +34,16 @@ struct SignInUseAnotherMethodView: View {
                 )
                 .padding(.bottom, 32)
                 
-                SignInAlternativeMethodsView(currentStrategy: currentStrategy)
+                SignInFactorTwoAlternativeMethodsView(currentStrategy: currentStrategy)
                     .padding(.bottom, 18)
                 
                 Button {
                     switch currentStrategy {
-                    case .password:
-                        clerkUIState.presentedAuthStep = .signInPassword
+                    case .backupCode:
+                        clerkUIState.presentedAuthStep = .signInFactorTwoBackupCode
                     default:
-                        if signIn.firstFactorHasBeenPrepared {
-                            clerkUIState.presentedAuthStep = .signInFactorOneVerify
+                        if signIn.secondFactorHasBeenPrepared {
+                            clerkUIState.presentedAuthStep = .signInFactorTwoVerify
                         } else {
                             clerkUIState.presentedAuthStep = .signInStart
                         }
@@ -61,7 +63,7 @@ struct SignInUseAnotherMethodView: View {
 }
 
 #Preview {
-    SignInUseAnotherMethodView(currentStrategy: .password)
-        .environmentObject(Clerk.mock)
-        .environmentObject(ClerkUIState())
+    SignInFactorTwoUseAnotherMethodView(currentStrategy: .totp)
 }
+
+#endif

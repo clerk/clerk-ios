@@ -140,7 +140,7 @@ extension Strategy {
         }
     }
     
-    public var signInPrepareStrategy: SignIn.PrepareStrategy? {
+    public var signInPrepareStrategy: SignIn.PrepareFirstFactorStrategy? {
         switch self {
         case .phoneCode:
             return .phoneCode
