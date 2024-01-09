@@ -12,7 +12,7 @@ import Clerk
 
 struct SignInStartView: View {
     @EnvironmentObject private var clerk: Clerk
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     private var socialProvidersEnabled: Bool {
         !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
@@ -24,6 +24,10 @@ struct SignInStartView: View {
             $0.key == .username ||
             $0.key == .phoneNumber
         }
+    }
+    
+    private var signIn: SignIn {
+        clerk.client.signIn
     }
     
     public var body: some View {
@@ -40,7 +44,7 @@ struct SignInStartView: View {
                 
                 if socialProvidersEnabled {
                     SignInSocialProvidersView()
-                        .onSuccess { dismiss() }
+                        .onSuccess { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 }
                 
                 if socialProvidersEnabled && showSignInForm {

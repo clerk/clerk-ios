@@ -14,7 +14,6 @@ struct SignUpStartView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
-    @Environment(\.dismiss) private var dismiss
     
     private var signUp: SignUp {
         clerk.client.signUp
@@ -43,7 +42,7 @@ struct SignUpStartView: View {
                 
                 if socialProvidersEnabled {
                     SignUpSocialProvidersView()
-                        .onSuccess { dismiss() }
+                        .onSuccess { clerkUIState.authIsPresented = false }
                 }
                 
                 if socialProvidersEnabled && contactInfoEnabled {

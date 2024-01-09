@@ -30,6 +30,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
         do {
             try await signIn.create(.oauth(provider: provider))
             try await signIn.startOAuth()
+            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart
             dump(error)

@@ -34,7 +34,26 @@ public final class ClerkUIState: ObservableObject {
     }
     
     /// Is the user profile view being displayed
-    @Published public var userProfileIsPresented = false    
+    @Published public var userProfileIsPresented = false
+}
+
+extension ClerkUIState {
+    
+    public func setAuthStepToCurrentStatus(for signIn: SignIn) {
+        switch signIn.status {
+        case .needsIdentifier:
+            presentedAuthStep = .signInStart
+        case .needsFirstFactor:
+            presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
+        case .needsSecondFactor:
+            presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
+        case .needsNewPassword:
+            presentedAuthStep = .signInResetPassword
+        default:
+            authIsPresented = false
+        }
+    }
+    
 }
 
 #endif
