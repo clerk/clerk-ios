@@ -221,36 +221,36 @@ extension Clerk {
     
     private func loadPersistedData() {
         
-        do {
-            if let data = Clerk.keychain[data: Clerk.KeychainKey.client] {
+        if let data = Clerk.keychain[data: Clerk.KeychainKey.client] {
+            do {
                 self.client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
+            } catch {
+                dump(error)
             }
-        } catch {
-            dump(error)
         }
         
-        do {
-            if let data = Clerk.keychain[data: Clerk.KeychainKey.environment] {
+        if let data = Clerk.keychain[data: Clerk.KeychainKey.environment] {
+            do {
                 self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
+            } catch {
+                dump(error)
             }
-        } catch {
-            dump(error)
         }
         
-        do {
-            if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] {
+        if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] {
+            do {
                 self.sessionTokensByCacheKey = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
+            } catch {
+                dump(error)
             }
-        } catch {
-            dump(error)
         }
         
-        do {
-            if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] {
+        if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] {
+            do {
                 self.sessionsByUserId = try JSONDecoder.clerkDecoder.decode([String: [Session]].self, from: data)
+            } catch {
+                dump(error)
             }
-        } catch {
-            dump(error)
         }
     }
     
