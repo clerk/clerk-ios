@@ -7,7 +7,7 @@
 
 import AuthenticationServices
 
-public final class OAuthWebSession: NSObject {
+public final class ExternalAuthWebSession: NSObject {
     let url: URL
     let authAction: AuthAction
     
@@ -92,7 +92,7 @@ public final class OAuthWebSession: NSObject {
     
 }
 
-extension OAuthWebSession: ASWebAuthenticationPresentationContextProviding {
+extension ExternalAuthWebSession: ASWebAuthenticationPresentationContextProviding {
     
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         ASPresentationAnchor()

@@ -108,7 +108,7 @@ struct UserProfileExternalAccountSection: View {
     private func retryConnection(_ provider: OAuthProvider) async {
         do {
             let externalAccount = try await user?.addExternalAccount(provider)
-            try await externalAccount?.startOAuth()
+            try await externalAccount?.startExternalAuth()
         } catch {
             if case ASWebAuthenticationSessionError.canceledLogin = error {
                 return

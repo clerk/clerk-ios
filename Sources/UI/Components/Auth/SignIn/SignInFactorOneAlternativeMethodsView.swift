@@ -29,7 +29,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     private func signIn(provider: OAuthProvider) async {
         do {
             try await signIn.create(.oauth(provider: provider))
-            try await signIn.startOAuth()
+            try await signIn.startExternalAuth()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart

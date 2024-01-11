@@ -50,7 +50,7 @@ struct SignInSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         do {
             try await signIn.create(.oauth(provider: provider))
-            try await signIn.startOAuth()
+            try await signIn.startExternalAuth()
             onSuccess?()
         } catch {
             if case ASWebAuthenticationSessionError.canceledLogin = error {

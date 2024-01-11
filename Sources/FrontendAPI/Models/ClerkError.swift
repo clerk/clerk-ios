@@ -1,5 +1,5 @@
 //
-//  ClerkAPIError.swift
+//  ClerkError.swift
 //
 //
 //  Created by Mike Pitre on 10/2/23.

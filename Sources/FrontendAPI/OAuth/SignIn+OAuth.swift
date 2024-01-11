@@ -9,15 +9,15 @@ import Foundation
 
 extension SignIn {
     
-    public func startOAuth() async throws {
+    public func startExternalAuth() async throws {
         guard
             let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
         else {
-            throw ClerkClientError(message: "Redirect URL not provided. Unable to start OAuth flow.")
+            throw ClerkClientError(message: "Redirect URL not provided. Unable to start authentication flow.")
         }
         
-        let authSession = OAuthWebSession(url: url, authAction: .signIn)
+        let authSession = ExternalAuthWebSession(url: url, authAction: .signIn)
         try await authSession.start()
     }
     
