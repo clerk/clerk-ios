@@ -343,9 +343,8 @@ extension SignIn {
     public var currentFirstFactor: Factor? {
         guard status == .needsFirstFactor else { return nil }
 
-        if
-            let firstFactorVerification,
-            let currentFirstFactor = supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification.verificationStrategy })
+        if let firstFactorVerification,
+           let currentFirstFactor = supportedFirstFactors.first(where: { $0.verificationStrategy == firstFactorVerification.verificationStrategy })
         {
             return currentFirstFactor
         }
@@ -395,9 +394,8 @@ extension SignIn {
     public var currentSecondFactor: Factor? {
         guard status == .needsSecondFactor else { return nil }
 
-        if
-            let secondFactorVerification,
-            let currentSecondFactor = supportedSecondFactors.first(where: { $0.verificationStrategy == secondFactorVerification.verificationStrategy })
+        if let secondFactorVerification,
+           let currentSecondFactor = supportedSecondFactors.first(where: { $0.verificationStrategy == secondFactorVerification.verificationStrategy })
         {
             return currentSecondFactor
         }
