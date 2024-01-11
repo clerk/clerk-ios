@@ -26,9 +26,13 @@ public struct UserProfileDetailsView: View {
     }
     
     public var body: some View {
-        VStack(spacing: 30) {
-            HeaderView(title: "Profile Details")
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                HeaderView(title: "Profile Details")
+                    .multilineTextAlignment(.leading)
+                Divider()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             UserProfileSection()
             

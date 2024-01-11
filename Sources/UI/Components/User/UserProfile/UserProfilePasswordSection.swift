@@ -15,18 +15,27 @@ struct UserProfilePasswordSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            UserProfileSectionHeader(title: "Password")
-            Text("••••••••••")
+            Text("Password")
                 .font(.footnote.weight(.medium))
-            Button("Change password", systemImage: "pencil") {
-                changePasswordIsPresented = true
+            HStack {
+                Text("••••••••••")
+                    .font(.title3.weight(.medium))
+                Spacer()
+                Button("Reset password") {
+                    changePasswordIsPresented = true
+                }
+                .font(.caption.weight(.medium))
             }
             .font(.footnote.weight(.medium))
-            .tint(clerkTheme.colors.textPrimary)
+            .tint(.primary)
+            .padding(.leading, 12)
             .sheet(isPresented: $changePasswordIsPresented, content: {
                 UserProfileChangePasswordView()
             })
+            
+            Divider()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

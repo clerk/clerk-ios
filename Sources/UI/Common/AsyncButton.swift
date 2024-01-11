@@ -12,15 +12,18 @@ import SwiftUI
 struct AsyncButton<Label: View>: View {
     public init(
         options: Set<AsyncButton<Label>.Options> = [.disableButton, .showProgressView],
+        role: ButtonRole? = nil,
         action: @escaping () async -> Void,
         label: @escaping () -> Label
     ) {
         self.options = options
+        self.role = role
         self.action = action
         self.label = label
     }
     
     var options = Set(Options.allCases)
+    var role: ButtonRole?
     var action: () async -> Void
     @ViewBuilder var label: () -> Label
     
@@ -35,33 +38,30 @@ struct AsyncButton<Label: View>: View {
     }
     
     public var body: some View {
-        Button(
-            action: {
-                if options.contains(.disableButton) {
-                    isDisabled = true
-                }
-                
-                if options.contains(.showProgressView) {
-                    showProgressView = true
-                }
-                
-                Task {
-                    await action()
-                    isDisabled = false
-                    showProgressView = false
-                }
-            },
-            label: {
-                label()
-                    .opacity(disabled ? 0.3 : 1)
-                    .opacity(showProgressView ? 0 : 1)
-                    .overlay {
-                        if showProgressView {
-                            ProgressView()
-                        }
-                    }
+        Button(role: role) {
+            if options.contains(.disableButton) {
+                isDisabled = true
             }
-        )
+            
+            if options.contains(.showProgressView) {
+                showProgressView = true
+            }
+            
+            Task {
+                await action()
+                isDisabled = false
+                showProgressView = false
+            }
+        } label: {
+            label()
+                .opacity(disabled ? 0.3 : 1)
+                .opacity(showProgressView ? 0 : 1)
+                .overlay {
+                    if showProgressView {
+                        ProgressView()
+                    }
+                }
+        }
         .disabled(disabled)
         .animation(.default, value: disabled)
         .animation(.default, value: showProgressView)

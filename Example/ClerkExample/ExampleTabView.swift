@@ -39,7 +39,6 @@ struct ExampleTabView: View {
                         })
                     } else {
                         UserProfileView()
-                            .removeDismissButton()
                     }
                 }
                 .navigationTitle("Account")

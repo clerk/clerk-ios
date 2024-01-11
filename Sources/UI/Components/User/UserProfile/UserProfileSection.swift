@@ -22,27 +22,29 @@ struct UserProfileSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            UserProfileSectionHeader(title: "Profile")
+            Text("Profile")
+                .font(.footnote.weight(.medium))
             
             if let user {
-                Button {
-                    updateProfileIsPresented = true
-                } label: {
+                HStack {
                     UserPreviewView(user: user, hideSubtitle: true)
-                        .overlay(alignment: .bottomLeading) {
-                            Image(systemName: "pencil.circle.fill")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 16, height: 16)
-                                .background()
-                                .clipShape(.circle)
-                        }
+                    Spacer()
+                    Button {
+                        updateProfileIsPresented = true
+                    } label: {
+                        Text("Edit profile")
+                            .font(.caption.weight(.medium))
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $updateProfileIsPresented) {
+                        UserProfileUpdateProfileView()
+                    }
                 }
-                .buttonStyle(.plain)
-                .sheet(isPresented: $updateProfileIsPresented) {
-                    UserProfileUpdateProfileView()
-                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 12)
             }
+            
+            Divider()
         }
         .animation(.snappy, value: user)
     }

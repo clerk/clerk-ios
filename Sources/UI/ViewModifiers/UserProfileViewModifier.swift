@@ -16,8 +16,16 @@ struct UserProfileViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $isPresented) {
-                UserProfileView()
-                    .presentationDragIndicator(.visible)
+                NavigationStack {
+                    UserProfileView()
+                        .presentationDragIndicator(.visible)
+                        .navigationTitle("Account")
+                        .toolbar(content: {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                DismissButton()
+                            }
+                        })
+                }
             }
     }
 }

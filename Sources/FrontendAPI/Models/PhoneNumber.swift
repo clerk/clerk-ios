@@ -72,8 +72,8 @@ extension Container {
 
 extension PhoneNumber {
     
-    public var isPrimary: Bool {
-        Clerk.shared.client.lastActiveSession?.user?.primaryPhoneNumberId == id
+    public func isPrimary(for user: User) -> Bool {
+        user.primaryPhoneNumberId == id
     }
     
     public var flag: String? {

@@ -37,7 +37,7 @@ struct UserPreviewView: View {
             VStack(alignment: .leading) {
                 if let title {
                     Text(title)
-                        .font(.footnote)
+                        .font(.footnote.weight(.medium))
                 }
                 
                 if let subtitle {

@@ -11,7 +11,7 @@ import SwiftUI
 
 extension CapsuleTag {
     enum Style {
-        case primary
+        case regular
         case warning
     }
 }
@@ -20,33 +20,26 @@ struct CapsuleTag: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     let text: String
-    var style: Style = .primary
+    var style: Style = .regular
     
     private var foregroundStyle: Color {
         switch style {
-        case .primary:
-            return clerkTheme.colors.textPrimary
+        case .regular:
+            return .secondary
         case .warning:
             return .red
         }
     }
     
-    private var background: Color {
-        switch style {
-        case .primary:
-            return clerkTheme.colors.primary.opacity(0.1)
-        case .warning:
-            return .red.opacity(0.1)
-        }
-    }
-    
     var body: some View {
         Text(text)
-            .font(.caption2.weight(.semibold))
+            .font(.caption2.weight(.medium))
             .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .frame(minHeight: 18)
             .foregroundStyle(foregroundStyle)
-            .background(background, in: Capsule())
+            .background(Color(.tertiarySystemGroupedBackground))
+            .clipShape(.rect(cornerRadius: 4))
+            .shadow(radius: 0.5)
     }
 }
 

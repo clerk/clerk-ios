@@ -14,10 +14,7 @@ import Factory
 struct UserProfileEmailSection: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
-    
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
-    @State private var confirmDeleteEmailAddress: EmailAddress?
-    @State private var errorWrapper: ErrorWrapper?
     
     @Namespace private var namespace
     
@@ -27,141 +24,129 @@ struct UserProfileEmailSection: View {
     
     private var emailAddresses: [EmailAddress] {
         (user?.emailAddresses ?? []).sorted { lhs, rhs in
-            return lhs.isPrimary
-        }
-    }
-    
-    @ViewBuilder
-    private func primaryCallout(emailAddress: EmailAddress) -> some View {
-        if emailAddress.isPrimary {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Primary email address")
-                    .font(.footnote)
-                Text("This email address is the primary email address")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        } else if emailAddress.verification?.status == .verified {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Set as primary email address")
-                    .font(.footnote)
-                Text("Set this email address as the primary to receive communications regarding your account")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                AsyncButton {
-                    await setAsPrimary(emailAddress: emailAddress)
-                } label: {
-                    Text("Set as primary")
-                        .font(.footnote.weight(.medium))
-                }
-                .tint(clerkTheme.colors.textPrimary)
-            }
-        }
-    }
-    
-    private func setAsPrimary(emailAddress: EmailAddress) async {
-        do {
-            try await emailAddress.setAsPrimary()
-        } catch {
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-    }
-    
-    @ViewBuilder
-    private func unverifiedCallout(emailAddress: EmailAddress) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Verify email address")
-                .font(.footnote)
-            Text("Complete verification to access all features with this email address")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(action: {
-                addEmailAddressStep = .code(emailAddress: emailAddress)
-            }, label: {
-                Text("Verify email address")
-                    .font(.footnote.weight(.medium))
-            })
-            .tint(clerkTheme.colors.textPrimary)
-        }
-    }
-    
-    private struct RemoveEmailView: View {
-        let emailAddress: EmailAddress
-        @State private var confirmationSheetIsPresented = false
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Remove")
-                    .font(.footnote)
-                Text("Delete this email address and remove it from your account")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Button("Remove email address", role: .destructive) {
-                    confirmationSheetIsPresented = true
-                }
-                .font(.footnote.weight(.medium))
-                .popover(isPresented: $confirmationSheetIsPresented) {
-                    UserProfileRemoveResourceView(resource: .email(emailAddress))
-                        .padding(.top)
-                        .presentationDragIndicator(.visible)
-                        .presentationDetents([.height(250)])
-                }
+            if let user {
+                return lhs.isPrimary(for: user)
+            } else {
+                return false
             }
         }
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            UserProfileSectionHeader(title: "Email addresses")
-            VStack(alignment: .leading, spacing: 24) {
-                ForEach(emailAddresses) { emailAddress in
-                    AccordionView {
-                        HStack {
-                            Text(verbatim: emailAddress.emailAddress)
-                                .font(.footnote)
-                            
-                            if emailAddress.isPrimary {
-                                CapsuleTag(text: "Primary")
-                                    .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
-                            }
-                            
-                            if emailAddress.verification?.status != .verified {
-                                CapsuleTag(text: "Unverified", style: .warning)
-                            }
-                        }
-                    } expandedContent: {
-                        VStack(alignment: .leading, spacing: 16) {
-                            
-                            primaryCallout(emailAddress: emailAddress)
-                                .matchedGeometryEffect(id: "\(emailAddress.id)", in: namespace)
-                            
-                            if emailAddress.verification?.status != .verified {
-                                unverifiedCallout(emailAddress: emailAddress)
-                            }
-                            
-                            RemoveEmailView(emailAddress: emailAddress)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading)
-                    }
-                }
-                
-                Button(action: {
-                    addEmailAddressStep = .add
-                }, label: {
-                    Text("+ Add an email address")
-                })
+            Text("Email addresses")
+                .frame(minHeight: 32)
                 .font(.footnote.weight(.medium))
-                .tint(clerkTheme.colors.textPrimary)
-                .padding(.leading, 8)
+            
+            if let user {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(emailAddresses) { emailAddress in
+                        EmailAddressRowView(
+                            emailAddress: emailAddress,
+                            user: user,
+                            namespace: namespace,
+                            addEmailAddressStep: $addEmailAddressStep
+                        )
+                    }
+                    
+                    Button(action: {
+                        addEmailAddressStep = .add
+                    }, label: {
+                        Text("+ Add an email address")
+                            .font(.caption.weight(.medium))
+                            .frame(minHeight: 32)
+                            .tint(clerkTheme.colors.textPrimary)
+                    })
+                }
+                .padding(.leading, 12)
             }
+            
+            Divider()
         }
-        .clerkErrorPresenting($errorWrapper)
         .sheet(item: $addEmailAddressStep) { step in
             UserProfileAddEmailView(initialStep: step)
+        }
+    }
+    
+    private struct EmailAddressRowView: View {
+        let emailAddress: EmailAddress
+        let user: User
+        let namespace: Namespace.ID
+        @Binding var addEmailAddressStep: UserProfileAddEmailView.Step?
+        @State private var confirmationSheetIsPresented = false
+        @State private var errorWrapper: ErrorWrapper?
+        @Environment(\.clerkTheme) private var clerkTheme
+        
+        var body: some View {
+            HStack {
+                Text(verbatim: emailAddress.emailAddress)
+                    .font(.footnote)
+                
+                if emailAddress.isPrimary(for: user) {
+                    CapsuleTag(text: "Primary")
+                        .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
+                }
+                
+                if emailAddress.verification?.status != .verified {
+                    CapsuleTag(text: "Unverified", style: .warning)
+                }
+                
+                Spacer()
+                
+                Menu {
+                    if emailAddress.verification?.status == .verified && !emailAddress.isPrimary(for: user) {
+                        setAsPrimaryButton
+                    }
+                    
+                    if emailAddress.verification?.status != .verified {
+                        verifyEmailButton
+                    }
+                    
+                    removeEmailButton
+                } label: {
+                    MoreActionsView()
+                }
+                .tint(.primary)
+            }
+            .clerkErrorPresenting($errorWrapper)
+            .popover(isPresented: $confirmationSheetIsPresented) {
+                UserProfileRemoveResourceView(resource: .email(emailAddress))
+                    .padding(.top)
+                    .presentationDragIndicator(.visible)
+                    .presentationDetents([.height(250)])
+            }
+        }
+        
+        @ViewBuilder
+        private var setAsPrimaryButton: some View {
+            AsyncButton {
+                await setAsPrimary(emailAddress: emailAddress)
+            } label: {
+                Text("Set as primary")
+            }
+        }
+        
+        private func setAsPrimary(emailAddress: EmailAddress) async {
+            do {
+                try await emailAddress.setAsPrimary()
+            } catch {
+                errorWrapper = ErrorWrapper(error: error)
+                dump(error)
+            }
+        }
+        
+        @ViewBuilder
+        private var verifyEmailButton: some View {
+            Button("Verify email") {
+                addEmailAddressStep = .code(emailAddress: emailAddress)
+            }
+        }
+        
+        @ViewBuilder
+        private var removeEmailButton: some View {
+            Button("Remove email", role: .destructive) {
+                confirmationSheetIsPresented = true
+            }
         }
     }
 }

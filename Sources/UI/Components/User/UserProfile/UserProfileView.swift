@@ -13,9 +13,7 @@ import Clerk
 public struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var errorWrapper: ErrorWrapper?
-    
-    private var removeDismissButton: Bool = false
-    
+        
     public init() {}
     
     private var user: User? {
@@ -29,11 +27,10 @@ public struct UserProfileView: View {
                 UserProfileSecurityView()
             }
             .padding()
-            .padding(.top, removeDismissButton ? 0 : nil)
             .animation(.snappy, value: user)
         }
+        .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
-        .dismissButtonOverlay(hidden: removeDismissButton)
         .task {
             do {
                 try await clerk.client.get()
@@ -54,16 +51,6 @@ public struct UserProfileView: View {
             try? await clerk.environment.get()
         }
     }
-}
-
-extension UserProfileView {
-    
-    public func removeDismissButton(_ remove: Bool = true) -> Self {
-        var copy = self
-        copy.removeDismissButton = remove
-        return copy
-    }
-    
 }
 
 #Preview {

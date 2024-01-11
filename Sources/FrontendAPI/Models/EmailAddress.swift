@@ -52,8 +52,8 @@ extension EmailAddress: Equatable, Hashable {}
 
 extension EmailAddress {
     
-    public var isPrimary: Bool {
-        Clerk.shared.client.lastActiveSession?.user?.primaryEmailAddressId == id
+    public func isPrimary(for user: User) -> Bool {
+        user.primaryEmailAddressId == id
     }
     
 }

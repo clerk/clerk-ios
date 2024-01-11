@@ -20,12 +20,11 @@ struct HeaderView: View {
             Text(title)
                 .font(.body.weight(.bold))
                 .frame(minHeight: 24)
-                .foregroundStyle(clerkTheme.colors.textPrimary)
+            
             if let subtitle {
                 Text(subtitle)
                     .font(.footnote)
-                    .foregroundStyle(clerkTheme.colors.gray500)
-                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
             }
         }
     }
