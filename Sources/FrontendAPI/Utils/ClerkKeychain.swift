@@ -10,7 +10,12 @@ import KeychainAccess
 
 extension Clerk {
     
-    static let keychain = Keychain(service: "com.clerk")
+    // clerk.{APP_NAME}
+    static var keychain: Keychain {
+        var service = "clerk"
+        if let appName = Bundle.main.appName { service += ".\(appName)" }
+        return Keychain(service: service)
+    }
     
     enum KeychainKey {
         static let deviceToken = "deviceToken"
