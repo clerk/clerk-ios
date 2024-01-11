@@ -295,6 +295,23 @@ extension SignUp {
 
 extension SignUp {
     
+    public func startExternalAuth() async throws {
+        guard
+            let verification = verifications.first(where: { $0.key == "external_account" })?.value,
+            let redirectUrl = verification.externalVerificationRedirectUrl,
+            let url = URL(string: redirectUrl)
+        else {
+            throw ClerkClientError(message: "Redirect URL not provided. Unable to start external flow.")
+        }
+        
+        let authSession = ExternalAuthWebSession(url: url, authAction: .signUp)
+        try await authSession.start()
+    }
+    
+}
+
+extension SignUp {
+    
     /**
      This method initiates a new sign-up flow. It creates a new SignUp object and de-activates any existing SignUp that the client might already had in progress.
      

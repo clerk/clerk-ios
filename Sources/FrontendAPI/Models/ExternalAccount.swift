@@ -110,6 +110,22 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
+    public func startExternalAuth() async throws {
+        guard
+            let redirectUrl = verification.externalVerificationRedirectUrl,
+            let url = URL(string: redirectUrl)
+        else {
+            throw ClerkClientError(message: "Redirect URL not provided. Unable to start external authentication flow.")
+        }
+        
+        let authSession = ExternalAuthWebSession(url: url, authAction: .verify)
+        try await authSession.start()
+    }
+    
+}
+
+extension ExternalAccount {
+    
     @MainActor
     public func delete() async throws {
         let request = APIEndpoint

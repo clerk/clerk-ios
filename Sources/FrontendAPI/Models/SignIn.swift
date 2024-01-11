@@ -448,6 +448,22 @@ extension SignIn {
 
 extension SignIn {
     
+    public func startExternalAuth() async throws {
+        guard
+            let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl,
+            let url = URL(string: redirectUrl)
+        else {
+            throw ClerkClientError(message: "Redirect URL not provided. Unable to start authentication flow.")
+        }
+        
+        let authSession = ExternalAuthWebSession(url: url, authAction: .signIn)
+        try await authSession.start()
+    }
+    
+}
+
+extension SignIn {
+    
     /**
      Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign in lifecycle state.
 
