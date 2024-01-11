@@ -283,7 +283,7 @@ extension Session {
 actor SessionTokenFetcher {
     static let shared = SessionTokenFetcher()
     
-    // Key is session `tokenCacheKey`
+    // Key is `tokenCacheKey` property of a `session`
     private var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
     
     func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {

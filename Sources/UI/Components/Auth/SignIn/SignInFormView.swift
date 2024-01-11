@@ -105,11 +105,9 @@ struct SignInFormView: View {
             }
             
             AsyncButton {
-                if displayingEmailOrUsernameEntry {
-                    await signInAction(strategy: .emailCode(email: emailAddressOrUsername))
-                } else {
-                    await signInAction(strategy: .phoneCode(phoneNumber: phoneNumber))
-                }
+                await signInAction(
+                    strategy: .identifier(displayingEmailOrUsernameEntry ? emailAddressOrUsername : phoneNumber)
+                )
             } label: {
                 Text("Continue")
                     .frame(maxWidth: .infinity)

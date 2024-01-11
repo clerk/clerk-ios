@@ -224,18 +224,15 @@ extension SignIn {
 extension SignIn {
     
     public enum CreateStrategy {
-        case emailCode(email: String)
-        case phoneCode(phoneNumber: String)
+        case identifier(_ identifier: String)
         case oauth(provider: OAuthProvider)
         case transfer
     }
     
     private func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
-        case .emailCode(let identifier):
+        case .identifier(let identifier):
             return .init(identifier: identifier)
-        case .phoneCode(let phoneNumber):
-            return .init(identifier: phoneNumber)
         case .oauth(let provider):
             return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
         case .transfer:
