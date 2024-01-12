@@ -68,6 +68,7 @@ struct UserProfilePhoneNumberSection: View {
             
             Divider()
         }
+        .animation(.snappy, value: user)
     }
     
     private struct PhoneNumberRow: View {

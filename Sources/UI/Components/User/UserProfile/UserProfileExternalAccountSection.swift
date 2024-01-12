@@ -56,6 +56,7 @@ struct UserProfileExternalAccountSection: View {
             .padding(.leading, 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.snappy, value: user)
         .sheet(isPresented: $addExternalAccountIsPresented) {
             UserProfileAddExternalAccountView()
         }

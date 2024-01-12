@@ -27,7 +27,6 @@ public struct UserProfileView: View {
                 UserProfileSecurityView()
             }
             .padding()
-            .animation(.snappy, value: user)
         }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)

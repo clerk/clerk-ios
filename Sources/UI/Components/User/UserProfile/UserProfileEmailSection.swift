@@ -63,6 +63,7 @@ struct UserProfileEmailSection: View {
             
             Divider()
         }
+        .animation(.snappy, value: user)
         .sheet(item: $addEmailAddressStep) { step in
             UserProfileAddEmailView(initialStep: step)
         }
