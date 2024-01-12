@@ -41,6 +41,7 @@ struct UserProfileActiveDevicesSection: View {
         @EnvironmentObject private var clerk: Clerk
         @Environment(\.colorScheme) private var colorScheme
         @State private var errorWrapper: ErrorWrapper?
+        @State private var isSigningOutOfDevice: Bool = false
 
         let session: Session
         
@@ -79,7 +80,9 @@ struct UserProfileActiveDevicesSection: View {
                 if !session.isThisDevice {
                     Menu {
                         AsyncButton(role: .destructive) {
+                            isSigningOutOfDevice = true
                             await revokeSession()
+                            isSigningOutOfDevice = false
                         } label: {
                             Text("Sign out of device")
                         }
@@ -89,7 +92,14 @@ struct UserProfileActiveDevicesSection: View {
                     .tint(.primary)
                 }
             }
+            .opacity(isSigningOutOfDevice ? 0 : 1)
+            .overlay {
+                if isSigningOutOfDevice {
+                    ProgressView()
+                }
+            }
             .clerkErrorPresenting($errorWrapper)
+            .animation(.default, value: isSigningOutOfDevice)
         }
         
         @ViewBuilder
@@ -119,7 +129,7 @@ struct UserProfileActiveDevicesSection: View {
                 try await clerk.client.lastActiveSession?.user?.getSessions()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
-            dump(error)
+                dump(error)
             }
         }
     }
