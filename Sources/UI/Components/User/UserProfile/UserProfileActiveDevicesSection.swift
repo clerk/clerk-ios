@@ -76,17 +76,18 @@ struct UserProfileActiveDevicesSection: View {
                 
                 Spacer()
                 
-                Menu {
-                    AsyncButton(role: .destructive) {
-                        await revokeSession()
+                if !session.isThisDevice {
+                    Menu {
+                        AsyncButton(role: .destructive) {
+                            await revokeSession()
+                        } label: {
+                            Text("Sign out of device")
+                        }
                     } label: {
-                        Text("Sign out of device")
+                        MoreActionsView()
                     }
-                } label: {
-                    MoreActionsView()
+                    .tint(.primary)
                 }
-                .tint(.primary)
-
             }
             .clerkErrorPresenting($errorWrapper)
         }
