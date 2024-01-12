@@ -68,6 +68,8 @@ struct UserProfileExternalAccountSection: View {
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
         
+        private var removeResource: RemoveResource { .externalAccount(externalAccount) }
+        
         var body: some View {
             HStack(spacing: 8) {
                 if let provider = externalAccount.externalProvider {
@@ -109,11 +111,22 @@ struct UserProfileExternalAccountSection: View {
                 .tint(.primary)
             }
             .clerkErrorPresenting($errorWrapper)
-            .popover(isPresented: $confirmationSheetIsPresented) {
-                UserProfileRemoveResourceView(resource: .externalAccount(externalAccount))
-                    .padding(.top)
-                    .presentationDragIndicator(.visible)
-                    .presentationDetents([.height(250)])
+            .confirmationDialog(
+                Text(removeResource.messageLine1),
+                isPresented: $confirmationSheetIsPresented,
+                titleVisibility: .visible
+            ) {
+                AsyncButton(role: .destructive) {
+                    do {
+                        try await removeResource.deleteAction()
+                    } catch {
+                        dump(error)
+                    }
+                } label: {
+                    Text(removeResource.title)
+                }
+            } message: {
+                Text(removeResource.messageLine2)
             }
         }
         

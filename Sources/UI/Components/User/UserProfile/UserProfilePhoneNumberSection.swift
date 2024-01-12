@@ -78,6 +78,8 @@ struct UserProfilePhoneNumberSection: View {
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
         
+        private var removeResource: RemoveResource { .phoneNumber(phoneNumber) }
+        
         var body: some View {
             HStack(spacing: 8) {
                 Text(verbatim: phoneNumber.formatted(.international))
@@ -114,11 +116,22 @@ struct UserProfilePhoneNumberSection: View {
                 .tint(.primary)
             }
             .clerkErrorPresenting($errorWrapper)
-            .popover(isPresented: $confirmationSheetIsPresented) {
-                UserProfileRemoveResourceView(resource: .phoneNumber(phoneNumber))
-                    .padding(.top)
-                    .presentationDragIndicator(.visible)
-                    .presentationDetents([.height(250)])
+            .confirmationDialog(
+                Text(removeResource.messageLine1),
+                isPresented: $confirmationSheetIsPresented,
+                titleVisibility: .visible
+            ) {
+                AsyncButton(role: .destructive) {
+                    do {
+                        try await removeResource.deleteAction()
+                    } catch {
+                        dump(error)
+                    }
+                } label: {
+                    Text(removeResource.title)
+                }
+            } message: {
+                Text(removeResource.messageLine2)
             }
         }
         
