@@ -33,6 +33,8 @@ struct RemoveResourceView: View {
                     dismiss()
                 } label: {
                     Text("Cancel")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())
@@ -41,6 +43,8 @@ struct RemoveResourceView: View {
                     await onDelete?()
                 } label: {
                     Text("Remove")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkDangerButtonStyle())

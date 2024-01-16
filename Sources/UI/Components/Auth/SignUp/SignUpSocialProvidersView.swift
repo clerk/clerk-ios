@@ -35,6 +35,8 @@ struct SignUpSocialProvidersView: View {
                         await signUp(provider: provider)
                     } label: {
                         AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())
                 }

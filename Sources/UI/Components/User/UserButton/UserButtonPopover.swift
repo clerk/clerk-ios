@@ -41,49 +41,59 @@ struct UserButtonPopover: View {
         
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: .zero) {
                 if let currentSession = clerk.session {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
                         UserPreviewView(session: currentSession)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        Button {
-                            dismiss()
-                            clerkUIState.userProfileIsPresented = true
-                        } label: {
-                            HStack(spacing: 16) {
-                                Image(systemName: "gearshape")
-                                    .frame(width: 50)
-                                    .imageScale(.medium)
-                                Text("Manage account")
-                                    .font(.footnote)
+                        HStack {
+                            Button {
+                                dismiss()
+                                clerkUIState.userProfileIsPresented = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "gearshape.fill")
+                                        .frame(height: 16)
+                                        .imageScale(.medium)
+                                    Text("Manage account")
+                                        .font(.footnote)
+                                        .lineLimit(1)
+                                }
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity)
                             }
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        AsyncButton {
-                            await signOut(currentSession)
-                        } label: {
-                            HStack(spacing: 16) {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    .frame(width: 50)
-                                    .imageScale(.medium)
-
-                                Text("Sign out")
-                                    .font(.footnote)
+                            .buttonStyle(ClerkSecondaryButtonStyle())
+                            
+                            AsyncButton {
+                                await signOut(currentSession)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                        .frame(height: 16)
+                                        .imageScale(.medium)
+                                    
+                                    Text("Sign out")
+                                        .font(.footnote)
+                                }
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity)
                             }
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .buttonStyle(ClerkSecondaryButtonStyle())
                         }
-                        .buttonStyle(.plain)
+                        .padding(.leading, 66) // 66 is 50pt avatar + 16pt spacing
                     }
-                    .padding(.horizontal)
+                    .padding()
+                    .padding(.top, 30)
+                    .background()
+                    .overlay(alignment: .bottom) {
+                        Divider()
+                    }
+                    .zIndex(10)
                 }
                 
                 if !clerk.environment.authConfig.singleSessionMode {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: .zero) {
                         ForEach(otherSessions) { session in
                             AsyncButton {
                                 await setActiveSession(session)
@@ -91,14 +101,20 @@ struct UserButtonPopover: View {
                                 HStack {
                                     UserPreviewView(session: session)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-
+                                    
                                     Image(systemName: "arrow.left.arrow.right")
                                         .foregroundStyle(.secondary)
-                                        .imageScale(.medium)
+                                        .imageScale(.small)
                                 }
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .padding(.horizontal)
+                            .padding(.vertical)
+                            .background()
+                            .overlay(alignment: .bottom) {
+                                Divider()
+                            }
                         }
                         
                         Button {
@@ -107,25 +123,30 @@ struct UserButtonPopover: View {
                         } label: {
                             HStack(spacing: 16) {
                                 Image(systemName: "plus")
+                                    .imageScale(.small)
+                                    .padding(6)
+                                    .clipShape(.circle)
                                     .frame(width: 50)
-                                    .imageScale(.medium)
-
+                                    .background {
+                                        Circle()
+                                            .foregroundStyle(.ultraThinMaterial)
+                                    }
+                                    .overlay(content: {
+                                        Circle()
+                                            .strokeBorder(.quinary, style: StrokeStyle(lineWidth: 2, dash: [4]))
+                                    })
+                                
                                 Text("Add account")
-                                    .font(.footnote)
+                                    .font(.footnote.weight(.medium))
                             }
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical)
-                    .background(.quinary)
-                    .overlay(alignment: .top, content: {
-                        Divider()
-                    })
-                    .overlay(alignment: .bottom) {
-                        Divider()
+                        .padding()
+                        .overlay(alignment: .bottom) {
+                            Divider()
+                        }
                     }
                     
                     if otherSessions.count > 0 {
@@ -135,21 +156,21 @@ struct UserButtonPopover: View {
                             HStack(spacing: 16) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .frame(width: 50)
-                                    .imageScale(.medium)
-
+                                    .imageScale(.small)
+                                
                                 Text("Sign out of all accounts")
-                                    .font(.footnote)
+                                    .font(.footnote.weight(.medium))
                             }
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal)
+                        .padding()
+                        .zIndex(-1)
                     }
                 }
             }
             .animation(.snappy, value: clerk.session)
-            .padding(.vertical, 30)
             .frame(minWidth: 376, maxWidth: .infinity, alignment: .leading)
             .onChange(of: clerk.session) { session in
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -160,9 +181,9 @@ struct UserButtonPopover: View {
         .clerkErrorPresenting($errorWrapper)
         .safeAreaInset(edge: .bottom) {
             SecuredByClerkView()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
-                .background()
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial)
         }
     }
 }

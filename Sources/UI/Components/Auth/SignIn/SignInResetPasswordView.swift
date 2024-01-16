@@ -102,6 +102,8 @@ struct SignInResetPasswordView: View {
                     await resetPassword()
                 } label: {
                     Text("Reset password")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkPrimaryButtonStyle())

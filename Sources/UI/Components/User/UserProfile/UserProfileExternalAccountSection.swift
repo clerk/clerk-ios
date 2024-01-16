@@ -81,6 +81,23 @@ struct UserProfileExternalAccountSection: View {
                 if let providerName = externalAccount.externalProvider?.data.name {
                     Text(providerName)
                         .font(.footnote)
+                        .confirmationDialog(
+                            Text(removeResource.messageLine1),
+                            isPresented: $confirmationSheetIsPresented,
+                            titleVisibility: .visible
+                        ) {
+                            AsyncButton(role: .destructive) {
+                                do {
+                                    try await removeResource.deleteAction()
+                                } catch {
+                                    dump(error)
+                                }
+                            } label: {
+                                Text(removeResource.title)
+                            }
+                        } message: {
+                            Text(removeResource.messageLine2)
+                        }
                 }
                 
                 if !externalAccount.displayName.isEmpty {
@@ -112,23 +129,6 @@ struct UserProfileExternalAccountSection: View {
                 .tint(.primary)
             }
             .clerkErrorPresenting($errorWrapper)
-            .confirmationDialog(
-                Text(removeResource.messageLine1),
-                isPresented: $confirmationSheetIsPresented,
-                titleVisibility: .visible
-            ) {
-                AsyncButton(role: .destructive) {
-                    do {
-                        try await removeResource.deleteAction()
-                    } catch {
-                        dump(error)
-                    }
-                } label: {
-                    Text(removeResource.title)
-                }
-            } message: {
-                Text(removeResource.messageLine2)
-            }
         }
         
         @ViewBuilder

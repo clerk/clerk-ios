@@ -15,8 +15,6 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
             .frame(minHeight: ClerkStyleConstants.textMinHeight)
             .font(.footnote.weight(.medium))
             .foregroundStyle(clerkTheme.colors.gray700)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
             .background(Color(.systemBackground))
             .overlay {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -24,7 +22,7 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
             }
             .clipShape(.rect(cornerRadius: 6, style: .continuous))
             .contentShape(.rect(cornerRadius: 6, style: .continuous))
-            .shadow(radius: 0.5, y: 1)
+            .shadow(color: .black.opacity(0.05), radius: 0.5, y: 1)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.bouncy, value: configuration.isPressed)
     }
@@ -35,6 +33,7 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
         //
     } label: {
         Text("Continue")
+            .padding()
     }
     .buttonStyle(ClerkSecondaryButtonStyle())
 }

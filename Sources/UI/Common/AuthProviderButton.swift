@@ -93,6 +93,8 @@ extension AuthProviderButton {
             ForEach(limitedProviders, id: \.self) { provider in
                 Button(action: {}) {
                     AuthProviderButton(provider: provider, style: limitedProviders.count <= 2 ? .regular : .compact)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
@@ -102,6 +104,8 @@ extension AuthProviderButton {
             ForEach(manyProviders, id: \.self) { provider in
                 Button(action: {}) {
                     AuthProviderButton(provider: provider, style: manyProviders.count <= 2 ? .regular : .compact)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }

@@ -85,6 +85,23 @@ struct UserProfilePhoneNumberSection: View {
             HStack(spacing: 8) {
                 Text(verbatim: phoneNumber.formatted(.international))
                     .font(.footnote)
+                    .confirmationDialog(
+                        Text(removeResource.messageLine1),
+                        isPresented: $confirmationSheetIsPresented,
+                        titleVisibility: .visible
+                    ) {
+                        AsyncButton(role: .destructive) {
+                            do {
+                                try await removeResource.deleteAction()
+                            } catch {
+                                dump(error)
+                            }
+                        } label: {
+                            Text(removeResource.title)
+                        }
+                    } message: {
+                        Text(removeResource.messageLine2)
+                    }
                 
                 if phoneNumber.isPrimary(for: user) {
                     CapsuleTag(text: "Primary")
@@ -117,23 +134,6 @@ struct UserProfilePhoneNumberSection: View {
                 .tint(.primary)
             }
             .clerkErrorPresenting($errorWrapper)
-            .confirmationDialog(
-                Text(removeResource.messageLine1),
-                isPresented: $confirmationSheetIsPresented,
-                titleVisibility: .visible
-            ) {
-                AsyncButton(role: .destructive) {
-                    do {
-                        try await removeResource.deleteAction()
-                    } catch {
-                        dump(error)
-                    }
-                } label: {
-                    Text(removeResource.title)
-                }
-            } message: {
-                Text(removeResource.messageLine2)
-            }
         }
         
         @ViewBuilder

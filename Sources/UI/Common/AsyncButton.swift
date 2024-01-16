@@ -74,6 +74,7 @@ struct AsyncButton<Label: View>: View {
             try? await Task.sleep(for: .seconds(1))
         } label: {
             Text("Button")
+                .padding()
         }
         .buttonStyle(ClerkPrimaryButtonStyle())
         
@@ -81,6 +82,7 @@ struct AsyncButton<Label: View>: View {
             try? await Task.sleep(for: .seconds(1))
         } label: {
             Text("Button")
+                .padding()
         }
         .buttonStyle(ClerkSecondaryButtonStyle())
         
@@ -88,6 +90,7 @@ struct AsyncButton<Label: View>: View {
             try? await Task.sleep(for: .seconds(1))
         } label: {
             Text("Button")
+                .padding()
         }
         .buttonStyle(ClerkDangerButtonStyle())
     }

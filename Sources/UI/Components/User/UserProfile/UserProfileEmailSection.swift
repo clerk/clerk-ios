@@ -84,6 +84,23 @@ struct UserProfileEmailSection: View {
             HStack {
                 Text(verbatim: emailAddress.emailAddress)
                     .font(.footnote)
+                    .confirmationDialog(
+                        Text(removeResource.messageLine1),
+                        isPresented: $confirmationSheetIsPresented,
+                        titleVisibility: .visible
+                    ) {
+                        AsyncButton(role: .destructive) {
+                            do {
+                                try await removeResource.deleteAction()
+                            } catch {
+                                dump(error)
+                            }
+                        } label: {
+                            Text(removeResource.title)
+                        }
+                    } message: {
+                        Text(removeResource.messageLine2)
+                    }
                 
                 if emailAddress.isPrimary(for: user) {
                     CapsuleTag(text: "Primary")
@@ -110,23 +127,6 @@ struct UserProfileEmailSection: View {
                     MoreActionsView()
                 }
                 .tint(.primary)
-            }
-            .confirmationDialog(
-                Text(removeResource.messageLine1),
-                isPresented: $confirmationSheetIsPresented,
-                titleVisibility: .visible
-            ) {
-                AsyncButton(role: .destructive) {
-                    do {
-                        try await removeResource.deleteAction()
-                    } catch {
-                        dump(error)
-                    }
-                } label: {
-                    Text(removeResource.title)
-                }
-            } message: {
-                Text(removeResource.messageLine2)
             }
         }
         

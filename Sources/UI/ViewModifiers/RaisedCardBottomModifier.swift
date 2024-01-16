@@ -11,8 +11,12 @@ import Clerk
 struct RaisedCardBottomModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8), style: .continuous))
-            .shadow(radius: 1)
+            .background()
+            .clipShape(UnevenRoundedRectangle(
+                cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8),
+                style: .continuous
+            ))
+            .shadow(color: .black.opacity(0.05), radius: 0.5, y: 1)
     }
 }
 

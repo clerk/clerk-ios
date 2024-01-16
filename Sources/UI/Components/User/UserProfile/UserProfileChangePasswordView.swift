@@ -104,6 +104,8 @@ struct UserProfileChangePasswordView: View {
                         dismiss()
                     } label: {
                         Text("Cancel")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())
@@ -112,6 +114,8 @@ struct UserProfileChangePasswordView: View {
                         await updatePassword()
                     } label: {
                         Text("Continue")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkPrimaryButtonStyle())

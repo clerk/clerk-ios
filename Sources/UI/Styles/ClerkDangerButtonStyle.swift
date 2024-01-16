@@ -16,8 +16,6 @@ struct ClerkDangerButtonStyle: ButtonStyle {
             .frame(minHeight: ClerkStyleConstants.textMinHeight)
             .font(.footnote.weight(.medium))
             .tint(clerkTheme.colors.textOnPrimaryBackground)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
             .background(
                 LinearGradient(
                     stops: [
@@ -42,6 +40,7 @@ struct ClerkDangerButtonStyle: ButtonStyle {
         //
     } label: {
         Text("Continue")
+            .padding()
     }
     .buttonStyle(ClerkDangerButtonStyle())
 }

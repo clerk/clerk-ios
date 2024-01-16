@@ -16,8 +16,6 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
             .font(.footnote.weight(.medium))
             .foregroundStyle(clerkTheme.colors.textOnPrimaryBackground)
             .tint(clerkTheme.colors.textOnPrimaryBackground)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
             .background(
                 LinearGradient(
                     stops: [
@@ -42,6 +40,7 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
         //
     } label: {
         Text("Continue")
+            .padding()
     }
     .buttonStyle(ClerkPrimaryButtonStyle())
 }

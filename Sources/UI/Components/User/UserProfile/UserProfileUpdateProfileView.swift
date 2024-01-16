@@ -148,6 +148,8 @@ struct UserProfileUpdateProfileView: View {
                         dismiss()
                     } label: {
                         Text("Cancel")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())
@@ -157,6 +159,8 @@ struct UserProfileUpdateProfileView: View {
                         dismiss()
                     } label: {
                         Text("Continue")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkPrimaryButtonStyle())

@@ -57,6 +57,8 @@ struct UserProfileAddExternalAccountView: View {
                                 label: "Connect \(provider.data.name) account"
                             )
                             .font(.footnote)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                         }
                         .buttonStyle(ClerkSecondaryButtonStyle())
                     }
@@ -67,6 +69,8 @@ struct UserProfileAddExternalAccountView: View {
                         dismiss()
                     } label: {
                         Text("Cancel")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())

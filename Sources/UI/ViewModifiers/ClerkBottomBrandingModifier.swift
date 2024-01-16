@@ -18,8 +18,7 @@ struct ClerkBottomBrandingModifier: ViewModifier {
                 content
                     .background {
                         Color(.systemBackground)
-                            .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8), style: .continuous))
-                            .shadow(radius: 1)
+                            .raisedCardBottom()
                             .ignoresSafeArea()
                     }
                         
