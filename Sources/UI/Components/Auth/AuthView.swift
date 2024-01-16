@@ -87,9 +87,12 @@ public struct AuthView: View {
         .keyboardIgnoringBottomView(inFrontOfContent: false, content: {
             VStack(spacing: 0) {
                 footerView
-                SecuredByClerkView()
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
+                if clerk.environment.displayConfig.branded {
+                    Divider()
+                    SecuredByClerkView()
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .background(.ultraThinMaterial)
         })
@@ -129,8 +132,7 @@ public struct AuthView: View {
                 }
             }
             .padding(.vertical, 16)
-            
-            Divider()
+            .frame(maxWidth: .infinity)
         }
     }
 }
