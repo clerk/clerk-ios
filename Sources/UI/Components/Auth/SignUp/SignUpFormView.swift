@@ -56,7 +56,7 @@ struct SignUpFormView: View {
                                 if !firstName.required {
                                     Text("Optional")
                                         .font(.caption2.weight(.medium))
-                                        .foregroundStyle(.tertiary)
+                                        .foregroundStyle(clerkTheme.colors.textTertiary)
                                 }
                             }
                             
@@ -77,7 +77,7 @@ struct SignUpFormView: View {
                                 if !lastName.required {
                                     Text("Optional")
                                         .font(.caption2.weight(.medium))
-                                        .foregroundStyle(.tertiary)
+                                        .foregroundStyle(clerkTheme.colors.textTertiary)
                                 }
                             }
 
@@ -100,7 +100,7 @@ struct SignUpFormView: View {
                         if !username.required {
                             Text("Optional")
                                 .font(.caption2.weight(.medium))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
                         }
                     }
                     
@@ -122,7 +122,7 @@ struct SignUpFormView: View {
                         if !email.required {
                             Text("Optional")
                                 .font(.caption2.weight(.medium))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
                         }
                     }
                     
@@ -145,7 +145,7 @@ struct SignUpFormView: View {
                         if !phoneNumber.required {
                             Text("Optional")
                                 .font(.caption2.weight(.medium))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
                         }
                     }
                     

@@ -16,6 +16,7 @@ public struct ClerkTheme {
         public var primary: Color
         public var textPrimary: Color
         public var textSecondary: Color
+        public var textTertiary: Color
         public var textOnPrimaryBackground: Color
         public var borderPrimary: Color
         public var danger: Color
@@ -29,9 +30,10 @@ extension ClerkTheme {
             primary: Color(.clerkPrimary),
             textPrimary: Color(.clerkTextPrimary),
             textSecondary: Color(.clerkTextSecondary),
+            textTertiary: Color(.clerkTextTertiary),
             textOnPrimaryBackground: .white,
             borderPrimary: Color(.systemFill),
-            danger: Color(.clerkRed500)
+            danger: Color(.clerkDanger)
         )
     )
     

@@ -55,6 +55,7 @@ struct OTPFieldView: View {
                     Text(" ")
                 }
             }
+            .font(.title3.weight(.bold))
             .foregroundStyle(clerkTheme.colors.textPrimary)
             .overlay {
                 if isSelected {

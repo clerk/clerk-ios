@@ -134,7 +134,7 @@ struct UserButtonPopover: View {
                                     }
                                     .overlay(content: {
                                         Circle()
-                                            .strokeBorder(.quinary, style: StrokeStyle(lineWidth: 2, dash: [4]))
+                                            .strokeBorder(clerkTheme.colors.borderPrimary, style: StrokeStyle(lineWidth: 2, dash: [4]))
                                     })
                                 
                                 Text("Add account")
