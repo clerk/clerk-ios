@@ -10,9 +10,31 @@
 import SwiftUI
 
 public struct ClerkTheme {
+    public init(colors: ClerkTheme.Colors) {
+        self.colors = colors
+    }
+    
     public var colors: Colors
     
     public struct Colors {
+        public init(
+            primary: Color,
+            textPrimary: Color,
+            textSecondary: Color,
+            textTertiary: Color,
+            textOnPrimaryBackground: Color,
+            borderPrimary: Color,
+            danger: Color
+        ) {
+            self.primary = primary
+            self.textPrimary = textPrimary
+            self.textSecondary = textSecondary
+            self.textTertiary = textTertiary
+            self.textOnPrimaryBackground = textOnPrimaryBackground
+            self.borderPrimary = borderPrimary
+            self.danger = danger
+        }
+        
         public var primary: Color
         public var textPrimary: Color
         public var textSecondary: Color
@@ -25,7 +47,7 @@ public struct ClerkTheme {
 
 extension ClerkTheme {
     
-    static let clerkDefault = Self(
+    static public let clerkDefault = Self(
         colors: .init(
             primary: Color(.clerkPrimary),
             textPrimary: Color(.clerkTextPrimary),
