@@ -14,7 +14,7 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
         configuration.label
             .frame(minHeight: ClerkStyleConstants.textMinHeight)
             .font(.footnote.weight(.medium))
-            .foregroundStyle(clerkTheme.colors.gray700)
+            .foregroundStyle(clerkTheme.colors.textPrimary)
             .background(Color(.systemBackground))
             .overlay {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)

@@ -26,7 +26,7 @@ struct ClerkDangerButtonStyle: ButtonStyle {
                     endPoint: UnitPoint(x: 0.5, y: 1)
                 )
             )
-            .background(clerkTheme.colors.red500)
+            .background(clerkTheme.colors.danger)
             .clipShape(.rect(cornerRadius: 6, style: .continuous))
             .contentShape(.rect(cornerRadius: 6, style: .continuous))
             .shadow(radius: 1, y: 1)

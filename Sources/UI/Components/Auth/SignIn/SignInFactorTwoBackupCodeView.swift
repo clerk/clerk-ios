@@ -38,7 +38,7 @@ struct SignInFactorTwoBackupCodeView: View {
                     HStack {
                         Text("Backup code")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                     }
                     CustomTextField(text: $code)

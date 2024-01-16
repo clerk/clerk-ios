@@ -47,7 +47,7 @@ struct SignInFactorOnePasswordView: View {
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Password")
-                                .foregroundStyle(clerkTheme.colors.gray700)
+                                .foregroundStyle(clerkTheme.colors.textPrimary)
                             Spacer()
                             Button(action: {
                                 clerkUIState.presentedAuthStep = .signInForgotPassword
@@ -78,7 +78,7 @@ struct SignInFactorOnePasswordView: View {
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

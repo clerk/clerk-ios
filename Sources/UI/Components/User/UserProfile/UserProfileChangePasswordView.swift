@@ -93,7 +93,7 @@ struct UserProfileChangePasswordView: View {
                             .font(.footnote.weight(.medium))
                     }
                     .labelsHidden()
-                    .tint(clerkTheme.colors.primary)
+                    .tint(clerkTheme.colors.textPrimary)
                     
                     Text("Sign out of all other devices")
                         .font(.footnote.weight(.medium))

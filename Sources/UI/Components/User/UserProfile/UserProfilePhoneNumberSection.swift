@@ -57,7 +57,7 @@ struct UserProfilePhoneNumberSection: View {
                         Text("+ Add a phone number")
                             .font(.caption.weight(.medium))
                             .frame(minHeight: 32)
-                            .tint(.primary)
+                            .tint(clerkTheme.colors.textPrimary)
                     })
                     .sheet(item: $addPhoneNumberStep) { step in
                         UserProfileAddPhoneNumberView(initialStep: step)
@@ -78,6 +78,7 @@ struct UserProfilePhoneNumberSection: View {
         @Binding var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
+        @Environment(\.clerkTheme) private var clerkTheme
         
         private var removeResource: RemoveResource { .phoneNumber(phoneNumber) }
         
@@ -131,7 +132,7 @@ struct UserProfilePhoneNumberSection: View {
                 } label: {
                     MoreActionsView()
                 }
-                .tint(.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
             .clerkErrorPresenting($errorWrapper)
         }

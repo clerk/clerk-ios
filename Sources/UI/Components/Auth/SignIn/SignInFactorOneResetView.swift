@@ -62,7 +62,7 @@ struct SignInFactorOneResetView: View {
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                         .frame(minHeight: ClerkStyleConstants.textMinHeight)
                 }
             }

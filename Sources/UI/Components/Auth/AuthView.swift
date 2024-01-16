@@ -119,7 +119,7 @@ public struct AuthView: View {
             HStack(spacing: 4) {
                 Text(isSignIn ? "Don't have an account?" : "Already have an account?")
                     .font(.footnote)
-                    .foregroundStyle(clerkTheme.colors.gray500)
+                    .foregroundStyle(clerkTheme.colors.textSecondary)
                 Button {
                     clerkUIState.authIsPresented = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
@@ -128,7 +128,7 @@ public struct AuthView: View {
                 } label: {
                     Text(isSignIn ? "Sign Up" : "Sign In")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                 }
             }
             .padding(.vertical, 16)

@@ -24,7 +24,7 @@ struct HeaderView: View {
             if let subtitle {
                 Text(subtitle)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(clerkTheme.colors.textSecondary)
             }
         }
     }

@@ -63,7 +63,7 @@ struct SignInFormView: View {
             VStack {
                 HStack {
                     Text(displayingEmailOrUsernameEntry ? emailOrUsernameLabel.capitalizedSentence : "Phone number")
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                         .animation(nil, value: displayingEmailOrUsernameEntry)
                     Spacer()
                     

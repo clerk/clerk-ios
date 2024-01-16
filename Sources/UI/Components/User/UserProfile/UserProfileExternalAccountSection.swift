@@ -48,7 +48,7 @@ struct UserProfileExternalAccountSection: View {
                     }, label: {
                         Text("+ Connect account")
                             .font(.caption.weight(.medium))
-                            .tint(.primary)
+                            .tint(clerkTheme.colors.textPrimary)
                             .frame(minHeight: 32)
                     })
                 }
@@ -68,6 +68,7 @@ struct UserProfileExternalAccountSection: View {
         let namespace: Namespace.ID
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
+        @Environment(\.clerkTheme) private var clerkTheme
         
         private var removeResource: RemoveResource { .externalAccount(externalAccount) }
         
@@ -105,7 +106,7 @@ struct UserProfileExternalAccountSection: View {
                         Text("•")
                         Text(externalAccount.displayName)
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(clerkTheme.colors.textSecondary)
                     .font(.footnote)
                 }
                                 
@@ -126,7 +127,7 @@ struct UserProfileExternalAccountSection: View {
                 } label: {
                     MoreActionsView()
                 }
-                .tint(.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
             .clerkErrorPresenting($errorWrapper)
         }

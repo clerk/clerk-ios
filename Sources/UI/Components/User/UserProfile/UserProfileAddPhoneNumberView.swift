@@ -82,7 +82,7 @@ struct UserProfileAddPhoneNumberView: View {
             
             Text("Message and data rates may apply.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(clerkTheme.colors.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             AsyncButton {

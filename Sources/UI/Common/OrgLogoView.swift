@@ -15,7 +15,7 @@ struct OrgLogoView: View {
             .resizable()
             .scaledToFit()
             .frame(width: 32, height: 32)
-            .foregroundStyle(clerkTheme.colors.gray700)
+            .foregroundStyle(clerkTheme.colors.textPrimary)
     }
 }
 

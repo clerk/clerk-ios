@@ -13,6 +13,7 @@ import Clerk
 struct UserButtonPopover: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var errorWrapper: ErrorWrapper?
     @Namespace private var namespace
@@ -103,7 +104,7 @@ struct UserButtonPopover: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     
                                     Image(systemName: "arrow.left.arrow.right")
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(clerkTheme.colors.textSecondary)
                                         .imageScale(.small)
                                 }
                                 .contentShape(Rectangle())
@@ -139,7 +140,7 @@ struct UserButtonPopover: View {
                                 Text("Add account")
                                     .font(.footnote.weight(.medium))
                             }
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(clerkTheme.colors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
@@ -163,7 +164,7 @@ struct UserButtonPopover: View {
                                 Text("Sign out of all accounts")
                                     .font(.footnote.weight(.medium))
                             }
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(clerkTheme.colors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)

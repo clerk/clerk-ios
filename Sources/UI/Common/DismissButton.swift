@@ -11,6 +11,7 @@ import SwiftUI
 
 struct DismissButton: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.clerkTheme) private var clerkTheme
     
     var body: some View {
         Button(action: {
@@ -18,7 +19,7 @@ struct DismissButton: View {
         }, label: {
             Image(systemName: "xmark")
                 .imageScale(.small)
-                .tint(.secondary)
+                .tint(clerkTheme.colors.textSecondary)
                 .padding(10)
                 .background(.ultraThinMaterial, in: Circle())
         })

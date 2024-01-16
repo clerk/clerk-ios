@@ -34,7 +34,7 @@ struct IdentityPreviewView: View {
                 })
             }
         }
-        .foregroundStyle(clerkTheme.colors.gray500)
+        .foregroundStyle(clerkTheme.colors.textSecondary)
     }
 }
 

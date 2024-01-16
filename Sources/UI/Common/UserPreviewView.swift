@@ -13,6 +13,8 @@ import Clerk
 import Nuke
 
 struct UserPreviewView: View {
+    @Environment(\.clerkTheme) private var clerkTheme
+    
     var title: String?
     var subtitle: String?
     var imageUrl: String?
@@ -43,7 +45,7 @@ struct UserPreviewView: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                 }
             }
         }

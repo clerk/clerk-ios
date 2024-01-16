@@ -16,16 +16,19 @@ struct SecuredByClerkView: View {
         HStack(spacing: 4) {
             Text("Secured by ")
                 .font(.footnote)
-                .foregroundStyle(clerkTheme.colors.gray500)
+                .foregroundStyle(clerkTheme.colors.textSecondary)
             HStack(spacing: 0) {
                 Image("clerk-logomark-gray", bundle: .module)
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 14, height: 14)
                 Image("clerk-name-gray", bundle: .module)
+                    .renderingMode(.template)
             }
             .font(.subheadline)
         }
+        .foregroundStyle(clerkTheme.colors.textPrimary.opacity(0.7))
     }
 }
 

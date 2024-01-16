@@ -13,36 +13,32 @@ public struct ClerkTheme {
     public var colors: Colors
     
     public struct Colors {
-        // Customizable
         public var primary: Color
         public var textPrimary: Color
         public var textSecondary: Color
-        public var textOnPrimaryBackground: Color = .white
+        public var textOnPrimaryBackground: Color
         public var borderPrimary: Color
-        
-        // Constants
-        public let gray50 = Color(.clerkGray50)
-        public let gray500 = Color(.clerkGray500)
-        public let gray700 = Color(.clerkGray700)
-        public let red500 = Color(.clerkRed500)
+        public var danger: Color
     }
 }
 
 extension ClerkTheme {
     
-    static let `default` = Self(
+    static let clerkDefault = Self(
         colors: .init(
             primary: Color(.clerkPrimary),
             textPrimary: Color(.clerkTextPrimary),
             textSecondary: Color(.clerkTextSecondary),
-            borderPrimary: Color(.systemFill)
+            textOnPrimaryBackground: .white,
+            borderPrimary: Color(.systemFill),
+            danger: Color(.clerkRed500)
         )
     )
     
 }
 
 struct ClerkThemeKey: EnvironmentKey {
-    static let defaultValue: ClerkTheme = .default
+    static let defaultValue: ClerkTheme = .clerkDefault
 }
 
 extension EnvironmentValues {

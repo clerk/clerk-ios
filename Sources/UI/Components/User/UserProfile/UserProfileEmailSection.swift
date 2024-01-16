@@ -126,7 +126,7 @@ struct UserProfileEmailSection: View {
                 } label: {
                     MoreActionsView()
                 }
-                .tint(.primary)
+                .tint(clerkTheme.colors.textPrimary)
             }
         }
         

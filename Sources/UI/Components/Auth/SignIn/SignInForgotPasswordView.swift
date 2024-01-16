@@ -46,7 +46,7 @@ struct SignInForgotPasswordView: View {
                 
                 Text("Forgot password?")
                     .font(.body.weight(.bold))
-                    .foregroundStyle(clerkTheme.colors.gray700)
+                    .foregroundStyle(clerkTheme.colors.textPrimary)
                     .padding(.bottom, 32)
                 
                 AsyncButton {
@@ -70,7 +70,7 @@ struct SignInForgotPasswordView: View {
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                         .frame(minHeight: ClerkStyleConstants.textMinHeight)
                 }
             }

@@ -54,7 +54,7 @@ struct SignInResetPasswordView: View {
                         HStack {
                             Text("New password")
                                 .font(.footnote)
-                                .foregroundStyle(clerkTheme.colors.gray700)
+                                .foregroundStyle(clerkTheme.colors.textPrimary)
                             Spacer()
                         }
                         
@@ -69,7 +69,7 @@ struct SignInResetPasswordView: View {
                         HStack {
                             Text("Confirm password")
                                 .font(.footnote)
-                                .foregroundStyle(clerkTheme.colors.gray700)
+                                .foregroundStyle(clerkTheme.colors.textPrimary)
                             Spacer()
                         }
                         
@@ -92,7 +92,7 @@ struct SignInResetPasswordView: View {
                         
                         Text("Sign out of all other devices")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                     }
                     Spacer()
                 }
@@ -114,7 +114,7 @@ struct SignInResetPasswordView: View {
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.gray700)
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
                 }
 
             }

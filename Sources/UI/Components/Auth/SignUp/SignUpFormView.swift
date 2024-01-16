@@ -51,7 +51,7 @@ struct SignUpFormView: View {
                             HStack {
                                 Text("First name")
                                     .font(.footnote.weight(.medium))
-                                    .foregroundStyle(clerkTheme.colors.gray700)
+                                    .foregroundStyle(clerkTheme.colors.textPrimary)
                                 Spacer()
                                 if !firstName.required {
                                     Text("Optional")
@@ -72,7 +72,7 @@ struct SignUpFormView: View {
                             HStack {
                                 Text("Last name")
                                     .font(.footnote.weight(.medium))
-                                    .foregroundStyle(clerkTheme.colors.gray700)
+                                    .foregroundStyle(clerkTheme.colors.textPrimary)
                                 Spacer()
                                 if !lastName.required {
                                     Text("Optional")
@@ -95,7 +95,7 @@ struct SignUpFormView: View {
                     HStack {
                         Text("Username")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                         if !username.required {
                             Text("Optional")
@@ -117,7 +117,7 @@ struct SignUpFormView: View {
                     HStack {
                         Text("Email address")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                         if !email.required {
                             Text("Optional")
@@ -140,7 +140,7 @@ struct SignUpFormView: View {
                     HStack {
                         Text("Phone number")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                         if !phoneNumber.required {
                             Text("Optional")
@@ -160,7 +160,7 @@ struct SignUpFormView: View {
                     HStack {
                         Text("Password")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.gray700)
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                     }
                     

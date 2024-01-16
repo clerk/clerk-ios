@@ -25,7 +25,7 @@ struct CapsuleTag: View {
     private var foregroundStyle: Color {
         switch style {
         case .regular:
-            return .secondary
+            return (clerkTheme.colors.textSecondary)
         case .warning:
             return .red
         }

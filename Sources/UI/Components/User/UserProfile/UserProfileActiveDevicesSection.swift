@@ -13,6 +13,7 @@ import NukeUI
 
 struct UserProfileActiveDevicesSection: View {
     @EnvironmentObject private var clerk: Clerk
+    @Environment(\.clerkTheme) private var clerkTheme
     
     private var sessions: [Session] {
         guard let user = clerk.client.lastActiveSession?.user else { return [] }
@@ -40,6 +41,7 @@ struct UserProfileActiveDevicesSection: View {
     private struct ActiveDeviceView: View {
         @EnvironmentObject private var clerk: Clerk
         @Environment(\.colorScheme) private var colorScheme
+        @Environment(\.clerkTheme) private var clerkTheme
         @State private var errorWrapper: ErrorWrapper?
         @State private var isSigningOutOfDevice: Bool = false
 
@@ -71,7 +73,7 @@ struct UserProfileActiveDevicesSection: View {
                         Text(session.ipAddressDisplayText)
                         Text(session.lastActiveAt.formatted(Date.RelativeFormatStyle()))
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(clerkTheme.colors.textSecondary)
                     .font(.footnote)
                 }
                 
@@ -89,7 +91,7 @@ struct UserProfileActiveDevicesSection: View {
                     } label: {
                         MoreActionsView()
                     }
-                    .tint(.primary)
+                    .tint(clerkTheme.colors.textPrimary)
                 }
             }
             .opacity(isSigningOutOfDevice ? 0 : 1)
@@ -110,7 +112,7 @@ struct UserProfileActiveDevicesSection: View {
                         .font(.footnote)
                     Text("This is the device you are currently using")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                 }
             } else {
                     AsyncButton {

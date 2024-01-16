@@ -109,7 +109,7 @@ struct PhoneNumberField: View {
                             .foregroundStyle(clerkTheme.colors.textPrimary)
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(clerkTheme.colors.textSecondary)
                     }
                     .padding(.horizontal)
                     .contentShape(Rectangle())

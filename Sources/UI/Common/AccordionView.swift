@@ -12,6 +12,7 @@ import SwiftUI
 struct AccordionView<Content: View, ExpandedContent: View>: View {
     @State private var isExpanded = false
     var horizontalSpacing: CGFloat? = nil
+    @Environment(\.clerkTheme) private var clerkTheme
     
     @ViewBuilder var content: Content
     @ViewBuilder var expandedContent: ExpandedContent
@@ -28,7 +29,7 @@ struct AccordionView<Content: View, ExpandedContent: View>: View {
                     Spacer(minLength: horizontalSpacing)
                     Image(systemName: "chevron.down")
                         .imageScale(.small)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                         .font(.system(size: 16).weight(.medium))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
