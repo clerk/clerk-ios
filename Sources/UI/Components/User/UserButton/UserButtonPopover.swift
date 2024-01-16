@@ -179,12 +179,7 @@ struct UserButtonPopover: View {
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
-        .safeAreaInset(edge: .bottom) {
-            SecuredByClerkView()
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
-        }
+        .clerkBottomBranding()
     }
 }
 
