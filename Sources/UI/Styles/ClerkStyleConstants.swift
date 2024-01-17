@@ -8,5 +8,5 @@
 import Foundation
 
 struct ClerkStyleConstants {
-    static let textMinHeight = 18.0
+    
 }

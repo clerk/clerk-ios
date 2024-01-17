@@ -38,8 +38,7 @@ struct SignInSocialProvidersView: View {
                             provider: provider,
                             style: thirdPartyProviders.count <= 2 ? .regular : .compact
                         )
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())
                 }

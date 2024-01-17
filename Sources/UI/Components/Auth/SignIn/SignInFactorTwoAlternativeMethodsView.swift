@@ -49,8 +49,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
                             
                             Text(actionText)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())

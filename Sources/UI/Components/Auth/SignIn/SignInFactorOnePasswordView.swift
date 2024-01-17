@@ -65,8 +65,7 @@ struct SignInFactorOnePasswordView: View {
                     
                     AsyncButton(action: attempt) {
                         Text("Continue")
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .clerkStandardButtonPadding()
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkPrimaryButtonStyle())
@@ -78,7 +77,7 @@ struct SignInFactorOnePasswordView: View {
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -91,8 +91,7 @@ struct UserProfileAddPhoneNumberView: View {
                 step = .code(phoneNumber: phoneNumber)
             } label: {
                 Text("Continue")
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
@@ -135,8 +134,7 @@ struct UserProfileAddPhoneNumberView: View {
                     dismiss()
                 } label: {
                     Text("Cancel")
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())

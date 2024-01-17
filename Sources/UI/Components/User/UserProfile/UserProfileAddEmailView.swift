@@ -116,8 +116,7 @@ struct UserProfileAddEmailView: View {
                 step = .code(emailAddress: emailAddress)
             } label: {
                 Text("Continue")
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
@@ -159,8 +158,7 @@ struct UserProfileAddEmailView: View {
                     dismiss()
                 } label: {
                     Text("Cancel")
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())

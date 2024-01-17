@@ -67,8 +67,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                         
                         Text("Continue with \(provider.data.name)")
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())
@@ -87,8 +86,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                             
                             Text(actionText)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClerkSecondaryButtonStyle())

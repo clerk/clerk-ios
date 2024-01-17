@@ -62,8 +62,7 @@ struct VerificationCodeView: View {
                             }
                         }
                         .animation(.snappy, value: isSubmittingCode)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkPrimaryButtonStyle())
@@ -76,7 +75,7 @@ struct VerificationCodeView: View {
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                 }
             }
         }

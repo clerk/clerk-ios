@@ -49,8 +49,7 @@ struct SignInFactorTwoBackupCodeView: View {
                     //
                 } label: {
                     Text("Continue")
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkPrimaryButtonStyle())
@@ -61,7 +60,7 @@ struct SignInFactorTwoBackupCodeView: View {
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
                 }
 
             }

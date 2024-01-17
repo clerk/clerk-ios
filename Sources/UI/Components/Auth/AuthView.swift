@@ -77,7 +77,7 @@ public struct AuthView: View {
                     ))
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             Color(.systemBackground)
                 .raisedCardBottom()
@@ -88,7 +88,6 @@ public struct AuthView: View {
             VStack(spacing: 0) {
                 footerView
                 if clerk.environment.displayConfig.branded {
-                    Divider()
                     SecuredByClerkView()
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
@@ -133,6 +132,9 @@ public struct AuthView: View {
             }
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
+            .overlay(alignment: .bottom) {
+                Divider()
+            }
         }
     }
 }

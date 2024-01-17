@@ -53,8 +53,7 @@ struct SignInForgotPasswordView: View {
                     await resetPassword()
                 } label: {
                     Text("Reset password")
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .clerkStandardButtonPadding()
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ClerkPrimaryButtonStyle())
@@ -70,8 +69,8 @@ struct SignInForgotPasswordView: View {
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
-                        .frame(minHeight: ClerkStyleConstants.textMinHeight)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
+                        .frame(minHeight: 18)
                 }
             }
             .padding()

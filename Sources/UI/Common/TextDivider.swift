@@ -24,7 +24,7 @@ struct TextDivider: View {
                 Text(text)
                     .font(.footnote)
                     .foregroundStyle(clerkTheme.colors.textSecondary)
-                    .frame(minHeight: ClerkStyleConstants.textMinHeight)
+                    .frame(minHeight: 18)
                     .layoutPriority(1)
                 
                 Rectangle()

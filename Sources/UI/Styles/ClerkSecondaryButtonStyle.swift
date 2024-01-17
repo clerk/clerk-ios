@@ -12,7 +12,7 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .frame(minHeight: ClerkStyleConstants.textMinHeight)
+            .frame(minHeight: 18)
             .font(.footnote.weight(.medium))
             .foregroundStyle(clerkTheme.colors.textPrimary)
             .background(Color(.systemBackground))

@@ -42,8 +42,8 @@ struct SignInFactorOneUseAnotherMethodView: View {
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(clerkTheme.colors.textPrimary)
-                        .frame(minHeight: ClerkStyleConstants.textMinHeight)
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
+                        .frame(minHeight: 18)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

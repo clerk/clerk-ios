@@ -13,7 +13,7 @@ struct ClerkDangerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(clerkTheme.colors.textOnPrimaryBackground)
-            .frame(minHeight: ClerkStyleConstants.textMinHeight)
+            .frame(minHeight: 18)
             .font(.footnote.weight(.medium))
             .tint(clerkTheme.colors.textOnPrimaryBackground)
             .background(

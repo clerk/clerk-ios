@@ -173,8 +173,7 @@ struct SignUpFormView: View {
                 await continueAction()
             } label: {
                 Text("Continue")
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())

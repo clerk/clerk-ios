@@ -38,8 +38,7 @@ struct ErrorView: View {
                 dismiss()
             } label: {
                 Text("OK")
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
