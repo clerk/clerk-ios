@@ -28,7 +28,7 @@ struct SecuredByClerkView: View {
             }
             .font(.subheadline)
         }
-        .foregroundStyle(clerkTheme.colors.textPrimary.opacity(0.7))
+        .foregroundStyle(clerkTheme.colors.textSecondary.opacity(0.7))
     }
 }
 

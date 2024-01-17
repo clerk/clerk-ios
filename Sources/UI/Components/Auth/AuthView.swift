@@ -119,15 +119,14 @@ public struct AuthView: View {
                 Text(isSignIn ? "Don't have an account?" : "Already have an account?")
                     .font(.footnote)
                     .foregroundStyle(clerkTheme.colors.textSecondary)
+                    .animation(nil, value: clerkUIState.presentedAuthStep)
                 Button {
-                    clerkUIState.authIsPresented = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-                        clerkUIState.presentedAuthStep = isSignIn ? .signUpStart : .signInStart
-                    })
+                    clerkUIState.presentedAuthStep = isSignIn ? .signUpStart : .signInStart
                 } label: {
                     Text(isSignIn ? "Sign Up" : "Sign In")
                         .font(.footnote.weight(.medium))
                         .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .animation(nil, value: clerkUIState.presentedAuthStep)
                 }
             }
             .padding(.vertical, 16)

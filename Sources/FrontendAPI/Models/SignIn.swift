@@ -363,10 +363,10 @@ extension SignIn {
                 return passwordFactor
             }
             
-            return sortedFactors.first(where: { $0.safeIdentifier == identifier })
+            return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
         case .otp:
             let sortedFactors = firstFactors.sorted { $0.sortOrderOTPPreferred < $1.sortOrderOTPPreferred }
-            return sortedFactors.first(where: { $0.safeIdentifier == identifier })
+            return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
         }
     }
     
