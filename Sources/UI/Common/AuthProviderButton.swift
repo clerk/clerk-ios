@@ -35,14 +35,12 @@ struct AuthProviderButton: View {
             if let image = state.image {
                 image
                     .resizable()
-                    .frame(width: 16, height: 16)
                     .scaledToFit()
             } else {
-                Text(label)
-                    .lineLimit(1)
+                Color(.secondarySystemBackground)
             }
         })
-        .frame(maxWidth: .infinity)
+        .frame(width: 16, height: 16)
     }
     
     @MainActor
@@ -63,7 +61,6 @@ struct AuthProviderButton: View {
             Text("\(label)")
                 .lineLimit(1)
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -75,7 +72,7 @@ extension AuthProviderButton {
         if let label {
             self.label = label
         } else {
-            self.label = style == .regular ? "Continue with \(provider.data.name)" : provider.data.name
+            self.label = provider.data.name
         }
     }
     

@@ -73,6 +73,7 @@ struct SignInFactorOneView: View {
                         clerkUIState.presentedAuthStep = .signInStart
                     })
                 )
+                .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 .transition(.asymmetric(
                     insertion: .offset(y: 50).combined(with: .opacity),
                     removal: .opacity.animation(nil)

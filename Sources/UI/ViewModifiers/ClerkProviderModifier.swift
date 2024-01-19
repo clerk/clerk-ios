@@ -19,7 +19,6 @@ import Clerk
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
-    @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.scenePhase) private var scenePhase
     
     @ObservedObject private var clerk = Clerk.shared

@@ -14,6 +14,9 @@ import AuthenticationServices
 struct SignUpSocialProvidersView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var errorWrapper: ErrorWrapper?
+    @Environment(\.clerkTheme) private var clerkTheme
+    @State private var providerStackSize: CGSize = .zero
+    @State private var providerButtonSize: CGSize = .zero
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
@@ -23,24 +26,27 @@ struct SignUpSocialProvidersView: View {
         clerk.client.signUp
     }
     
+    private var providerButtonMaxWidth: CGFloat {
+        providerStackSize.height > providerButtonSize.height ? 46 : .infinity
+    }
+    
     var onSuccess:(() -> Void)?
     
     var body: some View {
-        LazyVGrid(
-            columns: Array(repeating: .init(.flexible()), count: min(thirdPartyProviders.count, thirdPartyProviders.count <= 2 ? 1 : 6)),
-            alignment: .leading,
-            content: {
-                ForEach(thirdPartyProviders, id: \.self) { provider in
-                    AsyncButton {
-                        await signUp(provider: provider)
-                    } label: {
-                        AuthProviderButton(provider: provider, style: thirdPartyProviders.count <= 2 ? .regular : .compact)
-                            .clerkStandardButtonPadding()
-                    }
-                    .buttonStyle(ClerkSecondaryButtonStyle())
-                }
+        WrappingHStack(thirdPartyProviders, alignment: .center, spacing: .constant(8), lineSpacing: 8) { provider in
+            AsyncButton {
+                await signUp(provider: provider)
+            } label: {
+                AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
+                    .padding(8)
+                    .frame(minWidth: 46, maxWidth: providerButtonMaxWidth, minHeight: 30)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(clerkTheme.colors.textPrimary)
+                    .readSize { providerButtonSize = $0 }
             }
-        )
+            .buttonStyle(ClerkSecondaryButtonStyle())
+        }
+        .readSize { providerStackSize = $0 }
         .clerkErrorPresenting($errorWrapper)
     }
     

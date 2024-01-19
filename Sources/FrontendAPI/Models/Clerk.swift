@@ -134,7 +134,7 @@ extension Clerk {
         client.lastActiveSession?.user
     }
     
-    public func startSessionTokenPolling() {
+    func startSessionTokenPolling() {
         Timer.scheduledTimer(withTimeInterval: 50, repeats: true) { _ in
             Task(priority: .background) { [weak self] in
                 guard let self, let session else { return }

@@ -169,6 +169,9 @@ struct UserButtonPopover: View {
                         }
                         .buttonStyle(.plain)
                         .padding()
+                        .overlay(alignment: .bottom, content: {
+                            Divider()
+                        })
                         .zIndex(-1)
                     }
                 }

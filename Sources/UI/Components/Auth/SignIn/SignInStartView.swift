@@ -57,7 +57,6 @@ struct SignInStartView: View {
                         .padding(.bottom, 32)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .padding(.vertical)
         }
