@@ -58,6 +58,7 @@ struct UserProfileAddExternalAccountView: View {
                             )
                             .font(.footnote)
                             .clerkStandardButtonPadding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(ClerkSecondaryButtonStyle())
                     }

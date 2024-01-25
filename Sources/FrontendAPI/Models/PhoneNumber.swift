@@ -44,10 +44,10 @@ public struct PhoneNumber: Codable, Identifiable {
     public let phoneNumber: String
     
     /// Set to true if this phone number is reserved for multi-factor authentication (2FA). Set to false otherwise.
-    let reservedForSecondFactor: Bool
+    public let reservedForSecondFactor: Bool
     
     /// Set to true if this phone number is the default second factor. Set to false otherwise. A user must have exactly one default second factor, if multi-factor authentication (2FA) is enabled.
-    let defaultSecondFactor: Bool
+    public let defaultSecondFactor: Bool
     
     /// An object holding information on the verification of this phone number.
     public let verification: Verification?
@@ -74,6 +74,12 @@ extension PhoneNumber {
     
     public func isPrimary(for user: User) -> Bool {
         user.primaryPhoneNumberId == id
+    }
+    
+    public var regionId: String? {
+        let phoneNumberKit = Container.shared.phoneNumberKit()
+        guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return nil }
+        return phoneNumber.regionID
     }
     
     public var flag: String? {
@@ -178,6 +184,25 @@ extension PhoneNumber {
             .id(id)
             .attemptVerification
             .post(params)
+        
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
+        try await Clerk.shared.client.get()
+    }
+    
+    /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
+    /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
+    @MainActor
+    public func setReservedForSecondFactor(reserved: Bool = true) async throws {
+        let body = ["reserved_for_second_factor": reserved]
+        
+        let request = APIEndpoint
+            .v1
+            .me
+            .phoneNumbers
+            .id(id)
+            .patch(body: body)
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])

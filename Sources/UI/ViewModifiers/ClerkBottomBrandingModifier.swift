@@ -21,7 +21,7 @@ struct ClerkBottomBrandingModifier: ViewModifier {
                     .background {
                         if withRaisedCardContent {
                             Color(.systemBackground)
-                                .raisedCardBottom()
+//                                .raisedCardBottom()
                                 .ignoresSafeArea()
                         } else {
                             Color(.systemBackground)

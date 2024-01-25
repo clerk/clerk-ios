@@ -29,6 +29,7 @@ public struct UserProfileView: View {
             .padding()
         }
         .clerkBottomBranding()
+        .animation(.snappy, value: user)
         .clerkErrorPresenting($errorWrapper)
         .task {
             do {

@@ -15,6 +15,10 @@ struct UserProfileActiveDevicesSection: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     
+    private var user: User? {
+        clerk.user
+    }
+    
     private var sessions: [Session] {
         guard let user = clerk.client.lastActiveSession?.user else { return [] }
         return clerk.sessionsByUserId[user.id, default: []].sorted()
@@ -36,6 +40,7 @@ struct UserProfileActiveDevicesSection: View {
             Divider()
         }
         .animation(.snappy, value: sessions.count)
+        .animation(.snappy, value: user)
     }
     
     private struct ActiveDeviceView: View {
@@ -46,6 +51,10 @@ struct UserProfileActiveDevicesSection: View {
         @State private var isSigningOutOfDevice: Bool = false
 
         let session: Session
+        
+        private var user: User? {
+            clerk.user
+        }
         
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
@@ -61,7 +70,7 @@ struct UserProfileActiveDevicesSection: View {
                     }
                 
                 VStack(alignment: .leading) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Text(session.latestActivity?.deviceType ?? "\(session.latestActivity?.isMobile == true ? "Mobile" : "Desktop") device")
                             .font(.footnote.weight(.medium))
                         if clerk.client.lastActiveSessionId == session.id {

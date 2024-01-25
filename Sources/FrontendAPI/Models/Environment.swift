@@ -132,7 +132,26 @@ extension Clerk.Environment.UserSettings {
     }
     
     public var firstFactorAttributes: [Attribute: AttributesConfig] {
-        enabledAttributes.filter({ $0.value.usedForFirstFactor })
+        enabledAttributes.filter(\.value.usedForFirstFactor)
+    }
+    
+    public var secondFactorAttributes: [Attribute: AttributesConfig] {
+        enabledAttributes.filter(\.value.usedForSecondFactor)
+    }
+    
+    public func availableSecondFactors(user: User) -> [Attribute: AttributesConfig] {
+        var secondFactors = secondFactorAttributes
+        
+        if user.totpEnabled {
+            secondFactors.removeValue(forKey: .authenticatorApp)
+        }
+        
+        
+        if user.backupCodeEnabled || !user.twoFactorEnabled {
+            secondFactors.removeValue(forKey: .backupCode)
+        }
+        
+        return secondFactors
     }
     
     public var requiredAttributes: [Attribute: AttributesConfig] {

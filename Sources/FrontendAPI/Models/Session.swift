@@ -121,14 +121,19 @@ extension Session {
         }
         
         if latestActivity?.city != nil || latestActivity?.country != nil {
-            string += " ("
+            var cityCountry: [String] = []
+            
             if let city = latestActivity?.city {
-                string += city
+                cityCountry.append(city)
             }
             if let country = latestActivity?.country {
-                string += ", \(country)"
+                cityCountry.append(country)
             }
-            string += ")"
+            
+            var locationString = " (" + cityCountry.joined(separator: ", ")
+            locationString.append(")")
+            
+            string += locationString
         }
         
         return string

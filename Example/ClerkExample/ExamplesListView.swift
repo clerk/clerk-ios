@@ -8,29 +8,13 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
 import ClerkUI
 
 struct ExamplesListView: View {
-    @EnvironmentObject private var clerk: Clerk
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-        
     var body: some View {
         NavigationStack {
             List {
-                Section("Components") {
-                    Button {
-                        clerkUIState.presentedAuthStep = .signInStart
-                    } label: {
-                        Text("Sign In")
-                    }
-                    
-                    Button {
-                        clerkUIState.presentedAuthStep = .signUpStart
-                    } label: {
-                        Text("Sign Up")
-                    }
-                }
+                Text("Tap the user button to get started.")
             }
             .navigationTitle("Clerk Examples")
             .toolbar {
@@ -44,7 +28,6 @@ struct ExamplesListView: View {
 
 #Preview {
     ExamplesListView()
-        .environmentObject(Clerk.mock)
 }
 
 #endif

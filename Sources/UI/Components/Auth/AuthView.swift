@@ -80,7 +80,7 @@ public struct AuthView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             Color(.systemBackground)
-                .raisedCardBottom()
+//                .raisedCardBottom()
                 .background(.ultraThinMaterial)
                 .ignoresSafeArea()
         }

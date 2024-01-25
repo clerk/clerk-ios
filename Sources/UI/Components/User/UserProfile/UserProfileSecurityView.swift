@@ -13,6 +13,10 @@ import Clerk
 struct UserProfileSecurityView: View {
     @EnvironmentObject private var clerk: Clerk
     
+    private var user: User? {
+        clerk.session?.user
+    }
+    
     public var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 16) {
@@ -24,6 +28,10 @@ struct UserProfileSecurityView: View {
             
             if clerk.environment.userSettings.instanceIsPasswordBased {
                 UserProfilePasswordSection()
+            }
+            
+            if !clerk.environment.userSettings.secondFactorAttributes.isEmpty {
+                UserProfileMFASection()
             }
             
             UserProfileActiveDevicesSection()

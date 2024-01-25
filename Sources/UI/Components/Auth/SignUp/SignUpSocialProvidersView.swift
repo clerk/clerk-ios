@@ -42,11 +42,11 @@ struct SignUpSocialProvidersView: View {
                     .frame(minWidth: 46, maxWidth: providerButtonMaxWidth, minHeight: 30)
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(clerkTheme.colors.textPrimary)
-                    .readSize { providerButtonSize = $0 }
+//                    .readSize { providerButtonSize = $0 }
             }
             .buttonStyle(ClerkSecondaryButtonStyle())
         }
-        .readSize { providerStackSize = $0 }
+//        .readSize { providerStackSize = $0 }
         .clerkErrorPresenting($errorWrapper)
     }
     

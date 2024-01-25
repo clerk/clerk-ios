@@ -119,10 +119,10 @@ public struct User: Codable {
     let twoFactorEnabled: Bool
     
     /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
-    let totpEnabled: Bool
+    public let totpEnabled: Bool
     
     /// A boolean indicating whether the user has enabled Backup codes.
-    let backupCodeEnabled: Bool
+    public let backupCodeEnabled: Bool
     
     /// An array of all the EmailAddress objects associated with the user. Includes the primary.
     @DecodableDefault.EmptyList private(set) public var emailAddresses: [EmailAddress]
@@ -220,6 +220,17 @@ extension User {
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
+    public var availableSecondFactors: [Clerk.Environment.UserSettings.Attribute: Clerk.Environment.UserSettings.AttributesConfig] {
+        Clerk.shared.environment.userSettings.availableSecondFactors(user: self)
+    }
+    
+    public var phoneNumbersAvailableForSecondFactor: [PhoneNumber] {
+        phoneNumbers.filter { !$0.reservedForSecondFactor }
+    }
+    
+    public var mfaPhones: [PhoneNumber] {
+        phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
+    }
 }
 
 extension User {

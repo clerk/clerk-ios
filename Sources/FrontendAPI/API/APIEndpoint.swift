@@ -465,7 +465,11 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
         public let path: String
         
         var get: Request<ClientResponse<PhoneNumber>> {
-            return .init(path: path)
+            .init(path: path)
+        }
+        
+        func patch(body: Encodable) -> Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .patch, body: body)
         }
         
         var delete: Request<Void> {
