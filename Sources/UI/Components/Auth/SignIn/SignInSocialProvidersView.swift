@@ -10,43 +10,50 @@
 import SwiftUI
 import Clerk
 import AuthenticationServices
+import Algorithms
 
 struct SignInSocialProvidersView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.clerkTheme) private var clerkTheme
-    @State private var providerStackSize: CGSize = .zero
-    @State private var providerButtonSize: CGSize = .zero
+    
+    private var signIn: SignIn {
+        clerk.client.signIn
+    }
     
     private var thirdPartyProviders: [OAuthProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
+        thirdPartyProviders.chunks(ofCount: 6)
     }
         
     private var providerButtonMaxWidth: CGFloat {
-        providerStackSize.height > providerButtonSize.height ? 46 : .infinity
+        chunkedProviders.count > 1 ? 46 : .infinity
     }
     
     var onSuccess:(() -> Void)?
     
     var body: some View {
-        WrappingHStack(thirdPartyProviders, alignment: .center, spacing: .constant(8), lineSpacing: 8) { provider in
-            AsyncButton {
-                await signIn(provider: provider)
-            } label: {
-                AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
-                    .padding(8)
-                    .frame(minWidth: 46, maxWidth: providerButtonMaxWidth, minHeight: 30)
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(clerkTheme.colors.textPrimary)
-//                    .readSize { providerButtonSize = $0 }
+        VStack(spacing: 8) {
+            ForEach(chunkedProviders, id: \.self) { chunk in
+                HStack(spacing: 8) {
+                    ForEach(chunk) { provider in
+                        AsyncButton {
+                            await signIn(provider: provider)
+                        } label: {
+                            AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
+                                .padding(8)
+                                .frame(maxWidth: providerButtonMaxWidth, minHeight: 30)
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(clerkTheme.colors.textPrimary)
+                        }
+                        .buttonStyle(ClerkSecondaryButtonStyle())
+                    }
+                }
             }
-            .buttonStyle(ClerkSecondaryButtonStyle())
         }
-//        .readSize { providerStackSize = $0 }
         .clerkErrorPresenting($errorWrapper)
     }
     
