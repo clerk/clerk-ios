@@ -31,7 +31,7 @@ struct UserProfileSecurityView: View {
             }
             
             if !clerk.environment.userSettings.secondFactorAttributes.isEmpty {
-                UserProfileMFASection()
+                UserProfileMfaSection()
             }
             
             UserProfileActiveDevicesSection()

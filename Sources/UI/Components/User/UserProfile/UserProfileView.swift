@@ -22,7 +22,7 @@ public struct UserProfileView: View {
     
     public var body: some View {
         ScrollView {
-            VStack(spacing: 30) {
+            LazyVStack(spacing: 30) {
                 UserProfileDetailsView()
                 UserProfileSecurityView()
             }

@@ -56,7 +56,7 @@ public struct PhoneNumber: Codable, Identifiable {
     let linkedTo: JSON?
     
     ///
-    let backupCodes: [String]?
+    public let backupCodes: [String]?
 }
 
 extension PhoneNumber: Equatable, Hashable {}
@@ -194,7 +194,8 @@ extension PhoneNumber {
     /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
     @MainActor
-    public func setReservedForSecondFactor(reserved: Bool = true) async throws {
+    @discardableResult
+    public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
         let body = ["reserved_for_second_factor": reserved]
         
         let request = APIEndpoint
@@ -204,10 +205,12 @@ extension PhoneNumber {
             .id(id)
             .patch(body: body)
         
-        try await Clerk.apiClient.send(request) {
+        let phoneNumber = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        }.value.response
+        
         try await Clerk.shared.client.get()
+        return phoneNumber
     }
     
     @MainActor

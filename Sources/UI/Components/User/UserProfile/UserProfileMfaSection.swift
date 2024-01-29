@@ -1,5 +1,5 @@
 //
-//  UserProfileMFASection.swift
+//  UserProfileMfaSection.swift
 //
 //
 //  Created by Mike Pitre on 1/24/24.
@@ -8,7 +8,7 @@
 import SwiftUI
 import Clerk
 
-struct UserProfileMFASection: View {
+struct UserProfileMfaSection: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var phoneNumberIsPresented: Bool = false
@@ -88,8 +88,8 @@ struct UserProfileMFASection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.snappy, value: user)
         .sheet(isPresented: $phoneNumberIsPresented, content: {
-            UserProfileMFASelectPhoneView()
-                .presentationDetents([.medium])
+            UserProfileMfaAddSmsView()
+                .presentationDetents([.height(480), .large])
                 .presentationDragIndicator(.visible)
         })
     }
@@ -147,7 +147,7 @@ struct UserProfileMFASection: View {
 }
 
 #Preview {
-    UserProfileMFASection()
+    UserProfileMfaSection()
         .environmentObject(Clerk.mock)
         .padding()
 }
