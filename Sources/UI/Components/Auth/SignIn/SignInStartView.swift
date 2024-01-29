@@ -43,7 +43,7 @@ struct SignInStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    SignInSocialProvidersView()
+                    AuthSocialProvidersView(useCase: .signIn)
                         .onSuccess { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 }
                 

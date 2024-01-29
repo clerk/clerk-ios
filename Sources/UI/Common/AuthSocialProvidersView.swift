@@ -1,5 +1,5 @@
 //
-//  SignInSocialProvidersView.swift
+//  AuthSocialProvidersView.swift
 //
 //
 //  Created by Mike Pitre on 11/2/23.
@@ -12,13 +12,27 @@ import Clerk
 import AuthenticationServices
 import Algorithms
 
-struct SignInSocialProvidersView: View {
+struct AuthSocialProvidersView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.clerkTheme) private var clerkTheme
+    @State private var viewSize: CGSize?
+    
+    private let buttonMinWidth: CGFloat = 46
+    
+    let useCase: UseCase
+    var onSuccess:(() -> Void)?
+    
+    enum UseCase {
+        case signIn, signUp
+    }
     
     private var signIn: SignIn {
         clerk.client.signIn
+    }
+    
+    private var signUp: SignUp {
+        clerk.client.signUp
     }
     
     private var thirdPartyProviders: [OAuthProvider] {
@@ -26,22 +40,33 @@ struct SignInSocialProvidersView: View {
     }
     
     private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
-        thirdPartyProviders.chunks(ofCount: 6)
+        thirdPartyProviders.chunks(ofCount: Int(mostHorizontalButtons))
+    }
+    
+    private var mostHorizontalButtons: CGFloat {
+        if let viewSize {
+            return max(1, (viewSize.width + 8) / (buttonMinWidth + 8))
+        } else {
+            return 6
+        }
     }
         
     private var providerButtonMaxWidth: CGFloat {
-        chunkedProviders.count > 1 ? 46 : .infinity
+        chunkedProviders.count > 1 ? buttonMinWidth : .infinity
     }
-    
-    var onSuccess:(() -> Void)?
-    
+        
     var body: some View {
         VStack(spacing: 8) {
             ForEach(chunkedProviders, id: \.self) { chunk in
                 HStack(spacing: 8) {
                     ForEach(chunk) { provider in
                         AsyncButton {
-                            await signIn(provider: provider)
+                            switch useCase {
+                            case .signIn:
+                                await signIn(provider: provider)
+                            case .signUp:
+                                await signUp(provider: provider)
+                            }
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
                                 .padding(8)
@@ -53,6 +78,10 @@ struct SignInSocialProvidersView: View {
                     }
                 }
             }
+        }
+        .frame(maxWidth: .infinity)
+        .readSize { size in
+            withAnimation(nil) { viewSize = size }
         }
         .clerkErrorPresenting($errorWrapper)
     }
@@ -72,9 +101,25 @@ struct SignInSocialProvidersView: View {
             dump(error)
         }
     }
+    
+    private func signUp(provider: OAuthProvider) async {
+        KeyboardHelpers.dismissKeyboard()
+        do {
+            try await signUp.create(.oauth(provider: provider))
+            try await signUp.startExternalAuth()
+            onSuccess?()
+        } catch {
+            if case ASWebAuthenticationSessionError.canceledLogin = error {
+                return
+            }
+            
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
+    }
 }
 
-extension SignInSocialProvidersView {
+extension AuthSocialProvidersView {
     
     func onSuccess(perform action: @escaping () -> Void) -> Self {
         var copy = self
@@ -85,7 +130,7 @@ extension SignInSocialProvidersView {
 }
 
 #Preview {
-    SignInSocialProvidersView()
+    AuthSocialProvidersView(useCase: .signIn)
         .padding()
         .environmentObject(Clerk.mock)
 }

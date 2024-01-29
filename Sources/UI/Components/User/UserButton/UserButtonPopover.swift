@@ -147,7 +147,7 @@ struct UserButtonPopover: View {
                         .padding()
                         .background {
                             Color(.systemBackground)
-//                                .raisedCardBottom()
+                                .raisedCardBottom()
                                 .ignoresSafeArea()
                         }
                     }

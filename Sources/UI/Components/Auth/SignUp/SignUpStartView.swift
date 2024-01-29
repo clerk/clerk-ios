@@ -41,7 +41,7 @@ struct SignUpStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    SignUpSocialProvidersView()
+                    AuthSocialProvidersView(useCase: .signUp)
                         .onSuccess { clerkUIState.authIsPresented = false }
                 }
                 
