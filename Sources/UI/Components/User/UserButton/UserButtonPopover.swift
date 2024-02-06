@@ -112,7 +112,6 @@ struct UserButtonPopover: View {
                             .buttonStyle(.plain)
                             .padding(.horizontal)
                             .padding(.vertical)
-                            .background()
                             .overlay(alignment: .bottom) {
                                 Divider()
                             }
@@ -145,11 +144,6 @@ struct UserButtonPopover: View {
                         }
                         .buttonStyle(.plain)
                         .padding()
-                        .background {
-                            Color(.systemBackground)
-                                .raisedCardBottom()
-                                .ignoresSafeArea()
-                        }
                     }
                     
                     if otherSessions.count > 0 {
@@ -183,10 +177,10 @@ struct UserButtonPopover: View {
                 if session == nil { dismiss() }
             }
         }
-        .background(.ultraThinMaterial)
+        .background()
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
-        .clerkBottomBranding(withRaisedCardContent: false)
+        .clerkBottomBranding()
     }
 }
 
