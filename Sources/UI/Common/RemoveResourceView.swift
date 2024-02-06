@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 struct RemoveResourceView: View {
     @Environment(\.dismiss) private var dismiss

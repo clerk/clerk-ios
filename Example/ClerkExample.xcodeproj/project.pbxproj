@@ -7,13 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8F19AF4A2ACC815A00F3F8C9 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F19AF492ACC815A00F3F8C9 /* Clerk */; };
 		8F38A77E2AD0AC3E00C6E248 /* ExamplesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F38A77D2AD0AC3E00C6E248 /* ExamplesListView.swift */; };
-		8F3C07BD2ADB03FB00FEE832 /* ClerkUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3C07BC2ADB03FB00FEE832 /* ClerkUI */; };
+		8F45BB142B72C924004AAE42 /* ClerkSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8F45BB132B72C924004AAE42 /* ClerkSDK */; };
+		8F45BB162B72C948004AAE42 /* ClerkUISDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8F45BB152B72C948004AAE42 /* ClerkUISDK */; };
 		8F67B6D22ACB0EF60047FFE4 /* ClerkExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F67B6D12ACB0EF60047FFE4 /* ClerkExampleApp.swift */; };
 		8F67B6D62ACB0EF70047FFE4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F67B6D52ACB0EF70047FFE4 /* Assets.xcassets */; };
 		8F67B6DA2ACB0EF70047FFE4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F67B6D92ACB0EF70047FFE4 /* Preview Assets.xcassets */; };
-		8F67B6E32ACB10970047FFE4 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F67B6E22ACB10970047FFE4 /* Clerk */; };
 		8FE8D5202B27D45D00BC6681 /* ExampleTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE8D51F2B27D45D00BC6681 /* ExampleTabView.swift */; };
 /* End PBXBuildFile section */
 
@@ -34,9 +33,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8F3C07BD2ADB03FB00FEE832 /* ClerkUI in Frameworks */,
-				8F19AF4A2ACC815A00F3F8C9 /* Clerk in Frameworks */,
-				8F67B6E32ACB10970047FFE4 /* Clerk in Frameworks */,
+				8F45BB162B72C948004AAE42 /* ClerkUISDK in Frameworks */,
+				8F45BB142B72C924004AAE42 /* ClerkSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,9 +105,8 @@
 			);
 			name = ClerkExample;
 			packageProductDependencies = (
-				8F67B6E22ACB10970047FFE4 /* Clerk */,
-				8F19AF492ACC815A00F3F8C9 /* Clerk */,
-				8F3C07BC2ADB03FB00FEE832 /* ClerkUI */,
+				8F45BB132B72C924004AAE42 /* ClerkSDK */,
+				8F45BB152B72C948004AAE42 /* ClerkUISDK */,
 			);
 			productName = ClerkExample;
 			productReference = 8F67B6CE2ACB0EF60047FFE4 /* ClerkExample.app */;
@@ -412,18 +409,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8F19AF492ACC815A00F3F8C9 /* Clerk */ = {
+		8F45BB132B72C924004AAE42 /* ClerkSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClerkSDK;
+		};
+		8F45BB152B72C948004AAE42 /* ClerkUISDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8F19AF482ACC815A00F3F8C9 /* XCRemoteSwiftPackageReference "clerk-ios" */;
-			productName = Clerk;
-		};
-		8F3C07BC2ADB03FB00FEE832 /* ClerkUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ClerkUI;
-		};
-		8F67B6E22ACB10970047FFE4 /* Clerk */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Clerk;
+			productName = ClerkUISDK;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

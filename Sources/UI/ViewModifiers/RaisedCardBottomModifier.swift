@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 struct RaisedCardBottomModifier: ViewModifier {
     func body(content: Content) -> some View {

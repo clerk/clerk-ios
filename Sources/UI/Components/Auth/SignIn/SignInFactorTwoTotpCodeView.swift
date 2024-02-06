@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 struct SignInFactorTwoTotpCodeView: View {
     @EnvironmentObject private var clerk: Clerk

@@ -12,11 +12,11 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "Clerk",
-            targets: ["Clerk"]),
+            name: "ClerkSDK",
+            targets: ["ClerkSDK"]),
         .library(
-            name: "ClerkUI",
-            targets: ["ClerkUI"]
+            name: "ClerkUISDK",
+            targets: ["ClerkUISDK"]
         )
     ],
     dependencies: [
@@ -32,7 +32,7 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Clerk",
+            name: "ClerkSDK",
             dependencies: [
                 .product(name: "Algorithms", package: "swift-algorithms"),
                 "KeychainAccess",
@@ -43,9 +43,9 @@ let package = Package(
             path: "Sources/FrontendAPI"
         ),
         .target(
-            name: "ClerkUI",
+            name: "ClerkUISDK",
             dependencies: [
-                "Clerk",
+                "ClerkSDK",
                 .product(name: "NukeUI", package: "Nuke"),
                 "PhoneNumberKit"
             ],
@@ -53,7 +53,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ClerkTests",
-            dependencies: ["Clerk"], 
+            dependencies: ["ClerkSDK"],
             path: "Tests"
         ),
     ]

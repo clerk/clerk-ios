@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkUI
+import ClerkUISDK
 
 struct ExamplesListView: View {
     var body: some View {

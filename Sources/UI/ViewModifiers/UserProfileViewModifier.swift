@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 struct UserProfileViewModifier: ViewModifier {
     @Binding var isPresented: Bool

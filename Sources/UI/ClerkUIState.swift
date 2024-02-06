@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import Foundation
-import Clerk
+import ClerkSDK
 
 public final class ClerkUIState: ObservableObject {
     

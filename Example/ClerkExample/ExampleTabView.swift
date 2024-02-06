@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import ClerkUI
-import Clerk
+import ClerkUISDK
+import ClerkSDK
 
 struct ExampleTabView: View {
     @State private var selectedTab: Tab = .home

@@ -9,7 +9,7 @@
 
 import Foundation
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 /**
  This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.

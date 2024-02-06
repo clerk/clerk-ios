@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 struct UserButtonPopover: View {
     @EnvironmentObject private var clerk: Clerk

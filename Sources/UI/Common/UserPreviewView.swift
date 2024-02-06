@@ -9,7 +9,7 @@
 
 import SwiftUI
 import NukeUI
-import Clerk
+import ClerkSDK
 import Nuke
 
 struct UserPreviewView: View {

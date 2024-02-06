@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Clerk
+import ClerkSDK
 
 extension UserProfileAddPhoneNumberView {
     public enum Step: Hashable, Identifiable {
