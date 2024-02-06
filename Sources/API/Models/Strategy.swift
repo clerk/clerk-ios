@@ -28,7 +28,7 @@ public enum Strategy: Hashable, Equatable {
     case resetPasswordPhoneCode
     case resetPasswordEmailCode
     case saml
-    case oauth(_ provider: OAuthProvider)
+    case externalProvider(_ provider: ExternalProvider)
     case web3(_ signature: String)
     
     public var stringValue: String {
@@ -43,7 +43,7 @@ public enum Strategy: Hashable, Equatable {
             return "email_link"
         case .saml:
             return "saml"
-        case .oauth(let provider):
+        case .externalProvider(let provider):
             return provider.data.strategy
         case .web3(let signature):
             return "web3_\(signature)_signature"
@@ -93,9 +93,9 @@ public enum Strategy: Hashable, Equatable {
             
             if
                 let strategy = value.firstMatch(of: regex)?.output.1,
-                let provider = OAuthProvider(strategy: String(strategy))
+                let provider = ExternalProvider(strategy: String(strategy))
             {
-                self = .oauth(provider)
+                self = .externalProvider(provider)
             } else {
                 return nil
             }

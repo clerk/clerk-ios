@@ -225,7 +225,7 @@ extension SignIn {
     
     public enum CreateStrategy {
         case identifier(_ identifier: String)
-        case oauth(provider: OAuthProvider)
+        case externalProvider(_ provider: ExternalProvider)
         case transfer
     }
     
@@ -233,8 +233,8 @@ extension SignIn {
         switch strategy {
         case .identifier(let identifier):
             return .init(identifier: identifier)
-        case .oauth(let provider):
-            return .init(strategy: .oauth(provider), redirectUrl: "clerk://")
+        case .externalProvider(let provider):
+            return .init(strategy: .externalProvider(provider), redirectUrl: "clerk://")
         case .transfer:
             return .init(transfer: true)
         }
@@ -375,7 +375,7 @@ extension SignIn {
     }
     
     public func alternativeFirstFactors(currentStrategy: Strategy?) -> [Factor] {
-        // Remove the current factor, reset factors, oauth factors
+        // Remove the current factor, reset factors, externalProvider factors
         let firstFactors = supportedFirstFactors.filter { factor in
             factor.verificationStrategy != currentStrategy &&
             !factor.isResetStrategy &&

@@ -143,7 +143,7 @@ struct UserProfileExternalAccountSection: View {
             }
         }
         
-        private func retryConnection(_ provider: OAuthProvider) async {
+        private func retryConnection(_ provider: ExternalProvider) async {
             do {
                 let externalAccount = try await user?.addExternalAccount(provider)
                 try await externalAccount?.startExternalAuth()

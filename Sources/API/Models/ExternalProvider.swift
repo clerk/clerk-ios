@@ -1,5 +1,5 @@
 //
-//  OAuthProvider.swift
+//  ExternalProvider.swift
 //
 //
 //  Created by Mike Pitre on 10/18/23.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum OAuthProvider: CaseIterable, Encodable, Identifiable {
+public enum ExternalProvider: CaseIterable, Encodable, Identifiable {
     public var id: Self { self }
     
     case facebook
@@ -236,8 +236,8 @@ public enum OAuthProvider: CaseIterable, Encodable, Identifiable {
     }
 }
 
-extension OAuthProvider: Comparable {
-    public static func <(lhs: OAuthProvider, rhs: OAuthProvider) -> Bool {
+extension ExternalProvider: Comparable {
+    public static func <(lhs: Self, rhs: Self) -> Bool {
         return lhs.data.name < rhs.data.name
     }
 }

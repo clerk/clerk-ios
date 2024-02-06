@@ -22,13 +22,13 @@ struct SignInFactorOneAlternativeMethodsView: View {
         clerk.client.signIn
     }
     
-    private var thirdPartyProviders: [OAuthProvider] {
+    private var thirdPartyProviders: [ExternalProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
     }
     
-    private func signIn(provider: OAuthProvider) async {
+    private func signIn(provider: ExternalProvider) async {
         do {
-            try await signIn.create(.oauth(provider: provider))
+            try await signIn.create(.externalProvider(provider))
             try await signIn.startExternalAuth()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {

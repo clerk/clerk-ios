@@ -68,7 +68,7 @@ extension ExternalAccount: Comparable {
 
 extension ExternalAccount {
     
-    public var externalProvider: OAuthProvider? {
+    public var externalProvider: ExternalProvider? {
         .init(strategy: provider)
     }
     
@@ -92,11 +92,11 @@ extension ExternalAccount {
     
     struct CreateParams: Encodable {
         init(
-            oauthProvider: OAuthProvider,
+            ExternalProvider: ExternalProvider,
             redirectUrl: String,
             additionalScopes: [String]? = nil
         ) {
-            self.strategy = oauthProvider.data.strategy
+            self.strategy = ExternalProvider.data.strategy
             self.redirectUrl = redirectUrl
             self.additionalScopes = additionalScopes
         }

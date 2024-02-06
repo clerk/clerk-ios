@@ -221,7 +221,7 @@ extension SignUp {
     
     public enum CreateStrategy {
         case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
-        case oauth(provider: OAuthProvider)
+        case externalProvider(_ provider: ExternalProvider)
         case transfer
     }
     
@@ -229,8 +229,8 @@ extension SignUp {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
-        case .oauth(let provider):
-            return .init(strategy: .oauth(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
+        case .externalProvider(let provider):
+            return .init(strategy: .externalProvider(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
         case .transfer:
             return .init(transfer: true)
         }

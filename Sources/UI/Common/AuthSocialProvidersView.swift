@@ -35,11 +35,11 @@ struct AuthSocialProvidersView: View {
         clerk.client.signUp
     }
     
-    private var thirdPartyProviders: [OAuthProvider] {
+    private var thirdPartyProviders: [ExternalProvider] {
         clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
     }
     
-    private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
+    private var chunkedProviders: ChunksOfCountCollection<[ExternalProvider]> {
         thirdPartyProviders.chunks(ofCount: Int(mostHorizontalButtons))
     }
     
@@ -86,10 +86,10 @@ struct AuthSocialProvidersView: View {
         .clerkErrorPresenting($errorWrapper)
     }
     
-    private func signIn(provider: OAuthProvider) async {
+    private func signIn(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await signIn.create(.oauth(provider: provider))
+            try await signIn.create(.externalProvider(provider))
             try await signIn.startExternalAuth()
             onSuccess?()
         } catch {
@@ -102,10 +102,10 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func signUp(provider: OAuthProvider) async {
+    private func signUp(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await signUp.create(.oauth(provider: provider))
+            try await signUp.create(.externalProvider(provider))
             try await signUp.startExternalAuth()
             onSuccess?()
         } catch {

@@ -40,7 +40,7 @@ let package = Package(
                 "Get",
                 "Factory"
             ],
-            path: "Sources/FrontendAPI"
+            path: "Sources/API"
         ),
         .target(
             name: "ClerkUISDK",

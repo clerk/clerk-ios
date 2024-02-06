@@ -66,7 +66,7 @@ struct AuthProviderButton: View {
 
 extension AuthProviderButton {
     
-    init(provider: OAuthProvider, label: String? = nil, style: Style = .regular) {
+    init(provider: ExternalProvider, label: String? = nil, style: Style = .regular) {
         self.iconImageUrl = provider.iconImageUrl?.absoluteString ?? ""
         self.style = style
         if let label {
@@ -79,10 +79,10 @@ extension AuthProviderButton {
 }
 
 #Preview {
-    let limitedProviders: [OAuthProvider] = Array(OAuthProvider.allCases.prefix(2))
+    let limitedProviders: [ExternalProvider] = Array(ExternalProvider.allCases.prefix(2))
     let limitedColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(limitedProviders.count, limitedProviders.count <= 2 ? 1 : 4))
     
-    let manyProviders: [OAuthProvider] = Array(OAuthProvider.allCases)
+    let manyProviders: [ExternalProvider] = Array(ExternalProvider.allCases)
     let manyColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(manyProviders.count, manyProviders.count <= 2 ? 1 : 4))
     
     return VStack {

@@ -214,7 +214,7 @@ extension User {
         externalAccounts.filter { $0.verification.status == .verified }
     }
     
-    public var unconnectedProviders: [OAuthProvider] {
+    public var unconnectedProviders: [ExternalProvider] {
         let allExternalProviders = Clerk.shared.environment.userSettings.enabledThirdPartyProviders.sorted()
         let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.externalProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
@@ -356,8 +356,8 @@ extension User {
     
     @discardableResult
     @MainActor
-    public func addExternalAccount(_ provider: OAuthProvider) async throws -> ExternalAccount {
-        let params = ExternalAccount.CreateParams(oauthProvider: provider, redirectUrl: "clerk://")
+    public func addExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
+        let params = ExternalAccount.CreateParams(ExternalProvider: provider, redirectUrl: "clerk://")
         let request = APIEndpoint
             .v1
             .me
