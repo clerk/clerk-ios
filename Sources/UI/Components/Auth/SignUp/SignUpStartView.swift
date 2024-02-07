@@ -19,6 +19,10 @@ struct SignUpStartView: View {
         clerk.client.signUp
     }
     
+    private var signIn: SignIn {
+        clerk.client.signIn
+    }
+    
     private var socialProvidersEnabled: Bool {
         !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
     }
@@ -42,7 +46,14 @@ struct SignUpStartView: View {
                 
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signUp)
-                        .onSuccess { clerkUIState.authIsPresented = false }
+                        .onSuccess {
+                            if signUp.status == .complete {
+                                clerkUIState.authIsPresented = false
+                            } else {
+                                // if the signup isnt complete
+                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                            }
+                        }
                 }
                 
                 if socialProvidersEnabled && contactInfoEnabled {

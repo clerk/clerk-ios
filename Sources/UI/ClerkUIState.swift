@@ -50,7 +50,7 @@ extension ClerkUIState {
             presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
         case .needsNewPassword:
             presentedAuthStep = .signInResetPassword
-        default:
+        case .abandoned, .complete,  .none:
             authIsPresented = false
         }
     }
