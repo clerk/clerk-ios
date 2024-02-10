@@ -36,7 +36,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
         request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.67.0")])
 
-//        // Encode body with url-encoded form
+        // Encode body with url-encoded form
         if let data = request.httpBody {
             let json = try JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
             request.httpBody = try URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(json)
