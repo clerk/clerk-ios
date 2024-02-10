@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import Factory
 
 struct UserProfileEmailSection: View {

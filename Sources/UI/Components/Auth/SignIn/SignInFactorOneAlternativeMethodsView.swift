@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import NukeUI
 
 struct SignInFactorOneAlternativeMethodsView: View {
@@ -16,7 +15,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let currentFactor: Factor?
+    let currentFactor: SignInFactor?
     
     private var signIn: SignIn {
         clerk.client.signIn
@@ -28,7 +27,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: ExternalProvider) async {
         do {
-            try await signIn.create(.externalProvider(provider))
+            try await signIn.create(strategy: .externalProvider(provider))
             try await signIn.startExternalAuth()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
@@ -37,10 +36,10 @@ struct SignInFactorOneAlternativeMethodsView: View {
         }
     }
     
-    private func startAlternateFirstFactor(_ factor: Factor) async {
+    private func startAlternateFirstFactor(_ factor: SignInFactor) async {
         do {
             if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                try await signIn.prepareFirstFactor(prepareStrategy)
+                try await signIn.prepareFirstFactor(for: prepareStrategy)
             }
             clerkUIState.presentedAuthStep = .signInFactorOne(factor)
         } catch {
@@ -73,13 +72,13 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             
-            ForEach(signIn.alternativeFirstFactors(currentStrategy: currentFactor?.verificationStrategy), id: \.self) { factor in
+            ForEach(signIn.alternativeFirstFactors(currentFactor: currentFactor), id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateFirstFactor(factor)
                     } label: {
                         HStack {
-                            if let icon = factor.verificationStrategy?.icon {
+                            if let icon = factor.strategyEnum?.icon {
                                 Image(systemName: icon)
                                     .frame(width: 16, height: 16)
                             }

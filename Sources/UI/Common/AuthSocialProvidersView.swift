@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import AuthenticationServices
 import Algorithms
 
@@ -89,7 +88,7 @@ struct AuthSocialProvidersView: View {
     private func signIn(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await signIn.create(.externalProvider(provider))
+            try await signIn.create(strategy: .externalProvider(provider))
             try await signIn.startExternalAuth()
             onSuccess?()
         } catch {

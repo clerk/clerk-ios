@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import ClerkSDK
 
 struct UserProfileMfaAddSmsView: View {
     @EnvironmentObject private var clerk: Clerk

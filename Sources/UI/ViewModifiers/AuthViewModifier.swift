@@ -9,7 +9,6 @@
 
 import Foundation
 import SwiftUI
-import ClerkSDK
 
 struct AuthViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme

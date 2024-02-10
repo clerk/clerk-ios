@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 extension UserProfileAddPhoneNumberView {
     public enum Step: Hashable, Identifiable {
@@ -155,7 +154,7 @@ struct UserProfileAddPhoneNumberView: View {
     private func create() async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            self.phoneNumber = try await user.addPhoneNumber(phone)
+            self.phoneNumber = try await user.createPhoneNumber(phone)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

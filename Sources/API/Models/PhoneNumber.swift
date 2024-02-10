@@ -10,32 +10,15 @@ import PhoneNumberKit
 import Factory
 
 /**
- The PhoneNumber object describes a phone number. Phone numbers can be used as a proof of identification for users, or simply as a means of contacting users.
+ The `PhoneNumber` object describes a phone number. Phone numbers can be used as a proof of identification for users, or simply as a means of contacting users.
 
- Phone numbers must be verified to ensure that they can be assigned to their rightful owners. The PhoneNumber object holds all the necessary state around the verification process.
+ Phone numbers must be verified to ensure that they can be assigned to their rightful owners. The `PhoneNumber` object holds all the necessary state around the verification process.
 
- The verification process always starts with the PhoneNumber.prepareVerification() method, which will send a one-time verification code via an SMS message. The second and final step involves an attempt to complete the verification by calling the PhoneNumber.attemptVerification() method, passing the one-time code as a parameter.
+ The verification process always starts with the `PhoneNumber.prepareVerification()` method, which will send a one-time verification code via an SMS message. The second and final step involves an attempt to complete the verification by calling the `PhoneNumber.attemptVerification()` method, passing the one-time code as a parameter.
 
  Finally, phone numbers are used as part of multi-factor authentication. Users receive an SMS message with a one-time code that they need to provide as an extra verification step.
  */
-public struct PhoneNumber: Codable, Identifiable {
-    public init(
-        id: String,
-        phoneNumber: String,
-        reservedForSecondFactor: Bool = false,
-        defaultSecondFactor: Bool = false,
-        verification: Verification? = nil,
-        linkedTo: JSON? = nil,
-        backupCodes: [String]? = nil
-    ) {
-        self.id = id
-        self.phoneNumber = phoneNumber
-        self.reservedForSecondFactor = reservedForSecondFactor
-        self.defaultSecondFactor = defaultSecondFactor
-        self.verification = verification
-        self.linkedTo = linkedTo
-        self.backupCodes = backupCodes
-    }
+public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     
     /// A unique identifier for this phone number.
     public let id: String
@@ -53,36 +36,43 @@ public struct PhoneNumber: Codable, Identifiable {
     public let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
-    let linkedTo: JSON?
+    let linkedTo: AnyJSON?
     
     ///
     public let backupCodes: [String]?
-}
-
-extension PhoneNumber: Equatable, Hashable {}
-
-extension Container {
     
-    public var phoneNumberKit: Factory<PhoneNumberKit> {
-        self { PhoneNumberKit() }
-            .singleton
+    init(
+        id: String,
+        phoneNumber: String,
+        reservedForSecondFactor: Bool = false,
+        defaultSecondFactor: Bool = false,
+        verification: Verification? = nil,
+        linkedTo: AnyJSON? = nil,
+        backupCodes: [String]? = nil
+    ) {
+        self.id = id
+        self.phoneNumber = phoneNumber
+        self.reservedForSecondFactor = reservedForSecondFactor
+        self.defaultSecondFactor = defaultSecondFactor
+        self.verification = verification
+        self.linkedTo = linkedTo
+        self.backupCodes = backupCodes
     }
-    
 }
 
 extension PhoneNumber {
     
-    public func isPrimary(for user: User) -> Bool {
+    func isPrimary(for user: User) -> Bool {
         user.primaryPhoneNumberId == id
     }
     
-    public var regionId: String? {
+    var regionId: String? {
         let phoneNumberKit = Container.shared.phoneNumberKit()
         guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return nil }
         return phoneNumber.regionID
     }
     
-    public var flag: String? {
+    var flag: String? {
         let phoneNumberKit = Container.shared.phoneNumberKit()
         guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return phoneNumber }
 
@@ -96,7 +86,7 @@ extension PhoneNumber {
         return nil
     }
     
-    public func formatted(_ format: PhoneNumberFormat) -> String {
+    func formatted(_ format: PhoneNumberFormat) -> String {
         let phoneNumberKit = Container.shared.phoneNumberKit()
         guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return phoneNumber }
         return phoneNumberKit.format(phoneNumber, toType: format)
@@ -131,36 +121,10 @@ extension PhoneNumber {
 
 extension PhoneNumber {
     
-    public enum PrepareStrategy {
-        case phoneCode
-    }
-    
-    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
-        switch strategy {
-        case .phoneCode:
-            return .init(strategy: .phoneCode)
-        }
-    }
-    
-    public enum AttemptStrategy {
-        case phoneCode(code: String)
-    }
-    
-    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
-        switch strategy {
-        case .phoneCode(let code):
-            return .init(code: code)
-        }
-    }
-    
-}
-
-extension PhoneNumber {
-    
     @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws {
         let params = prepareParams(for: strategy)
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .phoneNumbers
@@ -174,10 +138,21 @@ extension PhoneNumber {
         try await Clerk.shared.client.get()
     }
     
+    public enum PrepareStrategy {
+        case phoneCode
+    }
+    
+    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
+        switch strategy {
+        case .phoneCode:
+            return .init(strategy: .phoneCode)
+        }
+    }
+    
     @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws {
         let params = attemptParams(for: strategy)
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .phoneNumbers
@@ -191,35 +166,34 @@ extension PhoneNumber {
         try await Clerk.shared.client.get()
     }
     
+    public enum AttemptStrategy {
+        case phoneCode(code: String)
+    }
+    
+    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
+        switch strategy {
+        case .phoneCode(let code):
+            return .init(code: code)
+        }
+    }
+    
     /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
     @MainActor
     @discardableResult
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
         let body = ["reserved_for_second_factor": reserved]
-        
-        let request = APIEndpoint
-            .v1
-            .me
-            .phoneNumbers
-            .id(id)
-            .patch(body: body)
-        
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).patch(body: body)
         let phoneNumber = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        
         try await Clerk.shared.client.get()
         return phoneNumber
     }
     
     @MainActor
     public func setAsPrimary() async throws {
-        let request = APIEndpoint
-            .v1
-            .me
-            .update(.init(primaryPhoneNumberId: id))
-        
+        let request = ClerkAPI.v1.me.update(.init(primaryPhoneNumberId: id))
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
@@ -228,13 +202,7 @@ extension PhoneNumber {
     
     @MainActor
     public func delete() async throws {
-        let request = APIEndpoint
-            .v1
-            .me
-            .phoneNumbers
-            .id(id)
-            .delete
-        
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }

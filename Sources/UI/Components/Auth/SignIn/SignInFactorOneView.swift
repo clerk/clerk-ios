@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorOneView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -22,7 +21,7 @@ struct SignInFactorOneView: View {
     private var strategy: Strategy? {
         guard signIn.status == .needsFirstFactor else { return nil }
         if case .signInFactorOne(let factor) = clerkUIState.presentedAuthStep {
-            return factor?.verificationStrategy
+            return factor?.strategyEnum
         }
         return nil
     }

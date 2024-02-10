@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import ClerkSDK
 
 struct ClerkBottomBrandingModifier: ViewModifier {
     @EnvironmentObject private var clerk: Clerk

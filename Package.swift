@@ -13,10 +13,7 @@ let package = Package(
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "ClerkSDK",
-            targets: ["ClerkSDK"]),
-        .library(
-            name: "ClerkUISDK",
-            targets: ["ClerkUISDK"]
+            targets: ["ClerkSDK"]
         )
     ],
     dependencies: [
@@ -38,18 +35,11 @@ let package = Package(
                 "KeychainAccess",
                 "URLQueryEncoder",
                 "Get",
-                "Factory"
-            ],
-            path: "Sources/API"
-        ),
-        .target(
-            name: "ClerkUISDK",
-            dependencies: [
-                "ClerkSDK",
+                "Factory",
                 .product(name: "NukeUI", package: "Nuke"),
                 "PhoneNumberKit"
             ],
-            path: "Sources/UI"
+            path: "Sources"
         ),
         .testTarget(
             name: "ClerkTests",

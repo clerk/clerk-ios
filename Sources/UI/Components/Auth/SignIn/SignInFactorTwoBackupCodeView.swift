@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorTwoBackupCodeView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -72,7 +71,7 @@ struct SignInFactorTwoBackupCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptSecondFactor(.backupCode(code: code))
+            try await signIn.attemptSecondFactor(for: .backupCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

@@ -207,11 +207,7 @@ extension Clerk.Environment {
     
     @MainActor
     public func get() async throws {
-        let request = APIEndpoint
-            .v1
-            .environment
-            .get
-        
+        let request = ClerkAPI.v1.environment.get
         Clerk.shared.environment = try await Clerk.apiClient.send(request).value
     }
     

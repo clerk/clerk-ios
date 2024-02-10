@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorOnePasswordView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -90,7 +89,7 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptFirstFactor(.password(password: password))
+            try await signIn.attemptFirstFactor(for: .password(password: password))
             if signIn.status == .needsSecondFactor {
                 clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
             } else {

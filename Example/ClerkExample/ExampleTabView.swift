@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import ClerkUISDK
 import ClerkSDK
 
 struct ExampleTabView: View {

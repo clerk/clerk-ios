@@ -8,20 +8,20 @@
 import Foundation
 import KeychainAccess
 
-extension Clerk {
+extension Keychain {
     
     // clerk.{APP_NAME}
-    static var keychain: Keychain {
+    static var clerk: Keychain {
         var service = "clerk"
         if let appName = Bundle.main.appName { service += ".\(appName)" }
         return Keychain(service: service)
     }
-    
-    enum KeychainKey {
-        static let deviceToken = "deviceToken"
-        static let client = "client"
-        static let sessionsByUserId = "sessionsByUserId"
-        static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
-        static let environment = "environment"
-    }
+}
+
+enum ClerkKeychainKey {
+    static let deviceToken = "deviceToken"
+    static let client = "client"
+    static let sessionsByUserId = "sessionsByUserId"
+    static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
+    static let environment = "environment"
 }

@@ -35,7 +35,7 @@ public final class ExternalAuthWebSession: NSObject {
                                 
                             case .signIn:
                                 if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client.signIn.get(.init(rotatingTokenNonce: nonce))
+                                    try await Clerk.shared.client.signIn.get(rotatingTokenNonce: nonce)
                                     
                                 } else {
                                     try await Clerk.shared.client.get()
@@ -46,7 +46,7 @@ public final class ExternalAuthWebSession: NSObject {
                                 
                             case .signUp:
                                 if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client.signUp.get(.init(rotatingTokenNonce: nonce))
+                                    try await Clerk.shared.client.signUp.get(rotatingTokenNonce: nonce)
                                     
                                 } else {
                                     try await Clerk.shared.client.get()
@@ -54,7 +54,7 @@ public final class ExternalAuthWebSession: NSObject {
                                         let verification = Clerk.shared.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
                                         verification.status == .transferable
                                     {
-                                        try await Clerk.shared.client.signIn.create(.transfer)
+                                        try await Clerk.shared.client.signIn.create(strategy: .transfer)
                                     }
                                 }
                                 

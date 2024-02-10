@@ -8,7 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkUISDK
+import ClerkSDK
 
 @main
 struct ClerkExampleApp: App {

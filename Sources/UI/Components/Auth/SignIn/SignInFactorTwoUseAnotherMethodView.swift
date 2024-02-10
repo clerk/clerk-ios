@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorTwoUseAnotherMethodView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -20,7 +19,7 @@ struct SignInFactorTwoUseAnotherMethodView: View {
         clerk.client.signIn
     }
     
-    let currentFactor: Factor?
+    let currentFactor: SignInFactor?
     
     public var body: some View {
         ScrollView {

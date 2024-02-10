@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import Foundation
-import ClerkSDK
 
 public final class ClerkUIState: ObservableObject {
     
@@ -17,10 +16,10 @@ public final class ClerkUIState: ObservableObject {
 
     public enum AuthStep: Equatable {
         case signInStart
-        case signInFactorOne(_ factor: Factor?)
-        case signInFactorOneUseAnotherMethod(_ currentFactor: Factor?)
-        case signInFactorTwo(_ factor: Factor?)
-        case signInFactorTwoUseAnotherMethod(_ currentFactor: Factor?)
+        case signInFactorOne(_ factor: SignInFactor?)
+        case signInFactorOneUseAnotherMethod(_ currentFactor: SignInFactor?)
+        case signInFactorTwo(_ factor: SignInFactor?)
+        case signInFactorTwoUseAnotherMethod(_ currentFactor: SignInFactor?)
         case signInForgotPassword
         case signInResetPassword
         case signUpStart

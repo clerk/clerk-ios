@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorOneResetView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -23,7 +22,7 @@ struct SignInFactorOneResetView: View {
     }
         
     private var useEmailCodeStrategy: Bool {
-        signIn.firstFactorVerification?.verificationStrategy == .resetPasswordEmailCode
+        signIn.firstFactorVerification?.strategyEnum == .resetPasswordEmailCode
     }
     
     var body: some View {
@@ -74,13 +73,13 @@ struct SignInFactorOneResetView: View {
     
     private func prepare() async {
         do {
-            switch signIn.firstFactorVerification?.verificationStrategy {
+            switch signIn.firstFactorVerification?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn.prepareFirstFactor(.resetPasswordEmailCode)
+                try await signIn.prepareFirstFactor(for: .resetPasswordEmailCode)
                 
             case .resetPasswordPhoneCode:
-                try await signIn.prepareFirstFactor(.resetPasswordPhoneCode)
+                try await signIn.prepareFirstFactor(for: .resetPasswordPhoneCode)
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
@@ -94,13 +93,13 @@ struct SignInFactorOneResetView: View {
     
     private func attempt() async {
         do {
-            switch signIn.currentFirstFactor?.verificationStrategy {
+            switch signIn.currentFirstFactor?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn.attemptFirstFactor(.resetEmailCode(code: code))
+                try await signIn.attemptFirstFactor(for: .resetPasswordEmailCode(code: code))
                 
             case .resetPasswordPhoneCode:
-                try await signIn.attemptFirstFactor(.resetPhoneCode(code: code))
+                try await signIn.attemptFirstFactor(for: .resetPasswordPhoneCode(code: code))
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")

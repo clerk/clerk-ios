@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum ExternalProvider: CaseIterable, Encodable, Identifiable {
+public enum ExternalProvider: Codable, CaseIterable, Identifiable {
     public var id: Self { self }
     
     case facebook

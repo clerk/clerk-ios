@@ -16,14 +16,14 @@ import Foundation
 
  Finally, email addresses can be linked to other identifications.
  */
-public struct EmailAddress: Codable, Identifiable {
+public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
     
     public init(
         id: String,
         emailAddress: String,
         reserved: Bool = false,
         verification: Verification? = nil,
-        linkedTo: [JSON]? = nil
+        linkedTo: [AnyJSON]? = nil
     ) {
         self.id = id
         self.emailAddress = emailAddress
@@ -45,10 +45,8 @@ public struct EmailAddress: Codable, Identifiable {
     public let verification: Verification?
     
     /// An array of objects containing information about any identifications that might be linked to this email address.
-    let linkedTo: [JSON]?
+    let linkedTo: [AnyJSON]?
 }
-
-extension EmailAddress: Equatable, Hashable {}
 
 extension EmailAddress {
     
@@ -120,7 +118,7 @@ extension EmailAddress {
     @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws {
         let params = prepareParams(for: strategy)
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .emailAddresses
@@ -137,7 +135,7 @@ extension EmailAddress {
     @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws {
         let params = attemptParams(for: strategy)
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .emailAddresses
@@ -153,7 +151,7 @@ extension EmailAddress {
     
     @MainActor
     public func delete() async throws {
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .emailAddresses
@@ -168,7 +166,7 @@ extension EmailAddress {
     
     @MainActor
     public func setAsPrimary() async throws {
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .update(.init(primaryEmailAddressId: id))
