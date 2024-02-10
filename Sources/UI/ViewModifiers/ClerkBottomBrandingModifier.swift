@@ -42,7 +42,7 @@ struct ClerkBottomBrandingModifier: ViewModifier {
 }
 
 extension View {
-    public func clerkBottomBranding(withRaisedCardContent: Bool = true) -> some View {
+    func clerkBottomBranding(withRaisedCardContent: Bool = true) -> some View {
         modifier(ClerkBottomBrandingModifier(withRaisedCardContent: withRaisedCardContent))
     }
 }

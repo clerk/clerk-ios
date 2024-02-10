@@ -10,6 +10,9 @@ import Foundation
 extension Clerk {
         
     public struct Environment: Codable {
+        public let authConfig: AuthConfig
+        public let userSettings: UserSettings
+        public let displayConfig: DisplayConfig
         
         public init(
             authConfig: AuthConfig = .init(),
@@ -20,24 +23,17 @@ extension Clerk {
             self.userSettings = userSettings
             self.displayConfig = displayConfig
         }
-        
-        public var authConfig: AuthConfig
-        public var userSettings: UserSettings
-        public var displayConfig: DisplayConfig
     }
 }
 
 extension Clerk.Environment {
     
     public struct AuthConfig: Codable {
+        public let singleSessionMode: Bool
         
-        public init(
-            singleSessionMode: Bool = true
-        ) {
+        public init(singleSessionMode: Bool = true) {
             self.singleSessionMode = singleSessionMode
         }
-        
-        public let singleSessionMode: Bool
     }
     
 }
@@ -45,6 +41,13 @@ extension Clerk.Environment {
 extension Clerk.Environment {
     
     public struct DisplayConfig: Codable {
+        public let applicationName: String
+        public let preferredSignInStrategy: PreferredSignInStrategy
+        public let branded: Bool
+        
+        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable {
+            case password, otp
+        }
         
         public init(
             applicationName: String = "",
@@ -55,14 +58,6 @@ extension Clerk.Environment {
             self.preferredSignInStrategy = preferredSignInStrategy
             self.branded = branded
         }
-        
-        public let applicationName: String
-        public let preferredSignInStrategy: PreferredSignInStrategy
-        public let branded: Bool
-        
-        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable {
-            case password, otp
-        }
     }
     
 }
@@ -71,17 +66,9 @@ extension Clerk.Environment {
     
     public struct UserSettings: Codable, Equatable {
         
-        public init(
-            attributes: [Attribute : AttributesConfig] = [:],
-            social: [String : SocialConfig] = [:]
-        ) {
-            self.attributes = attributes
-            self.social = social
-        }
-        
-        var attributes: [Attribute: AttributesConfig] = [:]
+        let attributes: [Attribute: AttributesConfig]
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
-        var social: [String: SocialConfig] = [:]
+        let social: [String: SocialConfig]
         
         public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable {
             case emailAddress
@@ -118,28 +105,36 @@ extension Clerk.Environment {
             public let strategy: String
             public let notSelectable: Bool
         }
+        
+        public init(
+            attributes: [Attribute : AttributesConfig] = [:],
+            social: [String : SocialConfig] = [:]
+        ) {
+            self.attributes = attributes
+            self.social = social
+        }
     }
 }
 
 extension Clerk.Environment.UserSettings {
     
-    public func config(for attribute: Attribute) -> AttributesConfig? {
+    func config(for attribute: Attribute) -> AttributesConfig? {
         attributes[attribute]
     }
     
-    public var enabledAttributes: [Attribute: AttributesConfig] {
+    var enabledAttributes: [Attribute: AttributesConfig] {
         attributes.filter({ $0.value.enabled })
     }
     
-    public var firstFactorAttributes: [Attribute: AttributesConfig] {
+    var firstFactorAttributes: [Attribute: AttributesConfig] {
         enabledAttributes.filter(\.value.usedForFirstFactor)
     }
     
-    public var secondFactorAttributes: [Attribute: AttributesConfig] {
+    var secondFactorAttributes: [Attribute: AttributesConfig] {
         enabledAttributes.filter(\.value.usedForSecondFactor)
     }
     
-    public func availableSecondFactors(user: User) -> [Attribute: AttributesConfig] {
+    func availableSecondFactors(user: User) -> [Attribute: AttributesConfig] {
         var secondFactors = secondFactorAttributes
         
         if user.totpEnabled {
@@ -154,16 +149,16 @@ extension Clerk.Environment.UserSettings {
         return secondFactors
     }
     
-    public var requiredAttributes: [Attribute: AttributesConfig] {
+    var requiredAttributes: [Attribute: AttributesConfig] {
         enabledAttributes.filter({ $0.value.required })
     }
     
-    public var instanceIsPasswordBased: Bool {
+    var instanceIsPasswordBased: Bool {
         guard let passwordConfig = config(for: .password) else { return false }
         return passwordConfig.enabled && passwordConfig.required
     }
     
-    public var hasValidAuthFactor: Bool {
+    var hasValidAuthFactor: Bool {
         if enabledAttributes.contains(where: { $0.key == .emailAddress || $0.key == .phoneNumber }) {
             return true
         }
@@ -173,14 +168,14 @@ extension Clerk.Environment.UserSettings {
         return false
      }
         
-    public var enabledThirdPartyProviders: [ExternalProvider] {
+    var enabledThirdPartyProviders: [ExternalProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         return authenticatableStrategies.compactMap { strategy in
             ExternalProvider(strategy: strategy)
         }
     }
     
-    public var attributesToVerifyAtSignUp: [Attribute: AttributesConfig] {
+    var attributesToVerifyAtSignUp: [Attribute: AttributesConfig] {
         enabledAttributes.filter({ $0.value.verifyAtSignUp })
     }
     
@@ -188,7 +183,7 @@ extension Clerk.Environment.UserSettings {
         return enabledAttributes.first(where: { $0.key == key && $0.value.enabled })?.value
     }
     
-    public var preferredEmailVerificationStrategy: Strategy? {
+    var preferredEmailVerificationStrategy: Strategy? {
         let emailAttribute = userAttributeConfig(for: .emailAddress)
         let strategies = emailAttribute?.verificationStrategies ?? []
         

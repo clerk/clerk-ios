@@ -7,12 +7,12 @@
 
 import Foundation
 
-public enum RemoveResource {
+enum RemoveResource {
     case email(EmailAddress)
     case phoneNumber(PhoneNumber)
     case externalAccount(ExternalAccount)
     
-    public var title: String {
+    var title: String {
         switch self {
         case .email:
             return "Remove email address"
@@ -23,7 +23,7 @@ public enum RemoveResource {
         }
     }
     
-    public var messageLine1: String {
+    var messageLine1: String {
         switch self {
         case .email(let emailAddress):
             return "\(emailAddress.emailAddress) will be removed from this account."
@@ -34,7 +34,7 @@ public enum RemoveResource {
         }
     }
     
-    public var messageLine2: String {
+    var messageLine2: String {
         switch self {
         case .email:
             return "You will no longer be able to sign in using this email address."
@@ -45,7 +45,7 @@ public enum RemoveResource {
         }
     }
     
-    public func deleteAction() async throws {
+    func deleteAction() async throws {
         switch self {
         case .email(let emailAddress):
             try await emailAddress.delete()

@@ -31,7 +31,7 @@ struct SignUpStartView: View {
         clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
     }
     
-    public var body: some View {
+    var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
@@ -65,7 +65,7 @@ struct SignUpStartView: View {
                         .padding(.bottom, 32)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal)
             .padding(.vertical, 32)
         }

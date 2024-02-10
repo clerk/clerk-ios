@@ -21,7 +21,7 @@ struct SignInFactorTwoUseAnotherMethodView: View {
     
     let currentFactor: SignInFactor?
     
-    public var body: some View {
+    var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()

@@ -23,7 +23,7 @@ extension String {
         return String(data: data, encoding: .utf8)
     }
     
-    public var capitalizedSentence: String {
+    var capitalizedSentence: String {
         let firstLetter = self.prefix(1).capitalized
         let remainingLetters = self.dropFirst().lowercased()
         return firstLetter + remainingLetters

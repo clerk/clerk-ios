@@ -29,7 +29,7 @@ struct SignInStartView: View {
         clerk.client.signIn
     }
     
-    public var body: some View {
+    var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
@@ -56,6 +56,7 @@ struct SignInStartView: View {
                         .padding(.bottom, 32)
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding()
             .padding(.vertical)
         }
