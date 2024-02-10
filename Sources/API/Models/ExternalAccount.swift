@@ -45,7 +45,7 @@ public struct ExternalAccount: Codable, Identifiable {
     let username: String?
     
     /// Metadata provided about the user from the provider.
-    let publicMetadata: AnyJSON
+    let publicMetadata: JSON
     
     /// A descriptive label to differentiate multiple external accounts of the same user for the same provider.
     let label: String?

@@ -23,7 +23,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
         emailAddress: String,
         reserved: Bool = false,
         verification: Verification? = nil,
-        linkedTo: [AnyJSON]? = nil
+        linkedTo: [JSON]? = nil
     ) {
         self.id = id
         self.emailAddress = emailAddress
@@ -45,7 +45,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
     public let verification: Verification?
     
     /// An array of objects containing information about any identifications that might be linked to this email address.
-    let linkedTo: [AnyJSON]?
+    let linkedTo: [JSON]?
 }
 
 extension EmailAddress {

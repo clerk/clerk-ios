@@ -36,7 +36,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     public let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
-    public let linkedTo: AnyJSON?
+    public let linkedTo: JSON?
     
     ///
     public let backupCodes: [String]?
@@ -47,7 +47,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
         reservedForSecondFactor: Bool = false,
         defaultSecondFactor: Bool = false,
         verification: Verification? = nil,
-        linkedTo: AnyJSON? = nil,
+        linkedTo: JSON? = nil,
         backupCodes: [String]? = nil
     ) {
         self.id = id

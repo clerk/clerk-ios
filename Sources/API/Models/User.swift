@@ -74,13 +74,13 @@ public struct User: Codable, Equatable {
     public let samlAccounts: [String]
     
     /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
-    public let publicMetadata: AnyJSON?
+    public let publicMetadata: JSON?
     
     /**
      Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
      Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
      */
-    public let unsafeMetadata: AnyJSON?
+    public let unsafeMetadata: JSON?
     
     /// Date when the user last signed in. May be empty if the user has never signed in.
     public let lastSignInAt: Date
@@ -115,8 +115,8 @@ public struct User: Codable, Equatable {
         web3Wallets: [String] = [],
         externalAccounts: [ExternalAccount] = [],
         samlAccounts: [String] = [],
-        publicMetadata: AnyJSON? = nil,
-        unsafeMetadata: AnyJSON? = nil,
+        publicMetadata: JSON? = nil,
+        unsafeMetadata: JSON? = nil,
         externalId: String? = nil,
         lastSignInAt: Date = .now,
         banned: Bool = false,
@@ -266,7 +266,7 @@ extension User {
         Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
         Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
          */
-        var unsafeMetadata: AnyJSON?
+        var unsafeMetadata: JSON?
     }
     
     @discardableResult
