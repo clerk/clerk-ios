@@ -52,7 +52,7 @@ struct UserProfileSection: View {
 #Preview {
     UserProfileSection()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

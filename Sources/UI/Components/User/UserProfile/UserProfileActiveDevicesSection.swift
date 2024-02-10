@@ -148,7 +148,7 @@ struct UserProfileActiveDevicesSection: View {
 #Preview {
     UserProfileActiveDevicesSection()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

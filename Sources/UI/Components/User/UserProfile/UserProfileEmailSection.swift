@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Factory
 
 struct UserProfileEmailSection: View {
     @EnvironmentObject private var clerk: Clerk
@@ -164,10 +163,9 @@ struct UserProfileEmailSection: View {
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { Clerk.mock }
     return UserProfileEmailSection()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

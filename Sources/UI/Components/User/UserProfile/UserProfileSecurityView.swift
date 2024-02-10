@@ -44,7 +44,7 @@ struct UserProfileSecurityView: View {
             .padding()
             .padding(.vertical)
     }
-    .environmentObject(Clerk.mock)
+    .environmentObject(Clerk.shared)
 }
 
 #endif

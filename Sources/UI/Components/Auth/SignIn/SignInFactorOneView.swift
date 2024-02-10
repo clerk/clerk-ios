@@ -89,7 +89,7 @@ struct SignInFactorOneView: View {
 
 #Preview {
     SignInFactorOneView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

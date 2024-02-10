@@ -54,7 +54,7 @@ public struct UserProfileView: View {
 
 #Preview {
     UserProfileView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

@@ -60,7 +60,7 @@ struct SignInFactorTwoTotpCodeView: View {
 
 #Preview {
     SignInFactorTwoTotpCodeView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

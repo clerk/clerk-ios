@@ -9,7 +9,6 @@
 
 import SwiftUI
 import NukeUI
-import Factory
 import AuthenticationServices
 
 struct UserProfileExternalAccountSection: View {
@@ -159,10 +158,9 @@ struct UserProfileExternalAccountSection: View {
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { .mock }
     return UserProfileExternalAccountSection()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

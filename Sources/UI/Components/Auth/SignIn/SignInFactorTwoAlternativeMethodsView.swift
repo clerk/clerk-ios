@@ -61,7 +61,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
 
 #Preview {
     SignInFactorTwoAlternativeMethodsView(currentFactor: nil)
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

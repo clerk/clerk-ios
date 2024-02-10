@@ -140,7 +140,7 @@ struct SignInFormView: View {
 #Preview {
     SignInFormView()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

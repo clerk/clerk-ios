@@ -59,5 +59,5 @@ struct ExampleTabView: View {
 
 #Preview {
     ExampleTabView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }

@@ -175,7 +175,7 @@ struct UserProfileUpdateProfileView: View {
 
 #Preview {
     UserProfileUpdateProfileView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

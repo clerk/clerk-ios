@@ -208,7 +208,7 @@ struct UserProfileAddEmailView: View {
 
 #Preview {
     UserProfileAddEmailView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

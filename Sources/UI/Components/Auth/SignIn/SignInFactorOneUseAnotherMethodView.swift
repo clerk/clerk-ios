@@ -54,7 +54,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
 
 #Preview {
     SignInFactorOneUseAnotherMethodView(currentFactor: nil)
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

@@ -50,9 +50,8 @@ struct SignUpVerificationView: View {
 }
 
 #Preview {
-    let _ = Container.shared.clerk.register { Clerk.mock }
     return SignUpVerificationView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

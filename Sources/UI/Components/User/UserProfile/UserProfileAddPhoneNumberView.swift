@@ -184,7 +184,7 @@ struct UserProfileAddPhoneNumberView: View {
 
 #Preview {
     UserProfileAddPhoneNumberView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

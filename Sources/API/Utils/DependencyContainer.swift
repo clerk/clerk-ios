@@ -1,5 +1,5 @@
 //
-//  DIContainer.swift
+//  DependencyContainer.swift
 //
 //
 //  Created by Mike Pitre on 2/9/24.
@@ -31,4 +31,18 @@ extension Container {
         self { PhoneNumberKit() }
             .singleton
     }
+}
+
+extension Container: AutoRegistering {
+    
+    public func autoRegister() {
+        Container.shared.clerk.register {
+            Clerk()
+        }
+        
+        Container.shared.clerk.context(.preview) {
+            Clerk.mock
+        }
+    }
+    
 }

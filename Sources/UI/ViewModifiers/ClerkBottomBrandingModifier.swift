@@ -49,6 +49,6 @@ extension View {
 
 #Preview {
     AuthView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }

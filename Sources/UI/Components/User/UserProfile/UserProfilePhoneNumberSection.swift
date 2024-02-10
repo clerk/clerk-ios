@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Factory
 
 struct UserProfilePhoneNumberSection: View {
     @EnvironmentObject private var clerk: Clerk
@@ -153,10 +152,9 @@ struct UserProfilePhoneNumberSection: View {
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { Clerk.mock }
     return UserProfilePhoneNumberSection()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

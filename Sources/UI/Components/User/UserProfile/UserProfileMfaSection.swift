@@ -147,6 +147,6 @@ struct UserProfileMfaSection: View {
 
 #Preview {
     UserProfileMfaSection()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .padding()
 }
