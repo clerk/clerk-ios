@@ -1,3 +1,14 @@
+//
+//  MockSessionsJSON.swift
+//  
+//
+//  Created by Mike Pitre on 2/10/24.
+//
+
+import Foundation
+
+let MockSessionsJSON = """
+
 [
   {
     "object": "session",
@@ -76,3 +87,4 @@
   }
 ]
 
+"""

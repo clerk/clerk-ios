@@ -1,3 +1,14 @@
+//
+//  MockUserJSON.swift
+//
+//
+//  Created by Mike Pitre on 2/10/24.
+//
+
+import Foundation
+
+let MockUserJSON = """
+
 {
   "id": "user_2XdLRC6pJCyrFQsmlJoAOuYnLx4",
   "object": "user",
@@ -136,3 +147,4 @@
   "organization_memberships": []
 }
 
+"""

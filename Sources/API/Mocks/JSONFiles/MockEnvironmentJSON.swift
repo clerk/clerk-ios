@@ -1,3 +1,14 @@
+//
+//  MockEnvironmentJSON.swift
+//  
+//
+//  Created by Mike Pitre on 2/10/24.
+//
+
+import Foundation
+
+let MockEnvironmentJSON = """
+
 {
   "auth_config": {
     "object": "auth_config",
@@ -446,6 +457,9 @@
         "enabled": true,
         "max_attempts": 100,
         "duration_in_minutes": 60
+      },
+      "pii": {
+        "enabled": false
       }
     },
     "password_settings": {
@@ -476,3 +490,4 @@
   }
 }
 
+"""
