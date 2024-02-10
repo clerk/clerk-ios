@@ -54,7 +54,7 @@ public struct Session: Codable, Identifiable {
     public var user: User?
     
     /// Public information about the user that this session belongs to.
-    public let publicUserData: AnyJSON?
+    public let publicUserData: PublicUserData?
     
     /// The time the session was created.
     public let createdAt: Date
@@ -64,6 +64,23 @@ public struct Session: Codable, Identifiable {
     
     /// The last active token for the session.
     public let lastActiveToken: TokenResource?
+    
+    public struct PublicUserData: Codable, Equatable {
+        /// The user's first name. This attribute will only be populated if name is enabled in instance settings.
+        public let firstName: String?
+        
+        /// The user's last name. This attribute will only be populated if name is enabled in instance settings.
+        public let lastName: String?
+        
+        /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
+        public let imageUrl: String
+        
+        /// Whether the user has a profile image.
+        public let hasImage: Bool
+        
+        /// The user's identifier (email address, phone number, username, etc) that was used for authentication when this session was created.
+        public let identifier: String
+    }
     
     public init(
         id: String,
@@ -75,7 +92,7 @@ public struct Session: Codable, Identifiable {
         lastActiveOrganizationId: String? = nil,
         actor: String? = nil,
         user: User?,
-        publicUserData: AnyJSON? = nil,
+        publicUserData: PublicUserData? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         lastActiveToken: TokenResource? = nil
@@ -141,10 +158,7 @@ extension Session {
     }
     
     var identifier: String? {
-        if case .object(let json) = publicUserData {
-            return json["identifier"]?.value as? String
-        }
-        return nil
+        publicUserData?.identifier
     }
     
 }

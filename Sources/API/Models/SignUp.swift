@@ -74,10 +74,10 @@ public struct SignUp: Codable {
     public let lastName: String?
     
     /// Metadata that can be read and set from the frontend. Once the sign-up is complete, the value of this field will be automatically copied to the newly created user's unsafe metadata. One common use case for this attribute is to use it to implement custom fields that can be collected during sign-up and will automatically be attached to the created User object.
-    public let unsafeMetadata: AnyJSON?
+    public let unsafeMetadata: JSON?
     
     ///
-    public let publicMetadata: AnyJSON?
+    public let publicMetadata: JSON?
     
     ///
     public let customAction: Bool
@@ -119,8 +119,8 @@ public struct SignUp: Codable {
         passwordEnabled: Bool = false,
         firstName: String? = nil,
         lastName: String? = nil,
-        unsafeMetadata: AnyJSON? = nil,
-        publicMetadata: AnyJSON? = nil,
+        unsafeMetadata: JSON? = nil,
+        publicMetadata: JSON? = nil,
         customAction: Bool = false,
         externalId: String? = nil,
         createdSessionId: String? = nil,

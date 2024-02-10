@@ -38,7 +38,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
 
 //        // Encode body with url-encoded form
         if let data = request.httpBody {
-            let json = try JSONDecoder.clerkDecoder.decode(AnyJSON.self, from: data)
+            let json = try JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
             request.httpBody = try URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(json)
         }
     }
