@@ -1,5 +1,5 @@
 //
-//  APIEndpoint.swift
+//  ClerkAPI.swift
 //
 //
 //  Created by Mike Pitre on 10/2/23.
@@ -9,9 +9,9 @@ import Foundation
 import Get
 import URLQueryEncoder
     
-enum APIEndpoint {}
+enum ClerkAPI {}
 
-extension APIEndpoint {
+extension ClerkAPI {
     static var v1: V1Endpoint {
         V1Endpoint(path: "/v1")
     }
@@ -22,7 +22,7 @@ extension APIEndpoint {
     }
 }
 
-extension APIEndpoint.V1Endpoint {
+extension ClerkAPI.V1Endpoint {
     
     var client: ClientEndpoint {
         ClientEndpoint(path: path + "/client")
@@ -46,7 +46,7 @@ extension APIEndpoint.V1Endpoint {
     }
 }
 
-extension APIEndpoint.V1Endpoint {
+extension ClerkAPI.V1Endpoint {
     
     var environment: EnvironmentEndpoint {
         EnvironmentEndpoint(path: path + "/environment")
@@ -63,7 +63,7 @@ extension APIEndpoint.V1Endpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint {
     
     var signUps: SignUpsEndpoint {
         SignUpsEndpoint(path: path + "/sign_ups")
@@ -83,7 +83,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
     public func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
     }
@@ -92,15 +92,15 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
         /// Path: `/v1/client/sign_ups/{id}`
         public let path: String
         
-        func get(params: SignUp.GetParams?) -> Request<ClientResponse<SignUp>> {
+        func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignUp>> {
             let encoder = URLQueryEncoder()
-            encoder.encode(params?.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            encoder.encode(rotatingTokenNonce, forKey: "rotating_token_nonce")
             return .init(path: path, query: encoder.items)
         }
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     
     var prepareVerification: PrepareVerificationEndpoint {
         PrepareVerificationEndpoint(path: path + "/prepare_verification")
@@ -116,7 +116,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     
     var attemptVerification: AttemptVerificationEndpoint {
         AttemptVerificationEndpoint(path: path + "/attempt_verification")
@@ -132,7 +132,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint {
     
     var signIns: SignInsEndpoint {
         SignInsEndpoint(path: path + "/sign_ins")
@@ -149,7 +149,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
     public func id(_ id: String) -> WithIDEndpoint {
         WithIDEndpoint(path: path + "/\(id)")
@@ -159,16 +159,16 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
         public let path: String
         
-        func get(params: SignIn.GetParams?) -> Request<ClientResponse<SignIn>> {
+        func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
             let encoder = URLQueryEncoder()
-            encoder.encode(params?.rotatingTokenNonce, forKey: "rotating_token_nonce")
+            encoder.encode(rotatingTokenNonce, forKey: "rotating_token_nonce")
             return .init(path: path, query: encoder.items)
         }
     }
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var prepareFirstFactor: PrepareFirstFactorEndpoint {
         PrepareFirstFactorEndpoint(path: path + "/prepare_first_factor")
@@ -185,7 +185,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var attemptFirstFactor: AttemptFirstFactorEndpoint {
         AttemptFirstFactorEndpoint(path: path + "/attempt_first_factor")
@@ -202,7 +202,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var prepareSecondFactor: PrepareSecondFactorEndpoint {
         PrepareSecondFactorEndpoint(path: path + "/prepare_second_factor")
@@ -219,7 +219,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var attemptSecondFactor: AttemptSecondFactorEndpoint {
         AttemptSecondFactorEndpoint(path: path + "/attempt_second_factor")
@@ -236,7 +236,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
     var resetPassword: ResetPasswordEndpoint {
         ResetPasswordEndpoint(path: path + "/reset_password")
@@ -253,7 +253,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint {
     
     var sessions: SessionsEndpoint {
         SessionsEndpoint(path: path + "/sessions")
@@ -266,7 +266,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint {
     
     func id(_ id: String) -> WithIdEndpoint {
         WithIdEndpoint(path: path + "/\(id)")
@@ -279,7 +279,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
     
     var touch: TouchEndpoint {
         TouchEndpoint(path: path + "/touch")
@@ -296,7 +296,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint 
     
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
     
     var tokens: TokensEndpoint {
         TokensEndpoint(path: path + "/tokens")
@@ -312,7 +312,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint 
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint.TokensEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint.TokensEndpoint {
     
     func template(_ template: String) -> TemplateEndpoint {
         TemplateEndpoint(path: path + "/\(template)")
@@ -328,7 +328,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint.
     }
 }
 
-extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
+extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
     
     var remove: RemoveEndpoint {
         RemoveEndpoint(path: path + "/remove")
@@ -346,7 +346,7 @@ extension APIEndpoint.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint 
 }
 
 
-extension APIEndpoint.V1Endpoint {
+extension ClerkAPI.V1Endpoint {
     
     var me: MeEndpoint {
         MeEndpoint(path: path + "/me")
@@ -367,7 +367,7 @@ extension APIEndpoint.V1Endpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var emailAddresses: EmailAddressesEndpoint {
         EmailAddressesEndpoint(path: path + "/email_addresses")
@@ -384,7 +384,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
     
     public func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
@@ -405,7 +405,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
     
     var prepareVerification: PrepareVerificationEndpoint {
         PrepareVerificationEndpoint(path: path + "/prepare_verification")
@@ -421,7 +421,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
     
     var attemptVerification: AttemptVerificationEndpoint {
         AttemptVerificationEndpoint(path: path + "/attempt_verification")
@@ -437,7 +437,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var phoneNumbers: PhoneNumbersEndpoint {
         PhoneNumbersEndpoint(path: path + "/phone_numbers")
@@ -454,7 +454,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
     
     public func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
@@ -479,7 +479,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
     
     var prepareVerification: PrepareVerificationEndpoint {
         PrepareVerificationEndpoint(path: path + "/prepare_verification")
@@ -495,7 +495,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
+extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
     
     var attemptVerification: AttemptVerificationEndpoint {
         AttemptVerificationEndpoint(path: path + "/attempt_verification")
@@ -511,7 +511,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
     }
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var externalAccounts: ExternalAccountsEndpoint {
         ExternalAccountsEndpoint(path: path + "/external_accounts")
@@ -528,7 +528,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
     
     public func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
@@ -549,7 +549,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var sessions: SessionsEndpoint {
         SessionsEndpoint(path: path + "/sessions")
@@ -562,7 +562,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
     var active: ActiveEndpoint {
         ActiveEndpoint(path: path + "/active")
@@ -579,7 +579,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
     func withId(id: String) -> WithIdEndpoint {
         WithIdEndpoint(path: path + "/\(id)")
@@ -592,7 +592,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
     
     var revoke: RevokeEndpoint {
         RevokeEndpoint(path: path + "/revoke")
@@ -610,7 +610,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
     
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var changePassword: ChangePasswordEndpoint {
         ChangePasswordEndpoint(path: path + "/change_password")
@@ -627,7 +627,7 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
     }
 }
 
-extension APIEndpoint.V1Endpoint.MeEndpoint {
+extension ClerkAPI.V1Endpoint.MeEndpoint {
     
     var profileImage: ProfileImageEndpoint {
         ProfileImageEndpoint(path: path + "/profile_image")
@@ -637,11 +637,11 @@ extension APIEndpoint.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/profile_image`
         let path: String
         
-        var post: Request<ClientResponse<ImageResource>> {
+        var post: Request<ClientResponse<ClerkImageResource>> {
             .init(path: path, method: .post)
         }
         
-        var delete: Request<ClientResponse<ImageResource>> {
+        var delete: Request<ClientResponse<ClerkImageResource>> {
             .init(path: path, method: .delete)
         }
     }

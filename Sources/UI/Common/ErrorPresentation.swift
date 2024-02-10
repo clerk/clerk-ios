@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import ClerkSDK
 
 public struct ErrorWrapper: Identifiable {
     public let id = UUID()

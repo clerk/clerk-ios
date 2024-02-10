@@ -10,40 +10,40 @@ import Factory
 import RegexBuilder
 
 /**
- This is the main entrypoint class for the clerk-ios package. It contains a number of methods and properties for interacting with the Clerk API.
- 
- Holds a `.shared` instance.
+ This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
 final public class Clerk: ObservableObject {
-    
-    /// The shared clerk instance
     public static let shared = Container.shared.clerk()
+    static let apiClient = Container.shared.apiClient()
+    static let keychain = Container.shared.keychain()
     
-    /**
-     Configures the settings for the Clerk package.
-     
-     To use the Clerk package, you'll need to copy your Publishable Key from the API Keys page in the Clerk Dashboard.
-     On this same page, click on the Advanced dropdown and copy your Frontend API URL.
-     If you are signed into your Clerk Dashboard, your Publishable key should be visible.
-     
-     - Parameters:
-     - publishableKey: Formatted as pk_test_ in development and pk_live_ in production.
-     
-     - Note:
-     It's essential to call this function with the appropriate values before using any other package functionality.
-     Failure to configure the package may result in unexpected behavior or errors.
-     
-     Example Usage:
-     ```swift
-     Clerk.shared.configure(publishableKey: "pk_your_publishable_key")
-     */
-    public func configure(publishableKey: String) {
+    init() {}
+    
+    /// Create an instance of the Clerk class with dedicated options.
+    /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
+    ///
+    /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
+    /// It is absolutely necessary to call this method before using the Clerk object in your code.
+    public func load(publishableKey: String) async {
+        Container.shared.clerk.register { self }
         self.publishableKey = publishableKey
-        loadPersistedData()
+        await loadPersistedData()
         startSessionTokenPolling()
+        
+        Task.detached { [client] in
+            if !client.isNew {
+                try? await client.get()
+            } else {
+                try? await client.create()
+            }
+        }
+        
+        Task.detached { [environment] in
+            try? await environment.get()
+        }
     }
     
-    /// Publishable Key: Formatted as pk_test_ in development and pk_live_ in production.
+    /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     private(set) public var publishableKey: String = "" {
         didSet {
             let liveRegex = Regex {
@@ -62,10 +62,8 @@ final public class Clerk: ObservableObject {
                 "k"
             }
             
-            if
-                let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-                let apiUrl = String(match).base64Decoded()
-            {
+            if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
+               let apiUrl = String(match).base64Decoded() {
                 frontendAPIURL = "https://\(apiUrl)"
             }
         }
@@ -74,11 +72,21 @@ final public class Clerk: ObservableObject {
     /// Frontend API URL
     private(set) public var frontendAPIURL: String = ""
     
+    /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
+    public var session: Session? {
+        client.lastActiveSession
+    }
+    
+    /// A shortcut to Session.user which holds the currently active User object. If the session is null or undefined, the user field will match.
+    public var user: User? {
+        client.lastActiveSession?.user
+    }
+    
     /// The Client object for the current device.
     @Published internal(set) public var client: Client = .init() {
         didSet {
             do {
-                Clerk.keychain[data: Clerk.KeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
+                Clerk.keychain[data: ClerkKeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
             } catch {
                 dump(error)
             }
@@ -89,7 +97,7 @@ final public class Clerk: ObservableObject {
     @Published internal(set) public var environment: Clerk.Environment = .init() {
         didSet {
             do {
-                Clerk.keychain[data: Clerk.KeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
+                Clerk.keychain[data: ClerkKeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
             } catch {
                 dump(error)
             }
@@ -99,10 +107,10 @@ final public class Clerk: ObservableObject {
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    @Published internal(set) public var sessionsByUserId: [String: [Session]] = .init() {
+    @Published var sessionsByUserId: [String: [Session]] = .init() {
         didSet {
             do {
-                Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
+                Clerk.keychain[data: ClerkKeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
             } catch {
                 dump(error)
             }
@@ -116,25 +124,51 @@ final public class Clerk: ObservableObject {
     var sessionTokensByCacheKey: [String: TokenResource] = .init() {
         didSet {
             do {
-                Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
+                Clerk.keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
             } catch {
                 dump(error)
             }
         }
     }
-}
-
-extension Clerk {
     
-    public var session: Session? {
-        client.lastActiveSession
+    /**
+     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
+     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
+     */
+    public func signOut(sessionId: String? = nil) async throws {
+        if let sessionId {
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
+            try await Clerk.apiClient.send(request)
+            try await Clerk.shared.client.get()
+            if Clerk.shared.client.sessions.isEmpty {
+                try await Clerk.shared.client.destroy()
+            }
+        } else {
+            try await Clerk.shared.client.destroy()
+        }
     }
     
-    public var user: User? {
-        client.lastActiveSession?.user
+    /// A method used to set the active session and/or organization.
+    public func setActive(_ params: SetActiveParams) async throws {
+        if let sessionId = params.sessionId {
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(params)
+            try await Clerk.apiClient.send(request)
+            try await Clerk.shared.client.get()
+            
+        } else if let currentSession = session {
+            try await currentSession.revoke()
+            try await Clerk.shared.client.get()
+        }
     }
     
-    func startSessionTokenPolling() {
+    public struct SetActiveParams: Encodable {
+        /// The session ID to be set as active. If null, the current session is deleted.
+        var sessionId: String?
+        /// The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+        var organizationId: String?
+    }
+    
+    private func startSessionTokenPolling() {
         Timer.scheduledTimer(withTimeInterval: 50, repeats: true) { _ in
             Task(priority: .background) { [weak self] in
                 guard let self, let session else { return }
@@ -148,80 +182,11 @@ extension Clerk {
         }
     }
     
-    /**
-     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
-     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
-     */
-    public func signOut(sessionId: String? = nil) async throws {
-        if let sessionId {
-            let request = APIEndpoint
-                .v1
-                .client
-                .sessions
-                .id(sessionId)
-                .remove
-                .post
-            
-            try await Clerk.apiClient.send(request)
-            try await Clerk.shared.client.get()
-            if Clerk.shared.client.sessions.isEmpty {
-                try await Clerk.shared.client.destroy()
-            }
-        } else {
-            try await Clerk.shared.client.destroy()
-        }
-    }
-    
-    public struct SetActiveParams: Encodable {
-        public init(
-            sessionId: String? = nil,
-            organizationId: String? = nil
-        ) {
-            self.sessionId = sessionId
-            self.organizationId = organizationId
-        }
-        
-        /// The session ID to be set as active. If null, the current session is deleted.
-        var sessionId: String?
-        /// The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
-        var organizationId: String?
-    }
-    
-    /// A method used to set the active session and/or organization.
-    public func setActive(_ params: SetActiveParams) async throws {
-        guard let sessionId = params.sessionId else {
-            // TODO: Delete Session if sessionId is nil
-            return
-        }
-        
-        let request = APIEndpoint
-            .v1
-            .client
-            .sessions
-            .id(sessionId)
-            .touch
-            .post(params)
-        
-        try await Clerk.apiClient.send(request)
-        try await Clerk.shared.client.get()
-    }
-    
-}
-
-extension Container {
-    
-    public var clerk: Factory<Clerk> {
-        self { Clerk() }
-            .singleton
-    }
-    
-}
-
-extension Clerk {
-    
+    /// Loads the data persisted across sessions from the keychain.
+    @MainActor
     private func loadPersistedData() {
         
-        if let data = Clerk.keychain[data: Clerk.KeychainKey.client] {
+        if let data = Clerk.keychain[data: ClerkKeychainKey.client] {
             do {
                 self.client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
             } catch {
@@ -229,7 +194,7 @@ extension Clerk {
             }
         }
         
-        if let data = Clerk.keychain[data: Clerk.KeychainKey.environment] {
+        if let data = Clerk.keychain[data: ClerkKeychainKey.environment] {
             do {
                 self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
             } catch {
@@ -237,7 +202,7 @@ extension Clerk {
             }
         }
         
-        if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionTokensByCacheKey] {
+        if let data = Clerk.keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] {
             do {
                 self.sessionTokensByCacheKey = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
             } catch {
@@ -245,7 +210,7 @@ extension Clerk {
             }
         }
         
-        if let data = Clerk.keychain[data: Clerk.KeychainKey.sessionsByUserId] {
+        if let data = Clerk.keychain[data: ClerkKeychainKey.sessionsByUserId] {
             do {
                 self.sessionsByUserId = try JSONDecoder.clerkDecoder.decode([String: [Session]].self, from: data)
             } catch {
@@ -253,5 +218,4 @@ extension Clerk {
             }
         }
     }
-    
 }

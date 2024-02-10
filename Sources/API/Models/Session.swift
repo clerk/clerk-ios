@@ -25,6 +25,46 @@ import Foundation
  While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
  */
 public struct Session: Codable, Identifiable {
+    
+    /// A unique identifier for the session.
+    public let id: String
+    
+    /// The current state of the session.
+    public let status: SessionStatus
+    
+    /// The time the session expires and will cease to be active.
+    public let expireAt: Date
+    
+    /// The time when the session was abandoned by the user.
+    public let abandonAt: Date
+    
+    /// The time the session was last active on the client.
+    public let lastActiveAt: Date
+    
+    /// The latest activity associated with the session.
+    public let latestActivity: SessionActivity?
+    
+    /// The last active organization identifier.
+    public let lastActiveOrganizationId: String?
+    
+    /// The JWT actor for the session.
+    public let actor: String?
+    
+    /// The user associated with the session.
+    public var user: User?
+    
+    /// Public information about the user that this session belongs to.
+    public let publicUserData: AnyJSON?
+    
+    /// The time the session was created.
+    public let createdAt: Date
+    
+    /// The last time the session recorded activity of any kind.
+    public let updatedAt: Date
+    
+    /// The last active token for the session.
+    public let lastActiveToken: TokenResource?
+    
     public init(
         id: String,
         status: SessionStatus,
@@ -35,7 +75,7 @@ public struct Session: Codable, Identifiable {
         lastActiveOrganizationId: String? = nil,
         actor: String? = nil,
         user: User?,
-        publicUserData: JSON? = nil,
+        publicUserData: AnyJSON? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         lastActiveToken: TokenResource? = nil
@@ -54,45 +94,6 @@ public struct Session: Codable, Identifiable {
         self.updatedAt = updatedAt
         self.lastActiveToken = lastActiveToken
     }
-    
-    /// A unique identifier for the session.
-    public let id: String
-    
-    /// The current state of the session.
-    public let status: SessionStatus
-    
-    /// The time the session expires and will cease to be active.
-    let expireAt: Date
-    
-    /// The time when the session was abandoned by the user.
-    let abandonAt: Date
-    
-    /// The time the session was last active on the client.
-    public let lastActiveAt: Date
-    
-    /// The latest activity associated with the session.
-    public let latestActivity: SessionActivity?
-    
-    /// The last active organization identifier.
-    let lastActiveOrganizationId: String?
-    
-    /// The JWT actor for the session.
-    let actor: String?
-    
-    /// The user associated with the session.
-    public var user: User?
-    
-    /// Public information about the user that this session belongs to.
-    let publicUserData: JSON?
-    
-    /// The time the session was created.
-    let createdAt: Date
-    
-    /// The last time the session recorded activity of any kind.
-    let updatedAt: Date
-    
-    /// The last active token for the session.
-    public let lastActiveToken: TokenResource?
 }
 
 extension Session {
@@ -140,7 +141,10 @@ extension Session {
     }
     
     public var identifier: String? {
-        publicUserData?["identifier"]?.stringValue
+        if case .object(let json) = publicUserData {
+            return json["identifier"]?.value as? String
+        }
+        return nil
     }
     
 }
@@ -236,18 +240,10 @@ extension Session {
     @MainActor
     @discardableResult
     public func revoke() async throws -> Session {
-        let request = APIEndpoint
-            .v1
-            .me
-            .sessions
-            .withId(id: id)
-            .revoke
-            .post
-        
+        let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
         let revokedSession = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        
         try await Clerk.shared.client.get()
         return revokedSession
     }
@@ -330,12 +326,7 @@ actor SessionTokenFetcher {
                     
         var token: TokenResource?
         
-        let tokensRequest = APIEndpoint
-            .v1
-            .client
-            .sessions
-            .id(session.id)
-            .tokens
+        let tokensRequest = ClerkAPI.v1.client.sessions.id(session.id).tokens
         
         if let template = options.template {
             let templateTokenRequest = tokensRequest

@@ -9,7 +9,6 @@
 
 import Foundation
 import SwiftUI
-import ClerkSDK
 
 /**
  This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.
@@ -28,22 +27,9 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .task { clerk.configure(publishableKey: publishableKey) }
+            .task { await clerk.load(publishableKey: publishableKey) }
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
-            .onChange(of: scenePhase) { phase in
-                if phase == .active {
-                    Task.detached {
-                        try? await clerk.environment.get()
-                    }
-                    Task.detached {
-                        try? await clerk.client.get()
-                        if await clerk.client.isPlaceholder {
-                            try? await clerk.client.create()
-                        }
-                    }
-                }
-            }
             // these must be the last modifiers
             .environmentObject(clerk)
             .environmentObject(clerkUIState)

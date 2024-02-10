@@ -9,7 +9,6 @@
 
 import SwiftUI
 import NukeUI
-import ClerkSDK
 import Nuke
 
 struct UserPreviewView: View {
@@ -78,7 +77,7 @@ extension UserPreviewView {
 
 #Preview {
     VStack(spacing: 20) {
-        UserPreviewView(user: .mock)
+        UserPreviewView(user: Clerk.mock.user!)
         UserPreviewView(title: nil, subtitle: "clerkuser@clerk.dev", imageUrl: "")
     }
     .frame(maxWidth: .infinity, alignment: .leading)

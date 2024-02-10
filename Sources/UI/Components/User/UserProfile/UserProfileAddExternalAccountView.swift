@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import Factory
 import AuthenticationServices
 
@@ -25,7 +24,7 @@ struct UserProfileAddExternalAccountView: View {
     private func create(provider: ExternalProvider) async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            let newExternalAccount = try await user.addExternalAccount(provider)
+            let newExternalAccount = try await user.createExternalAccount(provider)
             try await newExternalAccount.startExternalAuth()
             dismiss()
         } catch {

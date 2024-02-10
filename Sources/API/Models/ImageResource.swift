@@ -1,5 +1,5 @@
 //
-//  ImageResource.swift
+//  ClerkImageResource.swift
 //
 //
 //  Created by Mike Pitre on 11/28/23.
@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents information about an image.
-public struct ImageResource: Codable {
+public struct ClerkImageResource: Codable {
     /// The unique identifier of the image.
     var id: String
     

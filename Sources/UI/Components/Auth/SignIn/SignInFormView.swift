@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFormView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -125,10 +124,10 @@ struct SignInFormView: View {
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            try await signIn.create(strategy)
+            try await signIn.create(strategy: strategy)
             
-            if let prepareStrategy = signIn.currentFirstFactor?.verificationStrategy?.signInPrepareStrategy {
-                try await signIn.prepareFirstFactor(prepareStrategy)
+            if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
+                try await signIn.prepareFirstFactor(for: prepareStrategy)
             }
             clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
         } catch {

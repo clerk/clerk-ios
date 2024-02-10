@@ -2,19 +2,20 @@
 //  SignInFactor.swift
 //
 //
-//  Created by Mike Pitre on 10/10/23.
+//  Created by Mike Pitre on 2/9/24.
 //
 
 import Foundation
 
-/**
- Each factor contains information about the verification strategy that can be used.
- For example:
- email_code for email addresses
- phone_code for phone numbers
- As well as the identifier that the factor refers to.
- */
-public struct Factor: Codable, Hashable {
+public struct SignInFactor: Codable, Equatable, Hashable {
+    public let strategy: String
+    public let safeIdentifier: String?
+    public let emailAddressId: String?
+    public let phoneNumberId: String?
+    public let web3WalletId: String?
+    public let primary: Bool?
+    public let `default`: Bool?
+    
     init(
         strategy: Strategy,
         safeIdentifier: String? = nil,
@@ -32,32 +33,38 @@ public struct Factor: Codable, Hashable {
         self.primary = primary
         self.default = `default`
     }
-    
-    public let strategy: String
-    public let safeIdentifier: String?
-    public let emailAddressId: String?
-    public let phoneNumberId: String?
-    public let web3WalletId: String?
-    public let primary: Bool?
-    public let `default`: Bool?
 }
 
-extension Factor {
+extension SignInFactor {
     
-    public var verificationStrategy: Strategy? {
+    var strategyEnum: Strategy? {
         Strategy(stringValue: strategy)
     }
     
-    var isResetStrategy: Bool {
-        [
-            Strategy.resetPasswordEmailCode,
-            Strategy.resetPasswordPhoneCode
-        ]
-        .contains(verificationStrategy)
+    var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy? {
+        switch strategyEnum {
+        case .phoneCode:
+            return .phoneCode
+        case .emailCode:
+            return .emailCode
+        case .emailLink:
+            return .emailLink
+        default:
+            return nil
+        }
     }
     
-    public var actionText: String? {
-        switch verificationStrategy {
+    var prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy? {
+        switch strategyEnum {
+        case .phoneCode:
+            return .phoneCode
+        default:
+            return nil
+        }
+    }
+    
+    var actionText: String? {
+        switch strategyEnum {
         case .phoneCode:
             guard let safeIdentifier else { return nil }
             return "Send SMS code to \(safeIdentifier)"
@@ -78,30 +85,8 @@ extension Factor {
         }
     }
     
-    public var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy? {
-        switch verificationStrategy {
-        case .phoneCode:
-            return .phoneCode
-        case .emailCode:
-            return .emailCode
-        case .emailLink:
-            return .emailLink
-        default:
-            return nil
-        }
-    }
-    
-    public var prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy? {
-        switch verificationStrategy {
-        case .phoneCode:
-            return .phoneCode
-        default:
-            return nil
-        }
-    }
-    
     var sortOrderPasswordPreferred: Int {
-        switch self.verificationStrategy {
+        switch self.strategyEnum {
         case .password: 0
         case .emailCode: 1
         case .phoneCode: 2
@@ -111,7 +96,7 @@ extension Factor {
     }
     
     var sortOrderOTPPreferred: Int {
-        switch self.verificationStrategy {
+        switch self.strategyEnum {
         case .emailCode: 0
         case .phoneCode: 1
         case .emailLink: 2

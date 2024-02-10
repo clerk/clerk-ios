@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignInFactorOneEmailCodeView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -63,7 +62,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareFirstFactor(.emailCode)
+            try await signIn.prepareFirstFactor(for: .emailCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,7 +71,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptFirstFactor(.emailCode(code: code))
+            try await signIn.attemptFirstFactor(for: .emailCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

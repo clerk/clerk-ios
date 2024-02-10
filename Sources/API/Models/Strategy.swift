@@ -17,7 +17,7 @@ import RegexBuilder
  - `oauth_{provider}`: Authenticate against various OAuth providers.
  - `web3_{signature}_signature`: Authenticate against Web3 signatures.
  */
-public enum Strategy: Hashable, Equatable {
+public enum Strategy: Codable, Equatable {
     case password
     case phoneCode
     case emailCode
@@ -125,7 +125,11 @@ public enum Strategy: Hashable, Equatable {
 
 extension Strategy {
     
-    public var icon: String? {
+    var isResetStrategy: Bool {
+        [.resetPasswordEmailCode, .resetPasswordPhoneCode].contains(self)
+    }
+    
+    var icon: String? {
         switch self {
         case .password:
             return "lock.fill"
@@ -140,7 +144,7 @@ extension Strategy {
         }
     }
     
-    public var signInPrepareStrategy: SignIn.PrepareFirstFactorStrategy? {
+    var signInPrepareStrategy: SignIn.PrepareFirstFactorStrategy? {
         switch self {
         case .phoneCode:
             return .phoneCode

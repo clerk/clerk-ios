@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 struct SignUpFormView: View {
     @EnvironmentObject private var clerk: Clerk

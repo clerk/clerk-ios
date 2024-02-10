@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import NukeUI
 import AuthenticationServices
 
@@ -31,7 +30,7 @@ struct SignInForgotPasswordView: View {
             guard let resetPasswordStrategy = signIn.resetPasswordStrategy else {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
-            try await signIn.prepareFirstFactor(resetPasswordStrategy)
+            try await signIn.prepareFirstFactor(for: resetPasswordStrategy)
             clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)

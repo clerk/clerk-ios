@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 
 extension UserProfileAddEmailView {
     public enum Step: Hashable, Identifiable {
@@ -179,7 +178,7 @@ struct UserProfileAddEmailView: View {
     private func create() async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            self.emailAddress = try await user.addEmailAddress(email)
+            self.emailAddress = try await user.createEmailAddress(email)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

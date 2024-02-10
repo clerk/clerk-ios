@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import NukeUI
 import Factory
 import AuthenticationServices
@@ -145,7 +144,7 @@ struct UserProfileExternalAccountSection: View {
         
         private func retryConnection(_ provider: ExternalProvider) async {
             do {
-                let externalAccount = try await user?.addExternalAccount(provider)
+                let externalAccount = try await user?.createExternalAccount(provider)
                 try await externalAccount?.startExternalAuth()
             } catch {
                 if case ASWebAuthenticationSessionError.canceledLogin = error {

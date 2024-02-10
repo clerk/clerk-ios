@@ -10,7 +10,6 @@
 import SwiftUI
 import NukeUI
 import Nuke
-import ClerkSDK
 import PhotosUI
 
 struct UserProfileUpdateProfileView: View {

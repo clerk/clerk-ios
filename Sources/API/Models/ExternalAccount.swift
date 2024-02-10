@@ -45,7 +45,7 @@ public struct ExternalAccount: Codable, Identifiable {
     let username: String?
     
     /// Metadata provided about the user from the provider.
-    let publicMetadata: JSON
+    let publicMetadata: AnyJSON
     
     /// A descriptive label to differentiate multiple external accounts of the same user for the same provider.
     let label: String?
@@ -128,7 +128,7 @@ extension ExternalAccount {
     
     @MainActor
     public func delete() async throws {
-        let request = APIEndpoint
+        let request = ClerkAPI
             .v1
             .me
             .externalAccounts

@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import ClerkSDK
 import NukeUI
 
 struct SignInFactorTwoAlternativeMethodsView: View {
@@ -16,16 +15,16 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let currentFactor: Factor?
+    let currentFactor: SignInFactor?
     
     private var signIn: SignIn {
         clerk.client.signIn
     }
     
-    private func startAlternateSecondFactor(_ factor: Factor) async {
+    private func startAlternateSecondFactor(_ factor: SignInFactor) async {
         do {
             if let prepareStrategy = factor.prepareSecondFactorStrategy {
-                try await signIn.prepareSecondFactor(prepareStrategy)
+                try await signIn.prepareSecondFactor(for: prepareStrategy)
             }
             clerkUIState.presentedAuthStep = .signInFactorTwo(factor)
         } catch {
@@ -36,13 +35,13 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(signIn.alternativeSecondFactors(currentStrategy: currentFactor?.verificationStrategy), id: \.self) { factor in
+            ForEach(signIn.alternativeSecondFactors(currentFactor: currentFactor), id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateSecondFactor(factor)
                     } label: {
                         HStack {
-                            if let icon = factor.verificationStrategy?.icon {
+                            if let icon = factor.strategyEnum?.icon {
                                 Image(systemName: icon)
                                     .frame(width: 16, height: 16)
                             }
