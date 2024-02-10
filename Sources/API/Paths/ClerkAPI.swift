@@ -18,7 +18,7 @@ extension ClerkAPI {
     
     struct V1Endpoint {
         /// Path: `/v1`
-        public let path: String
+        let path: String
     }
 }
 
@@ -84,13 +84,13 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint {
 }
 
 extension ClerkAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
-    public func id(_ id: String) -> WithID {
+    func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
     }
 
-    public struct WithID {
+    struct WithID {
         /// Path: `/v1/client/sign_ups/{id}`
-        public let path: String
+        let path: String
         
         func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignUp>> {
             let encoder = URLQueryEncoder()
@@ -151,13 +151,13 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint {
 
 extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
-    public func id(_ id: String) -> WithIDEndpoint {
+    func id(_ id: String) -> WithIDEndpoint {
         WithIDEndpoint(path: path + "/\(id)")
     }
 
-    public struct WithIDEndpoint {
+    struct WithIDEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
-        public let path: String
+        let path: String
         
         func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
             let encoder = URLQueryEncoder()
@@ -386,13 +386,13 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
 
 extension ClerkAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
     
-    public func id(_ id: String) -> WithID {
+    func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
     }
 
-    public struct WithID {
+    struct WithID {
         /// Path: `/v1/client/email_addresses/{id}`
-        public let path: String
+        let path: String
         
         var get: Request<ClientResponse<EmailAddress>> {
             .init(path: path)
@@ -456,13 +456,13 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
 
 extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
     
-    public func id(_ id: String) -> WithID {
+    func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
     }
 
-    public struct WithID {
+    struct WithID {
         /// Path: `/v1/me/phone_numbers/{id}`
-        public let path: String
+        let path: String
         
         var get: Request<ClientResponse<PhoneNumber>> {
             .init(path: path)
@@ -530,13 +530,13 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
 
 extension ClerkAPI.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
     
-    public func id(_ id: String) -> WithID {
+    func id(_ id: String) -> WithID {
         WithID(path: path + "/\(id)")
     }
 
     struct WithID {
         /// Path: `/v1/me/external_accounts/{id}`
-        public let path: String
+        let path: String
         
         var get: Request<ClientResponse<ExternalAccount>> {
             return .init(path: path)

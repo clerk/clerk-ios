@@ -31,7 +31,7 @@ public enum Strategy: Codable, Equatable {
     case externalProvider(_ provider: ExternalProvider)
     case web3(_ signature: String)
     
-    public var stringValue: String {
+    var stringValue: String {
         switch self {
         case .password:
             return "password"
@@ -60,7 +60,7 @@ public enum Strategy: Codable, Equatable {
         }
     }
     
-    public init?(stringValue: String) {
+    init?(stringValue: String) {
         switch stringValue {
         case Strategy.password.stringValue:
             self = .password

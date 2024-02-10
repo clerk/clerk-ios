@@ -68,16 +68,16 @@ extension ExternalAccount: Comparable {
 
 extension ExternalAccount {
     
-    public var externalProvider: ExternalProvider? {
+    var externalProvider: ExternalProvider? {
         .init(strategy: provider)
     }
     
     /// Username if available, otherwise email address
-    public var displayName: String {
+    var displayName: String {
         username ?? emailAddress
     }
     
-    public var fullName: String? {
+    var fullName: String? {
         let fullName = [firstName, lastName]
             .compactMap { $0 }
             .filter({ !$0.isEmpty })

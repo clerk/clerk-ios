@@ -16,7 +16,7 @@ struct UserProfileSecurityView: View {
         clerk.session?.user
     }
     
-    public var body: some View {
+    var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 16) {
                 HeaderView(title: "Security")

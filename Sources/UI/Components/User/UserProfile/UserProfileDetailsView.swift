@@ -9,7 +9,7 @@
 
 import SwiftUI
 
-public struct UserProfileDetailsView: View {
+struct UserProfileDetailsView: View {
     @EnvironmentObject private var clerk: Clerk
     
     private var emailIsEnabled: Bool {
@@ -24,7 +24,7 @@ public struct UserProfileDetailsView: View {
         !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
     }
     
-    public var body: some View {
+    var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 16) {
                 HeaderView(title: "Profile Details")

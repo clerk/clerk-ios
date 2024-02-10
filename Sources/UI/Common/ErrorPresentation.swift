@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-public struct ErrorWrapper: Identifiable {
-    public let id = UUID()
-    public let error: Error
+struct ErrorWrapper: Identifiable {
+    let id = UUID()
+    let error: Error
 }
 
 struct ErrorView: View {

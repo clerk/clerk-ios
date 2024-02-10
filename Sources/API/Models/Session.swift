@@ -98,11 +98,11 @@ public struct Session: Codable, Identifiable {
 
 extension Session {
     
-    public var isThisDevice: Bool {
+    var isThisDevice: Bool {
         Clerk.shared.client.lastActiveSessionId == id
     }
     
-    public var browserDisplayText: String {
+    var browserDisplayText: String {
         var string = ""
         if let browserName = latestActivity?.browserName {
             string += browserName
@@ -115,7 +115,7 @@ extension Session {
         return string
     }
     
-    public var ipAddressDisplayText: String {
+    var ipAddressDisplayText: String {
         var string = ""
         if let ipAddress = latestActivity?.ipAddress {
             string += ipAddress
@@ -140,7 +140,7 @@ extension Session {
         return string
     }
     
-    public var identifier: String? {
+    var identifier: String? {
         if case .object(let json) = publicUserData {
             return json["identifier"]?.value as? String
         }
@@ -250,19 +250,19 @@ extension Session {
     
     public struct GetTokenOptions: Hashable {
         public init(
-            expirationBuffer: Double = 10,
             template: String? = nil,
+            expirationBuffer: Double = 10,
             skipCache: Bool = false
         ) {
-            self.expirationBuffer = min(expirationBuffer, 60)
             self.template = template
+            self.expirationBuffer = min(expirationBuffer, 60)
             self.skipCache = skipCache
         }
 
-        /// If the cached token will expire within X seconds (the buffer), fetch a new token instead. Max is 60 seconds.
-        var expirationBuffer: Double
         /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
         var template: String?
+        /// If the cached token will expire within X seconds (the buffer), fetch a new token instead. Max is 60 seconds.
+        var expirationBuffer: Double
         /// Whether to skip the cache lookup and force a call to the server instead, even within the TTL. Useful if the token claims are time-sensitive or depend on data that can be updated (e.g. user fields). Defaults to false.
         var skipCache: Bool
     }

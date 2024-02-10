@@ -7,23 +7,23 @@
 
 import AuthenticationServices
 
-public final class ExternalAuthWebSession: NSObject {
+final class ExternalAuthWebSession: NSObject {
     let url: URL
     let authAction: AuthAction
     
-    public enum AuthAction {
+    enum AuthAction {
         case signIn, signUp, verify
     }
     
     private var webAuthSession: ASWebAuthenticationSession?
     
-    public init(url: URL, authAction: AuthAction = .signIn) {
+    init(url: URL, authAction: AuthAction = .signIn) {
         self.url = url
         self.authAction = authAction
     }
     
     @MainActor
-    public func start() async throws {
+    func start() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: "clerk") { callbackUrl, error in
                 if let error = error {
@@ -94,7 +94,7 @@ public final class ExternalAuthWebSession: NSObject {
 
 extension ExternalAuthWebSession: ASWebAuthenticationPresentationContextProviding {
     
-    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         ASPresentationAnchor()
     }
     

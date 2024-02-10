@@ -31,15 +31,23 @@ final public class Clerk: ObservableObject {
         startSessionTokenPolling()
         
         Task.detached { [client] in
-            if !client.isNew {
-                try? await client.get()
-            } else {
-                try? await client.create()
+            do {
+                if !client.isNew {
+                    try await client.get()
+                } else {
+                    try await client.create()
+                }
+            } catch {
+                dump(error)
             }
         }
         
         Task.detached { [environment] in
-            try? await environment.get()
+            do {
+                try await environment.get()
+            } catch {
+                dump(error)
+            }
         }
     }
     

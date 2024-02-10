@@ -36,7 +36,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     public let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
-    let linkedTo: AnyJSON?
+    public let linkedTo: AnyJSON?
     
     ///
     public let backupCodes: [String]?

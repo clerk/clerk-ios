@@ -39,7 +39,8 @@ let package = Package(
                 .product(name: "NukeUI", package: "Nuke"),
                 "PhoneNumberKit"
             ],
-            path: "Sources"
+            path: "Sources",
+            exclude: []
         ),
         .testTarget(
             name: "ClerkTests",

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct AsyncButton<Label: View>: View {
-    public init(
+    init(
         options: Set<AsyncButton<Label>.Options> = [.disableButton, .showProgressView],
         role: ButtonRole? = nil,
         action: @escaping () async -> Void,
@@ -37,7 +37,7 @@ struct AsyncButton<Label: View>: View {
         !isEnabled || isDisabled
     }
     
-    public var body: some View {
+    var body: some View {
         Button(role: role) {
             if options.contains(.disableButton) {
                 isDisabled = true
@@ -98,7 +98,7 @@ struct AsyncButton<Label: View>: View {
 }
 
 extension AsyncButton {
-    public enum Options: CaseIterable {
+    enum Options: CaseIterable {
         case disableButton
         case showProgressView
     }

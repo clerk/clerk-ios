@@ -9,7 +9,7 @@
 
 import SwiftUI
 
-public struct AuthView: View {
+struct AuthView: View {
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
@@ -17,7 +17,7 @@ public struct AuthView: View {
     
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
-    public var body: some View {
+    var body: some View {
         Group {
             switch clerkUIState.presentedAuthStep {
             case .signInStart:

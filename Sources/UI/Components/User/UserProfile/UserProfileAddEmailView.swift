@@ -10,7 +10,7 @@
 import SwiftUI
 
 extension UserProfileAddEmailView {
-    public enum Step: Hashable, Identifiable {
+    enum Step: Hashable, Identifiable {
         case add
         case code(emailAddress: EmailAddress)
         
