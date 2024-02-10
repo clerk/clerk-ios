@@ -7,13 +7,11 @@
 
 import Foundation
 import Get
-import Factory
-import URLQueryEncoder
 
 extension APIClient {
     
     /// The Clerk API Client
-    static var clerk = APIClient(baseURL: URL(string: Container.shared.clerk().frontendAPIURL)) { client in
+    static var clerk = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
         client.delegate = ClerkAPIClientDelegate()
         client.decoder = JSONDecoder.clerkDecoder
         client.encoder = JSONEncoder.clerkEncoder
