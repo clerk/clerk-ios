@@ -65,7 +65,7 @@ struct SignInStartView: View {
 
 #Preview {
     SignInStartView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

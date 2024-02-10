@@ -104,7 +104,7 @@ struct SignInFactorOnePasswordView: View {
 
 #Preview {
     SignInFactorOnePasswordView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

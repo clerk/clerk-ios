@@ -65,7 +65,7 @@ public struct UserButton: View {
 
 #Preview {
     UserButton()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

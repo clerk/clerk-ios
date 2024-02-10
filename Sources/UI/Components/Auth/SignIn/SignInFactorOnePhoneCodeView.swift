@@ -82,7 +82,7 @@ struct SignInFactorOnePhoneCodeView: View {
 
 #Preview {
     SignInFactorOnePhoneCodeView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

@@ -205,7 +205,7 @@ struct SignUpFormView: View {
 #Preview {
     SignUpFormView()
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

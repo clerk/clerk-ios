@@ -117,7 +117,7 @@ struct SignInFactorOneResetView: View {
 
 #Preview {
     SignInFactorOneResetView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

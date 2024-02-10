@@ -81,7 +81,7 @@ struct SignInFactorTwoBackupCodeView: View {
 
 #Preview {
     SignInFactorTwoBackupCodeView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

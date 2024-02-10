@@ -99,7 +99,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
 #Preview {
     SignInFactorOneAlternativeMethodsView(currentFactor: nil)
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

@@ -32,6 +32,6 @@ extension View {
     }
     .padding(.vertical)
     .raisedCardBottom()
-    .environmentObject(Clerk.mock)
+    .environmentObject(Clerk.shared)
     .environmentObject(ClerkUIState())
 }

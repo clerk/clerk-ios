@@ -77,7 +77,7 @@ extension UserPreviewView {
 
 #Preview {
     VStack(spacing: 20) {
-        UserPreviewView(user: Clerk.mock.user!)
+        UserPreviewView(user: Clerk.shared.user!)
         UserPreviewView(title: nil, subtitle: "clerkuser@clerk.dev", imageUrl: "")
     }
     .frame(maxWidth: .infinity, alignment: .leading)

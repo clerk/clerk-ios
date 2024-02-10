@@ -25,7 +25,6 @@ final public class Clerk: ObservableObject {
     /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
     public func load(publishableKey: String) async {
-        Container.shared.clerk.register { self }
         self.publishableKey = publishableKey
         await loadPersistedData()
         startSessionTokenPolling()

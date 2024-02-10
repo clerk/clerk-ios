@@ -81,7 +81,7 @@ struct SignInForgotPasswordView: View {
 
 #Preview {
     SignInForgotPasswordView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

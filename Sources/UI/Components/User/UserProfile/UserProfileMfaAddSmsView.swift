@@ -137,5 +137,5 @@ struct UserProfileMfaAddSmsView: View {
 
 #Preview {
     UserProfileMfaAddSmsView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }

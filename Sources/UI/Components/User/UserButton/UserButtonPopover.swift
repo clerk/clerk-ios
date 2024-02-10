@@ -185,7 +185,7 @@ struct UserButtonPopover: View {
 
 #Preview {
     UserButtonPopover()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

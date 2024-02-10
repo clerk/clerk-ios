@@ -131,7 +131,7 @@ extension AuthSocialProvidersView {
 #Preview {
     AuthSocialProvidersView(useCase: .signIn)
         .padding()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif

@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Factory
 
 struct SignUpEmailCodeView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -78,9 +77,8 @@ struct SignUpEmailCodeView: View {
 }
 
 #Preview {
-    let _ = Container.shared.clerk.register { Clerk.mock }
     return SignUpEmailCodeView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

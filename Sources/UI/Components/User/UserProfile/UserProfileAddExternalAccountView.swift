@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import Factory
 import AuthenticationServices
 
 struct UserProfileAddExternalAccountView: View {
@@ -86,9 +85,8 @@ struct UserProfileAddExternalAccountView: View {
 }
 
 #Preview {
-    _ = Container.shared.clerk.register { .mock }
     return UserProfileAddExternalAccountView()
-        .environmentObject(Clerk.mock)
+        .environmentObject(Clerk.shared)
 }
 
 #endif
