@@ -212,7 +212,7 @@ extension User {
     }
     
     var mfaPhones: [PhoneNumber] {
-        phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
+        phoneNumbers.filter { $0.verification.status == .verified && $0.reservedForSecondFactor }
     }
 }
 

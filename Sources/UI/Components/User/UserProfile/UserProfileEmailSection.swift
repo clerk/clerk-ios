@@ -79,52 +79,62 @@ struct UserProfileEmailSection: View {
         private var removeResource: RemoveResource { .email(emailAddress) }
         
         var body: some View {
-            HStack {
-                Text(verbatim: emailAddress.emailAddress)
-                    .font(.footnote)
-                    .confirmationDialog(
-                        Text(removeResource.messageLine1),
-                        isPresented: $confirmationSheetIsPresented,
-                        titleVisibility: .visible
-                    ) {
-                        AsyncButton(role: .destructive) {
-                            do {
-                                try await removeResource.deleteAction()
-                            } catch {
-                                dump(error)
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Text(verbatim: emailAddress.emailAddress)
+                        .font(.footnote)
+                        .confirmationDialog(
+                            Text(removeResource.messageLine1),
+                            isPresented: $confirmationSheetIsPresented,
+                            titleVisibility: .visible
+                        ) {
+                            AsyncButton(role: .destructive) {
+                                do {
+                                    try await removeResource.deleteAction()
+                                } catch {
+                                    dump(error)
+                                }
+                            } label: {
+                                Text(removeResource.title)
                             }
-                        } label: {
-                            Text(removeResource.title)
+                        } message: {
+                            Text(removeResource.messageLine2)
                         }
-                    } message: {
-                        Text(removeResource.messageLine2)
-                    }
-                
-                if emailAddress.isPrimary(for: user) {
-                    CapsuleTag(text: "Primary")
-                        .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
-                }
-                
-                if emailAddress.verification?.status != .verified {
-                    CapsuleTag(text: "Unverified", style: .warning)
-                }
-                
-                Spacer()
-                
-                Menu {
-                    if emailAddress.verification?.status == .verified && !emailAddress.isPrimary(for: user) {
-                        setAsPrimaryButton
+                    
+                    if emailAddress.isPrimary(for: user) {
+                        CapsuleTag(text: "Primary")
+                            .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
                     }
                     
-                    if emailAddress.verification?.status != .verified {
-                        verifyEmailButton
+                    if emailAddress.verification.status != .verified {
+                        CapsuleTag(text: "Unverified", style: .warning)
                     }
                     
-                    removeEmailButton
-                } label: {
-                    MoreActionsView()
+                    Spacer()
+                    
+                    Menu {
+                        if emailAddress.verification.status == .verified && !emailAddress.isPrimary(for: user) {
+                            setAsPrimaryButton
+                        }
+                        
+                        if emailAddress.verification.status != .verified {
+                            verifyEmailButton
+                        }
+                        
+                        removeEmailButton
+                    } label: {
+                        MoreActionsView()
+                    }
+                    .tint(clerkTheme.colors.textPrimary)
                 }
-                .tint(clerkTheme.colors.textPrimary)
+                
+                if let verificationError = emailAddress.verification.error {
+                    Text(verificationError.localizedDescription)
+                        .font(.footnote)
+                        .foregroundStyle(clerkTheme.colors.danger)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 24)
+                }
             }
         }
         
