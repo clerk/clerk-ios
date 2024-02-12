@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk {
     
-    public static var mock: Clerk {
+    static var mock: Clerk {
         let clerk = Clerk()
         clerk.client = try! JSONDecoder.clerkDecoder.decode(ClientResponse<Client>.self, from: Data(MockClientJSON.utf8)).response
         clerk.environment = try! JSONDecoder.clerkDecoder.decode(Environment.self, from: Data(MockEnvironmentJSON.utf8))
