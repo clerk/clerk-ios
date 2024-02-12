@@ -104,7 +104,7 @@ public struct SignUp: Codable {
         case complete
     }
     
-    public init(
+    init(
         id: String = "",
         status: SignUp.Status? = nil,
         requiredFields: [String] = [],

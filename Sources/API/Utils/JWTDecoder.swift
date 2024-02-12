@@ -29,6 +29,7 @@ import Foundation
 /// ## See Also
 ///
 /// - [JWT.io](https://jwt.io)
+@_documentation(visibility: internal)
 public protocol JWT {
 
     /// Contents of the header part.
@@ -117,7 +118,8 @@ public extension JWT {
 /// ## See Also
 ///
 /// - [JWT.io](https://jwt.io)
-public func decode(jwt: String) throws -> JWT {
+@_documentation(visibility: internal)
+func decode(jwt: String) throws -> JWT {
     return try DecodedJWT(jwt: jwt)
 }
 
@@ -157,6 +159,7 @@ struct DecodedJWT: JWT {
 }
 
 /// A JWT claim.
+@_documentation(visibility: internal)
 public struct Claim {
 
     /// Raw claim value.
@@ -258,6 +261,7 @@ private func decodeJWTPart(_ value: String) throws -> [String: Any] {
 }
 
 /// A decoding error due to a malformed JWT.
+@_documentation(visibility: internal)
 public enum JWTDecodeError: LocalizedError, CustomDebugStringConvertible {
     /// When either the header or body parts cannot be Base64URL-decoded.
     case invalidBase64URL(String)
