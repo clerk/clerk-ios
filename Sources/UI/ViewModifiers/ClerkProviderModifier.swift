@@ -20,7 +20,7 @@ import SwiftUI
 struct ClerkProviderModifier: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     
-    @ObservedObject private var clerk = Clerk.shared
+    @StateObject private var clerk = Clerk.shared
     @StateObject private var clerkUIState = ClerkUIState()
     
     let publishableKey: String
