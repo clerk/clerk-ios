@@ -33,31 +33,13 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     public let defaultSecondFactor: Bool
     
     /// An object holding information on the verification of this phone number.
-    public let verification: Verification?
+    public let verification: Verification
     
     /// An object containing information about any other identification that might be linked to this phone number.
     public let linkedTo: JSON?
     
     ///
     public let backupCodes: [String]?
-    
-    init(
-        id: String,
-        phoneNumber: String,
-        reservedForSecondFactor: Bool = false,
-        defaultSecondFactor: Bool = false,
-        verification: Verification? = nil,
-        linkedTo: JSON? = nil,
-        backupCodes: [String]? = nil
-    ) {
-        self.id = id
-        self.phoneNumber = phoneNumber
-        self.reservedForSecondFactor = reservedForSecondFactor
-        self.defaultSecondFactor = defaultSecondFactor
-        self.verification = verification
-        self.linkedTo = linkedTo
-        self.backupCodes = backupCodes
-    }
 }
 
 extension PhoneNumber {

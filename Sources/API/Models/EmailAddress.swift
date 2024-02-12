@@ -17,21 +17,7 @@ import Foundation
  Finally, email addresses can be linked to other identifications.
  */
 public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
-    
-    public init(
-        id: String,
-        emailAddress: String,
-        reserved: Bool = false,
-        verification: Verification? = nil,
-        linkedTo: [JSON]? = nil
-    ) {
-        self.id = id
-        self.emailAddress = emailAddress
-        self.reserved = reserved
-        self.verification = verification
-        self.linkedTo = linkedTo
-    }
-    
+
     /// A unique identifier for this email address.
     public let id: String
     
@@ -42,7 +28,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
     let reserved: Bool
     
     /// An object holding information on the verification of this email address.
-    public let verification: Verification?
+    public let verification: Verification
     
     /// An array of objects containing information about any identifications that might be linked to this email address.
     let linkedTo: [JSON]?

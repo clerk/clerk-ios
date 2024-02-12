@@ -71,61 +71,70 @@ struct UserProfileExternalAccountSection: View {
         private var removeResource: RemoveResource { .externalAccount(externalAccount) }
         
         var body: some View {
-            HStack(spacing: 8) {
-                if let provider = externalAccount.externalProvider {
-                    LazyImage(url: provider.iconImageUrl)
-                        .frame(width: 16, height: 16)
-                }
-                
-                if let providerName = externalAccount.externalProvider?.data.name {
-                    Text(providerName)
-                        .font(.footnote)
-                        .confirmationDialog(
-                            Text(removeResource.messageLine1),
-                            isPresented: $confirmationSheetIsPresented,
-                            titleVisibility: .visible
-                        ) {
-                            AsyncButton(role: .destructive) {
-                                do {
-                                    try await removeResource.deleteAction()
-                                } catch {
-                                    dump(error)
-                                }
-                            } label: {
-                                Text(removeResource.title)
-                            }
-                        } message: {
-                            Text(removeResource.messageLine2)
-                        }
-                }
-                
-                if !externalAccount.displayName.isEmpty {
-                    Group {
-                        Text("•")
-                        Text(externalAccount.displayName)
-                    }
-                    .foregroundStyle(clerkTheme.colors.textSecondary)
-                    .font(.footnote)
-                }
-                                
-                if externalAccount.verification.status != .verified {
-                    CapsuleTag(text: "Requires action", style: .warning)
-                }
-                
-                Spacer()
-                
-                Menu {
-                    if externalAccount.verification.status != .verified {
-                        retryConnectionButton
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    if let provider = externalAccount.externalProvider {
+                        LazyImage(url: provider.iconImageUrl)
+                            .frame(width: 16, height: 16)
                     }
                     
-                    Button("Remove connected account", role: .destructive) {
-                        confirmationSheetIsPresented = true
+                    if let providerName = externalAccount.externalProvider?.data.name {
+                        Text(providerName)
+                            .font(.footnote)
+                            .confirmationDialog(
+                                Text(removeResource.messageLine1),
+                                isPresented: $confirmationSheetIsPresented,
+                                titleVisibility: .visible
+                            ) {
+                                AsyncButton(role: .destructive) {
+                                    do {
+                                        try await removeResource.deleteAction()
+                                    } catch {
+                                        dump(error)
+                                    }
+                                } label: {
+                                    Text(removeResource.title)
+                                }
+                            } message: {
+                                Text(removeResource.messageLine2)
+                            }
                     }
-                } label: {
-                    MoreActionsView()
+                    
+                    if !externalAccount.displayName.isEmpty {
+                        Group {
+                            Text("•")
+                            Text(externalAccount.displayName)
+                        }
+                        .foregroundStyle(clerkTheme.colors.textSecondary)
+                        .font(.footnote)
+                    }
+                                    
+                    if externalAccount.verification.status != .verified {
+                        CapsuleTag(text: "Requires action", style: .warning)
+                    }
+                    
+                    Spacer()
+                    
+                    Menu {
+                        if externalAccount.verification.status != .verified {
+                            retryConnectionButton
+                        }
+                        
+                        Button("Remove connected account", role: .destructive) {
+                            confirmationSheetIsPresented = true
+                        }
+                    } label: {
+                        MoreActionsView()
+                    }
+                    .tint(clerkTheme.colors.textPrimary)
                 }
-                .tint(clerkTheme.colors.textPrimary)
+                if let verificationError = externalAccount.verification.error {
+                    Text(verificationError.localizedDescription)
+                        .font(.footnote)
+                        .foregroundStyle(clerkTheme.colors.danger)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 24)
+                }
             }
             .clerkErrorPresenting($errorWrapper)
         }
