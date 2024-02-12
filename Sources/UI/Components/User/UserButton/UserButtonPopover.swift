@@ -23,7 +23,7 @@ struct UserButtonPopover: View {
     
     private func setActiveSession(_ session: Session) async {
         do {
-            try await clerk.setActive(.init(sessionId: session.id, organizationId: nil))
+            try await clerk.setActive(sessionId: session.id)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

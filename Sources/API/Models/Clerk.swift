@@ -19,7 +19,7 @@ final public class Clerk: ObservableObject {
     
     init() {}
     
-    /// Create an instance of the Clerk class with dedicated options.
+    /// Configure an instance of the Clerk class with dedicated options.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
     ///
     /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
@@ -156,9 +156,11 @@ final public class Clerk: ObservableObject {
     }
     
     /// A method used to set the active session and/or organization.
-    public func setActive(_ params: SetActiveParams) async throws {
-        if let sessionId = params.sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(params)
+    /// - Parameter sessionId: The session ID to be set as active. If null, the current session is deleted.
+    /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+    public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
+        if let sessionId = sessionId {
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(sessionId: sessionId, organizationId: organizationId)
             try await Clerk.apiClient.send(request)
             try await Clerk.shared.client.get()
             
@@ -166,13 +168,6 @@ final public class Clerk: ObservableObject {
             try await currentSession.revoke()
             try await Clerk.shared.client.get()
         }
-    }
-    
-    public struct SetActiveParams: Encodable {
-        /// The session ID to be set as active. If null, the current session is deleted.
-        var sessionId: String?
-        /// The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
-        var organizationId: String?
     }
     
     private func startSessionTokenPolling() {
