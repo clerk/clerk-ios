@@ -18,7 +18,7 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/change_password`
         let path: String
         
-        func post(_ params: User.UpdateUserPasswordParams) -> Request<ClientResponse<User>> {
+        func post(_ params: User.UpdatePasswordParams) -> Request<ClientResponse<User>> {
             .init(path: path, method: .post, body: params)
         }
         
