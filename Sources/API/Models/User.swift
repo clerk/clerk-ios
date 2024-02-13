@@ -94,65 +94,6 @@ public struct User: Codable, Equatable {
     /// A boolean indicating whether the organization creation is enabled for the user or not.
     public let createOrganizationEnabled: Bool
     
-    init(
-        id: String = "",
-        username: String? = nil,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        gender: String? = nil,
-        birthday: String? = nil,
-        imageUrl: String = "",
-        hasImage: Bool = false,
-        primaryEmailAddressId: String? = nil,
-        primaryPhoneNumberId: String? = nil,
-        primaryWeb3WalletId: String? = nil,
-        passwordEnabled: Bool = false,
-        twoFactorEnabled: Bool = false,
-        totpEnabled: Bool = false,
-        backupCodeEnabled: Bool = false,
-        emailAddresses: [EmailAddress] = [],
-        phoneNumbers: [PhoneNumber] = [],
-        web3Wallets: [String] = [],
-        externalAccounts: [ExternalAccount] = [],
-        samlAccounts: [String] = [],
-        publicMetadata: JSON? = nil,
-        unsafeMetadata: JSON? = nil,
-        externalId: String? = nil,
-        lastSignInAt: Date = .now,
-        banned: Bool = false,
-        locked: Bool = false,
-        createdAt: Date = .now,
-        updatedAt: Date = .now,
-        deleteSelfEnabled: Bool = false,
-        createOrganizationEnabled: Bool = false
-    ) {
-        self.id = id
-        self.username = username
-        self.firstName = firstName
-        self.lastName = lastName
-        self.imageUrl = imageUrl
-        self.hasImage = hasImage
-        self.primaryEmailAddressId = primaryEmailAddressId
-        self.primaryPhoneNumberId = primaryPhoneNumberId
-        self.primaryWeb3WalletId = primaryWeb3WalletId
-        self.passwordEnabled = passwordEnabled
-        self.twoFactorEnabled = twoFactorEnabled
-        self.totpEnabled = totpEnabled
-        self.backupCodeEnabled = backupCodeEnabled
-        self.emailAddresses = emailAddresses
-        self.phoneNumbers = phoneNumbers
-        self.web3Wallets = web3Wallets
-        self.externalAccounts = externalAccounts
-        self.samlAccounts = samlAccounts
-        self.publicMetadata = publicMetadata
-        self.unsafeMetadata = unsafeMetadata
-        self.lastSignInAt = lastSignInAt
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.deleteSelfEnabled = deleteSelfEnabled
-        self.createOrganizationEnabled = createOrganizationEnabled
-    }
-    
     /// The user's full name.
     public var fullName: String? {
         let joinedString = [firstName, lastName]
@@ -218,22 +159,8 @@ extension User {
 
 extension User {
     
-    public struct RemoveUserPasswordParams: Encodable {
-        public init(currentPassword: String) {
-            self.currentPassword = currentPassword
-        }
-        
-        /// The user's current password.
-        let currentPassword: String
-    }
-    
-}
-
-extension User {
-    
     /// Updates the user's attributes. Use this method to save information you collected about the user.
-    @discardableResult
-    @MainActor
+    @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
         let request = ClerkAPI.v1.me.update(params)
         let response = try await Clerk.apiClient.send(request) {
@@ -269,10 +196,11 @@ extension User {
         var unsafeMetadata: JSON?
     }
     
-    @discardableResult
-    @MainActor
-    public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
-        let params = EmailAddress.CreateParams(emailAddress: emailAddress)
+    /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
+    /// - Parameter email: The value of the email address
+    @discardableResult @MainActor
+    public func createEmailAddress(_ email: String) async throws -> EmailAddress {
+        let params = EmailAddress.CreateParams(emailAddress: email)
         let request = ClerkAPI.v1.me.emailAddresses.post(params)
         let newEmail = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -281,8 +209,9 @@ extension User {
         return newEmail
     }
     
-    @discardableResult
-    @MainActor
+    ///Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
+    /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
+    @discardableResult @MainActor
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
         let params = PhoneNumber.CreateParams(phoneNumber: phoneNumber)
         let request = ClerkAPI.v1.me.phoneNumbers.post(params)
@@ -293,8 +222,8 @@ extension User {
         return newPhoneNumber
     }
     
-    @discardableResult
-    @MainActor
+    /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
+    @discardableResult @MainActor
     public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
         let params = ExternalAccount.CreateParams(ExternalProvider: provider, redirectUrl: "clerk://")
         let request = ClerkAPI.v1.me.externalAccounts.create(params)
@@ -303,6 +232,39 @@ extension User {
         }.value.response
         try await Clerk.shared.client.get()
         return newExternalAccount
+    }
+    
+    /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.
+    @discardableResult @MainActor
+    public func createTOTP() async throws -> TOTPResource {
+        let request = ClerkAPI.v1.me.totp.post
+        let totp = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        try await Clerk.shared.client.get()
+        return totp
+    }
+    
+    /// Verifies a TOTP secret after a user has created it. The user must provide a code from their authenticator app, that has been generated using the previously created secret. This way, correct set up and ownership of the authenticator app can be validated.
+    /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
+    @discardableResult @MainActor
+    public func verifyTOTP(code: String) async throws -> TOTPResource {
+        let request = ClerkAPI.v1.me.totp.attemptVerification.post(code: code)
+        let totp = try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }.value.response
+        try await Clerk.shared.client.get()
+        return totp
+    }
+    
+    /// Disables TOTP by deleting the user's TOTP secret.
+    @MainActor
+    public func disableTOTP() async throws {
+        let request = ClerkAPI.v1.me.totp.delete
+        try await Clerk.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
+        try await Clerk.shared.client.get()
     }
     
     /// Retrieves all active sessions for this user.
@@ -335,8 +297,7 @@ extension User {
     }
     
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
-    @discardableResult
-    @MainActor
+    @discardableResult @MainActor
     public func setProfileImage(_ imageData: Data) async throws -> ClerkImageResource {
         let request = ClerkAPI.v1.me.profileImage.post
         let boundary = UUID().uuidString

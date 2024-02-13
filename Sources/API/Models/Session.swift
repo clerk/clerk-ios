@@ -221,8 +221,7 @@ extension Session {
 
 extension Session {
     
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func revoke() async throws -> Session {
         let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
         let revokedSession = try await Clerk.apiClient.send(request) {
