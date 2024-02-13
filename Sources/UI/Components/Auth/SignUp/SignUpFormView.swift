@@ -194,7 +194,12 @@ struct SignUpFormView: View {
                 phoneNumber: phoneNumber
             ))
             
-            clerkUIState.presentedAuthStep = .signUpVerification
+            switch signUp.nextStrategyToVerify {
+            case .saml:
+                try await signUp.startExternalAuth()
+            default:
+                clerkUIState.presentedAuthStep = .signUpVerification
+            }
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

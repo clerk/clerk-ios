@@ -175,11 +175,11 @@ public struct SignUp: Codable {
     private func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
         case .externalProvider(let provider):
             return .init(strategy: .externalProvider(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
         case .transfer:
-            return .init(transfer: true)
+            return .init(redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://", transfer: true)
         }
     }
     
@@ -346,23 +346,18 @@ public struct SignUp: Codable {
 
 extension SignUp {
     
-    /// Returns the next attribute that needs to verified at sign up
+    /// Returns the next strategy to use to verify an attribute that needs to verified at sign up
     var nextStrategyToVerify: Strategy? {
         let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
         
         if unverifiedFields.contains(where: { $0 == "email_address" }) {
-            guard let emailVerifications = attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies else {
-                return nil
-            }
-            
-            if emailVerifications.contains(where: { $0 == .emailCode }) {
-                return .emailCode
-            } else {
-                return nil
-            }
+            return attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies.first
             
         } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
             return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
+            
+        } else if let externalVerification = verifications.first(where: { $0.key == "external_account" && $0.value?.status == .unverified }) {
+            return externalVerification.value?.strategyEnum
             
         } else {
             return nil

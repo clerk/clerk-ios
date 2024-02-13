@@ -128,8 +128,11 @@ struct SignInFormView: View {
             
             if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
                 try await signIn.prepareFirstFactor(for: prepareStrategy)
+            } else if signIn.currentFirstFactor?.strategyEnum == .saml {
+                try await signIn.startExternalAuth()
             }
-            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
