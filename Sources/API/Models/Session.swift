@@ -81,36 +81,6 @@ public struct Session: Codable, Identifiable {
         /// The user's identifier (email address, phone number, username, etc) that was used for authentication when this session was created.
         public let identifier: String
     }
-    
-    public init(
-        id: String,
-        status: SessionStatus,
-        expireAt: Date = .now,
-        abandonAt: Date = .now,
-        lastActiveAt: Date = .now,
-        latestActivity: SessionActivity? = nil,
-        lastActiveOrganizationId: String? = nil,
-        actor: String? = nil,
-        user: User?,
-        publicUserData: PublicUserData? = nil,
-        createdAt: Date = .now,
-        updatedAt: Date = .now,
-        lastActiveToken: TokenResource? = nil
-    ) {
-        self.id = id
-        self.status = status
-        self.expireAt = expireAt
-        self.abandonAt = abandonAt
-        self.lastActiveAt = lastActiveAt
-        self.latestActivity = latestActivity
-        self.lastActiveOrganizationId = lastActiveOrganizationId
-        self.actor = actor
-        self.user = user
-        self.publicUserData = publicUserData
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.lastActiveToken = lastActiveToken
-    }
 }
 
 extension Session {

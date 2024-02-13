@@ -14,7 +14,7 @@ extension Clerk {
         public let userSettings: UserSettings
         public let displayConfig: DisplayConfig
         
-        public init(
+        init(
             authConfig: AuthConfig = .init(),
             userSettings: UserSettings = .init(),
             displayConfig: DisplayConfig = .init()
