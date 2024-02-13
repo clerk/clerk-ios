@@ -172,28 +172,28 @@ extension User {
     
     public struct UpdateParams: Encodable {
         /// The user's username.
-        var username: String?
+        public var username: String?
         
         /// The user's first name.
-        var firstName: String?
+        public var firstName: String?
         
         /// The user's last name.
-        var lastName: String?
+        public var lastName: String?
         
         /// The unique identifier for the EmailAddress that the user has set as primary.
-        var primaryEmailAddressId: String?
+        public var primaryEmailAddressId: String?
         
         /// The unique identifier for the PhoneNumber that the user has set as primary.
-        var primaryPhoneNumberId: String?
+        public var primaryPhoneNumberId: String?
         
         /// The unique identifier for the Web3Wallet that the user signed up with.
-        var primaryWeb3WalletId: String?
+        public var primaryWeb3WalletId: String?
         
         /**
         Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
         Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
          */
-        var unsafeMetadata: JSON?
+        public var unsafeMetadata: JSON?
     }
     
     /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
@@ -279,7 +279,7 @@ extension User {
     
     /// Updates the user's password.
     @MainActor
-    public func updatePassword(_ params: UpdateUserPasswordParams) async throws {
+    public func updatePassword(_ params: User.UpdatePasswordParams) async throws {
         let request = ClerkAPI.v1.me.changePassword.post(params)
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -287,13 +287,13 @@ extension User {
         try await Clerk.shared.client.get()
     }
     
-    public struct UpdateUserPasswordParams: Encodable {
+    public struct UpdatePasswordParams: Encodable {
         /// The user's new password.
-        let newPassword: String
+        public let newPassword: String
         /// The user's current password.
-        let currentPassword: String
+        public let currentPassword: String
         /// If set to true, all sessions will be signed out.
-        let signOutOfOtherSessions: Bool
+        public let signOutOfOtherSessions: Bool
     }
     
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -315,6 +315,7 @@ extension User {
         return imageResource
     }
     
+    /// Deletes the user's profile image.
     @MainActor
     public func deleteProfileImage() async throws {
         let request = ClerkAPI.v1.me.profileImage.delete
