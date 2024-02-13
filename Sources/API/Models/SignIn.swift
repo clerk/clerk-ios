@@ -141,8 +141,7 @@ public struct SignIn: Codable {
      
      Depending on the use-case and the params you pass to the create method, it can either complete the sign-in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func create(strategy: CreateStrategy) async throws -> SignIn {
         let params = createSignInParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.post(params)
@@ -177,8 +176,7 @@ public struct SignIn: Codable {
     }
     
     /// Resets a user's password.
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).resetPassword.post(params)
         let response = try await Clerk.apiClient.send(request).value.response
@@ -196,8 +194,7 @@ public struct SignIn: Codable {
      
      Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func prepareFirstFactor(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) async throws -> SignIn {
         let params = prepareFirstFactorParams(for: prepareFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareFirstFactor.post(params)
@@ -244,8 +241,7 @@ public struct SignIn: Codable {
      
      Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func attemptFirstFactor(for attemptFirstFactorStrategy: AttemptFirstFactorStrategy) async throws -> SignIn {
         let params = attemptFirstFactorParams(for: attemptFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptFirstFactor.post(params)
@@ -288,8 +284,7 @@ public struct SignIn: Codable {
      
      A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func prepareSecondFactor(for prepareSecondFactorStrategy: PrepareSecondFactorStrategy) async throws -> SignIn {
         let params = prepareSecondFactorParams(for: prepareSecondFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareSecondFactor.post(params)
@@ -320,8 +315,7 @@ public struct SignIn: Codable {
      
      The totp strategy can directly be attempted, without the need for preparation.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func attemptSecondFactor(for strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
         let params = attemptSecondFactorParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptSecondFactor.post(params)
@@ -358,8 +352,7 @@ public struct SignIn: Codable {
      Returns the sign-in with the given id.
      The sign in is returned only if it belongs to the requesting client and is not abandoned.
      */
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         let response = try await Clerk.apiClient.send(request).value.response

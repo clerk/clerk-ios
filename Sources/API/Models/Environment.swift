@@ -104,6 +104,10 @@ extension Clerk.Environment {
             public let authenticatable: Bool
             public let strategy: String
             public let notSelectable: Bool
+            
+            var strategyEnum: Strategy? {
+                Strategy(stringValue: strategy)
+            }
         }
         
         public init(

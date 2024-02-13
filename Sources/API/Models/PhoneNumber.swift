@@ -161,8 +161,7 @@ extension PhoneNumber {
     
     /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
-    @MainActor
-    @discardableResult
+    @discardableResult @MainActor
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
         let body = ["reserved_for_second_factor": reserved]
         let request = ClerkAPI.v1.me.phoneNumbers.id(id).patch(body: body)

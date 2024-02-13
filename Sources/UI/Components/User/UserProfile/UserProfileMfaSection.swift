@@ -91,6 +91,11 @@ struct UserProfileMfaSection: View {
                 .presentationDetents([.height(480), .large])
                 .presentationDragIndicator(.visible)
         })
+        .sheet(isPresented: $authenticationAppIsPresented, content: {
+            UserProfileAddTotpView()
+                .presentationDetents([.height(480), .large])
+                .presentationDragIndicator(.visible)
+        })
     }
     
     @ViewBuilder
