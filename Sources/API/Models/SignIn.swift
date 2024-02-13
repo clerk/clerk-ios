@@ -160,11 +160,11 @@ public struct SignIn: Codable {
     private func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .identifier(let identifier):
-            return .init(identifier: identifier)
+            return .init(identifier: identifier, redirectUrl: "clerk://")
         case .externalProvider(let provider):
             return .init(strategy: provider.data.strategy, redirectUrl: "clerk://")
         case .transfer:
-            return .init(transfer: true)
+            return .init(redirectUrl: "clerk://", transfer: true)
         }
     }
     
@@ -382,9 +382,7 @@ extension SignIn {
     
     // First SignInFactor
     
-    var currentFirstFactor: SignInFactor? {
-        guard status == .needsFirstFactor else { return nil }
-        
+    var currentFirstFactor: SignInFactor? {        
         if let firstFactorVerification,
            let currentFirstFactor = supportedFirstFactors?.first(where: { $0.strategy == firstFactorVerification.strategy }) {
             return currentFirstFactor

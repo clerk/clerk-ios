@@ -54,6 +54,16 @@ extension ClerkUIState {
         }
     }
     
+    /// Sets the current auth step to the status determined by the API
+    public func setAuthStepToCurrentStatus(for signUp: SignUp) {
+        switch signUp.status {
+        case .missingRequirements:
+            presentedAuthStep = .signUpStart
+        case .abandoned, .complete, .none:
+            authIsPresented = false
+        }
+    }
+    
 }
 
 #endif
