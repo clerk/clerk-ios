@@ -90,7 +90,8 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
-    /// Kicks off an external authentication web session at the provided `externalVerificationRedirectUrl`.
+    /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
+    @MainActor
     public func startExternalAuth() async throws {
         guard
             let redirectUrl = verification.externalVerificationRedirectUrl,

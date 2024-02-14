@@ -346,12 +346,7 @@ public struct SignIn: Codable {
         public let code: String
     }
     
-    /**
-     Retrieve sign-in
-     
-     Returns the sign-in with the given id.
-     The sign in is returned only if it belongs to the requesting client and is not abandoned.
-     */
+    /// Returns the current sign-in.
     @discardableResult @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
@@ -360,6 +355,7 @@ public struct SignIn: Codable {
         return response
     }
     
+    /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
     @MainActor
     public func startExternalAuth() async throws {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {

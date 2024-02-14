@@ -64,7 +64,7 @@ public struct SignUp: Codable {
     /// The Web3 wallet public address supplied to the current sign-up. In Ethereum, the address is made up of 0x + 40 hexadecimal characters.
     public let web3Wallet: String?
     
-    ///
+    /// The value of this attribute is true if a password was supplied to the current sign-up. This attribute is available only if password-based authentication is enabled. Check the available instance settings for more information.
     public let passwordEnabled: Bool
     
     /// The first name supplied to the current sign-up. This attribute is available only if name is enabled in personal information. Check the available for more information. lastName
@@ -77,13 +77,13 @@ public struct SignUp: Codable {
     public let unsafeMetadata: JSON?
     
     ///
-    public let publicMetadata: JSON?
+    let publicMetadata: JSON?
     
     ///
-    public let customAction: Bool
+    let customAction: Bool
     
     ///
-    public let externalId: String?
+    let externalId: String?
     
     /// The identifier of the newly-created session. This attribute is populated only when the sign-up is complete.
     public let createdSessionId: String?
@@ -323,6 +323,8 @@ public struct SignUp: Codable {
         public let code: String
     }
     
+    /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
+    @MainActor
     public func startExternalAuth() async throws {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
@@ -336,6 +338,7 @@ public struct SignUp: Codable {
         try await authSession.start()
     }
     
+    /// Returns the current sign up.
     @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
