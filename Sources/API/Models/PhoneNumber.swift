@@ -78,41 +78,16 @@ extension PhoneNumber {
 
 extension PhoneNumber {
     
-    public struct CreateParams: Encodable {
-        /// The value of the phone number, in E.164 format.
-        public let phoneNumber: String
-    }
-    
-    public struct PrepareParams: Encodable {
-        public init(strategy: Strategy) {
-            self.strategy = strategy.stringValue
-        }
-        
-        public let strategy: String
-    }
-    
-    public struct AttemptParams: Encodable {
-        public init(code: String) {
-            self.code = code
-        }
-        
-        public let code: String
-    }
-    
-}
-
-extension PhoneNumber {
-    
+    /// Kick off the verification process for this phone number. An SMS message with a one-time code will be sent to the phone number value.
     @MainActor
-    public func prepareVerification(strategy: PrepareStrategy) async throws {
-        let params = prepareParams(for: strategy)
+    public func prepareVerification() async throws {
         let request = ClerkAPI
             .v1
             .me
             .phoneNumbers
             .id(id)
             .prepareVerification
-            .post(params)
+            .post
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -120,43 +95,21 @@ extension PhoneNumber {
         try await Clerk.shared.client.get()
     }
     
-    public enum PrepareStrategy {
-        case phoneCode
-    }
-    
-    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
-        switch strategy {
-        case .phoneCode:
-            return .init(strategy: .phoneCode)
-        }
-    }
-    
+    /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message. The code will be sent when calling the `PhoneNumber.prepareVerification()` method.
     @MainActor
-    public func attemptVerification(strategy: AttemptStrategy) async throws {
-        let params = attemptParams(for: strategy)
+    public func attemptVerification(code: String) async throws {
         let request = ClerkAPI
             .v1
             .me
             .phoneNumbers
             .id(id)
             .attemptVerification
-            .post(params)
+            .post(code: code)
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
-    }
-    
-    public enum AttemptStrategy {
-        case phoneCode(code: String)
-    }
-    
-    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
-        switch strategy {
-        case .phoneCode(let code):
-            return .init(code: code)
-        }
     }
     
     /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
@@ -172,9 +125,10 @@ extension PhoneNumber {
         return phoneNumber
     }
     
+    /// Deletes this phone number.
     @MainActor
-    public func setAsPrimary() async throws {
-        let request = ClerkAPI.v1.me.update(.init(primaryPhoneNumberId: id))
+    public func destroy() async throws {
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
@@ -182,8 +136,8 @@ extension PhoneNumber {
     }
     
     @MainActor
-    public func delete() async throws {
-        let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete
+    func setAsPrimary() async throws {
+        let request = ClerkAPI.v1.me.update(.init(primaryPhoneNumberId: id))
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }

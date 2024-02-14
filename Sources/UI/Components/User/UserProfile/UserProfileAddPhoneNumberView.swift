@@ -163,7 +163,7 @@ struct UserProfileAddPhoneNumberView: View {
     
     private func prepare() async {
         do {
-            try await self.phoneNumber?.prepareVerification(strategy: .phoneCode)
+            try await self.phoneNumber?.prepareVerification()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -172,7 +172,7 @@ struct UserProfileAddPhoneNumberView: View {
     
     private func attempt() async {
         do {
-            try await self.phoneNumber?.attemptVerification(strategy: .phoneCode(code: code))
+            try await self.phoneNumber?.attemptVerification(code: code)
             dismiss()
         } catch {
             errorWrapper = ErrorWrapper(error: error)

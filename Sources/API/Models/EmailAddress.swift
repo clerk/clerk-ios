@@ -36,7 +36,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
 
 extension EmailAddress {
     
-    public func isPrimary(for user: User) -> Bool {
+    func isPrimary(for user: User) -> Bool {
         user.primaryEmailAddressId == id
     }
     
@@ -44,63 +44,7 @@ extension EmailAddress {
 
 extension EmailAddress {
     
-    public struct CreateParams: Encodable {
-        public init(emailAddress: String) {
-            self.emailAddress = emailAddress
-        }
-        
-        public let emailAddress: String
-    }
-    
-    public struct PrepareParams: Encodable {
-        public init(strategy: Strategy) {
-            self.strategy = strategy.stringValue
-        }
-        
-        public let strategy: String
-    }
-    
-    public struct AttemptParams: Encodable {
-        public init(code: String) {
-            self.code = code
-        }
-        
-        public let code: String
-    }
-    
-}
-
-extension EmailAddress {
-    
-    public enum PrepareStrategy {
-        case emailCode
-        case emailLink
-    }
-    
-    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
-        switch strategy {
-        case .emailCode:
-            return .init(strategy: .emailCode)
-        case .emailLink:
-            return .init(strategy: .emailLink)
-        }
-    }
-    
-    public enum AttemptStrategy {
-        case emailCode(code: String)
-    }
-    
-    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
-        switch strategy {
-        case .emailCode(let code):
-            return .init(code: code)
-        }
-    }
-    
-}
-
-extension EmailAddress {
-    
+    /// Kick off the verification process for this email address. An email message with a one-time code or a magic-link will be sent to the email address box.
     @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws {
         let params = prepareParams(for: strategy)
@@ -118,6 +62,33 @@ extension EmailAddress {
         try await Clerk.shared.client.get()
     }
     
+    public enum PrepareStrategy {
+        
+        /// User will receive a one-time authentication code via email.
+        case emailCode
+        
+        /// User will receive an email magic link via email.
+        case emailLink
+    }
+    
+    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
+        switch strategy {
+        case .emailCode:
+            return .init(strategy: .emailCode)
+        case .emailLink:
+            return .init(strategy: .emailLink)
+        }
+    }
+    
+    public struct PrepareParams: Encodable {
+        public init(strategy: Strategy) {
+            self.strategy = strategy.stringValue
+        }
+        
+        public let strategy: String
+    }
+    
+    /// Attempts to verify this email address, passing the one-time code that was sent as an email message. The code will be sent when calling the EmailAddress.prepareVerification() method.
     @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws {
         let params = attemptParams(for: strategy)
@@ -135,8 +106,25 @@ extension EmailAddress {
         try await Clerk.shared.client.get()
     }
     
+    public enum AttemptStrategy {
+        /// The one-time code that was sent to the user's email address when EmailAddress.prepareVerification() was called with `strategy` set to `email_code`.
+        case emailCode(code: String)
+    }
+    
+    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
+        switch strategy {
+        case .emailCode(let code):
+            return .init(code: code)
+        }
+    }
+    
+    public struct AttemptParams: Encodable {
+        public let code: String
+    }
+    
+    /// Deletes this email address.
     @MainActor
-    public func delete() async throws {
+    public func destroy() async throws {
         let request = ClerkAPI
             .v1
             .me
@@ -151,7 +139,7 @@ extension EmailAddress {
     }
     
     @MainActor
-    public func setAsPrimary() async throws {
+    func setAsPrimary() async throws {
         let request = ClerkAPI
             .v1
             .me
