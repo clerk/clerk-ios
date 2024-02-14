@@ -172,17 +172,7 @@ public struct SessionActivity: Codable, Equatable {
     public let isMobile: Bool?
 }
 
-/**
- Represents the status of a session.
- 
- - abandoned: The session was abandoned client-side.
- - active: The session is valid, and all activity is allowed.
- - ended: The user signed out of the session, but the Session remains in the Client object.
- - expired: The period of allowed activity for this session has passed.
- - removed: The user signed out of the session, and the Session was removed from the Client object.
- - replaced: The session has been replaced by another one, but the Session remains in the Client object.
- - revoked: The application ended the session, and the Session was removed from the Client object.
- */
+/// Represents the status of a session.
 public enum SessionStatus: String, Codable {
     /// The session was abandoned client-side.
     case abandoned
