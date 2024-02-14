@@ -65,6 +65,7 @@ public struct Session: Codable, Identifiable {
     /// The last active token for the session.
     public let lastActiveToken: TokenResource?
     
+    /// Information about the user that's publicly available.
     public struct PublicUserData: Codable, Equatable {
         /// The user's first name. This attribute will only be populated if name is enabled in instance settings.
         public let firstName: String?
@@ -144,6 +145,7 @@ extension Session: Comparable {
     }
 }
 
+/// A `SessionActivity` object will provide information about the user's location, device and browser.
 public struct SessionActivity: Codable, Equatable {
     /// A unique identifier for the session activity record.
     let id: String
@@ -221,6 +223,7 @@ extension Session {
 
 extension Session {
     
+    /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
         let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
@@ -231,7 +234,19 @@ extension Session {
         return revokedSession
     }
     
+    /**
+     Retrieves the user's session token for the given template or the default clerk token.
+     This method uses a cache so a network request will only be made if the token in memory is expired.
+     The TTL for clerk token is one minute.
+     */
+    @discardableResult
+    public func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
+        return try await SessionTokenFetcher.shared.getToken(self, options: options)
+    }
+    
+    /// Options that can be passed as parameters to the `getToken()` function.
     public struct GetTokenOptions: Hashable {
+        
         public init(
             template: String? = nil,
             expirationBuffer: Double = 10,
@@ -243,21 +258,13 @@ extension Session {
         }
 
         /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
-        var template: String?
+        public let template: String?
+        
         /// If the cached token will expire within X seconds (the buffer), fetch a new token instead. Max is 60 seconds.
-        var expirationBuffer: Double
+        public let expirationBuffer: Double
+        
         /// Whether to skip the cache lookup and force a call to the server instead, even within the TTL. Useful if the token claims are time-sensitive or depend on data that can be updated (e.g. user fields). Defaults to false.
-        var skipCache: Bool
-    }
-    
-    /**
-     Retrieves the user's session token for the given template or the default clerk token.
-     This method uses a cache so a network request will only be made if the token in memory is expired.
-     The TTL for clerk token is one minute.
-     */
-    @discardableResult
-    public func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
-        return try await SessionTokenFetcher.shared.getToken(self, options: options)
+        public let skipCache: Bool
     }
     
 }

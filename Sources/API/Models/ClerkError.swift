@@ -13,7 +13,7 @@ struct ClerkErrorResponse: Codable, Equatable {
     let clerkTraceId: String
 }
 
-/// Custom error return by the Clerk API
+/// Custom error returned by the Clerk API.
 public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable {
     let code: String
     let message: String?
@@ -22,7 +22,7 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
     public var errorDescription: String? { longMessage ?? message }
 }
 
-/// Custom Clerk error created on the client
+/// Custom Clerk error created on the client.
 public struct ClerkClientError: Error, LocalizedError {
     public init(message: String? = nil) {
         self.message = message
