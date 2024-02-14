@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// The available external authentication providers.
 public enum ExternalProvider: Codable, CaseIterable, Identifiable {
     public var id: Self { self }
     

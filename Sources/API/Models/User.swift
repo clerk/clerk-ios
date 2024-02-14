@@ -231,16 +231,43 @@ extension User {
         public let phoneNumber: String
     }
     
-    /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
+     /// Adds an external account for the user. A new `ExternalAccount` will be created and associated with the user.
+     ///
+     /// The initial state of the returned ExternalAccount will be unverified. To initiate the connection with the external provider one should redirect to the externalAccount.verification.externalVerificationRedirectURL contained in the result of createExternalAccount.
+     /// Upon return, one can inspect within the user.externalAccounts the entry that corresponds to the requested strategy:
+     ///
+     /// - If the connection was successful then externalAccount.verification.status should be verified.
+     /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
     @discardableResult @MainActor
     public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
-        let params = ExternalAccount.CreateParams(ExternalProvider: provider, redirectUrl: "clerk://")
+        let params = CreateExternalAccountParams(ExternalProvider: provider, redirectUrl: "clerk://")
         let request = ClerkAPI.v1.me.externalAccounts.create(params)
         let newExternalAccount = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
         try await Clerk.shared.client.get()
         return newExternalAccount
+    }
+    
+    public struct CreateExternalAccountParams: Encodable {
+        init(
+            ExternalProvider: ExternalProvider,
+            redirectUrl: String,
+            additionalScopes: [String]? = nil
+        ) {
+            self.strategy = ExternalProvider.data.strategy
+            self.redirectUrl = redirectUrl
+            self.additionalScopes = additionalScopes
+        }
+        
+        /// The strategy corresponding to the oauth provider, e.g. `oauth_facebook`, `oauth_github`, etc.
+        let strategy: String
+        
+        /// The URL to redirect back to one the oauth flow has completed successfully or unsuccessfully.
+        let redirectUrl: String
+        
+        /// Any additional scopes you would like your user to be prompted to approve.
+        let additionalScopes: [String]?
     }
     
     /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.

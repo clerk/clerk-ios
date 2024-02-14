@@ -38,7 +38,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     /// An object containing information about any other identification that might be linked to this phone number.
     public let linkedTo: JSON?
     
-    ///
+    /// A set of fresh generated Backup codes. Note that this will be populated if the feature is enabled in your instance and the user doesn't already have backup codes generated.
     public let backupCodes: [String]?
 }
 

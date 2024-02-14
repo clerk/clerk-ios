@@ -52,7 +52,7 @@ enum RemoveResource {
         case .phoneNumber(let phoneNumber):
             try await phoneNumber.destroy()
         case .externalAccount(let externalAccount):
-            try await externalAccount.delete()
+            try await externalAccount.destroy()
         }
     }
 }

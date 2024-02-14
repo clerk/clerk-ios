@@ -90,26 +90,7 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
-    struct CreateParams: Encodable {
-        init(
-            ExternalProvider: ExternalProvider,
-            redirectUrl: String,
-            additionalScopes: [String]? = nil
-        ) {
-            self.strategy = ExternalProvider.data.strategy
-            self.redirectUrl = redirectUrl
-            self.additionalScopes = additionalScopes
-        }
-        
-        let strategy: String
-        let redirectUrl: String
-        let additionalScopes: [String]?
-    }
-    
-}
-
-extension ExternalAccount {
-    
+    /// Kicks off an external authentication web session at the provided `externalVerificationRedirectUrl`.
     public func startExternalAuth() async throws {
         guard
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -126,8 +107,9 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
+    /// Deletes this external account.
     @MainActor
-    public func delete() async throws {
+    public func destroy() async throws {
         let request = ClerkAPI
             .v1
             .me

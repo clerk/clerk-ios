@@ -27,18 +27,10 @@ public struct Verification: Codable, Equatable, Hashable {
     
     /// The redirect URL for an external verification.
     public var externalVerificationRedirectUrl: String?
-    
-    public var nextAction: NextAction?
-    
-    public var supportedStrategies: [String]?
-    
-    public var strategyEnum: Strategy? {
+            
+    var strategyEnum: Strategy? {
         if let strategy { return Strategy(stringValue: strategy) }
         return nil
-    }
-    
-    public var supportedStrategiesEnums: [Strategy]? {
-        supportedStrategies?.compactMap { Strategy(stringValue: $0) }
     }
     
     /// The state of the verification.
@@ -48,11 +40,5 @@ public struct Verification: Codable, Equatable, Hashable {
         case transferable
         case failed
         case expired
-    }
-    
-    public enum NextAction: String, Codable {
-        case needsPrepare = "needs_prepare"
-        case needsAttempt = "needs_attempt"
-        case empty = ""
     }
 }

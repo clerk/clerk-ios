@@ -8,15 +8,7 @@
 import Foundation
 import RegexBuilder
 
-/**
- The strategy to validate the user's request. The following strategies are supported:
- - phone_code: Send an SMS with a unique token to input.
- - email_code: Send an email with a unique token to input.
- - email_link: Send an email with a link which validates sign-up
- - saml: Authenticate against SAML. Experimental
- - `oauth_{provider}`: Authenticate against various OAuth providers.
- - `web3_{signature}_signature`: Authenticate against Web3 signatures.
- */
+/// The strategy to validate the user's request.
 public enum Strategy: Codable, Equatable {
     case password
     case phoneCode
