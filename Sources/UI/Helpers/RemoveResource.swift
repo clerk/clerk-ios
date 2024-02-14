@@ -48,9 +48,9 @@ enum RemoveResource {
     func deleteAction() async throws {
         switch self {
         case .email(let emailAddress):
-            try await emailAddress.delete()
+            try await emailAddress.destroy()
         case .phoneNumber(let phoneNumber):
-            try await phoneNumber.delete()
+            try await phoneNumber.destroy()
         case .externalAccount(let externalAccount):
             try await externalAccount.delete()
         }

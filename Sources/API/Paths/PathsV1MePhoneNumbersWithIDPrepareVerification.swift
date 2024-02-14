@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
         /// Path: `v1/me/phone_numbers/{id}/prepare_verification`
         let path: String
         
-        func post(_ params: PhoneNumber.PrepareParams) -> Request<ClientResponse<PhoneNumber>> {
-            .init(path: path, method: .post, body: params)
+        var post: Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .post, body: ["strategy": "phone_code"])
         }
     }
 }

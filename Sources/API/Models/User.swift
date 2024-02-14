@@ -200,7 +200,7 @@ extension User {
     /// - Parameter email: The value of the email address
     @discardableResult @MainActor
     public func createEmailAddress(_ email: String) async throws -> EmailAddress {
-        let params = EmailAddress.CreateParams(emailAddress: email)
+        let params = CreateEmailAddressParams(emailAddress: email)
         let request = ClerkAPI.v1.me.emailAddresses.post(params)
         let newEmail = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -209,17 +209,26 @@ extension User {
         return newEmail
     }
     
-    ///Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
+    public struct CreateEmailAddressParams: Encodable {
+        public let emailAddress: String
+    }
+    
+    /// Creates a new phone number for the current user.
     /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
     @discardableResult @MainActor
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-        let params = PhoneNumber.CreateParams(phoneNumber: phoneNumber)
+        let params = CreatePhoneNumberParams(phoneNumber: phoneNumber)
         let request = ClerkAPI.v1.me.phoneNumbers.post(params)
         let newPhoneNumber = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
         try await Clerk.shared.client.get()
         return newPhoneNumber
+    }
+    
+    public struct CreatePhoneNumberParams: Encodable {
+        /// The value of the phone number, in E.164 format.
+        public let phoneNumber: String
     }
     
     /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
