@@ -144,6 +144,8 @@ extension Strategy {
             return .emailCode
         case .emailLink:
             return .emailLink
+        case .saml:
+            return .saml
         default:
             return nil
         }

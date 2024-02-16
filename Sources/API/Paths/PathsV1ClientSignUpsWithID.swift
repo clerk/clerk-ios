@@ -23,5 +23,9 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint {
             encoder.encode(rotatingTokenNonce, forKey: "rotating_token_nonce")
             return .init(path: path, query: encoder.items)
         }
+        
+        func patch(_ params: SignUp.UpdateParams) -> Request<ClientResponse<SignUp>> {
+            .init(path: path, method: .patch, body: params)
+        }
     }
 }

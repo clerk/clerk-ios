@@ -58,8 +58,16 @@ extension ClerkUIState {
     public func setAuthStepToCurrentStatus(for signUp: SignUp) {
         switch signUp.status {
         case .missingRequirements:
+            if signUp.unverifiedFields.contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
+                presentedAuthStep = .signUpVerification
+            } else {
+                presentedAuthStep = .signUpStart
+            }
+            
+        case .abandoned:
             presentedAuthStep = .signUpStart
-        case .abandoned, .complete, .none:
+            
+        case .complete, .none:
             authIsPresented = false
         }
     }

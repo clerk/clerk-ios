@@ -29,15 +29,7 @@ struct SignUpVerificationView: View {
             default:
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task {
-                        switch signUp.status {
-                        case .missingRequirements:
-                            dump("MISSING REQUIREMENTS")
-                            clerkUIState.presentedAuthStep = .signUpStart
-                        default:
-                            clerkUIState.authIsPresented = false
-                        }
-                    }
+                    .task { clerkUIState.setAuthStepToCurrentStatus(for: signUp) }
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))

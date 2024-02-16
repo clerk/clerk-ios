@@ -24,4 +24,5 @@ enum ClerkKeychainKey {
     static let sessionsByUserId = "sessionsByUserId"
     static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
     static let environment = "environment"
+    static let publishableKey = "publishableKey"
 }

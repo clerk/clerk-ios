@@ -175,14 +175,14 @@ public struct SignUp: Codable {
     private func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
         case .externalProvider(let provider):
-            return .init(strategy: .externalProvider(provider), redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://")
+            return .init(strategy: .externalProvider(provider))
         case .transfer:
-            return .init(redirectUrl: "clerk://", actionCompleteRedirectUrl: "clerk://", transfer: true)
+            return .init(transfer: true)
         }
     }
-    
+        
     public struct CreateParams: Encodable {
         public init(
             firstName: String? = nil,
@@ -192,8 +192,8 @@ public struct SignUp: Codable {
             phoneNumber: String? = nil,
             username: String? = nil,
             strategy: Strategy? = nil,
-            redirectUrl: String? = nil,
-            actionCompleteRedirectUrl: String? = nil,
+            redirectUrl: String? = "clerk://",
+            actionCompleteRedirectUrl: String? = "clerk://",
             transfer: Bool? = nil
         ) {
             self.firstName = firstName
@@ -248,6 +248,18 @@ public struct SignUp: Codable {
         /// Transfer the user to a dedicated sign-up for an OAuth flow.
         public let transfer: Bool?
     }
+    
+    /// This method is used to update the current sign-up.
+    @discardableResult @MainActor
+    public func update(params: UpdateParams) async throws -> SignUp {
+        let request = ClerkAPI.v1.client.signUps.id(id).patch(params)
+        let signUp = try await Clerk.apiClient.send(request).value.response
+        try await Clerk.shared.client.get()
+        return signUp
+    }
+    
+    /// UpdateParams is a mirror of CreateParams with the same fields and types.
+    public typealias UpdateParams = CreateParams
     
     /**
      The prepareVerification is used to initiate the verification process for a field that requires it.
@@ -353,14 +365,14 @@ extension SignUp {
     var nextStrategyToVerify: Strategy? {
         let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
         
-        if unverifiedFields.contains(where: { $0 == "email_address" }) {
+        if let externalVerification = verifications.first(where: { $0.value?.externalVerificationRedirectUrl != nil && $0.value?.status == .unverified }) {
+            return externalVerification.value?.strategyEnum
+            
+        } else if unverifiedFields.contains(where: { $0 == "email_address" }) {
             return attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies.first
             
         } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
             return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
-            
-        } else if let externalVerification = verifications.first(where: { $0.key == "external_account" && $0.value?.status == .unverified }) {
-            return externalVerification.value?.strategyEnum
             
         } else {
             return nil

@@ -159,11 +159,11 @@ public struct SignIn: Codable {
     private func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .identifier(let identifier):
-            return .init(identifier: identifier, redirectUrl: "clerk://")
+            return .init(identifier: identifier)
         case .externalProvider(let provider):
-            return .init(strategy: provider.data.strategy, redirectUrl: "clerk://")
+            return .init(strategy: provider.data.strategy)
         case .transfer:
-            return .init(redirectUrl: "clerk://", transfer: true)
+            return .init(transfer: true)
         }
     }
     
@@ -171,7 +171,7 @@ public struct SignIn: Codable {
         public var identifier: String?
         public var strategy: String?
         public var password: String?
-        public var redirectUrl: String?
+        public var redirectUrl: String? = "clerk://"
         public var transfer: Bool?
     }
     
@@ -207,6 +207,7 @@ public struct SignIn: Codable {
         case emailCode
         case emailLink
         case phoneCode
+        case saml
         case resetPasswordEmailCode
         case resetPasswordPhoneCode
     }
@@ -216,6 +217,7 @@ public struct SignIn: Codable {
         case .emailCode: .emailCode
         case .emailLink: .emailLink
         case .phoneCode: .phoneCode
+        case .saml: .saml
         case .resetPasswordEmailCode: .resetPasswordEmailCode
         case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
@@ -225,13 +227,26 @@ public struct SignIn: Codable {
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
+        case .saml:
+            return .init(strategy: strategy.stringValue)
         }
     }
     
     public struct PrepareFirstFactorParams: Encodable {
+        /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
         public let strategy: String
+        
+        /// Unique identifier for the user's email address that will receive an email message with the one-time authentication code. This parameter will work only when the `email_code` strategy is specified.
         public var emailAddressId: String?
+        
+        /// Unique identifier for the user's phone number that will receive an SMS message with the one-time authentication code. This parameter will work only when the `phone_code` strategy is specified.
         public var phoneNumberId: String?
+        
+        /// The URL that the OAuth provider should redirect to, on successful authorization on their part. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
+        public var redirectUrl: String? = "clerk://"
+        
+        /// The URL that the user will be redirected to, after successful authorization from the OAuth provider and Clerk sign in. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
+        public var actionCompleteRedirectUrl: String? // = "clerk://"
     }
     
     /**
@@ -373,8 +388,12 @@ extension SignIn {
     
     var currentFirstFactor: SignInFactor? {        
         if let firstFactorVerification,
-           let currentFirstFactor = supportedFirstFactors?.first(where: { $0.strategy == firstFactorVerification.strategy }) {
+           let currentFirstFactor = supportedFirstFactors?.first(where: { $0.strategyEnum == firstFactorVerification.strategyEnum }) {
             return currentFirstFactor
+        }
+        
+        if status == .needsIdentifier, let samlFactor = supportedFirstFactors?.first(where: { $0.strategyEnum == .saml }) {
+            return samlFactor
         }
         
         return startingSignInFirstFactor
