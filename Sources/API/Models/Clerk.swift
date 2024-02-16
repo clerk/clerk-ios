@@ -58,7 +58,6 @@ final public class Clerk: ObservableObject {
                 Capture {
                     OneOrMore(.any)
                 }
-                "k"
             }
             
             let testRegex = Regex {
@@ -66,13 +65,26 @@ final public class Clerk: ObservableObject {
                 Capture {
                     OneOrMore(.any)
                 }
-                "k"
             }
             
             if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-               let apiUrl = String(match).base64Decoded() {
+               let apiUrl = String(match.dropLast()).base64Decoded() {
                 frontendAPIURL = "https://\(apiUrl)"
             }
+            
+//            // If we have a new publishable key, clear the keychain
+//            do {
+//                if let data = Clerk.keychain[data: ClerkKeychainKey.publishableKey] {
+//                    let lastPublishableKey = try JSONDecoder.clerkDecoder.decode(String.self, from: data)
+//                    if lastPublishableKey != publishableKey {
+//                        try Clerk.keychain.removeAll()
+//                    }
+//                }
+//                Clerk.keychain[data: ClerkKeychainKey.publishableKey] = try JSONEncoder.clerkEncoder.encode(publishableKey)
+//            } catch {
+//                dump(error)
+//            }
+            
         }
     }
     

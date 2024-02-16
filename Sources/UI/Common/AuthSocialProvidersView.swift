@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import AuthenticationServices
 import Algorithms
 
 struct AuthSocialProvidersView: View {
@@ -92,10 +91,6 @@ struct AuthSocialProvidersView: View {
             try await signIn.startExternalAuth()
             onSuccess?()
         } catch {
-            if case ASWebAuthenticationSessionError.canceledLogin = error {
-                return
-            }
-            
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
@@ -108,10 +103,6 @@ struct AuthSocialProvidersView: View {
             try await signUp.startExternalAuth()
             onSuccess?()
         } catch {
-            if case ASWebAuthenticationSessionError.canceledLogin = error {
-                return
-            }
-            
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }

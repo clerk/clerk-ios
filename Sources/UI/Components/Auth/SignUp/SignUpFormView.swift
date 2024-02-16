@@ -32,18 +32,30 @@ struct SignUpFormView: View {
         clerk.client.signUp
     }
     
-    private var nameEnabled: Bool {
+    private var nameIsEnabled: Bool {
         clerk.environment.userSettings.config(for: .firstName)?.enabled == true ||
         clerk.environment.userSettings.config(for: .lastName)?.enabled == true
+    }
+    
+    private var emailIsEnabled: Bool {
+        clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true
     }
     
     private var usernameEnabled: Bool {
         clerk.environment.userSettings.config(for: .username)?.enabled == true
     }
     
+    private var phoneNumberIsEnabled: Bool {
+        clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
+    }
+    
+    private var passwordIsEnabled: Bool {
+        clerk.environment.userSettings.instanceIsPasswordBased
+    }
+    
     var body: some View {
         VStack(spacing: 24) {
-            if nameEnabled {
+            if nameIsEnabled {
                 HStack(spacing: 16) {
                     if let firstName = clerk.environment.userSettings.config(for: .firstName), firstName.enabled {
                         VStack(alignment: .leading) {
@@ -186,20 +198,26 @@ struct SignUpFormView: View {
         
         do {
             try await signUp.create(.standard(
-                emailAddress: emailAddress,
-                password: password,
-                firstName: firstName,
-                lastName: lastName,
+                emailAddress: emailIsEnabled ? emailAddress : nil,
+                password: passwordIsEnabled ? password : nil,
+                firstName: nameIsEnabled ? firstName : nil,
+                lastName: nameIsEnabled ? lastName : nil,
                 username: usernameEnabled ? username : nil,
-                phoneNumber: phoneNumber
+                phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ))
             
+            if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
+                try await signUp.update(params: .init(strategy: .saml))
+            }
+                        
             switch signUp.nextStrategyToVerify {
-            case .saml:
+            case .externalProvider, .saml:
                 try await signUp.startExternalAuth()
             default:
-                clerkUIState.presentedAuthStep = .signUpVerification
+                break
             }
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

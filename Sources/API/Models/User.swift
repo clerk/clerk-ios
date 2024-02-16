@@ -71,7 +71,7 @@ public struct User: Codable, Equatable {
     public let externalAccounts: [ExternalAccount]
     
     /// An experimental list of saml accounts associated with the user.
-    public let samlAccounts: [String]
+    public let samlAccounts: [SAMLAccount]?
     
     /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
     public let publicMetadata: JSON?
@@ -240,7 +240,7 @@ extension User {
      /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
     @discardableResult @MainActor
     public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
-        let params = CreateExternalAccountParams(ExternalProvider: provider, redirectUrl: "clerk://")
+        let params = CreateExternalAccountParams(ExternalProvider: provider)
         let request = ClerkAPI.v1.me.externalAccounts.create(params)
         let newExternalAccount = try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -252,7 +252,7 @@ extension User {
     public struct CreateExternalAccountParams: Encodable {
         init(
             ExternalProvider: ExternalProvider,
-            redirectUrl: String,
+            redirectUrl: String = "clerk://",
             additionalScopes: [String]? = nil
         ) {
             self.strategy = ExternalProvider.data.strategy

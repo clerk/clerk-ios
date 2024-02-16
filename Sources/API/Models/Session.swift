@@ -315,8 +315,7 @@ actor SessionTokenFetcher {
             
             token = try await Clerk.apiClient.send(templateTokenRequest).value
         } else {
-            let defaultTokenRequest = tokensRequest
-                .post()
+            let defaultTokenRequest = tokensRequest.post()
             
             token = try await Clerk.apiClient.send(defaultTokenRequest).value
         }

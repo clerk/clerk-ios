@@ -155,10 +155,6 @@ struct UserProfileExternalAccountSection: View {
                 let externalAccount = try await user?.createExternalAccount(provider)
                 try await externalAccount?.startExternalAuth()
             } catch {
-                if case ASWebAuthenticationSessionError.canceledLogin = error {
-                    return
-                }
-                
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }

@@ -8,7 +8,6 @@
 #if canImport(UIKit)
 
 import SwiftUI
-import AuthenticationServices
 
 struct UserProfileAddExternalAccountView: View {
     @EnvironmentObject private var clerk: Clerk
@@ -27,10 +26,6 @@ struct UserProfileAddExternalAccountView: View {
             try await newExternalAccount.startExternalAuth()
             dismiss()
         } catch {
-            if case ASWebAuthenticationSessionError.canceledLogin = error {
-                return
-            }
-            
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
