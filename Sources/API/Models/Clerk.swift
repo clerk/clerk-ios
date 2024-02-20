@@ -71,20 +71,6 @@ final public class Clerk: ObservableObject {
                let apiUrl = String(match.dropLast()).base64Decoded() {
                 frontendAPIURL = "https://\(apiUrl)"
             }
-            
-//            // If we have a new publishable key, clear the keychain
-//            do {
-//                if let data = Clerk.keychain[data: ClerkKeychainKey.publishableKey] {
-//                    let lastPublishableKey = try JSONDecoder.clerkDecoder.decode(String.self, from: data)
-//                    if lastPublishableKey != publishableKey {
-//                        try Clerk.keychain.removeAll()
-//                    }
-//                }
-//                Clerk.keychain[data: ClerkKeychainKey.publishableKey] = try JSONEncoder.clerkEncoder.encode(publishableKey)
-//            } catch {
-//                dump(error)
-//            }
-            
         }
     }
     
