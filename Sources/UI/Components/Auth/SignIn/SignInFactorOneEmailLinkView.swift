@@ -54,7 +54,7 @@ struct SignInFactorOneEmailLinkView: View {
         .task {
             repeat {
                 do {
-                    try await signIn.get()
+                    try await clerk.client.get()
                     clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                     try? await Task.sleep(for: .seconds(1))
                 } catch {

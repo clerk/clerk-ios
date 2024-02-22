@@ -167,18 +167,19 @@ final public class Clerk: ObservableObject {
             try await Clerk.shared.client.get()
         }
     }
-    
+        
     private func startSessionTokenPolling() {
-        Timer.scheduledTimer(withTimeInterval: 50, repeats: true) { _ in
-            Task(priority: .background) { [weak self] in
-                guard let self, let session else { return }
-                
-                do {
-                    try await session.getToken(.init(skipCache: true))
-                } catch {
-                    dump(error)
+        Task(priority: .background) {
+            repeat {
+                if let session {
+                    do {
+                        try await session.getToken(.init(skipCache: true))
+                        try await Task.sleep(for: .seconds(50))
+                    } catch {
+                        dump(error)
+                    }
                 }
-            }
+            } while (!Task.isCancelled)
         }
     }
     
