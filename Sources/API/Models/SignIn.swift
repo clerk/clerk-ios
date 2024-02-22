@@ -151,8 +151,14 @@ public struct SignIn: Codable {
     }
     
     public enum CreateStrategy {
+        /// Creates a new sign in with the provided identifier
+        /// - Examples of idenitifers are email address, username or phone number
         case identifier(_ identifier: String)
+        /// Creates a new sign in with the external provider
+        ///
+        /// After successfully creating the sign in, call `signIn.startExternalAuth()` to kick off the external authentication process.
         case externalProvider(_ provider: ExternalProvider)
+        /// 
         case transfer
     }
     
@@ -223,8 +229,10 @@ public struct SignIn: Codable {
         }
         
         switch prepareFirstFactorStrategy {
-        case .emailCode, .emailLink, .resetPasswordEmailCode:
+        case .emailCode, .resetPasswordEmailCode:
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
+        case .emailLink:
+            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.frontendAPIURL.replacingOccurrences(of: ".clerk", with: "") + "/sign-in/verify")
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
         case .saml:

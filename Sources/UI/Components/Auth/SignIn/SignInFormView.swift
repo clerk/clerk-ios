@@ -129,7 +129,7 @@ struct SignInFormView: View {
             if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
                 try await signIn.prepareFirstFactor(for: prepareStrategy)
                 
-                // If the prepare fucntion resulted in a verification with an external verification url,
+                // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
                 if signIn.firstFactorVerification?.status == .unverified, signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
                     try await signIn.startExternalAuth()

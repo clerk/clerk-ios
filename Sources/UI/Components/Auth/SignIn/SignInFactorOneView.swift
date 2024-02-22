@@ -43,6 +43,12 @@ struct SignInFactorOneView: View {
                         insertion: .offset(y: 50).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+            case .emailLink:
+                SignInFactorOneEmailLinkView()
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 50).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .phoneCode:
                 SignInFactorOnePhoneCodeView()
                     .transition(.asymmetric(

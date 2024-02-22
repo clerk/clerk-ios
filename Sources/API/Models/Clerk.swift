@@ -71,20 +71,6 @@ final public class Clerk: ObservableObject {
                let apiUrl = String(match.dropLast()).base64Decoded() {
                 frontendAPIURL = "https://\(apiUrl)"
             }
-            
-//            // If we have a new publishable key, clear the keychain
-//            do {
-//                if let data = Clerk.keychain[data: ClerkKeychainKey.publishableKey] {
-//                    let lastPublishableKey = try JSONDecoder.clerkDecoder.decode(String.self, from: data)
-//                    if lastPublishableKey != publishableKey {
-//                        try Clerk.keychain.removeAll()
-//                    }
-//                }
-//                Clerk.keychain[data: ClerkKeychainKey.publishableKey] = try JSONEncoder.clerkEncoder.encode(publishableKey)
-//            } catch {
-//                dump(error)
-//            }
-            
         }
     }
     
@@ -181,18 +167,19 @@ final public class Clerk: ObservableObject {
             try await Clerk.shared.client.get()
         }
     }
-    
+        
     private func startSessionTokenPolling() {
-        Timer.scheduledTimer(withTimeInterval: 50, repeats: true) { _ in
-            Task(priority: .background) { [weak self] in
-                guard let self, let session else { return }
-                
-                do {
-                    try await session.getToken(.init(skipCache: true))
-                } catch {
-                    dump(error)
+        Task(priority: .background) {
+            repeat {
+                if let session {
+                    do {
+                        try await session.getToken(.init(skipCache: true))
+                        try await Task.sleep(for: .seconds(50))
+                    } catch {
+                        dump(error)
+                    }
                 }
-            }
+            } while (!Task.isCancelled)
         }
     }
     
