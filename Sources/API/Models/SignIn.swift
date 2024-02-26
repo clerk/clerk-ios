@@ -211,7 +211,7 @@ public struct SignIn: Codable {
     
     public enum PrepareFirstFactorStrategy {
         case emailCode
-        case emailLink
+//        case emailLink
         case phoneCode
         case saml
         case resetPasswordEmailCode
@@ -221,7 +221,7 @@ public struct SignIn: Codable {
     private func prepareFirstFactorParams(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) -> PrepareFirstFactorParams {
         let strategy: Strategy = switch prepareFirstFactorStrategy {
         case .emailCode: .emailCode
-        case .emailLink: .emailLink
+//        case .emailLink: .emailLink
         case .phoneCode: .phoneCode
         case .saml: .saml
         case .resetPasswordEmailCode: .resetPasswordEmailCode
@@ -231,8 +231,8 @@ public struct SignIn: Codable {
         switch prepareFirstFactorStrategy {
         case .emailCode, .resetPasswordEmailCode:
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
-        case .emailLink:
-            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.frontendAPIURL.replacingOccurrences(of: ".clerk", with: "") + "/sign-in/verify")
+//        case .emailLink:
+//            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.frontendAPIURL.replacingOccurrences(of: ".clerk", with: "") + "/sign-in/verify")
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
         case .saml:
@@ -488,7 +488,7 @@ extension SignIn {
         let signInFactor = signInFactors.first(where: { $0.strategyEnum == strategy })
         
         switch strategy {
-        case .emailCode, .emailLink, .resetPasswordEmailCode:
+        case .emailCode, .resetPasswordEmailCode /**, .emailLink */ :
             return signInFactor?.emailAddressId
         case .phoneCode, .resetPasswordPhoneCode:
             return signInFactor?.phoneNumberId

@@ -68,15 +68,15 @@ extension EmailAddress {
         case emailCode
         
         /// User will receive an email magic link via email.
-        case emailLink
+//        case emailLink
     }
     
     private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
         switch strategy {
         case .emailCode:
             return .init(strategy: .emailCode)
-        case .emailLink:
-            return .init(strategy: .emailLink)
+//        case .emailLink:
+//            return .init(strategy: .emailLink)
         }
     }
     

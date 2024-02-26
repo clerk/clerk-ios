@@ -193,9 +193,10 @@ extension Clerk.Environment.UserSettings {
         
         if strategies.contains(where: { $0 == .emailCode }) {
             return .emailCode
-        } else if strategies.contains(where: { $0 == .emailLink }) {
-            return .emailLink
-        }
+        } 
+//        else if strategies.contains(where: { $0 == .emailLink }) {
+//            return .emailLink
+//        }
         
         return nil
     }
