@@ -48,13 +48,7 @@ extension EmailAddress {
     @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws {
         let params = prepareParams(for: strategy)
-        let request = ClerkAPI
-            .v1
-            .me
-            .emailAddresses
-            .id(id)
-            .prepareVerification
-            .post(params)
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).prepareVerification.post(params)
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -92,13 +86,7 @@ extension EmailAddress {
     @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws {
         let params = attemptParams(for: strategy)
-        let request = ClerkAPI
-            .v1
-            .me
-            .emailAddresses
-            .id(id)
-            .attemptVerification
-            .post(params)
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).attemptVerification.post(params)
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -125,12 +113,7 @@ extension EmailAddress {
     /// Deletes this email address.
     @MainActor
     public func destroy() async throws {
-        let request = ClerkAPI
-            .v1
-            .me
-            .emailAddresses
-            .id(id)
-            .delete
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).delete
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
@@ -140,10 +123,7 @@ extension EmailAddress {
     
     @MainActor
     func setAsPrimary() async throws {
-        let request = ClerkAPI
-            .v1
-            .me
-            .update(.init(primaryEmailAddressId: id))
+        let request = ClerkAPI.v1.me.update(.init(primaryEmailAddressId: id))
         
         try await Clerk.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
