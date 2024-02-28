@@ -73,8 +73,8 @@ final public class Clerk: ObservableObject {
             }
             
             if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-               let apiUrl = String(match.dropLast()).base64Decoded() {
-                frontendAPIURL = "https://\(apiUrl)"
+               let apiUrl = String(match).base64String() {
+                frontendAPIURL = "https://\(apiUrl.dropLast())"
             }
         }
     }
