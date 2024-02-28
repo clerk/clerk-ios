@@ -179,10 +179,10 @@ final public class Clerk: ObservableObject {
                 if let session {
                     do {
                         try await session.getToken(.init(skipCache: true))
-                        try await Task.sleep(for: .seconds(50))
                     } catch {
                         dump(error)
                     }
+                    try await Task.sleep(for: .seconds(50))
                 }
             } while (!Task.isCancelled)
         }

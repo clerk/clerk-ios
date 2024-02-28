@@ -30,12 +30,16 @@ extension PhoneNumberField {
         }
         
         var exampleNumber: String {
-            phoneNumberKit.getFormattedExampleNumber(forCountry: textField.currentRegion, withPrefix: false) ?? ""
+            phoneNumberKit.getFormattedExampleNumber(
+                forCountry: textField.currentRegion,
+                withFormat: .national,
+                withPrefix: false
+            ) ?? ""
         }
         
         func phoneNumberFormattedForDisplay() -> String {
             if let phoneNumber = textField.phoneNumber {
-                return phoneNumberKit.format(phoneNumber, toType: .international, withPrefix: false)
+                return phoneNumberKit.format(phoneNumber, toType: .national, withPrefix: false)
             } else {
                 return textField.partialFormatter.formatPartial(textField.text ?? "")
             }
