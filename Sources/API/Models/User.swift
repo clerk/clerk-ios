@@ -119,7 +119,7 @@ public struct User: Codable, Equatable {
     
     /// A getter for the user's list of verified external accounts.
     public var verifiedExternalAccounts: [ExternalAccount] {
-        externalAccounts.filter { $0.verification.status == .verified }
+        externalAccounts.filter { $0.verification?.status == .verified }
     }
 }
 
@@ -153,7 +153,7 @@ extension User {
     }
     
     var mfaPhones: [PhoneNumber] {
-        phoneNumbers.filter { $0.verification.status == .verified && $0.reservedForSecondFactor }
+        phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
     }
 }
 

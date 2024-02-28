@@ -17,5 +17,5 @@ public struct SAMLAccount: Codable, Equatable {
     public let lastName: String?
     public let providerUserId: String?
     public let publicMetadata: JSON?
-    public let verification: Verification
+    public let verification: Verification?
 }

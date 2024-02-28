@@ -51,15 +51,15 @@ public struct ExternalAccount: Codable, Identifiable {
     let label: String?
     
     /// An object holding information on the verification of this external account.
-    public let verification: Verification
+    public let verification: Verification?
 }
 
 extension ExternalAccount: Equatable, Hashable {}
 
 extension ExternalAccount: Comparable {
     public static func < (lhs: ExternalAccount, rhs: ExternalAccount) -> Bool {
-        if lhs.verification.status != rhs.verification.status  {
-            return lhs.verification.status == .verified
+        if lhs.verification?.status != rhs.verification?.status  {
+            return lhs.verification?.status == .verified
         } else {
             return (lhs.externalProvider?.data.name ?? "") < (rhs.externalProvider?.data.name ?? "")
         }
@@ -94,7 +94,7 @@ extension ExternalAccount {
     @MainActor
     public func startExternalAuth() async throws {
         guard
-            let redirectUrl = verification.externalVerificationRedirectUrl,
+            let redirectUrl = verification?.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
         else {
             throw ClerkClientError(message: "Redirect URL not provided. Unable to start external authentication flow.")

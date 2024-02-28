@@ -33,7 +33,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable {
     public let defaultSecondFactor: Bool
     
     /// An object holding information on the verification of this phone number.
-    public let verification: Verification
+    public let verification: Verification?
     
     /// An object containing information about any other identification that might be linked to this phone number.
     public let linkedTo: JSON?

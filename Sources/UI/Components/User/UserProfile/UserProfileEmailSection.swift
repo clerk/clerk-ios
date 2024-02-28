@@ -106,18 +106,18 @@ struct UserProfileEmailSection: View {
                             .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
                     }
                     
-                    if emailAddress.verification.status != .verified {
+                    if emailAddress.verification?.status != .verified {
                         CapsuleTag(text: "Unverified", style: .warning)
                     }
                     
                     Spacer()
                     
                     Menu {
-                        if emailAddress.verification.status == .verified && !emailAddress.isPrimary(for: user) {
+                        if emailAddress.verification?.status == .verified && !emailAddress.isPrimary(for: user) {
                             setAsPrimaryButton
                         }
                         
-                        if emailAddress.verification.status != .verified {
+                        if emailAddress.verification?.status != .verified {
                             verifyEmailButton
                         }
                         
@@ -128,7 +128,7 @@ struct UserProfileEmailSection: View {
                     .tint(clerkTheme.colors.textPrimary)
                 }
                 
-                if let verificationError = emailAddress.verification.error {
+                if let verificationError = emailAddress.verification?.error {
                     Text(verificationError.localizedDescription)
                         .font(.footnote)
                         .foregroundStyle(clerkTheme.colors.danger)

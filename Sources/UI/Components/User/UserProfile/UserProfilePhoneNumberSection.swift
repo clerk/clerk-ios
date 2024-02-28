@@ -108,18 +108,18 @@ struct UserProfilePhoneNumberSection: View {
                             .matchedGeometryEffect(id: "primaryCapsule", in: namespace)
                     }
                     
-                    if phoneNumber.verification.status != .verified {
+                    if phoneNumber.verification?.status != .verified {
                         CapsuleTag(text: "Unverified", style: .warning)
                     }
                     
                     Spacer()
                     
                     Menu {
-                        if phoneNumber.verification.status == .verified && !phoneNumber.isPrimary(for: user) {
+                        if phoneNumber.verification?.status == .verified && !phoneNumber.isPrimary(for: user) {
                             setAsPrimaryButton
                         }
                         
-                        if phoneNumber.verification.status != .verified {
+                        if phoneNumber.verification?.status != .verified {
                             Button("Verify phone number") {
                                 addPhoneNumberStep = .code(phoneNumber: phoneNumber)
                             }
@@ -134,7 +134,7 @@ struct UserProfilePhoneNumberSection: View {
                     .tint(clerkTheme.colors.textPrimary)
                 }
                 
-                if let verificationError = phoneNumber.verification.error {
+                if let verificationError = phoneNumber.verification?.error {
                     Text(verificationError.localizedDescription)
                         .font(.footnote)
                         .foregroundStyle(clerkTheme.colors.danger)

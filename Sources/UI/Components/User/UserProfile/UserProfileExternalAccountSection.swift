@@ -109,14 +109,14 @@ struct UserProfileExternalAccountSection: View {
                         .font(.footnote)
                     }
                                     
-                    if externalAccount.verification.status != .verified {
+                    if externalAccount.verification?.status != .verified {
                         CapsuleTag(text: "Requires action", style: .warning)
                     }
                     
                     Spacer()
                     
                     Menu {
-                        if externalAccount.verification.status != .verified {
+                        if externalAccount.verification?.status != .verified {
                             retryConnectionButton
                         }
                         
@@ -128,7 +128,7 @@ struct UserProfileExternalAccountSection: View {
                     }
                     .tint(clerkTheme.colors.textPrimary)
                 }
-                if let verificationError = externalAccount.verification.error {
+                if let verificationError = externalAccount.verification?.error {
                     Text(verificationError.localizedDescription)
                         .font(.footnote)
                         .foregroundStyle(clerkTheme.colors.danger)
