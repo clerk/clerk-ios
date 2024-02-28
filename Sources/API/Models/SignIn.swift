@@ -153,7 +153,7 @@ public struct SignIn: Codable {
     public enum CreateStrategy {
         /// Creates a new sign in with the provided identifier
         /// - Examples of idenitifers are email address, username or phone number
-        case identifier(_ identifier: String)
+        case identifier(identifier: String, password: String? = nil)
         /// Creates a new sign in with the external provider
         ///
         /// After successfully creating the sign in, call `signIn.startExternalAuth()` to kick off the external authentication process.
@@ -164,8 +164,8 @@ public struct SignIn: Codable {
     
     private func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
-        case .identifier(let identifier):
-            return .init(identifier: identifier)
+        case .identifier(let identifier, let password):
+            return .init(identifier: identifier, password: password)
         case .externalProvider(let provider):
             return .init(strategy: provider.data.strategy)
         case .transfer:
