@@ -142,7 +142,7 @@ struct UserProfileAddPhoneNumberView: View {
             .padding(.vertical)
         }
         .transition(.asymmetric(
-            insertion: .offset(y: 50).combined(with: .opacity),
+            insertion: .scale(scale: 0.95).combined(with: .opacity),
             removal: .opacity.animation(nil)
         ))
         .id(step)

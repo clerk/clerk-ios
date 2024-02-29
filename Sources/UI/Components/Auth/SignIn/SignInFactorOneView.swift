@@ -34,31 +34,31 @@ struct SignInFactorOneView: View {
             case .password:
                 SignInFactorOnePasswordView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .emailCode:
                 SignInFactorOneEmailCodeView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
 //            case .emailLink:
 //                SignInFactorOneEmailLinkView()
 //                    .transition(.asymmetric(
-//                        insertion: .offset(y: 50).combined(with: .opacity),
+//                        insertion: .scale(scale: 0.95).combined(with: .opacity),
 //                        removal: .opacity.animation(nil)
 //                    ))
             case .phoneCode:
                 SignInFactorOnePhoneCodeView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .resetPasswordEmailCode, .resetPasswordPhoneCode:
                 SignInFactorOneResetView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
                 
@@ -80,7 +80,7 @@ struct SignInFactorOneView: View {
                 )
                 .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 .transition(.asymmetric(
-                    insertion: .offset(y: 50).combined(with: .opacity),
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
 

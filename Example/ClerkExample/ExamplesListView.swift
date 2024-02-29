@@ -16,7 +16,7 @@ struct ExamplesListView: View {
             List {
                 Text("Tap the user button to get started.")
             }
-            .navigationTitle("Clerk Examples")
+            .navigationTitle("Clerk Example")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     UserButton()

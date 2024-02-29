@@ -34,13 +34,13 @@ struct UserProfileMfaAddSmsView: View {
             if let backupCodes {
                 backupCodesView(backupCodes: backupCodes)
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             } else {
                 selectPhoneNumberView
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             }

@@ -23,55 +23,55 @@ struct AuthView: View {
             case .signInStart:
                 SignInStartView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorOne:
                 SignInFactorOneView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorOneUseAnotherMethod(let currentFactor):
                 SignInFactorOneUseAnotherMethodView(currentFactor: currentFactor)
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorTwo:
                 SignInFactorTwoView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInFactorTwoUseAnotherMethod(let currentFactor):
                 SignInFactorTwoUseAnotherMethodView(currentFactor: currentFactor)
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInForgotPassword:
                 SignInForgotPasswordView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signInResetPassword:
                 SignInResetPasswordView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signUpStart:
                 SignUpStartView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .signUpVerification:
                 SignUpVerificationView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             }

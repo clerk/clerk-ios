@@ -34,19 +34,19 @@ struct SignInFactorTwoView: View {
             case .phoneCode:
                 SignInFactorTwoPhoneCodeView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .totp:
                 SignInFactorTwoTotpCodeView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .backupCode:
                 SignInFactorTwoBackupCodeView()
                     .transition(.asymmetric(
-                        insertion: .offset(y: 50).combined(with: .opacity),
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
                 
@@ -68,7 +68,7 @@ struct SignInFactorTwoView: View {
                 )
                 .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 .transition(.asymmetric(
-                    insertion: .offset(y: 50).combined(with: .opacity),
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 
