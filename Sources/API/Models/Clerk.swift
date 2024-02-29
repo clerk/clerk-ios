@@ -17,6 +17,8 @@ final public class Clerk: ObservableObject {
     static let apiClient = Container.shared.apiClient()
     static let keychain = Container.shared.keychain()
     
+    private var sessionPollingTask: Task<Void, Error>?
+    
     init() {}
     
     /// Configure an instance of the Clerk class with dedicated options.
@@ -174,17 +176,18 @@ final public class Clerk: ObservableObject {
     }
         
     private func startSessionTokenPolling() {
-        Task(priority: .background) {
+        sessionPollingTask = Task(priority: .background) {
             repeat {
                 if let session {
                     do {
                         try await session.getToken(.init(skipCache: true))
                     } catch {
                         dump(error)
+                        sessionPollingTask?.cancel()
                     }
                     try await Task.sleep(for: .seconds(50))
                 }
-            } while (!Task.isCancelled)
+            } while sessionPollingTask?.isCancelled == false
         }
     }
     
