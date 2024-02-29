@@ -163,7 +163,7 @@ final public class Clerk: ObservableObject {
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
     public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
         if let sessionId = sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(sessionId: sessionId, organizationId: organizationId)
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
             try await Clerk.apiClient.send(request)
             try await Clerk.shared.client.get()
             
