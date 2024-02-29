@@ -18,20 +18,17 @@ import SwiftUI
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
-    @Environment(\.scenePhase) private var scenePhase
-    
-    @StateObject private var clerk = Clerk.shared
     @StateObject private var clerkUIState = ClerkUIState()
     
     let publishableKey: String
     
     func body(content: Content) -> some View {
         content
-            .task { await clerk.load(publishableKey: publishableKey) }
+            .task { await Clerk.shared.load(publishableKey: publishableKey) }
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             // these must be the last modifiers
-            .environmentObject(clerk)
+            .environmentObject(Clerk.shared)
             .environmentObject(clerkUIState)
     }
 }
