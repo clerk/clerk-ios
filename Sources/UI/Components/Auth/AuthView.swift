@@ -77,19 +77,16 @@ struct AuthView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            Color(.systemBackground)
-                .raisedCardBottom()
-                .background(.ultraThinMaterial)
-                .ignoresSafeArea()
-        }
-        .keyboardIgnoringBottomView(inFrontOfContent: false, content: {
+        .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
             VStack(spacing: 0) {
                 footerView
                 if clerk.environment.displayConfig.branded {
                     SecuredByClerkView()
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
+                        .overlay(alignment: .top) {
+                            Divider()
+                        }
                 }
             }
             .background(.ultraThinMaterial)
@@ -130,9 +127,14 @@ struct AuthView: View {
             }
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .overlay(alignment: .bottom) {
+            .overlay(alignment: .top) {
                 Divider()
             }
+//            .overlay(alignment: .bottom) {
+//                if clerk.environment.displayConfig.branded {
+//                    Divider()
+//                }
+//            }
         }
     }
 }
