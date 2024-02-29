@@ -50,7 +50,7 @@ struct SignUpStartView: View {
                                 clerkUIState.authIsPresented = false
                             } else {
                                 // if the signup isnt complete
-                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                                clerkUIState.setAuthStepToCurrentStatus(for: signUp)
                             }
                         }
                 }
