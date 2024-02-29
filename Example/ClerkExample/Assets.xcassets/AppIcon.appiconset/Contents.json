@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "clerk-logo-1024x1024-centered-white (2).png",
+      "filename" : "Use for circular only.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -52,7 +52,7 @@
       "size" : "512x512"
     },
     {
-      "filename" : "clerk-logo-1024x1024-centered-white (2) 1.png",
+      "filename" : "Use for circular only 1.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"

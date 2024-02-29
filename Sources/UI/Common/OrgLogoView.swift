@@ -17,20 +17,13 @@ struct OrgLogoView: View {
             if let image = state.image {
                 image
                     .resizable()
-                    .renderingMode(.template)
-                    .scaledToFit()
-            } else {
-                Image(systemName: "circle.square.fill")
-                    .resizable()
                     .scaledToFit()
             }
         }
-        .foregroundStyle(clerkTheme.colors.textPrimary)
-        .frame(height: 32)
-        .clipped()
     }
 }
 
 #Preview {
     OrgLogoView()
+        .frame(width: 32, height: 32)
 }

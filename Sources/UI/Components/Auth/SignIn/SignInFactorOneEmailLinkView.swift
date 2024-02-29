@@ -20,6 +20,7 @@
 //        ScrollView {
 //            VStack(spacing: .zero) {
 //                OrgLogoView()
+//                    .frame(width: 32, height: 32)
 //                    .padding(.bottom, 24)
 //                
 //                VStack(spacing: 4) {
