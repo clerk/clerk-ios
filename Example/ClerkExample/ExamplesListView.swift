@@ -28,6 +28,7 @@ struct ExamplesListView: View {
 
 #Preview {
     ExamplesListView()
+        .environmentObject(Clerk.shared)
 }
 
 #endif

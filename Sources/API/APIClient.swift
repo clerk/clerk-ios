@@ -44,13 +44,14 @@ final class ClerkAPIClientDelegate: APIClientDelegate {
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
         // If our response is an error status code...
         guard (200..<300).contains(response.statusCode) else {
-            // and the response has a ClerkError body throw a custom clerk error
+            
+            // ...and the response has a ClerkError body throw a custom clerk error
             if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
                 let clerkError = clerkErrorResponse.errors.first {
                 throw clerkError
             }
 
-            // else throw a generic api error
+            // ...else throw a generic api error
             throw APIError.unacceptableStatusCode(response.statusCode)
         }
         
