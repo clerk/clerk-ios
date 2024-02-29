@@ -16,9 +16,7 @@ final public class Clerk: ObservableObject {
     public static let shared = Container.shared.clerk()
     static let apiClient = Container.shared.apiClient()
     static let keychain = Container.shared.keychain()
-    
-    private var sessionPollingTask: Task<Void, Error>?
-    
+        
     init() {}
     
     /// Configure an instance of the Clerk class with dedicated options.
@@ -174,6 +172,8 @@ final public class Clerk: ObservableObject {
             try await Clerk.shared.client.get()
         }
     }
+    
+    private var sessionPollingTask: Task<Void, Error>?
         
     private func startSessionTokenPolling() {
         sessionPollingTask = Task(priority: .background) {
