@@ -104,7 +104,7 @@ struct UserProfileMfaSection: View {
             Group {
                 Image(systemName: "circle.filled.iphone.fill")
                 Text("SMS Code")
-                Text(phoneNumber.formatted(.international))
+                Text(phoneNumber.formatted(.national))
             }
             .font(.footnote)
             

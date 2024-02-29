@@ -28,7 +28,7 @@ enum RemoveResource {
         case .email(let emailAddress):
             return "\(emailAddress.emailAddress) will be removed from this account."
         case .phoneNumber(let phoneNumber):
-            return "\(phoneNumber.formatted(.international)) will be removed from this account."
+            return "\(phoneNumber.formatted(.national)) will be removed from this account."
         case .externalAccount(let externalAccount):
             return "\(externalAccount.externalProvider?.data.name ?? "This provider") will be removed from this account."
         }

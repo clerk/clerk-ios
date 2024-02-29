@@ -83,7 +83,7 @@ struct UserProfilePhoneNumberSection: View {
         var body: some View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    Text(verbatim: phoneNumber.formatted(.international))
+                    Text(verbatim: phoneNumber.formatted(.national))
                         .font(.footnote)
                         .confirmationDialog(
                             Text(removeResource.messageLine1),

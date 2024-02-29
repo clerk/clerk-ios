@@ -74,7 +74,7 @@ struct UserProfileMfaAddSmsView: View {
                                 if let regionId = phoneNumber.regionId {
                                     Text(regionId)
                                 }
-                                Text(phoneNumber.formatted(.international))
+                                Text(phoneNumber.formatted(.national))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.horizontal, 12)

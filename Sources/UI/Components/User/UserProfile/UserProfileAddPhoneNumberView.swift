@@ -104,7 +104,7 @@ struct UserProfileAddPhoneNumberView: View {
             code: $code,
             title: "Check your phone",
             subtitle: "Enter the verification code sent to your phone",
-            safeIdentifier: phoneNumber?.formatted(.international)
+            safeIdentifier: phoneNumber?.formatted(.national)
         )
         .onCodeEntry {
             await attempt()
