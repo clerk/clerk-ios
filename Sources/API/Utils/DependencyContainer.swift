@@ -41,7 +41,7 @@ extension Container: AutoRegistering {
         }
         
         Container.shared.clerk.context(.preview) {
-            Clerk.mock
+            Clerk()
         }
     }
     
