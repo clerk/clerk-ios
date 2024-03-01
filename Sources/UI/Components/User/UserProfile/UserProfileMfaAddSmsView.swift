@@ -23,7 +23,11 @@ struct UserProfileMfaAddSmsView: View {
     private func reserveForSecondFactor(phoneNumber: PhoneNumber) async {
         do {
             let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
-            self.backupCodes = phoneNumber.backupCodes
+            if let backupCodes = phoneNumber.backupCodes {
+                self.backupCodes = phoneNumber.backupCodes
+            } else {
+                dismiss()
+            }
         } catch {
             errorWrapper = .init(error: error)
         }
