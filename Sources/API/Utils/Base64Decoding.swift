@@ -8,7 +8,7 @@
 import Foundation
 
 extension String {
-    public func base64Data() -> Data? {
+    func base64Data() -> Data? {
         var string = self
         let remainder = string.count % 4
         if remainder > 0 {
@@ -18,7 +18,7 @@ extension String {
         return Data(base64Encoded: string)
     }
     
-    public func base64String() -> String? {
+    func base64String() -> String? {
         if let data = self.base64Data() {
             return String(data: data, encoding: .utf8)
         }
