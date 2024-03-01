@@ -13,6 +13,7 @@ struct UserProfileMfaSection: View {
     @State private var phoneNumberIsPresented: Bool = false
     @State private var authenticationAppIsPresented: Bool = false
     @State private var errorWrapper: ErrorWrapper?
+    @Namespace private var namespace
     
     private var user: User? {
         clerk.user
@@ -30,11 +31,19 @@ struct UserProfileMfaSection: View {
         secondFactors.contains(where: { $0.key == .backupCode }) && user?.backupCodeEnabled == true
     }
     
+    private func removeTOTPAsSecondFactor() async {
+        do {
+            try await user?.disableTOTP()
+        } catch {
+            errorWrapper = ErrorWrapper(error: error)
+        }
+    }
+    
     private func removePhoneAsSecondFactor(_ phoneNumber: PhoneNumber) async {
         do {
             try await phoneNumber.setReservedForSecondFactor(reserved: false)
         } catch {
-            errorWrapper = .init(error: error)
+            errorWrapper = ErrorWrapper(error: error)
         }
     }
         
@@ -43,6 +52,11 @@ struct UserProfileMfaSection: View {
             Text("Two-step verification")
                 .font(.footnote.weight(.medium))
                 .frame(minHeight: 32)
+            
+            if showTotp {
+                totpView
+                    .padding(.leading, 12)
+            }
             
             if let user, !user.mfaPhones.isEmpty {
                 VStack {
@@ -88,14 +102,39 @@ struct UserProfileMfaSection: View {
         .animation(.snappy, value: user)
         .sheet(isPresented: $phoneNumberIsPresented, content: {
             UserProfileMfaAddSmsView()
-                .presentationDetents([.height(480), .large])
                 .presentationDragIndicator(.visible)
         })
         .sheet(isPresented: $authenticationAppIsPresented, content: {
             UserProfileAddTotpView()
-                .presentationDetents([.height(480), .large])
                 .presentationDragIndicator(.visible)
         })
+    }
+    
+    @ViewBuilder
+    private var totpView: some View {
+        HStack(spacing: 8) {
+            Group {
+                Image(systemName: "lock.iphone")
+                Text("Authenticator application")
+            }
+            .font(.footnote)
+            
+            CapsuleTag(text: "Default")
+                .matchedGeometryEffect(id: "defaultTag", in: namespace)
+            
+            Spacer()
+            
+            Menu {
+                AsyncButton(role: .destructive) {
+                    await removeTOTPAsSecondFactor()
+                } label: {
+                    Text("Remove authenticator application")
+                }
+            } label: {
+                MoreActionsView()
+            }
+            .tint(clerkTheme.colors.textPrimary)
+        }
     }
     
     @ViewBuilder
@@ -110,6 +149,7 @@ struct UserProfileMfaSection: View {
             
             if phoneNumber.defaultSecondFactor && !showTotp {
                 CapsuleTag(text: "Default")
+                    .matchedGeometryEffect(id: "defaultTag", in: namespace)
             }
             
             Spacer()

@@ -60,9 +60,9 @@ struct UserProfileMfaBackupCodeListView: View {
                             .foregroundStyle(clerkTheme.colors.borderPrimary)
                         
                         Button {
-                            // copy action
+                            UIPasteboard.general.string = backupCodes.joined(separator: "\n")
                         } label: {
-                            Image(systemName: "doc.on.doc")
+                            Image(systemName: "clipboard")
                         }
                         .frame(maxWidth: .infinity)
                     }
