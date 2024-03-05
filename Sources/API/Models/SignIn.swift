@@ -153,7 +153,7 @@ public struct SignIn: Codable {
     public enum CreateStrategy {
         /// Creates a new sign in with the provided identifier
         /// - Examples of idenitifers are email address, username or phone number
-        case identifier(identifier: String, password: String? = nil)
+        case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the external provider
         ///
         /// After successfully creating the sign in, call `signIn.startExternalAuth()` to kick off the external authentication process.
