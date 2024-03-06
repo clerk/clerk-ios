@@ -185,8 +185,8 @@ final public class Clerk: ObservableObject {
                         dump(error)
                         sessionPollingTask?.cancel()
                     }
-                    try await Task.sleep(for: .seconds(50))
                 }
+                try await Task.sleep(for: .seconds(50))
             } while sessionPollingTask?.isCancelled == false
         }
     }
