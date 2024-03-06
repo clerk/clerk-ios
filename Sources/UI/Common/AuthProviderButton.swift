@@ -33,10 +33,13 @@ struct AuthProviderButton: View {
         LazyImage(url: URL(string: iconImageUrl), content: { state in
             if let image = state.image {
                 image
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
+                    .foregroundStyle(.primary)
             } else {
                 Color(.secondarySystemBackground)
+                    .clipShape(.circle)
             }
         })
         .frame(width: 16, height: 16)
@@ -49,10 +52,13 @@ struct AuthProviderButton: View {
             LazyImage(url: URL(string: iconImageUrl)) { state in
                 if let image = state.image {
                     image
+                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
+                        .foregroundStyle(.primary)
                 } else {
                     Color(.secondarySystemBackground)
+                        .clipShape(.circle)
                 }
             }
             .frame(width: 16, height: 16)

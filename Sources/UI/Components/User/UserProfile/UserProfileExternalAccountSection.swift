@@ -74,8 +74,18 @@ struct UserProfileExternalAccountSection: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     if let provider = externalAccount.externalProvider {
-                        LazyImage(url: provider.iconImageUrl)
-                            .frame(width: 16, height: 16)
+                        LazyImage(url: provider.iconImageUrl) { state in
+                            if let image = state.image {
+                                image
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundStyle(.primary)
+                            } else {
+                                Color(.secondarySystemBackground)
+                            }
+                        }
+                        .frame(width: 16, height: 16)
                     }
                     
                     if let providerName = externalAccount.externalProvider?.data.name {

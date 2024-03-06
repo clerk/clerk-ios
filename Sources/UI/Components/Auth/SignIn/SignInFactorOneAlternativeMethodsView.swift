@@ -57,7 +57,11 @@ struct SignInFactorOneAlternativeMethodsView: View {
                     HStack {
                         LazyImage(url: provider.iconImageUrl) { state in
                             if let image = state.image {
-                                image.resizable().scaledToFit()
+                                image
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundStyle(.primary)
                             } else {
                                 Color(.secondarySystemBackground)
                             }
