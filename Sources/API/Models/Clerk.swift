@@ -24,14 +24,15 @@ final public class Clerk: ObservableObject {
     ///
     /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    public func load(publishableKey: String) async {
+    @MainActor
+    public func load(publishableKey: String) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             assertionFailure("You must include a valid publishable key to call this function.")
             return
         }
         
         self.publishableKey = publishableKey
-        await loadPersistedData()
+        loadPersistedData()
         startSessionTokenPolling()
         
         Task.detached { [client] in

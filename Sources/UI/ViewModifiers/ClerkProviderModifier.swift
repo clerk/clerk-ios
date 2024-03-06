@@ -24,7 +24,7 @@ struct ClerkProviderModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .task { await Clerk.shared.load(publishableKey: publishableKey) }
+            .task { Clerk.shared.load(publishableKey: publishableKey) }
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             // these must be the last modifiers
