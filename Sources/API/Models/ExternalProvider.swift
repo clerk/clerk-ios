@@ -233,7 +233,7 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable {
     }
     
     public var iconImageUrl: URL? {
-        URL(string: "https://img.clerk.com/static/\(data.provider).svg")
+        URL(string: "https://img.clerk.com/static/\(data.provider).png")
     }
 }
 
