@@ -84,20 +84,21 @@ extension Clerk.Environment {
             case authenticatorApp
             case ticket
             case backupCode
+            case passkey
         }
         
         public struct AttributesConfig: Codable, Equatable {
             public let enabled: Bool
             public let required: Bool
             public let usedForFirstFactor: Bool
-            public let firstFactors: [String]
+            public let firstFactors: [String]?
             public let usedForSecondFactor: Bool
-            public let secondFactors: [String]
-            public let verifications: [String]
+            public let secondFactors: [String]?
+            public let verifications: [String]?
             public let verifyAtSignUp: Bool
             
             public var verificationStrategies: [Strategy] {
-                verifications.compactMap({ .init(stringValue: $0) })
+                verifications?.compactMap({ .init(stringValue: $0) }) ?? []
             }
         }
         
