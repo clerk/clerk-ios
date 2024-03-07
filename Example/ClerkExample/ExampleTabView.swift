@@ -28,31 +28,13 @@ struct ExampleTabView: View {
                 .toolbarBackground(.visible, for: .tabBar)
                 .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
             
-            NavigationStack {
-                Group {
-                    if clerk.user == nil {
-                        Button(action: {
-                            clerkUIState.presentedAuthStep = .signInStart
-                        }, label: {
-                            Text("Sign In")
-                        })
-                    } else {
-                        UserProfileView()
-                    }
+            ExamplesProfileTabView()
+                .tag(Tab.profile)
+                .tabItem {
+                    Label("Account", systemImage: "person.fill")
                 }
-                .navigationTitle("Account")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        UserButton()
-                    }
-                }
-            }
-            .tag(Tab.profile)
-            .tabItem {
-                Label("Account", systemImage: "person.fill")
-            }
-            .toolbarBackground(.visible, for: .tabBar)
-            .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
+                .toolbarBackground(.visible, for: .tabBar)
+                .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
         }
     }
 }
