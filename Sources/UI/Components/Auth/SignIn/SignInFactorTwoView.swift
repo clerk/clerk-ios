@@ -50,7 +50,7 @@ struct SignInFactorTwoView: View {
                         removal: .opacity.animation(nil)
                     ))
                 
-            case nil:
+            case nil where clerk.session == nil:
                 GetHelpView(
                     title: "Cannot sign in",
                     description: """
