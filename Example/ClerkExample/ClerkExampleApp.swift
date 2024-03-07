@@ -12,10 +12,15 @@ import ClerkSDK
 
 @main
 struct ClerkExampleApp: App {
+    
+    init() {
+        Clerk.shared.load(publishableKey: "")
+    }
+    
     var body: some Scene {
         WindowGroup {
             ExampleTabView()
-                .clerkProvider(publishableKey: "")
+                .clerkProvider()
         }
     }
 }

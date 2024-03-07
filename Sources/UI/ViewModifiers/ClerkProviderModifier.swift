@@ -19,12 +19,9 @@ import SwiftUI
  */
 struct ClerkProviderModifier: ViewModifier {
     @StateObject private var clerkUIState = ClerkUIState()
-    
-    let publishableKey: String
-    
+        
     func body(content: Content) -> some View {
         content
-            .task { Clerk.shared.load(publishableKey: publishableKey) }
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             // these must be the last modifiers
@@ -40,8 +37,8 @@ extension View {
      
      You should apply this modifier to the root view of your application. Most likely in your `App` file.
      */
-    public func clerkProvider(publishableKey: String) -> some View {
-        modifier(ClerkProviderModifier(publishableKey: publishableKey))
+    public func clerkProvider() -> some View {
+        modifier(ClerkProviderModifier())
     }
 }
 
