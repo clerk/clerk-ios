@@ -232,8 +232,19 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable {
         }
     }
     
-    public var iconImageUrl: URL? {
-        URL(string: "https://img.clerk.com/static/\(data.provider).png")
+    var hasDarkModeVariant: Bool {
+        switch self {
+        case .apple:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    public func iconImageUrl(darkMode: Bool = false) -> URL? {
+        var iconName = data.provider
+        if darkMode && hasDarkModeVariant { iconName += "-dark" }
+        return URL(string: "https://img.clerk.com/static/\(iconName).png")
     }
 }
 

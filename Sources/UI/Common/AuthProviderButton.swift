@@ -11,8 +11,10 @@ import SwiftUI
 import NukeUI
 
 struct AuthProviderButton: View {
-    let iconImageUrl: String
-    var label: String
+    @Environment(\.colorScheme) private var colorScheme
+    
+    let provider: ExternalProvider
+    let label: String
     var style: Style = .regular
     
     enum Style {
@@ -30,38 +32,16 @@ struct AuthProviderButton: View {
     @MainActor
     @ViewBuilder
     private var compactStyleButton: some View {
-        LazyImage(url: URL(string: iconImageUrl), content: { state in
-            if let image = state.image {
-                image
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(.primary)
-            } else {
-                Color(.secondarySystemBackground)
-                    .clipShape(.circle)
-            }
-        })
-        .frame(width: 16, height: 16)
+        AuthProviderIcon(provider: provider)
+            .frame(width: 16, height: 16)
     }
     
     @MainActor
     @ViewBuilder
     private var regularStyleButton: some View {
         HStack(spacing: 16) {
-            LazyImage(url: URL(string: iconImageUrl)) { state in
-                if let image = state.image {
-                    image
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(.primary)
-                } else {
-                    Color(.secondarySystemBackground)
-                        .clipShape(.circle)
-                }
-            }
-            .frame(width: 16, height: 16)
+            AuthProviderIcon(provider: provider)
+                .frame(width: 16, height: 16)
                 
             Text("\(label)")
                 .lineLimit(1)
@@ -72,7 +52,7 @@ struct AuthProviderButton: View {
 extension AuthProviderButton {
     
     init(provider: ExternalProvider, label: String? = nil, style: Style = .regular) {
-        self.iconImageUrl = provider.iconImageUrl?.absoluteString ?? ""
+        self.provider = provider
         self.style = style
         if let label {
             self.label = label
