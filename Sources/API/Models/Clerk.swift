@@ -8,6 +8,7 @@
 import Foundation
 import Factory
 import RegexBuilder
+import Nuke
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -47,13 +48,15 @@ final public class Clerk: ObservableObject {
             }
         }
         
-        Task.detached { [environment] in
+        Task.detached { [self, environment] in
             do {
                 try await environment.get()
+                prefecthImages()
             } catch {
                 dump(error)
             }
         }
+        
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -227,5 +230,24 @@ final public class Clerk: ObservableObject {
                 dump(error)
             }
         }
+    }
+    
+    private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
+    
+    private func prefecthImages() {
+        var imageUrls: [URL?] = []
+        
+        if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
+            imageUrls.append(logoUrl)
+        }
+        
+        environment.userSettings.enabledThirdPartyProviders.forEach { provider in
+            imageUrls.append(provider.iconImageUrl())
+            if provider.hasDarkModeVariant {
+                imageUrls.append(provider.iconImageUrl(darkMode: true))
+            }
+        }
+        
+        imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
     }
 }
