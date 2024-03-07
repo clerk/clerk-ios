@@ -35,7 +35,7 @@ public struct UserButton: View {
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {
-                    Image(systemName: "person.circle")
+                    Image(systemName: "person.crop.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .symbolRenderingMode(.monochrome)
