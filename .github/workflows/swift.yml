@@ -12,12 +12,9 @@ on:
 jobs:
   build:
 
-    runs-on: macos-13
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v1
-      - name: Build
-        run: swift build
-      - name: Run tests
-        run: swift test
+    - uses: actions/checkout@v3
+    - name: Run tests
+      run: swift test --parallel
