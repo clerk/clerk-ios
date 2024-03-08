@@ -13,7 +13,7 @@ import Nuke
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
-final public class Clerk: ObservableObject, Sendable {
+final public class Clerk: ObservableObject, @unchecked Sendable {
     public static let shared = Container.shared.clerk()
     static let apiClient = Container.shared.apiClient()
     static let keychain = Container.shared.keychain()
