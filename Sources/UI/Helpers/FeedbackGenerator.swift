@@ -10,6 +10,7 @@
 import Foundation
 import UIKit
 
+@MainActor
 enum FeedbackGenerator {
     
     private static let generator = UINotificationFeedbackGenerator()

@@ -9,14 +9,14 @@
 
 import SwiftUI
 
-public struct ClerkTheme {
+public struct ClerkTheme: @unchecked Sendable {
     public init(colors: ClerkTheme.Colors) {
         self.colors = colors
     }
     
     public var colors: Colors
     
-    public struct Colors {
+    public struct Colors: Sendable {
         public init(
             primary: Color,
             textPrimary: Color,
@@ -47,7 +47,7 @@ public struct ClerkTheme {
 
 extension ClerkTheme {
     
-    static public let clerkDefault = Self(
+    static public let clerkDefault = ClerkTheme(
         colors: .init(
             primary: Color(.clerkPrimary),
             textPrimary: Color(.clerkTextPrimary),

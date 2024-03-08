@@ -8,7 +8,7 @@
 import Foundation
 
 /// Each factor contains information about the verification strategy that can be used.
-public struct SignInFactor: Codable, Equatable, Hashable {
+public struct SignInFactor: Codable, Equatable, Hashable, Sendable {
     /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
     public let strategy: String
         

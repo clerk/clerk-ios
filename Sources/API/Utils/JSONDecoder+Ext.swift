@@ -9,7 +9,7 @@ import Foundation
 
 extension JSONDecoder {
     
-    static var clerkDecoder: JSONDecoder = {
+    static let clerkDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .millisecondsSince1970

@@ -64,10 +64,8 @@ struct OTPFieldView: View {
                         .foregroundStyle(clerkTheme.colors.textPrimary)
                         .opacity(cursorAnimating ? 1 : 0)
                         .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
-                        .task {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                cursorAnimating.toggle()
-                            }
+                        .onAppear {
+                            cursorAnimating.toggle()
                         }
                 }
             }

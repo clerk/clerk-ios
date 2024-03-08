@@ -31,7 +31,7 @@ import Foundation
 /// and `Codable`, so that you can compare values for equality and code and decode them into data
 /// or strings.
 @_documentation(visibility: internal)
-@dynamicMemberLookup public enum JSON: Equatable {
+@dynamicMemberLookup public enum JSON: Equatable, Sendable {
     case string(String)
     case number(Double)
     case object([String:JSON])

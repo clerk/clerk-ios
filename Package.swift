@@ -40,7 +40,10 @@ let package = Package(
                 "PhoneNumberKit"
             ],
             path: "Sources",
-            exclude: []
+            exclude: [],
+            swiftSettings: [
+//                .enableExperimentalFeature("StrictConcurrency")
+            ]
         ),
         .testTarget(
             name: "ClerkTests",

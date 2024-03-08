@@ -8,6 +8,8 @@
 import Foundation
 import KeychainAccess
 
+extension Keychain: @unchecked Sendable { }
+
 extension Keychain {
     
     // clerk.{APP_NAME}

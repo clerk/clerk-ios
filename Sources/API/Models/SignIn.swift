@@ -19,7 +19,7 @@ import Foundation
  Information about the current sign in status in general and which authentication identifiers, authentication methods and verifications are supported.
  Information about the user and the provided authentication identifier value (email address, phone number or username).Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
-public struct SignIn: Codable {
+public struct SignIn: Codable, Sendable {
     
     /// String representing the object's type. Objects of the same type share the same value.
     let object: Object
@@ -67,12 +67,12 @@ public struct SignIn: Codable {
     let abandonAt: Date
     
     /// String representing the object's type. Objects of the same type share the same value.
-    public enum Object: String, Codable {
+    public enum Object: String, Codable, Sendable {
         case signInAttempt = "sign_in_attempt"
     }
     
     /// The current status of the sign-in.
-    public enum Status: String, Codable {
+    public enum Status: String, Codable, Sendable {
         /// The authentication identifier hasn't been provided.
         case needsIdentifier = "needs_identifier"
         
@@ -93,7 +93,7 @@ public struct SignIn: Codable {
     }
     
     /// Authentication identifier that is supported for this sign in.
-    public enum SupportedIdentifier: String, Codable {
+    public enum SupportedIdentifier: String, Codable, Sendable {
         case emailAddress = "email_address"
         case phoneNumber = "phone_number"
         case username
@@ -101,7 +101,7 @@ public struct SignIn: Codable {
     }
     
     /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
-    public struct UserData: Codable {
+    public struct UserData: Codable, Sendable {
         public let firstName: String?
         public let lastName: String?
         public let imageUrl: String?

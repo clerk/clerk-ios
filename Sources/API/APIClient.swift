@@ -11,20 +11,19 @@ import Get
 extension APIClient {
     
     /// The Clerk API Client
-    static var clerk = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
+    static let clerk = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
         client.delegate = ClerkAPIClientDelegate()
         client.decoder = JSONDecoder.clerkDecoder
         client.encoder = JSONEncoder.clerkEncoder
         client.sessionConfiguration.httpAdditionalHeaders = [
             "Clerk-API-Version": "2021-02-05",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": UserAgentHelpers.userAgentString
+            "Content-Type": "application/x-www-form-urlencoded"
         ]
     }
     
 }
 
-final class ClerkAPIClientDelegate: APIClientDelegate {
+final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
         // Set the device token on every request
