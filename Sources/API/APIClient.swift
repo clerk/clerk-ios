@@ -17,7 +17,8 @@ extension APIClient {
         client.encoder = JSONEncoder.clerkEncoder
         client.sessionConfiguration.httpAdditionalHeaders = [
             "Clerk-API-Version": "2021-02-05",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": UserAgentHelpers.userAgentString
         ]
     }
     
