@@ -16,6 +16,9 @@
   </strong>
 </h3>
 <p align="center">
+  Breaking changes should be expected until the first stable release (1.0.0)
+</p>
+<p align="center">
   <strong>
     Clerk helps developers build user management. We provide streamlined user experiences for your users to sign up, sign in, and manage their profile.
   </strong>
