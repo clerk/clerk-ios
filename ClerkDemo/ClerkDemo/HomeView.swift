@@ -1,22 +1,20 @@
 //
-//  ExamplesListView.swift
-//  ClerkExample
+//  HomeView.swift
+//  ClerkDemo
 //
-//  Created by Mike Pitre on 10/6/23.
+//  Created by Mike Pitre on 3/8/24.
 //
-
-#if canImport(UIKit)
 
 import SwiftUI
 import ClerkSDK
 
-struct ExamplesListView: View {
+struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
                 Text("Tap the user button to get started.")
             }
-            .navigationTitle("Clerk Example")
+            .navigationTitle("Clerk Demo")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     UserButton()
@@ -27,10 +25,6 @@ struct ExamplesListView: View {
 }
 
 #Preview {
-    ExamplesListView()
+    HomeView()
         .environmentObject(Clerk.shared)
 }
-
-#endif
-
-

@@ -1,37 +1,28 @@
 //
-//  ExampleTabView.swift
-//  ClerkExample
+//  MainTabView.swift
+//  ClerkDemo
 //
-//  Created by Mike Pitre on 12/11/23.
+//  Created by Mike Pitre on 3/8/24.
 //
 
 import SwiftUI
 import ClerkSDK
 
-struct ExampleTabView: View {
+struct MainTabView: View {
     @State private var selectedTab: Tab = .home
     @EnvironmentObject private var clerk: Clerk
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     enum Tab {
         case home
-        case profile
     }
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            ExamplesListView()
+            HomeView()
                 .tag(Tab.home)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
-                }
-                .toolbarBackground(.visible, for: .tabBar)
-                .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
-            
-            ExamplesProfileTabView()
-                .tag(Tab.profile)
-                .tabItem {
-                    Label("Account", systemImage: "person.fill")
                 }
                 .toolbarBackground(.visible, for: .tabBar)
                 .toolbarBackground(Material.ultraThinMaterial, for: .tabBar, .navigationBar)
@@ -40,6 +31,6 @@ struct ExampleTabView: View {
 }
 
 #Preview {
-    ExampleTabView()
+    MainTabView()
         .environmentObject(Clerk.shared)
 }
