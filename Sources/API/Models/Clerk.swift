@@ -13,7 +13,7 @@ import Nuke
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
-final public class Clerk: ObservableObject {
+final public class Clerk: ObservableObject, Sendable {
     public static let shared = Container.shared.clerk()
     static let apiClient = Container.shared.apiClient()
     static let keychain = Container.shared.keychain()
@@ -149,6 +149,7 @@ final public class Clerk: ObservableObject {
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
+    @MainActor
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
@@ -165,6 +166,7 @@ final public class Clerk: ObservableObject {
     /// A method used to set the active session and/or organization.
     /// - Parameter sessionId: The session ID to be set as active. If null, the current session is deleted.
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+    @MainActor
     public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)

@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk {
         
-    public struct Environment: Codable {
+    public struct Environment: Codable, Sendable {
         public let authConfig: AuthConfig
         public let userSettings: UserSettings
         public let displayConfig: DisplayConfig
@@ -28,7 +28,7 @@ extension Clerk {
 
 extension Clerk.Environment {
     
-    public struct AuthConfig: Codable {
+    public struct AuthConfig: Codable, Sendable {
         public let singleSessionMode: Bool
         
         public init(singleSessionMode: Bool = true) {
@@ -40,13 +40,13 @@ extension Clerk.Environment {
 
 extension Clerk.Environment {
     
-    public struct DisplayConfig: Codable {
+    public struct DisplayConfig: Codable, Sendable {
         public let applicationName: String
         public let preferredSignInStrategy: PreferredSignInStrategy
         public let branded: Bool
         public let logoImageUrl: String
         
-        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable {
+        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password, otp
         }
         
@@ -67,13 +67,13 @@ extension Clerk.Environment {
 
 extension Clerk.Environment {
     
-    public struct UserSettings: Codable, Equatable {
+    public struct UserSettings: Codable, Equatable, Sendable {
         
         let attributes: [Attribute: AttributesConfig]
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
         let social: [String: SocialConfig]
         
-        public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable {
+        public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable, Sendable {
             case emailAddress
             case phoneNumber
             case username
@@ -87,7 +87,7 @@ extension Clerk.Environment {
             case passkey
         }
         
-        public struct AttributesConfig: Codable, Equatable {
+        public struct AttributesConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
             public let required: Bool
             public let usedForFirstFactor: Bool
@@ -102,7 +102,7 @@ extension Clerk.Environment {
             }
         }
         
-        public struct SocialConfig: Codable, Equatable {
+        public struct SocialConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
             public let required: Bool
             public let authenticatable: Bool

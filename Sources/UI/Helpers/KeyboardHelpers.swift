@@ -12,6 +12,7 @@ import Combine
 
 enum KeyboardHelpers {
     
+    @MainActor
     static func dismissKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
@@ -20,10 +21,11 @@ enum KeyboardHelpers {
 
 /// Publisher to read keyboard changes.
 protocol KeyboardReadable {
-    var keyboardPublisher: AnyPublisher<Bool, Never> { get }
+    @MainActor var keyboardPublisher: AnyPublisher<Bool, Never> { get }
 }
 
 extension KeyboardReadable {
+    @MainActor
     var keyboardPublisher: AnyPublisher<Bool, Never> {
         Publishers.Merge(
             NotificationCenter.default

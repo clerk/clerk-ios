@@ -12,6 +12,7 @@ import Factory
 import PhoneNumberKit
 
 extension PhoneNumberField {
+    @MainActor
     final class Model: ObservableObject {
         private let phoneNumberKit = Container.shared.phoneNumberKit()
         let textField: PhoneNumberTextField

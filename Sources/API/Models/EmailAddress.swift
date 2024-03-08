@@ -16,7 +16,7 @@ import Foundation
 
  Finally, email addresses can be linked to other identifications.
  */
-public struct EmailAddress: Codable, Equatable, Hashable, Identifiable {
+public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
 
     /// A unique identifier for this email address.
     public let id: String

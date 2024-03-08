@@ -12,7 +12,7 @@ import Foundation
 
  External account must be verified, so that you can make sure they can be assigned to their rightful owners. The ExternalAccount object holds all necessary state around the verification process.
  */
-public struct ExternalAccount: Codable, Identifiable {
+public struct ExternalAccount: Codable, Identifiable, Sendable {
     
     /// A unique identifier for this external account.
     public let id: String

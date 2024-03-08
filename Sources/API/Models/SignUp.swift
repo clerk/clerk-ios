@@ -23,7 +23,7 @@ import Foundation
  - Those that hold the different values that we supply to the sign-up. Examples of these are `username`, `emailAddress`, `firstName`, etc.
  - Those that contain references to the created resources once the sign-up is complete, i.e. `createdSessionId` and `createdUserId`.
  */
-public struct SignUp: Codable {
+public struct SignUp: Codable, Sendable {
     
     let id: String
     
@@ -95,7 +95,7 @@ public struct SignUp: Codable {
     public let abandonAt: Date
     
     /// The status of the current sign-up.
-    public enum Status: String, Codable {
+    public enum Status: String, Codable, Sendable {
         /// The sign-up has been inactive for a long period of time, thus it's considered as abandoned and needs to start over.
         case abandoned
         /// There are required fields that are either missing or they are unverified.

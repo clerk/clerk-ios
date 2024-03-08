@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents information about an image.
-public struct ClerkImageResource: Codable {
+public struct ClerkImageResource: Codable, Sendable {
     /// The unique identifier of the image.
     var id: String
     

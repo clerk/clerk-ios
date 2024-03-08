@@ -8,7 +8,7 @@
 import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
-public struct Verification: Codable, Equatable, Hashable {
+public struct Verification: Codable, Equatable, Hashable, Sendable {
     
     /// The state of the verification.
     public let status: Status?
@@ -34,7 +34,7 @@ public struct Verification: Codable, Equatable, Hashable {
     }
     
     /// The state of the verification.
-    public enum Status: String, Codable {
+    public enum Status: String, Codable, Sendable {
         case unverified
         case verified
         case transferable

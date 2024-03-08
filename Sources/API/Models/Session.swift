@@ -24,7 +24,7 @@ import Foundation
 
  While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
  */
-public struct Session: Codable, Identifiable {
+public struct Session: Codable, Identifiable, Sendable {
     
     /// A unique identifier for the session.
     public let id: String
@@ -66,7 +66,7 @@ public struct Session: Codable, Identifiable {
     public let lastActiveToken: TokenResource?
     
     /// Information about the user that's publicly available.
-    public struct PublicUserData: Codable, Equatable {
+    public struct PublicUserData: Codable, Equatable, Sendable {
         /// The user's first name. This attribute will only be populated if name is enabled in instance settings.
         public let firstName: String?
         
@@ -146,7 +146,7 @@ extension Session: Comparable {
 }
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
-public struct SessionActivity: Codable, Equatable {
+public struct SessionActivity: Codable, Equatable, Sendable {
     /// A unique identifier for the session activity record.
     let id: String
     
@@ -173,7 +173,7 @@ public struct SessionActivity: Codable, Equatable {
 }
 
 /// Represents the status of a session.
-public enum SessionStatus: String, Codable {
+public enum SessionStatus: String, Codable, Sendable {
     /// The session was abandoned client-side.
     case abandoned
     
@@ -235,7 +235,7 @@ extension Session {
     }
     
     /// Options that can be passed as parameters to the `getToken()` function.
-    public struct GetTokenOptions: Hashable {
+    public struct GetTokenOptions: Hashable, Sendable {
         
         public init(
             template: String? = nil,

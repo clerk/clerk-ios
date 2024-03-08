@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents information about a token.
-public struct TokenResource: Codable, Equatable {
+public struct TokenResource: Codable, Equatable, Sendable {
     /// The requested token.
     public let jwt: String
 }
