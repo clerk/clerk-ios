@@ -11,10 +11,8 @@ import Foundation
 import SwiftUI
 
 /**
- This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.
- 
- It also performs some Clerk specific setup.
- 
+ This modifier injects the clerk instance and clerkUIState into the environment.
+  
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
@@ -32,8 +30,9 @@ struct ClerkProviderModifier: ViewModifier {
 
 extension View {
     /**
-     This modifier configures your clerk shared instance, and injects it into the environment as an environmentObject.
-     You can observe changes to the Clerk object via `EnvironmentObject var clerk: Clerk` from any descendant view.
+     This modifier injects the clerk instance and clerkUIState into the environment.
+     
+     You can observe changes to this objects via `EnvironmentObject` from any descendant view.
      
      You should apply this modifier to the root view of your application. Most likely in your `App` file.
      */
