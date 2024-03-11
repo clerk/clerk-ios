@@ -29,6 +29,7 @@ struct DemoAppSettingsView: View {
                 } label: {
                     Text("Save")
                 }
+                .disabled(text == publishableKey)
             }
             .navigationTitle("Demo Settings")
             .toolbar {
