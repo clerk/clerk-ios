@@ -50,7 +50,7 @@ extension EmailAddress {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.me.emailAddresses.id(id).prepareVerification.post(params)
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -88,7 +88,7 @@ extension EmailAddress {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.me.emailAddresses.id(id).attemptVerification.post(params)
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -115,7 +115,7 @@ extension EmailAddress {
     public func destroy() async throws {
         let request = ClerkAPI.v1.me.emailAddresses.id(id).delete
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -125,7 +125,7 @@ extension EmailAddress {
     func setAsPrimary() async throws {
         let request = ClerkAPI.v1.me.update(.init(primaryEmailAddressId: id))
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()

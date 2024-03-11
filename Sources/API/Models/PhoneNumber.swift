@@ -89,7 +89,7 @@ extension PhoneNumber {
             .prepareVerification
             .post
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -106,7 +106,7 @@ extension PhoneNumber {
             .attemptVerification
             .post(code: code)
         
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -118,7 +118,7 @@ extension PhoneNumber {
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
         let body = ["reserved_for_second_factor": reserved]
         let request = ClerkAPI.v1.me.phoneNumbers.id(id).patch(body: body)
-        let phoneNumber = try await Clerk.apiClient.send(request) {
+        let phoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
         try await Clerk.shared.client.get()
@@ -129,7 +129,7 @@ extension PhoneNumber {
     @MainActor
     public func destroy() async throws {
         let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()
@@ -138,7 +138,7 @@ extension PhoneNumber {
     @MainActor
     func setAsPrimary() async throws {
         let request = ClerkAPI.v1.me.update(.init(primaryPhoneNumberId: id))
-        try await Clerk.apiClient.send(request) {
+        try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Clerk.shared.client.get()

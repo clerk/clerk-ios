@@ -32,6 +32,8 @@ extension View {
 #Preview {
     Text("SignIn")
         .authView(isPresented: .constant(true))
+        .environmentObject(Clerk.shared)
+        .environmentObject(ClerkUIState())
 }
 
 #endif

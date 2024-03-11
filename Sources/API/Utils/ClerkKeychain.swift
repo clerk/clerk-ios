@@ -7,6 +7,7 @@
 
 import Foundation
 import KeychainAccess
+import Factory
 
 extension Keychain: @unchecked Sendable { }
 
@@ -14,9 +15,7 @@ extension Keychain {
     
     // clerk.{APP_NAME}
     static var clerk: Keychain {
-        var service = "clerk"
-        if let appName = Bundle.main.appName { service += ".\(appName)" }
-        return Keychain(service: service)
+        Container.shared.keychain()
     }
 }
 

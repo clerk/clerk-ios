@@ -84,22 +84,22 @@ extension Client {
     @MainActor
     func get() async throws {
         let request = ClerkAPI.v1.client.get
-        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response ?? Client()
+        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response ?? Client()
     }
     
     /// Creates a new client for the current instance along with its cookie.
     @MainActor
     public func create() async throws {
         let request = ClerkAPI.v1.client.put
-        Clerk.shared.client = try await Clerk.apiClient.send(request).value.response
+        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response
     }
     
     /// Deletes the client. All sessions will be reset.
     @MainActor
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
-        try await Clerk.apiClient.send(request)
-        try Clerk.keychain.removeAll()
+        try await Clerk.shared.apiClient.send(request)
+        try Clerk.shared.keychain.removeAll()
         Clerk.shared.client = Client()
     }
     

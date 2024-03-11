@@ -162,7 +162,7 @@ public struct SignUp: Codable, Sendable {
     public func create(_ strategy: CreateStrategy) async throws {
         let params = createParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.post(params)
-        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.apiClient.send(request)
         try await Clerk.shared.client.get()
     }
     
@@ -253,7 +253,7 @@ public struct SignUp: Codable, Sendable {
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).patch(params)
-        let signUp = try await Clerk.apiClient.send(request).value.response
+        let signUp = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client.get()
         return signUp
     }
@@ -272,7 +272,7 @@ public struct SignUp: Codable, Sendable {
     public func prepareVerification(_ strategy: PrepareStrategy) async throws {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
-        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.apiClient.send(request)
         try await Clerk.shared.client.get()
     }
     
@@ -307,7 +307,7 @@ public struct SignUp: Codable, Sendable {
     public func attemptVerification(_ strategy: AttemptStrategy) async throws {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).attemptVerification.post(params)
-        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.apiClient.send(request)
         try await Clerk.shared.client.get()
     }
     
@@ -354,7 +354,7 @@ public struct SignUp: Codable, Sendable {
     @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        try await Clerk.apiClient.send(request)
+        try await Clerk.shared.apiClient.send(request)
         try await Clerk.shared.client.get()
     }
 }

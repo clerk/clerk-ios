@@ -9,15 +9,29 @@ import Foundation
 import Factory
 import RegexBuilder
 import Nuke
+import Get
+import KeychainAccess
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
 final public class Clerk: ObservableObject, @unchecked Sendable {
-    public static let shared = Container.shared.clerk()
-    static let apiClient = Container.shared.apiClient()
-    static let keychain = Container.shared.keychain()
-        
+    
+    public static var shared: Clerk {
+        // singleton scope
+        Container.shared.clerk()
+    }
+    
+    var apiClient: APIClient {
+        // cache scope
+        Container.shared.apiClient()
+    }
+    
+    var keychain: Keychain {
+        // cache scope
+        Container.shared.keychain()
+    }
+            
     init() {}
     
     /// Configure an instance of the Clerk class with dedicated options.
@@ -28,11 +42,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     @MainActor
     public func load(publishableKey: String) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            assertionFailure("You must include a valid publishable key to call this function.")
+            dump("Clerk loaded without a publishable key. Please include a valid publishable key.")
             return
         }
         
         self.publishableKey = publishableKey
+        Container.shared.reset()
         loadPersistedData()
         startSessionTokenPolling()
         
@@ -56,11 +71,19 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
                 dump(error)
             }
         }
-        
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     private(set) public var publishableKey: String = "" {
+        willSet {
+            // If we're setting a new publishable key after an existing one, 
+            // clear out the existing & persisted data
+            if !publishableKey.isEmpty {
+                try? keychain.removeAll()
+                client = Client()
+            }
+        }
+        
         didSet {
             let liveRegex = Regex {
                 "pk_live_"
@@ -100,7 +123,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     @Published internal(set) public var client: Client = .init() {
         didSet {
             do {
-                Clerk.keychain[data: ClerkKeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
+                keychain[data: ClerkKeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
             } catch {
                 dump(error)
             }
@@ -111,7 +134,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     @Published internal(set) public var environment: Clerk.Environment = .init() {
         didSet {
             do {
-                Clerk.keychain[data: ClerkKeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
+                keychain[data: ClerkKeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
             } catch {
                 dump(error)
             }
@@ -124,7 +147,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     @Published var sessionsByUserId: [String: [Session]] = .init() {
         didSet {
             do {
-                Clerk.keychain[data: ClerkKeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
+                keychain[data: ClerkKeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
             } catch {
                 dump(error)
             }
@@ -138,7 +161,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     var sessionTokensByCacheKey: [String: TokenResource] = .init() {
         didSet {
             do {
-                Clerk.keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
+                keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
             } catch {
                 dump(error)
             }
@@ -153,7 +176,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-            try await Clerk.apiClient.send(request)
+            try await Clerk.shared.apiClient.send(request)
             try await Clerk.shared.client.get()
             if Clerk.shared.client.sessions.isEmpty {
                 try await Clerk.shared.client.destroy()
@@ -170,7 +193,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
-            try await Clerk.apiClient.send(request)
+            try await Clerk.shared.apiClient.send(request)
             try await Clerk.shared.client.get()
             
         } else if let currentSession = session {
@@ -201,7 +224,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     @MainActor
     private func loadPersistedData() {
         
-        if let data = Clerk.keychain[data: ClerkKeychainKey.client] {
+        if let data = keychain[data: ClerkKeychainKey.client] {
             do {
                 self.client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
             } catch {
@@ -209,7 +232,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             }
         }
         
-        if let data = Clerk.keychain[data: ClerkKeychainKey.environment] {
+        if let data = keychain[data: ClerkKeychainKey.environment] {
             do {
                 self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
             } catch {
@@ -217,7 +240,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             }
         }
         
-        if let data = Clerk.keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] {
+        if let data = keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] {
             do {
                 self.sessionTokensByCacheKey = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
             } catch {
@@ -225,7 +248,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             }
         }
         
-        if let data = Clerk.keychain[data: ClerkKeychainKey.sessionsByUserId] {
+        if let data = keychain[data: ClerkKeychainKey.sessionsByUserId] {
             do {
                 self.sessionsByUserId = try JSONDecoder.clerkDecoder.decode([String: [Session]].self, from: data)
             } catch {

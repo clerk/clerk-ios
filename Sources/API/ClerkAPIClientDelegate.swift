@@ -8,27 +8,11 @@
 import Foundation
 import Get
 
-extension APIClient {
-    
-    /// The Clerk API Client
-    static let clerk = APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
-        client.delegate = ClerkAPIClientDelegate()
-        client.decoder = JSONDecoder.clerkDecoder
-        client.encoder = JSONEncoder.clerkEncoder
-        client.sessionConfiguration.httpAdditionalHeaders = [
-            "Clerk-API-Version": "2021-02-05",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": UserAgentHelpers.userAgentString
-        ]
-    }
-    
-}
-
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
         // Set the device token on every request
-        if let authToken = Clerk.keychain[ClerkKeychainKey.deviceToken] {
+        if let authToken = Clerk.shared.keychain[ClerkKeychainKey.deviceToken] {
             request.setValue(authToken, forHTTPHeaderField: "Authorization")
         }
         
@@ -58,7 +42,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         
         // Set the device token from the response headers whenever recieved in the response headers
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            Clerk.keychain[ClerkKeychainKey.deviceToken] = deviceToken
+            Clerk.shared.keychain[ClerkKeychainKey.deviceToken] = deviceToken
         }
     }
     

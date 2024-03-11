@@ -217,7 +217,7 @@ extension Session {
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
         let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
-        let revokedSession = try await Clerk.apiClient.send(request) {
+        let revokedSession = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
         try await Clerk.shared.client.get()
@@ -313,11 +313,11 @@ actor SessionTokenFetcher {
                 .template(template)
                 .post()
             
-            token = try await Clerk.apiClient.send(templateTokenRequest).value
+            token = try await Clerk.shared.apiClient.send(templateTokenRequest).value
         } else {
             let defaultTokenRequest = tokensRequest.post()
             
-            token = try await Clerk.apiClient.send(defaultTokenRequest).value
+            token = try await Clerk.shared.apiClient.send(defaultTokenRequest).value
         }
         
         if let token {

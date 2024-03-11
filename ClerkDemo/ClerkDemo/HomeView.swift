@@ -9,10 +9,15 @@ import SwiftUI
 import ClerkSDK
 
 struct HomeView: View {
+    
     var body: some View {
         NavigationStack {
             List {
-                Text("Tap the user button to get started.")
+                Section {
+                    Text("1. Set your publishable key in the settings.")
+                    Text("2. Tap the user button to get started.")
+                }
+                .font(.subheadline)
             }
             .navigationTitle("Clerk Demo")
             .toolbar {
