@@ -98,9 +98,11 @@ Clerk's full documentation is available at [clerk.com/docs](https://clerk.com/do
 
 Curious what we shipped recently? Check out our [changelog](https://clerk.com/changelog)!
 
+<!---
 ## 🤝 How to Contribute
 
 We're open to all community contributions! If you'd like to contribute in any way, please read [our contribution guidelines](https://github.com/clerk/javascript/blob/main/docs/CONTRIBUTING.md). We'd love to have you as part of the Clerk community!
+-->
 
 ## 📝 License
 
