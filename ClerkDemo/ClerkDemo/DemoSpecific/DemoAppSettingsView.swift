@@ -19,6 +19,7 @@ struct DemoAppSettingsView: View {
         NavigationStack {
             Form {                
                 TextField("Publishable Key", text: $text, prompt: Text("Publishable Key"))
+                    .font(.subheadline)
                     .task { text = publishableKey }
                 
                 Button {
@@ -38,7 +39,7 @@ struct DemoAppSettingsView: View {
                         Image(systemName: "xmark")
                             .imageScale(.small)
                             .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .background(.ultraThinMaterial, in: .circle)
                     })
                     .tint(.primary)
                 }
