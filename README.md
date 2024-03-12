@@ -73,15 +73,15 @@ Run `carthage update --use-xcframeworks` to build the framework and drag the bui
 
 ### Swift Package Manager
 
-To integrate using Apple's [Swift Package Manager](https://swift.org/package-manager/), add the following as a dependency to your `Package.swift`:
+To integrate using Apple's [Swift Package Manager](https://swift.org/package-manager/), navigate to your Xcode project, select `Package Dependencies` and click the `+` icon to search for `https://github.com/clerk/clerk-ios`.
+
+Alternatively, add the following as a dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
     .package(url: "https://github.com/clerk/clerk-ios", from: "0.1.0")
 ]
 ```
-
-Alternatively navigate to your Xcode project, select `Swift Packages` and click the `+` icon to search for `Clerk`.
 
 ### Manually
 
