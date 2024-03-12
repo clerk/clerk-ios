@@ -6,18 +6,6 @@
 //
 
 import Foundation
-import KeychainAccess
-import Factory
-
-extension Keychain: @unchecked Sendable { }
-
-extension Keychain {
-    
-    // clerk.{APP_NAME}
-    static var clerk: Keychain {
-        Container.shared.keychain()
-    }
-}
 
 enum ClerkKeychainKey {
     static let deviceToken = "deviceToken"
