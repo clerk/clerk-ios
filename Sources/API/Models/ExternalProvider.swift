@@ -8,7 +8,7 @@
 import Foundation
 
 /// The available external authentication providers.
-public enum ExternalProvider: Codable, CaseIterable, Identifiable {
+public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     public var id: Self { self }
     
     case facebook

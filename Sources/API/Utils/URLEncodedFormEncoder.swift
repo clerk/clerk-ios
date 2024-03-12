@@ -51,9 +51,9 @@ import Foundation
 /// replacing spaces with `%20`.
 ///
 /// This type is largely based on Vapor's [`url-encoded-form`](https://github.com/vapor/url-encoded-form) project.
-public final class URLEncodedFormEncoder {
+public final class URLEncodedFormEncoder: Sendable {
     /// Encoding to use for `Array` values.
-    public enum ArrayEncoding {
+    public enum ArrayEncoding: Sendable {
         /// An empty set of square brackets ("[]") are appended to the key for every value. This is the default encoding.
         case brackets
         /// No brackets are appended to the key and the key is encoded as is.
@@ -61,7 +61,7 @@ public final class URLEncodedFormEncoder {
         /// Brackets containing the item index are appended. This matches the jQuery and Node.js behavior.
         case indexInBrackets
         /// Provide a custom array key encoding with the given closure.
-        case custom((_ key: String, _ index: Int) -> String)
+        case custom(@Sendable (_ key: String, _ index: Int) -> String)
 
         /// Encodes the key according to the encoding.
         ///
@@ -81,7 +81,7 @@ public final class URLEncodedFormEncoder {
     }
 
     /// Encoding to use for `Bool` values.
-    public enum BoolEncoding {
+    public enum BoolEncoding: Sendable {
         /// Encodes `true` as `1`, `false` as `0`.
         case numeric
         /// Encodes `true` as "true", `false` as "false". This is the default encoding.
@@ -101,13 +101,13 @@ public final class URLEncodedFormEncoder {
     }
 
     /// Encoding to use for `Data` values.
-    public enum DataEncoding {
+    public enum DataEncoding: Sendable {
         /// Defers encoding to the `Data` type.
         case deferredToData
         /// Encodes `Data` as a Base64-encoded string. This is the default encoding.
         case base64
         /// Encode the `Data` as a custom value encoded by the given closure.
-        case custom((Data) throws -> String)
+        case custom(@Sendable (Data) throws -> String)
 
         /// Encodes `Data` according to the encoding.
         ///
@@ -125,7 +125,7 @@ public final class URLEncodedFormEncoder {
     }
 
     /// Encoding to use for `Date` values.
-    public enum DateEncoding {
+    public enum DateEncoding: Sendable {
         /// ISO8601 and RFC3339 formatter.
         private static let iso8601Formatter: ISO8601DateFormatter = {
             let formatter = ISO8601DateFormatter()
@@ -144,7 +144,7 @@ public final class URLEncodedFormEncoder {
         /// Encodes `Date`s using the given `DateFormatter`.
         case formatted(DateFormatter)
         /// Encodes `Date`s using the given closure.
-        case custom((Date) throws -> String)
+        case custom(@Sendable (Date) throws -> String)
 
         /// Encodes the date according to the encoding.
         ///
@@ -174,7 +174,7 @@ public final class URLEncodedFormEncoder {
     ///
     /// This type is derived from [`JSONEncoder`'s `KeyEncodingStrategy`](https://github.com/apple/swift/blob/6aa313b8dd5f05135f7f878eccc1db6f9fbe34ff/stdlib/public/Darwin/Foundation/JSONEncoder.swift#L128)
     /// and [`XMLEncoder`s `KeyEncodingStrategy`](https://github.com/MaxDesiatov/XMLCoder/blob/master/Sources/XMLCoder/Encoder/XMLEncoder.swift#L102).
-    public enum KeyEncoding {
+    public enum KeyEncoding: Sendable {
         /// Use the keys specified by each type. This is the default encoding.
         case useDefaultKeys
         /// Convert from "camelCaseKeys" to "snake_case_keys" before writing a key.
@@ -209,7 +209,7 @@ public final class URLEncodedFormEncoder {
         /// For example `oneTwoThree` becomes  `onetwothree`.
         case lowercased
         /// A custom encoding using the provided closure.
-        case custom((String) -> String)
+        case custom(@Sendable (String) -> String)
 
         func encode(_ key: String) -> String {
             switch self {
@@ -295,18 +295,18 @@ public final class URLEncodedFormEncoder {
     ///
     /// This encoding affects how the `parent`, `child`, `grandchild` path is encoded. Brackets are used by default.
     /// e.g. `parent[child][grandchild]=value`.
-    public struct KeyPathEncoding {
+    public struct KeyPathEncoding: Sendable {
         /// Encodes key paths by wrapping each component in brackets. e.g. `parent[child][grandchild]`.
         public static let brackets = KeyPathEncoding { "[\($0)]" }
         /// Encodes key paths by separating each component with dots. e.g. `parent.child.grandchild`.
         public static let dots = KeyPathEncoding { ".\($0)" }
 
-        private let encoding: (_ subkey: String) -> String
+        private let encoding: @Sendable (_ subkey: String) -> String
 
         /// Creates an instance with the encoding closure called for each sub-key in a key path.
         ///
         /// - Parameter encoding: Closure used to perform the encoding.
-        public init(encoding: @escaping (_ subkey: String) -> String) {
+        public init(encoding: @Sendable @escaping (_ subkey: String) -> String) {
             self.encoding = encoding
         }
 
@@ -316,7 +316,7 @@ public final class URLEncodedFormEncoder {
     }
 
     /// Encoding to use for `nil` values.
-    public struct NilEncoding {
+    public struct NilEncoding: Sendable {
         /// Encodes `nil` by dropping the entire key / value pair.
         public static let dropKey = NilEncoding { nil }
         /// Encodes `nil` by dropping only the value. e.g. `value1=one&nilValue=&value2=two`.
@@ -324,12 +324,12 @@ public final class URLEncodedFormEncoder {
         /// Encodes `nil` as `null`.
         public static let null = NilEncoding { "null" }
 
-        private let encoding: () -> String?
+        private let encoding: @Sendable () -> String?
 
         /// Creates an instance with the encoding closure called for `nil` values.
         ///
         /// - Parameter encoding: Closure used to perform the encoding.
-        public init(encoding: @escaping () -> String?) {
+        public init(encoding: @Sendable @escaping () -> String?) {
             self.encoding = encoding
         }
 
@@ -339,7 +339,7 @@ public final class URLEncodedFormEncoder {
     }
 
     /// Encoding to use for spaces.
-    public enum SpaceEncoding {
+    public enum SpaceEncoding: Sendable {
         /// Encodes spaces using percent escaping (`%20`).
         case percentEscaped
         /// Encodes spaces as `+`.
@@ -394,7 +394,7 @@ public final class URLEncodedFormEncoder {
     /// The `SpaceEncoding` to use.
     public let spaceEncoding: SpaceEncoding
     /// The `CharacterSet` of allowed (non-escaped) characters.
-    public var allowedCharacters: CharacterSet
+    public let allowedCharacters: CharacterSet
 
     /// Creates an instance from the supplied parameters.
     ///

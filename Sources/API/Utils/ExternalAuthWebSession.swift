@@ -7,6 +7,7 @@
 
 import AuthenticationServices
 
+@MainActor
 final class ExternalAuthWebSession: NSObject {
     let url: URL
     let authAction: AuthAction
@@ -22,7 +23,6 @@ final class ExternalAuthWebSession: NSObject {
         self.authAction = authAction
     }
     
-    @MainActor
     func start() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: "clerk") { callbackUrl, error in
