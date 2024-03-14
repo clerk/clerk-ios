@@ -34,6 +34,10 @@ struct UserProfileSecurityView: View {
             }
             
             UserProfileActiveDevicesSection()
+            
+            if clerk.environment.userSettings.actions.deleteSelf {
+                UserProfileDeleteAccountSection()
+            }
         }
     }
 }
