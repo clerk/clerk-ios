@@ -97,6 +97,8 @@ struct UserProfileMfaSection: View {
                 }
                 .padding(.leading, 12)
             }
+            
+            Divider()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.snappy, value: user)

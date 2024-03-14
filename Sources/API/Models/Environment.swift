@@ -72,6 +72,7 @@ extension Clerk.Environment {
         let attributes: [Attribute: AttributesConfig]
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
         let social: [String: SocialConfig]
+        let actions: Actions
         
         public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable, Sendable {
             case emailAddress
@@ -114,12 +115,19 @@ extension Clerk.Environment {
             }
         }
         
-        public init(
+        public struct Actions: Codable, Equatable, Sendable {
+            public var deleteSelf: Bool = false
+            public var createOrganization: Bool = false
+        }
+        
+        init(
             attributes: [Attribute : AttributesConfig] = [:],
-            social: [String : SocialConfig] = [:]
+            social: [String : SocialConfig] = [:],
+            actions: Actions = .init()
         ) {
             self.attributes = attributes
             self.social = social
+            self.actions = actions
         }
     }
 }

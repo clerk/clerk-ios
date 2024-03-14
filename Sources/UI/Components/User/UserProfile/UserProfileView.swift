@@ -12,6 +12,7 @@ import SwiftUI
 public struct UserProfileView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var errorWrapper: ErrorWrapper?
+    @Environment(\.dismiss) private var dismiss
         
     public init() {}
     
@@ -26,9 +27,18 @@ public struct UserProfileView: View {
                 UserProfileSecurityView()
             }
             .padding()
+            .padding(.bottom)
         }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
+        .overlay {
+            if user == nil {
+                ZStack {
+                    Color(.systemBackground)
+                    ProgressView()
+                }
+            }
+        }
         .task {
             do {
                 try await clerk.client.get()

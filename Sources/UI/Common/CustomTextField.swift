@@ -14,6 +14,7 @@ struct CustomTextField: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     @Binding var text: String
+    var placeholder: String = ""
     var isSecureField: Bool = false
     
     var body: some View {
@@ -35,9 +36,9 @@ struct CustomTextField: View {
     @ViewBuilder 
     private var inputField: some View {
         if isSecureField {
-            SecureField("", text: $text)
+            SecureField(placeholder, text: $text)
         } else {
-            TextField("", text: $text)
+            TextField(placeholder, text: $text)
         }
     }
 }

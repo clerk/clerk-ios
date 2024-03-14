@@ -361,4 +361,14 @@ extension User {
         try await Clerk.shared.client.get()
     }
     
+    /// Deletes the current user.
+    @MainActor
+    public func delete() async throws {
+        let request = ClerkAPI.v1.me.delete()
+        try await Clerk.shared.apiClient.send(request) {
+            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
+        }
+        try await Clerk.shared.client.get()
+    }
+    
 }

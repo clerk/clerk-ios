@@ -25,6 +25,10 @@ extension ClerkAPI.V1Endpoint {
         func update(_ params: User.UpdateParams) -> Request<ClientResponse<User>> {
             .init(path: path, method: .patch, body: params)
         }
+        
+        func delete() -> Request<Void> {
+            .init(path: path, method: .delete)
+        }
     }
     
 }
