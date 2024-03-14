@@ -54,7 +54,7 @@ struct UserProfileDetailsView: View {
     ScrollView {
         UserProfileDetailsView()
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
     }
     .environmentObject(Clerk.shared)
 }

@@ -59,7 +59,7 @@ struct SignInStartView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
     }
 }

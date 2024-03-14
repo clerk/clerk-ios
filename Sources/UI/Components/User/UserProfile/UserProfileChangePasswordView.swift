@@ -52,51 +52,58 @@ struct UserProfileChangePasswordView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: .zero) {
                 Text("Change password")
                     .font(.title2.weight(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 30)
                 
-                VStack(alignment: .leading) {
-                    Text("Current password").font(.footnote.weight(.medium))
-                    CustomTextField(text: $currentPassword, isSecureField: true)
-                        .textContentType(.password)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .currentPassword)
-                        .task {
-                            focusedField = .currentPassword
+                VStack(spacing: 20) {
+                    VStack(alignment: .leading) {
+                        Text("Current password").font(.footnote.weight(.medium))
+                        CustomTextField(text: $currentPassword, isSecureField: true)
+                            .textContentType(.password)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focusedField, equals: .currentPassword)
+                            .task {
+                                focusedField = .currentPassword
+                            }
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text("New password").font(.footnote.weight(.medium))
+                        CustomTextField(text: $newPassword, isSecureField: true)
+                            .textContentType(.newPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focusedField, equals: .newPassword)
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text("Confirm password").font(.footnote.weight(.medium))
+                        CustomTextField(text: $confirmPassword, isSecureField: true)
+                            .textContentType(.newPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focusedField, equals: .confirmPassword)
+                    }
+                    
+                    HStack {
+                        Toggle(isOn: $signOutOfOtherDevices) {
+                            Text("Sign out of all other devices")
+                                .font(.footnote.weight(.medium))
                         }
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("New password").font(.footnote.weight(.medium))
-                    CustomTextField(text: $newPassword, isSecureField: true)
-                        .textContentType(.newPassword)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .newPassword)
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("Confirm password").font(.footnote.weight(.medium))
-                    CustomTextField(text: $confirmPassword, isSecureField: true)
-                        .textContentType(.newPassword)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .confirmPassword)
-                }
-                
-                HStack {
-                    Toggle(isOn: $signOutOfOtherDevices) {
+                        .labelsHidden()
+                        .tint(clerkTheme.colors.textPrimary)
+                        
                         Text("Sign out of all other devices")
                             .font(.footnote.weight(.medium))
                     }
-                    .labelsHidden()
-                    .tint(clerkTheme.colors.textPrimary)
-                    
-                    Text("Sign out of all other devices")
-                        .font(.footnote.weight(.medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 30)
                 
                 HStack {
                     Button {
@@ -121,7 +128,7 @@ struct UserProfileChangePasswordView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)

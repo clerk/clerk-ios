@@ -46,7 +46,7 @@ struct UserProfileSecurityView: View {
     ScrollView {
         UserProfileSecurityView()
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
     }
     .environmentObject(Clerk.shared)
 }

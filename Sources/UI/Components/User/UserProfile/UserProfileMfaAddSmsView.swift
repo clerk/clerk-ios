@@ -58,10 +58,10 @@ struct UserProfileMfaAddSmsView: View {
     private var selectPhoneNumberView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading) {
                     Text("Add SMS code verification")
-                        .font(.footnote.weight(.bold))
-                        .frame(minHeight: 18)
+                        .font(.title2.weight(.bold))
+
                     Text("Select an existing phone number to register for SMS code two-step verification or add a new one.")
                         .font(.footnote)
                         .frame(minHeight: 18)

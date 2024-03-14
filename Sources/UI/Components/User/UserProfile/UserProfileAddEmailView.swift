@@ -148,9 +148,10 @@ struct UserProfileAddEmailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
-                OrgLogoView()
-                    .frame(width: 32, height: 32)
-                    .padding(.bottom, 24)
+                Text("Add email address")
+                    .font(.title2.weight(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 30)
                 
                 content
                 
@@ -164,7 +165,7 @@ struct UserProfileAddEmailView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
         .transition(.asymmetric(
             insertion: .scale(scale: 0.95).combined(with: .opacity),

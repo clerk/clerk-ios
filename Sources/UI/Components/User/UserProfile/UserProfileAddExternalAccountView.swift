@@ -70,7 +70,7 @@ struct UserProfileAddExternalAccountView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay()

@@ -84,7 +84,7 @@ struct UserButtonPopover: View {
                         .padding(.leading, 66) // 66 is 50pt avatar + 16pt spacing
                     }
                     .padding()
-                    .padding(.top, 30)
+                    .padding(.top)
                     .background()
                     .overlay(alignment: .bottom) {
                         Divider()

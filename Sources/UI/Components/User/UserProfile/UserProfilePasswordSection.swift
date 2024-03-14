@@ -21,7 +21,7 @@ struct UserProfilePasswordSection: View {
                 Text("••••••••••")
                     .font(.title3.weight(.medium))
                 Spacer()
-                Button("Reset password") {
+                Button("Change password") {
                     changePasswordIsPresented = true
                 }
                 .font(.caption.weight(.medium))

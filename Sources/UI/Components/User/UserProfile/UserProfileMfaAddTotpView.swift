@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-extension UserProfileAddTotpView {
+extension UserProfileMfaAddTotpView {
     enum Step: Hashable, Equatable {
         case loading
         case add(totp: TOTPResource)
@@ -16,7 +16,7 @@ extension UserProfileAddTotpView {
     }
 }
 
-struct UserProfileAddTotpView: View {
+struct UserProfileMfaAddTotpView: View {
     @EnvironmentObject private var clerk: Clerk
     @Environment(\.dismiss) private var dismiss
     @State private var step: Step = .loading
@@ -46,8 +46,6 @@ struct UserProfileAddTotpView: View {
         ))
         .id(step)
         .animation(.snappy, value: step)
-        .padding()
-        .padding(.top, 30)
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
         .task {
@@ -67,21 +65,21 @@ struct UserProfileAddTotpView: View {
 }
 
 #Preview {
-    UserProfileAddTotpView()
+    UserProfileMfaAddTotpView()
         .environmentObject(Clerk.shared)
 }
 
 private struct AddTOTPView: View {
-    @Binding var step: UserProfileAddTotpView.Step
+    @Binding var step: UserProfileMfaAddTotpView.Step
     
     var body: some View {
         ScrollView {
             if case .add(let totp) = step {
                 VStack(alignment: .leading, spacing: .zero) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading) {
                         Text("Add authenticator application")
-                            .font(.footnote.weight(.bold))
-                            .frame(minHeight: 18)
+                            .font(.title2.weight(.bold))
+                        
                         Text("Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -132,6 +130,8 @@ private struct AddTOTPView: View {
                         }
                     }
                 }
+                .padding()
+                .padding(.top, 30)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -143,6 +143,7 @@ private struct AddTOTPView: View {
                     .clerkStandardButtonPadding()
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding()
         }
     }
 }
@@ -158,14 +159,13 @@ private struct AddTOTPView: View {
         createdAt: .now,
         updatedAt: .now
     ))))
-    .padding()
 }
 
 private struct VerifyTOTPView: View {
     @EnvironmentObject private var clerk: Clerk
     @State private var code = ""
     @State private var errorWrapper: ErrorWrapper?
-    @Binding var step: UserProfileAddTotpView.Step
+    @Binding var step: UserProfileMfaAddTotpView.Step
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -192,6 +192,8 @@ private struct VerifyTOTPView: View {
                 }
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
+            .padding()
+            .padding(.top, 30)
         }
         .clerkErrorPresenting($errorWrapper)
     }
@@ -215,7 +217,6 @@ private struct VerifyTOTPView: View {
 
 #Preview {
     VerifyTOTPView(step: .constant(.verify))
-        .padding()
 }
 
 private struct TOTPBackupCodesView: View {
@@ -239,6 +240,8 @@ private struct TOTPBackupCodesView: View {
                 UserProfileMfaBackupCodeListView(backupCodes: backupCodes)
             }
             .frame(maxWidth: .infinity)
+            .padding()
+            .padding(.top, 30)
         }
         .safeAreaInset(edge: .bottom) {
             Button {
@@ -249,6 +252,7 @@ private struct TOTPBackupCodesView: View {
                     .clerkStandardButtonPadding()
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding()
         }
     }
 }
@@ -266,5 +270,4 @@ private struct TOTPBackupCodesView: View {
         "g2eh9622",
         "flwmkdcp"
       ])
-    .padding()
 }

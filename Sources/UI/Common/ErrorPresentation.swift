@@ -43,8 +43,7 @@ struct ErrorView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
         }
         .padding()
-        .padding(.vertical)
-        .padding(.top)
+        .padding(.top, 30)
         .dismissButtonOverlay()
     }
 }

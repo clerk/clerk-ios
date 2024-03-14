@@ -47,9 +47,9 @@ struct SignInFactorOneUseAnotherMethodView: View {
                         .frame(minHeight: 18)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
     }
 }

@@ -74,7 +74,7 @@ struct SignInForgotPasswordView: View {
                 }
             }
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
         .clerkErrorPresenting($errorWrapper)
     }

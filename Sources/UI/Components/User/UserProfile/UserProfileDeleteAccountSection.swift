@@ -90,7 +90,7 @@ private struct DeleteAccountConfirmationView: View {
                 }
             }
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)

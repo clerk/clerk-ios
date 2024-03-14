@@ -82,7 +82,7 @@ struct SignInFactorOnePasswordView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .padding(.vertical)
+            .padding(.top, 30)
             .background(.background)
             .clerkErrorPresenting($errorWrapper)
         }

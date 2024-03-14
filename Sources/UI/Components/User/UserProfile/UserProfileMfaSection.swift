@@ -107,7 +107,7 @@ struct UserProfileMfaSection: View {
                 .presentationDragIndicator(.visible)
         })
         .sheet(isPresented: $authenticationAppIsPresented, content: {
-            UserProfileAddTotpView()
+            UserProfileMfaAddTotpView()
                 .presentationDragIndicator(.visible)
         })
     }
