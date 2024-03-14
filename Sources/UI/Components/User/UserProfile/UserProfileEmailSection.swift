@@ -92,7 +92,7 @@ struct UserProfileEmailSection: View {
                                 do {
                                     try await removeResource.deleteAction()
                                 } catch {
-                                    dump(error)
+                                    errorWrapper = ErrorWrapper(error: error)
                                 }
                             } label: {
                                 Text(removeResource.title)
@@ -136,6 +136,7 @@ struct UserProfileEmailSection: View {
                         .padding(.leading, 24)
                 }
             }
+            .clerkErrorPresenting($errorWrapper)
         }
         
         @ViewBuilder

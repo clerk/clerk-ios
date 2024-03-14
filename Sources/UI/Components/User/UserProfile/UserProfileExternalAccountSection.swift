@@ -90,7 +90,7 @@ struct UserProfileExternalAccountSection: View {
                                     do {
                                         try await removeResource.deleteAction()
                                     } catch {
-                                        dump(error)
+                                        errorWrapper = ErrorWrapper(error: error)
                                     }
                                 } label: {
                                     Text(removeResource.title)
