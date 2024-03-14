@@ -73,6 +73,7 @@ struct UserProfileAddExternalAccountView: View {
             .padding(.vertical)
         }
         .clerkErrorPresenting($errorWrapper)
+        .dismissButtonOverlay()
         .task {
             try? await clerk.environment.get()
         }
