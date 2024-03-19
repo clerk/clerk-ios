@@ -335,22 +335,6 @@ public struct SignUp: Codable, Sendable {
         public let code: String
     }
     
-    /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
-    @available(*, deprecated, message: "Use authenticateWithRedirect instead.")
-    @MainActor
-    public func startExternalAuth() async throws {
-        guard
-            let verification = verifications.first(where: { $0.key == "external_account" })?.value,
-            let redirectUrl = verification.externalVerificationRedirectUrl,
-            let url = URL(string: redirectUrl)
-        else {
-            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-        }
-        
-        let authSession = ExternalAuthWebSession(url: url, authAction: .signUp)
-        try await authSession.start()
-    }
-    
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @MainActor
     public func authenticateWithRedirect() async throws {
