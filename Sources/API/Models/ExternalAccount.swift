@@ -74,7 +74,11 @@ extension ExternalAccount {
     
     /// Username if available, otherwise email address
     var displayName: String {
-        username ?? emailAddress
+        if let username, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return username
+        } else {
+            return emailAddress
+        }
     }
     
     var fullName: String? {
