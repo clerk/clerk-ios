@@ -13,7 +13,7 @@ final class ExternalAuthWebSession: NSObject {
     let authAction: AuthAction
     
     enum AuthAction {
-        case signIn, signUp, verify
+        case signIn, signUp, reauthorize
     }
     
     private var webAuthSession: ASWebAuthenticationSession?
@@ -25,7 +25,7 @@ final class ExternalAuthWebSession: NSObject {
     
     func start() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: "clerk") { callbackUrl, error in
+            let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.oauthSettings.callbackUrlScheme) { callbackUrl, error in
                 if let error = error {
                     if case ASWebAuthenticationSessionError.canceledLogin = error {
                         continuation.resume()
@@ -63,7 +63,7 @@ final class ExternalAuthWebSession: NSObject {
                                     }
                                 }
                                 
-                            case .verify:
+                            case .reauthorize:
                                 try await Clerk.shared.client.get()
                             }
                             

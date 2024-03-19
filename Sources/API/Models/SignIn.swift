@@ -158,7 +158,7 @@ public struct SignIn: Codable, Sendable {
         ///
         /// After successfully creating the sign in, call `signIn.startExternalAuth()` to kick off the external authentication process.
         case externalProvider(_ provider: ExternalProvider)
-        /// 
+        ///
         case transfer
     }
     
@@ -167,7 +167,7 @@ public struct SignIn: Codable, Sendable {
         case .identifier(let identifier, let password):
             return .init(identifier: identifier, password: password)
         case .externalProvider(let provider):
-            return .init(strategy: provider.data.strategy)
+            return .init(strategy: provider.data.strategy, redirectUrl: Clerk.shared.oauthSettings.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.oauthSettings.redirectUrl)
         case .transfer:
             return .init(transfer: true)
         }
@@ -177,7 +177,8 @@ public struct SignIn: Codable, Sendable {
         public var identifier: String?
         public var strategy: String?
         public var password: String?
-        public var redirectUrl: String? = "clerk://"
+        public var redirectUrl: String?
+        public var actionCompleteRedirectUrl: String?
         public var transfer: Bool?
     }
     
@@ -251,10 +252,10 @@ public struct SignIn: Codable, Sendable {
         public var phoneNumberId: String?
         
         /// The URL that the OAuth provider should redirect to, on successful authorization on their part. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
-        public var redirectUrl: String? = "clerk://"
+        public var redirectUrl: String?
         
         /// The URL that the user will be redirected to, after successful authorization from the OAuth provider and Clerk sign in. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
-        public var actionCompleteRedirectUrl: String? // = "clerk://"
+        public var actionCompleteRedirectUrl: String?
     }
     
     /**
@@ -379,10 +380,22 @@ public struct SignIn: Codable, Sendable {
     }
     
     /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
+    @available(*, deprecated, message: "Use authenticateWithRedirect instead.")
     @MainActor
     public func startExternalAuth() async throws {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
-            throw ClerkClientError(message: "Redirect URL not provided. Unable to start external authentication flow.")
+            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+        }
+        
+        let authSession = ExternalAuthWebSession(url: url, authAction: .signIn)
+        try await authSession.start()
+    }
+    
+    /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
+    @MainActor
+    public func authenticateWithRedirect() async throws {
+        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
         let authSession = ExternalAuthWebSession(url: url, authAction: .signIn)
