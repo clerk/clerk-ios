@@ -28,6 +28,7 @@ struct UserProfileDeleteAccountSection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.snappy, value: clerk.user)
+        .animation(.snappy, value: clerk.sessionsByUserId)
         .sheet(isPresented: $confirmationIsPresented) {
             DeleteAccountConfirmationView()
         }

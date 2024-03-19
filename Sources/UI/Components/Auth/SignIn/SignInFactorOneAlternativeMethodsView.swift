@@ -28,7 +28,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     private func signIn(provider: ExternalProvider) async {
         do {
             try await signIn.create(strategy: .externalProvider(provider))
-            try await signIn.startExternalAuth()
+            try await signIn.authenticateWithRedirect()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart

@@ -212,7 +212,7 @@ struct SignUpFormView: View {
                         
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
-                try await signUp.startExternalAuth()
+                try await signUp.authenticateWithRedirect()
             default:
                 break
             }

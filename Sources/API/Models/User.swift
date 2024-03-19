@@ -252,22 +252,20 @@ extension User {
     public struct CreateExternalAccountParams: Encodable {
         init(
             ExternalProvider: ExternalProvider,
-            redirectUrl: String = "clerk://",
             additionalScopes: [String]? = nil
         ) {
             self.strategy = ExternalProvider.data.strategy
-            self.redirectUrl = redirectUrl
             self.additionalScopes = additionalScopes
         }
         
         /// The strategy corresponding to the oauth provider, e.g. `oauth_facebook`, `oauth_github`, etc.
         let strategy: String
         
-        /// The URL to redirect back to one the oauth flow has completed successfully or unsuccessfully.
-        let redirectUrl: String
-        
         /// Any additional scopes you would like your user to be prompted to approve.
         let additionalScopes: [String]?
+        
+        /// The URL to redirect back to one the oauth flow has completed successfully or unsuccessfully.
+        private let redirectUrl: String = Clerk.shared.oauthSettings.redirectUrl
     }
     
     /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.

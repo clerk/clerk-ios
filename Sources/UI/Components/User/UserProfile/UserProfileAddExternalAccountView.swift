@@ -23,7 +23,7 @@ struct UserProfileAddExternalAccountView: View {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             let newExternalAccount = try await user.createExternalAccount(provider)
-            try await newExternalAccount.startExternalAuth()
+            try await newExternalAccount.reauthorize()
             dismiss()
         } catch {
             errorWrapper = ErrorWrapper(error: error)

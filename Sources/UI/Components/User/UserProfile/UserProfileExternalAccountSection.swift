@@ -116,7 +116,7 @@ struct UserProfileExternalAccountSection: View {
                     Spacer()
                     
                     Menu {
-                        if externalAccount.verification?.status != .verified {
+                        if externalAccount.verification?.error != nil || externalAccount.verification?.status != .verified {
                             retryConnectionButton
                         }
                         
@@ -153,7 +153,7 @@ struct UserProfileExternalAccountSection: View {
         private func retryConnection(_ provider: ExternalProvider) async {
             do {
                 let externalAccount = try await user?.createExternalAccount(provider)
-                try await externalAccount?.startExternalAuth()
+                try await externalAccount?.reauthorize()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)

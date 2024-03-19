@@ -90,17 +90,17 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
-    /// Starts an external authentication web session at the provided `externalVerificationRedirectUrl`.
+    /// Invokes a re-authorization flow for an existing external account.
     @MainActor
-    public func startExternalAuth() async throws {
+    public func reauthorize() async throws {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
         else {
-            throw ClerkClientError(message: "Redirect URL not provided. Unable to start external authentication flow.")
+            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = ExternalAuthWebSession(url: url, authAction: .verify)
+        let authSession = ExternalAuthWebSession(url: url, authAction: .reauthorize)
         try await authSession.start()
     }
     

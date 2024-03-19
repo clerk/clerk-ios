@@ -88,7 +88,7 @@ struct AuthSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         do {
             try await signIn.create(strategy: .externalProvider(provider))
-            try await signIn.startExternalAuth()
+            try await signIn.authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
@@ -100,7 +100,7 @@ struct AuthSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         do {
             try await signUp.create(.externalProvider(provider))
-            try await signUp.startExternalAuth()
+            try await signUp.authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
