@@ -110,7 +110,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     private(set) public var frontendAPIURL: String = ""
     
     /// The configurable OAuth settings. For example: `redirectUrl`, `callbackUrlScheme`
-    public var oauthSettings = OAuthSettings()
+    public var redirectConfig = RedirectConfig()
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {

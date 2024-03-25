@@ -25,7 +25,7 @@ final class ExternalAuthWebSession: NSObject {
     
     func start() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.oauthSettings.callbackUrlScheme) { callbackUrl, error in
+            let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme) { callbackUrl, error in
                 if let error = error {
                     if case ASWebAuthenticationSessionError.canceledLogin = error {
                         continuation.resume()
