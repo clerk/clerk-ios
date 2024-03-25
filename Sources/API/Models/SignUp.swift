@@ -177,7 +177,7 @@ public struct SignUp: Codable, Sendable {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
         case .externalProvider(let provider):
-            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.oauthSettings.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.oauthSettings.redirectUrl)
+            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         case .transfer:
             return .init(transfer: true)
         }

@@ -167,7 +167,7 @@ public struct SignIn: Codable, Sendable {
         case .identifier(let identifier, let password):
             return .init(identifier: identifier, password: password)
         case .externalProvider(let provider):
-            return .init(strategy: provider.data.strategy, redirectUrl: Clerk.shared.oauthSettings.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.oauthSettings.redirectUrl)
+            return .init(strategy: provider.data.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         case .transfer:
             return .init(transfer: true)
         }
@@ -233,7 +233,7 @@ public struct SignIn: Codable, Sendable {
         case .emailCode, .resetPasswordEmailCode:
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
 //        case .emailLink:
-//            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.frontendAPIURL.replacingOccurrences(of: ".clerk", with: "") + "/sign-in/verify")
+//            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
         case .saml:
