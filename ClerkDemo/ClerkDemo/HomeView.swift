@@ -34,5 +34,4 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
-        .environmentObject(Clerk.shared)
 }

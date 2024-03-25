@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -105,7 +105,6 @@ struct SignInFactorOnePasswordView: View {
 
 #Preview {
     SignInFactorOnePasswordView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorOneUseAnotherMethodView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
@@ -56,7 +56,6 @@ struct SignInFactorOneUseAnotherMethodView: View {
 
 #Preview {
     SignInFactorOneUseAnotherMethodView(currentFactor: nil)
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

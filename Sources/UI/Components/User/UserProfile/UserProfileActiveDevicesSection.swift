@@ -11,7 +11,7 @@ import SwiftUI
 import NukeUI
 
 struct UserProfileActiveDevicesSection: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     
     private var user: User? {
@@ -43,7 +43,7 @@ struct UserProfileActiveDevicesSection: View {
     }
     
     private struct ActiveDeviceView: View {
-        @EnvironmentObject private var clerk: Clerk
+        @ObservedObject private var clerk = Clerk.shared
         @Environment(\.colorScheme) private var colorScheme
         @Environment(\.clerkTheme) private var clerkTheme
         @State private var errorWrapper: ErrorWrapper?
@@ -148,7 +148,6 @@ struct UserProfileActiveDevicesSection: View {
 #Preview {
     UserProfileActiveDevicesSection()
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

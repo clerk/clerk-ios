@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignUpFormView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @FocusState private var focusedField: Field?
@@ -228,7 +228,6 @@ struct SignUpFormView: View {
 #Preview {
     SignUpFormView()
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

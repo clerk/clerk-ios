@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct UserProfileMfaSection: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var phoneNumberIsPresented: Bool = false
     @State private var authenticationAppIsPresented: Bool = false
@@ -194,6 +194,5 @@ struct UserProfileMfaSection: View {
 
 #Preview {
     UserProfileMfaSection()
-        .environmentObject(Clerk.shared)
         .padding()
 }

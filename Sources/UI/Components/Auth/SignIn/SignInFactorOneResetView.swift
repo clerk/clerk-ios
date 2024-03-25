@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorOneResetView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -118,7 +118,6 @@ struct SignInFactorOneResetView: View {
 
 #Preview {
     SignInFactorOneResetView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

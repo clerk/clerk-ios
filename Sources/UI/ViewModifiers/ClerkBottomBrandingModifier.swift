@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ClerkBottomBrandingModifier: ViewModifier {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
         
     func body(content: Content) -> some View {
@@ -38,6 +38,5 @@ extension View {
 
 #Preview {
     AuthView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }

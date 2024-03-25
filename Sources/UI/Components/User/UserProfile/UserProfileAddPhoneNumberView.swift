@@ -19,7 +19,7 @@ extension UserProfileAddPhoneNumberView {
 }
 
 struct UserProfileAddPhoneNumberView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
@@ -186,7 +186,6 @@ struct UserProfileAddPhoneNumberView: View {
 
 #Preview {
     UserProfileAddPhoneNumberView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

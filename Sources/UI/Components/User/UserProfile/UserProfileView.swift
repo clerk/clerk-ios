@@ -10,7 +10,7 @@
 import SwiftUI
 
 public struct UserProfileView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.dismiss) private var dismiss
         
@@ -63,7 +63,6 @@ public struct UserProfileView: View {
 
 #Preview {
     UserProfileView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

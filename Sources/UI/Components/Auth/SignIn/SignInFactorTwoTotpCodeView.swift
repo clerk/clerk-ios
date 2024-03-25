@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorTwoTotpCodeView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var code: String = ""
@@ -61,7 +61,6 @@ struct SignInFactorTwoTotpCodeView: View {
 
 #Preview {
     SignInFactorTwoTotpCodeView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

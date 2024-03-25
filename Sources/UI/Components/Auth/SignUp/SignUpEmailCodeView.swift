@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignUpEmailCodeView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var code: String = ""
@@ -79,7 +79,6 @@ struct SignUpEmailCodeView: View {
 
 #Preview {
     return SignUpEmailCodeView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

@@ -11,7 +11,7 @@ import SwiftUI
 import NukeUI
 
 struct SignInFactorTwoAlternativeMethodsView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
@@ -61,7 +61,6 @@ struct SignInFactorTwoAlternativeMethodsView: View {
 
 #Preview {
     SignInFactorTwoAlternativeMethodsView(currentFactor: nil)
-        .environmentObject(Clerk.shared)
 }
 
 #endif

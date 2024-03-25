@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileEmailSection: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
     
@@ -174,9 +174,8 @@ struct UserProfileEmailSection: View {
 }
 
 #Preview {
-    return UserProfileEmailSection()
+    UserProfileEmailSection()
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

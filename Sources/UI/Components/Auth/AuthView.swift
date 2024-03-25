@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct AuthView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
@@ -141,7 +141,6 @@ struct AuthView: View {
 
 #Preview {
     AuthView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

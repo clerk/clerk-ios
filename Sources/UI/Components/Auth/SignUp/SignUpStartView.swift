@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignUpStartView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -75,7 +75,6 @@ struct SignUpStartView: View {
 
 #Preview {
     SignUpStartView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

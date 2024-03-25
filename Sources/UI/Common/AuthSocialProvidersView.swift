@@ -11,7 +11,7 @@ import SwiftUI
 import Algorithms
 
 struct AuthSocialProvidersView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var viewSize: CGSize?
@@ -122,7 +122,6 @@ extension AuthSocialProvidersView {
 #Preview {
     AuthSocialProvidersView(useCase: .signIn)
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

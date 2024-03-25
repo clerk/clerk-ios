@@ -17,7 +17,7 @@ extension UserProfileMfaAddTotpView {
 }
 
 struct UserProfileMfaAddTotpView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.dismiss) private var dismiss
     @State private var step: Step = .loading
     @State private var errorWrapper: ErrorWrapper?
@@ -66,7 +66,6 @@ struct UserProfileMfaAddTotpView: View {
 
 #Preview {
     UserProfileMfaAddTotpView()
-        .environmentObject(Clerk.shared)
 }
 
 private struct AddTOTPView: View {
@@ -162,7 +161,7 @@ private struct AddTOTPView: View {
 }
 
 private struct VerifyTOTPView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @State private var code = ""
     @State private var errorWrapper: ErrorWrapper?
     @Binding var step: UserProfileMfaAddTotpView.Step

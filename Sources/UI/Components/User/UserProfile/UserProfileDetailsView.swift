@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileDetailsView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     
     private var emailIsEnabled: Bool {
         clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true
@@ -56,7 +56,6 @@ struct UserProfileDetailsView: View {
             .padding()
             .padding(.top, 30)
     }
-    .environmentObject(Clerk.shared)
 }
 
 #endif

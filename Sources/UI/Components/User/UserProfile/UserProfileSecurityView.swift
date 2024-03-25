@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileSecurityView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     
     private var user: User? {
         clerk.session?.user
@@ -48,7 +48,6 @@ struct UserProfileSecurityView: View {
             .padding()
             .padding(.top, 30)
     }
-    .environmentObject(Clerk.shared)
 }
 
 #endif

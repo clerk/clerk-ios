@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileDeleteAccountSection: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @State private var confirmationIsPresented = false
     
     var body: some View {
@@ -38,11 +38,10 @@ struct UserProfileDeleteAccountSection: View {
 #Preview {
     UserProfileDeleteAccountSection()
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 private struct DeleteAccountConfirmationView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var confirmationText = ""
     @State private var errorWrapper: ErrorWrapper?
@@ -118,7 +117,6 @@ private struct DeleteAccountConfirmationView: View {
 
 #Preview {
     DeleteAccountConfirmationView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif
