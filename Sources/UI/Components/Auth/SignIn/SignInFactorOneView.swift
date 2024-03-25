@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorOneView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
@@ -95,7 +95,6 @@ struct SignInFactorOneView: View {
 
 #Preview {
     SignInFactorOneView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

@@ -42,5 +42,4 @@ extension View {
 #Preview {
     HomeView()
         .demoSettings()
-        .environmentObject(Clerk.shared)
 }

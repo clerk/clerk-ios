@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 /**
- This modifier injects the clerk instance and clerkUIState into the environment.
+ This modifier injects the clerkUIState into the environment.
   
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
@@ -22,18 +22,15 @@ struct ClerkProviderModifier: ViewModifier {
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
-            // these must be the last modifiers
-            .environmentObject(Clerk.shared)
+            // this must be the last modifier
             .environmentObject(clerkUIState)
     }
 }
 
 extension View {
     /**
-     This modifier injects the clerk instance and clerkUIState into the environment.
-     
-     You can observe changes to this objects via `EnvironmentObject` from any descendant view.
-     
+     This modifier injects the clerkUIState into the environment.
+          
      You should apply this modifier to the root view of your application. Most likely in your `App` file.
      */
     public func clerkProvider() -> some View {

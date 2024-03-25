@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileAddExternalAccountView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var errorWrapper: ErrorWrapper?
@@ -81,8 +81,7 @@ struct UserProfileAddExternalAccountView: View {
 }
 
 #Preview {
-    return UserProfileAddExternalAccountView()
-        .environmentObject(Clerk.shared)
+    UserProfileAddExternalAccountView()
 }
 
 #endif

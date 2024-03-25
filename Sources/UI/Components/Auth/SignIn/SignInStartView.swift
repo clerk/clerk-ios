@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInStartView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     private var socialProvidersEnabled: Bool {
@@ -66,7 +66,6 @@ struct SignInStartView: View {
 
 #Preview {
     SignInStartView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

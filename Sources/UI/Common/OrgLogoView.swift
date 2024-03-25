@@ -9,7 +9,7 @@ import SwiftUI
 import NukeUI
 
 struct OrgLogoView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     
     var body: some View {

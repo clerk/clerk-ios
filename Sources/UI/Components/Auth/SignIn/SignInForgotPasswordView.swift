@@ -12,7 +12,7 @@ import NukeUI
 import AuthenticationServices
 
 struct SignInForgotPasswordView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
@@ -82,7 +82,6 @@ struct SignInForgotPasswordView: View {
 
 #Preview {
     SignInForgotPasswordView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

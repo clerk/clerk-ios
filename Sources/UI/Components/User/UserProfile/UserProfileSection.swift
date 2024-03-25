@@ -11,7 +11,7 @@ import SwiftUI
 import NukeUI
 
 struct UserProfileSection: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var updateProfileIsPresented = false
     
@@ -52,7 +52,6 @@ struct UserProfileSection: View {
 #Preview {
     UserProfileSection()
         .padding()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

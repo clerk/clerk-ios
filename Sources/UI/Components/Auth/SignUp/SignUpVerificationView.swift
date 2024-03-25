@@ -11,7 +11,7 @@ import SwiftUI
 import Factory
 
 struct SignUpVerificationView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
         
@@ -43,7 +43,6 @@ struct SignUpVerificationView: View {
 
 #Preview {
     return SignUpVerificationView()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 

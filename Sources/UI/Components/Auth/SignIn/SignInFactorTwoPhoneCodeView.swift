@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SignInFactorTwoPhoneCodeView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @State private var code: String = ""
@@ -78,7 +78,6 @@ struct SignInFactorTwoPhoneCodeView: View {
 
 #Preview {
     SignInFactorTwoPhoneCodeView()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserButtonPopover: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
@@ -185,7 +185,6 @@ struct UserButtonPopover: View {
 
 #Preview {
     UserButtonPopover()
-        .environmentObject(Clerk.shared)
 }
 
 #endif

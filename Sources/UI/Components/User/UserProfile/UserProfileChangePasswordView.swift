@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileChangePasswordView: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var currentPassword = ""

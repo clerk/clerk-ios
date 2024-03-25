@@ -12,7 +12,7 @@ import Factory
 struct DemoAppSettingsView: View {
     @AppStorage("publishableKey") var publishableKey: String = ""
     @State private var text: String = ""
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -51,5 +51,4 @@ struct DemoAppSettingsView: View {
 
 #Preview {
     DemoAppSettingsView()
-        .environmentObject(Clerk.shared)
 }

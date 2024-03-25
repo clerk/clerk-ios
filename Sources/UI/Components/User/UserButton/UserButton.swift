@@ -12,7 +12,7 @@ import Nuke
 import NukeUI
 
 public struct UserButton: View {
-    @EnvironmentObject private var clerk: Clerk
+    @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
     
@@ -65,7 +65,6 @@ public struct UserButton: View {
 
 #Preview {
     UserButton()
-        .environmentObject(Clerk.shared)
         .environmentObject(ClerkUIState())
 }
 
