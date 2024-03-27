@@ -10,8 +10,5 @@ import Foundation
 enum ClerkKeychainKey {
     static let deviceToken = "deviceToken"
     static let client = "client"
-    static let sessionsByUserId = "sessionsByUserId"
-    static let sessionTokensByCacheKey = "sessionTokensByCacheKey"
     static let environment = "environment"
-    static let publishableKey = "publishableKey"
 }
