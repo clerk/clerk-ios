@@ -33,7 +33,9 @@ struct UserProfileSecurityView: View {
                 UserProfileMfaSection()
             }
             
-            UserProfileActiveDevicesSection()
+            if !clerk.sessionsByUserId.isEmpty {
+                UserProfileActiveDevicesSection()
+            }
             
             if clerk.environment.userSettings.actions.deleteSelf && user?.deleteSelfEnabled == true {
                 UserProfileDeleteAccountSection()

@@ -48,29 +48,20 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         
         self.publishableKey = publishableKey
         Container.shared.reset()
-        loadPersistedData()
-        startSessionTokenPolling()
         
-        Task.detached { [client] in
-            do {
-                if !client.isNew {
-                    try await client.get()
-                } else {
-                    try await client.create()
-                }
-            } catch {
-                dump(error)
+        Task {
+            await loadPersistedData()
+            if !client.isNew {
+                try await client.get()
+            } else {
+                try await client.create()
             }
+            
+            try await environment.get()
+            prefecthImages()
+            startSessionTokenPolling()
         }
         
-        Task.detached { [self, environment] in
-            do {
-                try await environment.get()
-                prefecthImages()
-            } catch {
-                dump(error)
-            }
-        }
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -125,10 +116,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// The Client object for the current device.
     @Published internal(set) public var client: Client = .init() {
         didSet {
-            do {
-                keychain[data: ClerkKeychainKey.client] = try JSONEncoder.clerkEncoder.encode(client)
-            } catch {
-                dump(error)
+            Task {
+                do {
+                    try await PersistenceManager.saveClient(client)
+                } catch {
+                    dump(error)
+                }
             }
         }
     }
@@ -136,10 +129,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment = .init() {
         didSet {
-            do {
-                keychain[data: ClerkKeychainKey.environment] = try JSONEncoder.clerkEncoder.encode(environment)
-            } catch {
-                dump(error)
+            Task {
+                do {
+                    try await PersistenceManager.saveEnvironment(environment)
+                } catch {
+                    dump(error)
+                }
             }
         }
     }
@@ -147,29 +142,13 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    @Published var sessionsByUserId: [String: [Session]] = .init() {
-        didSet {
-            do {
-                keychain[data: ClerkKeychainKey.sessionsByUserId] = try JSONEncoder.clerkEncoder.encode(sessionsByUserId)
-            } catch {
-                dump(error)
-            }
-        }
-    }
+    @Published var sessionsByUserId: [String: [Session]] = .init()
     
     /// The cached session tokens. Key is the session id + template name if there is one.
     /// e.g. `sess_abc12345` or `sess_abc12345-supabase`
     ///
     /// Is set by the `getToken` function on a session.
-    var sessionTokensByCacheKey: [String: TokenResource] = .init() {
-        didSet {
-            do {
-                keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] = try JSONEncoder.clerkEncoder.encode(sessionTokensByCacheKey)
-            } catch {
-                dump(error)
-            }
-        }
-    }
+    var sessionTokensByCacheKey: [String: TokenResource] = .init()
     
     /**
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
@@ -225,38 +204,21 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     
     /// Loads the data persisted across sessions from the keychain.
     @MainActor
-    private func loadPersistedData() {
-        
-        if let data = keychain[data: ClerkKeychainKey.client] {
-            do {
-                self.client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
-            } catch {
-                dump(error)
+    private func loadPersistedData() async {
+        do {
+            if let client = try await PersistenceManager.loadClient() {
+                self.client = client
             }
+        } catch {
+            dump(error)
         }
         
-        if let data = keychain[data: ClerkKeychainKey.environment] {
-            do {
-                self.environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
-            } catch {
-                dump(error)
+        do {
+            if let environment = try await PersistenceManager.loadEnvironment() {
+                self.environment = environment
             }
-        }
-        
-        if let data = keychain[data: ClerkKeychainKey.sessionTokensByCacheKey] {
-            do {
-                self.sessionTokensByCacheKey = try JSONDecoder.clerkDecoder.decode([String: TokenResource].self, from: data)
-            } catch {
-                dump(error)
-            }
-        }
-        
-        if let data = keychain[data: ClerkKeychainKey.sessionsByUserId] {
-            do {
-                self.sessionsByUserId = try JSONDecoder.clerkDecoder.decode([String: [Session]].self, from: data)
-            } catch {
-                dump(error)
-            }
+        } catch {
+            dump(error)
         }
     }
     
