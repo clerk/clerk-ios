@@ -8,7 +8,6 @@
 import Foundation
 import Factory
 import Get
-import KeychainAccess
 import PhoneNumberKit
 
 extension Container {
@@ -31,16 +30,6 @@ extension Container {
                     "User-Agent": UserAgentHelpers.userAgentString
                 ]
             }
-        }
-        .cached
-    }
-    
-    var keychain: Factory<Keychain> {
-        self {
-            // clerk.{APP_NAME}
-            var service = "clerk"
-            if let appName = Bundle.main.appName { service += ".\(appName)" }
-            return Keychain(service: service)
         }
         .cached
     }
