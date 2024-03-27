@@ -10,7 +10,6 @@ import Factory
 import RegexBuilder
 import Nuke
 import Get
-import KeychainAccess
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -25,11 +24,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     var apiClient: APIClient {
         // cache scope
         Container.shared.apiClient()
-    }
-    
-    var keychain: Keychain {
-        // cache scope
-        Container.shared.keychain()
     }
             
     init() {}
@@ -64,7 +58,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             try await environment.get()
             prefetchImages()
         }
-        
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -73,7 +66,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             // If we're setting a new publishable key after an existing one, 
             // clear out the existing & persisted data
             if !publishableKey.isEmpty {
-                try? keychain.removeAll()
+                try? KeychainManager.deleteAllItems()
                 client = Client()
             }
         }

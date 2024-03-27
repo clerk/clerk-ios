@@ -99,7 +99,7 @@ extension Client {
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
-        try Clerk.shared.keychain.removeAll()
+        try? KeychainManager.deleteAllItems()
         Clerk.shared.client = Client()
     }
     

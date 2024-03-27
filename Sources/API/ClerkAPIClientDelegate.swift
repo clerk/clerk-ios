@@ -12,7 +12,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
         // Set the device token on every request
-        if let authToken = Clerk.shared.keychain[ClerkKeychainKey.deviceToken] {
+        if let data = try? KeychainManager.retrieve(forKey: "clerkDeviceToken"), let authToken = String(data: data, encoding: .utf8) {
             request.setValue(authToken, forHTTPHeaderField: "Authorization")
         }
         
@@ -41,8 +41,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         }
         
         // Set the device token from the response headers whenever recieved in the response headers
-        if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            Clerk.shared.keychain[ClerkKeychainKey.deviceToken] = deviceToken
+        if let authorization = response.value(forHTTPHeaderField: "Authorization"), let deviceToken = authorization.data(using: .utf8) {
+            try? KeychainManager.save(deviceToken, forKey: "clerkDeviceToken")
         }
     }
     
