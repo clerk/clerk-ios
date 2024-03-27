@@ -49,7 +49,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         self.publishableKey = publishableKey
         Container.shared.reset()
         
-        Task {
+        Task.detached { [self] in
             await loadPersistedData()
             if !client.isNew {
                 try await client.get()
@@ -57,9 +57,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
                 try await client.create()
             }
             
-            try await environment.get()
-            prefecthImages()
             startSessionTokenPolling()
+        }
+        
+        Task.detached { [self] in
+            try await environment.get()
+            prefetchImages()
         }
         
     }
@@ -224,7 +227,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     
     private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
     
-    private func prefecthImages() {
+    private func prefetchImages() {
         var imageUrls: [URL?] = []
         
         if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
