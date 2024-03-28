@@ -43,7 +43,9 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         
         // Set the device token from the response headers whenever recieved in the response headers
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            try? Keychain().set(deviceToken, key: "clerkDeviceToken")
+            try? Keychain()
+                .accessibility(.afterFirstUnlockThisDeviceOnly)
+                .set(deviceToken, key: "clerkDeviceToken")
         }
     }
     
