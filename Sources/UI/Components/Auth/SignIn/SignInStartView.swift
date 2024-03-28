@@ -56,6 +56,25 @@ struct SignInStartView: View {
                     SignInFormView()
                         .padding(.bottom, 32)
                 }
+                
+                if clerk.localAuthConfig.localAuthCredentialsIsEnabled {
+                    Button {
+                        Task {
+                            do {
+                                try await LocalAuth.authenticateWithFaceID()
+                            } catch {
+                                // fallback
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "faceid")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .tint(.secondary)
+                    }
+                    .padding(.vertical)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding()

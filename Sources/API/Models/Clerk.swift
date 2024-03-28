@@ -97,8 +97,11 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// Frontend API URL
     private(set) public var frontendAPIURL: String = ""
     
-    /// The configurable OAuth settings. For example: `redirectUrl`, `callbackUrlScheme`
+    /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
     public var redirectConfig = RedirectConfig()
+    
+    /// The configurable settings for local authentication (faceID, touchID, passcode).
+    public var localAuthConfig = LocalAuthConfig()
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
