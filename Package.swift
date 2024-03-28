@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-algorithms", .upToNextMajor(from: "1.2.0")),
+        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", .upToNextMajor(from: "4.2.2")),
         .package(url: "https://github.com/CreateAPI/URLQueryEncoder", .upToNextMajor(from: "0.2.1")),
         .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.1.6")),
         .package(url: "https://github.com/hmlongco/Factory", .upToNextMajor(from: "2.3.1")),
@@ -31,6 +32,7 @@ let package = Package(
             name: "ClerkSDK",
             dependencies: [
                 .product(name: "Algorithms", package: "swift-algorithms"),
+                "KeychainAccess",
                 "URLQueryEncoder",
                 "Get",
                 "Factory",

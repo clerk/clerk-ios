@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import KeychainAccess
 
 /**
  The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
@@ -99,7 +100,7 @@ extension Client {
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
-        try? KeychainManager.deleteAllItems()
+        try? Keychain().removeAll()
         Clerk.shared.client = Client()
     }
     
