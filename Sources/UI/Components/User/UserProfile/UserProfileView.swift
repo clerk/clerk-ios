@@ -31,14 +31,6 @@ public struct UserProfileView: View {
         }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
-        .overlay {
-            if user == nil {
-                ZStack {
-                    Color(.systemBackground)
-                    ProgressView()
-                }
-            }
-        }
         .task {
             do {
                 try await clerk.client.get()
@@ -57,6 +49,9 @@ public struct UserProfileView: View {
         }
         .task {
             try? await clerk.environment.get()
+        }
+        .onChange(of: user) { session in
+            if user == nil { dismiss() }
         }
     }
 }

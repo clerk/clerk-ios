@@ -40,25 +40,13 @@ final public class LocalAuth {
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
             throw ClerkClientError(message: "Can't evaluate policy")
-            
-            // Fall back to a asking for username and password.
-            // ...
         }
         
         do {
             try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Authenticate")
         } catch {
             throw error
-
-            // Fall back to a asking for username and password.
-            // ...
         }
-    }
-    
-    public static func getCredentialsWithFaceID(account: String) async throws {
-        
-        
-        
     }
     
 }
