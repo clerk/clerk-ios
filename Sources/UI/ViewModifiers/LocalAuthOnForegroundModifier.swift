@@ -47,22 +47,18 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
                 guard clerk.session != nil else { return }
                 switch newValue {
                 case .active:
-                    if isPresented && clerk.session != nil {
+                    if isPresented {
                         Task { await authenticate() }
                     }
                 case .background:
                     if lockPhase == .background || lockPhase == .inactive {
-                        withAnimation {
-                            shouldTryAuth = true
-                            isPresented = true
-                        }
+                        shouldTryAuth = true
+                        isPresented = true
                     }
                 case .inactive:
                     if lockPhase == .inactive {
-                        withAnimation {
-                            shouldTryAuth = true
-                            isPresented = true
-                        }
+                        shouldTryAuth = true
+                        isPresented = true
                     }
                 @unknown default:
                     return
@@ -75,9 +71,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
         guard shouldTryAuth else { return }
         do {
             try await LocalAuth.authenticateWithFaceID()
-            withAnimation {
-                isPresented = false
-            }
+            isPresented = false
         } catch {
             LocalAuth.context.invalidate()
             shouldTryAuth = false
@@ -88,9 +82,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
     private func signOut() async {
         do {
             try await clerk.signOut()
-            withAnimation {
-                isPresented = false
-            }
+            isPresented = false
         } catch {
             clerk.client = Client()
             isPresented = false
@@ -171,7 +163,7 @@ private extension LocalAuthOnForegroundModifier {
                 await signOut()
             }
         })
-
+        
         hostingController = UIHostingController(rootView: AnyView(swiftUIView))
         hostingController?.view.backgroundColor = .clear
         hostingController?.view.frame = CGRect(
@@ -181,21 +173,21 @@ private extension LocalAuthOnForegroundModifier {
             height: UIScreen.main.bounds.height
         )
         hostingController?.view.alpha = 0
-
+        
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first {
             window.addSubview(hostingController!.view)
-
+            
             hostingController?.view.center = window.center
             
-            UIView.animate(withDuration: withAnimation ? 0.2 : 0) {
+            UIView.animate(withDuration: withAnimation && lockPhase == .inactive ? 0.2 : 0) {
                 hostingController?.view.alpha = 1
             } completion: { done in
                 completion()
             }
         }
     }
-
+    
     func dismissView(withAnimation: Bool = true, completion: @escaping () -> Void = {}) {
         UIView.animate(withDuration: withAnimation ? 0.2 : 0) {
             hostingController?.view.alpha = 0
