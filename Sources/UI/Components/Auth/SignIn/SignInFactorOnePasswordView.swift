@@ -8,6 +8,7 @@
 #if canImport(UIKit)
 
 import SwiftUI
+import KeychainAccess
 
 struct SignInFactorOnePasswordView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -17,6 +18,7 @@ struct SignInFactorOnePasswordView: View {
     @State private var password: String = ""
     @State private var errorWrapper: ErrorWrapper?
     @FocusState private var isFocused: Bool
+    @State private var enableBiometry: Bool = true
     
     var signIn: SignIn {
         clerk.client.signIn
@@ -61,6 +63,18 @@ struct SignInFactorOnePasswordView: View {
                         PasswordInputView(password: $password)
                             .focused($isFocused)
                             .task { isFocused = true }
+                        
+                        if LocalAuth.availableBiometryType != .none {
+                            HStack {
+                                Toggle(isOn: $enableBiometry, label: { EmptyView() })
+                                    .labelsHidden()
+                                
+                                Text("Enable \(LocalAuth.availableBiometryType.displayName)")
+                                    .font(.footnote.weight(.medium))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top)
+                        }
                     }
                     
                     AsyncButton(action: attempt) {
@@ -90,7 +104,12 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
+            let signInIdentifier = signIn.identifier
+            
             try await signIn.attemptFirstFactor(for: .password(password: password))
+            if let signInIdentifier, enableBiometry {
+                try clerk.localAuthConfig.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
+            }
             if signIn.status == .needsSecondFactor {
                 clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
             } else {

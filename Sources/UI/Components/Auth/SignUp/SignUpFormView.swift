@@ -22,6 +22,7 @@ struct SignUpFormView: View {
     @State private var lastName: String = ""
     @State private var password: String = ""
     @State private var ticket: String = ""
+    @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
     private enum Field {
@@ -177,6 +178,18 @@ struct SignUpFormView: View {
                     
                     PasswordInputView(password: $password)
                         .focused($focusedField, equals: .password)
+                    
+                    if LocalAuth.availableBiometryType != .none {
+                        HStack {
+                            Toggle(isOn: $enableBiometry, label: { EmptyView() })
+                                .labelsHidden()
+                            
+                            Text("Enable \(LocalAuth.availableBiometryType.displayName)")
+                                .font(.footnote.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top)
+                    }
                 }
             }
             
@@ -196,6 +209,16 @@ struct SignUpFormView: View {
     private func continueAction() async {
         KeyboardHelpers.dismissKeyboard()
         
+        let identifer: String? = if usernameEnabled, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            username
+        } else if emailIsEnabled, !emailAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            emailAddress
+        } else if phoneNumberIsEnabled, !phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            phoneNumber
+        } else {
+            nil
+        }
+        
         do {
             try await signUp.create(.standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
@@ -205,6 +228,10 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ))
+            
+            if let identifer, enableBiometry {
+                try clerk.localAuthConfig.setLocalAuthCredentials(identifier: identifer, password: password)
+            }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 try await signUp.update(params: .init(strategy: .saml))

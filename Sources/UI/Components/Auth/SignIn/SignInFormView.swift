@@ -114,6 +114,24 @@ struct SignInFormView: View {
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
+            
+            if clerk.localAuthConfig.accountForLocalAuth != nil && !clerk.localAuthConfig.localAuthAccountAlreadySignedIn {
+                AsyncButton {
+                    do {
+                        let creds = try clerk.localAuthConfig.getLocalAuthCredentials()
+                        await signInAction(strategy: .identifier(creds.identifier, password: creds.password))
+                    } catch {
+                        errorWrapper = ErrorWrapper(error: error)
+                    }
+                } label: {
+                    Image(systemName: LocalAuth.availableBiometryType.systemImageName ?? "faceid")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
+                        .tint(.secondary)
+                }
+                .padding(.vertical)
+            }
         }
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment.userSettings) {

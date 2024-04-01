@@ -8,6 +8,7 @@
 import SwiftUI
 import ClerkSDK
 import Factory
+import KeychainAccess
 
 struct DemoAppSettingsView: View {
     @AppStorage("publishableKey") var publishableKey: String = ""
@@ -17,19 +18,30 @@ struct DemoAppSettingsView: View {
     
     var body: some View {
         NavigationStack {
-            Form {                
-                TextField("Publishable Key", text: $text, prompt: Text("Publishable Key"))
-                    .font(.subheadline)
-                    .task { text = publishableKey }
-                
-                Button {
-                    publishableKey = text
-                    clerk.load(publishableKey: publishableKey)
-                    dismiss()
-                } label: {
-                    Text("Save")
+            Form {
+                Section("Publishable Key") {
+                    TextField("Publishable Key", text: $text, prompt: Text("Publishable Key"))
+                        .font(.subheadline)
+                        .task { text = publishableKey }
+                    
+                    Button {
+                        publishableKey = text
+                        clerk.load(publishableKey: publishableKey)
+                        dismiss()
+                    } label: {
+                        Text("Save")
+                    }
+                    .disabled(text == publishableKey)
                 }
-                .disabled(text == publishableKey)
+                
+                Section("Keychain") {
+                    Button(role: .destructive) {
+                        try? Keychain().removeAll()
+                        try? Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https).removeAll()
+                    } label: {
+                        Text("Clear Keychain")
+                    }
+                }
             }
             .navigationTitle("Demo Settings")
             .toolbar {

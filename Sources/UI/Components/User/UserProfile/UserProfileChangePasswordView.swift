@@ -90,12 +90,8 @@ struct UserProfileChangePasswordView: View {
                     }
                     
                     HStack {
-                        Toggle(isOn: $signOutOfOtherDevices) {
-                            Text("Sign out of all other devices")
-                                .font(.footnote.weight(.medium))
-                        }
-                        .labelsHidden()
-                        .tint(clerkTheme.colors.textPrimary)
+                        Toggle(isOn: $signOutOfOtherDevices, label: { EmptyView() })
+                            .labelsHidden()
                         
                         Text("Sign out of all other devices")
                             .font(.footnote.weight(.medium))

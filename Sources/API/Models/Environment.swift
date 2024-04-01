@@ -45,6 +45,7 @@ extension Clerk.Environment {
         public let preferredSignInStrategy: PreferredSignInStrategy
         public let branded: Bool
         public let logoImageUrl: String
+        public let homeUrl: String
         
         public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password, otp
@@ -54,12 +55,14 @@ extension Clerk.Environment {
             applicationName: String = "",
             preferredSignInStrategy: PreferredSignInStrategy = .password,
             branded: Bool = true,
-            logoImageUrl: String = ""
+            logoImageUrl: String = "",
+            homeUrl: String = ""
         ) {
             self.applicationName = applicationName
             self.preferredSignInStrategy = preferredSignInStrategy
             self.branded = branded
             self.logoImageUrl = logoImageUrl
+            self.homeUrl = homeUrl
         }
     }
     
