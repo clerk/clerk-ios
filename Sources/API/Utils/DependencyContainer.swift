@@ -24,8 +24,8 @@ extension Container {
                 client.decoder = JSONDecoder.clerkDecoder
                 client.encoder = JSONEncoder.clerkEncoder
                 client.sessionConfiguration.httpAdditionalHeaders = [
-                    "Clerk-API-Version": "2021-02-05",
-                    "iOS-SDK-Version": ClerkSDK.version,
+                    "clerk-api-version": "2021-02-05",
+                    "x-ios-sdk-version": ClerkSDK.version,
                     "Content-Type": "application/x-www-form-urlencoded",
                     "User-Agent": UserAgentHelpers.userAgentString
                 ]
