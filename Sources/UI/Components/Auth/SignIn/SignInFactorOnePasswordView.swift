@@ -64,12 +64,12 @@ struct SignInFactorOnePasswordView: View {
                             .focused($isFocused)
                             .task { isFocused = true }
                         
-                        if LocalAuth.availableBiometryType != .none {
+                        if Clerk.LocalAuth.availableBiometryType != .none {
                             HStack {
                                 Toggle(isOn: $enableBiometry, label: { EmptyView() })
                                     .labelsHidden()
                                 
-                                Text("Enable \(LocalAuth.availableBiometryType.displayName)")
+                                Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
                                     .font(.footnote.weight(.medium))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -108,7 +108,7 @@ struct SignInFactorOnePasswordView: View {
             
             try await signIn.attemptFirstFactor(for: .password(password: password))
             if let signInIdentifier, enableBiometry {
-                try clerk.localAuthConfig.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
+                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
             }
             if signIn.status == .needsSecondFactor {
                 clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)

@@ -179,12 +179,12 @@ struct SignUpFormView: View {
                     PasswordInputView(password: $password)
                         .focused($focusedField, equals: .password)
                     
-                    if LocalAuth.availableBiometryType != .none {
+                    if Clerk.LocalAuth.availableBiometryType != .none {
                         HStack {
                             Toggle(isOn: $enableBiometry, label: { EmptyView() })
                                 .labelsHidden()
                             
-                            Text("Enable \(LocalAuth.availableBiometryType.displayName)")
+                            Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
                                 .font(.footnote.weight(.medium))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -209,16 +209,6 @@ struct SignUpFormView: View {
     private func continueAction() async {
         KeyboardHelpers.dismissKeyboard()
         
-        let identifer: String? = if usernameEnabled, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            username
-        } else if emailIsEnabled, !emailAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            emailAddress
-        } else if phoneNumberIsEnabled, !phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            phoneNumber
-        } else {
-            nil
-        }
-        
         do {
             try await signUp.create(.standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
@@ -229,8 +219,10 @@ struct SignUpFormView: View {
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ))
             
+            let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
+            
             if let identifer, enableBiometry {
-                try clerk.localAuthConfig.setLocalAuthCredentials(identifier: identifer, password: password)
+                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: password)
             }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {

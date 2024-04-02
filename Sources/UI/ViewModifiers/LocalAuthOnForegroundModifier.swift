@@ -70,10 +70,10 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
     private func authenticate() async {
         guard shouldTryAuth else { return }
         do {
-            try await LocalAuth.authenticateWithFaceID()
+            try await Clerk.LocalAuth.authenticateWithBiometrics()
             isPresented = false
         } catch {
-            LocalAuth.context.invalidate()
+            Clerk.LocalAuth.context.invalidate()
             shouldTryAuth = false
         }
     }
