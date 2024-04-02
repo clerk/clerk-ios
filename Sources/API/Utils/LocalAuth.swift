@@ -14,13 +14,13 @@ extension Clerk {
         
     final public class LocalAuth {
         
-        struct Credentials {
+        public struct Credentials {
             let identifier: String
             let password: String
         }
         
         /// An authentication context stored at class scope so it's available for use during UI updates.
-        static var context = LAContext()
+        public static var context = LAContext()
         
         static var availableBiometryType: LABiometryType {
             let biometryContext = LAContext()
@@ -28,7 +28,7 @@ extension Clerk {
             return biometryContext.biometryType
         }
         
-        static func authenticateWithBiometrics() async throws {
+        public static func authenticateWithBiometrics() async throws {
             
             // Get a fresh context for each login. If you use the same context on multiple attempts
             //  (by commenting out the next line), then a previously successful authentication
@@ -57,7 +57,7 @@ extension Clerk {
             try? Keychain().get(localAuthAccountKey)
         }
         
-        static func getLocalAuthCredentials() throws -> Credentials {
+        public static func getLocalAuthCredentials() throws -> Credentials {
             guard let identifier = accountForLocalAuth else {
                 throw ClerkClientError(message: "Unable to find biometry enrolled account.")
             }
@@ -69,7 +69,7 @@ extension Clerk {
             return Credentials(identifier: identifier, password: password)
         }
         
-        static func setLocalAuthCredentials(identifier: String, password: String) throws {
+        public static func setLocalAuthCredentials(identifier: String, password: String) throws {
             try Keychain().set(identifier, key: localAuthAccountKey)
             try Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https)
                 .accessibility(.whenPasscodeSetThisDeviceOnly, authenticationPolicy: .userPresence)
