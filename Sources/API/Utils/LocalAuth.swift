@@ -78,7 +78,8 @@ extension Clerk {
         
         private static func accountForLocalAuthBelongsToUser(_ user: User) -> Bool {
             guard let accountForLocalAuth else { return false }
-            let identifiers = user.emailAddresses.map(\.emailAddress) + user.phoneNumbers.map(\.phoneNumber)
+            var identifiers = user.emailAddresses.map(\.emailAddress) + user.phoneNumbers.map(\.phoneNumber)
+            if let username = user.username { identifiers.append(username) }
             return identifiers.contains(accountForLocalAuth)
         }
         
