@@ -11,7 +11,7 @@ import SwiftUI
 import UIKit
 
 /**
- This modifier injects the clerkUIState into the environment.
+ This modifier enables local authentication on the app being put into an active state.
  
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */

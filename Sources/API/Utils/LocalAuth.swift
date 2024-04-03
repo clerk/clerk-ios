@@ -59,11 +59,11 @@ extension Clerk {
         
         public static func getLocalAuthCredentials() throws -> Credentials {
             guard let identifier = accountForLocalAuth else {
-                throw ClerkClientError(message: "Unable to find biometry enrolled account.")
+                throw ClerkClientError(message: "Unable to find an account with biometric authentication enabled.")
             }
             
             guard let password = try Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https).get(identifier) else {
-                throw ClerkClientError(message: "Unable to find password for biometry enrolled account.")
+                throw ClerkClientError(message: "Unable to find credentials for the account enrolled in biometric authentication.")
             }
             
             return Credentials(identifier: identifier, password: password)
@@ -107,7 +107,7 @@ extension LABiometryType {
         case .opticID:
             "Optic ID"
         @unknown default:
-            ""
+            "Biometrics"
         }
     }
     
