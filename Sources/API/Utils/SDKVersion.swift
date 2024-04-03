@@ -7,4 +7,4 @@
 
 import Foundation
 
-let version: String = "0.8.0"
+let version: String = "0.9.0"
