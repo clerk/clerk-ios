@@ -100,7 +100,6 @@ extension Client {
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
-        try? Keychain().removeAll()
         Clerk.shared.client = Client()
     }
     

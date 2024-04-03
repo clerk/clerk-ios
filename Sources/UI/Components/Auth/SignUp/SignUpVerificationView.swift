@@ -13,6 +13,7 @@ import Factory
 struct SignUpVerificationView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?
         
     private var signUp: SignUp {
@@ -26,6 +27,27 @@ struct SignUpVerificationView: View {
                 SignUpPhoneCodeView()
             case .emailCode:
                 SignUpEmailCodeView()
+            case nil where signUp.status == .missingRequirements:
+                GetHelpView(
+                    title: "Cannot sign up",
+                    description: """
+                    
+                    Cannot proceed with sign up. We're unable to verify the provided information.
+                    
+                    If you’re experiencing difficulty signing up, email us and we will work with you to get you access as soon as possible.
+                    """,
+                    primaryButtonConfig: .init(label: "Email support", action: {
+                        openURL(URL(string: "mailto:")!)
+                    }),
+                    secondaryButtonConfig: .init(label: "Back to sign up", action: {
+                        clerkUIState.presentedAuthStep = .signUpStart
+                    })
+                )
+                .task { clerkUIState.setAuthStepToCurrentStatus(for: signUp) }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
             default:
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

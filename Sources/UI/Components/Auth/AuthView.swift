@@ -130,11 +130,6 @@ struct AuthView: View {
             .overlay(alignment: .top) {
                 Divider()
             }
-//            .overlay(alignment: .bottom) {
-//                if clerk.environment.displayConfig.branded {
-//                    Divider()
-//                }
-//            }
         }
     }
 }

@@ -22,6 +22,7 @@ struct SignUpFormView: View {
     @State private var lastName: String = ""
     @State private var password: String = ""
     @State private var ticket: String = ""
+    @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
     private enum Field {
@@ -177,6 +178,18 @@ struct SignUpFormView: View {
                     
                     PasswordInputView(password: $password)
                         .focused($focusedField, equals: .password)
+                    
+                    if Clerk.LocalAuth.availableBiometryType != .none {
+                        HStack {
+                            Toggle(isOn: $enableBiometry, label: { EmptyView() })
+                                .labelsHidden()
+                            
+                            Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
+                                .font(.footnote.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top)
+                    }
                 }
             }
             
@@ -205,6 +218,12 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ))
+            
+            let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
+            
+            if let identifer, enableBiometry {
+                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: password)
+            }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 try await signUp.update(params: .init(strategy: .saml))

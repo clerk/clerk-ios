@@ -21,6 +21,7 @@ struct ClerkDemoApp: App {
             HomeView()
                 .demoSettings() // only needed for the demo project
                 .clerkProvider()
+                .localAuthOnForeground()
         }
     }
 }
