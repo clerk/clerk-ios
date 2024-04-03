@@ -83,7 +83,7 @@ extension Client {
     
     /// Retrieves the current client.
     @MainActor
-    func get() async throws {
+    public func get() async throws {
         let request = ClerkAPI.v1.client.get
         Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response ?? Client()
     }
