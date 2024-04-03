@@ -153,49 +153,55 @@ extension View {
 private extension LocalAuthOnForegroundModifier {
     
     func showLocalAuthView(withAnimation: Bool = true, completion: @escaping () -> Void = {}) {
-        let swiftUIView = LocalAuthOverlay(onUnlock: {
-            Task {
-                shouldTryAuth = true
-                await authenticate()
-            }
-        }, onSignOut: {
-            Task {
-                await signOut()
-            }
-        })
-        
-        hostingController = UIHostingController(rootView: AnyView(swiftUIView))
-        hostingController?.view.backgroundColor = .clear
-        hostingController?.view.frame = CGRect(
-            x: 0,
-            y: 0,
-            width: UIScreen.main.bounds.width,
-            height: UIScreen.main.bounds.height
-        )
-        hostingController?.view.alpha = 0
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            window.addSubview(hostingController!.view)
+        DispatchQueue.main.async {
+            KeyboardHelpers.dismissKeyboard()
             
-            hostingController?.view.center = window.center
+            let swiftUIView = LocalAuthOverlay(onUnlock: {
+                Task {
+                    shouldTryAuth = true
+                    await authenticate()
+                }
+            }, onSignOut: {
+                Task {
+                    await signOut()
+                }
+            })
             
-            UIView.animate(withDuration: withAnimation && lockPhase == .inactive ? 0.2 : 0) {
-                hostingController?.view.alpha = 1
-            } completion: { done in
-                completion()
+            hostingController = UIHostingController(rootView: AnyView(swiftUIView))
+            hostingController?.view.backgroundColor = .clear
+            hostingController?.view.frame = CGRect(
+                x: 0,
+                y: 0,
+                width: UIScreen.main.bounds.width,
+                height: UIScreen.main.bounds.height
+            )
+            hostingController?.view.alpha = 0
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                window.addSubview(hostingController!.view)
+                
+                hostingController?.view.center = window.center
+                
+                UIView.animate(withDuration: withAnimation && lockPhase == .inactive ? 0.2 : 0) {
+                    hostingController?.view.alpha = 1
+                } completion: { done in
+                    completion()
+                }
             }
         }
     }
     
     func dismissView(withAnimation: Bool = true, completion: @escaping () -> Void = {}) {
-        UIView.animate(withDuration: withAnimation ? 0.2 : 0) {
-            hostingController?.view.alpha = 0
-        } completion: { done in
-            if done {
-                hostingController?.view.removeFromSuperview()
-                hostingController = nil
-                completion()
+        DispatchQueue.main.async {
+            UIView.animate(withDuration: withAnimation ? 0.2 : 0) {
+                hostingController?.view.alpha = 0
+            } completion: { done in
+                if done {
+                    hostingController?.view.removeFromSuperview()
+                    hostingController = nil
+                    completion()
+                }
             }
         }
     }
