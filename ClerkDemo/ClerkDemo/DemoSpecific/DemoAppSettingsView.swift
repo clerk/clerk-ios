@@ -31,14 +31,13 @@ struct DemoAppSettingsView: View {
                         Text("Save")
                     }
                     .disabled(text == publishableKey)
-                }
-                
-                Section("Reset") {
+                    
                     Button(role: .destructive) {
-                        Task { await resetWithPublishableKey("") }
+                        text = ""
                     } label: {
-                        Text("Reset")
+                        Text("Clear")
                     }
+                    .disabled(text == "")
                 }
             }
             .navigationTitle("Demo Settings")
@@ -68,18 +67,21 @@ struct DemoAppSettingsView: View {
     
     @MainActor
     private func resetWithPublishableKey(_ publishableKey: String) async {
-        isLoading = true
-        try? await clerk.client?.destroy()
-        try? Keychain().removeAll()
-        if let environment = clerk.environment {
-            try? Keychain(server: environment.displayConfig.homeUrl, protocolType: .https)
-                .removeAll()
+        do {
+            isLoading = true
+            try Keychain().removeAll()
+            if let environment = clerk.environment {
+                try Keychain(server: environment.displayConfig.homeUrl, protocolType: .https).removeAll()
+            }
+            try await clerk.client?.destroy()
+            self.publishableKey = publishableKey
+            Clerk.shared.configure(publishableKey: publishableKey)
+            try await clerk.load()
+            isLoading = false
+            dismiss()
+        } catch {
+            dump(error)
         }
-        self.publishableKey = publishableKey
-        Clerk.shared.configure(publishableKey: publishableKey)
-        try? await clerk.load()
-        isLoading = false
-        dismiss()
     }
 }
 

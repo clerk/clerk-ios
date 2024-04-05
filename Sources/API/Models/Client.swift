@@ -70,9 +70,6 @@ extension Client {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
         try await Clerk.shared.client?.get()
-        if Clerk.shared.client == nil {
-            try await Clerk.shared.createClient()
-        }
     }
     
     /**

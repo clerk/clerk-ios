@@ -29,6 +29,14 @@ public struct UserProfileView: View {
             .padding()
             .padding(.bottom)
         }
+        .overlay {
+            if clerk.session == nil {
+                ZStack {
+                    Color(.systemBackground).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
         .task {
@@ -50,8 +58,12 @@ public struct UserProfileView: View {
         .task {
             try? await clerk.getEnvironment()
         }
-        .onChange(of: user) { session in
-            if user == nil { dismiss() }
+        .onChange(of: clerk.session) { lastActiveSession in
+            if lastActiveSession == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    dismiss()
+                }
+            }
         }
     }
 }

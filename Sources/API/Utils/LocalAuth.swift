@@ -95,7 +95,7 @@ extension Clerk {
         
         static var localAuthAccountAlreadySignedIn: Bool {
             guard let client = Clerk.shared.client else { return false }
-            let signedInUsers = client.sessions.compactMap(\.user)
+            let signedInUsers = client.activeSessions.compactMap(\.user)
             if signedInUsers.contains(where: { accountForLocalAuthBelongsToUser($0) }) {
                 return true
             }

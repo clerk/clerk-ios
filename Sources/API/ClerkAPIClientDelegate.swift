@@ -34,6 +34,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             // ...and the response has a ClerkError body throw a custom clerk error
             if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
                 let clerkError = clerkErrorResponse.errors.first {
+                
+                if response.statusCode == 401 { Task { try? await Clerk.shared.signOut(sessionId: Clerk.shared.session?.id) } }
                 throw clerkError
             }
 

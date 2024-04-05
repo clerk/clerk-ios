@@ -54,7 +54,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             return
         }
         
-        if loadingState != .loadedFromDisk {
+        if loadingState == .notLoaded || loadingState == .failed {
             try await loadPersistedData()
         }
         
@@ -80,8 +80,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             loadingState = .loadedFromNetwork
             
         } catch {
-            dump(error)
-            
             if client != nil && environment != nil {
                 loadingState = .loadedFromDisk
                 throw error
@@ -183,9 +181,11 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             try await client?.get()
             if let client, client.sessions.isEmpty {
                 try await client.destroy()
+                try await createClient()
             }
         } else {
             try await client?.destroy()
+            try await createClient()
         }
     }
     
@@ -280,7 +280,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     }
     
     private func environmentAsyncSequence() async {
-        for await environment in $environment.values {
+        for await environment in $environment.values.dropFirst() {
             do {
                 if let environment {
                     try await PersistenceManager.saveEnvironment(environment)
