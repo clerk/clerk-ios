@@ -16,8 +16,8 @@ struct SignInFactorOnePhoneCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     var body: some View {
@@ -31,8 +31,8 @@ struct SignInFactorOnePhoneCodeView: View {
                     code: $code,
                     title: "Check your phone",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
-                    profileImageUrl: signIn.userData?.imageUrl
+                    safeIdentifier: signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier,
+                    profileImageUrl: signIn?.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signInStart
@@ -47,11 +47,11 @@ struct SignInFactorOnePhoneCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .phoneCode))
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn?.firstFactor(for: .phoneCode))
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
-                    if !signIn.firstFactorHasBeenPrepared {
+                    if signIn?.firstFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
@@ -63,7 +63,7 @@ struct SignInFactorOnePhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareFirstFactor(for: .phoneCode)
+            try await signIn?.prepareFirstFactor(for: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,7 +72,7 @@ struct SignInFactorOnePhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptFirstFactor(for: .phoneCode(code: code))
+            try await signIn?.attemptFirstFactor(for: .phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

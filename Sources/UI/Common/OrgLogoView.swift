@@ -8,12 +8,14 @@
 import SwiftUI
 import NukeUI
 
-struct OrgLogoView: View {
+public struct OrgLogoView: View {
     @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     
-    var body: some View {
-        LazyImage(request: .init(url: URL(string: clerk.environment.displayConfig.logoImageUrl))) { state in
+    public init() {}
+    
+    public var body: some View {
+        LazyImage(request: .init(url: URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))) { state in
             if let image = state.image {
                 image
                     .resizable()

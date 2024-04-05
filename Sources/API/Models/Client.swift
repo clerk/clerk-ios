@@ -15,10 +15,10 @@ import KeychainAccess
 public struct Client: Codable, Sendable {
 
     /// The current sign in attempt.
-    public let signIn: SignIn
+    public let signIn: SignIn?
     
     /// The current sign up attempt.
-    public let signUp: SignUp
+    public let signUp: SignUp?
     
     /// A list of sessions that have been created on this client.
     public let sessions: [Session]
@@ -39,9 +39,6 @@ public struct Client: Codable, Sendable {
         sessions.first(where: { $0.id == lastActiveSessionId })
     }
     
-    /// Returns true if this client hasn't been saved (created) yet in the Frontend API. Returns false otherwise.
-    public let isNew: Bool
-    
     enum CodingKeys: CodingKey {
         case signIn
         case signUp
@@ -49,49 +46,21 @@ public struct Client: Codable, Sendable {
         case lastActiveSessionId
         case updatedAt
     }
-    
-    init(
-        signIn: SignIn = SignIn(),
-        signUp: SignUp = SignUp(),
-        sessions: [Session] = [],
-        lastActiveSessionId: String? = nil,
-        updatedAt: Date? = nil
-    ) {
-        self.signIn = signIn
-        self.signUp = signUp
-        self.sessions = sessions
-        self.lastActiveSessionId = lastActiveSessionId
-        self.updatedAt = updatedAt ?? .now
-        self.isNew = true
-    }
-    
-    public init(from decoder: Decoder) throws {
-        let container: KeyedDecodingContainer<Client.CodingKeys> = try decoder.container(keyedBy: Client.CodingKeys.self)
-        self.isNew = false
-        
-        // SignUp and SignIn can have null values when returned from the api, but should never be nil on the client
-        self.signIn = try container.decodeIfPresent(SignIn.self, forKey: Client.CodingKeys.signIn) ?? SignIn()
-        self.signUp = try container.decodeIfPresent(SignUp.self, forKey: Client.CodingKeys.signUp) ?? SignUp()
-        //
-        self.sessions = try container.decode([Session].self, forKey: .sessions)
-        self.lastActiveSessionId = try container.decodeIfPresent(String.self, forKey: .lastActiveSessionId)
-        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
-    }
 }
 
 extension Client {
+    
+    /// Creates a new client for the current instance along with its cookie.
+    @MainActor
+    public static func create() async throws {
+        let request = ClerkAPI.v1.client.put
+        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response
+    }
     
     /// Retrieves the current client.
     @MainActor
     public func get() async throws {
         let request = ClerkAPI.v1.client.get
-        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response ?? Client()
-    }
-    
-    /// Creates a new client for the current instance along with its cookie.
-    @MainActor
-    public func create() async throws {
-        let request = ClerkAPI.v1.client.put
         Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -100,8 +69,33 @@ extension Client {
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
-        try await Clerk.shared.client.get()
-        try? Keychain().remove("lastActiveSessionId")
+        try await Clerk.shared.client?.get()
+        if Clerk.shared.client == nil {
+            try await Clerk.shared.createClient()
+        }
+    }
+    
+    /**
+     Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign-in lifecycle state.
+     
+     Depending on the use-case and the params you pass to the create method, it can either complete the sign-in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
+     */
+    @discardableResult @MainActor
+    public func createSignIn(strategy: SignIn.CreateStrategy) async throws -> SignIn {
+        try await SignIn.create(strategy: strategy)
+    }
+    
+    /**
+     This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
+     
+     Choices on the instance settings affect which options are available to use.
+     
+     This sign up might be complete if you supply the required fields in one go.
+     However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
+     */
+    @discardableResult @MainActor
+    public func createSignUp(_ strategy: SignUp.CreateStrategy) async throws -> SignUp {
+        try await SignUp.create(strategy)
     }
     
 }

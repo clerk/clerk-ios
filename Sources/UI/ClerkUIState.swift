@@ -39,26 +39,26 @@ public final class ClerkUIState: ObservableObject {
 extension ClerkUIState {
     
     /// Sets the current auth step to the status determined by the API
-    public func setAuthStepToCurrentStatus(for signIn: SignIn) {
-        switch signIn.status {
-        case .needsIdentifier:
+    public func setAuthStepToCurrentStatus(for signIn: SignIn?) {
+        switch signIn?.status {
+        case .needsIdentifier, .abandoned:
             presentedAuthStep = .signInStart
         case .needsFirstFactor:
-            presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
+            presentedAuthStep = .signInFactorOne(signIn?.currentFirstFactor)
         case .needsSecondFactor:
-            presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
+            presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
         case .needsNewPassword:
             presentedAuthStep = .signInResetPassword
-        case .abandoned, .complete,  .none:
+        case .complete, .none:
             authIsPresented = false
         }
     }
     
     /// Sets the current auth step to the status determined by the API
-    public func setAuthStepToCurrentStatus(for signUp: SignUp) {
-        switch signUp.status {
+    public func setAuthStepToCurrentStatus(for signUp: SignUp?) {
+        switch signUp?.status {
         case .missingRequirements:
-            if signUp.unverifiedFields.contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
+            if (signUp?.unverifiedFields ?? []).contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
                 presentedAuthStep = .signUpVerification
             } else {
                 presentedAuthStep = .signUpStart

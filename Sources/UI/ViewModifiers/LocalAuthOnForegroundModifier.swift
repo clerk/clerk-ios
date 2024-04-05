@@ -18,10 +18,10 @@ import KeychainAccess
  */
 public struct LocalAuthOnForegroundModifier: ViewModifier {
     @ObservedObject private var clerk = Clerk.shared
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isPresented = false
     @State private var shouldTryAuth = true
     @State private var shouldAnimate = false
-    @Environment(\.scenePhase) private var scenePhase
     @State private var hostingController: UIHostingController<AnyView>?
     
     var lockPhase: LockPhase = .background
@@ -89,8 +89,9 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
             try await clerk.signOut()
             isPresented = false
         } catch {
-            clerk.client = Client()
+            clerk.client = nil
             isPresented = false
+            try? await clerk.createClient()
             dump(error)
         }
     }

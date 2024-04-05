@@ -16,8 +16,8 @@ struct SignInFactorTwoPhoneCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     var body: some View {
@@ -42,10 +42,10 @@ struct SignInFactorTwoPhoneCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn.secondFactor(for: .phoneCode))
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn?.secondFactor(for: .phoneCode))
                 }
                 .task {
-                    if !signIn.secondFactorHasBeenPrepared {
+                    if signIn?.secondFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
@@ -58,7 +58,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareSecondFactor(for: .phoneCode)
+            try await signIn?.prepareSecondFactor(for: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -67,7 +67,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptSecondFactor(for: .phoneCode(code: code))
+            try await signIn?.attemptSecondFactor(for: .phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

@@ -14,21 +14,21 @@ struct SignUpStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     private var socialProvidersEnabled: Bool {
-        !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
+        clerk.environment?.userSettings.enabledThirdPartyProviders.isEmpty == false
     }
     
     private var contactInfoEnabled: Bool {
-        clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true ||
-        clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
+        clerk.environment?.userSettings.config(for: .emailAddress)?.enabled == true ||
+        clerk.environment?.userSettings.config(for: .phoneNumber)?.enabled == true
     }
     
     var body: some View {
@@ -47,7 +47,7 @@ struct SignUpStartView: View {
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signUp)
                         .onSuccess {
-                            if signUp.status == .complete {
+                            if signUp?.status == .complete {
                                 clerkUIState.authIsPresented = false
                             } else {
                                 // if the signup isnt complete

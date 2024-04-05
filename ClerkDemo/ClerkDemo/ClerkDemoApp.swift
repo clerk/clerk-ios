@@ -19,9 +19,7 @@ struct ClerkDemoApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
-                .demoSettings() // only needed for the demo project
                 .clerkProvider()
-                .localAuthOnForeground()
                 .task {
                     try? await Clerk.shared.load()
                 }

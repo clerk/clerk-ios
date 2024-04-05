@@ -17,18 +17,18 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     let currentFactor: SignInFactor?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     private var thirdPartyProviders: [ExternalProvider] {
-        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+        (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
     }
     
     private func signIn(provider: ExternalProvider) async {
         do {
-            try await signIn.create(strategy: .externalProvider(provider))
-            try await signIn.authenticateWithRedirect()
+            try await clerk.client?.createSignIn(strategy: .externalProvider(provider))
+            try await signIn?.authenticateWithRedirect()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart
@@ -39,7 +39,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
         do {
             if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                try await signIn.prepareFirstFactor(for: prepareStrategy)
+                try await signIn?.prepareFirstFactor(for: prepareStrategy)
             }
             clerkUIState.presentedAuthStep = .signInFactorOne(factor)
         } catch {
@@ -66,7 +66,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             
-            ForEach(signIn.alternativeFirstFactors(currentFactor: currentFactor), id: \.self) { factor in
+            ForEach(signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateFirstFactor(factor)

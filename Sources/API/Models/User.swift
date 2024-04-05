@@ -139,13 +139,15 @@ extension User {
     }
     
     var unconnectedProviders: [ExternalProvider] {
-        let allExternalProviders = Clerk.shared.environment.userSettings.enabledThirdPartyProviders.sorted()
+        guard let environment = Clerk.shared.environment else { return []}
+        let allExternalProviders = environment.userSettings.enabledThirdPartyProviders.sorted()
         let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.externalProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
     var availableSecondFactors: [Clerk.Environment.UserSettings.Attribute: Clerk.Environment.UserSettings.AttributesConfig] {
-        Clerk.shared.environment.userSettings.availableSecondFactors(user: self)
+        guard let environment = Clerk.shared.environment else { return [:] }
+        return environment.userSettings.availableSecondFactors(user: self)
     }
     
     var phoneNumbersAvailableForSecondFactor: [PhoneNumber] {
@@ -166,7 +168,7 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -205,7 +207,7 @@ extension User {
         let newEmail = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return newEmail
     }
     
@@ -222,7 +224,7 @@ extension User {
         let newPhoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return newPhoneNumber
     }
     
@@ -245,7 +247,7 @@ extension User {
         let newExternalAccount = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return newExternalAccount
     }
     
@@ -275,7 +277,7 @@ extension User {
         let totp = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return totp
     }
     
@@ -287,7 +289,7 @@ extension User {
         let totp = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return totp
     }
     
@@ -298,7 +300,7 @@ extension User {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     /// Retrieves all active sessions for this user.
@@ -318,7 +320,7 @@ extension User {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     public struct UpdatePasswordParams: Encodable {
@@ -345,7 +347,7 @@ extension User {
             $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return imageResource
     }
     
@@ -356,7 +358,7 @@ extension User {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     /// Deletes the current user.
@@ -366,7 +368,7 @@ extension User {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
 }

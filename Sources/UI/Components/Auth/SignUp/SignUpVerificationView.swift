@@ -16,18 +16,18 @@ struct SignUpVerificationView: View {
     @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?
         
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
     var body: some View {
         Group {
-            switch signUp.nextStrategyToVerify {
+            switch signUp?.nextStrategyToVerify {
             case .phoneCode:
                 SignUpPhoneCodeView()
             case .emailCode:
                 SignUpEmailCodeView()
-            case nil where signUp.status == .missingRequirements:
+            case nil where signUp?.status == .missingRequirements:
                 GetHelpView(
                     title: "Cannot sign up",
                     description: """
@@ -55,8 +55,8 @@ struct SignUpVerificationView: View {
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))
-        .animation(.snappy, value: signUp.nextStrategyToVerify)
-        .onChange(of: signUp.nextStrategyToVerify) { _ in
+        .animation(.snappy, value: signUp?.nextStrategyToVerify)
+        .onChange(of: signUp?.nextStrategyToVerify) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
         }

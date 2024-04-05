@@ -20,8 +20,8 @@ struct SignInFactorOnePasswordView: View {
     @FocusState private var isFocused: Bool
     @State private var enableBiometry: Bool = true
     
-    var signIn: SignIn {
-        clerk.client.signIn
+    var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     var body: some View {
@@ -38,7 +38,7 @@ struct SignInFactorOnePasswordView: View {
                 .padding(.bottom, 4)
                 
                 IdentityPreviewView(
-                    label: signIn.identifier,
+                    label: signIn?.identifier,
                     action: {
                         clerkUIState.presentedAuthStep = .signInStart
                     }
@@ -87,7 +87,7 @@ struct SignInFactorOnePasswordView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn?.firstFactor(for: .password))
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
@@ -104,14 +104,14 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
-            let signInIdentifier = signIn.identifier
+            let signInIdentifier = signIn?.identifier
             
-            try await signIn.attemptFirstFactor(for: .password(password: password))
+            try await signIn?.attemptFirstFactor(for: .password(password: password))
             if let signInIdentifier, enableBiometry {
                 try Clerk.LocalAuth.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
             }
-            if signIn.status == .needsSecondFactor {
-                clerkUIState.presentedAuthStep = .signInFactorTwo(signIn.currentSecondFactor)
+            if signIn?.status == .needsSecondFactor {
+                clerkUIState.presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
             } else {
                 clerkUIState.authIsPresented = false
             }

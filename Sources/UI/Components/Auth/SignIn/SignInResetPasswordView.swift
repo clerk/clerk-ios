@@ -19,13 +19,13 @@ struct SignInResetPasswordView: View {
     @State private var signOutOfAllDevices = true
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     private func resetPassword() async {
         do {
-            try await signIn.resetPassword(.init(
+            try await signIn?.resetPassword(.init(
                 password: password,
                 signOutOfOtherSessions: signOutOfAllDevices
             ))
@@ -109,7 +109,7 @@ struct SignInResetPasswordView: View {
                 .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))

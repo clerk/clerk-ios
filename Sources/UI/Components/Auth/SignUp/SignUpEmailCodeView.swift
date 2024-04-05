@@ -16,8 +16,8 @@ struct SignUpEmailCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
     var body: some View {
@@ -31,7 +31,7 @@ struct SignUpEmailCodeView: View {
                     code: $code,
                     title: "Verify your email",
                     subtitle: "Enter the verification code sent to your email address",
-                    safeIdentifier: signUp.emailAddress
+                    safeIdentifier: signUp?.emailAddress
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signUpStart
@@ -53,6 +53,7 @@ struct SignUpEmailCodeView: View {
     }
     
     private func prepare() async {
+        guard let signUp else { return }
         let emailVerification = signUp.verifications.first(where: { $0.key == "email_address" })?.value
         if signUp.status == nil || emailVerification?.status == .verified {
             return
@@ -68,7 +69,7 @@ struct SignUpEmailCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp.attemptVerification(.emailCode(code: code))
+            try await signUp?.attemptVerification(.emailCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

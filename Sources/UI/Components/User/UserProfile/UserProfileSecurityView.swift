@@ -25,11 +25,11 @@ struct UserProfileSecurityView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            if clerk.environment.userSettings.instanceIsPasswordBased {
+            if clerk.environment?.userSettings.instanceIsPasswordBased == true {
                 UserProfilePasswordSection()
             }
             
-            if !clerk.environment.userSettings.secondFactorAttributes.isEmpty {
+            if clerk.environment?.userSettings.secondFactorAttributes.isEmpty == false {
                 UserProfileMfaSection()
             }
             
@@ -37,7 +37,7 @@ struct UserProfileSecurityView: View {
                 UserProfileActiveDevicesSection()
             }
             
-            if clerk.environment.userSettings.actions.deleteSelf && user?.deleteSelfEnabled == true {
+            if clerk.environment?.userSettings.actions.deleteSelf == true && user?.deleteSelfEnabled == true {
                 UserProfileDeleteAccountSection()
             }
         }

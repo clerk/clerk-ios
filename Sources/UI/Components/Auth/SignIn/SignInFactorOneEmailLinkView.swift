@@ -12,8 +12,8 @@
 //    @EnvironmentObject private var clerkUIState: ClerkUIState
 //    @State private var errorWrapper: ErrorWrapper?
 //        
-//    private var signIn: SignIn {
-//        clerk.client.signIn
+//    private var signIn: SignIn? {
+//        clerk.client?.signIn
 //    }
 //    
 //    var body: some View {
@@ -31,7 +31,7 @@
 //                    .multilineTextAlignment(.center)
 //                    
 //                    IdentityPreviewView(
-//                        label: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
+//                        label: signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier,
 //                        action: {
 //                            clerkUIState.presentedAuthStep = .signInStart
 //                        }
@@ -40,7 +40,7 @@
 //                .padding(.bottom, 32)
 //                
 //                Button {
-//                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn.firstFactor(for: .emailLink))
+//                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn?.firstFactor(for: .emailLink))
 //                } label: {
 //                    Text("Use another method")
 //                        .frame(maxWidth: .infinity)
@@ -55,7 +55,7 @@
 //        .task {
 //            repeat {
 //                do {
-//                    try await clerk.client.get()
+//                    try await clerk.client?.get()
 //                    clerkUIState.setAuthStepToCurrentStatus(for: signIn)
 //                    try? await Task.sleep(for: .seconds(1))
 //                } catch {

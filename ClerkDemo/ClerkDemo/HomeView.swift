@@ -8,7 +8,8 @@
 import SwiftUI
 import ClerkSDK
 
-struct HomeView: View {
+struct HomeView: View {    
+    @ObservedObject private var clerk = Clerk.shared
     
     var body: some View {
         NavigationStack {
@@ -29,6 +30,22 @@ struct HomeView: View {
                 }
             }
         }
+        .overlay {
+            if clerk.loadingState == .notLoaded {
+                VStack {
+                    Spacer()
+                    OrgLogoView()
+                        .frame(width: 100, height: 100)
+                        .padding()
+                    Spacer()
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .background()
+                .transition(.opacity.animation(.default))
+            }
+        }
+        .demoSettings()
     }
 }
 

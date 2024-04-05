@@ -13,15 +13,15 @@ struct UserProfileDetailsView: View {
     @ObservedObject private var clerk = Clerk.shared
     
     private var emailIsEnabled: Bool {
-        clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true
+        clerk.environment?.userSettings.config(for: .emailAddress)?.enabled == true
     }
     
     private var phoneNumberIsEnabled: Bool {
-        clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
+        clerk.environment?.userSettings.config(for: .phoneNumber)?.enabled == true
     }
     
     private var socialProvidersIsEnabled: Bool {
-        !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
+        clerk.environment?.userSettings.enabledThirdPartyProviders.isEmpty == false
     }
     
     var body: some View {

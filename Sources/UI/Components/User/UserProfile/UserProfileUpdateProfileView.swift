@@ -22,7 +22,7 @@ struct UserProfileUpdateProfileView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
-        clerk.client.lastActiveSession?.user
+        clerk.client?.lastActiveSession?.user
     }
     
     private var continueButtonDisabled: Bool {
@@ -31,11 +31,11 @@ struct UserProfileUpdateProfileView: View {
     }
     
     private var firstNameIsEnabled: Bool {
-        clerk.environment.userSettings.enabledAttributes.contains { $0.key == .firstName }
+        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == .firstName }
     }
     
     private var lastNameIsEnabled: Bool {
-        clerk.environment.userSettings.enabledAttributes.contains { $0.key == .lastName }
+        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == .lastName }
     }
     
     private func updateUser() async {

@@ -40,31 +40,31 @@ final class ExternalAuthWebSession: NSObject {
                                 
                             case .signIn:
                                 if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client.signIn.get(rotatingTokenNonce: nonce)
+                                    try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
                                     
                                 } else {
-                                    try await Clerk.shared.client.get()
-                                    if Clerk.shared.client.signIn.firstFactorVerification?.status == .transferable {
-                                        try await Clerk.shared.client.signUp.create(.transfer)
+                                    try await Clerk.shared.client?.get()
+                                    if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
+                                        try await SignUp.create(.transfer)
                                     }
                                 }
                                 
                             case .signUp:
                                 if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client.signUp.get(rotatingTokenNonce: nonce)
+                                    try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
                                     
                                 } else {
-                                    try await Clerk.shared.client.get()
+                                    try await Clerk.shared.client?.get()
                                     if
-                                        let verification = Clerk.shared.client.signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+                                        let verification = Clerk.shared.client?.signUp?.verifications.first(where: { $0.key == "external_account" })?.value,
                                         verification.status == .transferable
                                     {
-                                        try await Clerk.shared.client.signIn.create(strategy: .transfer)
+                                        try await Clerk.shared.client?.createSignIn(strategy: .transfer)
                                     }
                                 }
                                 
                             case .reauthorize:
-                                try await Clerk.shared.client.get()
+                                try await Clerk.shared.client?.get()
                             }
                             
                             continuation.resume()

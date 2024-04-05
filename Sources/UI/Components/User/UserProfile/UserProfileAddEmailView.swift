@@ -42,11 +42,11 @@ struct UserProfileAddEmailView: View {
     }
     
     private var user: User? {
-        clerk.client.lastActiveSession?.user
+        clerk.client?.lastActiveSession?.user
     }
     
     private var preferredEmailVerificationStrategy: Strategy {
-        clerk.environment.userSettings.preferredEmailVerificationStrategy ?? .emailCode
+        clerk.environment?.userSettings.preferredEmailVerificationStrategy ?? .emailCode
     }
     
     private var prepareStrategy: EmailAddress.PrepareStrategy {

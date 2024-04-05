@@ -29,36 +29,36 @@ struct SignUpFormView: View {
         case emailAddress, phoneNumber, username, firstName, lastName, password, ticket
     }
     
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
     private var nameIsEnabled: Bool {
-        clerk.environment.userSettings.config(for: .firstName)?.enabled == true ||
-        clerk.environment.userSettings.config(for: .lastName)?.enabled == true
+        clerk.environment?.userSettings.config(for: .firstName)?.enabled == true ||
+        clerk.environment?.userSettings.config(for: .lastName)?.enabled == true
     }
     
     private var emailIsEnabled: Bool {
-        clerk.environment.userSettings.config(for: .emailAddress)?.enabled == true
+        clerk.environment?.userSettings.config(for: .emailAddress)?.enabled == true
     }
     
     private var usernameEnabled: Bool {
-        clerk.environment.userSettings.config(for: .username)?.enabled == true
+        clerk.environment?.userSettings.config(for: .username)?.enabled == true
     }
     
     private var phoneNumberIsEnabled: Bool {
-        clerk.environment.userSettings.config(for: .phoneNumber)?.enabled == true
+        clerk.environment?.userSettings.config(for: .phoneNumber)?.enabled == true
     }
     
     private var passwordIsEnabled: Bool {
-        clerk.environment.userSettings.instanceIsPasswordBased
+        clerk.environment?.userSettings.instanceIsPasswordBased == true
     }
     
     var body: some View {
         VStack(spacing: 24) {
             if nameIsEnabled {
                 HStack(spacing: 16) {
-                    if let firstName = clerk.environment.userSettings.config(for: .firstName), firstName.enabled {
+                    if let firstName = clerk.environment?.userSettings.config(for: .firstName), firstName.enabled {
                         VStack(alignment: .leading) {
                             HStack {
                                 Text("First name")
@@ -79,7 +79,7 @@ struct SignUpFormView: View {
                         }
                     }
                     
-                    if let lastName = clerk.environment.userSettings.config(for: .lastName), lastName.enabled {
+                    if let lastName = clerk.environment?.userSettings.config(for: .lastName), lastName.enabled {
                         VStack(alignment: .leading) {
                             HStack {
                                 Text("Last name")
@@ -102,7 +102,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let username = clerk.environment.userSettings.config(for: .username), username.enabled {
+            if let username = clerk.environment?.userSettings.config(for: .username), username.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Username")
@@ -124,7 +124,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let email = clerk.environment.userSettings.config(for: .emailAddress), email.enabled {
+            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Email address")
@@ -147,7 +147,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let phoneNumber = clerk.environment.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
+            if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Phone number")
@@ -167,7 +167,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if clerk.environment.userSettings.instanceIsPasswordBased {
+            if clerk.environment?.userSettings.instanceIsPasswordBased == true {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Password")
@@ -210,7 +210,7 @@ struct SignUpFormView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            try await signUp.create(.standard(
+            try await clerk.client?.createSignUp(.standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
                 password: passwordIsEnabled ? password : nil,
                 firstName: nameIsEnabled ? firstName : nil,
@@ -218,6 +218,8 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ))
+            
+            guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
             
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             

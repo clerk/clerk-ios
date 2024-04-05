@@ -108,45 +108,17 @@ public struct SignIn: Codable, Sendable {
         public let hasImage: Bool?
     }
     
-    init(
-        id: String = "",
-        object: Object = .signInAttempt,
-        status: Status? = nil,
-        supportedIdentifiers: [SupportedIdentifier] = [],
-        supportedFirstFactors: [SignInFactor]? = nil,
-        firstFactorVerification: Verification? = nil,
-        supportedSecondFactors: [SignInFactor]? = nil,
-        secondFactorVerification: Verification? = nil,
-        identifier: String? = nil,
-        userData: UserData? = nil,
-        createdSessionId: String? = nil,
-        abandonAt: Date = .now
-    ) {
-        self.id = id
-        self.object = object
-        self.status = status
-        self.supportedIdentifiers = supportedIdentifiers
-        self.supportedFirstFactors = supportedFirstFactors
-        self.supportedSecondFactors = supportedSecondFactors
-        self.firstFactorVerification = firstFactorVerification
-        self.secondFactorVerification = secondFactorVerification
-        self.identifier = identifier
-        self.userData = userData
-        self.createdSessionId = createdSessionId
-        self.abandonAt = abandonAt
-    }
-    
     /**
      Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign-in lifecycle state.
      
      Depending on the use-case and the params you pass to the create method, it can either complete the sign-in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
      */
     @discardableResult @MainActor
-    public func create(strategy: CreateStrategy) async throws -> SignIn {
-        let params = createSignInParams(for: strategy)
+    public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
+        let params = SignIn.createSignInParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -156,13 +128,13 @@ public struct SignIn: Codable, Sendable {
         case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the external provider
         ///
-        /// After successfully creating the sign in, call `signIn.startExternalAuth()` to kick off the external authentication process.
+        /// After successfully creating the sign in, call `signIn?.startExternalAuth()` to kick off the external authentication process.
         case externalProvider(_ provider: ExternalProvider)
         ///
         case transfer
     }
     
-    private func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
+    static func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .identifier(let identifier, let password):
             return .init(identifier: identifier, password: password)
@@ -187,7 +159,7 @@ public struct SignIn: Codable, Sendable {
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).resetPassword.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -206,7 +178,7 @@ public struct SignIn: Codable, Sendable {
         let params = prepareFirstFactorParams(for: prepareFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareFirstFactor.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -270,7 +242,7 @@ public struct SignIn: Codable, Sendable {
         let params = attemptFirstFactorParams(for: attemptFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptFirstFactor.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -313,7 +285,7 @@ public struct SignIn: Codable, Sendable {
         let params = prepareSecondFactorParams(for: prepareSecondFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareSecondFactor.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -344,7 +316,7 @@ public struct SignIn: Codable, Sendable {
         let params = attemptSecondFactorParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptSecondFactor.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -375,7 +347,7 @@ public struct SignIn: Codable, Sendable {
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return response
     }
     
@@ -409,7 +381,7 @@ extension SignIn {
     }
     
     private var startingSignInFirstFactor: SignInFactor? {
-        let preferredStrategy = Clerk.shared.environment.displayConfig.preferredSignInStrategy
+        guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
         switch preferredStrategy {

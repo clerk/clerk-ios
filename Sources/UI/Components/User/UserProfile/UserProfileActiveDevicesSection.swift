@@ -19,7 +19,7 @@ struct UserProfileActiveDevicesSection: View {
     }
     
     private var sessions: [Session] {
-        guard let user = clerk.client.lastActiveSession?.user else { return [] }
+        guard let user = clerk.client?.lastActiveSession?.user else { return [] }
         return clerk.sessionsByUserId[user.id, default: []].sorted()
     }
     
@@ -72,7 +72,7 @@ struct UserProfileActiveDevicesSection: View {
                     HStack(spacing: 8) {
                         Text(session.latestActivity?.deviceType ?? "\(session.latestActivity?.isMobile == true ? "Mobile" : "Desktop") device")
                             .font(.footnote.weight(.medium))
-                        if clerk.client.lastActiveSessionId == session.id {
+                        if clerk.client?.lastActiveSessionId == session.id {
                             CapsuleTag(text: "This device")
                         }
                     }
@@ -136,7 +136,7 @@ struct UserProfileActiveDevicesSection: View {
         private func revokeSession() async {
             do {
                 try await session.revoke()
-                try await clerk.client.lastActiveSession?.user?.getSessions()
+                try await clerk.client?.lastActiveSession?.user?.getSessions()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)

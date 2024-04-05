@@ -25,7 +25,7 @@ struct UserProfileChangePasswordView: View {
     }
     
     private var user: User? {
-        clerk.client.lastActiveSession?.user
+        clerk.client?.lastActiveSession?.user
     }
     
     private var continueDisabled: Bool {

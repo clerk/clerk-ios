@@ -13,27 +13,23 @@ extension Clerk {
         public let authConfig: AuthConfig
         public let userSettings: UserSettings
         public let displayConfig: DisplayConfig
-        
-        init(
-            authConfig: AuthConfig = .init(),
-            userSettings: UserSettings = .init(),
-            displayConfig: DisplayConfig = .init()
-        ) {
-            self.authConfig = authConfig
-            self.userSettings = userSettings
-            self.displayConfig = displayConfig
-        }
     }
+}
+
+extension Clerk.Environment {
+    
+    @MainActor
+    public static func get() async throws {
+        let request = ClerkAPI.v1.environment.get
+        Clerk.shared.environment = try await Clerk.shared.apiClient.send(request).value
+    }
+    
 }
 
 extension Clerk.Environment {
     
     public struct AuthConfig: Codable, Sendable {
         public let singleSessionMode: Bool
-        
-        public init(singleSessionMode: Bool = true) {
-            self.singleSessionMode = singleSessionMode
-        }
     }
     
 }
@@ -49,20 +45,6 @@ extension Clerk.Environment {
         
         public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password, otp
-        }
-        
-        public init(
-            applicationName: String = "",
-            preferredSignInStrategy: PreferredSignInStrategy = .password,
-            branded: Bool = true,
-            logoImageUrl: String = "",
-            homeUrl: String = ""
-        ) {
-            self.applicationName = applicationName
-            self.preferredSignInStrategy = preferredSignInStrategy
-            self.branded = branded
-            self.logoImageUrl = logoImageUrl
-            self.homeUrl = homeUrl
         }
     }
     
@@ -121,16 +103,6 @@ extension Clerk.Environment {
         public struct Actions: Codable, Equatable, Sendable {
             public var deleteSelf: Bool = false
             public var createOrganization: Bool = false
-        }
-        
-        init(
-            attributes: [Attribute : AttributesConfig] = [:],
-            social: [String : SocialConfig] = [:],
-            actions: Actions = .init()
-        ) {
-            self.attributes = attributes
-            self.social = social
-            self.actions = actions
         }
     }
 }
@@ -214,16 +186,6 @@ extension Clerk.Environment.UserSettings {
 //        }
         
         return nil
-    }
-    
-}
-
-extension Clerk.Environment {
-    
-    @MainActor
-    public func get() async throws {
-        let request = ClerkAPI.v1.environment.get
-        Clerk.shared.environment = try await Clerk.shared.apiClient.send(request).value
     }
     
 }
