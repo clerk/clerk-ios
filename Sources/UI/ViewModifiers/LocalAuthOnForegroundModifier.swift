@@ -9,6 +9,7 @@
 
 import SwiftUI
 import UIKit
+import KeychainAccess
 
 /**
  This modifier enables local authentication on the app being put into an active state.
@@ -29,13 +30,17 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
         case inactive, background
     }
     
+    private var hasSession: Bool {
+        (try? Keychain().get("lastActiveSessionId") != nil) ?? false
+    }
+    
     public func body(content: Content) -> some View {
         content
             .task {
                 isPresented = true
             }
             .onChange(of: isPresented) { newValue in
-                if newValue && clerk.session != nil {
+                if newValue && hasSession {
                     showLocalAuthView(withAnimation: shouldAnimate) {
                         shouldAnimate = true
                     }
@@ -44,7 +49,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
                 }
             }
             .onChange(of: scenePhase) { newValue in
-                guard clerk.session != nil else { return }
+                guard hasSession else { return }
                 switch newValue {
                 case .active:
                     if isPresented {

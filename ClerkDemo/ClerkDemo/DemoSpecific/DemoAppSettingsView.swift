@@ -26,8 +26,11 @@ struct DemoAppSettingsView: View {
                     
                     Button {
                         publishableKey = text
-                        clerk.load(publishableKey: publishableKey)
-                        dismiss()
+                        Clerk.shared.configure(publishableKey: publishableKey)
+                        Task {
+                            try? await clerk.load()
+                            dismiss()
+                        }
                     } label: {
                         Text("Save")
                     }

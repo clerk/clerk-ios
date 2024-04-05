@@ -11,6 +11,7 @@ import RegexBuilder
 import Nuke
 import Get
 import KeychainAccess
+import Combine
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -26,39 +27,54 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         // cache scope
         Container.shared.apiClient()
     }
-            
-    init() {}
     
-    /// Configure an instance of the Clerk class with dedicated options.
+    private var cancellables = Set<AnyCancellable>()
+    
+    init() {
+        setupLastActiveSessionIdSubscription()
+    }
+            
+    /// Configures the shared clerk instance.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    ///
-    /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
-    /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    @MainActor
-    public func load(publishableKey: String) {
+    public func configure(publishableKey: String) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            dump("Clerk loaded without a publishable key. Please include a valid publishable key.")
+            dump("Clerk configured without a publishable key. Please include a valid publishable key.")
             return
         }
         
         self.publishableKey = publishableKey
         Container.shared.reset()
+    }
+    
+    /// Loads all necessary environment configuration and instance settings from the Frontend API.
+    /// It is absolutely necessary to call this method before using the Clerk object in your code.
+    @MainActor
+    public func load() async throws {
+        if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+            return
+        }
         
-        Task.detached { [self] in
-            await loadPersistedData()
-            if !client.isNew {
-                try await client.get()
-            } else {
-                try await client.create()
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask { [self] in
+                await loadPersistedData()
+                if !client.isNew {
+                    try await client.get()
+                } else {
+                    try await client.create()
+                }
+                startSessionTokenPolling()
             }
             
-            startSessionTokenPolling()
+            group.addTask { [self] in
+                try await environment.get()
+                prefetchImages()
+            }
+            
+            while let _ = try await group.next() {}
         }
         
-        Task.detached { [self] in
-            try await environment.get()
-            prefetchImages()
-        }
+        isLoaded = true
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -109,6 +125,9 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     public var user: User? {
         client.lastActiveSession?.user
     }
+    
+    /// A boolean that indicate of the Clerk instance was loaded already.
+    @Published private(set) public var isLoaded: Bool = false
     
     /// The Client object for the current device.
     @Published internal(set) public var client: Client = .init() {
@@ -236,5 +255,18 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         }
         
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
+    }
+    
+    private func setupLastActiveSessionIdSubscription() {
+        $client
+            .filter({ !$0.isNew })
+            .sink { client in
+                if let lastActiveSessionId = client.lastActiveSessionId {
+                    try? Keychain().set(lastActiveSessionId, key: "lastActiveSessionId")
+                } else {
+                    try? Keychain().remove("lastActiveSessionId")
+                }
+            }
+            .store(in: &cancellables)
     }
 }

@@ -13,7 +13,7 @@ struct ClerkDemoApp: App {
     @AppStorage("publishableKey") var publishableKey: String = ""
     
     init() {
-        Clerk.shared.load(publishableKey: publishableKey)
+        Clerk.shared.configure(publishableKey: publishableKey)
     }
     
     var body: some Scene {
@@ -22,6 +22,9 @@ struct ClerkDemoApp: App {
                 .demoSettings() // only needed for the demo project
                 .clerkProvider()
                 .localAuthOnForeground()
+                .task {
+                    try? await Clerk.shared.load()
+                }
         }
     }
 }

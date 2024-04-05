@@ -100,7 +100,8 @@ extension Client {
     public func destroy() async throws {
         let request = ClerkAPI.v1.client.delete
         try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = Client()
+        try await Clerk.shared.client.get()
+        try? Keychain().remove("lastActiveSessionId")
     }
     
 }
