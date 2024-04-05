@@ -25,31 +25,33 @@ struct SignInFormView: View {
         case emailOrUsername, phoneNumber
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     // returns true if email OR username is used for sign in AND phone number is used for sign in
     private var showPhoneNumberToggle: Bool {
-        (clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .emailAddress } ||
-        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .username }) &&
-        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber }
+        guard let environment = clerk.environment else { return false }
+        return (environment.userSettings.firstFactorAttributes.contains { $0.key == .emailAddress } ||
+        environment.userSettings.firstFactorAttributes.contains { $0.key == .username }) &&
+        environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber }
     }
     
     // returns true if phone number is enabled, and both email and username are NOT
     private var shouldDefaultToPhoneNumber: Bool {
-        clerk.environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber } &&
-        (clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .emailAddress }) == false &&
-        clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .username }) == false)
+        guard let environment = clerk.environment else { return false }
+        return environment.userSettings.firstFactorAttributes.contains { $0.key == .phoneNumber } &&
+        (environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .emailAddress }) == false &&
+        environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .username }) == false)
     }
     
     private var emailOrUsernameLabel: String {
         var stringComponents = [String]()
-        if clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .emailAddress }) {
+        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == .emailAddress }) {
             stringComponents.append("email address")
         }
         
-        if clerk.environment.userSettings.firstFactorAttributes.contains(where: { $0.key == .username }) {
+        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == .username }) {
             stringComponents.append("username")
         }
         
@@ -134,7 +136,7 @@ struct SignInFormView: View {
             }
         }
         .clerkErrorPresenting($errorWrapper)
-        .task(id: clerk.environment.userSettings) {
+        .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
         }
     }
@@ -142,15 +144,15 @@ struct SignInFormView: View {
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            try await signIn.create(strategy: strategy)
+            try await clerk.client?.createSignIn(strategy: strategy)
             
-            if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
-                try await signIn.prepareFirstFactor(for: prepareStrategy)
+            if let prepareStrategy = signIn?.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
+                try await signIn?.prepareFirstFactor(for: prepareStrategy)
                 
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
-                if signIn.firstFactorVerification?.status == .unverified, signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    try await signIn.authenticateWithRedirect()
+                if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+                    try await signIn?.authenticateWithRedirect()
                 }
             }
             

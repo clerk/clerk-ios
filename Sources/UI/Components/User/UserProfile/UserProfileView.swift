@@ -29,11 +29,19 @@ public struct UserProfileView: View {
             .padding()
             .padding(.bottom)
         }
+        .overlay {
+            if clerk.session == nil {
+                ZStack {
+                    Color(.systemBackground).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
         .task {
             do {
-                try await clerk.client.get()
+                try await clerk.client?.get()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
@@ -41,17 +49,21 @@ public struct UserProfileView: View {
         }
         .task(id: user?.id) {
             do {
-                try await clerk.client.lastActiveSession?.user?.getSessions()
+                try await clerk.client?.lastActiveSession?.user?.getSessions()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }
         }
         .task {
-            try? await clerk.environment.get()
+            try? await clerk.getEnvironment()
         }
-        .onChange(of: user) { session in
-            if user == nil { dismiss() }
+        .onChange(of: clerk.session) { lastActiveSession in
+            if lastActiveSession == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    dismiss()
+                }
+            }
         }
     }
 }

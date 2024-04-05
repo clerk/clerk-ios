@@ -17,12 +17,12 @@ struct SignInFactorOneResetView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
         
     private var useEmailCodeStrategy: Bool {
-        signIn.firstFactorVerification?.strategyEnum == .resetPasswordEmailCode
+        signIn?.firstFactorVerification?.strategyEnum == .resetPasswordEmailCode
     }
     
     var body: some View {
@@ -36,8 +36,8 @@ struct SignInFactorOneResetView: View {
                     code: $code,
                     title: "Reset your password",
                     subtitle: "First, enter the code sent to your \(useEmailCodeStrategy ? "email address" : "phone")",
-                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
-                    profileImageUrl: signIn.userData?.imageUrl
+                    safeIdentifier: signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier,
+                    profileImageUrl: signIn?.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signInStart
@@ -52,13 +52,13 @@ struct SignInFactorOneResetView: View {
                     //
                 }
                 .task {
-                    if !signIn.firstFactorHasBeenPrepared {
+                    if signIn?.firstFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
@@ -74,13 +74,13 @@ struct SignInFactorOneResetView: View {
     
     private func prepare() async {
         do {
-            switch signIn.firstFactorVerification?.strategyEnum {
+            switch signIn?.firstFactorVerification?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn.prepareFirstFactor(for: .resetPasswordEmailCode)
+                try await signIn?.prepareFirstFactor(for: .resetPasswordEmailCode)
                 
             case .resetPasswordPhoneCode:
-                try await signIn.prepareFirstFactor(for: .resetPasswordPhoneCode)
+                try await signIn?.prepareFirstFactor(for: .resetPasswordPhoneCode)
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
@@ -94,13 +94,13 @@ struct SignInFactorOneResetView: View {
     
     private func attempt() async {
         do {
-            switch signIn.currentFirstFactor?.strategyEnum {
+            switch signIn?.currentFirstFactor?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn.attemptFirstFactor(for: .resetPasswordEmailCode(code: code))
+                try await signIn?.attemptFirstFactor(for: .resetPasswordEmailCode(code: code))
                 
             case .resetPasswordPhoneCode:
-                try await signIn.attemptFirstFactor(for: .resetPasswordPhoneCode(code: code))
+                try await signIn?.attemptFirstFactor(for: .resetPasswordPhoneCode(code: code))
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")

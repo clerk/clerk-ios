@@ -17,7 +17,6 @@ struct UserProfileViewModifier: ViewModifier {
             .sheet(isPresented: $isPresented) {
                 NavigationStack {
                     UserProfileView()
-                        .presentationDragIndicator(.visible)
                         .navigationTitle("Account")
                         .toolbar(content: {
                             ToolbarItem(placement: .topBarTrailing) {

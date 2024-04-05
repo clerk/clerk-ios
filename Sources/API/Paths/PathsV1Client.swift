@@ -26,7 +26,7 @@ extension ClerkAPI.V1Endpoint {
             .init(path: path, method: .put)
         }
         
-        var delete: Request<ClientResponse<Client>> {
+        var delete: Request<ClientResponse<Client?>> {
             .init(path: path, method: .delete)
         }
     }

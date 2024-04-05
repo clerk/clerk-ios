@@ -17,8 +17,8 @@ struct SignInFactorTwoBackupCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     var body: some View {
@@ -56,7 +56,7 @@ struct SignInFactorTwoBackupCodeView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn.secondFactor(for: .backupCode))
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn?.secondFactor(for: .backupCode))
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
@@ -72,7 +72,7 @@ struct SignInFactorTwoBackupCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptSecondFactor(for: .backupCode(code: code))
+            try await signIn?.attemptSecondFactor(for: .backupCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

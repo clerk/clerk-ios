@@ -25,16 +25,16 @@ struct AuthSocialProvidersView: View {
         case signIn, signUp
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
     private var thirdPartyProviders: [ExternalProvider] {
-        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+        (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
     }
     
     private var chunkedProviders: ChunksOfCountCollection<[ExternalProvider]> {
@@ -87,8 +87,8 @@ struct AuthSocialProvidersView: View {
     private func signIn(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await signIn.create(strategy: .externalProvider(provider))
-            try await signIn.authenticateWithRedirect()
+            try await clerk.client?.createSignIn(strategy: .externalProvider(provider))
+            try await signIn?.authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
@@ -99,8 +99,8 @@ struct AuthSocialProvidersView: View {
     private func signUp(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await signUp.create(.externalProvider(provider))
-            try await signUp.authenticateWithRedirect()
+            try await clerk.client?.createSignUp(.externalProvider(provider))
+            try await signUp?.authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)

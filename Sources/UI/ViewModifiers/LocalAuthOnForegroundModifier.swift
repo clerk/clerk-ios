@@ -9,6 +9,7 @@
 
 import SwiftUI
 import UIKit
+import KeychainAccess
 
 /**
  This modifier enables local authentication on the app being put into an active state.
@@ -17,10 +18,10 @@ import UIKit
  */
 public struct LocalAuthOnForegroundModifier: ViewModifier {
     @ObservedObject private var clerk = Clerk.shared
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isPresented = false
     @State private var shouldTryAuth = true
     @State private var shouldAnimate = false
-    @Environment(\.scenePhase) private var scenePhase
     @State private var hostingController: UIHostingController<AnyView>?
     
     var lockPhase: LockPhase = .background
@@ -29,13 +30,17 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
         case inactive, background
     }
     
+    private var hasSession: Bool {
+        (try? Keychain().get("lastActiveSessionId") != nil) ?? false
+    }
+    
     public func body(content: Content) -> some View {
         content
             .task {
                 isPresented = true
             }
             .onChange(of: isPresented) { newValue in
-                if newValue && clerk.session != nil {
+                if newValue && hasSession {
                     showLocalAuthView(withAnimation: shouldAnimate) {
                         shouldAnimate = true
                     }
@@ -44,7 +49,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
                 }
             }
             .onChange(of: scenePhase) { newValue in
-                guard clerk.session != nil else { return }
+                guard hasSession else { return }
                 switch newValue {
                 case .active:
                     if isPresented {
@@ -84,8 +89,9 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
             try await clerk.signOut()
             isPresented = false
         } catch {
-            clerk.client = Client()
+            clerk.client = nil
             isPresented = false
+            try? await clerk.createClient()
             dump(error)
         }
     }

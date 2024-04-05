@@ -73,4 +73,18 @@ struct PersistenceManager {
         _ = try await task.value
     }
     
+    static func deleteClientData() async throws {
+        let task = Task {
+            try FileManager.default.removeItem(at: clientDataURL())
+        }
+        _ = try await task.value
+    }
+    
+    static func deleteEnvironmentData() async throws {
+        let task = Task {
+            try FileManager.default.removeItem(at: environmentDataURL())
+        }
+        _ = try await task.value
+    }
+    
 }

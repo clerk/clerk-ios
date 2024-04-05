@@ -16,8 +16,8 @@ struct SignInFactorTwoTotpCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     var body: some View {
@@ -39,7 +39,7 @@ struct SignInFactorTwoTotpCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn.secondFactor(for: .totp))
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn?.secondFactor(for: .totp))
                 }
             }
             .padding(.horizontal)
@@ -50,7 +50,7 @@ struct SignInFactorTwoTotpCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn.attemptSecondFactor(for: .totp(code: code))
+            try await signIn?.attemptSecondFactor(for: .totp(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

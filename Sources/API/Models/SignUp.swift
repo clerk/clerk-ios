@@ -104,66 +104,21 @@ public struct SignUp: Codable, Sendable {
         case complete
     }
     
-    init(
-        id: String = "",
-        status: SignUp.Status? = nil,
-        requiredFields: [String] = [],
-        optionalFields: [String] = [],
-        missingFields: [String] = [],
-        unverifiedFields: [String] = [],
-        verifications: [String: Verification] = [:],
-        username: String? = nil,
-        emailAddress: String? = nil,
-        phoneNumber: String? = nil,
-        web3Wallet: String? = nil,
-        passwordEnabled: Bool = false,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        unsafeMetadata: JSON? = nil,
-        publicMetadata: JSON? = nil,
-        customAction: Bool = false,
-        externalId: String? = nil,
-        createdSessionId: String? = nil,
-        createdUserId: String? = nil,
-        abandonAt: Date = .now
-    ) {
-        self.id = id
-        self.status = status
-        self.requiredFields = requiredFields
-        self.optionalFields = optionalFields
-        self.missingFields = missingFields
-        self.unverifiedFields = unverifiedFields
-        self.verifications = verifications
-        self.username = username
-        self.emailAddress = emailAddress
-        self.phoneNumber = phoneNumber
-        self.web3Wallet = web3Wallet
-        self.passwordEnabled = passwordEnabled
-        self.firstName = firstName
-        self.lastName = lastName
-        self.unsafeMetadata = unsafeMetadata
-        self.publicMetadata = publicMetadata
-        self.customAction = customAction
-        self.externalId = externalId
-        self.createdSessionId = createdSessionId
-        self.createdUserId = createdUserId
-        self.abandonAt = abandonAt
-    }
-    
     /**
      This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
      
-     The form of the given `params` depends on the configuration of the instance. Choices on the instance settings affect which options are available to use.
+     Choices on the instance settings affect which options are available to use.
      
-     The `create` method will return a promise of the new `SignUp` object. This sign up might be complete if you supply the required fields in one go.
+     This sign up might be complete if you supply the required fields in one go.
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
-    @MainActor
-    public func create(_ strategy: CreateStrategy) async throws {
-        let params = createParams(for: strategy)
+    @discardableResult @MainActor
+    public static func create(_ strategy: SignUp.CreateStrategy) async throws -> SignUp {
+        let params = SignUp.createParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.post(params)
-        try await Clerk.shared.apiClient.send(request)
-        try await Clerk.shared.client.get()
+        let response = try await Clerk.shared.apiClient.send(request).value.response
+        try await Clerk.shared.client?.get()
+        return response
     }
     
     public enum CreateStrategy {
@@ -172,7 +127,7 @@ public struct SignUp: Codable, Sendable {
         case transfer
     }
     
-    private func createParams(for strategy: CreateStrategy) -> CreateParams {
+    static func createParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
@@ -254,7 +209,7 @@ public struct SignUp: Codable, Sendable {
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).patch(params)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return signUp
     }
     
@@ -273,7 +228,7 @@ public struct SignUp: Codable, Sendable {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
         try await Clerk.shared.apiClient.send(request)
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     public enum PrepareStrategy {
@@ -308,7 +263,7 @@ public struct SignUp: Codable, Sendable {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).attemptVerification.post(params)
         try await Clerk.shared.apiClient.send(request)
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     public enum AttemptStrategy {
@@ -355,7 +310,7 @@ public struct SignUp: Codable, Sendable {
     public func get(rotatingTokenNonce: String? = nil) async throws {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         try await Clerk.shared.apiClient.send(request)
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
 }
 
@@ -363,19 +318,21 @@ extension SignUp {
     
     /// Returns the next strategy to use to verify an attribute that needs to verified at sign up
     var nextStrategyToVerify: Strategy? {
-        let attributesToVerify = Clerk.shared.environment.userSettings.attributesToVerifyAtSignUp
         
         if let externalVerification = verifications.first(where: { $0.value?.externalVerificationRedirectUrl != nil && $0.value?.status == .unverified }) {
             return externalVerification.value?.strategyEnum
-            
-        } else if unverifiedFields.contains(where: { $0 == "email_address" }) {
-            return attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies.first
-            
-        } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
-            return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
-            
         } else {
-            return nil
+            guard let attributesToVerify = Clerk.shared.environment?.userSettings.attributesToVerifyAtSignUp else { return nil }
+
+            if unverifiedFields.contains(where: { $0 == "email_address" }) {
+                return attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies.first
+                
+            } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
+                return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
+                
+            } else {
+                return nil
+            }
         }
     }
     

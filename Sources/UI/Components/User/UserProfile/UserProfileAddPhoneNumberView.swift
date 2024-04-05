@@ -35,7 +35,7 @@ struct UserProfileAddPhoneNumberView: View {
     @FocusState var isFocused: Bool
     
     private var user: User? {
-        clerk.client.lastActiveSession?.user
+        clerk.client?.lastActiveSession?.user
     }
     
     init(initialStep: Step = .add) {

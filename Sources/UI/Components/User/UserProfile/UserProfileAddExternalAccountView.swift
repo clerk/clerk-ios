@@ -16,7 +16,7 @@ struct UserProfileAddExternalAccountView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
-        clerk.client.lastActiveSession?.user
+        clerk.client?.lastActiveSession?.user
     }
     
     private func create(provider: ExternalProvider) async {
@@ -75,7 +75,7 @@ struct UserProfileAddExternalAccountView: View {
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay()
         .task {
-            try? await clerk.environment.get()
+            try? await clerk.getEnvironment()
         }
     }
 }

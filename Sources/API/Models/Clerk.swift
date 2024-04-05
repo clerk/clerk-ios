@@ -26,52 +26,73 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         // cache scope
         Container.shared.apiClient()
     }
+        
+    init() {
+        Task { await clientAsyncSequence() }
+        Task { await environmentAsyncSequence() }
+    }
             
-    init() {}
-    
-    /// Configure an instance of the Clerk class with dedicated options.
+    /// Configures the shared clerk instance.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    ///
-    /// Initializes the Clerk object and loads all necessary environment configuration and instance settings from the Frontend API.
-    /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    @MainActor
-    public func load(publishableKey: String) {
+    public func configure(publishableKey: String) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            dump("Clerk loaded without a publishable key. Please include a valid publishable key.")
+            dump("Clerk configured without a publishable key. Please include a valid publishable key.")
             return
         }
         
         self.publishableKey = publishableKey
         Container.shared.reset()
+    }
+    
+    /// Loads all necessary environment configuration and instance settings from the Frontend API.
+    /// It is absolutely necessary to call this method before using the Clerk object in your code.
+    @MainActor
+    public func load() async throws {
+        if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+            loadingState = .failed
+            return
+        }
         
-        Task.detached { [self] in
-            await loadPersistedData()
-            if !client.isNew {
-                try await client.get()
-            } else {
-                try await client.create()
+        if loadingState == .notLoaded || loadingState == .failed {
+            try await loadPersistedData()
+        }
+        
+        do {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask { [self] in
+                    if let client {
+                        try await client.get()
+                    } else {
+                        try await createClient()
+                    }
+                    startSessionTokenPolling()
+                }
+                
+                group.addTask { [self] in
+                    try await getEnvironment()
+                    prefetchImages()
+                }
+                
+                while let _ = try await group.next() {}
             }
             
-            startSessionTokenPolling()
+            loadingState = .loadedFromNetwork
+            
+        } catch {
+            if client != nil && environment != nil {
+                loadingState = .loadedFromDisk
+                throw error
+            } else {
+                loadingState = .failed
+                throw error
+            }
         }
         
-        Task.detached { [self] in
-            try await environment.get()
-            prefetchImages()
-        }
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     private(set) public var publishableKey: String = "" {
-        willSet {
-            // If we're setting a new publishable key after an existing one, 
-            // clear out the existing & persisted data
-            if !publishableKey.isEmpty {
-                try? Keychain().removeAll()
-                client = Client()
-            }
-        }
-        
         didSet {
             let liveRegex = Regex {
                 "pk_live_"
@@ -102,39 +123,29 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
-        client.lastActiveSession
+        client?.lastActiveSession
     }
     
     /// A shortcut to Session.user which holds the currently active User object. If the session is null or undefined, the user field will match.
     public var user: User? {
-        client.lastActiveSession?.user
+        client?.lastActiveSession?.user
     }
+    
+    public enum LoadingState {
+        case notLoaded
+        case loadedFromNetwork
+        case loadedFromDisk
+        case failed
+    }
+    
+    /// The loading state of the Clerk object.
+    @Published private(set) public var loadingState: LoadingState = .notLoaded
     
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client = .init() {
-        didSet {
-            Task {
-                do {
-                    try await PersistenceManager.saveClient(client)
-                } catch {
-                    dump(error)
-                }
-            }
-        }
-    }
+    @Published internal(set) public var client: Client?
     
     /// The Environment for the clerk instance.
-    @Published internal(set) public var environment: Clerk.Environment = .init() {
-        didSet {
-            Task {
-                do {
-                    try await PersistenceManager.saveEnvironment(environment)
-                } catch {
-                    dump(error)
-                }
-            }
-        }
-    }
+    @Published internal(set) public var environment: Clerk.Environment?
     
     /// The retrieved active sessions for this user.
     ///
@@ -147,6 +158,17 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// Is set by the `getToken` function on a session.
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
     
+    /// Creates a new client for the current instance along with its cookie.
+    @MainActor
+    public func createClient() async throws {
+        try await Client.create()
+    }
+    
+    @MainActor
+    public func getEnvironment() async throws {
+        try await Environment.get()
+    }
+    
     /**
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
@@ -156,12 +178,14 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client.get()
-            if Clerk.shared.client.sessions.isEmpty {
-                try await Clerk.shared.client.destroy()
+            try await client?.get()
+            if let client, client.sessions.isEmpty {
+                try await client.destroy()
+                try await createClient()
             }
         } else {
-            try await Clerk.shared.client.destroy()
+            try await client?.destroy()
+            try await createClient()
         }
     }
     
@@ -173,11 +197,11 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client.get()
+            try await client?.get()
             
         } else if let currentSession = session {
             try await currentSession.revoke()
-            try await Clerk.shared.client.get()
+            try await client?.get()
         }
     }
     
@@ -199,29 +223,26 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         }
     }
     
-    /// Loads the data persisted across sessions from the keychain.
+    /// Loads the data persisted across launches.
     @MainActor
-    private func loadPersistedData() async {
-        do {
-            if let client = try await PersistenceManager.loadClient() {
-                self.client = client
-            }
-        } catch {
-            dump(error)
+    private func loadPersistedData() async throws {
+        async let client = await PersistenceManager.loadClient()
+        async let environment = await PersistenceManager.loadEnvironment()
+        
+        if let client = try await client {
+            self.client = client
         }
         
-        do {
-            if let environment = try await PersistenceManager.loadEnvironment() {
-                self.environment = environment
-            }
-        } catch {
-            dump(error)
+        if let environment = try await environment {
+            self.environment = environment
         }
     }
     
     private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
     
     private func prefetchImages() {
+        guard let environment else { return }
+        
         var imageUrls: [URL?] = []
         
         if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
@@ -236,5 +257,37 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         }
         
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
+    }
+    
+    private func clientAsyncSequence() async {
+        for await client in $client.values.dropFirst() {
+            do {
+                if let client {
+                    try await PersistenceManager.saveClient(client)
+                } else {
+                    try await PersistenceManager.deleteClientData()
+                }
+            } catch {
+                dump(error)
+            }
+            
+            if let lastActiveSessionId = client?.lastActiveSessionId {
+                try? Keychain().set(lastActiveSessionId, key: "lastActiveSessionId")
+            } else {
+                try? Keychain().remove("lastActiveSessionId")
+            }
+        }
+    }
+    
+    private func environmentAsyncSequence() async {
+        for await environment in $environment.values.dropFirst() {
+            do {
+                if let environment {
+                    try await PersistenceManager.saveEnvironment(environment)
+                }
+            } catch {
+                dump(error)
+            }
+        }
     }
 }

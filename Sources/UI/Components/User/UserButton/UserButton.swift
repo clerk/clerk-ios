@@ -22,7 +22,7 @@ public struct UserButton: View {
     
     private var imageRequest: ImageRequest {
         .init(
-            url: URL(string: clerk.client.lastActiveSession?.user?.imageUrl ?? ""),
+            url: URL(string: clerk.client?.lastActiveSession?.user?.imageUrl ?? ""),
             processors: [ImageProcessors.Circle()]
         )
     }
@@ -45,7 +45,7 @@ public struct UserButton: View {
             .clipShape(.circle)
         })
         .tint(clerkTheme.colors.textPrimary)
-        .onChange(of: clerk.client.lastActiveSession?.user) { user in
+        .onChange(of: clerk.client?.lastActiveSession?.user) { user in
             if user == nil { popoverIsPresented = false }
         }
         .popover(isPresented: $popoverIsPresented, content: {
@@ -55,7 +55,7 @@ public struct UserButton: View {
     }
     
     private func userButtonAction() {
-        if clerk.client.lastActiveSession?.user != nil {
+        if clerk.client?.lastActiveSession?.user != nil {
             popoverIsPresented = true
         } else {
             clerkUIState.presentedAuthStep = .signInStart

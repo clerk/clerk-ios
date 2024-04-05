@@ -14,12 +14,12 @@ struct SignInFactorOneView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     private var strategy: Strategy? {
-        guard signIn.status == .needsFirstFactor else { return nil }
+        guard signIn?.status == .needsFirstFactor else { return nil }
         if case .signInFactorOne(let factor) = clerkUIState.presentedAuthStep {
             return factor?.strategyEnum
         }

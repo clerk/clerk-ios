@@ -92,7 +92,7 @@ extension PhoneNumber {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message. The code will be sent when calling the `PhoneNumber.prepareVerification()` method.
@@ -109,7 +109,7 @@ extension PhoneNumber {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
@@ -121,7 +121,7 @@ extension PhoneNumber {
         let phoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
         return phoneNumber
     }
     
@@ -132,7 +132,7 @@ extension PhoneNumber {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
     @MainActor
@@ -141,7 +141,7 @@ extension PhoneNumber {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client.get()
+        try await Clerk.shared.client?.get()
     }
     
 }

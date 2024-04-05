@@ -16,8 +16,8 @@ struct SignUpPhoneCodeView: View {
     @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signUp: SignUp {
-        clerk.client.signUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
     }
     
     var body: some View {
@@ -31,7 +31,7 @@ struct SignUpPhoneCodeView: View {
                     code: $code,
                     title: "Verify your phone number",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signUp.phoneNumber
+                    safeIdentifier: signUp?.phoneNumber
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signUpStart
@@ -53,6 +53,7 @@ struct SignUpPhoneCodeView: View {
     }
     
     private func prepare() async {
+        guard let signUp else { return }
         do {
             let signUpVerification = signUp.verifications.first(where: { $0.key == "phone_number" })?.value
             if signUp.status == nil || signUpVerification?.status == .verified {
@@ -68,7 +69,7 @@ struct SignUpPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp.attemptVerification(.phoneCode(code: code))
+            try await signUp?.attemptVerification(.phoneCode(code: code))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             code = ""

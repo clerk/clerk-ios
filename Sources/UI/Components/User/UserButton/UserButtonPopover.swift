@@ -18,7 +18,8 @@ struct UserButtonPopover: View {
     @Namespace private var namespace
     
     private var otherSessions: [Session] {
-        clerk.client.sessions.filter({ $0.id != clerk.session?.id && $0.status == .active })
+        guard let client = clerk.client else { return [] }
+        return client.sessions.filter({ $0.id != clerk.session?.id && $0.status == .active })
     }
     
     private func setActiveSession(_ session: Session) async {
@@ -92,7 +93,7 @@ struct UserButtonPopover: View {
                     .zIndex(10)
                 }
                 
-                if !clerk.environment.authConfig.singleSessionMode {
+                if clerk.environment?.authConfig.singleSessionMode == false {
                     VStack(alignment: .leading, spacing: .zero) {
                         ForEach(otherSessions) { session in
                             AsyncButton {

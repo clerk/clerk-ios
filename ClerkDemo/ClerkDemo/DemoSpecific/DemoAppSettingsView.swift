@@ -15,6 +15,7 @@ struct DemoAppSettingsView: View {
     @State private var text: String = ""
     @ObservedObject private var clerk = Clerk.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var isLoading = false
     
     var body: some View {
         NavigationStack {
@@ -25,22 +26,18 @@ struct DemoAppSettingsView: View {
                         .task { text = publishableKey }
                     
                     Button {
-                        publishableKey = text
-                        clerk.load(publishableKey: publishableKey)
-                        dismiss()
+                        Task { await resetWithPublishableKey(text) }
                     } label: {
                         Text("Save")
                     }
                     .disabled(text == publishableKey)
-                }
-                
-                Section("Keychain") {
+                    
                     Button(role: .destructive) {
-                        try? Keychain().removeAll()
-                        try? Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https).removeAll()
+                        text = ""
                     } label: {
-                        Text("Clear Keychain")
+                        Text("Clear")
                     }
+                    .disabled(text == "")
                 }
             }
             .navigationTitle("Demo Settings")
@@ -57,6 +54,33 @@ struct DemoAppSettingsView: View {
                     .tint(.primary)
                 }
             }
+            .overlay {
+                if isLoading {
+                    ZStack {
+                        Color(.systemBackground).opacity(0.5).ignoresSafeArea()
+                        ProgressView()
+                    }
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func resetWithPublishableKey(_ publishableKey: String) async {
+        do {
+            isLoading = true
+            try Keychain().removeAll()
+            if let environment = clerk.environment {
+                try Keychain(server: environment.displayConfig.homeUrl, protocolType: .https).removeAll()
+            }
+            try await clerk.client?.destroy()
+            self.publishableKey = publishableKey
+            Clerk.shared.configure(publishableKey: publishableKey)
+            try await clerk.load()
+            isLoading = false
+            dismiss()
+        } catch {
+            dump(error)
         }
     }
 }

@@ -62,7 +62,13 @@ extension Clerk {
                 throw ClerkClientError(message: "Unable to find an account with biometric authentication enabled.")
             }
             
-            guard let password = try Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https).get(identifier) else {
+            guard
+                let environment = Clerk.shared.environment,
+                    let password = try Keychain(
+                        server: environment.displayConfig.homeUrl,
+                        protocolType: .https
+                    ).get(identifier)
+            else {
                 throw ClerkClientError(message: "Unable to find credentials for the account enrolled in biometric authentication.")
             }
             
@@ -70,8 +76,12 @@ extension Clerk {
         }
         
         public static func setLocalAuthCredentials(identifier: String, password: String) throws {
+            guard let environment = Clerk.shared.environment else {
+                throw ClerkClientError(message: "The Clerk environment is not available.")
+            }
+            
             try Keychain().set(identifier, key: localAuthAccountKey)
-            try Keychain(server: Clerk.shared.environment.displayConfig.homeUrl, protocolType: .https)
+            try Keychain(server: environment.displayConfig.homeUrl, protocolType: .https)
                 .accessibility(.whenPasscodeSetThisDeviceOnly, authenticationPolicy: .userPresence)
                 .set(password, key: identifier)
         }
@@ -84,7 +94,8 @@ extension Clerk {
         }
         
         static var localAuthAccountAlreadySignedIn: Bool {
-            let signedInUsers = Clerk.shared.client.sessions.compactMap(\.user)
+            guard let client = Clerk.shared.client else { return false }
+            let signedInUsers = client.activeSessions.compactMap(\.user)
             if signedInUsers.contains(where: { accountForLocalAuthBelongsToUser($0) }) {
                 return true
             }

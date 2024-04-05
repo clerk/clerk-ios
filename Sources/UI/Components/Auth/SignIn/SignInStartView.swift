@@ -14,19 +14,27 @@ struct SignInStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
     private var socialProvidersEnabled: Bool {
-        !clerk.environment.userSettings.enabledThirdPartyProviders.isEmpty
+        clerk.environment?.userSettings.enabledThirdPartyProviders.isEmpty == false
     }
     
     private var showSignInForm: Bool {
-        clerk.environment.userSettings.firstFactorAttributes.contains {
+        (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains {
             $0.key == .emailAddress ||
             $0.key == .username ||
             $0.key == .phoneNumber
         }
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
+    
+    private var headerTitle: String {
+        var string = "Sign in"
+        if let environment = clerk.environment {
+            string += " to \(environment.displayConfig.applicationName)"
+        }
+        return string
     }
     
     var body: some View {
@@ -37,7 +45,7 @@ struct SignInStartView: View {
                     .padding(.bottom, 24)
                 
                 HeaderView(
-                    title: "Sign in to \(clerk.environment.displayConfig.applicationName)",
+                    title: headerTitle,
                     subtitle: "Welcome back! Please sign in to continue"
                 )
                 .padding(.bottom, 32)

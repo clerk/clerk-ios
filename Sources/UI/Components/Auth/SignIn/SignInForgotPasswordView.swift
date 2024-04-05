@@ -18,20 +18,20 @@ struct SignInForgotPasswordView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var thirdPartyProviders: [ExternalProvider] {
-        clerk.environment.userSettings.enabledThirdPartyProviders.sorted()
+        (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
     }
     
-    private var signIn: SignIn {
-        clerk.client.signIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
     }
     
     private func resetPassword() async {
         do {
-            guard let resetPasswordStrategy = signIn.resetPasswordStrategy else {
+            guard let resetPasswordStrategy = signIn?.resetPasswordStrategy else {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
-            try await signIn.prepareFirstFactor(for: resetPasswordStrategy)
-            clerkUIState.presentedAuthStep = .signInFactorOne(signIn.currentFirstFactor)
+            try await signIn?.prepareFirstFactor(for: resetPasswordStrategy)
+            clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.currentFirstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -61,11 +61,11 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                SignInFactorOneAlternativeMethodsView(currentFactor: signIn.firstFactor(for: .password))
+                SignInFactorOneAlternativeMethodsView(currentFactor: signIn?.firstFactor(for: .password))
                     .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
