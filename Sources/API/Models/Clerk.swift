@@ -143,7 +143,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     }
     
     /// The Client object for the current device.
-    @Published public var client: Client?
+    @Published internal(set) public var client: Client?
         
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment?
