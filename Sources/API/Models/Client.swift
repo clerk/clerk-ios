@@ -39,13 +39,6 @@ public struct Client: Codable, Sendable {
         sessions.first(where: { $0.id == lastActiveSessionId })
     }
     
-    enum CodingKeys: CodingKey {
-        case signIn
-        case signUp
-        case sessions
-        case lastActiveSessionId
-        case updatedAt
-    }
 }
 
 extension Client {

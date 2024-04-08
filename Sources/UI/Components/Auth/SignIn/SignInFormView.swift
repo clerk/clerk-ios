@@ -144,7 +144,7 @@ struct SignInFormView: View {
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            try await clerk.client?.createSignIn(strategy: strategy)
+            try await SignIn.create(strategy: strategy)
             
             if let prepareStrategy = signIn?.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
                 try await signIn?.prepareFirstFactor(for: prepareStrategy)

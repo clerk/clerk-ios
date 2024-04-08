@@ -81,14 +81,7 @@ extension PhoneNumber {
     /// Kick off the verification process for this phone number. An SMS message with a one-time code will be sent to the phone number value.
     @MainActor
     public func prepareVerification() async throws {
-        let request = ClerkAPI
-            .v1
-            .me
-            .phoneNumbers
-            .id(id)
-            .prepareVerification
-            .post
-        
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).prepareVerification.post
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
@@ -98,14 +91,7 @@ extension PhoneNumber {
     /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message. The code will be sent when calling the `PhoneNumber.prepareVerification()` method.
     @MainActor
     public func attemptVerification(code: String) async throws {
-        let request = ClerkAPI
-            .v1
-            .me
-            .phoneNumbers
-            .id(id)
-            .attemptVerification
-            .post(code: code)
-        
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).attemptVerification.post(code: code)
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }

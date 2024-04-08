@@ -59,7 +59,7 @@ final class ExternalAuthWebSession: NSObject {
                                         let verification = Clerk.shared.client?.signUp?.verifications.first(where: { $0.key == "external_account" })?.value,
                                         verification.status == .transferable
                                     {
-                                        try await Clerk.shared.client?.createSignIn(strategy: .transfer)
+                                        try await SignIn.create(strategy: .transfer)
                                     }
                                 }
                                 

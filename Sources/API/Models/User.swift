@@ -94,6 +94,12 @@ public struct User: Codable, Equatable, Sendable {
     /// A boolean indicating whether the organization creation is enabled for the user or not.
     public let createOrganizationEnabled: Bool
     
+    /// A boolean that returns true if the user is signed in.
+    public var isSignedIn: Bool {
+        let activeUserIds = Clerk.shared.client?.activeSessions.compactMap(\.user?.id) ?? []
+        return activeUserIds.contains(id)
+    }
+    
     /// The user's full name.
     public var fullName: String? {
         let joinedString = [firstName, lastName]

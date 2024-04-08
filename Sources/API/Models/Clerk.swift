@@ -17,6 +17,8 @@ import KeychainAccess
  */
 final public class Clerk: ObservableObject, @unchecked Sendable {
     
+    // MARK: - Dependencies
+    
     public static var shared: Clerk {
         // singleton scope
         Container.shared.clerk()
@@ -26,12 +28,14 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         // cache scope
         Container.shared.apiClient()
     }
+    
+    // MARK: - Setup Functions
         
     init() {
         Task { await clientAsyncSequence() }
         Task { await environmentAsyncSequence() }
     }
-            
+                
     /// Configures the shared clerk instance.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
     public func configure(publishableKey: String) {
@@ -56,6 +60,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         
         if loadingState == .notLoaded || loadingState == .failed {
             try await loadPersistedData()
+            loadingState = .loadedFromDisk
         }
         
         do {
@@ -80,16 +85,25 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             loadingState = .loadedFromNetwork
             
         } catch {
-            if client != nil && environment != nil {
-                loadingState = .loadedFromDisk
-                throw error
-            } else {
+            if client == nil || environment == nil {
                 loadingState = .failed
-                throw error
             }
+            throw error
         }
         
     }
+    
+    // MARK: - Public Properties
+    
+    public enum LoadingState {
+        case notLoaded
+        case loadedFromDisk
+        case loadedFromNetwork
+        case failed
+    }
+    
+    /// The loading state of the Clerk object.
+    @Published private(set) public var loadingState: LoadingState = .notLoaded
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     private(set) public var publishableKey: String = "" {
@@ -118,9 +132,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// Frontend API URL
     private(set) public var frontendAPIURL: String = ""
     
-    /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
-    public var redirectConfig = RedirectConfig()
-    
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
         client?.lastActiveSession
@@ -131,19 +142,9 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         client?.lastActiveSession?.user
     }
     
-    public enum LoadingState {
-        case notLoaded
-        case loadedFromNetwork
-        case loadedFromDisk
-        case failed
-    }
-    
-    /// The loading state of the Clerk object.
-    @Published private(set) public var loadingState: LoadingState = .notLoaded
-    
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client?
-    
+    @Published public var client: Client?
+        
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment?
     
@@ -152,58 +153,18 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     /// Is set by the `getSessions` function on a user.
     @Published var sessionsByUserId: [String: [Session]] = .init()
     
+    /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
+    public var redirectConfig = RedirectConfig()
+    
+    // MARK: - Internal Properties
+    
     /// The cached session tokens. Key is the session id + template name if there is one.
     /// e.g. `sess_abc12345` or `sess_abc12345-supabase`
     ///
     /// Is set by the `getToken` function on a session.
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
     
-    /// Creates a new client for the current instance along with its cookie.
-    @MainActor
-    public func createClient() async throws {
-        try await Client.create()
-    }
-    
-    @MainActor
-    public func getEnvironment() async throws {
-        try await Environment.get()
-    }
-    
-    /**
-     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
-     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
-     */
-    @MainActor
-    public func signOut(sessionId: String? = nil) async throws {
-        if let sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-            try await Clerk.shared.apiClient.send(request)
-            try await client?.get()
-            if let client, client.sessions.isEmpty {
-                try await client.destroy()
-                try await createClient()
-            }
-        } else {
-            try await client?.destroy()
-            try await createClient()
-        }
-    }
-    
-    /// A method used to set the active session and/or organization.
-    /// - Parameter sessionId: The session ID to be set as active. If null, the current session is deleted.
-    /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
-    @MainActor
-    public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
-        if let sessionId = sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
-            try await Clerk.shared.apiClient.send(request)
-            try await client?.get()
-            
-        } else if let currentSession = session {
-            try await currentSession.revoke()
-            try await client?.get()
-        }
-    }
+    // MARK: - Private Setup
     
     private var sessionPollingTask: Task<Void, Error>?
         
@@ -290,4 +251,57 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             }
         }
     }
+}
+
+// MARK: - Public Functions
+
+extension Clerk {
+    
+    /**
+     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
+     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
+     */
+    @MainActor
+    public func signOut(sessionId: String? = nil) async throws {
+        if let sessionId {
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
+            try await Clerk.shared.apiClient.send(request)
+            try await Clerk.shared.client?.get()
+            if let client, client.sessions.isEmpty {
+                try await client.destroy()
+                try await Client.create()
+            }
+        } else {
+            try await client?.destroy()
+            try await Client.create()
+        }
+    }
+    
+    /// A method used to set the active session and/or organization.
+    /// - Parameter sessionId: The session ID to be set as active. If null, the current session is deleted.
+    /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+    @MainActor
+    public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
+        if let sessionId = sessionId {
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
+            try await Clerk.shared.apiClient.send(request)
+            try await Clerk.shared.client?.get()
+            
+        } else if let currentSession = session {
+            try await currentSession.revoke()
+            try await Clerk.shared.client?.get()
+        }
+    }
+    
+    /// Creates a new client for the current instance along with its cookie.
+    @MainActor
+    public func createClient() async throws {
+        try await Client.create()
+    }
+    
+    @MainActor
+    public func getEnvironment() async throws {
+        try await Environment.get()
+    }
+    
 }

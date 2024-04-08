@@ -25,14 +25,6 @@ struct AuthSocialProvidersView: View {
         case signIn, signUp
     }
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-    
     private var thirdPartyProviders: [ExternalProvider] {
         (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
     }
@@ -87,8 +79,7 @@ struct AuthSocialProvidersView: View {
     private func signIn(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await clerk.client?.createSignIn(strategy: .externalProvider(provider))
-            try await signIn?.authenticateWithRedirect()
+            try await SignIn.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
@@ -99,8 +90,7 @@ struct AuthSocialProvidersView: View {
     private func signUp(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await clerk.client?.createSignUp(.externalProvider(provider))
-            try await signUp?.authenticateWithRedirect()
+            try await SignUp.create(.externalProvider(provider)).authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
