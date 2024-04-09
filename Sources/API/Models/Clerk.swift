@@ -59,8 +59,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         }
         
         if loadingState == .notLoaded || loadingState == .failed {
-            try await loadPersistedData()
-            loadingState = .loadedFromDisk
+            do {
+                try await loadPersistedData()
+                loadingState = .loadedFromDisk
+            } catch {
+                dump(error)
+            }
         }
         
         do {
