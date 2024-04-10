@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/25/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct UserProfileMfaAddSmsView: View {
@@ -142,3 +144,5 @@ struct UserProfileMfaAddSmsView: View {
 #Preview {
     UserProfileMfaAddSmsView()
 }
+
+#endif

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 3/6/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 import NukeUI
 
@@ -31,3 +33,5 @@ struct AuthProviderIcon: View {
 #Preview {
     AuthProviderIcon(provider: .apple)
 }
+
+#endif

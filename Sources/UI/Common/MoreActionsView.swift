@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/11/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct MoreActionsView: View {
@@ -23,3 +25,5 @@ struct MoreActionsView: View {
 #Preview {
     MoreActionsView()
 }
+
+#endif

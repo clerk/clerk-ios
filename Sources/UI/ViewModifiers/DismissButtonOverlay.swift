@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/22/23.
 //
 
+#if canImport(UIKit)
+
 import Foundation
 import SwiftUI
 
@@ -38,3 +40,5 @@ extension View {
     Color(.systemBackground)
         .dismissButtonOverlay()
 }
+
+#endif

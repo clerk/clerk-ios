@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 12/19/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct CheckBoxView: View {
@@ -58,3 +60,5 @@ struct CheckBoxView: View {
     CheckBoxView(isSelected: .constant(true))
         .frame(width: 40, height: 40)
 }
+
+#endif

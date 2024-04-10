@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 12/20/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct ClerkBottomBrandingModifier: ViewModifier {
@@ -40,3 +42,5 @@ extension View {
     AuthView()
         .environmentObject(ClerkUIState())
 }
+
+#endif

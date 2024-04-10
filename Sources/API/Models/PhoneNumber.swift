@@ -58,12 +58,15 @@ extension PhoneNumber {
         let phoneNumberKit = Container.shared.phoneNumberKit()
         guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return phoneNumber }
 
+        #if canImport(UIKit)
+        
         if
             let region = phoneNumber.regionID,
             let country = CountryCodePickerViewController.Country(for: region, with: phoneNumberKit)
         {
             return country.flag
         }
+        #endif
         
         return nil
     }
