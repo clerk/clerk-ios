@@ -12,6 +12,7 @@ import SwiftUI
 
 struct AuthViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @Binding var isPresented: Bool
 
@@ -19,6 +20,7 @@ struct AuthViewModifier: ViewModifier {
         content
             .sheet(isPresented: $isPresented, content: {
                 AuthView()
+                    .environmentObject(clerkUIState)
             })
     }
 }

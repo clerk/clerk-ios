@@ -11,6 +11,8 @@ import Foundation
 
 public final class ClerkUIState: ObservableObject {
     
+    public init() {}
+    
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false
 

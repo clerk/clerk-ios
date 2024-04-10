@@ -11,6 +11,7 @@ import SwiftUI
 
 struct UserProfileViewModifier: ViewModifier {
     @Binding var isPresented: Bool
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     func body(content: Content) -> some View {
         content
@@ -23,6 +24,7 @@ struct UserProfileViewModifier: ViewModifier {
                                 DismissButton()
                             }
                         })
+                        .environmentObject(clerkUIState)
                 }
             }
     }
