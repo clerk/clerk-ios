@@ -12,15 +12,12 @@ import ClerkSDK
 struct ClerkDemoApp: App {
     @AppStorage("publishableKey") var publishableKey: String = ""
     
-    init() {
-        Clerk.shared.configure(publishableKey: publishableKey)
-    }
-    
     var body: some Scene {
         WindowGroup {
             HomeView()
                 .clerkProvider()
                 .task {
+                    Clerk.shared.configure(publishableKey: publishableKey)
                     try? await Clerk.shared.load()
                 }
         }
