@@ -51,7 +51,7 @@ import Foundation
 /// replacing spaces with `%20`.
 ///
 /// This type is largely based on Vapor's [`url-encoded-form`](https://github.com/vapor/url-encoded-form) project.
-public final class URLEncodedFormEncoder: Sendable {
+final class URLEncodedFormEncoder: Sendable {
     /// Encoding to use for `Array` values.
     public enum ArrayEncoding: Sendable {
         /// An empty set of square brackets ("[]") are appended to the key for every value. This is the default encoding.
