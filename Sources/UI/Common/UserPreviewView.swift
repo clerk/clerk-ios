@@ -28,7 +28,9 @@ struct UserPreviewView: View {
                     if let image = imageState.image {
                         image.resizable().scaledToFill()
                     } else {
+                        #if !os(tvOS)
                         Color(.secondarySystemBackground)
+                        #endif
                     }
                 }
                 .frame(width: 50, height: 50)

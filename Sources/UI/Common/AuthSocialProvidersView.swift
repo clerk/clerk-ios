@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(tvOS)
 
 import SwiftUI
 import Algorithms

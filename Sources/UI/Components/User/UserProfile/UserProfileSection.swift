@@ -28,6 +28,7 @@ struct UserProfileSection: View {
                 HStack {
                     UserPreviewView(user: user, hideSubtitle: true)
                     Spacer()
+                    #if !os(tvOS)
                     Button {
                         updateProfileIsPresented = true
                     } label: {
@@ -38,6 +39,7 @@ struct UserProfileSection: View {
                     .sheet(isPresented: $updateProfileIsPresented) {
                         UserProfileUpdateProfileView()
                     }
+                    #endif
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)

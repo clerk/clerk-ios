@@ -87,7 +87,9 @@ struct SignInResetPasswordView: View {
                         CheckBoxView(isSelected: $signOutOfAllDevices)
                             .frame(width: 18, height: 18)
                             .onChange(of: signOutOfAllDevices) { _ in
+                                #if !os(tvOS)
                                 FeedbackGenerator.success()
+                                #endif
                             }
                         
                         Text("Sign out of all other devices")

@@ -54,7 +54,7 @@ extension ClerkTheme {
             textSecondary: Color(.clerkTextSecondary),
             textTertiary: Color(.clerkTextTertiary),
             textOnPrimaryBackground: .white,
-            borderPrimary: Color(.systemFill),
+            borderPrimary: Color(.separator),
             danger: Color(.clerkDanger)
         )
     )

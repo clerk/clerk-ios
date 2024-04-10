@@ -173,7 +173,9 @@ struct UserButtonPopover: View {
             .animation(.snappy, value: clerk.session)
             .frame(minWidth: 376, maxWidth: .infinity, alignment: .leading)
             .onChange(of: clerk.session) { session in
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                #if !os(tvOS)
+                FeedbackGenerator.success()
+                #endif
                 if session == nil { dismiss() }
             }
         }

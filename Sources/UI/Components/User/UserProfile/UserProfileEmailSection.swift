@@ -112,6 +112,7 @@ struct UserProfileEmailSection: View {
                     
                     Spacer()
                     
+                    #if !os(tvOS)
                     Menu {
                         if emailAddress.verification?.status == .verified && !emailAddress.isPrimary(for: user) {
                             setAsPrimaryButton
@@ -126,6 +127,7 @@ struct UserProfileEmailSection: View {
                         MoreActionsView()
                     }
                     .tint(clerkTheme.colors.textPrimary)
+                    #endif
                 }
                 
                 if let verificationError = emailAddress.verification?.error {

@@ -77,6 +77,7 @@ struct AuthView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #if !os(tvOS)
         .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
             VStack(spacing: 0) {
                 footerView
@@ -91,13 +92,16 @@ struct AuthView: View {
             }
             .background(.ultraThinMaterial)
         })
+        #endif
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
         .interactiveDismissDisabled()
         .scrollDismissesKeyboard(.interactively)
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
+            #if !os(tvOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
+            #endif
         }
         .task {
             try? await clerk.getEnvironment()

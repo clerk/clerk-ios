@@ -114,6 +114,7 @@ struct UserProfilePhoneNumberSection: View {
                     
                     Spacer()
                     
+                    #if !os(tvOS)
                     Menu {
                         if phoneNumber.verification?.status == .verified && !phoneNumber.isPrimary(for: user) {
                             setAsPrimaryButton
@@ -132,6 +133,7 @@ struct UserProfilePhoneNumberSection: View {
                         MoreActionsView()
                     }
                     .tint(clerkTheme.colors.textPrimary)
+                    #endif
                 }
                 
                 if let verificationError = phoneNumber.verification?.error {

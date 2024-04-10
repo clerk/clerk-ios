@@ -37,7 +37,8 @@ extension View {
 }
 
 #Preview {
-    Color(.systemBackground)
+    Text("Hello, World!")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .dismissButtonOverlay()
 }
 

@@ -31,6 +31,7 @@ public struct UserButton: View {
         Button(action: {
             userButtonAction()
         }, label: {
+            #if !os(tvOS)
             LazyImage(request: imageRequest) { state in
                 if let image = state.image {
                     image.resizable().scaledToFill()
@@ -43,15 +44,25 @@ public struct UserButton: View {
             }
             .frame(width: 32, height: 32)
             .clipShape(.circle)
+            #else
+//            Image(systemName: "person.crop.circle.fill")
+            #endif
         })
         .tint(clerkTheme.colors.textPrimary)
         .onChange(of: clerk.client?.lastActiveSession?.user) { user in
             if user == nil { popoverIsPresented = false }
         }
+        #if !os(tvOS)
         .popover(isPresented: $popoverIsPresented, content: {
             UserButtonPopover()
                 .presentationDetents([.medium, .large])
         })
+        #else
+        .sheet(isPresented: $popoverIsPresented, content: {
+            UserButtonPopover()
+                .presentationDetents([.medium, .large])
+        })
+        #endif
     }
     
     private func userButtonAction() {

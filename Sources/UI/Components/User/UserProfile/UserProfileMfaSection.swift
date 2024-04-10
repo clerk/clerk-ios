@@ -75,6 +75,7 @@ struct UserProfileMfaSection: View {
             }
             
             if let user, !user.availableSecondFactors.isEmpty {
+                #if !os(tvOS)
                 Menu {
                     if user.availableSecondFactors.contains(where: { $0.key == .phoneNumber }) {
                         Button {
@@ -98,6 +99,7 @@ struct UserProfileMfaSection: View {
                         .frame(minHeight: 32)
                 }
                 .padding(.leading, 12)
+                #endif
             }
             
             Divider()
@@ -128,6 +130,7 @@ struct UserProfileMfaSection: View {
             
             Spacer()
             
+            #if !os(tvOS)
             Menu {
                 AsyncButton(role: .destructive) {
                     await removeTOTPAsSecondFactor()
@@ -138,6 +141,7 @@ struct UserProfileMfaSection: View {
                 MoreActionsView()
             }
             .tint(clerkTheme.colors.textPrimary)
+            #endif
         }
     }
     
@@ -158,6 +162,7 @@ struct UserProfileMfaSection: View {
             
             Spacer()
             
+            #if !os(tvOS)
             Menu {
                 AsyncButton(role: .destructive) {
                     await removePhoneAsSecondFactor(phoneNumber)
@@ -168,6 +173,7 @@ struct UserProfileMfaSection: View {
                 MoreActionsView()
             }
             .tint(clerkTheme.colors.textPrimary)
+            #endif
         }
     }
     
@@ -180,6 +186,7 @@ struct UserProfileMfaSection: View {
             }
             .font(.footnote)
             Spacer()
+            #if !os(tvOS)
             Menu {
                 Button {
                     // regenerate codes
@@ -189,6 +196,7 @@ struct UserProfileMfaSection: View {
             } label: {
                 MoreActionsView()
             }
+            #endif
         }
         .tint(clerkTheme.colors.textPrimary)
     }

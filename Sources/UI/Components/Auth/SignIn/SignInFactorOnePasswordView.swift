@@ -64,6 +64,7 @@ struct SignInFactorOnePasswordView: View {
                             .focused($isFocused)
                             .task { isFocused = true }
                         
+                        #if !os(tvOS)
                         if Clerk.LocalAuth.availableBiometryType != .none {
                             HStack {
                                 Toggle(isOn: $enableBiometry, label: { EmptyView() })
@@ -75,6 +76,7 @@ struct SignInFactorOnePasswordView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top)
                         }
+                        #endif
                     }
                     
                     AsyncButton(action: attempt) {
@@ -107,9 +109,13 @@ struct SignInFactorOnePasswordView: View {
             let signInIdentifier = signIn?.identifier
             
             try await signIn?.attemptFirstFactor(for: .password(password: password))
+            
+            #if !os(tvOS)
             if let signInIdentifier, enableBiometry {
                 try Clerk.LocalAuth.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
             }
+            #endif
+            
             if signIn?.status == .needsSecondFactor {
                 clerkUIState.presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
             } else {

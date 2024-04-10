@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 10/19/23.
 //
 
+#if !os(tvOS)
+
 import AuthenticationServices
 
 @MainActor
@@ -104,4 +106,6 @@ extension ExternalAuthWebSession: ASWebAuthenticationPresentationContextProvidin
     }
     
 }
+
+#endif
 

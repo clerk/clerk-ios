@@ -82,8 +82,10 @@ struct UserProfileAddEmailView: View {
             }
         }
         .onChange(of: step) { _ in
+            #if !os(tvOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
+            #endif
         }
     }
     

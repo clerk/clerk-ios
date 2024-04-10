@@ -50,10 +50,12 @@ struct SignInStartView: View {
                 )
                 .padding(.bottom, 32)
                 
+                #if !os(tvOS)
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signIn)
                         .onSuccess { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 }
+                #endif
                 
                 if socialProvidersEnabled && showSignInForm {
                     TextDivider(text: "or")

@@ -62,10 +62,12 @@ struct UserProfileActiveDevicesSection: View {
                     .scaledToFit()
                     .frame(width: 32, height: 32)
                     .background {
+                        #if !os(tvOS)
                         if colorScheme == .dark {
                             Color(.secondarySystemBackground)
                                 .clipShape(.rect(cornerRadius: 8, style: .continuous))
                         }
+                        #endif
                     }
                 
                 VStack(alignment: .leading) {
@@ -88,6 +90,7 @@ struct UserProfileActiveDevicesSection: View {
                 Spacer()
                 
                 if !session.isThisDevice {
+                    #if !os(tvOS)
                     Menu {
                         AsyncButton(role: .destructive) {
                             isSigningOutOfDevice = true
@@ -100,6 +103,7 @@ struct UserProfileActiveDevicesSection: View {
                         MoreActionsView()
                     }
                     .tint(clerkTheme.colors.textPrimary)
+                    #endif
                 }
             }
             .opacity(isSigningOutOfDevice ? 0 : 1)

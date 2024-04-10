@@ -32,7 +32,9 @@ public struct UserProfileView: View {
         .overlay {
             if clerk.session == nil {
                 ZStack {
+                    #if !os(tvOS)
                     Color(.systemBackground).ignoresSafeArea()
+                    #endif
                     ProgressView()
                 }
             }

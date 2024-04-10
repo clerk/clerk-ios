@@ -57,8 +57,10 @@ struct SignUpVerificationView: View {
         .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.snappy, value: signUp?.nextStrategyToVerify)
         .onChange(of: signUp?.nextStrategyToVerify) { _ in
+            #if !os(tvOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
+            #endif
         }
     }
 }

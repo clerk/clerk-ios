@@ -56,8 +56,10 @@ struct UserProfileAddPhoneNumberView: View {
             }
         }
         .onChange(of: step) { _ in
+            #if !os(tvOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
+            #endif
         }
     }
     
@@ -67,11 +69,13 @@ struct UserProfileAddPhoneNumberView: View {
             VStack(alignment: .leading) {
                 Text("Phone number")
                     .font(.footnote.weight(.medium))
+                #if !os(tvOS)
                 PhoneNumberField(text: $phone)
                     .focused($isFocused)
                     .task {
                         isFocused = true
                     }
+                #endif
             }
             
             Text("A text message containing a verification code will be sent to this phone number.")

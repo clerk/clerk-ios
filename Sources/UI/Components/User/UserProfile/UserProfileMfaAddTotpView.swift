@@ -92,6 +92,7 @@ private struct AddTOTPView: View {
                             .font(.footnote)
                             .lineLimit(1)
                         Spacer()
+                        #if !os(tvOS)
                         Button {
                             UIPasteboard.general.string = totp.secret
                         } label: {
@@ -99,6 +100,7 @@ private struct AddTOTPView: View {
                                 .imageScale(.small)
                         }
                         .tint(.primary)
+                        #endif
                     }
                     .padding(8)
                     .overlay {
@@ -116,6 +118,7 @@ private struct AddTOTPView: View {
                                 .font(.footnote)
                                 .lineLimit(1)
                             Spacer()
+                            #if !os(tvOS)
                             Button {
                                 UIPasteboard.general.string = totp.uri
                             } label: {
@@ -123,6 +126,7 @@ private struct AddTOTPView: View {
                                     .imageScale(.small)
                             }
                             .tint(.primary)
+                            #endif
                         }
                         .padding(8)
                         .overlay {
