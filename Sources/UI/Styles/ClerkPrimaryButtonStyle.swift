@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 12/15/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct ClerkPrimaryButtonStyle: ButtonStyle {
@@ -44,3 +46,5 @@ struct ClerkPrimaryButtonStyle: ButtonStyle {
     }
     .buttonStyle(ClerkPrimaryButtonStyle())
 }
+
+#endif

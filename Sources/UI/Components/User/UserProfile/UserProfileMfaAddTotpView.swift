@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 2/13/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 extension UserProfileMfaAddTotpView {
@@ -270,3 +272,5 @@ private struct TOTPBackupCodesView: View {
         "flwmkdcp"
       ])
 }
+
+#endif

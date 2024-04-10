@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/29/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct UserProfileMfaBackupCodeListView: View {
@@ -94,3 +96,5 @@ struct UserProfileMfaBackupCodeListView: View {
       ])
     .padding()
 }
+
+#endif

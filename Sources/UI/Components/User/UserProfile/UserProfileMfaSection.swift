@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/24/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct UserProfileMfaSection: View {
@@ -196,3 +198,5 @@ struct UserProfileMfaSection: View {
     UserProfileMfaSection()
         .padding()
 }
+
+#endif

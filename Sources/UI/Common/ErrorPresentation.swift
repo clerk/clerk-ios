@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 12/11/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct ErrorWrapper: Identifiable {
@@ -77,3 +79,5 @@ extension View {
                 .presentationDragIndicator(.visible)
         }
 }
+
+#endif

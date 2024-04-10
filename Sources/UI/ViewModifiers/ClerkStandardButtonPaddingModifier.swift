@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/17/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct ClerkStandardButtonPaddingModifier: ViewModifier {
@@ -30,3 +32,5 @@ extension View {
     }
     .buttonStyle(ClerkPrimaryButtonStyle())
 }
+
+#endif

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 11/8/23.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct RemoveResourceView: View {
@@ -69,3 +71,5 @@ struct RemoveResourceView: View {
         print("DELETED")
     }
 }
+
+#endif

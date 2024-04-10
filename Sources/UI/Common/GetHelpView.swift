@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/17/24.
 //
 
+#if canImport(UIKit)
+
 import SwiftUI
 
 struct GetHelpView: View {
@@ -68,3 +70,5 @@ struct GetHelpView: View {
         primaryButtonConfig: .init(label: "Email support", action: {}),
         secondaryButtonConfig: .init(label: "Back to sign in", action: {}))
 }
+
+#endif
