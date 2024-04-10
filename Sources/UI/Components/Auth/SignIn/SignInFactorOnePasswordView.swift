@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
-#if canImport(UIKit)
+#if canImport(SwiftUI)
 
 import SwiftUI
 import KeychainAccess

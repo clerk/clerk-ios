@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
-#if canImport(UIKit)
+#if canImport(SwiftUI)
 
 import SwiftUI
 
@@ -96,9 +96,11 @@ struct AuthView: View {
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
         .interactiveDismissDisabled()
+        #if !os(visionOS)
         .scrollDismissesKeyboard(.interactively)
+        #endif
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
-            #if !os(tvOS)
+            #if !os(tvOS) && !os(visionOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
             #endif

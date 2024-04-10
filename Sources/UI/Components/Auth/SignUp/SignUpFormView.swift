@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/1/23.
 //
 
-#if canImport(UIKit)
+#if canImport(SwiftUI)
 
 import SwiftUI
 
@@ -147,7 +147,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            #if !os(tvOS)
+            #if !os(tvOS) && !os(visionOS)
             if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {

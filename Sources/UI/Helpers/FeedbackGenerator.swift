@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
-#if canImport(UIKit) && !os(tvOS)
+#if canImport(SwiftUI) && !os(tvOS) && !os(visionOS)
 
 import Foundation
 import UIKit

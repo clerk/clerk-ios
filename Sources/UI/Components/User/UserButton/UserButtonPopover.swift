@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/29/23.
 //
 
-#if canImport(UIKit)
+#if canImport(SwiftUI)
 
 import SwiftUI
 
@@ -173,7 +173,7 @@ struct UserButtonPopover: View {
             .animation(.snappy, value: clerk.session)
             .frame(minWidth: 376, maxWidth: .infinity, alignment: .leading)
             .onChange(of: clerk.session) { session in
-                #if !os(tvOS)
+                #if !os(tvOS) && !os(visionOS)
                 FeedbackGenerator.success()
                 #endif
                 if session == nil { dismiss() }

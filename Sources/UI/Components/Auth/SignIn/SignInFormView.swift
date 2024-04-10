@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
-#if canImport(UIKit)
+#if canImport(SwiftUI)
 
 import SwiftUI
 
@@ -93,7 +93,7 @@ struct SignInFormView: View {
                             .focused($focusedField, equals: .emailOrUsername)
                             .transition(.move(edge: .leading).combined(with: .opacity))
                     } else {
-                        #if !os(tvOS)
+                        #if !os(tvOS) && !os(visionOS)
                         PhoneNumberField(text: $phoneNumber)
                             .focused($focusedField, equals: .phoneNumber)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
