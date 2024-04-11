@@ -94,7 +94,7 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
-    #if !os(tvOS)
+    #if !os(tvOS) && !os(watchOS)
     /// Invokes a re-authorization flow for an existing external account.
     @MainActor
     public func reauthorize() async throws {
