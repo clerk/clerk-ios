@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/12/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -47,7 +47,6 @@ public struct ClerkTheme: @unchecked Sendable {
 
 extension ClerkTheme {
     
-    #if !os(tvOS)
     static public let clerkDefault = ClerkTheme(
         colors: .init(
             primary: Color(.clerkPrimary),
@@ -59,19 +58,6 @@ extension ClerkTheme {
             danger: Color(.clerkDanger)
         )
     )
-    #else
-    static public let clerkDefault = ClerkTheme(
-        colors: .init(
-            primary: Color(.clerkPrimary),
-            textPrimary: Color(.clerkTextPrimary),
-            textSecondary: Color(.clerkTextSecondary),
-            textTertiary: Color(.clerkTextTertiary),
-            textOnPrimaryBackground: .white,
-            borderPrimary: Color(.separator),
-            danger: Color(.clerkDanger)
-        )
-    )
-    #endif
     
 }
 

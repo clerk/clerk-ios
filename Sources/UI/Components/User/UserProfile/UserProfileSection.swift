@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 import NukeUI
@@ -28,7 +28,6 @@ struct UserProfileSection: View {
                 HStack {
                     UserPreviewView(user: user, hideSubtitle: true)
                     Spacer()
-                    #if !os(tvOS)
                     Button {
                         updateProfileIsPresented = true
                     } label: {
@@ -39,7 +38,6 @@ struct UserProfileSection: View {
                     .sheet(isPresented: $updateProfileIsPresented) {
                         UserProfileUpdateProfileView()
                     }
-                    #endif
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)

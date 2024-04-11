@@ -362,7 +362,6 @@ public struct SignIn: Codable, Sendable {
         let authSession = ExternalAuthWebSession(url: url, authAction: .signIn)
         try await authSession.start()
     }
-    
     #endif
 }
 

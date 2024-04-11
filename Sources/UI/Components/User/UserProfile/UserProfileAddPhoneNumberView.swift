@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/8/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -56,10 +56,8 @@ struct UserProfileAddPhoneNumberView: View {
             }
         }
         .onChange(of: step) { _ in
-            #if !os(tvOS) && !os(visionOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
-            #endif
         }
     }
     
@@ -69,13 +67,11 @@ struct UserProfileAddPhoneNumberView: View {
             VStack(alignment: .leading) {
                 Text("Phone number")
                     .font(.footnote.weight(.medium))
-                #if !os(tvOS) && !os(visionOS)
                 PhoneNumberField(text: $phone)
                     .focused($isFocused)
                     .task {
                         isFocused = true
                     }
-                #endif
             }
             
             Text("A text message containing a verification code will be sent to this phone number.")

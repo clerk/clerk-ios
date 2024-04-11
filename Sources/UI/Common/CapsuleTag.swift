@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/8/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -37,9 +37,7 @@ struct CapsuleTag: View {
             .padding(.horizontal, 6)
             .frame(minHeight: 18)
             .foregroundStyle(foregroundStyle)
-            #if !os(tvOS)
             .background(Color(.tertiarySystemGroupedBackground))
-            #endif
             .clipShape(.rect(cornerRadius: 4))
             .shadow(radius: 0.5)
     }

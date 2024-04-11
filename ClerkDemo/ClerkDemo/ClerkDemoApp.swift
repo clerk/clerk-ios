@@ -15,7 +15,9 @@ struct ClerkDemoApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
+                #if os(iOS)
                 .clerkProvider()
+                #endif
                 .task {
                     Clerk.shared.configure(publishableKey: publishableKey)
                     try? await Clerk.shared.load()

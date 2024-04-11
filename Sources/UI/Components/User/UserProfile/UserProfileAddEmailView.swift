@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/6/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -82,10 +82,8 @@ struct UserProfileAddEmailView: View {
             }
         }
         .onChange(of: step) { _ in
-            #if !os(tvOS) && !os(visionOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
-            #endif
         }
     }
     

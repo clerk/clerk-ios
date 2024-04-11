@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 9/22/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -50,12 +50,10 @@ struct SignInStartView: View {
                 )
                 .padding(.bottom, 32)
                 
-                #if !os(tvOS)
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signIn)
                         .onSuccess { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 }
-                #endif
                 
                 if socialProvidersEnabled && showSignInForm {
                     TextDivider(text: "or")

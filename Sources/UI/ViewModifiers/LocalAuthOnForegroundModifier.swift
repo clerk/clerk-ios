@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 3/28/24.
 //
 
-#if canImport(SwiftUI) && !os(tvOS) && !os(visionOS)
+#if os(iOS)
 
 import SwiftUI
 import UIKit

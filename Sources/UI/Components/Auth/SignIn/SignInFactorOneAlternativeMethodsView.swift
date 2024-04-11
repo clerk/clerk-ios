@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 12/21/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 import NukeUI
@@ -26,7 +26,6 @@ struct SignInFactorOneAlternativeMethodsView: View {
     }
     
     private func signIn(provider: ExternalProvider) async {
-    #if !os(tvOS)
         do {
             try await SignIn.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
@@ -34,7 +33,6 @@ struct SignInFactorOneAlternativeMethodsView: View {
             clerkUIState.presentedAuthStep = .signInStart
             dump(error)
         }
-    #endif
     }
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {

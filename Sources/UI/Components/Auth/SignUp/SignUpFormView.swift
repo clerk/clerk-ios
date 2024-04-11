@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/1/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -147,7 +147,6 @@ struct SignUpFormView: View {
                 }
             }
             
-            #if !os(tvOS) && !os(visionOS)
             if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {
@@ -167,7 +166,6 @@ struct SignUpFormView: View {
                         .focused($focusedField, equals: .phoneNumber)
                 }
             }
-            #endif
             
             if clerk.environment?.userSettings.instanceIsPasswordBased == true {
                 VStack(alignment: .leading) {
@@ -181,7 +179,6 @@ struct SignUpFormView: View {
                     PasswordInputView(password: $password)
                         .focused($focusedField, equals: .password)
                     
-                    #if !os(tvOS)
                     if Clerk.LocalAuth.availableBiometryType != .none {
                         HStack {
                             Toggle(isOn: $enableBiometry, label: { EmptyView() })
@@ -193,7 +190,6 @@ struct SignUpFormView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top)
                     }
-                    #endif
                 }
             }
             
@@ -211,9 +207,7 @@ struct SignUpFormView: View {
     }
     
     private func continueAction() async {
-        #if !os(tvOS)
         KeyboardHelpers.dismissKeyboard()
-        #endif
         
         do {
             try await SignUp.create(.standard(
@@ -229,24 +223,20 @@ struct SignUpFormView: View {
             
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
-            #if !os(tvOS)
             if let identifer, enableBiometry {
                 try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: password)
             }
-            #endif
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 try await signUp.update(params: .init(strategy: .saml))
             }
                         
-            #if !os(tvOS)
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
                 try await signUp.authenticateWithRedirect()
             default:
                 break
             }
-            #endif
             
             clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {

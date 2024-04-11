@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 12/19/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -28,14 +28,11 @@ struct CheckBoxView: View {
                         .scaledToFill()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .fontWeight(.bold)
-                        #if !os(tvOS)
                         .foregroundStyle(Color(.systemBackground))
-                        #endif
                         .shadow(radius: 1, y: 1)
                         .padding(4)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                #if !os(tvOS)
                                 .background(
                                     LinearGradient(
                                         stops: [
@@ -46,7 +43,6 @@ struct CheckBoxView: View {
                                         endPoint: UnitPoint(x: 0.5, y: 1)
                                     )
                                 )
-                                #endif
                                 .background(clerkTheme.colors.primary)
                                 .clipShape(.rect(cornerRadius: 4, style: .continuous))
                                 .shadow(radius: 1, y: 1)

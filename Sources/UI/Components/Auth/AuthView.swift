@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/10/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -77,7 +77,6 @@ struct AuthView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        #if !os(tvOS)
         .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
             VStack(spacing: 0) {
                 footerView
@@ -92,18 +91,13 @@ struct AuthView: View {
             }
             .background(.ultraThinMaterial)
         })
-        #endif
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
         .dismissButtonOverlay()
         .interactiveDismissDisabled()
-        #if !os(visionOS)
         .scrollDismissesKeyboard(.interactively)
-        #endif
         .onChange(of: clerkUIState.presentedAuthStep) { _ in
-            #if !os(tvOS) && !os(visionOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
-            #endif
         }
         .task {
             try? await clerk.getEnvironment()

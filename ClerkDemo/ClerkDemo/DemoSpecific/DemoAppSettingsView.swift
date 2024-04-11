@@ -42,7 +42,7 @@ struct DemoAppSettingsView: View {
             }
             .navigationTitle("Demo Settings")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
                     Button(action: {
                         dismiss()
                     }, label: {
@@ -56,12 +56,7 @@ struct DemoAppSettingsView: View {
             }
             .overlay {
                 if isLoading {
-                    ZStack {
-                        #if !os(tvOS)
-                        Color(.systemBackground).opacity(0.5).ignoresSafeArea()
-                        #endif
-                        ProgressView()
-                    }
+                    ProgressView()
                 }
             }
         }

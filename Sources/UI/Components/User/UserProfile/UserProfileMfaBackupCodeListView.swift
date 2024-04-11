@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 1/29/24.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -61,14 +61,12 @@ struct UserProfileMfaBackupCodeListView: View {
                         Divider()
                             .foregroundStyle(clerkTheme.colors.borderPrimary)
                         
-                        #if !os(tvOS)
                         Button {
                             UIPasteboard.general.string = backupCodes.joined(separator: "\n")
                         } label: {
                             Image(systemName: "clipboard")
                         }
                         .frame(maxWidth: .infinity)
-                        #endif
                     }
                     .tint(clerkTheme.colors.textPrimary)
                     .imageScale(.small)

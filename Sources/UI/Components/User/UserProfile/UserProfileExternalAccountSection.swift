@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 import NukeUI
@@ -40,7 +40,6 @@ struct UserProfileExternalAccountSection: View {
                     )
                 }
                 
-                #if !os(tvOS)
                 if let user, !user.unconnectedProviders.isEmpty {
                     Button(action: {
                         addExternalAccountIsPresented = true
@@ -51,17 +50,14 @@ struct UserProfileExternalAccountSection: View {
                             .frame(minHeight: 32)
                     })
                 }
-                #endif
             }
             .padding(.leading, 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.snappy, value: user)
-        #if !os(tvOS)
         .sheet(isPresented: $addExternalAccountIsPresented) {
             UserProfileAddExternalAccountView()
         }
-        #endif
     }
     
     private struct ExternalAccountRow: View {
@@ -119,7 +115,6 @@ struct UserProfileExternalAccountSection: View {
                     
                     Spacer()
                     
-                    #if !os(tvOS)
                     Menu {
                         if externalAccount.verification?.error != nil || externalAccount.verification?.status != .verified {
                             retryConnectionButton
@@ -132,7 +127,6 @@ struct UserProfileExternalAccountSection: View {
                         MoreActionsView()
                     }
                     .tint(clerkTheme.colors.textPrimary)
-                    #endif
                 }
                 if let verificationError = externalAccount.verification?.error {
                     Text(verificationError.localizedDescription)
@@ -145,7 +139,6 @@ struct UserProfileExternalAccountSection: View {
             .clerkErrorPresenting($errorWrapper)
         }
         
-        #if !os(tvOS)
         @ViewBuilder
         private var retryConnectionButton: some View {
             if let provider = externalAccount.externalProvider {
@@ -166,7 +159,6 @@ struct UserProfileExternalAccountSection: View {
                 dump(error)
             }
         }
-        #endif
     }
 }
 

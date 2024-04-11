@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/16/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 import Factory
@@ -57,10 +57,8 @@ struct SignUpVerificationView: View {
         .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.snappy, value: signUp?.nextStrategyToVerify)
         .onChange(of: signUp?.nextStrategyToVerify) { _ in
-            #if !os(tvOS) && !os(visionOS)
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
-            #endif
         }
     }
 }

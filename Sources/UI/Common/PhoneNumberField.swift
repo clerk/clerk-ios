@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-#if canImport(SwiftUI) && !os(tvOS) && !os(visionOS)
+#if os(iOS)
 
 import SwiftUI
 import Factory

@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 12/18/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -87,9 +87,7 @@ struct SignInResetPasswordView: View {
                         CheckBoxView(isSelected: $signOutOfAllDevices)
                             .frame(width: 18, height: 18)
                             .onChange(of: signOutOfAllDevices) { _ in
-                                #if !os(tvOS) && !os(visionOS)
                                 FeedbackGenerator.success()
-                                #endif
                             }
                         
                         Text("Sign out of all other devices")

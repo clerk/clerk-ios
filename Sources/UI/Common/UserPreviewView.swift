@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/29/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 import NukeUI
@@ -28,9 +28,7 @@ struct UserPreviewView: View {
                     if let image = imageState.image {
                         image.resizable().scaledToFill()
                     } else {
-                        #if !os(tvOS)
                         Color(.secondarySystemBackground)
-                        #endif
                     }
                 }
                 .frame(width: 50, height: 50)

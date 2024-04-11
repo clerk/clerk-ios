@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -112,7 +112,6 @@ struct UserProfileEmailSection: View {
                     
                     Spacer()
                     
-                    #if !os(tvOS)
                     Menu {
                         if emailAddress.verification?.status == .verified && !emailAddress.isPrimary(for: user) {
                             setAsPrimaryButton
@@ -127,7 +126,6 @@ struct UserProfileEmailSection: View {
                         MoreActionsView()
                     }
                     .tint(clerkTheme.colors.textPrimary)
-                    #endif
                 }
                 
                 if let verificationError = emailAddress.verification?.error {

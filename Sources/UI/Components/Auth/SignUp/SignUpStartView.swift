@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/16/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -44,7 +44,6 @@ struct SignUpStartView: View {
                 )
                 .padding(.bottom, 32)
                 
-                #if !os(tvOS)
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signUp)
                         .onSuccess {
@@ -61,7 +60,6 @@ struct SignUpStartView: View {
                     TextDivider(text: "or")
                         .padding(.vertical, 24)
                 }
-                #endif
 
                 if contactInfoEnabled {
                     SignUpFormView()

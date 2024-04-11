@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/16/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -32,9 +32,7 @@ public struct UserProfileView: View {
         .overlay {
             if clerk.session == nil {
                 ZStack {
-                    #if !os(tvOS)
                     Color(.systemBackground).ignoresSafeArea()
-                    #endif
                     ProgressView()
                 }
             }

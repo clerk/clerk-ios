@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/3/23.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import SwiftUI
 
@@ -93,11 +93,9 @@ struct SignInFormView: View {
                             .focused($focusedField, equals: .emailOrUsername)
                             .transition(.move(edge: .leading).combined(with: .opacity))
                     } else {
-                        #if !os(tvOS) && !os(visionOS)
                         PhoneNumberField(text: $phoneNumber)
                             .focused($focusedField, equals: .phoneNumber)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
-                        #endif
                     }
                 }
                 .onChange(of: displayingEmailOrUsernameEntry) { showingEmail in
@@ -119,7 +117,6 @@ struct SignInFormView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
             
-            #if !os(tvOS)
             if Clerk.LocalAuth.accountForLocalAuth != nil && !Clerk.LocalAuth.localAuthAccountAlreadySignedIn {
                 AsyncButton {
                     do {
@@ -137,7 +134,6 @@ struct SignInFormView: View {
                 }
                 .padding(.vertical)
             }
-            #endif
         }
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment?.userSettings) {
@@ -147,21 +143,17 @@ struct SignInFormView: View {
     
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
-            #if !os(tvOS)
             KeyboardHelpers.dismissKeyboard()
-            #endif
             try await SignIn.create(strategy: strategy)
             
             if let prepareStrategy = signIn?.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
                 try await signIn?.prepareFirstFactor(for: prepareStrategy)
                 
-                #if !os(tvOS)
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
                 if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
                     try await signIn?.authenticateWithRedirect()
                 }
-                #endif
             }
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
