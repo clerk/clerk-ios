@@ -55,7 +55,7 @@ public struct UserButton: View {
     }
     
     private func userButtonAction() {
-        if clerk.client?.lastActiveSession?.user != nil {
+        if clerk.user != nil {
             popoverIsPresented = true
         } else {
             clerkUIState.presentedAuthStep = .signInStart
