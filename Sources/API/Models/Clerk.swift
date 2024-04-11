@@ -10,7 +10,7 @@ import Factory
 import RegexBuilder
 import Nuke
 import Get
-import KeychainAccess
+import SimpleKeychain
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -237,9 +237,9 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             }
             
             if let lastActiveSessionId = client?.lastActiveSessionId {
-                try? Keychain().set(lastActiveSessionId, key: "lastActiveSessionId")
+                try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
             } else {
-                try? Keychain().remove("lastActiveSessionId")
+                try? SimpleKeychain().deleteItem(forKey: "lastActiveSessionId")
             }
         }
     }

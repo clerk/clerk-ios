@@ -117,7 +117,7 @@ struct SignInFormView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
             
-            if Clerk.LocalAuth.accountForLocalAuth != nil && !Clerk.LocalAuth.localAuthAccountAlreadySignedIn {
+            if Clerk.LocalAuth.displayLocalAuthOption {
                 AsyncButton {
                     do {
                         let creds = try Clerk.LocalAuth.getLocalAuthCredentials()
