@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import KeychainAccess
+import SimpleKeychain
 
 /**
  The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.

@@ -7,13 +7,13 @@
 
 import Foundation
 import Get
-import KeychainAccess
+import SimpleKeychain
 
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
         // Set the device token on every request
-        if let deviceToken = try? Keychain().getString("clerkDeviceToken") {
+        if let deviceToken = try? SimpleKeychain().string(forKey: "clerkDeviceToken") {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         
@@ -48,9 +48,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         
         // Set the device token from the response headers whenever recieved in the response headers
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            try? Keychain()
-                .accessibility(.afterFirstUnlockThisDeviceOnly)
-                .set(deviceToken, key: "clerkDeviceToken")
+            try? SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly)
+                .set(deviceToken, forKey: "clerkDeviceToken")
         }
     }
     

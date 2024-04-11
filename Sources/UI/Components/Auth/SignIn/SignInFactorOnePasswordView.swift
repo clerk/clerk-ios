@@ -8,7 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
-import KeychainAccess
+import SimpleKeychain
 
 struct SignInFactorOnePasswordView: View {
     @ObservedObject private var clerk = Clerk.shared

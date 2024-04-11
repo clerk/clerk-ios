@@ -10,7 +10,7 @@
 import Foundation
 import SwiftUI
 import LocalAuthentication
-import KeychainAccess
+import SimpleKeychain
 
 extension Clerk {
         
@@ -55,8 +55,12 @@ extension Clerk {
         
         private static let localAuthAccountKey = "localAuthAccountKey"
         
+        static var displayLocalAuthOption: Bool {
+            accountForLocalAuth != nil && !localAuthAccountAlreadySignedIn
+        }
+        
         static var accountForLocalAuth: String? {
-            try? Keychain().get(localAuthAccountKey)
+            try? SimpleKeychain().string(forKey: localAuthAccountKey)
         }
         
         public static func getLocalAuthCredentials() throws -> Credentials {
@@ -64,13 +68,7 @@ extension Clerk {
                 throw ClerkClientError(message: "Unable to find an account with biometric authentication enabled.")
             }
             
-            guard
-                let environment = Clerk.shared.environment,
-                    let password = try Keychain(
-                        server: environment.displayConfig.homeUrl,
-                        protocolType: .https
-                    ).get(identifier)
-            else {
+            guard let password = try? SimpleKeychain().string(forKey: identifier) else {
                 throw ClerkClientError(message: "Unable to find credentials for the account enrolled in biometric authentication.")
             }
             
@@ -78,14 +76,11 @@ extension Clerk {
         }
         
         public static func setLocalAuthCredentials(identifier: String, password: String) throws {
-            guard let environment = Clerk.shared.environment else {
-                throw ClerkClientError(message: "The Clerk environment is not available.")
-            }
-            
-            try Keychain().set(identifier, key: localAuthAccountKey)
-            try Keychain(server: environment.displayConfig.homeUrl, protocolType: .https)
-                .accessibility(.whenPasscodeSetThisDeviceOnly, authenticationPolicy: .userPresence)
-                .set(password, key: identifier)
+            try SimpleKeychain().set(identifier, forKey: localAuthAccountKey)
+            let context = LAContext()
+            context.touchIDAuthenticationAllowableReuseDuration = 10
+            try SimpleKeychain(accessibility: .whenPasscodeSetThisDeviceOnly, accessControlFlags: .biometryCurrentSet, context: context)
+                .set(password, forKey: identifier)
         }
         
         private static func accountForLocalAuthBelongsToUser(_ user: User) -> Bool {

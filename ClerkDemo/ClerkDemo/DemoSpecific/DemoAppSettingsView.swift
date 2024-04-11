@@ -8,7 +8,7 @@
 import SwiftUI
 import ClerkSDK
 import Factory
-import KeychainAccess
+import SimpleKeychain
 
 struct DemoAppSettingsView: View {
     @AppStorage("publishableKey") var publishableKey: String = ""
@@ -66,10 +66,7 @@ struct DemoAppSettingsView: View {
     private func resetWithPublishableKey(_ publishableKey: String) async {
         do {
             isLoading = true
-            try Keychain().removeAll()
-            if let environment = clerk.environment {
-                try Keychain(server: environment.displayConfig.homeUrl, protocolType: .https).removeAll()
-            }
+            try SimpleKeychain().deleteAll()
             try await clerk.client?.destroy()
             self.publishableKey = publishableKey
             Clerk.shared.configure(publishableKey: publishableKey)

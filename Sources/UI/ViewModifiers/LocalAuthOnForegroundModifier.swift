@@ -9,7 +9,7 @@
 
 import SwiftUI
 import UIKit
-import KeychainAccess
+import SimpleKeychain
 
 /**
  This modifier enables local authentication on the app being put into an active state.
@@ -31,7 +31,11 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
     }
     
     private var hasSession: Bool {
-        (try? Keychain().get("lastActiveSessionId") != nil) ?? false
+        do {
+            return try SimpleKeychain().hasItem(forKey: "lastActiveSessionId")
+        } catch {
+            return false
+        }
     }
     
     public func body(content: Content) -> some View {
