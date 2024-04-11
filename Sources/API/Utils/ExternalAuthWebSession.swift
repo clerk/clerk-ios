@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/19/23.
 //
 
-#if !os(tvOS)
+#if !os(tvOS) && !os(watchOS)
 
 import AuthenticationServices
 

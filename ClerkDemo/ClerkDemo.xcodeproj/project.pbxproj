@@ -14,7 +14,37 @@
 		8F81167F2B9BC45000E2858C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F81167E2B9BC45000E2858C /* HomeView.swift */; };
 		8FA348152B9F5D4C00C63315 /* DemoAppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA348142B9F5D4C00C63315 /* DemoAppSettingsView.swift */; };
 		8FA348172B9F73F600C63315 /* ClerkDemoSettingsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA348162B9F73F600C63315 /* ClerkDemoSettingsModifier.swift */; };
+		8FF70B552BC88E300053048D /* ClerkDemoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */; };
+		8FF70B572BC88E300053048D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF70B562BC88E300053048D /* ContentView.swift */; };
+		8FF70B592BC88E310053048D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B582BC88E310053048D /* Assets.xcassets */; };
+		8FF70B5C2BC88E310053048D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B5B2BC88E310053048D /* Preview Assets.xcassets */; };
+		8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8FF70B652BC88ED30053048D /* ClerkSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8FF70B642BC88ED30053048D /* ClerkSDK */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8FF70B5D2BC88E310053048D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8F81165E2B9BC35B00E2858C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8FF70B512BC88E300053048D;
+			remoteInfo = "ClerkDemoWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8FF70B602BC88E310053048D /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClerkDemo.entitlements; sourceTree = "<group>"; };
@@ -28,6 +58,11 @@
 		8F8407862BA36ACB00218DB3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8FA348142B9F5D4C00C63315 /* DemoAppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoAppSettingsView.swift; sourceTree = "<group>"; };
 		8FA348162B9F73F600C63315 /* ClerkDemoSettingsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoSettingsModifier.swift; sourceTree = "<group>"; };
+		8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ClerkDemoWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoWatchApp.swift; sourceTree = "<group>"; };
+		8FF70B562BC88E300053048D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		8FF70B582BC88E310053048D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8FF70B5B2BC88E310053048D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +71,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				8F81167A2B9BC38200E2858C /* ClerkSDK in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FF70B4F2BC88E300053048D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FF70B652BC88ED30053048D /* ClerkSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,6 +91,7 @@
 				8F81167B2B9BC3AA00E2858C /* Package.swift */,
 				8F8116772B9BC37200E2858C /* clerk-ios */,
 				8F8116682B9BC35B00E2858C /* ClerkDemo */,
+				8FF70B532BC88E300053048D /* ClerkDemoWatch Watch App */,
 				8F8116672B9BC35B00E2858C /* Products */,
 				8F8116782B9BC38200E2858C /* Frameworks */,
 			);
@@ -57,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				8F8116662B9BC35B00E2858C /* ClerkDemo.app */,
+				8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -99,6 +144,25 @@
 			path = DemoSpecific;
 			sourceTree = "<group>";
 		};
+		8FF70B532BC88E300053048D /* ClerkDemoWatch Watch App */ = {
+			isa = PBXGroup;
+			children = (
+				8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */,
+				8FF70B562BC88E300053048D /* ContentView.swift */,
+				8FF70B582BC88E310053048D /* Assets.xcassets */,
+				8FF70B5A2BC88E310053048D /* Preview Content */,
+			);
+			path = "ClerkDemoWatch Watch App";
+			sourceTree = "<group>";
+		};
+		8FF70B5A2BC88E310053048D /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				8FF70B5B2BC88E310053048D /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -109,10 +173,12 @@
 				8F8116622B9BC35B00E2858C /* Sources */,
 				8F8116632B9BC35B00E2858C /* Frameworks */,
 				8F8116642B9BC35B00E2858C /* Resources */,
+				8FF70B602BC88E310053048D /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8FF70B5E2BC88E310053048D /* PBXTargetDependency */,
 			);
 			name = ClerkDemo;
 			packageProductDependencies = (
@@ -120,6 +186,26 @@
 			);
 			productName = ClerkDemo;
 			productReference = 8F8116662B9BC35B00E2858C /* ClerkDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8FF70B512BC88E300053048D /* ClerkDemoWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8FF70B632BC88E310053048D /* Build configuration list for PBXNativeTarget "ClerkDemoWatch Watch App" */;
+			buildPhases = (
+				8FF70B4E2BC88E300053048D /* Sources */,
+				8FF70B4F2BC88E300053048D /* Frameworks */,
+				8FF70B502BC88E300053048D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "ClerkDemoWatch Watch App";
+			packageProductDependencies = (
+				8FF70B642BC88ED30053048D /* ClerkSDK */,
+			);
+			productName = "ClerkDemoWatch Watch App";
+			productReference = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -133,6 +219,9 @@
 				LastUpgradeCheck = 1530;
 				TargetAttributes = {
 					8F8116652B9BC35B00E2858C = {
+						CreatedOnToolsVersion = 15.3;
+					};
+					8FF70B512BC88E300053048D = {
 						CreatedOnToolsVersion = 15.3;
 					};
 				};
@@ -151,6 +240,7 @@
 			projectRoot = "";
 			targets = (
 				8F8116652B9BC35B00E2858C /* ClerkDemo */,
+				8FF70B512BC88E300053048D /* ClerkDemoWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -162,6 +252,15 @@
 			files = (
 				8F8116712B9BC35C00E2858C /* Preview Assets.xcassets in Resources */,
 				8F81166E2B9BC35C00E2858C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FF70B502BC88E300053048D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FF70B5C2BC88E310053048D /* Preview Assets.xcassets in Resources */,
+				8FF70B592BC88E310053048D /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,7 +278,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FF70B4E2BC88E300053048D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FF70B572BC88E300053048D /* ContentView.swift in Sources */,
+				8FF70B552BC88E300053048D /* ClerkDemoWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8FF70B5E2BC88E310053048D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 8FF70B512BC88E300053048D /* ClerkDemoWatch Watch App */;
+			targetProxy = 8FF70B5D2BC88E310053048D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8F8116722B9BC35C00E2858C /* Debug */ = {
@@ -304,8 +421,10 @@
 		8F8116752B9BC35C00E2858C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -343,8 +462,10 @@
 		8F8116762B9BC35C00E2858C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -379,6 +500,68 @@
 			};
 			name = Release;
 		};
+		8FF70B612BC88E310053048D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemoWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = ClerkDemoWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.clerk.ClerkDemo;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.4;
+			};
+			name = Debug;
+		};
+		8FF70B622BC88E310053048D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemoWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = ClerkDemoWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.clerk.ClerkDemo;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.4;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -400,10 +583,23 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		8FF70B632BC88E310053048D /* Build configuration list for PBXNativeTarget "ClerkDemoWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FF70B612BC88E310053048D /* Debug */,
+				8FF70B622BC88E310053048D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		8F8116792B9BC38200E2858C /* ClerkSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClerkSDK;
+		};
+		8FF70B642BC88ED30053048D /* ClerkSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkSDK;
 		};

@@ -351,7 +351,7 @@ public struct SignIn: Codable, Sendable {
         return response
     }
     
-    #if !os(tvOS)
+    #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @MainActor
     public func authenticateWithRedirect() async throws {
