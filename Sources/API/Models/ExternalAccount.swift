@@ -94,6 +94,7 @@ extension ExternalAccount {
 
 extension ExternalAccount {
     
+    #if !os(tvOS)
     /// Invokes a re-authorization flow for an existing external account.
     @MainActor
     public func reauthorize() async throws {
@@ -107,6 +108,7 @@ extension ExternalAccount {
         let authSession = ExternalAuthWebSession(url: url, authAction: .reauthorize)
         try await authSession.start()
     }
+    #endif
     
 }
 

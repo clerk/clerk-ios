@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 12/11/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import SwiftUI
 
@@ -72,12 +72,7 @@ extension View {
 }
 
 #Preview {
-    Color(.systemBackground)
-        .sheet(item: .constant(ErrorWrapper(error: ClerkClientError(message: "Password is incorrect. Try again, or use another method.")))) { errorWrapper in
-            ErrorView(errorWrapper: errorWrapper)
-                .presentationDetents([.height(250)])
-                .presentationDragIndicator(.visible)
-        }
+    ErrorView(errorWrapper: ErrorWrapper(error: ClerkClientError(message: "Password is incorrect. Try again, or use another method.")))
 }
 
 #endif

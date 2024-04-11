@@ -14,6 +14,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
+                #if os(iOS)
                 Section("Instructions:") {
                     Text("Create an account on [Clerk.com](https://www.clerk.com).")
                     Text("Create an app.")
@@ -22,11 +23,16 @@ struct HomeView: View {
                     Text("Tap the user button to get started.")
                 }
                 .font(.subheadline)
+                #else
+                Text("Clerk UI components are only supported on iOS (iPhone, iPad, Mac Catalyst), but you can still use the Clerk SDK to interact with the Clerk API on other platforms.")
+                #endif
             }
             .navigationTitle("Clerk Demo")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
+                    #if os(iOS)
                     UserButton()
+                    #endif
                 }
             }
         }
@@ -34,9 +40,11 @@ struct HomeView: View {
             if clerk.loadingState == .notLoaded {
                 VStack {
                     Spacer()
+                    #if os(iOS)
                     OrgLogoView()
                         .frame(width: 100, height: 100)
                         .padding()
+                    #endif
                     Spacer()
                     Spacer()
                 }
@@ -45,7 +53,9 @@ struct HomeView: View {
                 .transition(.opacity.animation(.default))
             }
         }
+        #if os(iOS)
         .demoSettings()
+        #endif
     }
 }
 

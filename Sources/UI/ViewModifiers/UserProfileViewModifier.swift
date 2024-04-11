@@ -5,12 +5,13 @@
 //  Created by Mike Pitre on 11/29/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import SwiftUI
 
 struct UserProfileViewModifier: ViewModifier {
     @Binding var isPresented: Bool
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     func body(content: Content) -> some View {
         content
@@ -23,6 +24,7 @@ struct UserProfileViewModifier: ViewModifier {
                                 DismissButton()
                             }
                         })
+                        .environmentObject(clerkUIState)
                 }
             }
     }

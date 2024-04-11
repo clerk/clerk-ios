@@ -290,6 +290,7 @@ public struct SignUp: Codable, Sendable {
         public let code: String
     }
     
+    #if !os(tvOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @MainActor
     public func authenticateWithRedirect() async throws {
@@ -304,6 +305,7 @@ public struct SignUp: Codable, Sendable {
         let authSession = ExternalAuthWebSession(url: url, authAction: .signUp)
         try await authSession.start()
     }
+    #endif
     
     /// Returns the current sign up.
     @MainActor

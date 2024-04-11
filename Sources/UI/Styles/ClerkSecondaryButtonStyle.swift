@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 12/15/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import SwiftUI
 
@@ -16,7 +16,7 @@ struct ClerkSecondaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.footnote.weight(.medium))
             .foregroundStyle(clerkTheme.colors.textPrimary)
-            .background(Color(.systemBackground))
+            .background()
             .overlay {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(clerkTheme.colors.borderPrimary, lineWidth: 1)

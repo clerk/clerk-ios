@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 3/25/24.
 //
 
+#if !os(tvOS)
+
 import Foundation
 import SwiftUI
 import LocalAuthentication
@@ -139,3 +141,5 @@ extension LABiometryType {
     }
     
 }
+
+#endif

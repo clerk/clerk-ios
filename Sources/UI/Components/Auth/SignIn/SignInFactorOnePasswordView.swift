@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/2/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import SwiftUI
 import KeychainAccess
@@ -107,9 +107,11 @@ struct SignInFactorOnePasswordView: View {
             let signInIdentifier = signIn?.identifier
             
             try await signIn?.attemptFirstFactor(for: .password(password: password))
+            
             if let signInIdentifier, enableBiometry {
                 try Clerk.LocalAuth.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
             }
+            
             if signIn?.status == .needsSecondFactor {
                 clerkUIState.presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
             } else {

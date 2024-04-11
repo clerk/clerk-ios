@@ -5,11 +5,13 @@
 //  Created by Mike Pitre on 10/25/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import Foundation
 
 public final class ClerkUIState: ObservableObject {
+    
+    public init() {}
     
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false

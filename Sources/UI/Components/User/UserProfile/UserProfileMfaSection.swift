@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 1/24/24.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import SwiftUI
 

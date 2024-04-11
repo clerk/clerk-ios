@@ -5,13 +5,14 @@
 //  Created by Mike Pitre on 10/12/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import Foundation
 import SwiftUI
 
 struct AuthViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
+    @EnvironmentObject private var clerkUIState: ClerkUIState
     
     @Binding var isPresented: Bool
 
@@ -19,6 +20,7 @@ struct AuthViewModifier: ViewModifier {
         content
             .sheet(isPresented: $isPresented, content: {
                 AuthView()
+                    .environmentObject(clerkUIState)
             })
     }
 }

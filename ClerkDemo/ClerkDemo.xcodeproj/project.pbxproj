@@ -17,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClerkDemo.entitlements; sourceTree = "<group>"; };
 		8F8116662B9BC35B00E2858C /* ClerkDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoApp.swift; sourceTree = "<group>"; };
 		8F81166D2B9BC35C00E2858C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -63,6 +64,7 @@
 		8F8116682B9BC35B00E2858C /* ClerkDemo */ = {
 			isa = PBXGroup;
 			children = (
+				8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */,
 				8F8407862BA36ACB00218DB3 /* Info.plist */,
 				8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */,
 				8F81167E2B9BC45000E2858C /* HomeView.swift */,
@@ -304,6 +306,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemo/Preview Content\"";
@@ -325,13 +328,15 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
-				SUPPORTS_MACCATALYST = NO;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Debug;
 		};
@@ -340,6 +345,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemo/Preview Content\"";
@@ -361,13 +367,15 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
-				SUPPORTS_MACCATALYST = NO;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Release;
 		};

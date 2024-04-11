@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 11/22/23.
 //
 
-#if canImport(UIKit)
+#if os(iOS)
 
 import Foundation
 import SwiftUI
@@ -37,7 +37,8 @@ extension View {
 }
 
 #Preview {
-    Color(.systemBackground)
+    Text("Hello, World!")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .dismissButtonOverlay()
 }
 

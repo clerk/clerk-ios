@@ -58,7 +58,7 @@ extension PhoneNumber {
         let phoneNumberKit = Container.shared.phoneNumberKit()
         guard let phoneNumber = try? phoneNumberKit.parse(phoneNumber) else { return phoneNumber }
 
-        #if canImport(UIKit)
+        #if os(iOS)
         
         if
             let region = phoneNumber.regionID,
