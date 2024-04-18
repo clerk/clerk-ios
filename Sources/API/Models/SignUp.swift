@@ -35,7 +35,7 @@ public struct SignUp: Codable, Sendable {
      - `complete`: All the required fields have been supplied and verified, so the sign-up is complete and a new user and a session have been created.
      - `abandoned`: The sign-up has been inactive for a long period of time, thus it's considered as abandoned and need to start over.
      */
-    public let status: Status?
+    public let status: Status
     
     /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
     public let requiredFields: [String]

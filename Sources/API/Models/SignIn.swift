@@ -28,7 +28,7 @@ public struct SignIn: Codable, Sendable {
     let id: String
     
     /// The current status of the sign-in.
-    public let status: Status?
+    public let status: Status
     
     /// Array of all the authentication identifiers that are supported for this sign in.
     public let supportedIdentifiers: [SupportedIdentifier]
