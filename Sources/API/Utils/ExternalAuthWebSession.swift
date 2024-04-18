@@ -47,7 +47,7 @@ final class ExternalAuthWebSession: NSObject {
                                 } else {
                                     try await Clerk.shared.client?.get()
                                     if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
-                                        try await SignUp.create(.transfer)
+                                        try await SignUp.create(strategy: .transfer)
                                     }
                                 }
                                 

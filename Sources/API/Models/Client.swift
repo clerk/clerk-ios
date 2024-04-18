@@ -84,8 +84,8 @@ extension Client {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @discardableResult @MainActor
-    public func createSignUp(_ strategy: SignUp.CreateStrategy) async throws -> SignUp {
-        try await SignUp.create(strategy)
+    public func createSignUp(strategy: SignUp.CreateStrategy) async throws -> SignUp {
+        try await SignUp.create(strategy: strategy)
     }
     
 }

@@ -210,7 +210,7 @@ struct SignUpFormView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            try await SignUp.create(.standard(
+            try await SignUp.create(strategy: .standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
                 password: passwordIsEnabled ? password : nil,
                 firstName: nameIsEnabled ? firstName : nil,

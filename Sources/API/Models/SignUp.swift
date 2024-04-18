@@ -113,7 +113,7 @@ public struct SignUp: Codable, Sendable {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @discardableResult @MainActor
-    public static func create(_ strategy: SignUp.CreateStrategy) async throws -> SignUp {
+    public static func create(strategy: SignUp.CreateStrategy) async throws -> SignUp {
         let params = SignUp.createParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response

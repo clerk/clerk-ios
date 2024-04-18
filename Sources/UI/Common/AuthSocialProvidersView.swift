@@ -90,7 +90,7 @@ struct AuthSocialProvidersView: View {
     private func signUp(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await SignUp.create(.externalProvider(provider)).authenticateWithRedirect()
+            try await SignUp.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
             onSuccess?()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
