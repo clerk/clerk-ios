@@ -15,9 +15,10 @@ struct ClerkErrorResponse: Codable, Equatable {
 
 /// Custom error returned by the Clerk API.
 public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable {
-    let code: String
-    let message: String?
-    let longMessage: String?
+    public let code: String
+    public let message: String?
+    public let longMessage: String?
+    public let meta: JSON?
     
     public var errorDescription: String? { longMessage ?? message }
 }
