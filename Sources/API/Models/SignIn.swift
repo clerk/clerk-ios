@@ -164,8 +164,13 @@ public struct SignIn: Codable, Sendable {
     }
     
     public struct ResetPasswordParams: Encodable {
-        let password: String
-        let signOutOfOtherSessions: Bool
+        public init(password: String, signOutOfOtherSessions: Bool) {
+            self.password = password
+            self.signOutOfOtherSessions = signOutOfOtherSessions
+        }
+        
+        public let password: String
+        public let signOutOfOtherSessions: Bool
     }
     
     /**
