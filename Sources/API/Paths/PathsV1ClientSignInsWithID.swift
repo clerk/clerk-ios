@@ -7,7 +7,6 @@
 
 import Foundation
 import Get
-import URLQueryEncoder
 
 extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
@@ -20,9 +19,12 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint {
         let path: String
         
         func get(rotatingTokenNonce: String? = nil) -> Request<ClientResponse<SignIn>> {
-            let encoder = URLQueryEncoder()
-            encoder.encode(rotatingTokenNonce, forKey: "rotating_token_nonce")
-            return .init(path: path, query: encoder.items)
+            if let rotatingTokenNonce {
+                let queryEncodedNonce = rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                return .init(path: path, query: [("rotating_token_nonce", queryEncodedNonce)])
+            } else {
+                return .init(path: path)
+            }
         }
     }
     
