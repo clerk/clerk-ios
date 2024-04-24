@@ -18,10 +18,12 @@ extension Clerk {
 
 extension Clerk.Environment {
     
-    @MainActor
-    public static func get() async throws {
+    @discardableResult @MainActor
+    public static func get() async throws -> Clerk.Environment {
         let request = ClerkAPI.v1.environment.get
-        Clerk.shared.environment = try await Clerk.shared.apiClient.send(request).value
+        let environment = try await Clerk.shared.apiClient.send(request).value
+        Clerk.shared.environment = environment
+        return environment
     }
     
 }

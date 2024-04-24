@@ -310,23 +310,25 @@ extension User {
     }
     
     /// Retrieves all active sessions for this user.
-    @MainActor
-    public func getSessions() async throws {
+    @discardableResult @MainActor
+    public func getSessions() async throws -> [Session] {
         let request = ClerkAPI.v1.me.sessions.active.get
         let sessions = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value
         Clerk.shared.sessionsByUserId[id] = sessions
+        return sessions
     }
     
     /// Updates the user's password.
-    @MainActor
-    public func updatePassword(_ params: User.UpdatePasswordParams) async throws {
+    @discardableResult @MainActor
+    public func updatePassword(_ params: User.UpdatePasswordParams) async throws -> User {
         let request = ClerkAPI.v1.me.changePassword.post(params)
-        try await Clerk.shared.apiClient.send(request) {
+        let user = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        }.value.response
         try await Clerk.shared.client?.get()
+        return user
     }
     
     public struct UpdatePasswordParams: Encodable {
@@ -358,13 +360,15 @@ extension User {
     }
     
     /// Deletes the user's profile image.
-    @MainActor
-    public func deleteProfileImage() async throws {
+    @discardableResult @MainActor
+    public func deleteProfileImage() async throws -> ClerkImageResource {
         let request = ClerkAPI.v1.me.profileImage.delete
-        try await Clerk.shared.apiClient.send(request) {
+        let imageResource = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        }.value.response
         try await Clerk.shared.client?.get()
+        return imageResource
+        
     }
     
     /// Deletes the current user.
