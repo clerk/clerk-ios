@@ -44,25 +44,30 @@ public struct Client: Codable, Sendable {
 extension Client {
     
     /// Creates a new client for the current instance along with its cookie.
-    @MainActor
-    public static func create() async throws {
+    @discardableResult @MainActor
+    public static func create() async throws -> Client {
         let request = ClerkAPI.v1.client.put
-        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response
+        let client = try await Clerk.shared.apiClient.send(request).value.response
+        Clerk.shared.client = client
+        return client
     }
     
     /// Retrieves the current client.
-    @MainActor
-    public func get() async throws {
+    @discardableResult @MainActor
+    public func get() async throws -> Client? {
         let request = ClerkAPI.v1.client.get
-        Clerk.shared.client = try await Clerk.shared.apiClient.send(request).value.response
+        let client = try await Clerk.shared.apiClient.send(request).value.response
+        Clerk.shared.client = client
+        return client
     }
     
     /// Deletes the client. All sessions will be reset.
-    @MainActor
-    public func destroy() async throws {
+    @discardableResult @MainActor
+    public func destroy() async throws -> Client? {
         let request = ClerkAPI.v1.client.delete
-        try await Clerk.shared.apiClient.send(request)
+        let client = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
+        return client
     }
     
     /**

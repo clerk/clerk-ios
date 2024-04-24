@@ -120,13 +120,14 @@ extension EmailAddress {
         try await Clerk.shared.client?.get()
     }
     
-    @MainActor
-    func setAsPrimary() async throws {
+    @discardableResult @MainActor
+    func setAsPrimary() async throws -> User {
         let request = ClerkAPI.v1.me.update(.init(primaryEmailAddressId: id))
-        try await Clerk.shared.apiClient.send(request) {
+        let user = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        }.value.response
         try await Clerk.shared.client?.get()
+        return user
     }
     
 }

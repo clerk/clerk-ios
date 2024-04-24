@@ -223,12 +223,13 @@ public struct SignUp: Codable, Sendable {
      - emailAddress: The email address can be verified via an email code. This is a one-time code that is sent to the email already provided to the SignUp object. The prepareVerification sends this email.
      - phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
      */
-    @MainActor
-    public func prepareVerification(_ strategy: PrepareStrategy) async throws {
+    @discardableResult @MainActor
+    public func prepareVerification(_ strategy: PrepareStrategy) async throws -> SignUp {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
-        try await Clerk.shared.apiClient.send(request)
+        let signUp = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
+        return signUp
     }
     
     public enum PrepareStrategy {
@@ -258,12 +259,13 @@ public struct SignUp: Codable, Sendable {
      
      Depending on the strategy, the method parameters could differ.
      */
-    @MainActor
-    public func attemptVerification(_ strategy: AttemptStrategy) async throws {
+    @discardableResult @MainActor
+    public func attemptVerification(_ strategy: AttemptStrategy) async throws -> SignUp {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).attemptVerification.post(params)
-        try await Clerk.shared.apiClient.send(request)
+        let signUp = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
+        return signUp
     }
     
     public enum AttemptStrategy {
@@ -308,11 +310,12 @@ public struct SignUp: Codable, Sendable {
     #endif
     
     /// Returns the current sign up.
-    @MainActor
-    public func get(rotatingTokenNonce: String? = nil) async throws {
+    @discardableResult @MainActor
+    public func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        try await Clerk.shared.apiClient.send(request)
+        let signUp = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
+        return signUp
     }
 }
 
