@@ -121,10 +121,6 @@ extension ExternalAccount {
     }
     #endif
     
-}
-
-extension ExternalAccount {
-    
     /// Deletes this external account.
     @discardableResult @MainActor
     public func destroy() async throws -> Deletion {
@@ -136,5 +132,4 @@ extension ExternalAccount {
         Clerk.shared.client = response.value.client
         return response.value.response
     }
-    
 }

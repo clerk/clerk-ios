@@ -367,6 +367,13 @@ extension User {
         
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
+
+		#if !os(tvOS) && !os(watchOS)
+        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
+            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
+        }
+        #endif
+
         return response.value.response
     }
     

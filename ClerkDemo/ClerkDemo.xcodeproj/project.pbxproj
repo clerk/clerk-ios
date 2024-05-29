@@ -48,6 +48,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8F4CA5402C06847F0052C1F2 /* ClerkDemoWatch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ClerkDemoWatch Watch App.entitlements"; sourceTree = "<group>"; };
 		8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClerkDemo.entitlements; sourceTree = "<group>"; };
 		8F8116662B9BC35B00E2858C /* ClerkDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoApp.swift; sourceTree = "<group>"; };
@@ -149,6 +150,7 @@
 		8FF70B532BC88E300053048D /* ClerkDemoWatch Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				8F4CA5402C06847F0052C1F2 /* ClerkDemoWatch Watch App.entitlements */,
 				8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */,
 				8FF70B562BC88E300053048D /* ContentView.swift */,
 				8FF70B582BC88E310053048D /* Assets.xcassets */,
@@ -357,7 +359,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				IPHONEOS_DEPLOYMENT_TARGET = Default;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -414,7 +416,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				IPHONEOS_DEPLOYMENT_TARGET = Default;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -513,6 +515,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "ClerkDemoWatch Watch App/ClerkDemoWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemoWatch Watch App/Preview Content\"";
@@ -544,6 +547,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "ClerkDemoWatch Watch App/ClerkDemoWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemoWatch Watch App/Preview Content\"";

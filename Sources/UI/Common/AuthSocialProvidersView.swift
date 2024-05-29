@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Algorithms
+import AuthenticationServices
 
 struct AuthSocialProvidersView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -56,11 +57,17 @@ struct AuthSocialProvidersView: View {
     
     private func startAuth(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
-        
+
+		var oauthResult: OAuthResult?        
+
         do {
-            let oauthResult = try await SignIn
-                .create(strategy: .externalProvider(provider))
-                .authenticateWithRedirect()
+			if provider == .apple {
+                oauthResult = try await SignUp.signUpWithApple()
+            } else {
+            	oauthResult = try await SignIn
+                	.create(strategy: .externalProvider(provider))
+                	.authenticateWithRedirect()
+			}
             
             if let oauthResult {
                 onSuccess?(oauthResult)
