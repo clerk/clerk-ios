@@ -8,7 +8,7 @@
 import Foundation
 
 /// The available external authentication providers.
-public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
+public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
     public var id: Self { self }
     
     case facebook
@@ -38,21 +38,21 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     case linear
     
     init?(strategy: String) {
-        if let provider = Self.allCases.first(where: { $0.data.strategy == strategy }) {
+        if let provider = Self.allCases.first(where: { $0.info.strategy == strategy }) {
             self = provider
         } else {
             return nil
         }
     }
     
-    public struct Data {
+    public struct Info {
         let provider: String
         let strategy: String
         public let name: String
         let docsUrl: String
     }
     
-    public var data: Data {
+    public var info: Info {
         switch self {
         case .facebook:
             return .init(
@@ -242,7 +242,7 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     }
     
     public func iconImageUrl(darkMode: Bool = false) -> URL? {
-        var iconName = data.provider
+        var iconName = info.provider
         if darkMode && hasDarkModeVariant { iconName += "-dark" }
         return URL(string: "https://img.clerk.com/static/\(iconName).png")
     }
@@ -250,6 +250,6 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
 
 extension ExternalProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.data.name < rhs.data.name
+        return lhs.info.name < rhs.info.name
     }
 }

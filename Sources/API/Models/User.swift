@@ -267,7 +267,7 @@ extension User {
             ExternalProvider: ExternalProvider,
             additionalScopes: [String]? = nil
         ) {
-            self.strategy = ExternalProvider.data.strategy
+            self.strategy = ExternalProvider.info.strategy
             self.additionalScopes = additionalScopes
         }
         

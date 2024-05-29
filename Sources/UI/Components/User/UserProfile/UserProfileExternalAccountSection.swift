@@ -78,7 +78,7 @@ struct UserProfileExternalAccountSection: View {
                             .frame(width: 16, height: 16)
                     }
                     
-                    if let providerName = externalAccount.externalProvider?.data.name {
+                    if let providerName = externalAccount.externalProvider?.info.name {
                         Text(providerName)
                             .font(.footnote)
                             .confirmationDialog(
