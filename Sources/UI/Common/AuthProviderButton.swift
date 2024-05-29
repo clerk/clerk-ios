@@ -57,7 +57,7 @@ extension AuthProviderButton {
         if let label {
             self.label = label
         } else {
-            self.label = provider.data.name
+            self.label = provider.info.name
         }
     }
     

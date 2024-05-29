@@ -145,7 +145,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the external provider
         ///
-        /// After successfully creating the sign in, call `signIn?.startExternalAuth()` to kick off the external authentication process.
+        /// After successfully creating the sign in, call `signIn?.authenticateWithRedirect()` to kick off the external authentication process.
         case externalProvider(_ provider: ExternalProvider)
         ///
         case transfer
@@ -157,7 +157,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case .identifier(let identifier, let password):
             return .init(identifier: identifier, password: password)
         case .externalProvider(let provider):
-            return .init(strategy: provider.data.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+            return .init(strategy: provider.info.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         case .transfer:
             return .init(transfer: true)
         }

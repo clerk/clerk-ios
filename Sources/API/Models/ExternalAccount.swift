@@ -61,7 +61,7 @@ extension ExternalAccount: Comparable {
         if lhs.verification?.status != rhs.verification?.status  {
             return lhs.verification?.status == .verified
         } else {
-            return (lhs.externalProvider?.data.name ?? "") < (rhs.externalProvider?.data.name ?? "")
+            return (lhs.externalProvider?.info.name ?? "") < (rhs.externalProvider?.info.name ?? "")
         }
     }
 }
