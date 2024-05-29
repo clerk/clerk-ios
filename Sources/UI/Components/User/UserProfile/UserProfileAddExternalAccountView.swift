@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct UserProfileAddExternalAccountView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -22,10 +23,14 @@ struct UserProfileAddExternalAccountView: View {
     private func create(provider: ExternalProvider) async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            let newExternalAccount = try await user.createExternalAccount(provider)
-            try await newExternalAccount.reauthorize()
-            dismiss()
+            if provider == .apple {
+                try await user.linkAppleAccount()
+            } else {
+                let newExternalAccount = try await user.createExternalAccount(provider)
+                try await newExternalAccount.reauthorize()
+            }
         } catch {
+            if case ASAuthorizationError.canceled = error { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
@@ -74,6 +79,11 @@ struct UserProfileAddExternalAccountView: View {
         }
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay()
+        .onChange(of: user) { [user] newValue in
+            if newValue?.unconnectedProviders.count ?? 0 < user?.unconnectedProviders.count ?? 0 {
+                dismiss()
+            }
+        }
         .task {
             try? await clerk.getEnvironment()
         }

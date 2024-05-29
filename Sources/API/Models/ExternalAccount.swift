@@ -119,10 +119,6 @@ extension ExternalAccount {
     }
     #endif
     
-}
-
-extension ExternalAccount {
-    
     /// Deletes this external account.
     @MainActor
     public func destroy() async throws {
@@ -132,5 +128,4 @@ extension ExternalAccount {
         }
         try await Client.get()
     }
-    
 }

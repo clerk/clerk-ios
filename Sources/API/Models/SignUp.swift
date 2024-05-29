@@ -104,6 +104,14 @@ public struct SignUp: Codable, Sendable, Equatable {
         case complete
     }
     
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @MainActor
+    static func signUpWithApple() async throws {
+        let authManager = ASAuthManager(authType: .signInWithApple)
+        let authorization = try await authManager.start()
+    }
+    #endif
+    
     /**
      This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
      

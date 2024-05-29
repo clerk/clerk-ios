@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Algorithms
+import AuthenticationServices
 
 struct AuthSocialProvidersView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -58,9 +59,13 @@ struct AuthSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            let needsTransferToSignUp = try await SignIn
-                .create(strategy: .externalProvider(provider))
-                .authenticateWithRedirect()
+			if provider == .apple {
+                try await SignUp.signUpWithApple()
+            } else {
+            	let needsTransferToSignUp = try await SignIn
+                	.create(strategy: .externalProvider(provider))
+                	.authenticateWithRedirect()
+			}
             
             onSuccess?(needsTransferToSignUp)
         } catch {

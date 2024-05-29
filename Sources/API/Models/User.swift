@@ -262,6 +262,14 @@ extension User {
         return newExternalAccount
     }
     
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @MainActor
+    public func linkAppleAccount() async throws {
+        let authManager = ASAuthManager(authType: .signInWithApple)
+        let authorization = try await authManager.start()
+    }
+    #endif
+    
     public struct CreateExternalAccountParams: Encodable {
         init(
             ExternalProvider: ExternalProvider,
@@ -371,7 +379,14 @@ extension User {
         let imageResource = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Client.get()
+		try await Client.get()
+
+		#if !os(tvOS) && !os(watchOS)
+        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
+            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
+        }
+        #endif
+
         return imageResource
     }
     
