@@ -428,6 +428,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     #endif
     
     #if canImport(AuthenticationServices) && !os(watchOS)
+    /// Starts the native sign in with apple flow
     @MainActor
     static func signInWithApple() async throws {
         let authManager = ASAuthManager(authType: .signInWithApple)
