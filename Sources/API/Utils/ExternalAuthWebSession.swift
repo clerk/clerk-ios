@@ -78,7 +78,6 @@ final class ExternalAuthWebSession: NSObject {
             }
 
             webAuthSession.presentationContextProvider = self
-            webAuthSession.prefersEphemeralWebBrowserSession = true
             webAuthSession.start()
         }
     }
