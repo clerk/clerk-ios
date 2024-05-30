@@ -263,6 +263,7 @@ extension User {
     }
     
     #if canImport(AuthenticationServices) && !os(watchOS)
+    /// Starts the native sign in with apple flow so it can be linked to the current user
     @MainActor
     public func linkAppleAccount() async throws {
         let authManager = ASAuthManager(authType: .signInWithApple)

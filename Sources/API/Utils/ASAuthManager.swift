@@ -11,6 +11,7 @@
 import Foundation
 import AuthenticationServices
 
+@MainActor
 final class ASAuthManager: NSObject {
     
     enum AuthType {
