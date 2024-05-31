@@ -9,6 +9,7 @@
 
 import SwiftUI
 import NukeUI
+import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -33,7 +34,8 @@ struct SignInFactorOneAlternativeMethodsView: View {
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
-            clerkUIState.presentedAuthStep = .signInStart
+            errorWrapper = ErrorWrapper(error: error)
+			clerkUIState.presentedAuthStep = .signInStart
             dump(error)
         }
     }
