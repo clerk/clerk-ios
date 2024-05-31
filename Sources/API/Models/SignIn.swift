@@ -145,7 +145,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the external provider
         ///
-        /// After successfully creating the sign in, call `signIn?.authenticateWithRedirect()` to kick off the external authentication process.
+        /// After successfully creating the sign in, call `signIn?.authenticateWithRedirect()` to kick off the external authentication process. If the provider is `.apple` you should use `SignIn.signInWithApple() instead.`
         case externalProvider(_ provider: ExternalProvider)
         ///
         case transfer

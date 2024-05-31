@@ -86,7 +86,7 @@ struct SignInFormView: View {
                 ZStack {
                     if displayingEmailOrUsernameEntry {
                         CustomTextField(text: $emailAddressOrUsername)
-                            .textContentType(.emailAddress)
+                            .textContentType(.username)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
@@ -152,7 +152,11 @@ struct SignInFormView: View {
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
                 if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    try await signIn?.authenticateWithRedirect()
+                    if signIn?.firstFactorVerification?.strategyEnum == .externalProvider(.apple) {
+                        try await SignIn.signInWithApple()
+                    } else {
+                        try await signIn?.authenticateWithRedirect()
+                    }
                 }
             }
             
