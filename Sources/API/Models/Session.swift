@@ -281,11 +281,12 @@ actor SessionTokenFetcher {
 
         tokenTasks[cacheKey] = task
         
-        let token = try await task.value
-        
+        let result = await task.result
+
+        // clear the inProgressTask on success AND failure
         tokenTasks[cacheKey] = nil
         
-        return token
+        return try result.get()
     }
     
     /**
