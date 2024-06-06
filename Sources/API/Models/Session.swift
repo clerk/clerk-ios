@@ -281,11 +281,9 @@ actor SessionTokenFetcher {
 
         tokenTasks[cacheKey] = task
         
-        let token = try await task.value
+        defer { tokenTasks[cacheKey] = nil }
         
-        tokenTasks[cacheKey] = nil
-        
-        return token
+        return try await task.value
     }
     
     /**
