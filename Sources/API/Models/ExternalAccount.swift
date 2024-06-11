@@ -97,7 +97,7 @@ extension ExternalAccount {
     #if !os(tvOS) && !os(watchOS)
     /// Invokes a re-authorization flow for an existing external account.
     @MainActor
-    public func reauthorize() async throws {
+    public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
             let url = URL(string: redirectUrl)
@@ -105,7 +105,12 @@ extension ExternalAccount {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = ExternalAuthWebSession(url: url, authAction: .reauthorize)
+        let authSession = ExternalAuthWebSession(
+            url: url,
+            authAction: .reauthorize,
+            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+        )
+        
         try await authSession.start()
     }
     #endif

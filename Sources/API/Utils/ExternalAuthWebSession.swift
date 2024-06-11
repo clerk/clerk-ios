@@ -13,6 +13,7 @@ import AuthenticationServices
 final class ExternalAuthWebSession: NSObject {
     let url: URL
     let authAction: AuthAction
+    let prefersEphemeralWebBrowserSession: Bool
     
     enum AuthAction {
         case signIn, signUp, reauthorize
@@ -20,9 +21,10 @@ final class ExternalAuthWebSession: NSObject {
     
     private var webAuthSession: ASWebAuthenticationSession?
     
-    init(url: URL, authAction: AuthAction = .signIn) {
+    init(url: URL, authAction: AuthAction = .signIn, prefersEphemeralWebBrowserSession: Bool = false) {
         self.url = url
         self.authAction = authAction
+        self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     }
     
     func start() async throws {
@@ -78,6 +80,7 @@ final class ExternalAuthWebSession: NSObject {
             }
 
             webAuthSession.presentationContextProvider = self
+            webAuthSession.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
             webAuthSession.start()
         }
     }
