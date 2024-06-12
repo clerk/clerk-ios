@@ -45,12 +45,11 @@ struct SignUpStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView(useCase: .signUp)
-                        .onSuccess {
-                            if signUp?.status == .complete {
-                                clerkUIState.authIsPresented = false
+                    AuthSocialProvidersView()
+                        .onSuccess { provider, wasTransfer in
+                            if wasTransfer {
+                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                             } else {
-                                // if the signup isnt complete
                                 clerkUIState.setAuthStepToCurrentStatus(for: signUp)
                             }
                         }

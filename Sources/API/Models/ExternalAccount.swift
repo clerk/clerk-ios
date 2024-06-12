@@ -107,7 +107,6 @@ extension ExternalAccount {
         
         let authSession = ExternalAuthWebSession(
             url: url,
-            authAction: .reauthorize,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         

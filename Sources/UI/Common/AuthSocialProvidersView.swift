@@ -18,12 +18,7 @@ struct AuthSocialProvidersView: View {
     
     private let buttonMinWidth: CGFloat = 46
     
-    let useCase: UseCase
-    var onSuccess:(() -> Void)?
-    
-    enum UseCase {
-        case signIn, signUp
-    }
+    var onSuccess:((_ provider: ExternalProvider, _ wasTransfer: Bool) -> Void)?
     
     private var thirdPartyProviders: [ExternalProvider] {
         (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
@@ -51,12 +46,7 @@ struct AuthSocialProvidersView: View {
                 HStack(spacing: 8) {
                     ForEach(chunk) { provider in
                         AsyncButton {
-                            switch useCase {
-                            case .signIn:
-                                await signIn(provider: provider)
-                            case .signUp:
-                                await signUp(provider: provider)
-                            }
+                            await signIn(provider: provider)
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
                                 .padding(8)
@@ -79,19 +69,8 @@ struct AuthSocialProvidersView: View {
     private func signIn(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         do {
-            try await SignIn.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
-            onSuccess?()
-        } catch {
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-    }
-    
-    private func signUp(provider: ExternalProvider) async {
-        KeyboardHelpers.dismissKeyboard()
-        do {
-            try await SignUp.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
-            onSuccess?()
+            let result = try await SignIn.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
+            onSuccess?(provider, result.wasTransfer)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -101,7 +80,7 @@ struct AuthSocialProvidersView: View {
 
 extension AuthSocialProvidersView {
     
-    func onSuccess(perform action: @escaping () -> Void) -> Self {
+    func onSuccess(perform action: @escaping (_ provider: ExternalProvider, _ wasTransfer: Bool) -> Void) -> Self {
         var copy = self
         copy.onSuccess = action
         return copy
@@ -110,7 +89,7 @@ extension AuthSocialProvidersView {
 }
 
 #Preview {
-    AuthSocialProvidersView(useCase: .signIn)
+    AuthSocialProvidersView()
         .padding()
 }
 
