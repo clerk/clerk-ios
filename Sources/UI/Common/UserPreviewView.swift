@@ -63,18 +63,6 @@ extension UserPreviewView {
     }
 }
 
-extension UserPreviewView {
-    init(
-        session: Session,
-        hideTitle: Bool = false,
-        hideSubtitle: Bool = false
-    ) {
-        self.title = hideTitle ? nil : session.user?.fullName
-        self.subtitle = hideSubtitle ? nil : session.identifier
-        self.imageUrl = session.user?.imageUrl
-    }
-}
-
 #Preview {
     VStack(spacing: 20) {
         UserPreviewView(user: Clerk.shared.user!)
