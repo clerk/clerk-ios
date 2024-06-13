@@ -137,7 +137,7 @@ public struct SignUp: Codable, Sendable {
             return .init(transfer: true)
         }
     }
-        
+    
     public struct CreateParams: Encodable {
         public init(
             firstName: String? = nil,
@@ -183,7 +183,7 @@ public struct SignUp: Codable, Sendable {
         
         /**
          The strategy to use for the sign-up flow.
-
+         
          The following strategies are supported:
          - `oauth_<provider>`: The user will be authenticated with their Social login account. See available OAuth Strategies.
          - `saml`: The user will be authenticated with SAML.
@@ -292,10 +292,10 @@ public struct SignUp: Codable, Sendable {
         public let code: String
     }
     
-    #if !os(tvOS) && !os(watchOS)
+#if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
-    @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws {
+    @discardableResult @MainActor
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> WebAuthResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -306,13 +306,12 @@ public struct SignUp: Codable, Sendable {
         
         let authSession = ExternalAuthWebSession(
             url: url,
-            authAction: .signUp,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        try await authSession.start()
+        return try await authSession.start()
     }
-    #endif
+#endif
     
     /// Returns the current sign up.
     @discardableResult @MainActor

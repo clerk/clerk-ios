@@ -43,9 +43,9 @@ struct UserButtonPopover: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
-                if let currentSession = clerk.session {
+                if let currentSession = clerk.session, let user = currentSession.user {
                     VStack(alignment: .leading, spacing: 8) {
-                        UserPreviewView(session: currentSession)
+                        UserPreviewView(user: user)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         HStack {
@@ -96,24 +96,26 @@ struct UserButtonPopover: View {
                 if clerk.environment?.authConfig.singleSessionMode == false {
                     VStack(alignment: .leading, spacing: .zero) {
                         ForEach(otherSessions) { session in
-                            AsyncButton {
-                                await setActiveSession(session)
-                            } label: {
-                                HStack {
-                                    UserPreviewView(session: session)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    
-                                    Image(systemName: "arrow.left.arrow.right")
-                                        .foregroundStyle(clerkTheme.colors.textSecondary)
-                                        .imageScale(.small)
+                            if let user = session.user {
+                                AsyncButton {
+                                    await setActiveSession(session)
+                                } label: {
+                                    HStack {
+                                        UserPreviewView(user: user)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        
+                                        Image(systemName: "arrow.left.arrow.right")
+                                            .foregroundStyle(clerkTheme.colors.textSecondary)
+                                            .imageScale(.small)
+                                    }
+                                    .contentShape(Rectangle())
                                 }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal)
-                            .padding(.vertical)
-                            .overlay(alignment: .bottom) {
-                                Divider()
+                                .buttonStyle(.plain)
+                                .padding(.horizontal)
+                                .padding(.vertical)
+                                .overlay(alignment: .bottom) {
+                                    Divider()
+                                }
                             }
                         }
                         

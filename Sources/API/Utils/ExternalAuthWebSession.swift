@@ -1,85 +1,70 @@
 //
-//  OAuthSession.swift
+//  ASWebAuthManager.swift
 //
 //
 //  Created by Mike Pitre on 10/19/23.
 //
 
-#if !os(tvOS) && !os(watchOS)
-
 import AuthenticationServices
 
+public struct WebAuthResult {
+    var cancelled: Bool = false
+    var wasTransfer: Bool = false
+}
+
+@available(tvOS 16.0, watchOS 6.2, *)
 @MainActor
 final class ExternalAuthWebSession: NSObject {
     let url: URL
-    let authAction: AuthAction
     let prefersEphemeralWebBrowserSession: Bool
     
-    enum AuthAction {
-        case signIn, signUp, reauthorize
-    }
-    
-    private var webAuthSession: ASWebAuthenticationSession?
-    
-    init(url: URL, authAction: AuthAction = .signIn, prefersEphemeralWebBrowserSession: Bool = false) {
+    init(url: URL, prefersEphemeralWebBrowserSession: Bool = false) {
         self.url = url
-        self.authAction = authAction
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     }
     
-    func start() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+    @discardableResult
+    func start() async throws -> WebAuthResult {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WebAuthResult, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme) { callbackUrl, error in
+                
                 if let error = error {
+                    
                     if case ASWebAuthenticationSessionError.canceledLogin = error {
-                        continuation.resume()
+                        continuation.resume(returning: WebAuthResult(cancelled: true))
                     } else {
                         continuation.resume(throwing: error)
                     }
                     
                 } else if let callbackUrl {
+                    
                     Task {
                         do {
-                            switch self.authAction {
+                            var result = WebAuthResult()
+                            
+                            if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
+                                try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
                                 
-                            case .signIn:
-                                if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
-                                    
-                                } else {
-                                    try await Clerk.shared.client?.get()
-                                    if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
-                                        try await SignUp.create(strategy: .transfer)
-                                    }
-                                }
-                                
-                            case .signUp:
-                                if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                    try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
-                                    
-                                } else {
-                                    try await Clerk.shared.client?.get()
-                                    if
-                                        let verification = Clerk.shared.client?.signUp?.verifications.first(where: { $0.key == "external_account" })?.value,
-                                        verification.status == .transferable
-                                    {
-                                        try await SignIn.create(strategy: .transfer)
-                                    }
-                                }
-                                
-                            case .reauthorize:
+                            } else {
                                 try await Clerk.shared.client?.get()
+                                if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
+                                    try await SignUp.create(strategy: .transfer)
+                                    result.wasTransfer = true
+                                }
                             }
                             
-                            continuation.resume()
+                            continuation.resume(returning: result)
                         } catch {
                             continuation.resume(throwing: error)
                         }
                     }
+                    
                 }
             }
 
+            #if !os(watchOS) && !os(tvOS)
             webAuthSession.presentationContextProvider = self
+            #endif
             webAuthSession.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
             webAuthSession.start()
         }
@@ -101,13 +86,13 @@ final class ExternalAuthWebSession: NSObject {
     
 }
 
+#if !os(watchOS) && !os(tvOS)
 extension ExternalAuthWebSession: ASWebAuthenticationPresentationContextProviding {
     
+    @MainActor
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         ASPresentationAnchor()
     }
     
 }
-
 #endif
-

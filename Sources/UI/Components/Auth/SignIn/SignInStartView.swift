@@ -29,6 +29,10 @@ struct SignInStartView: View {
         clerk.client?.signIn
     }
     
+    private var signUp: SignUp? {
+        clerk.client?.signUp
+    }
+    
     private var headerTitle: String {
         var string = "Sign in"
         if let environment = clerk.environment {
@@ -51,8 +55,14 @@ struct SignInStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView(useCase: .signIn)
-                        .onSuccess { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
+                    AuthSocialProvidersView()
+                        .onSuccess { provider, wasTransfer in
+                            if wasTransfer {
+                                clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+                            } else {
+                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                            }
+                        }
                 }
                 
                 if socialProvidersEnabled && showSignInForm {
