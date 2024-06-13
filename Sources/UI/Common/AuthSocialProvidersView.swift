@@ -14,10 +14,8 @@ struct AuthSocialProvidersView: View {
     @ObservedObject private var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.clerkTheme) private var clerkTheme
-    @State private var viewSize: CGSize?
-    
-    private let buttonMinWidth: CGFloat = 46
-    
+    @State private var stackWidth: CGFloat = .zero
+        
     var onSuccess:((_ provider: ExternalProvider, _ wasTransfer: Bool) -> Void)?
     
     private var thirdPartyProviders: [ExternalProvider] {
@@ -25,23 +23,11 @@ struct AuthSocialProvidersView: View {
     }
     
     private var chunkedProviders: ChunksOfCountCollection<[ExternalProvider]> {
-        thirdPartyProviders.chunks(ofCount: Int(mostHorizontalButtons))
-    }
-    
-    private var mostHorizontalButtons: CGFloat {
-        if let viewSize {
-            return max(1, (viewSize.width + 8) / (buttonMinWidth + 8))
-        } else {
-            return 6
-        }
-    }
-        
-    private var providerButtonMaxWidth: CGFloat {
-        chunkedProviders.count > 1 ? buttonMinWidth : .infinity
+        thirdPartyProviders.chunks(ofCount: 4)
     }
         
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(chunkedProviders, id: \.self) { chunk in
                 HStack(spacing: 8) {
                     ForEach(chunk) { provider in
@@ -50,7 +36,7 @@ struct AuthSocialProvidersView: View {
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
                                 .padding(8)
-                                .frame(maxWidth: providerButtonMaxWidth, minHeight: 30)
+                                .frame(maxWidth: thirdPartyProviders.count < 4 ? .infinity : max((stackWidth / 4) - 8, 0), minHeight: 30)
                                 .font(.footnote.weight(.medium))
                                 .foregroundStyle(clerkTheme.colors.textPrimary)
                         }
@@ -60,10 +46,10 @@ struct AuthSocialProvidersView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .readSize { size in
-            withAnimation(nil) { viewSize = size }
-        }
         .clerkErrorPresenting($errorWrapper)
+        .readSize { stackSize in
+            stackWidth = stackSize.width
+        }
     }
     
     private func signIn(provider: ExternalProvider) async {
