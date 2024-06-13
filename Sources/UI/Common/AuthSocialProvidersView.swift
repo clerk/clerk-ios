@@ -35,8 +35,10 @@ struct AuthSocialProvidersView: View {
                             await signIn(provider: provider)
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
-                                .padding(8)
-                                .frame(maxWidth: thirdPartyProviders.count < 4 ? .infinity : max((stackWidth / 4) - 8, 0), minHeight: 30)
+                                .frame(
+                                    maxWidth: thirdPartyProviders.count <= 4 ? .infinity : max((stackWidth - 24) / 4, 0),
+                                    minHeight: 30
+                                )
                                 .font(.footnote.weight(.medium))
                                 .foregroundStyle(clerkTheme.colors.textPrimary)
                         }
