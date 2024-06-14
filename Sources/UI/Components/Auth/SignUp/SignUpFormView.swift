@@ -22,6 +22,7 @@ struct SignUpFormView: View {
     @State private var lastName: String = ""
     @State private var password: String = ""
     @State private var ticket: String = ""
+    @State private var captchaToken: String?
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
@@ -202,6 +203,12 @@ struct SignUpFormView: View {
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
+            
+            TurnstileWebView { token in
+                captchaToken = token
+                dump(token)
+            }
+            .frame(width: 300, height: 70)
         }
         .clerkErrorPresenting($errorWrapper)
     }
@@ -217,7 +224,7 @@ struct SignUpFormView: View {
                 lastName: nameIsEnabled ? lastName : nil,
                 username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
-            ))
+            ), captchaToken: captchaToken)
             
             guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
             

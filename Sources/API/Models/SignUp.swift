@@ -113,10 +113,12 @@ public struct SignUp: Codable, Sendable {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @discardableResult @MainActor
-    public static func create(strategy: SignUp.CreateStrategy) async throws -> SignUp {
-        let params = SignUp.createParams(for: strategy)
+    public static func create(strategy: SignUp.CreateStrategy, captchaToken: String? = nil) async throws -> SignUp {
+        let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
+        let response = try await Clerk.shared.apiClient.send(request) {
+            $0.setValue(Clerk.shared.environment?.displayConfig.homeUrl, forHTTPHeaderField: "Origin")
+        }.value.response
         try await Clerk.shared.client?.get()
         return response
     }
@@ -127,14 +129,14 @@ public struct SignUp: Codable, Sendable {
         case transfer
     }
     
-    static func createParams(for strategy: CreateStrategy) -> CreateParams {
+    static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
         case .externalProvider(let provider):
-            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
         case .transfer:
-            return .init(transfer: true)
+            return .init(transfer: true, captchaToken: captchaToken)
         }
     }
     
@@ -149,7 +151,8 @@ public struct SignUp: Codable, Sendable {
             strategy: Strategy? = nil,
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
-            transfer: Bool? = nil
+            transfer: Bool? = nil,
+            captchaToken: String? = nil
         ) {
             self.firstName = firstName
             self.lastName = lastName
@@ -161,6 +164,7 @@ public struct SignUp: Codable, Sendable {
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
+            self.captchaToken = captchaToken
         }
         
         /// The user's first name. This option is available only if name is selected in personal information. Please check the instance settings for more information.
@@ -202,6 +206,9 @@ public struct SignUp: Codable, Sendable {
         
         /// Transfer the user to a dedicated sign-up for an OAuth flow.
         public let transfer: Bool?
+        
+        /// Optional captcha token for bot protection
+        public let captchaToken: String?
     }
     
     /// This method is used to update the current sign-up.
