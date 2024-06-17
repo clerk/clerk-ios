@@ -13,7 +13,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
         // Set the device token on every request
-        if let deviceToken = try? SimpleKeychain().string(forKey: "clerkDeviceToken"), request.value(forHTTPHeaderField: "Origin") == nil {
+        if let deviceToken = try? SimpleKeychain().string(forKey: "clerkDeviceToken") {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         

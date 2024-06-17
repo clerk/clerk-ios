@@ -116,9 +116,7 @@ public struct SignUp: Codable, Sendable {
     public static func create(strategy: SignUp.CreateStrategy, captchaToken: String? = nil) async throws -> SignUp {
         let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.setValue(Clerk.shared.environment?.displayConfig.homeUrl, forHTTPHeaderField: "Origin")
-        }.value.response
+        let response = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
         return response
     }

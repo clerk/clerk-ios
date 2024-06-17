@@ -44,9 +44,21 @@ extension Clerk.Environment {
         public let branded: Bool
         public let logoImageUrl: String
         public let homeUrl: String
+        public let captchaPublicKey: String?
+        public let captchaWidgetType: CaptchaWidgetType?
+        public let captchaPublicKeyInvisible: String?
+        public let captchaProvider: CaptchaProvider?
         
         public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password, otp
+        }
+        
+        public enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
+            case invisible, smart
+        }
+        
+        public enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
+            case turnstile
         }
     }
     
@@ -188,6 +200,14 @@ extension Clerk.Environment.UserSettings {
 //        }
         
         return nil
+    }
+    
+}
+
+extension Clerk.Environment.DisplayConfig {
+    
+    public var botProtectionIsEnabled: Bool {
+        captchaWidgetType != nil
     }
     
 }

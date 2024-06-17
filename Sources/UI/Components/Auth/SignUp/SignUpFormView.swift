@@ -23,6 +23,7 @@ struct SignUpFormView: View {
     @State private var password: String = ""
     @State private var ticket: String = ""
     @State private var captchaToken: String?
+    @State private var displayCaptcha = false
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
@@ -204,11 +205,21 @@ struct SignUpFormView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
             
-            TurnstileWebView { token in
-                captchaToken = token
-                dump(token)
+            if clerk.environment?.displayConfig.botProtectionIsEnabled == true {
+                TurnstileWebView()
+                    .onSuccess { token in
+                        captchaToken = token
+                    }
+                    .onBeforeInteractive {
+                        displayCaptcha = true
+                    }
+                    .onError { errorMessage in
+                        errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
+                    }
+                    .frame(width: 300, height: 65)
+                    .scaleEffect(displayCaptcha ? 1 : 0)
+                    .animation(.bouncy.speed(1.5), value: displayCaptcha)
             }
-            .frame(width: 300, height: 70)
         }
         .clerkErrorPresenting($errorWrapper)
     }
