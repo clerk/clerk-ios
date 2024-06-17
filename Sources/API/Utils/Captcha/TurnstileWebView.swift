@@ -152,18 +152,21 @@ extension TurnstileWebView {
         return copy
     }
     
+    /// A callback invoked upon success of the challenge. The callback is passed a token that can be validated.
     func onSuccess(perform onSuccess: @escaping (_ token: String) -> Void) -> Self {
         var copy = self
         copy.onSuccess = onSuccess
         return copy
     }
     
+    /// A callback invoked before the challenge enters interactive mode.
     func onBeforeInteractive(perform onBeforeInteractive: @escaping () -> Void) -> Self {
         var copy = self
         copy.onBeforeInteractive = onBeforeInteractive
         return copy
     }
     
+    /// A callback invoked when there is an error (e.g. network error or the challenge failed). Refer to Client-side errors.
     func onError(perform onError: @escaping (_ errorMessage: String) -> Void) -> Self {
         var copy = self
         copy.onError = onError
