@@ -10,11 +10,25 @@
 import SwiftUI
 import WebKit
 
-struct TurnstileWebView: UIViewRepresentable {
+public struct TurnstileWebView: UIViewRepresentable {
+    var size: Size = .regular
     var onFinishLoading: (() -> Void)?
     var onSuccess: ((String) -> Void)?
     var onBeforeInteractive: (() -> Void)?
     var onError: ((String) -> Void)?
+    
+    enum Size: String {
+        case regular, compact
+        
+        var size: CGSize {
+            switch self {
+            case .regular:
+                return CGSize(width: 300, height: 65)
+            case .compact:
+                return CGSize(width: 130, height: 120)
+            }
+        }
+    }
     
     let displayConfig = Clerk.shared.environment?.displayConfig
     
@@ -29,7 +43,7 @@ struct TurnstileWebView: UIViewRepresentable {
         }
     }
 
-    func makeUIView(context: Context) -> WKWebView {
+    public func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
 
@@ -51,7 +65,6 @@ struct TurnstileWebView: UIViewRepresentable {
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    height: 108vh;
                 }
             </style>
             <script>
@@ -67,7 +80,7 @@ struct TurnstileWebView: UIViewRepresentable {
             </script>
         </head>
         <body>
-            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only"></div>
+            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only" data-size="\(size.rawValue)"></div>
         </body>
         </html>
         """
@@ -86,11 +99,11 @@ struct TurnstileWebView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {
+    public func updateUIView(_ webView: WKWebView, context: Context) {
         // nothing
     }
 
-    func makeCoordinator() -> Coordinator {
+    public func makeCoordinator() -> Coordinator {
         Coordinator(
             self,
             onFinishLoading: onFinishLoading,
@@ -100,7 +113,7 @@ struct TurnstileWebView: UIViewRepresentable {
         )
     }
 
-    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: TurnstileWebView
         var onFinishLoading: (() -> Void)?
         var onSuccess: ((String) -> Void)?
@@ -121,11 +134,11 @@ struct TurnstileWebView: UIViewRepresentable {
             self.onError = onError
         }
 
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             onFinishLoading?()
         }
 
-        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             switch message.name {
             case "onSuccess":
                 if let messageBody = message.body as? String {
@@ -146,28 +159,28 @@ struct TurnstileWebView: UIViewRepresentable {
 
 extension TurnstileWebView {
     
-    func onFinishLoading(perform onFinishLoading: @escaping () -> Void) -> Self {
+    public func onFinishLoading(perform onFinishLoading: @escaping () -> Void) -> Self {
         var copy = self
         copy.onFinishLoading = onFinishLoading
         return copy
     }
     
     /// A callback invoked upon success of the challenge. The callback is passed a token that can be validated.
-    func onSuccess(perform onSuccess: @escaping (_ token: String) -> Void) -> Self {
+    public func onSuccess(perform onSuccess: @escaping (_ token: String) -> Void) -> Self {
         var copy = self
         copy.onSuccess = onSuccess
         return copy
     }
     
     /// A callback invoked before the challenge enters interactive mode.
-    func onBeforeInteractive(perform onBeforeInteractive: @escaping () -> Void) -> Self {
+    public func onBeforeInteractive(perform onBeforeInteractive: @escaping () -> Void) -> Self {
         var copy = self
         copy.onBeforeInteractive = onBeforeInteractive
         return copy
     }
     
     /// A callback invoked when there is an error (e.g. network error or the challenge failed). Refer to Client-side errors.
-    func onError(perform onError: @escaping (_ errorMessage: String) -> Void) -> Self {
+    public func onError(perform onError: @escaping (_ errorMessage: String) -> Void) -> Self {
         var copy = self
         copy.onError = onError
         return copy
