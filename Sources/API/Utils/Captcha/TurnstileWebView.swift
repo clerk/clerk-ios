@@ -10,6 +10,13 @@
 import SwiftUI
 import WebKit
 
+/// Use this view to acquire a Cloudflare Turnstile catpcha token.
+///
+/// If you have enabled bot protection via the Clerk dashboard, you will need a to provide a captcha token in order to sign up.
+/// Use this view, and its `onSuccess` callback to acquire the necessary token.
+///
+/// - If you are using the invisible style widget type you can hide this view in the background since users will never need to interact with it.
+/// - If you are using the smart style widget, you should place this view in your view heirarchy as users may need to intereact with the widget.
 public struct TurnstileWebView: UIViewRepresentable {
     var size: Size = .regular
     var onFinishLoading: (() -> Void)?
