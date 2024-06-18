@@ -23,7 +23,7 @@ import Foundation
  - Those that hold the different values that we supply to the sign-up. Examples of these are `username`, `emailAddress`, `firstName`, etc.
  - Those that contain references to the created resources once the sign-up is complete, i.e. `createdSessionId` and `createdUserId`.
  */
-public struct SignUp: Codable, Sendable {
+public struct SignUp: Codable, Sendable, Equatable {
     
     let id: String
     
@@ -95,7 +95,7 @@ public struct SignUp: Codable, Sendable {
     public let abandonAt: Date
     
     /// The status of the current sign-up.
-    public enum Status: String, Codable, Sendable {
+    public enum Status: String, Codable, Sendable, Equatable {
         /// The sign-up has been inactive for a long period of time, thus it's considered as abandoned and needs to start over.
         case abandoned
         /// There are required fields that are either missing or they are unverified.
@@ -300,7 +300,7 @@ public struct SignUp: Codable, Sendable {
 #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> WebAuthResult {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false, captchaToken: String? = nil) async throws -> WebAuthResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -311,7 +311,8 @@ public struct SignUp: Codable, Sendable {
         
         let authSession = ExternalAuthWebSession(
             url: url,
-            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+            captchaToken: captchaToken
         )
         
         return try await authSession.start()

@@ -87,7 +87,7 @@ public struct TurnstileWebView: UIViewRepresentable {
             </script>
         </head>
         <body>
-            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only" data-size="\(size.rawValue)"></div>
+            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only" data-size="\(size.rawValue)" data-retry-interval="3000"></div>
         </body>
         </html>
         """

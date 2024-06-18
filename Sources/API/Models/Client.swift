@@ -12,7 +12,7 @@ import SimpleKeychain
  The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
  The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
  */
-public struct Client: Codable, Sendable {
+public struct Client: Codable, Sendable, Equatable {
 
     /// The current sign in attempt.
     public let signIn: SignIn?
