@@ -14,6 +14,11 @@ struct SignUpStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
+    @State private var captchaToken: String?
+    @State private var captchaIsInteractive = false
+    @State private var displayCaptcha = false
+    @State private var errorWrapper: ErrorWrapper?
+    
     private var signUp: SignUp? {
         clerk.client?.signUp
     }
@@ -45,7 +50,7 @@ struct SignUpStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView()
+                    AuthSocialProvidersView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
                         .onSuccess { provider, wasTransfer in
                             if wasTransfer {
                                 clerkUIState.setAuthStepToCurrentStatus(for: signIn)
@@ -61,13 +66,31 @@ struct SignUpStartView: View {
                 }
 
                 if contactInfoEnabled {
-                    SignUpFormView()
+                    SignUpFormView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
                         .padding(.bottom, 32)
+                }
+                
+                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, displayCaptcha {
+                    TurnstileWebView()
+                        .onSuccess { token in
+                            captchaToken = token
+                        }
+                        .onBeforeInteractive {
+                            captchaIsInteractive = true
+                        }
+                        .onError { errorMessage in
+                            errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
+                            dump(errorMessage)
+                        }
+                        .frame(width: 300, height: 65)
+                        .scaleEffect(captchaIsInteractive ? 1 : 0)
+                        .animation(.bouncy.speed(1.5), value: captchaIsInteractive)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal)
             .padding(.vertical, 32)
+            .clerkErrorPresenting($errorWrapper)
         }
     }
 }

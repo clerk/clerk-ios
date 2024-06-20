@@ -17,15 +17,21 @@ public struct WebAuthResult {
 final class ExternalAuthWebSession: NSObject {
     let url: URL
     let prefersEphemeralWebBrowserSession: Bool
+    var captchaToken: String?
     
-    init(url: URL, prefersEphemeralWebBrowserSession: Bool = false) {
+    init(
+        url: URL,
+        prefersEphemeralWebBrowserSession: Bool = false,
+        captchaToken: String? = nil
+    ) {
         self.url = url
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+        self.captchaToken = captchaToken
     }
     
     @discardableResult
     func start() async throws -> WebAuthResult {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WebAuthResult, Error>) in
+        try await withCheckedThrowingContinuation { [captchaToken] (continuation: CheckedContinuation<WebAuthResult, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme) { callbackUrl, error in
                 
                 if let error = error {
@@ -48,7 +54,7 @@ final class ExternalAuthWebSession: NSObject {
                             } else {
                                 try await Clerk.shared.client?.get()
                                 if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
-                                    try await SignUp.create(strategy: .transfer)
+                                    try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
                                     result.wasTransfer = true
                                 }
                             }

@@ -46,7 +46,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             throw APIError.unacceptableStatusCode(response.statusCode)
         }
         
-        // Set the device token from the response headers whenever recieved in the response headers
+        // Set the device token from the response headers whenever received in the response headers
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
             try? SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly)
                 .set(deviceToken, forKey: "clerkDeviceToken")

@@ -23,7 +23,7 @@ import Foundation
  - Those that hold the different values that we supply to the sign-up. Examples of these are `username`, `emailAddress`, `firstName`, etc.
  - Those that contain references to the created resources once the sign-up is complete, i.e. `createdSessionId` and `createdUserId`.
  */
-public struct SignUp: Codable, Sendable {
+public struct SignUp: Codable, Sendable, Equatable {
     
     let id: String
     
@@ -95,7 +95,7 @@ public struct SignUp: Codable, Sendable {
     public let abandonAt: Date
     
     /// The status of the current sign-up.
-    public enum Status: String, Codable, Sendable {
+    public enum Status: String, Codable, Sendable, Equatable {
         /// The sign-up has been inactive for a long period of time, thus it's considered as abandoned and needs to start over.
         case abandoned
         /// There are required fields that are either missing or they are unverified.
@@ -113,8 +113,8 @@ public struct SignUp: Codable, Sendable {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @discardableResult @MainActor
-    public static func create(strategy: SignUp.CreateStrategy) async throws -> SignUp {
-        let params = SignUp.createParams(for: strategy)
+    public static func create(strategy: SignUp.CreateStrategy, captchaToken: String? = nil) async throws -> SignUp {
+        let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
@@ -127,14 +127,14 @@ public struct SignUp: Codable, Sendable {
         case transfer
     }
     
-    static func createParams(for strategy: CreateStrategy) -> CreateParams {
+    static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username)
+            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
         case .externalProvider(let provider):
-            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
         case .transfer:
-            return .init(transfer: true)
+            return .init(transfer: true, captchaToken: captchaToken)
         }
     }
     
@@ -149,7 +149,8 @@ public struct SignUp: Codable, Sendable {
             strategy: Strategy? = nil,
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
-            transfer: Bool? = nil
+            transfer: Bool? = nil,
+            captchaToken: String? = nil
         ) {
             self.firstName = firstName
             self.lastName = lastName
@@ -161,6 +162,7 @@ public struct SignUp: Codable, Sendable {
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
+            self.captchaToken = captchaToken
         }
         
         /// The user's first name. This option is available only if name is selected in personal information. Please check the instance settings for more information.
@@ -202,6 +204,9 @@ public struct SignUp: Codable, Sendable {
         
         /// Transfer the user to a dedicated sign-up for an OAuth flow.
         public let transfer: Bool?
+        
+        /// Optional captcha token for bot protection
+        public let captchaToken: String?
     }
     
     /// This method is used to update the current sign-up.
@@ -295,7 +300,7 @@ public struct SignUp: Codable, Sendable {
 #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> WebAuthResult {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false, captchaToken: String? = nil) async throws -> WebAuthResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -306,7 +311,8 @@ public struct SignUp: Codable, Sendable {
         
         let authSession = ExternalAuthWebSession(
             url: url,
-            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+            captchaToken: captchaToken
         )
         
         return try await authSession.start()
