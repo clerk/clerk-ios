@@ -39,7 +39,7 @@ struct CodeFormView: View {
                     await onResend()
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Didn't recieve a code?")
+                        Text("Didn't receive a code?")
                             .foregroundStyle(clerkTheme.colors.textSecondary)
                         Text("Resend")
                             .foregroundStyle(.foreground)

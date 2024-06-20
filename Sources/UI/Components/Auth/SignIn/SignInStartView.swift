@@ -13,6 +13,11 @@ struct SignInStartView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     
+    @State private var captchaToken: String?
+    @State private var captchaIsInteractive = false
+    @State private var displayCaptcha = false
+    @State private var errorWrapper: ErrorWrapper?
+    
     private var socialProvidersEnabled: Bool {
         clerk.environment?.userSettings.enabledThirdPartyProviders.isEmpty == false
     }
@@ -55,7 +60,7 @@ struct SignInStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView()
+                    AuthSocialProvidersView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
                         .onSuccess { provider, wasTransfer in
                             if wasTransfer {
                                 clerkUIState.setAuthStepToCurrentStatus(for: signUp)
@@ -73,6 +78,23 @@ struct SignInStartView: View {
                 if showSignInForm {
                     SignInFormView()
                         .padding(.bottom, 32)
+                }
+                
+                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, displayCaptcha {
+                    TurnstileWebView()
+                        .onSuccess { token in
+                            captchaToken = token
+                        }
+                        .onBeforeInteractive {
+                            captchaIsInteractive = true
+                        }
+                        .onError { errorMessage in
+                            errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
+                            dump(errorMessage)
+                        }
+                        .frame(width: 300, height: 65)
+                        .scaleEffect(captchaIsInteractive ? 1 : 0)
+                        .animation(.bouncy.speed(1.5), value: captchaIsInteractive)
                 }
             }
             .frame(maxWidth: .infinity)

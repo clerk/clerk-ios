@@ -22,10 +22,12 @@ struct SignUpFormView: View {
     @State private var lastName: String = ""
     @State private var password: String = ""
     @State private var ticket: String = ""
-    @State private var captchaToken: String?
-    @State private var displayCaptcha = false
+    @State private var isSubmitting = false
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
+    
+    @Binding var captchaToken: String?
+    @Binding var displayCaptcha: Bool
     
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password, ticket
@@ -199,34 +201,42 @@ struct SignUpFormView: View {
                 await continueAction()
             } label: {
                 Text("Continue")
+                    .opacity(isSubmitting ? 0 : 1)
+                    .overlay {
+                        if isSubmitting {
+                            ProgressView()
+                        }
+                    }
+                    .animation(.snappy, value: isSubmitting)
                     .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
-            
-            if clerk.environment?.displayConfig.botProtectionIsEnabled == true {
-                TurnstileWebView()
-                    .onSuccess { token in
-                        captchaToken = token
-                    }
-                    .onBeforeInteractive {
-                        displayCaptcha = true
-                    }
-                    .onError { errorMessage in
-                        errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
-                    }
-                    .frame(width: 300, height: 65)
-                    .scaleEffect(displayCaptcha ? 1 : 0)
-                    .animation(.bouncy.speed(1.5), value: displayCaptcha)
-            }
         }
         .clerkErrorPresenting($errorWrapper)
+        .onChange(of: captchaToken) { token in
+            if token != nil && isSubmitting {
+                Task { await performSignUp() }
+            } else {
+                isSubmitting = false
+            }
+        }
     }
     
     private func continueAction() async {
+        isSubmitting = true
         KeyboardHelpers.dismissKeyboard()
         
+        if clerk.environment?.displayConfig.botProtectionIsEnabled == true && captchaToken == nil {
+            displayCaptcha = true
+        } else {
+            await performSignUp()
+            isSubmitting = false
+        }
+    }
+    
+    private func performSignUp() async {
         do {
             try await SignUp.create(strategy: .standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
@@ -248,7 +258,7 @@ struct SignUpFormView: View {
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 try await signUp.update(params: .init(strategy: .saml))
             }
-                        
+            
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
                 try await signUp.authenticateWithRedirect()
@@ -259,13 +269,17 @@ struct SignUpFormView: View {
             clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
+            isSubmitting = false
+            captchaToken = nil
+            displayCaptcha = false
             dump(error)
         }
     }
+    
 }
 
 #Preview {
-    SignUpFormView()
+    SignUpFormView(captchaToken: .constant(nil), displayCaptcha: .constant(false))
         .padding()
 }
 
