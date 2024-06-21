@@ -144,6 +144,11 @@ extension User {
         username ?? primaryEmailAddress?.emailAddress ?? primaryPhoneNumber?.phoneNumber
     }
     
+    func identifierBelongsToUser(identifier: String) -> Bool {
+        var allIdentifiers = emailAddresses.map(\.emailAddress) + phoneNumbers.map(\.phoneNumber) + [username]
+        return allIdentifiers.contains(identifier)
+    }
+    
     var unconnectedProviders: [ExternalProvider] {
         guard let environment = Clerk.shared.environment else { return []}
         let allExternalProviders = environment.userSettings.enabledThirdPartyProviders.sorted()

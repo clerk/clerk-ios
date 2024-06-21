@@ -63,6 +63,10 @@ extension Clerk {
             try? SimpleKeychain().string(forKey: localAuthAccountKey)
         }
         
+        static func clearLocalAuthAccount() {
+            try? SimpleKeychain().deleteItem(forKey: localAuthAccountKey)
+        }
+        
         public static func getLocalAuthCredentials() throws -> Credentials {
             guard let identifier = accountForLocalAuth else {
                 throw ClerkClientError(message: "Unable to find an account with biometric authentication enabled.")
