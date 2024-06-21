@@ -14,6 +14,7 @@ struct SignUpStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
+    @State private var formIsSubmitting = false
     @State private var captchaToken: String?
     @State private var captchaIsInteractive = false
     @State private var displayCaptcha = false
@@ -50,12 +51,17 @@ struct SignUpStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
-                        .onSuccess { provider, wasTransfer in
-                            if wasTransfer {
+                    AuthSocialProvidersView()
+                        .onSuccess { nextStep in
+                            Task {
+                                switch nextStep {
+                                case .signIn(let nonce):
+                                    try await signIn?.get(rotatingTokenNonce: nonce)
+                                default:
+                                    break
+                                }
+                                
                                 clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                            } else {
-                                clerkUIState.setAuthStepToCurrentStatus(for: signUp)
                             }
                         }
                 }
@@ -66,8 +72,12 @@ struct SignUpStartView: View {
                 }
 
                 if contactInfoEnabled {
-                    SignUpFormView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
-                        .padding(.bottom, 32)
+                    SignUpFormView(
+                        isSubmitting: $formIsSubmitting, 
+                        captchaToken: $captchaToken,
+                        displayCaptcha: $displayCaptcha
+                    )
+                    .padding(.bottom, 32)
                 }
                 
                 if clerk.environment?.displayConfig.botProtectionIsEnabled == true, displayCaptcha {
@@ -75,11 +85,12 @@ struct SignUpStartView: View {
                         .onSuccess { token in
                             captchaToken = token
                         }
-                        .onBeforeInteractive {
+                        .onFinishLoading {
                             captchaIsInteractive = true
                         }
                         .onError { errorMessage in
                             errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
+                            formIsSubmitting = false
                             dump(errorMessage)
                         }
                         .frame(width: 300, height: 65)

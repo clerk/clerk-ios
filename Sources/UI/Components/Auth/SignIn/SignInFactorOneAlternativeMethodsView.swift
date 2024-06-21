@@ -27,7 +27,17 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: ExternalProvider) async {
         do {
-            try await SignIn.create(strategy: .externalProvider(provider)).authenticateWithRedirect()
+            let result = try await SignIn
+                .create(strategy: .externalProvider(provider))
+                .authenticateWithRedirect()
+            
+            switch result {
+            case .signIn(let nonce):
+                try await signIn?.get(rotatingTokenNonce: nonce)
+            default:
+                break
+            }
+            
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart

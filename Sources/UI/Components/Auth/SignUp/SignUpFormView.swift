@@ -21,16 +21,15 @@ struct SignUpFormView: View {
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var password: String = ""
-    @State private var ticket: String = ""
-    @State private var isSubmitting = false
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
+    @Binding var isSubmitting: Bool
     @Binding var captchaToken: String?
     @Binding var displayCaptcha: Bool
     
     private enum Field {
-        case emailAddress, phoneNumber, username, firstName, lastName, password, ticket
+        case emailAddress, phoneNumber, username, firstName, lastName, password
     }
     
     private var signUp: SignUp? {
@@ -218,8 +217,6 @@ struct SignUpFormView: View {
         .onChange(of: captchaToken) { token in
             if token != nil && isSubmitting {
                 Task { await performSignUp() }
-            } else {
-                isSubmitting = false
             }
         }
     }
@@ -261,7 +258,15 @@ struct SignUpFormView: View {
             
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
-                try await signUp.authenticateWithRedirect()
+                let result = try await signUp.authenticateWithRedirect()
+                switch result {
+                case .signIn(let nonce):
+                    try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
+                case .transferToSignUp:
+                    try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
+                case nil:
+                    break
+                }
             default:
                 break
             }
@@ -279,8 +284,12 @@ struct SignUpFormView: View {
 }
 
 #Preview {
-    SignUpFormView(captchaToken: .constant(nil), displayCaptcha: .constant(false))
-        .padding()
+    SignUpFormView(
+        isSubmitting: .constant(false),
+        captchaToken: .constant(nil),
+        displayCaptcha: .constant(false)
+    )
+    .padding()
 }
 
 #endif

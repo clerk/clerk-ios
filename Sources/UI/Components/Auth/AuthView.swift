@@ -74,6 +74,12 @@ struct AuthView: View {
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+            case .ssoCallback:
+                SSOCallbackView()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

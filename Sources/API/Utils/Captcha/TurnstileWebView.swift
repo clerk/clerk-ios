@@ -18,13 +18,30 @@ import WebKit
 /// - If you are using the invisible style widget type you can hide this view in the background since users will never need to interact with it.
 /// - If you are using the smart style widget, you should place this view in your view heirarchy as users may need to intereact with the widget.
 public struct TurnstileWebView: UIViewRepresentable {
-    var size: Size = .regular
+    public init(
+        appearence: Appearence = .always,
+        size: Size = .regular,
+        onFinishLoading: (() -> Void)? = nil,
+        onBeforeInteractive: (() -> Void)? = nil,
+        onSuccess: ((String) -> Void)? = nil,
+        onError: ((String) -> Void)? = nil
+    ) {
+        self.appearence = appearence
+        self.size = size
+        self.onFinishLoading = onFinishLoading
+        self.onBeforeInteractive = onBeforeInteractive
+        self.onSuccess = onSuccess
+        self.onError = onError
+    }
+    
+    public var appearence: Appearence = .interactionOnly
+    public var size: Size = .regular
     var onFinishLoading: (() -> Void)?
-    var onSuccess: ((String) -> Void)?
     var onBeforeInteractive: (() -> Void)?
+    var onSuccess: ((String) -> Void)?
     var onError: ((String) -> Void)?
     
-    enum Size: String {
+    public enum Size: String {
         case regular, compact
         
         var size: CGSize {
@@ -33,6 +50,21 @@ public struct TurnstileWebView: UIViewRepresentable {
                 return CGSize(width: 300, height: 65)
             case .compact:
                 return CGSize(width: 130, height: 120)
+            }
+        }
+    }
+    
+    public enum Appearence {
+        case always, execute, interactionOnly
+        
+        var stringValue: String {
+            switch self {
+            case .always:
+                return "always"
+            case .execute:
+                return "execute"
+            case .interactionOnly:
+                return "interaction-only"
             }
         }
     }
@@ -87,7 +119,7 @@ public struct TurnstileWebView: UIViewRepresentable {
             </script>
         </head>
         <body>
-            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only" data-size="\(size.rawValue)" data-retry-interval="3000"></div>
+            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="\(appearence.stringValue)" data-size="\(size.rawValue)" data-retry-interval="1000"></div>
         </body>
         </html>
         """

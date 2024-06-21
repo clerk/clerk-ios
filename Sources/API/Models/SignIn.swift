@@ -358,16 +358,15 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
-    @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false, captchaToken: String? = nil) async throws -> WebAuthResult {
+    @MainActor
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> WebAuthNextStep? {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = ExternalAuthWebSession(
+        let authSession = ASWebAuthManager(
             url: url,
-            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-            captchaToken: captchaToken
+            prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
         return try await authSession.start()

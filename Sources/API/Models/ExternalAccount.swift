@@ -105,7 +105,7 @@ extension ExternalAccount {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = ExternalAuthWebSession(
+        let authSession = ASWebAuthManager(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
