@@ -16,8 +16,8 @@ struct SignUpStartView: View {
     
     @State private var formIsSubmitting = false
     @State private var captchaToken: String?
-    @State private var captchaIsInteractive = false
-    @State private var displayCaptcha = false
+    @State private var showCaptcha = false
+    @State private var captchaIsActive = false
     @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp? {
@@ -52,17 +52,8 @@ struct SignUpStartView: View {
                 
                 if socialProvidersEnabled {
                     AuthSocialProvidersView()
-                        .onSuccess { nextStep in
-                            Task {
-                                switch nextStep {
-                                case .signIn(let nonce):
-                                    try await signIn?.get(rotatingTokenNonce: nonce)
-                                default:
-                                    break
-                                }
-                                
-                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                            }
+                        .onSuccess { _ in
+                            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                         }
                 }
                 
@@ -75,18 +66,18 @@ struct SignUpStartView: View {
                     SignUpFormView(
                         isSubmitting: $formIsSubmitting, 
                         captchaToken: $captchaToken,
-                        displayCaptcha: $displayCaptcha
+                        captchaIsActive: $captchaIsActive
                     )
                     .padding(.bottom, 32)
                 }
                 
-                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, displayCaptcha {
+                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, captchaIsActive {
                     TurnstileWebView()
                         .onSuccess { token in
                             captchaToken = token
                         }
-                        .onFinishLoading {
-                            captchaIsInteractive = true
+                        .onDidFinishLoading {
+                            showCaptcha = true
                         }
                         .onError { errorMessage in
                             errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
@@ -94,8 +85,8 @@ struct SignUpStartView: View {
                             dump(errorMessage)
                         }
                         .frame(width: 300, height: 65)
-                        .scaleEffect(captchaIsInteractive ? 1 : 0)
-                        .animation(.bouncy.speed(1.5), value: captchaIsInteractive)
+                        .scaleEffect(showCaptcha ? 1 : 0)
+                        .animation(.bouncy.speed(1.5), value: showCaptcha)
                 }
             }
             .frame(maxWidth: .infinity)

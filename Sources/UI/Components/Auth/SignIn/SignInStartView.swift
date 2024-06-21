@@ -56,17 +56,8 @@ struct SignInStartView: View {
                 
                 if socialProvidersEnabled {
                     AuthSocialProvidersView()
-                        .onSuccess { nextStep in
-                            Task {
-                                switch nextStep {
-                                case .signIn(let nonce):
-                                    try await signIn?.get(rotatingTokenNonce: nonce)
-                                default:
-                                    break
-                                }
-                                
-                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                            }
+                        .onSuccess { _ in
+                            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                         }
                 }
                 

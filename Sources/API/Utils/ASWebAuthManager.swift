@@ -7,10 +7,7 @@
 
 import AuthenticationServices
 
-public enum WebAuthNextStep: Equatable {
-    case signIn(nonce: String)
-    case transferToSignUp
-}
+public typealias NeedsTransferToSignUp = Bool
 
 @available(tvOS 16.0, watchOS 6.2, *)
 @MainActor
@@ -26,14 +23,14 @@ final class ASWebAuthManager: NSObject {
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     }
     
-    func start() async throws -> WebAuthNextStep? {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WebAuthNextStep?, Error>) in
+    func start() async throws -> NeedsTransferToSignUp {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NeedsTransferToSignUp, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme) { callbackUrl, error in
                 
                 if let error = error {
                     
                     if case ASWebAuthenticationSessionError.canceledLogin = error {
-                        continuation.resume(returning: nil)
+                        continuation.resume(returning: false)
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -44,15 +41,27 @@ final class ASWebAuthManager: NSObject {
                         do {
                             
                             if let nonce = self.nonceFromCallbackUrl(url: callbackUrl) {
-                                continuation.resume(returning: .signIn(nonce: nonce))
+                                
+                                try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
+                                continuation.resume(returning: false)
                                 
                             } else {
+                                
                                 try await Clerk.shared.client?.get()
-                                if Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable {
-                                    continuation.resume(returning: .transferToSignUp)
+                                let needsTransferToSignUp = Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable
+                                let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
+                                
+                                if needsTransferToSignUp {
+                                    if botProtectionIsEnabled {
+                                        continuation.resume(returning: true)
+                                    } else {
+                                        try await SignUp.create(strategy: .transfer)
+                                        continuation.resume(returning: false)
+                                    }
                                 } else {
-                                    continuation.resume(returning: nil)
+                                    continuation.resume(returning: false)
                                 }
+                                
                             }
                             
                         } catch {

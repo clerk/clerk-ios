@@ -26,7 +26,7 @@ struct SignUpFormView: View {
     
     @Binding var isSubmitting: Bool
     @Binding var captchaToken: String?
-    @Binding var displayCaptcha: Bool
+    @Binding var captchaIsActive: Bool
     
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password
@@ -226,7 +226,7 @@ struct SignUpFormView: View {
         KeyboardHelpers.dismissKeyboard()
         
         if clerk.environment?.displayConfig.botProtectionIsEnabled == true && captchaToken == nil {
-            displayCaptcha = true
+            captchaIsActive = true
         } else {
             await performSignUp()
             isSubmitting = false
@@ -258,14 +258,9 @@ struct SignUpFormView: View {
             
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
-                let result = try await signUp.authenticateWithRedirect()
-                switch result {
-                case .signIn(let nonce):
-                    try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
-                case .transferToSignUp:
+                let needsTransferToSignUp = try await signUp.authenticateWithRedirect()
+                if needsTransferToSignUp {
                     try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
-                case nil:
-                    break
                 }
             default:
                 break
@@ -276,7 +271,7 @@ struct SignUpFormView: View {
             errorWrapper = ErrorWrapper(error: error)
             isSubmitting = false
             captchaToken = nil
-            displayCaptcha = false
+            captchaIsActive = false
             dump(error)
         }
     }
@@ -287,7 +282,7 @@ struct SignUpFormView: View {
     SignUpFormView(
         isSubmitting: .constant(false),
         captchaToken: .constant(nil),
-        displayCaptcha: .constant(false)
+        captchaIsActive: .constant(false)
     )
     .padding()
 }

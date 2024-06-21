@@ -152,13 +152,7 @@ struct SignInFormView: View {
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
                 if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    let result = try await signIn?.authenticateWithRedirect()
-                    switch result {
-                    case .signIn(let nonce):
-                        try await signIn?.get(rotatingTokenNonce: nonce)
-                    default:
-                        break
-                    }
+                    try await signIn?.authenticateWithRedirect()
                 }
             }
             

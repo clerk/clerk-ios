@@ -31,13 +31,6 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .create(strategy: .externalProvider(provider))
                 .authenticateWithRedirect()
             
-            switch result {
-            case .signIn(let nonce):
-                try await signIn?.get(rotatingTokenNonce: nonce)
-            default:
-                break
-            }
-            
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             clerkUIState.presentedAuthStep = .signInStart

@@ -299,8 +299,8 @@ public struct SignUp: Codable, Sendable, Equatable {
     
 #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
-    @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> WebAuthNextStep? {
+    @discardableResult @MainActor
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> NeedsTransferToSignUp {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
