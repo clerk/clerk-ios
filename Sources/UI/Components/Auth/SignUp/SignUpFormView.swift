@@ -21,16 +21,15 @@ struct SignUpFormView: View {
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var password: String = ""
-    @State private var ticket: String = ""
-    @State private var isSubmitting = false
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
+    @Binding var isSubmitting: Bool
     @Binding var captchaToken: String?
-    @Binding var displayCaptcha: Bool
+    @Binding var captchaIsActive: Bool
     
     private enum Field {
-        case emailAddress, phoneNumber, username, firstName, lastName, password, ticket
+        case emailAddress, phoneNumber, username, firstName, lastName, password
     }
     
     private var signUp: SignUp? {
@@ -218,8 +217,6 @@ struct SignUpFormView: View {
         .onChange(of: captchaToken) { token in
             if token != nil && isSubmitting {
                 Task { await performSignUp() }
-            } else {
-                isSubmitting = false
             }
         }
     }
@@ -229,7 +226,7 @@ struct SignUpFormView: View {
         KeyboardHelpers.dismissKeyboard()
         
         if clerk.environment?.displayConfig.botProtectionIsEnabled == true && captchaToken == nil {
-            displayCaptcha = true
+            captchaIsActive = true
         } else {
             await performSignUp()
             isSubmitting = false
@@ -261,7 +258,10 @@ struct SignUpFormView: View {
             
             switch signUp.nextStrategyToVerify {
             case .externalProvider, .saml:
-                try await signUp.authenticateWithRedirect()
+                let needsTransferToSignUp = try await signUp.authenticateWithRedirect()
+                if needsTransferToSignUp {
+                    try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
+                }
             default:
                 break
             }
@@ -271,7 +271,7 @@ struct SignUpFormView: View {
             errorWrapper = ErrorWrapper(error: error)
             isSubmitting = false
             captchaToken = nil
-            displayCaptcha = false
+            captchaIsActive = false
             dump(error)
         }
     }
@@ -279,8 +279,12 @@ struct SignUpFormView: View {
 }
 
 #Preview {
-    SignUpFormView(captchaToken: .constant(nil), displayCaptcha: .constant(false))
-        .padding()
+    SignUpFormView(
+        isSubmitting: .constant(false),
+        captchaToken: .constant(nil),
+        captchaIsActive: .constant(false)
+    )
+    .padding()
 }
 
 #endif

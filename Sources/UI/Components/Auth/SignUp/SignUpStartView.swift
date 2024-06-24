@@ -14,9 +14,10 @@ struct SignUpStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     
+    @State private var formIsSubmitting = false
     @State private var captchaToken: String?
-    @State private var captchaIsInteractive = false
-    @State private var displayCaptcha = false
+    @State private var showCaptcha = false
+    @State private var captchaIsActive = false
     @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp? {
@@ -50,13 +51,9 @@ struct SignUpStartView: View {
                 .padding(.bottom, 32)
                 
                 if socialProvidersEnabled {
-                    AuthSocialProvidersView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
-                        .onSuccess { provider, wasTransfer in
-                            if wasTransfer {
-                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                            } else {
-                                clerkUIState.setAuthStepToCurrentStatus(for: signUp)
-                            }
+                    AuthSocialProvidersView()
+                        .onSuccess { _ in
+                            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                         }
                 }
                 
@@ -66,25 +63,30 @@ struct SignUpStartView: View {
                 }
 
                 if contactInfoEnabled {
-                    SignUpFormView(captchaToken: $captchaToken, displayCaptcha: $displayCaptcha)
-                        .padding(.bottom, 32)
+                    SignUpFormView(
+                        isSubmitting: $formIsSubmitting, 
+                        captchaToken: $captchaToken,
+                        captchaIsActive: $captchaIsActive
+                    )
+                    .padding(.bottom, 32)
                 }
                 
-                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, displayCaptcha {
+                if clerk.environment?.displayConfig.botProtectionIsEnabled == true, captchaIsActive {
                     TurnstileWebView()
                         .onSuccess { token in
                             captchaToken = token
                         }
-                        .onBeforeInteractive {
-                            captchaIsInteractive = true
+                        .onDidFinishLoading {
+                            showCaptcha = true
                         }
                         .onError { errorMessage in
                             errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
+                            formIsSubmitting = false
                             dump(errorMessage)
                         }
                         .frame(width: 300, height: 65)
-                        .scaleEffect(captchaIsInteractive ? 1 : 0)
-                        .animation(.bouncy.speed(1.5), value: captchaIsInteractive)
+                        .scaleEffect(showCaptcha ? 1 : 0)
+                        .animation(.bouncy.speed(1.5), value: showCaptcha)
                 }
             }
             .frame(maxWidth: .infinity)

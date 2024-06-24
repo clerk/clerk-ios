@@ -26,6 +26,7 @@ public final class ClerkUIState: ObservableObject {
         case signInResetPassword
         case signUpStart
         case signUpVerification
+        case ssoCallback
     }
     
     @Published public var presentedAuthStep: AuthStep = .signInStart {
@@ -43,6 +44,11 @@ extension ClerkUIState {
     /// Sets the current auth step to the status determined by the API
     @MainActor
     public func setAuthStepToCurrentStatus(for signIn: SignIn?) {
+        if signIn?.firstFactorVerification?.status == .transferable, Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true {
+            presentedAuthStep = .ssoCallback
+            return
+        }
+        
         switch signIn?.status {
         case .needsIdentifier, .abandoned:
             presentedAuthStep = .signInStart

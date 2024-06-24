@@ -16,12 +16,7 @@ struct AuthSocialProvidersView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var stackWidth: CGFloat = .zero
     
-    @State private var isSubmitting: Bool = false
-    @Binding var captchaToken: String?
-    @Binding var displayCaptcha: Bool
-    @State private var selectedProvider: ExternalProvider?
-    
-    var onSuccess:((_ provider: ExternalProvider, _ wasTransfer: Bool) -> Void)?
+    var onSuccess:((_ needsTransferToSignUp: Bool) -> Void)?
     
     private var thirdPartyProviders: [ExternalProvider] {
         (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
@@ -37,16 +32,9 @@ struct AuthSocialProvidersView: View {
                 HStack(spacing: 8) {
                     ForEach(chunk) { provider in
                         AsyncButton {
-                            await signIn(provider: provider, captchaToken: captchaToken)
+                            await signIn(provider: provider)
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
-                                .opacity(isSubmitting ? 0 : 1)
-                                .overlay {
-                                    if isSubmitting {
-                                        ProgressView()
-                                    }
-                                }
-                                .animation(.snappy, value: isSubmitting)
                                 .frame(
                                     maxWidth: thirdPartyProviders.count <= 4 ? .infinity : max((stackWidth - 24) / 4, 0),
                                     minHeight: 30
@@ -64,35 +52,19 @@ struct AuthSocialProvidersView: View {
         .readSize { stackSize in
             stackWidth = stackSize.width
         }
-        .onChange(of: captchaToken) { token in
-            if isSubmitting && token != nil, let selectedProvider {
-                Task { await signIn(provider: selectedProvider, captchaToken: token) }
-            }
-        }
     }
     
     private func signIn(provider: ExternalProvider, captchaToken: String? = nil) async {
         KeyboardHelpers.dismissKeyboard()
-        isSubmitting = true
-        selectedProvider = provider
         
         do {
-            if clerk.environment?.displayConfig.botProtectionIsEnabled == true && captchaToken == nil {
-                displayCaptcha = true
-            } else {
-                let result = try await SignIn
-                    .create(strategy: .externalProvider(provider))
-                    .authenticateWithRedirect(captchaToken: captchaToken)
-                isSubmitting = false
-                onSuccess?(provider, result.wasTransfer)
-            }
+            let needsTransferToSignUp = try await SignIn
+                .create(strategy: .externalProvider(provider))
+                .authenticateWithRedirect()
             
+            onSuccess?(needsTransferToSignUp)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
-            selectedProvider = nil
-            isSubmitting = false
-            displayCaptcha = false
-            self.captchaToken = nil
             dump(error)
         }
     }
@@ -100,7 +72,7 @@ struct AuthSocialProvidersView: View {
 
 extension AuthSocialProvidersView {
     
-    func onSuccess(perform action: @escaping (_ provider: ExternalProvider, _ wasTransfer: Bool) -> Void) -> Self {
+    func onSuccess(perform action: @escaping (_ needsTransferToSignUp: Bool) -> Void) -> Self {
         var copy = self
         copy.onSuccess = action
         return copy
@@ -109,7 +81,7 @@ extension AuthSocialProvidersView {
 }
 
 #Preview {
-    AuthSocialProvidersView(captchaToken: .constant(nil), displayCaptcha: .constant(false))
+    AuthSocialProvidersView()
         .padding()
 }
 

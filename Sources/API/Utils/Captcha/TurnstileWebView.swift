@@ -18,13 +18,30 @@ import WebKit
 /// - If you are using the invisible style widget type you can hide this view in the background since users will never need to interact with it.
 /// - If you are using the smart style widget, you should place this view in your view heirarchy as users may need to intereact with the widget.
 public struct TurnstileWebView: UIViewRepresentable {
-    var size: Size = .regular
-    var onFinishLoading: (() -> Void)?
-    var onSuccess: ((String) -> Void)?
+    public init(
+        appearence: Appearence = .always,
+        size: Size = .regular,
+        onDidFinishLoading: (() -> Void)? = nil,
+        onBeforeInteractive: (() -> Void)? = nil,
+        onSuccess: ((String) -> Void)? = nil,
+        onError: ((String) -> Void)? = nil
+    ) {
+        self.appearence = appearence
+        self.size = size
+        self.onDidFinishLoading = onDidFinishLoading
+        self.onBeforeInteractive = onBeforeInteractive
+        self.onSuccess = onSuccess
+        self.onError = onError
+    }
+    
+    let appearence: Appearence
+    let size: Size
+    var onDidFinishLoading: (() -> Void)?
     var onBeforeInteractive: (() -> Void)?
+    var onSuccess: ((String) -> Void)?
     var onError: ((String) -> Void)?
     
-    enum Size: String {
+    public enum Size: String {
         case regular, compact
         
         var size: CGSize {
@@ -37,7 +54,22 @@ public struct TurnstileWebView: UIViewRepresentable {
         }
     }
     
-    let displayConfig = Clerk.shared.environment?.displayConfig
+    public enum Appearence {
+        case always, execute, interactionOnly
+        
+        var stringValue: String {
+            switch self {
+            case .always:
+                return "always"
+            case .execute:
+                return "execute"
+            case .interactionOnly:
+                return "interaction-only"
+            }
+        }
+    }
+    
+    private let displayConfig = Clerk.shared.environment?.displayConfig
     
     private var siteKey: String {
         switch displayConfig?.captchaWidgetType {
@@ -87,7 +119,7 @@ public struct TurnstileWebView: UIViewRepresentable {
             </script>
         </head>
         <body>
-            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="interaction-only" data-size="\(size.rawValue)" data-retry-interval="3000"></div>
+            <div class="cf-turnstile" data-sitekey="\(siteKey)" data-callback="onSuccess" data-before-interactive-callback="onBeforeInteractive" data-error-callback="onError" data-appearance="\(appearence.stringValue)" data-size="\(size.rawValue)" data-retry-interval="500"></div>
         </body>
         </html>
         """
@@ -113,7 +145,7 @@ public struct TurnstileWebView: UIViewRepresentable {
     public func makeCoordinator() -> Coordinator {
         Coordinator(
             self,
-            onFinishLoading: onFinishLoading,
+            onDidFinishLoading: onDidFinishLoading,
             onSuccess: onSuccess,
             onBeforeInteractive: onBeforeInteractive,
             onError: onError
@@ -122,27 +154,27 @@ public struct TurnstileWebView: UIViewRepresentable {
 
     public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: TurnstileWebView
-        var onFinishLoading: (() -> Void)?
+        var onDidFinishLoading: (() -> Void)?
         var onSuccess: ((String) -> Void)?
         var onBeforeInteractive: (() -> Void)?
         var onError: ((String) -> Void)?
 
         init(
             _ parent: TurnstileWebView,
-            onFinishLoading: (() -> Void)?,
+            onDidFinishLoading: (() -> Void)?,
             onSuccess: ((String) -> Void)?,
             onBeforeInteractive: (() -> Void)?,
             onError: ((String) -> Void)?
         ) {
             self.parent = parent
-            self.onFinishLoading = onFinishLoading
+            self.onDidFinishLoading = onDidFinishLoading
             self.onSuccess = onSuccess
             self.onBeforeInteractive = onBeforeInteractive
             self.onError = onError
         }
 
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            onFinishLoading?()
+            onDidFinishLoading?()
         }
 
         public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -166,9 +198,9 @@ public struct TurnstileWebView: UIViewRepresentable {
 
 extension TurnstileWebView {
     
-    public func onFinishLoading(perform onFinishLoading: @escaping () -> Void) -> Self {
+    public func onDidFinishLoading(perform onDidFinishLoading: @escaping () -> Void) -> Self {
         var copy = self
-        copy.onFinishLoading = onFinishLoading
+        copy.onDidFinishLoading = onDidFinishLoading
         return copy
     }
     
