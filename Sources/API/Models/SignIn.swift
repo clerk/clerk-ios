@@ -448,12 +448,17 @@ public struct SignIn: Codable, Sendable, Equatable {
         let authManager = ASAuthManager(authType: .signInWithApple)
         let authorization = try await authManager.start()
         
+        if authorization == nil {
+            // cancelled
+            return false
+        }
+        
         guard
             let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
             let data = appleIdCredential.authorizationCode,
             let code = String(data: data, encoding: .utf8)
         else {
-            return false
+            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
         }
         
         let request = ClerkAPI.v1.client.signIns.post([
