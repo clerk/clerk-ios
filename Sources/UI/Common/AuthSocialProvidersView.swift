@@ -19,12 +19,12 @@ struct AuthSocialProvidersView: View {
     
     var onSuccess:((_ oauthResult: OAuthResult) -> Void)?
     
-    private var thirdPartyProviders: [ExternalProvider] {
+    private var oauthProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
     }
     
-    private var chunkedProviders: ChunksOfCountCollection<[ExternalProvider]> {
-        thirdPartyProviders.chunks(ofCount: 4)
+    private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
+        oauthProviders.chunks(ofCount: 4)
     }
         
     var body: some View {
@@ -35,9 +35,9 @@ struct AuthSocialProvidersView: View {
                         AsyncButton {
                             await startAuth(provider: provider)
                         } label: {
-                            AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
+                            AuthProviderButton(provider: provider, style: oauthProviders.count > 2 ? .compact : .regular)
                                 .frame(
-                                    maxWidth: thirdPartyProviders.count <= 4 ? .infinity : max((stackWidth - 24) / 4, 0),
+                                    maxWidth: oauthProviders.count <= 4 ? .infinity : max((stackWidth - 24) / 4, 0),
                                     minHeight: 30
                                 )
                                 .font(.footnote.weight(.medium))

@@ -17,7 +17,7 @@ struct SignInForgotPasswordView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    private var thirdPartyProviders: [ExternalProvider] {
+    private var oauthProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
     }
     

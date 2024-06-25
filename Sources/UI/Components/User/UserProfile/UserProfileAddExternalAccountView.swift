@@ -20,7 +20,7 @@ struct UserProfileAddExternalAccountView: View {
         clerk.client?.lastActiveSession?.user
     }
     
-    private func create(provider: ExternalProvider) async {
+    private func create(provider: OAuthProvider) async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             if provider == .apple {
@@ -52,7 +52,7 @@ struct UserProfileAddExternalAccountView: View {
                         } label: {
                             AuthProviderButton(
                                 provider: provider,
-                                label: "Connect \(provider.info.name) account"
+                                label: "Connect \(provider.providerData.name) account"
                             )
                             .font(.footnote)
                             .clerkStandardButtonPadding()

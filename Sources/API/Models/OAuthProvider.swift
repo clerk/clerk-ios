@@ -1,5 +1,5 @@
 //
-//  ExternalProvider.swift
+//  OAuthProvider.swift
 //
 //
 //  Created by Mike Pitre on 10/18/23.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// The available external authentication providers.
-public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
+/// The available OAuth providers.
+public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
     public var id: Self { self }
     
     case facebook
@@ -38,21 +38,21 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable, Equ
     case linear
     
     init?(strategy: String) {
-        if let provider = Self.allCases.first(where: { $0.info.strategy == strategy }) {
+        if let provider = Self.allCases.first(where: { $0.providerData.strategy == strategy }) {
             self = provider
         } else {
             return nil
         }
     }
     
-    public struct Info {
+    public struct OAuthProviderData {
         public let provider: String
         public let strategy: String
         public let name: String
         let docsUrl: String
     }
     
-    public var info: Info {
+    public var providerData: OAuthProviderData {
         switch self {
         case .facebook:
             return .init(
@@ -169,7 +169,7 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable, Equ
         case .apple:
             return .init(
                 provider: "apple",
-                strategy: "oauth_apple",
+                strategy: "oauth_code_apple",
                 name: "Apple",
                 docsUrl: "https://clerk.com/docs/authentication/social-connection-with-apple"
             )
@@ -242,14 +242,14 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable, Equ
     }
     
     public func iconImageUrl(darkMode: Bool = false) -> URL? {
-        var iconName = info.provider
+        var iconName = providerData.provider
         if darkMode && hasDarkModeVariant { iconName += "-dark" }
         return URL(string: "https://img.clerk.com/static/\(iconName).png")
     }
 }
 
-extension ExternalProvider: Comparable {
+extension OAuthProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.info.name < rhs.info.name
+        return lhs.providerData.name < rhs.providerData.name
     }
 }

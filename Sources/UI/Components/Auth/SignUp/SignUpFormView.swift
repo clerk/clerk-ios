@@ -258,12 +258,12 @@ struct SignUpFormView: View {
             }
             
             switch signUp.nextStrategyToVerify {
-            case .externalProvider, .saml:
 				if signUp.nextStrategyToVerify == .externalProvider(.apple) {
                     try await SignUp.signUpWithApple()
                 } else {
                		try await signUp.authenticateWithRedirect()
 				}
+            case .oauth, .saml:
             default:
                 break
             }

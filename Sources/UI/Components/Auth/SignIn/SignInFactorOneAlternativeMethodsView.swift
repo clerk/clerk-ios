@@ -22,14 +22,14 @@ struct SignInFactorOneAlternativeMethodsView: View {
         clerk.client?.signIn
     }
     
-    private var thirdPartyProviders: [ExternalProvider] {
+    private var oauthProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
     }
     
-    private func signIn(provider: ExternalProvider) async {
+    private func signIn(provider: OAuthProvider) async {
         do {
             try await SignIn
-                .create(strategy: .externalProvider(provider))
+                .create(strategy: .oauth(provider))
                 .authenticateWithRedirect()
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
@@ -54,7 +54,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(thirdPartyProviders) { provider in
+            ForEach(oauthProviders) { provider in
                 AsyncButton {
                     await signIn(provider: provider)
                 } label: {
@@ -62,7 +62,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                         AuthProviderIcon(provider: provider)
                             .frame(width: 16, height: 16)
                         
-                        Text("Continue with \(provider.info.name)")
+                        Text("Continue with \(provider.providerData.name)")
                     }
                     .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)

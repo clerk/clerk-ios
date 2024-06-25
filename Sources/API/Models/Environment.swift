@@ -195,10 +195,11 @@ extension Clerk.Environment.UserSettings {
         return false
      }
         
-    public var enabledOAuthProviders: [ExternalProvider] {
-        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+    public var enabledOAuthProviders: [OAuthProvider] {
+        var authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        
         return authenticatableStrategies.compactMap { strategy in
-            ExternalProvider(strategy: strategy)
+            OAuthProvider(strategy: strategy)
         }
     }
     
