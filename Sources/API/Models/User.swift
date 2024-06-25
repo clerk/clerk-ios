@@ -149,10 +149,10 @@ extension User {
         return allIdentifiers.contains(identifier)
     }
     
-    var unconnectedProviders: [ExternalProvider] {
+    var unconnectedProviders: [OAuthProvider] {
         guard let environment = Clerk.shared.environment else { return []}
-        let allExternalProviders = environment.userSettings.enabledThirdPartyProviders.sorted()
-        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.externalProvider)
+        let allExternalProviders = environment.userSettings.enabledOAuthProviders.sorted()
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.oauthProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
@@ -252,7 +252,7 @@ extension User {
      /// - If the connection was successful then externalAccount.verification.status should be verified.
      /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
     @discardableResult @MainActor
-    public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
+    public func createExternalAccount(_ provider: OAuthProvider) async throws -> ExternalAccount {
         let params = CreateExternalAccountParams(ExternalProvider: provider)
         let request = ClerkAPI.v1.me.externalAccounts.create(params)
         let newExternalAccount = try await Clerk.shared.apiClient.send(request) {
@@ -273,10 +273,10 @@ extension User {
     
     public struct CreateExternalAccountParams: Encodable {
         init(
-            ExternalProvider: ExternalProvider,
+            ExternalProvider: OAuthProvider,
             additionalScopes: [String]? = nil
         ) {
-            self.strategy = ExternalProvider.info.strategy
+            self.strategy = ExternalProvider.providerData.strategy
             self.additionalScopes = additionalScopes
         }
         

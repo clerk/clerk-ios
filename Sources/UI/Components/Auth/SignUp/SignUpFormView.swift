@@ -258,7 +258,6 @@ struct SignUpFormView: View {
             }
             
             switch signUp.nextStrategyToVerify {
-            case .externalProvider, .saml:
 				if signUp.nextStrategyToVerify == .externalProvider(.apple) {
                     try await SignUp.signUpWithApple()
                 } else {
@@ -267,6 +266,7 @@ struct SignUpFormView: View {
                     	try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
                 	}
 				}
+            case .oauth, .saml:
             default:
                 break
             }

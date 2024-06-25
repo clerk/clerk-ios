@@ -73,12 +73,12 @@ struct UserProfileExternalAccountSection: View {
         var body: some View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    if let provider = externalAccount.externalProvider {
+                    if let provider = externalAccount.oauthProvider {
                         AuthProviderIcon(provider: provider)
                             .frame(width: 16, height: 16)
                     }
                     
-                    if let providerName = externalAccount.externalProvider?.info.name {
+                    if let providerName = externalAccount.oauthProvider?.providerData.name {
                         Text(providerName)
                             .font(.footnote)
                             .confirmationDialog(
@@ -141,7 +141,7 @@ struct UserProfileExternalAccountSection: View {
         
         @ViewBuilder
         private var retryConnectionButton: some View {
-            if let provider = externalAccount.externalProvider {
+            if let provider = externalAccount.oauthProvider {
                 AsyncButton {
                     await retryConnection(provider)
                 } label: {
@@ -150,7 +150,7 @@ struct UserProfileExternalAccountSection: View {
             }
         }
         
-        private func retryConnection(_ provider: ExternalProvider) async {
+        private func retryConnection(_ provider: OAuthProvider) async {
             do {
                 if provider == .apple {
                     try await user?.linkAppleAccount()
