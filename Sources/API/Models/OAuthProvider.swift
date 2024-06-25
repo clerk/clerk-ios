@@ -169,7 +169,7 @@ public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equata
         case .apple:
             return .init(
                 provider: "apple",
-                strategy: "oauth_code_apple",
+                strategy: "oauth_apple",
                 name: "Apple",
                 docsUrl: "https://clerk.com/docs/authentication/social-connection-with-apple"
             )

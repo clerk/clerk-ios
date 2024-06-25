@@ -369,7 +369,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         try await Client.get()
         return response
     }
-    
+        
     #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
@@ -407,8 +407,14 @@ public struct SignIn: Codable, Sendable, Equatable {
             return false
         }
         
-        let signIn = try await SignIn.create(strategy: .oauth(.apple))
+        let request = ClerkAPI.v1.client.signIns.post([
+            "strategy": "oauth_code_apple",
+            "code": "\(code)"
+        ])
         
+        let signIn = try await Clerk.shared.apiClient.send(request).value.response
+        try await Clerk.shared.client?.get()
+                
         let needsTransferToSignUp = signIn.firstFactorVerification?.status == .transferable
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         

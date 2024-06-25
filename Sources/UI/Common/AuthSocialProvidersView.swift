@@ -61,9 +61,14 @@ struct AuthSocialProvidersView: View {
         var needsTransferToSignUp: Bool
         
         do {
-            needsTransferToSignUp = try await SignIn
-                .create(strategy: .oauth(provider))
-                .authenticateWithRedirect()
+            if provider == .apple {
+                needsTransferToSignUp = try await SignIn
+                    .signInWithApple()
+            } else {
+                needsTransferToSignUp = try await SignIn
+                    .create(strategy: .oauth(provider))
+                    .authenticateWithRedirect()
+            }
             
             onSuccess?(needsTransferToSignUp)
             
