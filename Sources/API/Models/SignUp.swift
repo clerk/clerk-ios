@@ -112,9 +112,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     
     #if canImport(AuthenticationServices) && !os(watchOS)
     /// Starts the native sign up with apple flow
-    @MainActor
-    static func signUpWithApple() async throws {
-        try await SignIn.signInWithApple()
+    @discardableResult @MainActor
+    static func signUpWithApple() async throws -> NeedsTransferToSignUp {
+        return try await SignIn.signInWithApple()
     }
     #endif
     
