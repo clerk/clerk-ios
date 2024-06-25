@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AuthenticationServices
 
 /**
  The SignIn object holds all the state of the current sign in and provides helper methods to navigate and complete the sign in process.
@@ -143,10 +144,8 @@ public struct SignIn: Codable, Sendable, Equatable {
         /// Creates a new sign in with the provided identifier
         /// - Examples of idenitifers are email address, username or phone number
         case identifier(_ identifier: String, password: String? = nil)
-        /// Creates a new sign in with the external provider
-        ///
-        /// After successfully creating the sign in, call `signIn?.authenticateWithRedirect()` to kick off the external authentication process. If the provider is `.apple` you should use `SignIn.signInWithApple() instead.`
-        case externalProvider(_ provider: ExternalProvider)
+        /// Creates a new sign in with the oauth provider
+        case oauth(_ provider: OAuthProvider)
         ///
         case transfer
     }
@@ -154,12 +153,26 @@ public struct SignIn: Codable, Sendable, Equatable {
     @MainActor
     static func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
+            
         case .identifier(let identifier, let password):
-            return .init(identifier: identifier, password: password)
-        case .externalProvider(let provider):
-            return .init(strategy: provider.info.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+            
+            return .init(
+                identifier: identifier,
+                password: password
+            )
+            
+        case .oauth(let provider):
+            
+            return .init(
+                strategy: provider.providerData.strategy,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
+            )
+            
         case .transfer:
+            
             return .init(transfer: true)
+            
         }
     }
     
@@ -170,6 +183,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         public var redirectUrl: String?
         public var actionCompleteRedirectUrl: String?
         public var transfer: Bool?
+        public var code: String?
     }
     
     /// Resets a user's password.
@@ -429,10 +443,34 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     #if canImport(AuthenticationServices) && !os(watchOS)
     /// Starts the native sign in with apple flow
-    @MainActor
-    static func signInWithApple() async throws {
+    @discardableResult @MainActor
+    static func signInWithApple() async throws -> NeedsTransferToSignUp {
         let authManager = ASAuthManager(authType: .signInWithApple)
         let authorization = try await authManager.start()
+        
+        guard
+            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
+            let data = appleIdCredential.authorizationCode,
+            let code = String(data: data, encoding: .utf8)
+        else {
+            return false
+        }
+        
+        let signIn = try await SignIn.create(strategy: .oauth(.apple))
+        
+        let needsTransferToSignUp = signIn.firstFactorVerification?.status == .transferable
+        let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
+        
+        if needsTransferToSignUp {
+            if botProtectionIsEnabled {
+                return true
+            } else {
+                try await SignUp.create(strategy: .transfer)
+                return false
+            }
+        } else {
+            return false
+        }
     }
     #endif
 }

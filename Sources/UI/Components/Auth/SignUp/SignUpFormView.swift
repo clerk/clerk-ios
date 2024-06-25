@@ -264,6 +264,10 @@ struct SignUpFormView: View {
                		try await signUp.authenticateWithRedirect()
 				}
             case .oauth, .saml:
+                let needsTransferToSignUp = try await signUp.authenticateWithRedirect()
+                if needsTransferToSignUp {
+                    try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
+                }
             default:
                 break
             }

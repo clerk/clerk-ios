@@ -65,7 +65,7 @@ struct AuthSocialProvidersView: View {
                 oauthResult = try await SignUp.signUpWithApple()
             } else {
             	oauthResult = try await SignIn
-                	.create(strategy: .externalProvider(provider))
+                	.create(strategy: .oauth(provider))
                 	.authenticateWithRedirect()
 			}
             

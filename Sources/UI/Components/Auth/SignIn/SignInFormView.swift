@@ -152,11 +152,7 @@ struct SignInFormView: View {
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
                 if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    if signIn?.firstFactorVerification?.strategyEnum == .externalProvider(.apple) {
-                        try await SignIn.signInWithApple()
-                    } else {
-                        try await signIn?.authenticateWithRedirect()
-                    }
+                    try await signIn?.authenticateWithRedirect()
                 }
             }
             

@@ -11,7 +11,6 @@
 import Foundation
 import AuthenticationServices
 
-@MainActor
 final class ASAuthManager: NSObject {
     
     enum AuthType {
@@ -24,9 +23,9 @@ final class ASAuthManager: NSObject {
         self.authType = authType
     }
     
-    private var continuation: CheckedContinuation<ASAuthorization,Error>?
+    private var continuation: CheckedContinuation<ASAuthorization?,Error>?
     
-    func start() async throws -> ASAuthorization {
+    func start() async throws -> ASAuthorization? {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -50,26 +49,21 @@ extension ASAuthManager: ASAuthorizationControllerDelegate {
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         continuation?.resume(returning: authorization)
-        
-        switch authorization.credential {
-            
-        case let appleIdCredential as ASAuthorizationAppleIDCredential:
-            
-            dump(appleIdCredential)
-            
-        default:
-            break
-        }
     }
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
-        continuation?.resume(throwing: error)
+        if case ASAuthorizationError.canceled = error {
+            continuation?.resume(returning: nil)
+        } else {
+            continuation?.resume(throwing: error)
+        }
     }
     
 }
 
 extension ASAuthManager: ASAuthorizationControllerPresentationContextProviding {
     
+    @MainActor
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         ASPresentationAnchor()
     }
