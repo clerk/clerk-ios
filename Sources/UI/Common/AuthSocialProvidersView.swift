@@ -58,16 +58,15 @@ struct AuthSocialProvidersView: View {
     private func startAuth(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         
+        var needsTransferToSignUp: Bool
+        
         do {
-			if provider == .apple {
-                try await SignUp.signUpWithApple()
-            } else {
-            	let needsTransferToSignUp = try await SignIn
-                	.create(strategy: .externalProvider(provider))
-                	.authenticateWithRedirect()
-			}
+            needsTransferToSignUp = try await SignIn
+                .create(strategy: .oauth(provider))
+                .authenticateWithRedirect()
             
             onSuccess?(needsTransferToSignUp)
+            
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

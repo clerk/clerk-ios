@@ -258,15 +258,11 @@ struct SignUpFormView: View {
             }
             
             switch signUp.nextStrategyToVerify {
-				if signUp.nextStrategyToVerify == .externalProvider(.apple) {
-                    try await SignUp.signUpWithApple()
-                } else {
-                	let needsTransferToSignUp = try await signUp.authenticateWithRedirect()
-                	if needsTransferToSignUp {
-                    	try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
-                	}
-				}
             case .oauth, .saml:
+                let needsTransferToSignUp = try await signUp.authenticateWithRedirect()
+                if needsTransferToSignUp {
+                    try await SignUp.create(strategy: .transfer, captchaToken: captchaToken)
+                }
             default:
                 break
             }
