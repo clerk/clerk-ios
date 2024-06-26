@@ -13,6 +13,8 @@ import SimpleKeychain
  The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
  */
 public struct Client: Codable, Sendable, Equatable {
+    
+    let id: String
 
     /// The current sign in attempt.
     public let signIn: SignIn?
@@ -45,7 +47,7 @@ extension Client {
     
     /// Creates a new client for the current instance along with its cookie.
     @discardableResult @MainActor
-    public static func create() async throws -> Client {
+    static func create() async throws -> Client {
         let request = ClerkAPI.v1.client.put
         let client = try await Clerk.shared.apiClient.send(request).value.response
         Clerk.shared.client = client
@@ -63,7 +65,7 @@ extension Client {
     
     /// Deletes the client. All sessions will be reset.
     @discardableResult @MainActor
-    public func destroy() async throws -> Client? {
+    func destroy() async throws -> Client? {
         let request = ClerkAPI.v1.client.delete
         let client = try await Clerk.shared.apiClient.send(request).value.response
         try await Clerk.shared.client?.get()
