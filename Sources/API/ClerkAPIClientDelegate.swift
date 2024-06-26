@@ -28,6 +28,13 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     }
     
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+        
+        // Set the device token from the response headers whenever received
+        if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
+            try? SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly)
+                .set(deviceToken, forKey: "clerkDeviceToken")
+        }
+        
         // If our response is an error status code...
         guard (200..<300).contains(response.statusCode) else {
             
@@ -35,21 +42,14 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
                 let clerkError = clerkErrorResponse.errors.first {
                 
-                if response.statusCode == 401 {
-                    Task { try? await Clerk.shared.signOut(sessionId: Clerk.shared.session?.id) }
-                }
+                // try to get the client in sync with the server
+                Task { try? await Clerk.shared.getOrCreateClient() }
                 
                 throw clerkError
             }
 
             // ...else throw a generic api error
             throw APIError.unacceptableStatusCode(response.statusCode)
-        }
-        
-        // Set the device token from the response headers whenever received in the response headers
-        if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            try? SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly)
-                .set(deviceToken, forKey: "clerkDeviceToken")
         }
     }
     

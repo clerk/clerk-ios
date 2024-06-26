@@ -70,11 +70,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask { [self] in
-                    if let client {
-                        try await client.get()
-                    } else {
-                        try await createClient()
-                    }
+                    try await getOrCreateClient()
                     startSessionTokenPolling()
                 }
                 
@@ -297,10 +293,19 @@ extension Clerk {
         }
     }
     
-    /// Creates a new client for the current instance along with its cookie.
+    /// Creates a new client for the current instance along with its authorization header.
     @MainActor
-    public func createClient() async throws {
+    func createClient() async throws {
         try await Client.create()
+    }
+    
+    /// Fetches the client from the server, if one doesn't exist for the device then create one.
+    @MainActor
+    func getOrCreateClient() async throws {
+        let client = try await Clerk.shared.client?.get()
+        if client == nil {
+            try await createClient()
+        }
     }
     
     @MainActor
