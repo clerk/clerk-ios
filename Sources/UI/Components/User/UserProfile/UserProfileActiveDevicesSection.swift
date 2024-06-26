@@ -77,8 +77,14 @@ struct UserProfileActiveDevicesSection: View {
                         }
                     }
                     VStack(alignment: .leading) {
-                        Text(session.browserDisplayText)
-                        Text(session.ipAddressDisplayText)
+                        if !session.browserDisplayText.isEmpty {
+                            Text(session.browserDisplayText)
+                        }
+                        
+                        if !session.ipAddressDisplayText.isEmpty {
+                            Text(session.ipAddressDisplayText)
+                        }
+                        
                         Text(session.lastActiveAt.formatted(Date.RelativeFormatStyle()))
                     }
                     .foregroundStyle(clerkTheme.colors.textSecondary)
