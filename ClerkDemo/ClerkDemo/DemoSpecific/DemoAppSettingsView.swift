@@ -66,8 +66,8 @@ struct DemoAppSettingsView: View {
     private func resetWithPublishableKey(_ publishableKey: String) async {
         do {
             isLoading = true
-            try SimpleKeychain().deleteAll()
-            try await clerk.signOut()
+            try? SimpleKeychain().deleteAll()
+            try? await clerk.signOut()
             self.publishableKey = publishableKey
             Clerk.shared.configure(publishableKey: publishableKey)
             try await clerk.load()

@@ -30,11 +30,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     }
     
     // MARK: - Setup Functions
-        
-    init() {
-        Task { await clientAsyncSequence() }
-        Task { await environmentAsyncSequence() }
-    }
                 
     /// Configures the shared clerk instance.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -58,15 +53,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             return
         }
         
-        if loadingState == .notLoaded || loadingState == .failed {
-            do {
-                try await loadPersistedData()
-                loadingState = .loadedFromDisk
-            } catch {
-                dump(error)
-            }
-        }
-        
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask { [self] in
@@ -85,9 +71,7 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
             loadingState = .loadedFromNetwork
             
         } catch {
-            if client == nil || environment == nil {
-                loadingState = .failed
-            }
+            loadingState = .failed
             throw error
         }
         
@@ -97,7 +81,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     
     public enum LoadingState {
         case notLoaded
-        case loadedFromDisk
         case loadedFromNetwork
         case failed
     }
@@ -143,7 +126,15 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     }
     
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client?
+    @Published internal(set) public var client: Client? {
+        didSet {
+            if let lastActiveSessionId = client?.lastActiveSessionId {
+                try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
+            } else {
+                try? SimpleKeychain().deleteItem(forKey: "lastActiveSessionId")
+            }
+        }
+    }
         
     /// The Environment for the clerk instance.
     @Published internal(set) public var environment: Clerk.Environment?
@@ -176,26 +167,10 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
                         try await session.getToken(.init(skipCache: true))
                     } catch {
                         dump(error)
-                        sessionPollingTask?.cancel()
                     }
                 }
                 try await Task.sleep(for: .seconds(50))
             } while sessionPollingTask?.isCancelled == false
-        }
-    }
-    
-    /// Loads the data persisted across launches.
-    @MainActor
-    private func loadPersistedData() async throws {
-        async let client = await PersistenceManager.loadClient()
-        async let environment = await PersistenceManager.loadEnvironment()
-        
-        if let client = try await client {
-            self.client = client
-        }
-        
-        if let environment = try await environment {
-            self.environment = environment
         }
     }
     
@@ -219,38 +194,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
     }
-    
-    private func clientAsyncSequence() async {
-        for await client in $client.values.dropFirst() {
-            do {
-                if let client {
-                    try await PersistenceManager.saveClient(client)
-                } else {
-                    try await PersistenceManager.deleteClientData()
-                }
-            } catch {
-                dump(error)
-            }
-            
-            if let lastActiveSessionId = client?.lastActiveSessionId {
-                try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
-            } else {
-                try? SimpleKeychain().deleteItem(forKey: "lastActiveSessionId")
-            }
-        }
-    }
-    
-    private func environmentAsyncSequence() async {
-        for await environment in $environment.values.dropFirst() {
-            do {
-                if let environment {
-                    try await PersistenceManager.saveEnvironment(environment)
-                }
-            } catch {
-                dump(error)
-            }
-        }
-    }
 }
 
 // MARK: - Public Functions
@@ -266,7 +209,7 @@ extension Clerk {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client?.get()
+            try await Client.get()
             if let client, client.sessions.isEmpty {
                 try await client.destroy()
                 try await Client.create()
@@ -285,11 +228,11 @@ extension Clerk {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client?.get()
+            try await Client.get()
             
         } else if let currentSession = session {
             try await currentSession.revoke()
-            try await Clerk.shared.client?.get()
+            try await Client.get()
         }
     }
     
@@ -302,9 +245,9 @@ extension Clerk {
     /// Fetches the client from the server, if one doesn't exist for the device then create one.
     @MainActor
     func getOrCreateClient() async throws {
-        let client = try await Clerk.shared.client?.get()
+        let client = try await Client.get()
         if client == nil {
-            try await createClient()
+            try await Client.create()
         }
     }
     

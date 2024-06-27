@@ -53,7 +53,7 @@ extension EmailAddress {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client?.get()
+        try await Client.get()
     }
     
     public enum PrepareStrategy {
@@ -91,7 +91,7 @@ extension EmailAddress {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client?.get()
+        try await Client.get()
     }
     
     public enum AttemptStrategy {
@@ -117,7 +117,7 @@ extension EmailAddress {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client?.get()
+        try await Client.get()
     }
     
     @discardableResult @MainActor
@@ -126,7 +126,7 @@ extension EmailAddress {
         let user = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return user
     }
     

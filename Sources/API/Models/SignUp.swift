@@ -117,7 +117,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return response
     }
     
@@ -214,7 +214,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).patch(params)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return signUp
     }
     
@@ -233,7 +233,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return signUp
     }
     
@@ -269,7 +269,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).attemptVerification.post(params)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return signUp
     }
     
@@ -328,7 +328,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return signUp
     }
 }

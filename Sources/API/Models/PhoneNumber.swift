@@ -88,7 +88,7 @@ extension PhoneNumber {
         let phoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return phoneNumber
     }
     
@@ -99,7 +99,7 @@ extension PhoneNumber {
         let phoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return phoneNumber
     }
     
@@ -112,7 +112,7 @@ extension PhoneNumber {
         let phoneNumber = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return phoneNumber
     }
     
@@ -123,7 +123,7 @@ extension PhoneNumber {
         try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Clerk.shared.client?.get()
+        try await Client.get()
     }
     
     @discardableResult @MainActor
@@ -132,7 +132,7 @@ extension PhoneNumber {
         let user = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return user
     }
     

@@ -56,11 +56,17 @@ extension Client {
     
     /// Retrieves the current client.
     @discardableResult @MainActor
-    public func get() async throws -> Client? {
+    public static func get() async throws -> Client? {
         let request = ClerkAPI.v1.client.get
         let client = try await Clerk.shared.apiClient.send(request).value.response
         Clerk.shared.client = client
         return client
+    }
+    
+    /// Retrieves the current client.
+    @discardableResult @MainActor
+    public func get() async throws -> Client? {
+        try await Client.get()
     }
     
     /// Deletes the client. All sessions will be reset.
@@ -68,7 +74,7 @@ extension Client {
     func destroy() async throws -> Client? {
         let request = ClerkAPI.v1.client.delete
         let client = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return client
     }
     
