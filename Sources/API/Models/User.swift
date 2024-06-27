@@ -382,12 +382,6 @@ extension User {
         }.value.response
 		try await Client.get()
 
-		#if !os(tvOS) && !os(watchOS)
-        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
-            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
-        }
-        #endif
-
         return imageResource
     }
     
@@ -399,6 +393,12 @@ extension User {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
         try await Client.get()
+        
+        #if !os(tvOS) && !os(watchOS)
+        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
+            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
+        }
+        #endif
     }
     
 }
