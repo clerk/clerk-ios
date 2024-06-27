@@ -360,8 +360,13 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> NeedsTransferToSignUp {
-        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, var url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+        }
+        
+        // if the url query doesnt contain prompt, add it
+        if let query = url.query(), !query.contains("prompt") {
+            url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
         let authSession = ASWebAuthManager(

@@ -23,6 +23,7 @@ final class ASWebAuthManager: NSObject {
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     }
     
+    @discardableResult
     func start() async throws -> NeedsTransferToSignUp {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NeedsTransferToSignUp, Error>) in
             let webAuthSession = ASWebAuthenticationSession(url: url, callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme) { callbackUrl, error in
