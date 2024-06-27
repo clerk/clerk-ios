@@ -210,7 +210,7 @@ extension Clerk {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client?.get()
+            try await Client.get()
             if let client, client.sessions.isEmpty {
                 try await client.destroy()
                 try await Client.create()
@@ -229,11 +229,11 @@ extension Clerk {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
             try await Clerk.shared.apiClient.send(request)
-            try await Clerk.shared.client?.get()
+            try await Client.get()
             
         } else if let currentSession = session {
             try await currentSession.revoke()
-            try await Clerk.shared.client?.get()
+            try await Client.get()
         }
     }
     
@@ -246,9 +246,9 @@ extension Clerk {
     /// Fetches the client from the server, if one doesn't exist for the device then create one.
     @MainActor
     func getOrCreateClient() async throws {
-        let client = try await Clerk.shared.client?.get()
+        let client = try await Client.get()
         if client == nil {
-            try await createClient()
+            try await Client.create()
         }
     }
     

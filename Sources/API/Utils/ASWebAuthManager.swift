@@ -48,7 +48,7 @@ final class ASWebAuthManager: NSObject {
                                 
                             } else {
                                 
-                                try await Clerk.shared.client?.get()
+                                try await Client.get()
                                 let needsTransferToSignUp = Clerk.shared.client?.signIn?.firstFactorVerification?.status == .transferable
                                 let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
                                 

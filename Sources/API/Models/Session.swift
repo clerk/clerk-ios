@@ -220,7 +220,7 @@ extension Session {
         let revokedSession = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }.value.response
-        try await Clerk.shared.client?.get()
+        try await Client.get()
         return revokedSession
     }
     
