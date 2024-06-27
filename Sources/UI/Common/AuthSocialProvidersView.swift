@@ -55,7 +55,7 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func startAuth(provider: ExternalProvider) async {
+    private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
 
 		var oauthResult: OAuthResult?        
