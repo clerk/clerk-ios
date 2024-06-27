@@ -32,7 +32,7 @@ struct AuthSocialProvidersView: View {
                 HStack(spacing: 8) {
                     ForEach(chunk) { provider in
                         AsyncButton {
-                            await signIn(provider: provider)
+                            await startAuth(provider: provider)
                         } label: {
                             AuthProviderButton(provider: provider, style: thirdPartyProviders.count > 2 ? .compact : .regular)
                                 .frame(
@@ -54,7 +54,7 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func signIn(provider: ExternalProvider, captchaToken: String? = nil) async {
+    private func startAuth(provider: ExternalProvider) async {
         KeyboardHelpers.dismissKeyboard()
         
         do {

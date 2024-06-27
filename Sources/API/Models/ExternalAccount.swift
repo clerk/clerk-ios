@@ -100,9 +100,14 @@ extension ExternalAccount {
     public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
-            let url = URL(string: redirectUrl)
+            var url = URL(string: redirectUrl)
         else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+        }
+        
+        // if the url query doesnt contain prompt, add it
+        if let query = url.query(), !query.contains("prompt") {
+            url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
         let authSession = ASWebAuthManager(
