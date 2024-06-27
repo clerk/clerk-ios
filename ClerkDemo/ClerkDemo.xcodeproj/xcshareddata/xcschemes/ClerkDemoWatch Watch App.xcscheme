@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1530"
+   LastUpgradeVersion = "1600"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
       buildArchitectures = "Automatic">
       <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8FF70B512BC88E300053048D"
+               BuildableName = "ClerkDemoWatch Watch App.app"
+               BlueprintName = "ClerkDemoWatch Watch App"
+               ReferencedContainer = "container:ClerkDemo.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
             buildForRunning = "YES"
@@ -44,9 +58,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8F8116652B9BC35B00E2858C"
-            BuildableName = "ClerkDemo.app"
-            BlueprintName = "ClerkDemo"
+            BlueprintIdentifier = "8FF70B512BC88E300053048D"
+            BuildableName = "ClerkDemoWatch Watch App.app"
+            BlueprintName = "ClerkDemoWatch Watch App"
             ReferencedContainer = "container:ClerkDemo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -61,9 +75,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8F8116652B9BC35B00E2858C"
-            BuildableName = "ClerkDemo.app"
-            BlueprintName = "ClerkDemo"
+            BlueprintIdentifier = "8FF70B512BC88E300053048D"
+            BuildableName = "ClerkDemoWatch Watch App.app"
+            BlueprintName = "ClerkDemoWatch Watch App"
             ReferencedContainer = "container:ClerkDemo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

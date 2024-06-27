@@ -75,7 +75,11 @@ final class ASWebAuthManager: NSObject {
             #if !os(watchOS) && !os(tvOS)
             webAuthSession.presentationContextProvider = self
             #endif
+            
+            #if !os(tvOS)
             webAuthSession.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+            #endif
+            
             webAuthSession.start()
         }
     }
