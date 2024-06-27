@@ -167,7 +167,6 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
                         try await session.getToken(.init(skipCache: true))
                     } catch {
                         dump(error)
-                        sessionPollingTask?.cancel()
                     }
                 }
                 try await Task.sleep(for: .seconds(50))
