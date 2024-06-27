@@ -39,18 +39,21 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         guard (200..<300).contains(response.statusCode) else {
             
             // ...and the response has a ClerkError body throw a custom clerk error
-            if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
-                let clerkError = clerkErrorResponse.errors.first {
-                
-                // try to get the client in sync with the server
-                Task { try? await Clerk.shared.getOrCreateClient() }
-                
+            if let clerkError = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data).errors.first {
                 throw clerkError
             }
 
             // ...else throw a generic api error
             throw APIError.unacceptableStatusCode(response.statusCode)
         }
+    }
+    
+    func client(_ client: APIClient, shouldRetry task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+        if attempts == 1 {
+            // try to get the client in sync with the server on errors
+            try? await Clerk.shared.getOrCreateClient()
+        }
+        return false
     }
     
 }
