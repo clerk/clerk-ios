@@ -42,7 +42,7 @@ extension Container {
     
 }
 
-extension Container: AutoRegistering {
+extension Container: @retroactive AutoRegistering {
     
     public func autoRegister() {
         Container.shared.clerk.register {
