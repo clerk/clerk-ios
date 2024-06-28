@@ -17,6 +17,10 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         
+        if Clerk.shared.debugMode, let client = Clerk.shared.client {
+            request.setValue(client.id, forHTTPHeaderField: "x-clerk-client-id")
+        }
+        
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
         request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.70.0")])
 
