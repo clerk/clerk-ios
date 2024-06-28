@@ -226,6 +226,9 @@ final public class Clerk: ObservableObject {
         didBecomeActiveObserver = nil
         didEnterBackgroundObserver = nil
     }
+    
+    /// Enable for additional debugging signals
+    public var debugMode: Bool = false
 }
 
 // MARK: - Public Functions
