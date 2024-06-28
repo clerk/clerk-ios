@@ -11,11 +11,12 @@ import RegexBuilder
 import Nuke
 import Get
 import SimpleKeychain
+import UIKit
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
-final public class Clerk: ObservableObject, @unchecked Sendable {
+final public class Clerk: ObservableObject {
     
     // MARK: - Dependencies
     
@@ -67,6 +68,22 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
                 
                 while let _ = try await group.next() {}
             }
+            
+            #if !os(watchOS)
+            didBecomeActiveObserver = NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(startSessionTokenPolling),
+                name: UIApplication.didBecomeActiveNotification,
+                object: nil
+            )
+            
+            didEnterBackgroundObserver = NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(stopSessionTokenPolling),
+                name: UIApplication.didEnterBackgroundNotification,
+                object: nil
+            )
+            #endif
             
             loadingState = .loadedFromNetwork
             
@@ -156,22 +173,31 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
     
     // MARK: - Private Setup
-    
+        
+    private var didBecomeActiveObserver: Void?
+    private var didEnterBackgroundObserver: Void?
     private var sessionPollingTask: Task<Void, Error>?
         
+    @objc
     private func startSessionTokenPolling() {
+        guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
+            return
+        }
+        
         sessionPollingTask = Task(priority: .background) {
             repeat {
                 if let session {
-                    do {
-                        try await session.getToken(.init(skipCache: true))
-                    } catch {
-                        dump(error)
-                    }
+                    _ = try? await session.getToken(.init(skipCache: true))
                 }
                 try await Task.sleep(for: .seconds(50))
             } while sessionPollingTask?.isCancelled == false
         }
+    }
+    
+    @objc
+    private func stopSessionTokenPolling() {
+        sessionPollingTask?.cancel()
+        sessionPollingTask = nil
     }
     
     private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
@@ -193,6 +219,12 @@ final public class Clerk: ObservableObject, @unchecked Sendable {
         }
         
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
+    }
+    
+    deinit {
+        stopSessionTokenPolling()
+        didBecomeActiveObserver = nil
+        didEnterBackgroundObserver = nil
     }
 }
 
