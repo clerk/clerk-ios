@@ -27,7 +27,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: ExternalProvider) async {
         do {
-            let result = try await SignIn
+            try await SignIn
                 .create(strategy: .externalProvider(provider))
                 .authenticateWithRedirect()
             

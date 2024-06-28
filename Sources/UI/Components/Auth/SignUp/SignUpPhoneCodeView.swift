@@ -56,7 +56,7 @@ struct SignUpPhoneCodeView: View {
         guard let signUp else { return }
         do {
             let signUpVerification = signUp.verifications.first(where: { $0.key == "phone_number" })?.value
-            if signUp.status == nil || signUpVerification?.status == .verified {
+            if signUpVerification?.status == .verified {
                 return
             }
             

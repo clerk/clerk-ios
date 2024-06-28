@@ -55,7 +55,7 @@ struct SignUpEmailCodeView: View {
     private func prepare() async {
         guard let signUp else { return }
         let emailVerification = signUp.verifications.first(where: { $0.key == "email_address" })?.value
-        if signUp.status == nil || emailVerification?.status == .verified {
+        if emailVerification?.status == .verified {
             return
         }
         

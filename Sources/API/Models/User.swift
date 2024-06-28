@@ -145,7 +145,7 @@ extension User {
     }
     
     func identifierBelongsToUser(identifier: String) -> Bool {
-        var allIdentifiers = emailAddresses.map(\.emailAddress) + phoneNumbers.map(\.phoneNumber) + [username]
+        let allIdentifiers = emailAddresses.map(\.emailAddress) + phoneNumbers.map(\.phoneNumber) + [username]
         return allIdentifiers.contains(identifier)
     }
     
