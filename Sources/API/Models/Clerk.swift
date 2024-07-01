@@ -72,7 +72,7 @@ final public class Clerk: ObservableObject {
                 while let _ = try await group.next() {}
             }
             
-            #if canImport(UIKit)
+            #if !os(watchOS) && !os(macOS)
             didBecomeActiveObserver = NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(startSessionTokenPolling),
