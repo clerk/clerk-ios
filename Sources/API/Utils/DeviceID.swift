@@ -6,12 +6,14 @@
 //
 
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
 
 var deviceID: String {
-    #if !os(watchOS)
+    #if canImport(UIKit)
     UIDevice.current.identifierForVendor?.uuidString ?? "none"
     #else
-    "watch-none"
+    "uikit-unsupported"
     #endif
 }

@@ -11,7 +11,10 @@ import RegexBuilder
 import Nuke
 import Get
 import SimpleKeychain
+
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
@@ -69,7 +72,7 @@ final public class Clerk: ObservableObject {
                 while let _ = try await group.next() {}
             }
             
-            #if !os(watchOS)
+            #if canImport(UIKit)
             didBecomeActiveObserver = NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(startSessionTokenPolling),
