@@ -11,9 +11,9 @@ import UIKit
 #endif
 
 var deviceID: String {
-    #if canImport(UIKit)
+    #if !os(watchOS) && !os(macOS)
     UIDevice.current.identifierForVendor?.uuidString ?? "none"
     #else
-    "uikit-unsupported"
+    "uidevice-unsupported"
     #endif
 }
