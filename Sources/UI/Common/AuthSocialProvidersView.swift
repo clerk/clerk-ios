@@ -62,7 +62,7 @@ struct AuthSocialProvidersView: View {
 
         do {
 			if provider == .apple {
-                oauthResult = try await SignUp.signUpWithApple()
+                oauthResult = try await SignIn.signInWithApple()
             } else {
             	oauthResult = try await SignIn
                 	.create(strategy: .oauth(provider))

@@ -110,14 +110,6 @@ public struct SignUp: Codable, Sendable, Equatable {
         }
     }
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Starts the native sign up with apple flow
-    @discardableResult @MainActor
-    static func signUpWithApple() async throws -> NeedsTransferToSignUp {
-        return try await SignIn.signInWithApple()
-    }
-    #endif
-    
     /**
      This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
      

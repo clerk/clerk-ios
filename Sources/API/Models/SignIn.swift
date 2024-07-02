@@ -444,13 +444,13 @@ public struct SignIn: Codable, Sendable, Equatable {
     #if canImport(AuthenticationServices) && !os(watchOS)
     /// Starts the native sign in with apple flow
     @discardableResult @MainActor
-    static func signInWithApple() async throws -> NeedsTransferToSignUp {
+    static func signInWithApple() async throws -> OAuthResult? {
         let authManager = ASAuthManager(authType: .signInWithApple)
         let authorization = try await authManager.start()
         
         if authorization == nil {
             // cancelled
-            return false
+            return nil
         }
         
         guard
@@ -463,24 +463,26 @@ public struct SignIn: Codable, Sendable, Equatable {
         
         let request = ClerkAPI.v1.client.signIns.post([
             "strategy": "oauth_code_apple",
-            "code": "\(code)"
+            "code": code,
+            "app_id": Bundle.main.bundleIdentifier
         ])
         
         let signIn = try await Clerk.shared.apiClient.send(request).value.response
-        try await Clerk.shared.client?.get()
-                
-        let needsTransferToSignUp = signIn.firstFactorVerification?.status == .transferable
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         
-        if needsTransferToSignUp {
+        if signIn.needsTransferToSignUp == true {
             if botProtectionIsEnabled {
-                return true
+                // this is a sign in that needs manual transfer (developer needs to provide captcha token)
+                try await Client.get()
+                return OAuthResult(signIn: signIn)
             } else {
-                try await SignUp.create(strategy: .transfer)
-                return false
+                let signUp = try await SignUp.create(strategy: .transfer)
+                return OAuthResult(signUp: signUp)
             }
         } else {
-            return false
+            // this is a completed sign in
+            try await Client.get()
+            return OAuthResult(signIn: signIn)
         }
     }
     #endif
