@@ -445,7 +445,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// Starts the native sign in with apple flow
     @discardableResult @MainActor
     static func signInWithApple() async throws -> OAuthResult? {
-        let authManager = ASAuthManager(authType: .signInWithApple)
+        let authManager = ASAuth(authType: .signInWithApple)
         let authorization = try await authManager.start()
         
         if authorization == nil {

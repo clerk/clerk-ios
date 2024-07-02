@@ -1,5 +1,5 @@
 //
-//  ASAuthManager.swift
+//  ASAuth.swift
 //
 //
 //  Created by Mike Pitre on 5/28/24.
@@ -11,7 +11,7 @@
 import Foundation
 import AuthenticationServices
 
-final class ASAuthManager: NSObject {
+final class ASAuth: NSObject {
     
     enum AuthType {
         case signInWithApple
@@ -45,7 +45,7 @@ final class ASAuthManager: NSObject {
     }
 }
 
-extension ASAuthManager: ASAuthorizationControllerDelegate {
+extension ASAuth: ASAuthorizationControllerDelegate {
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         continuation?.resume(returning: authorization)
@@ -61,7 +61,7 @@ extension ASAuthManager: ASAuthorizationControllerDelegate {
     
 }
 
-extension ASAuthManager: ASAuthorizationControllerPresentationContextProviding {
+extension ASAuth: ASAuthorizationControllerPresentationContextProviding {
     
     @MainActor
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
