@@ -359,7 +359,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> NeedsTransferToSignUp {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> OAuthResult? {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, var url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
@@ -369,17 +369,47 @@ public struct SignIn: Codable, Sendable, Equatable {
             url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
-        let authSession = ASWebAuthManager(
+        let authSession = WebAuthSession(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        return try await authSession.start()
+        guard let callbackUrl = try await authSession.start() else {
+            return nil
+        }
+        
+        if let nonce = OAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
+            
+            let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
+            return OAuthResult(signIn: signIn)
+            
+        } else {
+            // transfer flow
+            
+            try await Client.get()
+            let signIn = Clerk.shared.client?.signIn
+            let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
+            
+            if botProtectionIsEnabled {
+
+                return OAuthResult(signIn: signIn)
+                
+            } else {
+                
+                let signUp = try await SignUp.create(strategy: .transfer)
+                return OAuthResult(signUp: signUp)
+                
+            }
+        }
     }
     #endif
 }
 
 extension SignIn {
+    
+    var needsTransferToSignUp: Bool {
+        firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+    }
     
     // First SignInFactor
     

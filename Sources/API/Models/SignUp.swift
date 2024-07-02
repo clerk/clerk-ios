@@ -297,10 +297,10 @@ public struct SignUp: Codable, Sendable, Equatable {
         public let code: String
     }
     
-#if !os(tvOS) && !os(watchOS)
+    #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> NeedsTransferToSignUp {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> OAuthResult? {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -314,14 +314,28 @@ public struct SignUp: Codable, Sendable, Equatable {
             url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
-        let authSession = ASWebAuthManager(
+        let authSession = WebAuthSession(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        return try await authSession.start()
+        guard let callbackUrl = try await authSession.start() else {
+            return nil
+        }
+        
+        if let nonce = OAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
+            
+            let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
+            return OAuthResult(signUp: signUp)
+            
+        } else {
+            // transfer flow
+            
+            let signIn = try await SignIn.create(strategy: .transfer)
+            return OAuthResult(signIn: signIn)
+        }
     }
-#endif
+    #endif
     
     /// Returns the current sign up.
     @discardableResult @MainActor
@@ -334,6 +348,10 @@ public struct SignUp: Codable, Sendable, Equatable {
 }
 
 extension SignUp {
+    
+    var needsTransferToSignIn: Bool {
+        verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
+    }
     
     /// Returns the next strategy to use to verify an attribute that needs to verified at sign up
     var nextStrategyToVerify: Strategy? {

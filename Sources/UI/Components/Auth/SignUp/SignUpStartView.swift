@@ -52,8 +52,12 @@ struct SignUpStartView: View {
                 
                 if socialProvidersEnabled {
                     AuthSocialProvidersView()
-                        .onSuccess { _ in
-                            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                        .onSuccess { result in
+                            if let signIn = result.signIn {
+                                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                            } else if let signUp = result.signUp {
+                                clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+                            }
                         }
                 }
                 
