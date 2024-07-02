@@ -16,7 +16,7 @@ struct AuthSocialProvidersView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var stackWidth: CGFloat = .zero
     
-    var onSuccess:((_ needsTransferToSignUp: Bool) -> Void)?
+    var onSuccess:((_ oauthResult: OAuthResult) -> Void)?
     
     private var thirdPartyProviders: [ExternalProvider] {
         (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
@@ -58,11 +58,13 @@ struct AuthSocialProvidersView: View {
         KeyboardHelpers.dismissKeyboard()
         
         do {
-            let needsTransferToSignUp = try await SignIn
+            let oauthResult = try await SignIn
                 .create(strategy: .externalProvider(provider))
                 .authenticateWithRedirect()
             
-            onSuccess?(needsTransferToSignUp)
+            if let oauthResult {
+                onSuccess?(oauthResult)
+            }
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,7 +74,7 @@ struct AuthSocialProvidersView: View {
 
 extension AuthSocialProvidersView {
     
-    func onSuccess(perform action: @escaping (_ needsTransferToSignUp: Bool) -> Void) -> Self {
+    func onSuccess(perform action: @escaping (_ oauthResult: OAuthResult) -> Void) -> Self {
         var copy = self
         copy.onSuccess = action
         return copy

@@ -19,6 +19,7 @@ struct SSOCallbackView: View {
     var body: some View {
         ZStack {
             ProgressView("Verifying...")
+                .opacity(showCaptcha ? 0 : 1)
             TurnstileWebView(appearence: .always)
                 .onSuccess { token in
                     captchaToken = token
@@ -46,11 +47,7 @@ struct SSOCallbackView: View {
     }
     
     private func handleTransferFlow(token: String) async throws {
-        guard
-            let signIn = clerk.client?.signIn,
-            signIn.firstFactorVerification?.status == .transferable ||
-            signIn.secondFactorVerification?.status == .transferable
-        else {
+        guard clerk.client?.signIn?.needsTransferToSignUp == true else {
             clerkUIState.presentedAuthStep = .signInStart
             return
         }
