@@ -105,6 +105,49 @@ struct SignUpFormView: View {
                 }
             }
             
+            if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Phone number")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                        if !phoneNumber.required {
+                            Text("Optional")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
+                        }
+                    }
+                    
+                    PhoneNumberField(text: $phoneNumber)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .focused($focusedField, equals: .phoneNumber)
+                }
+            }
+            
+            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Email address")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                        if !email.required {
+                            Text("Optional")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
+                        }
+                    }
+                    
+                    CustomTextField(text: $emailAddress)
+                        .textContentType(usernameEnabled ? .emailAddress : .username)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .emailAddress)
+                }
+            }
+            
             if let username = clerk.environment?.userSettings.config(for: .username), username.enabled {
                 VStack(alignment: .leading) {
                     HStack {
@@ -127,49 +170,6 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Email address")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
-                        Spacer()
-                        if !email.required {
-                            Text("Optional")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(clerkTheme.colors.textTertiary)
-                        }
-                    }
-                    
-                    CustomTextField(text: $emailAddress)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .focused($focusedField, equals: .emailAddress)
-                }
-            }
-            
-            if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Phone number")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
-                        Spacer()
-                        if !phoneNumber.required {
-                            Text("Optional")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(clerkTheme.colors.textTertiary)
-                        }
-                    }
-                    
-                    PhoneNumberField(text: $phoneNumber)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .focused($focusedField, equals: .phoneNumber)
-                }
-            }
-            
             if clerk.environment?.userSettings.instanceIsPasswordBased == true {
                 VStack(alignment: .leading) {
                     HStack {
@@ -180,6 +180,7 @@ struct SignUpFormView: View {
                     }
                     
                     PasswordInputView(password: $password)
+                        .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
                     
                     if Clerk.LocalAuth.availableBiometryType != .none {

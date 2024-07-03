@@ -86,8 +86,7 @@ struct SignInFormView: View {
                 ZStack {
                     if displayingEmailOrUsernameEntry {
                         CustomTextField(text: $emailAddressOrUsername)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
+                            .textContentType(.username)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                             .focused($focusedField, equals: .emailOrUsername)
