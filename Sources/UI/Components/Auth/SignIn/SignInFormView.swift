@@ -85,7 +85,6 @@ struct SignInFormView: View {
                     if displayingEmailOrUsernameEntry {
                         CustomTextField(text: $config.signInEmailAddressOrUsername)
                             .textContentType(.username)
-                            .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                             .focused($focusedField, equals: .emailOrUsername)
