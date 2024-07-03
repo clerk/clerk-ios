@@ -35,28 +35,28 @@ public struct User: Codable, Equatable, Sendable {
     public let hasImage: Bool
     
     /// The unique identifier for the EmailAddress that the user has set as primary.
-    public  let primaryEmailAddressId: String?
+    public let primaryEmailAddressId: String?
     
     /// An array of all the EmailAddress objects associated with the user. Includes the primary.
     public let emailAddresses: [EmailAddress]
     
     /// The unique identifier for the PhoneNumber that the user has set as primary.
-    public  let primaryPhoneNumberId: String?
+    public let primaryPhoneNumberId: String?
     
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
     
     /// The unique identifier for the Web3Wallet that the user signed up with.
-    public  let primaryWeb3WalletId: String?
+    public let primaryWeb3WalletId: String?
     
     /// An array of all the Web3Wallet objects associated with the user. Includes the primary.
     public let web3Wallets: [String]
     
     /// A boolean indicating whether the user has a password on their account.
-    public  let passwordEnabled: Bool
+    public let passwordEnabled: Bool
     
     /// A boolean indicating whether the user has enabled two-factor authentication.
-    public  let twoFactorEnabled: Bool
+    public let twoFactorEnabled: Bool
     
     /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
     public let totpEnabled: Bool
