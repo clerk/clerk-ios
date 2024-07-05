@@ -41,17 +41,3 @@ extension Container {
     }
     
 }
-
-extension Container: @retroactive AutoRegistering {
-    
-    public func autoRegister() {
-        Container.shared.clerk.register {
-            Clerk()
-        }
-        
-        Container.shared.clerk.context(.preview) {
-            Clerk()
-        }
-    }
-    
-}
