@@ -455,24 +455,29 @@ public struct SignIn: Codable, Sendable, Equatable {
         
         guard
             let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
-            let data = appleIdCredential.authorizationCode,
-            let code = String(data: data, encoding: .utf8)
+            let tokenData = appleIdCredential.identityToken,
+            let token = String(data: tokenData, encoding: .utf8)
         else {
             throw ClerkClientError(message: "Unable to find your Apple ID credential.")
         }
         
-        let request = ClerkAPI.v1.client.signIns.post([
+        var requestBody = [
             "strategy": "oauth_code_apple",
-            "code": code,
-            "app_id": Bundle.main.bundleIdentifier
-        ])
+            "id_token": token
+        ]
+        
+        if let codeData = appleIdCredential.authorizationCode, let code = String(data: codeData, encoding: .utf8) {
+            requestBody["code"] = code
+        }
+        
+        let request = ClerkAPI.v1.client.signIns.post(requestBody)
         
         let signIn = try await Clerk.shared.apiClient.send(request).value.response
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         
         if signIn.needsTransferToSignUp == true {
             if botProtectionIsEnabled {
-                // this is a sign in that needs manual transfer (developer needs to provide captcha token)
+                // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
                 try await Client.get()
                 return OAuthResult(signIn: signIn)
             } else {
