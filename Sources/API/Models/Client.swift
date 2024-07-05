@@ -69,15 +69,6 @@ extension Client {
         try await Client.get()
     }
     
-    /// Deletes the client. All sessions will be reset.
-    @discardableResult @MainActor
-    func destroy() async throws -> Client? {
-        let request = ClerkAPI.v1.client.delete
-        let client = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return client
-    }
-    
     /**
      Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign-in lifecycle state.
      

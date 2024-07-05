@@ -246,15 +246,24 @@ extension Clerk {
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-            let response = try await Clerk.shared.apiClient.send(request)
-            Clerk.shared.client = response.value.client
-            if let client, client.sessions.isEmpty {
-                try await client.destroy()
-                try await Client.create()
-            }
+            try await Clerk.shared.apiClient.send(request)
+            try await Client.get()
         } else {
-            try await client?.destroy()
-            try await Client.create()
+            guard let client else { return }
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                let sessionIds = client.sessions.map(\.id)
+                
+                for sessionId in sessionIds {
+                    group.addTask {
+                        let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
+                        try await Clerk.shared.apiClient.send(request)
+                    }
+                }
+                
+                while let _ = try await group.next() {}
+            }
+            
+            try await Client.get()
         }
     }
     
