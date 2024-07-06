@@ -24,10 +24,7 @@ final class WebAuthSession: NSObject {
     func start() async throws -> URL? {
         try await withCheckedThrowingContinuation { continuation in
             
-            let webAuthSession = ASWebAuthenticationSession(
-                url: url,
-                callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme
-            ) { callbackUrl, error in
+            func handleCompletion(callbackUrl: URL?, error: (any Error)?) {
                 if let error {
                     if case ASWebAuthenticationSessionError.canceledLogin = error {
                         continuation.resume(returning: nil)
@@ -39,6 +36,26 @@ final class WebAuthSession: NSObject {
                 } else {
                     continuation.resume(throwing: ClerkClientError(message: "Missing callback URL"))
                 }
+            }
+            
+            let webAuthSession: ASWebAuthenticationSession
+            
+            if #available(iOS 17.4, watchOS 10.4, macOS 14.4, visionOS 1.1, *) {
+                
+                webAuthSession = ASWebAuthenticationSession(
+                    url: url,
+                    callback: .customScheme(Clerk.shared.redirectConfig.callbackUrlScheme),
+                    completionHandler: handleCompletion
+                )
+                
+            } else {
+                
+                // Fallback on earlier versions
+                webAuthSession = ASWebAuthenticationSession(
+                    url: url,
+                    callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme,
+                    completionHandler: handleCompletion
+                )
             }
 
             #if !os(watchOS) && !os(tvOS)
@@ -52,6 +69,8 @@ final class WebAuthSession: NSObject {
             webAuthSession.start()
         }
     }
+    
+    
     
 }
 
