@@ -60,7 +60,7 @@ final public class Clerk: ObservableObject {
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask { [self] in
-                    try await getOrCreateClient()
+                    try await Client.get()
                     startSessionTokenPolling()
                 }
                 
@@ -272,21 +272,6 @@ extension Clerk {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
             let response = try await Clerk.shared.apiClient.send(request)
             Clerk.shared.client = response.value.client
-        }
-    }
-    
-    /// Creates a new client for the current instance along with its authorization header.
-    @MainActor
-    func createClient() async throws {
-        try await Client.create()
-    }
-    
-    /// Fetches the client from the server, if one doesn't exist for the device then create one.
-    @MainActor
-    func getOrCreateClient() async throws {
-        let client = try await Client.get()
-        if client == nil {
-            try await Client.create()
         }
     }
     
