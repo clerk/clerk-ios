@@ -45,15 +45,6 @@ public struct Client: Codable, Sendable, Equatable {
 
 extension Client {
     
-    /// Creates a new client for the current instance along with its cookie.
-    @discardableResult @MainActor
-    static func create() async throws -> Client {
-        let request = ClerkAPI.v1.client.put
-        let client = try await Clerk.shared.apiClient.send(request).value.response
-        Clerk.shared.client = client
-        return client
-    }
-    
     /// Retrieves the current client.
     @discardableResult @MainActor
     public static func get() async throws -> Client? {
