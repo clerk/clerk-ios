@@ -19,8 +19,7 @@ struct ClerkDemoApp: App {
                 .clerkProvider()
                 #endif
                 .task {
-                    Clerk.shared.configure(publishableKey: publishableKey)
-                    Clerk.shared.debugMode = true
+                    Clerk.shared.configure(publishableKey: publishableKey, debugMode: true)
                     try? await Clerk.shared.load()
                 }
         }
