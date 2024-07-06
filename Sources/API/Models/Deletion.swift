@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Deletion: Decodable {
+public struct Deletion: Decodable, Sendable {
     let id: String?
     let object: String?
     let deleted: Bool?

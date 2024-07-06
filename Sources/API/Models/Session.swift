@@ -86,6 +86,7 @@ public struct Session: Codable, Identifiable, Sendable {
 
 extension Session {
     
+    @MainActor
     var isThisDevice: Bool {
         Clerk.shared.client?.lastActiveSessionId == id
     }
@@ -136,6 +137,7 @@ extension Session {
 
 extension Session: Comparable {
     
+    @MainActor
     public static func < (lhs: Session, rhs: Session) -> Bool {
         if lhs.isThisDevice != rhs.isThisDevice  {
             return lhs.isThisDevice
@@ -293,7 +295,7 @@ actor SessionTokenFetcher {
     /**
      Internal function to get the session token. Checks the cache first.
      */
-    @discardableResult
+    @discardableResult @MainActor
     func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
         
         let cacheKey = session.tokenCacheKey(template: options.template)

@@ -10,6 +10,7 @@ import Foundation
 import UIKit
 #endif
 
+@MainActor
 var deviceID: String {
     #if !os(watchOS) && !os(macOS)
     UIDevice.current.identifierForVendor?.uuidString ?? "none"

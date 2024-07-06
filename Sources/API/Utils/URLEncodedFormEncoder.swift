@@ -127,7 +127,7 @@ final class URLEncodedFormEncoder: Sendable {
     /// Encoding to use for `Date` values.
     public enum DateEncoding: Sendable {
         /// ISO8601 and RFC3339 formatter.
-        private static let iso8601Formatter: ISO8601DateFormatter = {
+        nonisolated(unsafe) private static let iso8601Formatter: ISO8601DateFormatter = {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = .withInternetDateTime
             return formatter
