@@ -236,7 +236,7 @@ struct SignUpFormView: View {
     
     private func performSignUp() async {
         do {
-            try await SignUp.create(strategy: .standard(
+            let signUp = try await SignUp.create(strategy: .standard(
                 emailAddress: emailIsEnabled ? emailAddress : nil,
                 password: passwordIsEnabled ? password : nil,
                 firstName: nameIsEnabled ? firstName : nil,
@@ -244,9 +244,7 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? username : nil,
                 phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
             ), captchaToken: captchaToken)
-            
-            guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
-            
+                        
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
             if let identifer, enableBiometry {
