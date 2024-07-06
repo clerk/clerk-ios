@@ -25,7 +25,8 @@ struct UserProfileSecurityView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            if clerk.environment?.userSettings.instanceIsPasswordBased == true {
+            if clerk.environment?.userSettings.instanceIsPasswordBased == true, clerk.user?.passwordEnabled == true {
+                // todo: allow users without a password to set one
                 UserProfilePasswordSection()
             }
             
