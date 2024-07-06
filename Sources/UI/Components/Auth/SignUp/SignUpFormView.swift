@@ -237,9 +237,7 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
-            
-            guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
-            
+                        
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
             if let identifer, enableBiometry, passwordIsEnabled {
