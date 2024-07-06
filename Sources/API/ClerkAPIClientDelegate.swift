@@ -53,10 +53,15 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     }
     
     func client(_ client: APIClient, shouldRetry task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+        
         if attempts == 1 {
-            // try to get the client in sync with the server on errors
-            _ = try? await Client.get()
+            if let lastPathComponent = task.originalRequest?.url?.pathComponents.last, lastPathComponent != "client" {
+                // try to get the client in sync with the server on errors if the original request wasn't a get client
+                _ = try? await Client.get()
+            }
+            return true
         }
+        
         return false
     }
     
