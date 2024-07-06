@@ -69,8 +69,12 @@ public struct TurnstileWebView: UIViewRepresentable {
         }
     }
     
-    private let displayConfig = Clerk.shared.environment?.displayConfig
+    @MainActor
+    private var displayConfig: Clerk.Environment.DisplayConfig? {
+        Clerk.shared.environment?.displayConfig
+    }
     
+    @MainActor
     private var siteKey: String {
         switch displayConfig?.captchaWidgetType {
         case .invisible:

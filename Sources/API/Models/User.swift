@@ -95,6 +95,7 @@ public struct User: Codable, Equatable, Sendable {
     public let createOrganizationEnabled: Bool
     
     /// A boolean that returns true if the user is signed in.
+    @MainActor
     public var isSignedIn: Bool {
         let activeUserIds = Clerk.shared.client?.activeSessions.compactMap(\.user?.id) ?? []
         return activeUserIds.contains(id)
@@ -149,6 +150,7 @@ extension User {
         return allIdentifiers.contains(identifier)
     }
     
+    @MainActor
     var unconnectedProviders: [ExternalProvider] {
         guard let environment = Clerk.shared.environment else { return []}
         let allExternalProviders = environment.userSettings.enabledThirdPartyProviders.sorted()
@@ -156,6 +158,7 @@ extension User {
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
+    @MainActor
     var availableSecondFactors: [Clerk.Environment.UserSettings.Attribute: Clerk.Environment.UserSettings.AttributesConfig] {
         guard let environment = Clerk.shared.environment else { return [:] }
         return environment.userSettings.availableSecondFactors(user: self)
@@ -276,9 +279,6 @@ extension User {
         
         /// Any additional scopes you would like your user to be prompted to approve.
         let additionalScopes: [String]?
-        
-        /// The URL to redirect back to one the oauth flow has completed successfully or unsuccessfully.
-        private let redirectUrl: String = Clerk.shared.redirectConfig.redirectUrl
     }
     
     /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.
