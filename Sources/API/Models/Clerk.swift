@@ -246,8 +246,8 @@ extension Clerk {
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-            try await Clerk.shared.apiClient.send(request)
-            try await Client.get()
+            let response = try await Clerk.shared.apiClient.send(request)
+            Clerk.shared.client = response.value.client
             if let client, client.sessions.isEmpty {
                 try await client.destroy()
                 try await Client.create()
@@ -259,18 +259,13 @@ extension Clerk {
     }
     
     /// A method used to set the active session and/or organization.
-    /// - Parameter sessionId: The session ID to be set as active. If null, the current session is deleted.
-    /// - Parameter organizationId: The organization ID to be set as active in the current session. If null, the currently active organization is removed as active.
+    /// - Parameter sessionId: The session ID to be set as active.
     @MainActor
-    public func setActive(sessionId: String?, organizationId: String? = nil) async throws {
+    public func setActive(sessionId: String?) async throws {
         if let sessionId = sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post(organizationId: organizationId)
-            try await Clerk.shared.apiClient.send(request)
-            try await Client.get()
-            
-        } else if let currentSession = session {
-            try await currentSession.revoke()
-            try await Client.get()
+            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
+            let response = try await Clerk.shared.apiClient.send(request)
+            Clerk.shared.client = response.value.client
         }
     }
     

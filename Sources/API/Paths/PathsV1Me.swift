@@ -26,7 +26,7 @@ extension ClerkAPI.V1Endpoint {
             .init(path: path, method: .patch, body: params)
         }
         
-        func delete() -> Request<Void> {
+        var delete: Request<ClientResponse<Deletion>> {
             .init(path: path, method: .delete)
         }
     }

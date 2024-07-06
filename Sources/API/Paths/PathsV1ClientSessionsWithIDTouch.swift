@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint.SessionsEndpoint.WithIdEndpoint {
         /// Path: `v1/client/sessions/{id}/touch`
         let path: String
         
-        func post(organizationId: String?) -> Request<ClientResponse<Session>> {
-            .init(path: path, method: .post, body: ["organization_id": organizationId])
+        var post: Request<ClientResponse<Session>> {
+            .init(path: path, method: .post)
         }
     }
     

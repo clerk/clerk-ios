@@ -39,14 +39,6 @@ public struct UserProfileView: View {
         }
         .clerkBottomBranding()
         .clerkErrorPresenting($errorWrapper)
-        .task {
-            do {
-                try await clerk.client?.get()
-            } catch {
-                errorWrapper = ErrorWrapper(error: error)
-                dump(error)
-            }
-        }
         .task(id: user?.id) {
             do {
                 try await clerk.client?.lastActiveSession?.user?.getSessions()
@@ -56,7 +48,7 @@ public struct UserProfileView: View {
             }
         }
         .task {
-            try? await clerk.getEnvironment()
+           _ = try? await Clerk.Environment.get()
         }
         .onChange(of: clerk.session) { lastActiveSession in
             if lastActiveSession == nil {
