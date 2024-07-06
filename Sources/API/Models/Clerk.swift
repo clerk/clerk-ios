@@ -256,14 +256,13 @@ extension Clerk {
                 for sessionId in sessionIds {
                     group.addTask {
                         let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-                        try await Clerk.shared.apiClient.send(request)
+                        let response = try await Clerk.shared.apiClient.send(request)
+                        Clerk.shared.client = response.value.client
                     }
                 }
                 
                 while let _ = try await group.next() {}
             }
-            
-            try await Client.get()
         }
     }
     
