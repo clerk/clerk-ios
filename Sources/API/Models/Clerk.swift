@@ -19,6 +19,7 @@ import UIKit
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
+@MainActor
 final public class Clerk: ObservableObject {
     
     // MARK: - Dependencies
@@ -49,7 +50,6 @@ final public class Clerk: ObservableObject {
     
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
@@ -61,12 +61,12 @@ final public class Clerk: ObservableObject {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask { [self] in
                     try await Client.get()
-                    startSessionTokenPolling()
+                    await startSessionTokenPolling()
                 }
                 
                 group.addTask { [self] in
                     try await getEnvironment()
-                    prefetchImages()
+                    await prefetchImages()
                 }
                 
                 while let _ = try await group.next() {}
@@ -109,31 +109,31 @@ final public class Clerk: ObservableObject {
     @Published private(set) public var loadingState: LoadingState = .notLoaded
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    private(set) public var publishableKey: String = "" {
-        didSet {
-            let liveRegex = Regex {
-                "pk_live_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-            
-            let testRegex = Regex {
-                "pk_test_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-            
-            if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-               let apiUrl = String(match).base64String() {
-                frontendAPIURL = "https://\(apiUrl.dropLast())"
-            }
-        }
-    }
+    private(set) public var publishableKey: String = ""
     
     /// Frontend API URL
-    private(set) public var frontendAPIURL: String = ""
+    public var frontendAPIURL: String {
+        let liveRegex = Regex {
+            "pk_live_"
+            Capture {
+                OneOrMore(.any)
+            }
+        }
+        
+        let testRegex = Regex {
+            "pk_test_"
+            Capture {
+                OneOrMore(.any)
+            }
+        }
+        
+        if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
+           let apiUrl = String(match).base64String() {
+            return "https://\(apiUrl.dropLast())"
+        }
+        
+        return ""
+    }
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
@@ -181,7 +181,7 @@ final public class Clerk: ObservableObject {
     private var didEnterBackgroundObserver: Void?
     private var sessionPollingTask: Task<Void, Error>?
         
-    @objc
+    @objc @MainActor
     private func startSessionTokenPolling() {
         guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
             return
@@ -222,12 +222,6 @@ final public class Clerk: ObservableObject {
         }
         
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
-    }
-    
-    deinit {
-        stopSessionTokenPolling()
-        didBecomeActiveObserver = nil
-        didEnterBackgroundObserver = nil
     }
     
     /// Enable for additional debugging signals
