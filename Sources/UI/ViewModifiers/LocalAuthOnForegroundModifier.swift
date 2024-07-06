@@ -93,9 +93,6 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
             try await clerk.signOut()
             isPresented = false
         } catch {
-            clerk.client = nil
-            isPresented = false
-            try? await clerk.createClient()
             dump(error)
         }
     }

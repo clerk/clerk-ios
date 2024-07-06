@@ -20,6 +20,7 @@ struct ClerkDemoApp: App {
                 #endif
                 .task {
                     Clerk.shared.configure(publishableKey: publishableKey)
+                    Clerk.shared.debugMode = true
                     try? await Clerk.shared.load()
                 }
         }
