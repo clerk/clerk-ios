@@ -80,7 +80,7 @@ struct UserProfileChangePasswordView: View {
                     VStack(alignment: .leading) {
                         Text("Confirm password").font(.footnote.weight(.medium))
                         CustomTextField(text: $confirmPassword, isSecureField: true)
-                            .textContentType(.newPassword)
+                            .textContentType(.password)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .focused($focusedField, equals: .confirmPassword)
