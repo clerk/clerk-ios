@@ -69,6 +69,7 @@ struct DemoAppSettingsView: View {
             try? SimpleKeychain().deleteAll()
             try? await clerk.signOut()
             self.publishableKey = publishableKey
+            Container.shared.reset()
             Clerk.shared.configure(publishableKey: publishableKey)
             try await clerk.load()
             isLoading = false

@@ -37,14 +37,14 @@ final public class Clerk: ObservableObject {
                 
     /// Configures the shared clerk instance.
     /// - Parameter publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    public func configure(publishableKey: String) {
+    public func configure(publishableKey: String, debugMode: Bool = false) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk configured without a publishable key. Please include a valid publishable key.")
             return
         }
         
         self.publishableKey = publishableKey
-        Container.shared.reset()
+        self.debugMode = debugMode
     }
     
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
