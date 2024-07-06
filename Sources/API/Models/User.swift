@@ -178,9 +178,9 @@ extension User {
         let request = ClerkAPI.v1.me.update(params)
         let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return response
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct UpdateParams: Encodable {
@@ -215,11 +215,11 @@ extension User {
     public func createEmailAddress(_ email: String) async throws -> EmailAddress {
         let params = CreateEmailAddressParams(emailAddress: email)
         let request = ClerkAPI.v1.me.emailAddresses.post(params)
-        let newEmail = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return newEmail
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct CreateEmailAddressParams: Encodable {
@@ -232,11 +232,11 @@ extension User {
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
         let params = CreatePhoneNumberParams(phoneNumber: phoneNumber)
         let request = ClerkAPI.v1.me.phoneNumbers.post(params)
-        let newPhoneNumber = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return newPhoneNumber
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct CreatePhoneNumberParams: Encodable {
@@ -255,11 +255,11 @@ extension User {
     public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
         let params = CreateExternalAccountParams(ExternalProvider: provider)
         let request = ClerkAPI.v1.me.externalAccounts.create(params)
-        let newExternalAccount = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return newExternalAccount
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct CreateExternalAccountParams: Encodable {
@@ -285,11 +285,11 @@ extension User {
     @discardableResult @MainActor
     public func createTOTP() async throws -> TOTPResource {
         let request = ClerkAPI.v1.me.totp.post
-        let totp = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return totp
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// Verifies a TOTP secret after a user has created it. The user must provide a code from their authenticator app, that has been generated using the previously created secret. This way, correct set up and ownership of the authenticator app can be validated.
@@ -297,21 +297,22 @@ extension User {
     @discardableResult @MainActor
     public func verifyTOTP(code: String) async throws -> TOTPResource {
         let request = ClerkAPI.v1.me.totp.attemptVerification.post(code: code)
-        let totp = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return totp
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// Disables TOTP by deleting the user's TOTP secret.
-    @MainActor
-    public func disableTOTP() async throws {
+    @discardableResult @MainActor
+    public func disableTOTP() async throws -> Deletion {
         let request = ClerkAPI.v1.me.totp.delete
-        try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Client.get()
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// Retrieves all active sessions for this user.
@@ -329,11 +330,11 @@ extension User {
     @discardableResult @MainActor
     public func updatePassword(_ params: User.UpdatePasswordParams) async throws -> User {
         let request = ClerkAPI.v1.me.changePassword.post(params)
-        let user = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return user
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct UpdatePasswordParams: Encodable {
@@ -356,33 +357,34 @@ extension User {
         data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-        let imageResource = try await Clerk.shared.apiClient.upload(for: request, from: data) {
+        let response = try await Clerk.shared.apiClient.upload(for: request, from: data) {
             $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return imageResource
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// Deletes the user's profile image.
     @discardableResult @MainActor
     public func deleteProfileImage() async throws -> ClerkImageResource {
         let request = ClerkAPI.v1.me.profileImage.delete
-        let imageResource = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return imageResource
+        }
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// Deletes the current user.
-    @MainActor
-    public func delete() async throws {
-        let request = ClerkAPI.v1.me.delete()
-        try await Clerk.shared.apiClient.send(request) {
+    @discardableResult @MainActor
+    public func delete() async throws -> Deletion {
+        let request = ClerkAPI.v1.me.delete
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Client.get()
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
 }

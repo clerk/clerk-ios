@@ -117,9 +117,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
         let params = SignIn.createSignInParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum CreateStrategy {
@@ -158,9 +158,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).resetPassword.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public struct ResetPasswordParams: Encodable {
@@ -182,9 +182,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     public func prepareFirstFactor(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) async throws -> SignIn {
         let params = prepareFirstFactorParams(for: prepareFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareFirstFactor.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum PrepareFirstFactorStrategy {
@@ -246,9 +246,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     public func attemptFirstFactor(for attemptFirstFactorStrategy: AttemptFirstFactorStrategy) async throws -> SignIn {
         let params = attemptFirstFactorParams(for: attemptFirstFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptFirstFactor.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum AttemptFirstFactorStrategy {
@@ -289,9 +289,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     public func prepareSecondFactor(for prepareSecondFactorStrategy: PrepareSecondFactorStrategy) async throws -> SignIn {
         let params = prepareSecondFactorParams(for: prepareSecondFactorStrategy)
         let request = ClerkAPI.v1.client.signIns.id(id).prepareSecondFactor.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum PrepareSecondFactorStrategy {
@@ -320,9 +320,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     public func attemptSecondFactor(for strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
         let params = attemptSecondFactorParams(for: strategy)
         let request = ClerkAPI.v1.client.signIns.id(id).attemptSecondFactor.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum AttemptSecondFactorStrategy {
@@ -351,9 +351,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
         let request = ClerkAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     #if !os(tvOS) && !os(watchOS)

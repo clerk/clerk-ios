@@ -45,15 +45,17 @@ extension EmailAddress {
 extension EmailAddress {
     
     /// Kick off the verification process for this email address. An email message with a one-time code or a magic-link will be sent to the email address box.
-    @MainActor
-    public func prepareVerification(strategy: PrepareStrategy) async throws {
+    @discardableResult @MainActor
+    public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.me.emailAddresses.id(id).prepareVerification.post(params)
         
-        try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Client.get()
+        
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum PrepareStrategy {
@@ -83,15 +85,17 @@ extension EmailAddress {
     }
     
     /// Attempts to verify this email address, passing the one-time code that was sent as an email message. The code will be sent when calling the EmailAddress.prepareVerification() method.
-    @MainActor
-    public func attemptVerification(strategy: AttemptStrategy) async throws {
+    @discardableResult @MainActor
+    public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.me.emailAddresses.id(id).attemptVerification.post(params)
         
-        try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Client.get()
+        
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum AttemptStrategy {
@@ -111,23 +115,26 @@ extension EmailAddress {
     }
     
     /// Deletes this email address.
-    @MainActor
-    public func destroy() async throws {
+    @discardableResult @MainActor
+    public func destroy() async throws -> Deletion {
         let request = ClerkAPI.v1.me.emailAddresses.id(id).delete
-        try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
-        try await Client.get()
+        
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     @discardableResult @MainActor
     func setAsPrimary() async throws -> User {
         let request = ClerkAPI.v1.me.update(.init(primaryEmailAddressId: id))
-        let user = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return user
+        }
+        
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
 }

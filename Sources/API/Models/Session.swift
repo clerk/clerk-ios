@@ -217,11 +217,12 @@ extension Session {
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
         let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
-        let revokedSession = try await Clerk.shared.apiClient.send(request) {
+        let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }.value.response
-        try await Client.get()
-        return revokedSession
+        }
+        
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /**

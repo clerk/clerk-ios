@@ -22,7 +22,7 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
             .init(path: path, method: .post)
         }
         
-        var delete: Request<Void> {
+        var delete: Request<ClientResponse<Deletion>> {
             .init(path: path, method: .delete)
         }
     }

@@ -116,9 +116,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     public static func create(strategy: SignUp.CreateStrategy, captchaToken: String? = nil) async throws -> SignUp {
         let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
-        let response = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return response
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum CreateStrategy {
@@ -213,9 +213,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).patch(params)
-        let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return signUp
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     /// UpdateParams is a mirror of CreateParams with the same fields and types.
@@ -232,9 +232,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     public func prepareVerification(_ strategy: PrepareStrategy) async throws -> SignUp {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
-        let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return signUp
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum PrepareStrategy {
@@ -268,9 +268,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     public func attemptVerification(_ strategy: AttemptStrategy) async throws -> SignUp {
         let params = attemptParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).attemptVerification.post(params)
-        let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return signUp
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
     
     public enum AttemptStrategy {
@@ -341,9 +341,9 @@ public struct SignUp: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
         let request = ClerkAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        try await Client.get()
-        return signUp
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
     }
 }
 

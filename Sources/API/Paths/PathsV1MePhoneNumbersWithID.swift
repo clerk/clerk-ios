@@ -26,7 +26,7 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
             .init(path: path, method: .patch, body: body)
         }
         
-        var delete: Request<Void> {
+        var delete: Request<ClientResponse<Deletion>> {
             .init(path: path, method: .delete)
         }
     }
