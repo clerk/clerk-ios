@@ -56,7 +56,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         
         if attempts == 1 {
             if let lastPathComponent = task.originalRequest?.url?.pathComponents.last, lastPathComponent != "client" {
-                // try to get the client in sync with the server on errors if the original request wasn't a get/create client
+                // try to get the client in sync with the server on errors if the original request wasn't a get client
                 _ = try? await Client.get()
             }
             return true
