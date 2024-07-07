@@ -25,12 +25,10 @@ final public class Clerk: ObservableObject {
     // MARK: - Dependencies
     
     public static var shared: Clerk {
-        // singleton scope
         Container.shared.clerk()
     }
     
     var apiClient: APIClient {
-        // cache scope
         Container.shared.apiClient()
     }
     
@@ -59,14 +57,14 @@ final public class Clerk: ObservableObject {
         
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { [self] in
+                group.addTask { @MainActor [self] in
                     try await Client.get()
-                    await startSessionTokenPolling()
+                    startSessionTokenPolling()
                 }
                 
-                group.addTask { [self] in
-                    try await getEnvironment()
-                    await prefetchImages()
+                group.addTask { @MainActor [self] in
+                    let environment = try await getEnvironment()
+                    prefetchImages(environment: environment)
                 }
                 
                 while let _ = try await group.next() {}
@@ -181,7 +179,7 @@ final public class Clerk: ObservableObject {
     private var didEnterBackgroundObserver: Void?
     private var sessionPollingTask: Task<Void, Error>?
         
-    @objc @MainActor
+    @objc
     private func startSessionTokenPolling() {
         guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
             return
@@ -189,11 +187,11 @@ final public class Clerk: ObservableObject {
         
         sessionPollingTask = Task(priority: .background) {
             repeat {
-                if let session {
+                if let session = Clerk.shared.session {
                     _ = try? await session.getToken(.init(skipCache: true))
                 }
-                try await Task.sleep(for: .seconds(50))
-            } while sessionPollingTask?.isCancelled == false
+                try await Task.sleep(for: .seconds(50), tolerance: .seconds(0.1))
+            } while !Task.isCancelled
         }
     }
     
@@ -205,9 +203,7 @@ final public class Clerk: ObservableObject {
     
     private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
     
-    private func prefetchImages() {
-        guard let environment else { return }
-        
+    private func prefetchImages(environment: Clerk.Environment) {
         var imageUrls: [URL?] = []
         
         if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
@@ -269,8 +265,8 @@ extension Clerk {
         }
     }
     
-    @MainActor
-    public func getEnvironment() async throws {
+    @discardableResult @MainActor
+    public func getEnvironment() async throws -> Clerk.Environment {
         try await Environment.get()
     }
     
