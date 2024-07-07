@@ -84,11 +84,11 @@ extension PhoneNumber {
     /// Kick off the verification process for this phone number. An SMS message with a one-time code will be sent to the phone number value.
     @discardableResult @MainActor
     public func prepareVerification() async throws -> PhoneNumber {
-        let request = ClerkAPI.v1.me.phoneNumbers.id(id).prepareVerification.post
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).prepareVerification.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
@@ -96,11 +96,12 @@ extension PhoneNumber {
     /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message. The code will be sent when calling the `PhoneNumber.prepareVerification()` method.
     @discardableResult @MainActor
     public func attemptVerification(code: String) async throws -> PhoneNumber {
-        let request = ClerkAPI.v1.me.phoneNumbers.id(id).attemptVerification.post(code: code)
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).attemptVerification.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["code": code]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
@@ -109,12 +110,12 @@ extension PhoneNumber {
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
     @discardableResult @MainActor
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
-        let body = ["reserved_for_second_factor": reserved]
-        let request = ClerkAPI.v1.me.phoneNumbers.id(id).patch(body: body)
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).patch(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["reserved_for_second_factor": reserved]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
@@ -122,22 +123,23 @@ extension PhoneNumber {
     /// Deletes this phone number.
     @discardableResult @MainActor
     public func destroy() async throws -> Deletion {
-        let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.phoneNumbers.id(id).delete(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
     
     @discardableResult @MainActor
     func setAsPrimary() async throws -> User {
-        let request = ClerkAPI.v1.me.update(.init(primaryPhoneNumberId: id))
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.update(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["primary_phone_number_id": id]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }

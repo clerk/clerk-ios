@@ -18,8 +18,13 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint.WithID {
         /// Path: `v1/me/phone_numbers/{id}/prepare_verification`
         let path: String
         
-        var post: Request<ClientResponse<PhoneNumber>> {
-            .init(path: path, method: .post, body: ["strategy": "phone_code"])
+        func post(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<PhoneNumber>> {
+            .init(
+                path: path,
+                method: .post,
+                query: queryItems.asTuples,
+                body: ["strategy": "phone_code"]
+            )
         }
     }
 }

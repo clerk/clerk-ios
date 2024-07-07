@@ -22,12 +22,20 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
             .init(path: path)
         }
         
-        func patch(body: Encodable) -> Request<ClientResponse<PhoneNumber>> {
-            .init(path: path, method: .patch, body: body)
+        func patch(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<PhoneNumber>> {
+            .init(
+                path: path,
+                method: .patch,
+                query: queryItems.asTuples,
+                body: body)
         }
         
-        var delete: Request<ClientResponse<Deletion>> {
-            .init(path: path, method: .delete)
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
+            .init(
+                path: path,
+                method: .delete, 
+                query: queryItems.asTuples
+            )
         }
     }
     
