@@ -232,7 +232,6 @@ extension Clerk {
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
-    @MainActor
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
@@ -256,7 +255,6 @@ extension Clerk {
     
     /// A method used to set the active session and/or organization.
     /// - Parameter sessionId: The session ID to be set as active.
-    @MainActor
     public func setActive(sessionId: String?) async throws {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
@@ -265,7 +263,7 @@ extension Clerk {
         }
     }
     
-    @discardableResult @MainActor
+    @discardableResult
     public func getEnvironment() async throws -> Clerk.Environment {
         try await Environment.get()
     }
