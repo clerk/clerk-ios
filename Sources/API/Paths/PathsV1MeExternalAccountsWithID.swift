@@ -22,8 +22,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.ExternalAccountsEndpoint {
             return .init(path: path)
         }
         
-        var delete: Request<ClientResponse<Deletion>> {
-            .init(path: path, method: .delete)
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
+            .init(path: path, method: .delete, query: queryItems.asTuples)
         }
     }
     
