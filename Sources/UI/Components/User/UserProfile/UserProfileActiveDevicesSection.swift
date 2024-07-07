@@ -20,7 +20,14 @@ struct UserProfileActiveDevicesSection: View {
     
     private var sessions: [Session] {
         guard let user = clerk.client?.lastActiveSession?.user else { return [] }
-        return clerk.sessionsByUserId[user.id, default: []].sorted()
+        let sessions = clerk.sessionsByUserId[user.id, default: []]
+        return sessions.sorted { lhs, rhs in
+            if (lhs.id == clerk.client?.lastActiveSessionId) != (rhs.id == clerk.client?.lastActiveSessionId)  {
+                return (lhs.id == clerk.client?.lastActiveSessionId)
+            } else {
+                return lhs.lastActiveAt > rhs.lastActiveAt
+            }
+        }
     }
     
     var body: some View {
@@ -93,7 +100,7 @@ struct UserProfileActiveDevicesSection: View {
                 
                 Spacer()
                 
-                if !session.isThisDevice {
+                if session.id != clerk.client?.lastActiveSessionId {
                     Menu {
                         AsyncButton(role: .destructive) {
                             isSigningOutOfDevice = true
@@ -120,7 +127,7 @@ struct UserProfileActiveDevicesSection: View {
         
         @ViewBuilder
         private var expandedContent: some View {
-            if session.isThisDevice {
+            if session.id == clerk.client?.lastActiveSessionId {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Current device")
                         .font(.footnote)

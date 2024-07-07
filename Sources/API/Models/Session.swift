@@ -24,7 +24,7 @@ import Foundation
 
  While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
  */
-public struct Session: Codable, Identifiable, Sendable {
+public struct Session: Codable, Identifiable, Equatable, Sendable {
     
     /// A unique identifier for the session.
     public let id: String
@@ -86,11 +86,6 @@ public struct Session: Codable, Identifiable, Sendable {
 
 extension Session {
     
-    @MainActor
-    var isThisDevice: Bool {
-        Clerk.shared.client?.lastActiveSessionId == id
-    }
-    
     var browserDisplayText: String {
         var string = ""
         if let browserName = latestActivity?.browserName {
@@ -133,18 +128,6 @@ extension Session {
         publicUserData?.identifier
     }
     
-}
-
-extension Session: Comparable {
-    
-    @MainActor
-    public static func < (lhs: Session, rhs: Session) -> Bool {
-        if lhs.isThisDevice != rhs.isThisDevice  {
-            return lhs.isThisDevice
-        } else {
-            return lhs.lastActiveAt > rhs.lastActiveAt
-        }
-    }
 }
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
@@ -218,11 +201,11 @@ extension Session {
     /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
-        let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.sessions.withId(id: id).revoke.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
