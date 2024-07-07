@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/email_addresses`
         let path: String
         
-        func post(_ params: User.CreateEmailAddressParams) -> Request<ClientResponse<EmailAddress>> {
-            .init(path: path, method: .post, body: params)
+        func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<EmailAddress>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
         }
     }
     

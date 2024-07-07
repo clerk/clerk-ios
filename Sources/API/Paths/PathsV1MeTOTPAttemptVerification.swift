@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.TOTPEndpoint {
         /// Path: `v1/me/totp/attempt_verification`
         let path: String
         
-        func post(code: String) -> Request<ClientResponse<TOTPResource>> {
-            .init(path: path, method: .post, body: ["code": code])
+        func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<TOTPResource>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
         }
     }
     

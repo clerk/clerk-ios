@@ -18,12 +18,12 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/profile_image`
         let path: String
         
-        var post: Request<ClientResponse<ClerkImageResource>> {
-            .init(path: path, method: .post)
+        func post(queryItems: [URLQueryItem] = [], headers: [String: String]? = nil) -> Request<ClientResponse<ClerkImageResource>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, headers: headers)
         }
         
-        var delete: Request<ClientResponse<ClerkImageResource>> {
-            .init(path: path, method: .delete)
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<ClerkImageResource>> {
+            .init(path: path, method: .delete, query: queryItems.asTuples)
         }
     }
     

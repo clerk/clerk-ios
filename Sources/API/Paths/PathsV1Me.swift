@@ -26,8 +26,8 @@ extension ClerkAPI.V1Endpoint {
             .init(path: path, method: .patch, query: queryItems.asTuples, body: body)
         }
         
-        var delete: Request<ClientResponse<Deletion>> {
-            .init(path: path, method: .delete)
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
+            .init(path: path, method: .delete, query: queryItems.asTuples)
         }
     }
     

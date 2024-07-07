@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/external_accounts`
         let path: String
         
-        func create(_ params: User.CreateExternalAccountParams) -> Request<ClientResponse<ExternalAccount>> {
-            .init(path: path, method: .post, body: params)
+        func create(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<ExternalAccount>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
         }
     }
     

@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.SessionsEndpoint {
         /// Path: `/v1/me/sessions/active`
         let path: String
         
-        var get: Request<[Session]> {
-            .init(path: path)
+        func get(queryItems: [URLQueryItem] = []) -> Request<[Session]> {
+            .init(path: path, query: queryItems.asTuples)
         }
     }
     

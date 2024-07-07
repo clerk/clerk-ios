@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/phone_numbers`
         let path: String
         
-        func post(_ params: User.CreatePhoneNumberParams) -> Request<ClientResponse<PhoneNumber>> {
-            .init(path: path, method: .post, body: params)
+        func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<PhoneNumber>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
         }
     }
     
