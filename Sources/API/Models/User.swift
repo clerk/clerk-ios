@@ -178,7 +178,7 @@ extension User {
     /// Updates the user's attributes. Use this method to save information you collected about the user.
     @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
-        let request = ClerkAPI.v1.me.update(params)
+        let request = ClerkAPI.v1.me.update(body: params)
         let response = try await Clerk.shared.apiClient.send(request) {
             $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
         }
