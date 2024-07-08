@@ -58,7 +58,7 @@ final public class Clerk: ObservableObject {
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask { @MainActor [weak self] in
-                    try await Client.get()
+                    try await Client.getOrCreate()
                     self?.startSessionTokenPolling()
                 }
                 
@@ -239,16 +239,11 @@ extension Clerk {
             Clerk.shared.client = response.value.client
         } else {
             guard let client else { return }
-            await withThrowingTaskGroup(of: Void.self) { group in
-                let sessionIds = client.sessions.map(\.id)
-                
-                for sessionId in sessionIds {
-                    group.addTask { @MainActor in
-                        let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-                        let response = try await Clerk.shared.apiClient.send(request)
-                        Clerk.shared.client = response.value.client
-                    }
-                }
+            let sessionIds = client.sessions.map(\.id)
+            for sessionId in sessionIds {
+                let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
+                let response = try await Clerk.shared.apiClient.send(request)
+                Clerk.shared.client = response.value.client
             }
         }
     }

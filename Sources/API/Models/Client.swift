@@ -45,6 +45,15 @@ public struct Client: Codable, Sendable, Equatable {
 
 extension Client {
     
+    /// Creates a new client for the current instance.
+    @discardableResult @MainActor
+    static func create() async throws -> Client {
+        let request = ClerkAPI.v1.client.put
+        let client = try await Clerk.shared.apiClient.send(request).value.response
+        Clerk.shared.client = client
+        return client
+    }
+    
     /// Retrieves the current client.
     @discardableResult @MainActor
     public static func get() async throws -> Client? {
@@ -58,6 +67,17 @@ extension Client {
     @discardableResult @MainActor
     public func get() async throws -> Client? {
         try await Client.get()
+    }
+    
+    /// Fetches the client from the server, if one doesn't exist for the device then create one.
+    @discardableResult @MainActor
+    static func getOrCreate() async throws -> Client? {
+        let client = try await Client.get()
+        if let client {
+            return client
+        } else {
+            return try await Client.create()
+        }
     }
     
     /**
