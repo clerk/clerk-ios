@@ -22,16 +22,16 @@ import UIKit
 @MainActor
 final public class Clerk: ObservableObject {
     
+    nonisolated init() {}
+    
     // MARK: - Dependencies
     
-    public static var shared: Clerk {
-        Container.shared.clerk()
-    }
+    public static let shared: Clerk = Container.shared.clerk()
     
     var apiClient: APIClient {
-        Container.shared.apiClient()
+        Container.shared.apiClient(frontendAPIURL)
     }
-    
+        
     // MARK: - Setup Functions
                 
     /// Configures the shared clerk instance.
@@ -107,31 +107,31 @@ final public class Clerk: ObservableObject {
     @Published private(set) public var loadingState: LoadingState = .notLoaded
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    private(set) public var publishableKey: String = ""
+    private(set) public var publishableKey: String = "" {
+        didSet {
+            let liveRegex = Regex {
+                "pk_live_"
+                Capture {
+                    OneOrMore(.any)
+                }
+            }
+            
+            let testRegex = Regex {
+                "pk_test_"
+                Capture {
+                    OneOrMore(.any)
+                }
+            }
+            
+            if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
+               let apiUrl = String(match).base64String() {
+                frontendAPIURL = "https://\(apiUrl.dropLast())"
+            }
+        }
+    }
     
     /// Frontend API URL
-    public var frontendAPIURL: String {
-        let liveRegex = Regex {
-            "pk_live_"
-            Capture {
-                OneOrMore(.any)
-            }
-        }
-        
-        let testRegex = Regex {
-            "pk_test_"
-            Capture {
-                OneOrMore(.any)
-            }
-        }
-        
-        if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-           let apiUrl = String(match).base64String() {
-            return "https://\(apiUrl.dropLast())"
-        }
-        
-        return ""
-    }
+    public var frontendAPIURL: String = ""
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
