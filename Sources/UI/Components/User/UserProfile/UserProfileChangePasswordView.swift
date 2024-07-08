@@ -66,9 +66,6 @@ struct UserProfileChangePasswordView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .focused($focusedField, equals: .currentPassword)
-                            .task {
-                                focusedField = .currentPassword
-                            }
                     }
                     
                     VStack(alignment: .leading) {
@@ -125,6 +122,9 @@ struct UserProfileChangePasswordView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .padding(.top, 30)
+        }
+        .task {
+            focusedField = .currentPassword
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
