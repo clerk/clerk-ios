@@ -83,20 +83,21 @@ struct UserProfileUpdateProfileView: View {
                             )
                             .font(.footnote)
                             .tint(clerkTheme.colors.textPrimary)
-                            .onChange(of: photosPickerItem) { newValue in
-                                if newValue == nil { return }
+                            .onChange(of: photosPickerItem) { photosPickerItem in
+                                guard let photosPickerItem else { return }
                                 Task {
                                     do {
-                                        guard let imageData = try await photosPickerItem?.loadTransferable(type: Data.self) else {
+                                        guard let imageData = try await photosPickerItem.loadTransferable(type: Data.self) else {
                                             throw ClerkClientError(message: "Unable to upload this item.")
                                         }
                                         try await user?.setProfileImage(imageData)
+                                        self.photosPickerItem = nil
                                     } catch {
                                         errorWrapper = ErrorWrapper(error: error)
                                         dump(error)
+                                        self.photosPickerItem = nil
                                     }
                                     
-                                    photosPickerItem = nil
                                 }
                             }
 

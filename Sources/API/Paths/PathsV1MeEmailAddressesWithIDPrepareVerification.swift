@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
         /// Path: `v1/me/email_addresses/{id}/prepare_verification`
         let path: String
         
-        func post(_ params: EmailAddress.PrepareParams) -> Request<ClientResponse<EmailAddress>> {
-            .init(path: path, method: .post, body: params)
+        func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<EmailAddress>> {
+            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
         }
     }
 }

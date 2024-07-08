@@ -17,9 +17,11 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         
-        if Clerk.shared.debugMode, let client = Clerk.shared.client {
+        if await Clerk.shared.debugMode, let client = await Clerk.shared.client {
             request.setValue(client.id, forHTTPHeaderField: "x-clerk-client-id")
         }
+        
+        await request.setValue(deviceID, forHTTPHeaderField: "x-native-device-id")
         
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
         request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.70.0")])
@@ -56,7 +58,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         
         if attempts == 1 {
             if let lastPathComponent = task.originalRequest?.url?.pathComponents.last, lastPathComponent != "client" {
-                // try to get the client in sync with the server on errors if the original request wasn't a get client
+                // if the original request wasn't a get client, try to get the client in sync with the server
                 _ = try? await Client.get()
             }
             return true

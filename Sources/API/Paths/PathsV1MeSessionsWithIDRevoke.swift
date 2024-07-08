@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.SessionsEndpoint.WithIdEndpoint {
         /// Path: `v1/me/sessions/{id}/revoke`
         let path: String
         
-        var post: Request<ClientResponse<Session>> {
-            .init(path: path, method: .post)
+        func post(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Session>> {
+            .init(path: path, method: .post, query: queryItems.asTuples)
         }
         
     }

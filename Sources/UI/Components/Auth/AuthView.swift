@@ -106,7 +106,7 @@ struct AuthView: View {
             FeedbackGenerator.success()
         }
         .task {
-            try? await clerk.getEnvironment()
+            _ = try? await clerk.getEnvironment()
         }
     }
     

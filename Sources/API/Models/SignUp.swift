@@ -127,6 +127,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         case transfer
     }
     
+    @MainActor
     static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
@@ -354,6 +355,7 @@ extension SignUp {
     }
     
     /// Returns the next strategy to use to verify an attribute that needs to verified at sign up
+    @MainActor
     var nextStrategyToVerify: Strategy? {
         
         if let externalVerification = verifications.first(where: { $0.value?.externalVerificationRedirectUrl != nil && $0.value?.status == .unverified }) {

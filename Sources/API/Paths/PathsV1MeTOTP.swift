@@ -18,12 +18,12 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/totp`
         let path: String
         
-        var post: Request<ClientResponse<TOTPResource>> {
-            .init(path: path, method: .post)
+        func post(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<TOTPResource>> {
+            .init(path: path, method: .post, query: queryItems.asTuples)
         }
         
-        var delete: Request<ClientResponse<Deletion>> {
-            .init(path: path, method: .delete)
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
+            .init(path: path, method: .delete, query: queryItems.asTuples)
         }
     }
     

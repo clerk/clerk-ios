@@ -19,20 +19,19 @@ import UIKit
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
+@MainActor
 final public class Clerk: ObservableObject {
+    
+    nonisolated init() {}
     
     // MARK: - Dependencies
     
-    public static var shared: Clerk {
-        // singleton scope
-        Container.shared.clerk()
-    }
+    public static let shared: Clerk = Container.shared.clerk()
     
     var apiClient: APIClient {
-        // cache scope
-        Container.shared.apiClient()
+        Container.shared.apiClient(frontendAPIURL)
     }
-    
+        
     // MARK: - Setup Functions
                 
     /// Configures the shared clerk instance.
@@ -49,7 +48,6 @@ final public class Clerk: ObservableObject {
     
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
@@ -59,14 +57,14 @@ final public class Clerk: ObservableObject {
         
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { [self] in
-                    try await Client.get()
-                    startSessionTokenPolling()
+                group.addTask { @MainActor [weak self] in
+                    try await Client.getOrCreate()
+                    self?.startSessionTokenPolling()
                 }
                 
-                group.addTask { [self] in
-                    try await getEnvironment()
-                    prefetchImages()
+                group.addTask { @MainActor [weak self] in
+                    let environment = try await Environment.get()
+                    self?.prefetchImages(environment: environment)
                 }
                 
                 while let _ = try await group.next() {}
@@ -133,7 +131,7 @@ final public class Clerk: ObservableObject {
     }
     
     /// Frontend API URL
-    private(set) public var frontendAPIURL: String = ""
+    public var frontendAPIURL: String = ""
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be null.
     public var session: Session? {
@@ -189,11 +187,11 @@ final public class Clerk: ObservableObject {
         
         sessionPollingTask = Task(priority: .background) {
             repeat {
-                if let session {
+                if let session = Clerk.shared.session {
                     _ = try? await session.getToken(.init(skipCache: true))
                 }
-                try await Task.sleep(for: .seconds(50))
-            } while sessionPollingTask?.isCancelled == false
+                try await Task.sleep(for: .seconds(50), tolerance: .seconds(0.1))
+            } while !Task.isCancelled
         }
     }
     
@@ -205,9 +203,7 @@ final public class Clerk: ObservableObject {
     
     private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
     
-    private func prefetchImages() {
-        guard let environment else { return }
-        
+    private func prefetchImages(environment: Clerk.Environment) {
         var imageUrls: [URL?] = []
         
         if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
@@ -224,12 +220,6 @@ final public class Clerk: ObservableObject {
         imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
     }
     
-    deinit {
-        stopSessionTokenPolling()
-        didBecomeActiveObserver = nil
-        didEnterBackgroundObserver = nil
-    }
-    
     /// Enable for additional debugging signals
     public var debugMode: Bool = false
 }
@@ -242,7 +232,6 @@ extension Clerk {
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
-    @MainActor
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
@@ -250,23 +239,17 @@ extension Clerk {
             Clerk.shared.client = response.value.client
         } else {
             guard let client else { return }
-            await withThrowingTaskGroup(of: Void.self) { group in
-                let sessionIds = client.sessions.map(\.id)
-                
-                for sessionId in sessionIds {
-                    group.addTask { @MainActor in
-                        let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-                        let response = try await Clerk.shared.apiClient.send(request)
-                        Clerk.shared.client = response.value.client
-                    }
-                }
+            let sessionIds = client.sessions.map(\.id)
+            for sessionId in sessionIds {
+                let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
+                let response = try await Clerk.shared.apiClient.send(request)
+                Clerk.shared.client = response.value.client
             }
         }
     }
     
     /// A method used to set the active session and/or organization.
     /// - Parameter sessionId: The session ID to be set as active.
-    @MainActor
     public func setActive(sessionId: String?) async throws {
         if let sessionId = sessionId {
             let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
@@ -275,8 +258,8 @@ extension Clerk {
         }
     }
     
-    @MainActor
-    public func getEnvironment() async throws {
+    @discardableResult
+    public func getEnvironment() async throws -> Clerk.Environment {
         try await Environment.get()
     }
     

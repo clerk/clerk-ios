@@ -22,7 +22,7 @@ extension Clerk {
         }
         
         /// An authentication context stored at class scope so it's available for use during UI updates.
-        public static var context = LAContext()
+        nonisolated(unsafe) public static var context = LAContext()
         
         static var availableBiometryType: LABiometryType {
             let biometryContext = LAContext()
@@ -55,6 +55,7 @@ extension Clerk {
         
         private static let localAuthAccountKey = "localAuthAccountKey"
         
+        @MainActor
         static var displayLocalAuthOption: Bool {
             accountForLocalAuth != nil && !localAuthAccountAlreadySignedIn
         }
@@ -94,6 +95,7 @@ extension Clerk {
             return identifiers.contains(accountForLocalAuth)
         }
         
+        @MainActor
         static var localAuthAccountAlreadySignedIn: Bool {
             guard let client = Clerk.shared.client else { return false }
             let signedInUsers = client.activeSessions.compactMap(\.user)

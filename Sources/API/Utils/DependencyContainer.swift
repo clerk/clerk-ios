@@ -17,18 +17,17 @@ extension Container {
             .singleton
     }
     
-    var apiClient: Factory<APIClient> {
+    var apiClient: ParameterFactory<String, APIClient> {
         self {
-            APIClient(baseURL: URL(string: Clerk.shared.frontendAPIURL)) { client in
+            APIClient(baseURL: URL(string: $0)) { client in
                 client.delegate = ClerkAPIClientDelegate()
                 client.decoder = JSONDecoder.clerkDecoder
                 client.encoder = JSONEncoder.clerkEncoder
                 client.sessionConfiguration.httpAdditionalHeaders = [
-                    "clerk-api-version": "2021-02-05",
-                    "x-ios-sdk-version": ClerkSDK.version,
-                    "x-native-device-id": deviceID,
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": UserAgentHelpers.userAgentString
+                    "User-Agent": UserAgentHelpers.userAgentString,
+                    "clerk-api-version": "2021-02-05",
+                    "x-ios-sdk-version": ClerkSDK.version
                 ]
             }
         }

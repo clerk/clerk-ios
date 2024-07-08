@@ -47,13 +47,12 @@ extension EmailAddress {
     /// Kick off the verification process for this email address. An email message with a one-time code or a magic-link will be sent to the email address box.
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-        let params = prepareParams(for: strategy)
-        let request = ClerkAPI.v1.me.emailAddresses.id(id).prepareVerification.post(params)
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).prepareVerification.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
         
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
-        
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
@@ -63,37 +62,36 @@ extension EmailAddress {
         /// User will receive a one-time authentication code via email.
         case emailCode
         
-        /// User will receive an email magic link via email.
+//        /// User will receive an email magic link via email.
 //        case emailLink
-    }
-    
-    private func prepareParams(for strategy: PrepareStrategy) -> PrepareParams {
-        switch strategy {
-        case .emailCode:
-            return .init(strategy: .emailCode)
-//        case .emailLink:
-//            return .init(strategy: .emailLink)
-        }
-    }
-    
-    public struct PrepareParams: Encodable {
-        public init(strategy: Strategy) {
-            self.strategy = strategy.stringValue
+        
+        internal var requestBody: RequestBody {
+            switch self {
+            case .emailCode:
+                return .init(strategy: .emailCode)
+    //        case .emailLink:
+    //            return .init(strategy: .emailLink)
+            }
         }
         
-        public let strategy: String
+        internal struct RequestBody: Encodable {
+            public init(strategy: Strategy) {
+                self.strategy = strategy.stringValue
+            }
+            
+            public let strategy: String
+        }
     }
     
     /// Attempts to verify this email address, passing the one-time code that was sent as an email message. The code will be sent when calling the EmailAddress.prepareVerification() method.
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-        let params = attemptParams(for: strategy)
-        let request = ClerkAPI.v1.me.emailAddresses.id(id).attemptVerification.post(params)
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).attemptVerification.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
         
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
-        
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
@@ -101,38 +99,40 @@ extension EmailAddress {
     public enum AttemptStrategy {
         /// The one-time code that was sent to the user's email address when EmailAddress.prepareVerification() was called with `strategy` set to `email_code`.
         case emailCode(code: String)
-    }
-    
-    private func attemptParams(for strategy: AttemptStrategy) -> AttemptParams {
-        switch strategy {
-        case .emailCode(let code):
-            return .init(code: code)
+        
+        internal var requestBody: RequestBody {
+            switch self {
+            case .emailCode(let code):
+                return .init(code: code)
+            }
         }
-    }
-    
-    public struct AttemptParams: Encodable {
-        public let code: String
+        
+        struct RequestBody: Encodable {
+            public let code: String
+        }
+        
     }
     
     /// Deletes this email address.
     @discardableResult @MainActor
     public func destroy() async throws -> Deletion {
-        let request = ClerkAPI.v1.me.emailAddresses.id(id).delete
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.emailAddresses.id(id).delete(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }
     
     @discardableResult @MainActor
     func setAsPrimary() async throws -> User {
-        let request = ClerkAPI.v1.me.update(.init(primaryEmailAddressId: id))
-        let response = try await Clerk.shared.apiClient.send(request) {
-            $0.url?.append(queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)])
-        }
+        let request = ClerkAPI.v1.me.update(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["primary_email_address_id": id]
+        )
         
+        let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
     }

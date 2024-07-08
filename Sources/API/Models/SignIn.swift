@@ -30,9 +30,6 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// The current status of the sign-in.
     public let status: Status
     
-    /// Array of all the authentication identifiers that are supported for this sign in.
-    public let supportedIdentifiers: [SupportedIdentifier]
-    
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?
     
@@ -134,6 +131,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case transfer
     }
     
+    @MainActor
     static func createSignInParams(for strategy: CreateStrategy) -> CreateParams {
         switch strategy {
         case .identifier(let identifier, let password):
@@ -413,7 +411,8 @@ extension SignIn {
     
     // First SignInFactor
     
-    var currentFirstFactor: SignInFactor? {        
+    @MainActor
+    var currentFirstFactor: SignInFactor? {
         if let firstFactorVerification,
            let currentFirstFactor = supportedFirstFactors?.first(where: { $0.strategyEnum == firstFactorVerification.strategyEnum }) {
             return currentFirstFactor
@@ -426,6 +425,7 @@ extension SignIn {
         return startingSignInFirstFactor
     }
     
+    @MainActor
     private var startingSignInFirstFactor: SignInFactor? {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
