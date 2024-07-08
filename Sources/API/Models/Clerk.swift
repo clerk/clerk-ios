@@ -57,14 +57,14 @@ final public class Clerk: ObservableObject {
         
         do {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { @MainActor [self] in
+                group.addTask { @MainActor [weak self] in
                     try await Client.get()
-                    startSessionTokenPolling()
+                    self?.startSessionTokenPolling()
                 }
                 
-                group.addTask { @MainActor [self] in
-                    let environment = try await getEnvironment()
-                    prefetchImages(environment: environment)
+                group.addTask { @MainActor [weak self] in
+                    let environment = try await Environment.get()
+                    self?.prefetchImages(environment: environment)
                 }
                 
                 while let _ = try await group.next() {}
