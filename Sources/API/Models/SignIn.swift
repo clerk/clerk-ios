@@ -30,9 +30,6 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// The current status of the sign-in.
     public let status: Status
     
-    /// Array of all the authentication identifiers that are supported for this sign in.
-    public let supportedIdentifiers: [SupportedIdentifier]
-    
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?
     
