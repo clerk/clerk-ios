@@ -29,7 +29,7 @@ struct SignUpStartView: View {
     }
     
     private var socialProvidersEnabled: Bool {
-        clerk.environment?.userSettings.enabledThirdPartyProviders.isEmpty == false
+        clerk.environment?.userSettings.enabledOAuthProviders.isEmpty == false
     }
     
     private var contactInfoEnabled: Bool {
