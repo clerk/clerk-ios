@@ -33,6 +33,7 @@ struct ClerkBottomBrandingModifier: ViewModifier {
 }
 
 extension View {
+    @MainActor
     func clerkBottomBranding() -> some View {
         modifier(ClerkBottomBrandingModifier())
     }
