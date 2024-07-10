@@ -210,7 +210,7 @@ final public class Clerk: ObservableObject {
             imageUrls.append(logoUrl)
         }
         
-        environment.userSettings.enabledThirdPartyProviders.forEach { provider in
+        environment.userSettings.enabledOAuthProviders.forEach { provider in
             imageUrls.append(provider.iconImageUrl())
             if provider.hasDarkModeVariant {
                 imageUrls.append(provider.iconImageUrl(darkMode: true))
