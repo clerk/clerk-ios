@@ -148,6 +148,7 @@ extension View {
      
      You should apply this modifier to the root view of your application. Most likely in your `App` file.
      */
+    @MainActor
     public func localAuthOnForeground(lockPhase: LocalAuthOnForegroundModifier.LockPhase = .background) -> some View {
         modifier(LocalAuthOnForegroundModifier(lockPhase: lockPhase))
     }
