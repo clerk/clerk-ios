@@ -68,10 +68,10 @@ extension Clerk.Environment {
     
     public struct UserSettings: Codable, Equatable, Sendable {
         
-        let attributes: [Attribute: AttributesConfig]
+        public let attributes: [Attribute: AttributesConfig]
         /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
-        let social: [String: SocialConfig]
-        let actions: Actions
+        public let social: [String: SocialConfig]
+        public let actions: Actions
         
         public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable, Sendable {
             case emailAddress
