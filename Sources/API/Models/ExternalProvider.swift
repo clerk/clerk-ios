@@ -46,8 +46,8 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     }
     
     public struct Data {
-        let provider: String
-        let strategy: String
+        public let provider: String
+        public let strategy: String
         public let name: String
         let docsUrl: String
     }
