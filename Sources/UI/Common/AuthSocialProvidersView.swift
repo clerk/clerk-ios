@@ -19,7 +19,7 @@ struct AuthSocialProvidersView: View {
     var onSuccess:((_ oauthResult: OAuthResult) -> Void)?
     
     private var thirdPartyProviders: [ExternalProvider] {
-        (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
+        (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
     }
     
     private var chunkedProviders: ChunksOfCountCollection<[ExternalProvider]> {

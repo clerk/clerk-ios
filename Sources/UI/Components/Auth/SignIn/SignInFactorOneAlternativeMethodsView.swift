@@ -22,7 +22,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     }
     
     private var thirdPartyProviders: [ExternalProvider] {
-        (clerk.environment?.userSettings.enabledThirdPartyProviders ?? []).sorted()
+        (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
     }
     
     private func signIn(provider: ExternalProvider) async {
