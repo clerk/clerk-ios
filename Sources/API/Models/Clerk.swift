@@ -161,7 +161,7 @@ final public class Clerk: ObservableObject {
     
     // MARK: - Private Setup
             
-    private var didBecomeActiveTask: Task<Void, Error>?
+    private var willEnterForegroundTask: Task<Void, Error>?
     private var didEnterBackgroundTask: Task<Void, Error>?
     private var sessionPollingTask: Task<Void, Error>?
     
@@ -169,11 +169,11 @@ final public class Clerk: ObservableObject {
         #if !os(watchOS) && !os(macOS)
         
         // cancel existing tasks if they exist (switching instances)
-        didBecomeActiveTask?.cancel()
+        willEnterForegroundTask?.cancel()
         didEnterBackgroundTask?.cancel()
         
-        didBecomeActiveTask = Task {
-            for await _ in NotificationCenter.default.notifications(named: UIApplication.didBecomeActiveNotification).map({ _ in () }) {
+        willEnterForegroundTask = Task {
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.willEnterForegroundNotification).map({ _ in () }) {
                 await withTaskGroup(of: Void.self) { group in
                     
                     group.addTask { @MainActor [weak self] in
