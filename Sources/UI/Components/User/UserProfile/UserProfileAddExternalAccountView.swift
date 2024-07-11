@@ -23,12 +23,12 @@ struct UserProfileAddExternalAccountView: View {
     private func create(provider: OAuthProvider) async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            if provider == .apple {
-                try await user.linkAppleAccount()
-            } else {
+//            if provider == .apple {
+//                try await user.linkAppleAccount()
+//            } else {
                 let newExternalAccount = try await user.createExternalAccount(provider)
                 try await newExternalAccount.reauthorize()
-            }
+//            }
         } catch {
             if case ASAuthorizationError.canceled = error { return }
             errorWrapper = ErrorWrapper(error: error)

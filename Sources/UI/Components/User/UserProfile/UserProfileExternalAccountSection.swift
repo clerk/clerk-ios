@@ -152,12 +152,12 @@ struct UserProfileExternalAccountSection: View {
         
         private func retryConnection(_ provider: OAuthProvider) async {
             do {
-                if provider == .apple {
-                    try await user?.linkAppleAccount()
-                } else {
+//                if provider == .apple {
+//                    try await user?.linkAppleAccount()
+//                } else {
                     let externalAccount = try await user?.createExternalAccount(provider)
                     try await externalAccount?.reauthorize()
-                }
+//                }
             } catch {
                 if case ASAuthorizationError.canceled = error { return }
                 errorWrapper = ErrorWrapper(error: error)
