@@ -386,6 +386,11 @@ public struct SignIn: Codable, Sendable, Equatable {
             
             try await Client.get()
             let signIn = Clerk.shared.client?.signIn
+            
+            guard signIn?.needsTransferToSignUp == true else {
+                return nil
+            }
+            
             let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
             
             if botProtectionIsEnabled {

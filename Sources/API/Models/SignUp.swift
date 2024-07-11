@@ -332,6 +332,13 @@ public struct SignUp: Codable, Sendable, Equatable {
         } else {
             // transfer flow
             
+            try await Client.get()
+            let signUp = Clerk.shared.client?.signUp
+            
+            guard signUp?.needsTransferToSignIn == true else {
+                return nil
+            }
+            
             let signIn = try await SignIn.create(strategy: .transfer)
             return OAuthResult(signIn: signIn)
         }
