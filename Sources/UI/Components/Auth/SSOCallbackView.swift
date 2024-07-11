@@ -19,7 +19,7 @@ struct SSOCallbackView: View {
     var body: some View {
         ZStack {
             ProgressView("Verifying...")
-            TurnstileWebView(appearence: .always)
+            TurnstileWebView(widgetType: .invisible)
                 .onSuccess { token in
                     captchaToken = token
                 }

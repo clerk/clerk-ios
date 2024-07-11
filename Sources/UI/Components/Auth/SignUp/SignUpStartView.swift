@@ -76,7 +76,7 @@ struct SignUpStartView: View {
                 }
                 
                 if clerk.environment?.displayConfig.botProtectionIsEnabled == true, captchaIsActive {
-                    TurnstileWebView()
+                    TurnstileWebView(widgetType: .invisible)
                         .onSuccess { token in
                             captchaToken = token
                         }
