@@ -20,7 +20,7 @@ import WebKit
 /// - Not passing a value for `widgetType` will result in the type that is set in your dashboard being used.
 public struct TurnstileWebView: UIViewRepresentable {
     public init(
-        widgetType: WidgetType? = nil,
+        widgetType: Clerk.Environment.DisplayConfig.CaptchaWidgetType? = nil,
         appearence: Appearence = .always,
         size: Size = .regular,
         onDidFinishLoading: (() -> Void)? = nil,
@@ -37,17 +37,13 @@ public struct TurnstileWebView: UIViewRepresentable {
         self.onError = onError
     }
     
-    let widgetType: WidgetType?
+    let widgetType: Clerk.Environment.DisplayConfig.CaptchaWidgetType?
     let appearence: Appearence
     let size: Size
     var onDidFinishLoading: (() -> Void)?
     var onBeforeInteractive: (() -> Void)?
     var onSuccess: ((String) -> Void)?
     var onError: ((String) -> Void)?
-    
-    public enum WidgetType {
-        case invisible, smart
-    }
     
     public enum Size: String {
         case regular, compact

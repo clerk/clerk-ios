@@ -258,9 +258,4 @@ extension Clerk {
         }
     }
     
-    @discardableResult
-    public func getEnvironment() async throws -> Clerk.Environment {
-        try await Environment.get()
-    }
-    
 }
