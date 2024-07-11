@@ -168,6 +168,10 @@ final public class Clerk: ObservableObject {
     private func setupNotificationObservers() {
         #if !os(watchOS) && !os(macOS)
         
+        // cancel existing tasks if they exist (switching instances)
+        didBecomeActiveTask?.cancel()
+        didEnterBackgroundTask?.cancel()
+        
         didBecomeActiveTask = Task {
             for await _ in NotificationCenter.default.notifications(named: UIApplication.didBecomeActiveNotification).map({ _ in () }) {
                 await withTaskGroup(of: Void.self) { group in
