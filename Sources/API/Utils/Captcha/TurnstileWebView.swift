@@ -17,8 +17,10 @@ import WebKit
 ///
 /// - If you are using the invisible style widget type you can hide this view in the background since users will never need to interact with it.
 /// - If you are using the smart style widget, you should place this view in your view heirarchy as users may need to intereact with the widget.
+/// - Not passing a value for `widgetType` will result in the type that is set in your dashboard being used.
 public struct TurnstileWebView: UIViewRepresentable {
     public init(
+        widgetType: WidgetType? = nil,
         appearence: Appearence = .always,
         size: Size = .regular,
         onDidFinishLoading: (() -> Void)? = nil,
@@ -26,6 +28,7 @@ public struct TurnstileWebView: UIViewRepresentable {
         onSuccess: ((String) -> Void)? = nil,
         onError: ((String) -> Void)? = nil
     ) {
+        self.widgetType = widgetType
         self.appearence = appearence
         self.size = size
         self.onDidFinishLoading = onDidFinishLoading
@@ -34,12 +37,17 @@ public struct TurnstileWebView: UIViewRepresentable {
         self.onError = onError
     }
     
+    let widgetType: WidgetType?
     let appearence: Appearence
     let size: Size
     var onDidFinishLoading: (() -> Void)?
     var onBeforeInteractive: (() -> Void)?
     var onSuccess: ((String) -> Void)?
     var onError: ((String) -> Void)?
+    
+    public enum WidgetType {
+        case invisible, smart
+    }
     
     public enum Size: String {
         case regular, compact
@@ -76,13 +84,20 @@ public struct TurnstileWebView: UIViewRepresentable {
     
     @MainActor
     private var siteKey: String {
-        switch displayConfig?.captchaWidgetType {
+        switch widgetType {
         case .invisible:
             return displayConfig?.captchaPublicKeyInvisible ?? ""
         case .smart:
             return displayConfig?.captchaPublicKey ?? ""
         case nil:
-            return ""
+            switch displayConfig?.captchaWidgetType {
+            case .invisible:
+                return displayConfig?.captchaPublicKeyInvisible ?? ""
+            case .smart:
+                return displayConfig?.captchaPublicKey ?? ""
+            case nil:
+                return ""
+            }
         }
     }
 

@@ -22,7 +22,7 @@ public struct UserButton: View {
     
     private var imageRequest: ImageRequest {
         .init(
-            url: URL(string: clerk.client?.lastActiveSession?.user?.imageUrl ?? ""),
+            url: URL(string: clerk.user?.imageUrl ?? ""),
             processors: [ImageProcessors.Circle()]
         )
     }
