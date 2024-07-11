@@ -70,21 +70,7 @@ final public class Clerk: ObservableObject {
                 while let _ = try await group.next() {}
             }
             
-            #if !os(watchOS) && !os(macOS)
-            didBecomeActiveObserver = NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(startSessionTokenPolling),
-                name: UIApplication.didBecomeActiveNotification,
-                object: nil
-            )
-            
-            didEnterBackgroundObserver = NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(stopSessionTokenPolling),
-                name: UIApplication.didEnterBackgroundNotification,
-                object: nil
-            )
-            #endif
+            setupNotificationObservers()
             
             loadingState = .loadedFromNetwork
             
@@ -174,12 +160,43 @@ final public class Clerk: ObservableObject {
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
     
     // MARK: - Private Setup
-        
-    private var didBecomeActiveObserver: Void?
-    private var didEnterBackgroundObserver: Void?
+            
+    private var didBecomeActiveTask: Task<Void, Error>?
+    private var didEnterBackgroundTask: Task<Void, Error>?
     private var sessionPollingTask: Task<Void, Error>?
+    
+    private func setupNotificationObservers() {
+        #if !os(watchOS) && !os(macOS)
         
-    @objc
+        didBecomeActiveTask = Task {
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.didBecomeActiveNotification).map({ _ in () }) {
+                await withTaskGroup(of: Void.self) { group in
+                    
+                    group.addTask { @MainActor [weak self] in
+                        self?.startSessionTokenPolling()
+                    }
+                    
+                    group.addTask { @MainActor in
+                        _ = try? await Client.getOrCreate()
+                    }
+                    
+                    group.addTask { @MainActor in
+                        _ = try? await Clerk.Environment.get()
+                    }
+                    
+                }
+            }
+        }
+        
+        didEnterBackgroundTask = Task {
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.didEnterBackgroundNotification).map({ _ in () }) {
+                stopSessionTokenPolling()
+            }
+        }
+        
+        #endif
+    }
+        
     private func startSessionTokenPolling() {
         guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
             return
@@ -195,7 +212,6 @@ final public class Clerk: ObservableObject {
         }
     }
     
-    @objc
     private func stopSessionTokenPolling() {
         sessionPollingTask?.cancel()
         sessionPollingTask = nil
