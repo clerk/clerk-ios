@@ -109,7 +109,7 @@ extension Clerk.Environment {
             public let strategy: String
             public let notSelectable: Bool
             
-            var strategyEnum: Strategy? {
+            public var strategyEnum: Strategy? {
                 Strategy(stringValue: strategy)
             }
         }

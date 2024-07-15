@@ -28,7 +28,7 @@ public struct SignInFactor: Codable, Equatable, Hashable, Sendable {
 
 extension SignInFactor {
     
-    var strategyEnum: Strategy? {
+    public var strategyEnum: Strategy? {
         Strategy(stringValue: strategy)
     }
     

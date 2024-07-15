@@ -28,7 +28,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
     /// The redirect URL for an external verification.
     public var externalVerificationRedirectUrl: String?
             
-    var strategyEnum: Strategy? {
+    public var strategyEnum: Strategy? {
         if let strategy { return Strategy(stringValue: strategy) }
         return nil
     }
