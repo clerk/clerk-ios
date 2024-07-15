@@ -40,5 +40,11 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
         case transferable
         case failed
         case expired
+        
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
     }
 }
