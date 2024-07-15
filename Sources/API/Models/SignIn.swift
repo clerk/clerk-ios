@@ -463,10 +463,11 @@ public struct SignIn: Codable, Sendable, Equatable {
         
         var requestBody = [
             "strategy": "oauth_code_apple",
-            "id_token": token
+            "token": token
         ]
         
-        if let codeData = appleIdCredential.authorizationCode, let code = String(data: codeData, encoding: .utf8) {
+        if let codeData = appleIdCredential.authorizationCode,
+           let code = String(data: codeData, encoding: .utf8) {
             requestBody["code"] = code
         }
         
@@ -478,7 +479,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         if signIn.needsTransferToSignUp == true {
             if botProtectionIsEnabled {
                 // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
-                try await Client.get()
+                let signIn = try await Client.get()?.signIn
                 return OAuthResult(signIn: signIn)
             } else {
                 let signUp = try await SignUp.create(strategy: .transfer)
