@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ClerkSDK
+import Atlantis
 
 @main
 struct ClerkDemoApp: App {
@@ -15,13 +16,16 @@ struct ClerkDemoApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
-                #if os(iOS)
-                .clerkProvider()
-                #endif
                 .task {
                     Clerk.shared.configure(publishableKey: publishableKey, debugMode: true)
                     try? await Clerk.shared.load()
                 }
+                #if os(iOS)
+                .clerkProvider()
+                #endif
+                #if DEBUG
+                .task { Atlantis.start() }
+                #endif
         }
     }
 }
