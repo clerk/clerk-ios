@@ -22,8 +22,8 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint {
             .init(path: path)
         }
         
-        func post(_ params: SignUp.CreateParams) -> Request<ClientResponse<SignUp>> {
-            .init(path: path, method: .post, body: params)
+        func post(_ body: any Encodable) -> Request<ClientResponse<SignUp>> {
+            .init(path: path, method: .post, body: body)
         }
     }
 }

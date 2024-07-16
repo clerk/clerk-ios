@@ -234,3 +234,12 @@ extension Clerk.Environment.DisplayConfig {
     }
     
 }
+
+extension Clerk.Environment {
+    
+    var nameIsEnabled: Bool {
+        userSettings.config(for: .firstName)?.enabled == true ||
+        userSettings.config(for: .lastName)?.enabled == true
+    }
+    
+}

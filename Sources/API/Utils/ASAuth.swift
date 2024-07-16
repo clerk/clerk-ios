@@ -36,6 +36,7 @@ final class ASAuth: NSObject {
                 let appleIDProvider = ASAuthorizationAppleIDProvider()
                 let appleRequest = appleIDProvider.createRequest()
                 appleRequest.requestedScopes = [.fullName, .email]
+                appleRequest.nonce = UUID().uuidString
                 let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
                 authorizationController.delegate = self
                 authorizationController.presentationContextProvider = self
