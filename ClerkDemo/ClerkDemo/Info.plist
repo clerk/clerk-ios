@@ -6,5 +6,11 @@
 	<false/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>We use Face ID to authenticate you securely.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Atlantis would use Bonjour Service to discover Proxyman app from your local network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_Proxyman._tcp</string>
+	</array>
 </dict>
 </plist>
