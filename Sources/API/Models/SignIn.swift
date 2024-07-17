@@ -82,6 +82,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case phoneNumber = "phone_number"
         case username
         case web3Wallet = "web3_wallet"
+        case passkey
         case unknown
         
         public init(from decoder: Decoder) throws {
