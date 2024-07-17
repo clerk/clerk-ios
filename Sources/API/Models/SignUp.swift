@@ -102,6 +102,12 @@ public struct SignUp: Codable, Sendable, Equatable {
         case missingRequirements = "missing_requirements"
         /// All the required fields have been supplied and verified, so the sign-up is complete and a new user and a session have been created..
         case complete
+        
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
     }
     
     /**

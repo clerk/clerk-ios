@@ -179,7 +179,15 @@ public enum SessionStatus: String, Codable, Sendable {
     
     /// The application ended the session, and the Session was removed from the Client object.
     case revoked
+    
+    case unknown
+    
+    public init(from decoder: Decoder) throws {
+        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+    }
 }
+
+
 
 extension Session {
     /// Format for the session token cache key

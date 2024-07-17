@@ -33,6 +33,9 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?
     
+    /// Array of all the authentication identifiers that are supported for this sign in.
+    public let supportedIdentifiers: [SupportedIdentifier]?
+    
     /// Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
     public let supportedFirstFactors: [SignInFactor]?
     
@@ -66,6 +69,25 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// String representing the object's type. Objects of the same type share the same value.
     public enum Object: String, Codable, Sendable {
         case signInAttempt = "sign_in_attempt"
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
+    }
+    
+    /// Authentication identifier that is supported for this sign in.
+    public enum SupportedIdentifier: String, Codable, Sendable, Equatable {
+        case emailAddress = "email_address"
+        case phoneNumber = "phone_number"
+        case username
+        case web3Wallet = "web3_wallet"
+        case passkey
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
     }
     
     /// The current status of the sign-in.
@@ -87,14 +109,12 @@ public struct SignIn: Codable, Sendable, Equatable {
         
         /// The sign-in has been inactive for a long period of time, thus it's considered as abandoned and needs to start over.
         case abandoned
-    }
-    
-    /// Authentication identifier that is supported for this sign in.
-    public enum SupportedIdentifier: String, Codable, Sendable, Equatable {
-        case emailAddress = "email_address"
-        case phoneNumber = "phone_number"
-        case username
-        case web3Wallet = "web3_wallet"
+        
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
     }
     
     /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
@@ -446,6 +466,9 @@ extension SignIn {
         case .otp:
             let sortedFactors = firstFactors.sorted { $0.sortOrderOTPPreferred < $1.sortOrderOTPPreferred }
             return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
+            
+        case .unknown:
+            return nil
         }
     }
     

@@ -85,13 +85,13 @@ public struct TurnstileWebView: UIViewRepresentable {
             return displayConfig?.captchaPublicKeyInvisible ?? ""
         case .smart:
             return displayConfig?.captchaPublicKey ?? ""
-        case nil:
+        case nil, .unknown:
             switch displayConfig?.captchaWidgetType {
             case .invisible:
                 return displayConfig?.captchaPublicKeyInvisible ?? ""
             case .smart:
                 return displayConfig?.captchaPublicKey ?? ""
-            case nil:
+            case nil, .unknown:
                 return ""
             }
         }
