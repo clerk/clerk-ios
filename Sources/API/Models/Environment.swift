@@ -50,15 +50,32 @@ extension Clerk.Environment {
         public let captchaProvider: CaptchaProvider?
         
         public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
-            case password, otp
+            case password
+            case otp
+            case unknown
+            
+            public init(from decoder: Decoder) throws {
+                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+            }
         }
         
         public enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
-            case invisible, smart
+            case invisible
+            case smart
+            case unknown
+            
+            public init(from decoder: Decoder) throws {
+                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+            }
         }
         
         public enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
             case turnstile
+            case unknown
+            
+            public init(from decoder: Decoder) throws {
+                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+            }
         }
     }
     
@@ -85,6 +102,11 @@ extension Clerk.Environment {
             case ticket
             case backupCode
             case passkey
+            case unknown
+            
+            public init(from decoder: Decoder) throws {
+                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+            }
         }
         
         public struct AttributesConfig: Codable, Equatable, Sendable {

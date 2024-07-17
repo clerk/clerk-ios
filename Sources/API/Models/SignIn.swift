@@ -34,7 +34,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     public let identifier: String?
     
     /// Array of all the authentication identifiers that are supported for this sign in.
-    public let supportedIdentifiers: [String]?
+    public let supportedIdentifiers: [SupportedIdentifier]?
     
     /// Array of the first factors that are supported in the current sign-in. Each factor contains information about the verification strategy that can be used.
     public let supportedFirstFactors: [SignInFactor]?
@@ -69,6 +69,24 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// String representing the object's type. Objects of the same type share the same value.
     public enum Object: String, Codable, Sendable {
         case signInAttempt = "sign_in_attempt"
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
+    }
+    
+    /// Authentication identifier that is supported for this sign in.
+    public enum SupportedIdentifier: String, Codable, Sendable, Equatable {
+        case emailAddress = "email_address"
+        case phoneNumber = "phone_number"
+        case username
+        case web3Wallet = "web3_wallet"
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
     }
     
     /// The current status of the sign-in.
@@ -447,6 +465,9 @@ extension SignIn {
         case .otp:
             let sortedFactors = firstFactors.sorted { $0.sortOrderOTPPreferred < $1.sortOrderOTPPreferred }
             return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
+            
+        case .unknown:
+            return nil
         }
     }
     
