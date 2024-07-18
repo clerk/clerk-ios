@@ -26,6 +26,6 @@ enum OAuthUtils {
 }
 
 public struct OAuthResult {
-    var signIn: SignIn?
-    var signUp: SignUp?
+    public var signIn: SignIn?
+    public var signUp: SignUp?
 }

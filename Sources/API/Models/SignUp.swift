@@ -236,7 +236,7 @@ public struct SignUp: Codable, Sendable, Equatable {
      - phoneNumber: The phone number can be verified via a phone code. This is a one-time code that is sent via an SMS to the phone already provided to the SignUp object. The prepareVerification sends this SMS.
      */
     @discardableResult @MainActor
-    public func prepareVerification(_ strategy: PrepareStrategy) async throws -> SignUp {
+    public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
         let params = prepareParams(for: strategy)
         let request = ClerkAPI.v1.client.signUps.id(id).prepareVerification.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
