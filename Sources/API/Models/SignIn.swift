@@ -430,7 +430,7 @@ public struct SignIn: Codable, Sendable, Equatable {
 
 extension SignIn {
     
-    var needsTransferToSignUp: Bool {
+    public var needsTransferToSignUp: Bool {
         firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
     }
     
