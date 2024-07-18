@@ -270,12 +270,10 @@ extension Clerk {
     
     /// A method used to set the active session and/or organization.
     /// - Parameter sessionId: The session ID to be set as active.
-    public func setActive(sessionId: String?) async throws {
-        if let sessionId = sessionId {
-            let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
-            let response = try await Clerk.shared.apiClient.send(request)
-            Clerk.shared.client = response.value.client
-        }
+    public func setActive(sessionId: String) async throws {
+        let request = ClerkAPI.v1.client.sessions.id(sessionId).touch.post
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
     }
     
 }
