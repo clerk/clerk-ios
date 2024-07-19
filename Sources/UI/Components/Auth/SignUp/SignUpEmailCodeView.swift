@@ -60,7 +60,7 @@ struct SignUpEmailCodeView: View {
         }
         
         do {
-            try await signUp.prepareVerification(.emailCode)
+            try await signUp.prepareVerification(strategy: .emailCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
