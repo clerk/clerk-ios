@@ -28,9 +28,13 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: OAuthProvider) async {
         do {
-            try await SignIn
-                .create(strategy: .oauth(provider))
-                .authenticateWithRedirect()
+            if provider == .apple {
+                try await SignIn.signInWithApple()
+            } else {
+                try await SignIn
+                    .create(strategy: .oauth(provider))
+                    .authenticateWithRedirect()
+            }
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
