@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AuthenticationServices
 
 /**
  The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account. Each user has a unique authentication identifier which might be their email address, phone number, or a username.
@@ -263,6 +264,46 @@ extension User {
         Clerk.shared.client = response.value.client
         return response.value.response
     }
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @discardableResult @MainActor
+    public func linkAppleAccount() async throws -> ExternalAccount? {
+        let authManager = ASAuth(authType: .signInWithApple)
+        let authorization = try await authManager.start()
+        
+        if authorization == nil {
+            // cancelled
+            return nil
+        }
+        
+        guard
+            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
+            let tokenData = appleIdCredential.identityToken,
+            let token = String(data: tokenData, encoding: .utf8)
+        else {
+            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
+        }
+                
+        var requestBody = [
+            "strategy": "oauth_code_apple",
+            "token": token
+        ]
+        
+        if let codeData = appleIdCredential.authorizationCode,
+           let code = String(data: codeData, encoding: .utf8) {
+            requestBody["code"] = code
+        }
+        
+        let request = ClerkAPI.v1.me.externalAccounts.create(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: requestBody
+        )
+        
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    #endif
     
     /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.
     @discardableResult @MainActor
