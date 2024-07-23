@@ -352,45 +352,30 @@ public struct SignUp: Codable, Sendable, Equatable {
     }
     #endif
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Starts the native sign up with apple flow
+    /// Creates a sign up with an id token (like the one from Sign in with Apple)
     @discardableResult @MainActor
-    static func signUpWithApple(captchaToken: String? = nil) async throws -> OAuthResult? {
-        let authManager = ASAuth(authType: .signInWithApple)
-        let authorization = try await authManager.start()
-        
-        if authorization == nil {
-            // cancelled
-            return nil
-        }
-        
-        guard
-            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
-            let tokenData = appleIdCredential.identityToken,
-            let token = String(data: tokenData, encoding: .utf8)
-        else {
-            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
-        }
-        
-        let nameIsEnabled = Clerk.shared.environment?.nameIsEnabled == true
+    static func signUpWithAppleIdToken(
+        idToken: String,
+        code: String? = nil,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        captchaToken: String? = nil
+    ) async throws -> OAuthResult? {
         
         var requestBody = [
             "strategy": "oauth_code_apple",
-            "token": token,
-            "first_name": nameIsEnabled ? appleIdCredential.fullName?.givenName : nil,
-            "last_name": nameIsEnabled ? appleIdCredential.fullName?.familyName : nil,
+            "token": idToken,
+            "first_name": firstName,
+            "last_name": lastName,
             "captcha_token": captchaToken
         ]
         
-        if let codeData = appleIdCredential.authorizationCode,
-           let code = String(data: codeData, encoding: .utf8) {
-            requestBody["code"] = code
-        }
+        if let code { requestBody["code"] = code }
         
         let request = ClerkAPI.v1.client.signUps.post(requestBody)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
         
-        if signUp.needsTransferToSignIn == true {
+        if signUp.needsTransferToSignIn {
             let signIn = try await SignIn.create(strategy: .transfer)
             return OAuthResult(signIn: signIn)
         } else {
@@ -398,7 +383,6 @@ public struct SignUp: Codable, Sendable, Equatable {
             return OAuthResult(signUp: signUp)
         }
     }
-    #endif
     
     /// Returns the current sign up.
     @discardableResult @MainActor

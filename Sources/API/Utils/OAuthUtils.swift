@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AuthenticationServices
 
 enum OAuthUtils {
     
@@ -22,6 +23,26 @@ enum OAuthUtils {
         
         return nonceQueryItem.value
     }
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    /// Starts the native sign up with apple flow
+    @MainActor
+    static func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential? {
+        let authManager = ASAuth(authType: .signInWithApple)
+        let authorization = try await authManager.start()
+        
+        if authorization == nil {
+            // cancelled
+            return nil
+        }
+        
+        guard let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential else {
+            throw ClerkClientError(message: "Unable to get your Apple ID credential.")
+        }
+        
+        return appleIdCredential
+    }
+    #endif
     
 }
 

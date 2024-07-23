@@ -441,42 +441,26 @@ public struct SignIn: Codable, Sendable, Equatable {
     }
     #endif
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Starts the native sign in with apple flow
+    /// Creates a sign up with an id token (like the one from Sign in with Apple)
     @discardableResult @MainActor
-    static func signInWithApple() async throws -> OAuthResult? {
-        let authManager = ASAuth(authType: .signInWithApple)
-        let authorization = try await authManager.start()
-        
-        if authorization == nil {
-            // cancelled
-            return nil
-        }
-        
-        guard
-            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
-            let tokenData = appleIdCredential.identityToken,
-            let token = String(data: tokenData, encoding: .utf8)
-        else {
-            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
-        }
+    static func signInWithAppleIdToken(
+        idToken: String,
+        code: String? = nil
+    ) async throws -> OAuthResult? {
         
         var requestBody = [
             "strategy": "oauth_code_apple",
-            "token": token
+            "token": idToken
         ]
         
-        if let codeData = appleIdCredential.authorizationCode,
-           let code = String(data: codeData, encoding: .utf8) {
-            requestBody["code"] = code
-        }
+        if let code { requestBody["code"] = code }
         
         let request = ClerkAPI.v1.client.signIns.post(requestBody)
-        
         let signIn = try await Clerk.shared.apiClient.send(request).value.response
+        
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         
-        if signIn.needsTransferToSignUp == true {
+        if signIn.needsTransferToSignUp {
             if botProtectionIsEnabled {
                 // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
                 let signIn = try await Client.get()?.signIn
@@ -491,7 +475,6 @@ public struct SignIn: Codable, Sendable, Equatable {
             return OAuthResult(signIn: signIn)
         }
     }
-    #endif
 }
 
 extension SignIn {

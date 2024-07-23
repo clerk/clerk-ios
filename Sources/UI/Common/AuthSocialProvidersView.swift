@@ -62,7 +62,7 @@ struct AuthSocialProvidersView: View {
 
         do {
 			if provider == .apple {
-                oauthResult = try await SignUp.signUpWithApple()
+                oauthResult = try await signUpWithApple()
             } else {
             	oauthResult = try await SignIn
                 	.create(strategy: .oauth(provider))
@@ -76,6 +76,27 @@ struct AuthSocialProvidersView: View {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
+    }
+    
+    private func signUpWithApple() async throws -> OAuthResult? {
+        guard let appleIdCredential = try await OAuthUtils.getAppleIdCredential() else {
+            return nil
+        }
+        
+        guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+            throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
+        }
+                        
+        let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
+        
+        let oauthResult = try await SignUp.signUpWithAppleIdToken(
+            idToken: token,
+            code: authCode,
+            firstName: appleIdCredential.fullName?.givenName,
+            lastName: appleIdCredential.fullName?.familyName
+        )
+        
+        return oauthResult
     }
 }
 

@@ -25,6 +25,18 @@ final class ASAuth: NSObject {
     
     private var continuation: CheckedContinuation<ASAuthorization?,Error>?
     
+    @MainActor
+    private var requestedScopes: [ASAuthorization.Scope]? {
+        var scopes: [ASAuthorization.Scope]? = [.email]
+        
+        if Clerk.shared.environment?.nameIsEnabled == true {
+            scopes?.append(.fullName)
+        }
+        
+        return scopes
+    }
+    
+    @MainActor
     func start() async throws -> ASAuthorization? {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
@@ -35,7 +47,7 @@ final class ASAuth: NSObject {
                 
                 let appleIDProvider = ASAuthorizationAppleIDProvider()
                 let appleRequest = appleIDProvider.createRequest()
-                appleRequest.requestedScopes = [.fullName, .email]
+                appleRequest.requestedScopes = requestedScopes
                 appleRequest.nonce = UUID().uuidString
                 let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
                 authorizationController.delegate = self

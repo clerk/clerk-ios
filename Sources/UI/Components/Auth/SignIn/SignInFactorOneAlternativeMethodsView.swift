@@ -29,7 +29,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     private func signIn(provider: OAuthProvider) async {
         do {
             if provider == .apple {
-                try await SignIn.signInWithApple()
+                try await signInWithApple()
             } else {
                 try await SignIn
                     .create(strategy: .oauth(provider))
@@ -42,6 +42,20 @@ struct SignInFactorOneAlternativeMethodsView: View {
 			clerkUIState.presentedAuthStep = .signInStart
             dump(error)
         }
+    }
+    
+    private func signInWithApple() async throws {
+        guard let appleIdCredential = try await OAuthUtils.getAppleIdCredential() else {
+            return
+        }
+        
+        guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+            throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
+        }
+                        
+        let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
+        
+        try await SignIn.signInWithAppleIdToken(idToken: token, code: authCode)
     }
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {

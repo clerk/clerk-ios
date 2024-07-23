@@ -196,7 +196,7 @@ extension Clerk.Environment.UserSettings {
      }
         
     public var enabledOAuthProviders: [OAuthProvider] {
-        var authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         
         return authenticatableStrategies.compactMap { strategy in
             OAuthProvider(strategy: strategy)
