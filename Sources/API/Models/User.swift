@@ -285,7 +285,7 @@ extension User {
         }
                 
         var requestBody = [
-            "strategy": "oauth_code_apple",
+            "strategy": "oauth_token_apple",
             "token": token
         ]
         

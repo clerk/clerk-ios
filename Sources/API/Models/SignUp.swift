@@ -363,7 +363,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     ) async throws -> OAuthResult? {
         
         var requestBody = [
-            "strategy": "oauth_code_apple",
+            "strategy": "oauth_token_apple",
             "token": idToken,
             "first_name": firstName,
             "last_name": lastName,

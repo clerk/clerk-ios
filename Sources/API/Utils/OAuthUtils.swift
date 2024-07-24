@@ -25,7 +25,7 @@ enum OAuthUtils {
     }
     
     #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Starts the native sign up with apple flow
+    /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
     @MainActor
     static func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential? {
         let authManager = ASAuth(authType: .signInWithApple)
