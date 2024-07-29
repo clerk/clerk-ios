@@ -61,6 +61,7 @@ struct SignInFactorOnePasswordView: View {
                         .font(.footnote.weight(.medium))
                         
                         PasswordInputView(password: $password)
+                            .textContentType(.password)
                             .focused($isFocused)
                             .task { isFocused = true }
                         

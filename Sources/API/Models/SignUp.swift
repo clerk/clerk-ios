@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AuthenticationServices
 
 /**
  The `SignUp` object holds the state of the current sign up and provides helper methods to navigate and complete the sign up flow. Once a sign up is complete, a new user is created.
@@ -129,7 +130,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     
     public enum CreateStrategy {
         case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
-        case externalProvider(_ provider: ExternalProvider)
+        case social(_ provider: SocialProvider)
         case transfer
     }
     
@@ -138,8 +139,8 @@ public struct SignUp: Codable, Sendable, Equatable {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
-        case .externalProvider(let provider):
-            return .init(strategy: .externalProvider(provider), redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
+        case .social(let provider):
+            return .init(strategy: provider.providerData.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
         case .transfer:
             return .init(transfer: true, captchaToken: captchaToken)
         }
@@ -153,7 +154,7 @@ public struct SignUp: Codable, Sendable, Equatable {
             emailAddress: String? = nil,
             phoneNumber: String? = nil,
             username: String? = nil,
-            strategy: Strategy? = nil,
+            strategy: String? = nil,
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil,
@@ -165,7 +166,7 @@ public struct SignUp: Codable, Sendable, Equatable {
             self.emailAddress = emailAddress
             self.phoneNumber = phoneNumber
             self.username = username
-            self.strategy = strategy?.stringValue
+            self.strategy = strategy
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
@@ -307,7 +308,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> OAuthResult? {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult? {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -330,10 +331,10 @@ public struct SignUp: Codable, Sendable, Equatable {
             return nil
         }
         
-        if let nonce = OAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
+        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
             
             let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
-            return OAuthResult(signUp: signUp)
+            return ExternalAuthResult(signUp: signUp)
             
         } else {
             // transfer flow
@@ -346,10 +347,42 @@ public struct SignUp: Codable, Sendable, Equatable {
             }
             
             let signIn = try await SignIn.create(strategy: .transfer)
-            return OAuthResult(signIn: signIn)
+            return ExternalAuthResult(signIn: signIn)
         }
     }
     #endif
+    
+    /// Creates a sign up with an id token (like the one from Sign in with Apple)
+    @discardableResult @MainActor
+    static func signUpWithAppleIdToken(
+        idToken: String,
+        code: String? = nil,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        captchaToken: String? = nil
+    ) async throws -> ExternalAuthResult? {
+        
+        var requestBody = [
+            "strategy": "oauth_token_apple",
+            "token": idToken,
+            "first_name": firstName,
+            "last_name": lastName,
+            "captcha_token": captchaToken
+        ]
+        
+        if let code { requestBody["code"] = code }
+        
+        let request = ClerkAPI.v1.client.signUps.post(requestBody)
+        let signUp = try await Clerk.shared.apiClient.send(request).value.response
+        
+        if signUp.needsTransferToSignIn {
+            let signIn = try await SignIn.create(strategy: .transfer)
+            return ExternalAuthResult(signIn: signIn)
+        } else {
+            try await Client.get()
+            return ExternalAuthResult(signUp: signUp)
+        }
+    }
     
     /// Returns the current sign up.
     @discardableResult @MainActor

@@ -1,5 +1,5 @@
 //
-//  ExternalProvider.swift
+//  SocialProvider.swift
 //
 //
 //  Created by Mike Pitre on 10/18/23.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// The available external authentication providers.
-public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
+/// The available social providers.
+public enum SocialProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
     public var id: Self { self }
     
     case facebook
@@ -38,21 +38,21 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     case linear
     
     init?(strategy: String) {
-        if let provider = Self.allCases.first(where: { $0.data.strategy == strategy }) {
+        if let provider = Self.allCases.first(where: { $0.providerData.strategy == strategy }) {
             self = provider
         } else {
             return nil
         }
     }
     
-    public struct Data {
+    public struct SocialProviderData {
         public let provider: String
         public let strategy: String
         public let name: String
         let docsUrl: String
     }
     
-    public var data: Data {
+    public var providerData: SocialProviderData {
         switch self {
         case .facebook:
             return .init(
@@ -242,14 +242,14 @@ public enum ExternalProvider: Codable, CaseIterable, Identifiable, Sendable {
     }
     
     public func iconImageUrl(darkMode: Bool = false) -> URL? {
-        var iconName = data.provider
+        var iconName = providerData.provider
         if darkMode && hasDarkModeVariant { iconName += "-dark" }
         return URL(string: "https://img.clerk.com/static/\(iconName).png")
     }
 }
 
-extension ExternalProvider: Comparable {
+extension SocialProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.data.name < rhs.data.name
+        return lhs.providerData.name < rhs.providerData.name
     }
 }

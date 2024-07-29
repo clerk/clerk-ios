@@ -73,12 +73,12 @@ struct UserProfileExternalAccountSection: View {
         var body: some View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    if let provider = externalAccount.externalProvider {
+                    if let provider = externalAccount.socialProvider {
                         AuthProviderIcon(provider: provider)
                             .frame(width: 16, height: 16)
                     }
                     
-                    if let providerName = externalAccount.externalProvider?.data.name {
+                    if let providerName = externalAccount.socialProvider?.providerData.name {
                         Text(providerName)
                             .font(.footnote)
                             .confirmationDialog(
@@ -141,7 +141,7 @@ struct UserProfileExternalAccountSection: View {
         
         @ViewBuilder
         private var retryConnectionButton: some View {
-            if let provider = externalAccount.externalProvider {
+            if let provider = externalAccount.socialProvider {
                 AsyncButton {
                     await retryConnection(provider)
                 } label: {
@@ -150,11 +150,16 @@ struct UserProfileExternalAccountSection: View {
             }
         }
         
-        private func retryConnection(_ provider: ExternalProvider) async {
+        private func retryConnection(_ provider: SocialProvider) async {
             do {
-                let externalAccount = try await user?.createExternalAccount(provider)
-                try await externalAccount?.reauthorize()
+//                if provider == .apple {
+//                    try await user?.linkAppleAccount()
+//                } else {
+                    let externalAccount = try await user?.createExternalAccount(provider)
+                    try await externalAccount?.reauthorize()
+//                }
             } catch {
+                if case ASAuthorizationError.canceled = error { return }
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }

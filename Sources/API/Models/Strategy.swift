@@ -20,7 +20,7 @@ public enum Strategy: Codable, Equatable {
     case resetPasswordPhoneCode
     case resetPasswordEmailCode
     case saml
-    case externalProvider(_ provider: ExternalProvider)
+    case oauth(_ provider: SocialProvider)
     case web3(_ signature: String)
     
     var stringValue: String {
@@ -35,8 +35,8 @@ public enum Strategy: Codable, Equatable {
 //            return "email_link"
         case .saml:
             return "saml"
-        case .externalProvider(let provider):
-            return provider.data.strategy
+        case .oauth(let provider):
+            return provider.providerData.strategy
         case .web3(let signature):
             return "web3_\(signature)_signature"
         case .ticket:
@@ -85,10 +85,10 @@ public enum Strategy: Codable, Equatable {
             }
             
             if
-                let strategy = value.firstMatch(of: regex)?.output.1,
-                let provider = ExternalProvider(strategy: String(strategy))
+                let strategy = value.firstMatch(of: regex)?.output.0,
+                let provider = SocialProvider(strategy: String(strategy))
             {
-                self = .externalProvider(provider)
+                self = .oauth(provider)
             } else {
                 return nil
             }

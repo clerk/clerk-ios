@@ -37,8 +37,7 @@ struct SignUpFormView: View {
     }
     
     private var nameIsEnabled: Bool {
-        clerk.environment?.userSettings.config(for: .firstName)?.enabled == true ||
-        clerk.environment?.userSettings.config(for: .lastName)?.enabled == true
+        clerk.environment?.nameIsEnabled == true
     }
     
     private var emailIsEnabled: Bool {
@@ -127,29 +126,6 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Email address")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
-                        Spacer()
-                        if !email.required {
-                            Text("Optional")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(clerkTheme.colors.textTertiary)
-                        }
-                    }
-                    
-                    CustomTextField(text: $emailAddress)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .focused($focusedField, equals: .emailAddress)
-                }
-            }
-            
             if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {
@@ -170,6 +146,29 @@ struct SignUpFormView: View {
                 }
             }
             
+            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Email address")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                        if !email.required {
+                            Text("Optional")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
+                        }
+                    }
+                    
+                    CustomTextField(text: $emailAddress)
+                        .textContentType(.username)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .emailAddress)
+                }
+            }
+            
             if clerk.environment?.userSettings.instanceIsPasswordBased == true {
                 VStack(alignment: .leading) {
                     HStack {
@@ -180,6 +179,7 @@ struct SignUpFormView: View {
                     }
                     
                     PasswordInputView(password: $password)
+                        .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
                     
                     if Clerk.LocalAuth.availableBiometryType != .none {
@@ -253,11 +253,11 @@ struct SignUpFormView: View {
             }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
-                try await signUp.update(params: .init(strategy: .saml))
+                try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
             }
             
             switch signUp.nextStrategyToVerify {
-            case .externalProvider, .saml:
+            case .oauth, .saml:
                 try await signUp.authenticateWithRedirect()
             default:
                 break

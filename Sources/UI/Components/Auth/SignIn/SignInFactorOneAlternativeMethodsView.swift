@@ -9,6 +9,7 @@
 
 import SwiftUI
 import NukeUI
+import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -21,21 +22,40 @@ struct SignInFactorOneAlternativeMethodsView: View {
         clerk.client?.signIn
     }
     
-    private var thirdPartyProviders: [ExternalProvider] {
-        (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
+    private var socialProviders: [SocialProvider] {
+        (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
     }
     
-    private func signIn(provider: ExternalProvider) async {
+    private func signIn(provider: SocialProvider) async {
         do {
-            try await SignIn
-                .create(strategy: .externalProvider(provider))
-                .authenticateWithRedirect()
+            if provider == .apple {
+                try await signInWithApple()
+            } else {
+                try await SignIn
+                    .create(strategy: .social(provider))
+                    .authenticateWithRedirect()
+            }
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
-            clerkUIState.presentedAuthStep = .signInStart
+            errorWrapper = ErrorWrapper(error: error)
+			clerkUIState.presentedAuthStep = .signInStart
             dump(error)
         }
+    }
+    
+    private func signInWithApple() async throws {
+        guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
+            return
+        }
+        
+        guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+            throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
+        }
+                        
+        let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
+        
+        try await SignIn.signInWithAppleIdToken(idToken: token, code: authCode)
     }
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
@@ -52,7 +72,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(thirdPartyProviders) { provider in
+            ForEach(socialProviders) { provider in
                 AsyncButton {
                     await signIn(provider: provider)
                 } label: {
@@ -60,7 +80,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                         AuthProviderIcon(provider: provider)
                             .frame(width: 16, height: 16)
                         
-                        Text("Continue with \(provider.data.name)")
+                        Text("Continue with \(provider.providerData.name)")
                     }
                     .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)

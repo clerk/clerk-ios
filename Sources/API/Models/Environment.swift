@@ -86,7 +86,7 @@ extension Clerk.Environment {
     public struct UserSettings: Codable, Equatable, Sendable {
         
         public let attributes: [Attribute: AttributesConfig]
-        /// key is oauth social provider strategy (`oauth_google`, `oauth_github`, etc.)
+        /// key is social provider strategy (`oauth_google`, `oauth_github`, etc.)
         public let social: [String: SocialConfig]
         public let actions: Actions
         
@@ -194,11 +194,20 @@ extension Clerk.Environment.UserSettings {
         
         return false
      }
+    
+    public var socialProviders: [SocialProvider] {
+        let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
         
-    public var enabledOAuthProviders: [ExternalProvider] {
-        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         return authenticatableStrategies.compactMap { strategy in
-            ExternalProvider(strategy: strategy)
+            SocialProvider(strategy: strategy)
+        }
+    }
+        
+    public var authenticatableSocialProviders: [SocialProvider] {
+        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        
+        return authenticatableStrategies.compactMap { strategy in
+            SocialProvider(strategy: strategy)
         }
     }
     
@@ -230,6 +239,15 @@ extension Clerk.Environment.DisplayConfig {
     
     public var botProtectionIsEnabled: Bool {
         captchaWidgetType != nil
+    }
+    
+}
+
+extension Clerk.Environment {
+    
+    var nameIsEnabled: Bool {
+        userSettings.config(for: .firstName)?.enabled == true ||
+        userSettings.config(for: .lastName)?.enabled == true
     }
     
 }

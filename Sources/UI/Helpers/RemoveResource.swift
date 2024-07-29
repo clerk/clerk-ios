@@ -30,7 +30,7 @@ enum RemoveResource {
         case .phoneNumber(let phoneNumber):
             return "\(phoneNumber.formatted(.national)) will be removed from this account."
         case .externalAccount(let externalAccount):
-            return "\(externalAccount.externalProvider?.data.name ?? "This provider") will be removed from this account."
+            return "\(externalAccount.socialProvider?.providerData.name ?? "This provider") will be removed from this account."
         }
     }
     

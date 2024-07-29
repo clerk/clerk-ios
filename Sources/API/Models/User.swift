@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AuthenticationServices
 
 /**
  The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account. Each user has a unique authentication identifier which might be their email address, phone number, or a username.
@@ -35,28 +36,28 @@ public struct User: Codable, Equatable, Sendable {
     public let hasImage: Bool
     
     /// The unique identifier for the EmailAddress that the user has set as primary.
-    public  let primaryEmailAddressId: String?
+    public let primaryEmailAddressId: String?
     
     /// An array of all the EmailAddress objects associated with the user. Includes the primary.
     public let emailAddresses: [EmailAddress]
     
     /// The unique identifier for the PhoneNumber that the user has set as primary.
-    public  let primaryPhoneNumberId: String?
+    public let primaryPhoneNumberId: String?
     
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
     
     /// The unique identifier for the Web3Wallet that the user signed up with.
-    public  let primaryWeb3WalletId: String?
+    public let primaryWeb3WalletId: String?
     
     /// An array of all the Web3Wallet objects associated with the user. Includes the primary.
     public let web3Wallets: [String]
     
     /// A boolean indicating whether the user has a password on their account.
-    public  let passwordEnabled: Bool
+    public let passwordEnabled: Bool
     
     /// A boolean indicating whether the user has enabled two-factor authentication.
-    public  let twoFactorEnabled: Bool
+    public let twoFactorEnabled: Bool
     
     /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
     public let totpEnabled: Bool
@@ -151,10 +152,10 @@ extension User {
     }
     
     @MainActor
-    var unconnectedProviders: [ExternalProvider] {
+    var unconnectedProviders: [SocialProvider] {
         guard let environment = Clerk.shared.environment else { return []}
-        let allExternalProviders = environment.userSettings.enabledOAuthProviders.sorted()
-        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.externalProvider)
+        let allExternalProviders = environment.userSettings.authenticatableSocialProviders.sorted()
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.socialProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
@@ -250,11 +251,11 @@ extension User {
      /// - If the connection was successful then externalAccount.verification.status should be verified.
      /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
     @discardableResult @MainActor
-    public func createExternalAccount(_ provider: ExternalProvider) async throws -> ExternalAccount {
+    public func createExternalAccount(_ provider: SocialProvider) async throws -> ExternalAccount {
         let request = ClerkAPI.v1.me.externalAccounts.create(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
             body: [
-                "strategy": provider.data.strategy,
+                "strategy": provider.providerData.strategy,
                 "redirect_url": Clerk.shared.redirectConfig.redirectUrl
             ]
         )
@@ -263,6 +264,46 @@ extension User {
         Clerk.shared.client = response.value.client
         return response.value.response
     }
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @discardableResult @MainActor
+    public func linkAppleAccount() async throws -> ExternalAccount? {
+        let authManager = ASAuth(authType: .signInWithApple)
+        let authorization = try await authManager.start()
+        
+        if authorization == nil {
+            // cancelled
+            return nil
+        }
+        
+        guard
+            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
+            let tokenData = appleIdCredential.identityToken,
+            let token = String(data: tokenData, encoding: .utf8)
+        else {
+            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
+        }
+                
+        var requestBody = [
+            "strategy": "oauth_token_apple",
+            "token": token
+        ]
+        
+        if let codeData = appleIdCredential.authorizationCode,
+           let code = String(data: codeData, encoding: .utf8) {
+            requestBody["code"] = code
+        }
+        
+        let request = ClerkAPI.v1.me.externalAccounts.create(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: requestBody
+        )
+        
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    #endif
     
     /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.
     @discardableResult @MainActor
@@ -367,6 +408,13 @@ extension User {
         
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
+
+		#if !os(tvOS) && !os(watchOS)
+        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
+            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
+        }
+        #endif
+
         return response.value.response
     }
     

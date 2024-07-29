@@ -88,7 +88,7 @@ extension Clerk {
                 .set(password, forKey: identifier)
         }
         
-        private static func accountForLocalAuthBelongsToUser(_ user: User) -> Bool {
+        static func accountForLocalAuthBelongsToUser(_ user: User) -> Bool {
             guard let accountForLocalAuth else { return false }
             var identifiers = user.emailAddresses.map(\.emailAddress) + user.phoneNumbers.map(\.phoneNumber)
             if let username = user.username { identifiers.append(username) }
@@ -104,6 +104,10 @@ extension Clerk {
             }
             
             return false
+        }
+        
+        static func deleteCurrentAccountForLocalAuth() {
+            try? SimpleKeychain().deleteItem(forKey: localAuthAccountKey)
         }
     }
     

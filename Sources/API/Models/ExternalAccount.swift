@@ -61,14 +61,14 @@ extension ExternalAccount: Comparable {
         if lhs.verification?.status != rhs.verification?.status  {
             return lhs.verification?.status == .verified
         } else {
-            return (lhs.externalProvider?.data.name ?? "") < (rhs.externalProvider?.data.name ?? "")
+            return (lhs.socialProvider?.providerData.name ?? "") < (rhs.socialProvider?.providerData.name ?? "")
         }
     }
 }
 
 extension ExternalAccount {
     
-    var externalProvider: ExternalProvider? {
+    var socialProvider: SocialProvider? {
         .init(strategy: provider)
     }
     
@@ -121,10 +121,6 @@ extension ExternalAccount {
     }
     #endif
     
-}
-
-extension ExternalAccount {
-    
     /// Deletes this external account.
     @discardableResult @MainActor
     public func destroy() async throws -> Deletion {
@@ -136,5 +132,4 @@ extension ExternalAccount {
         Clerk.shared.client = response.value.client
         return response.value.response
     }
-    
 }

@@ -9,9 +9,14 @@
 
 import SwiftUI
 
+enum AsyncButtonOptions: CaseIterable {
+    case disableButton
+    case showProgressView
+}
+
 struct AsyncButton<Label: View>: View {
     init(
-        options: Set<AsyncButton<Label>.Options> = [.disableButton, .showProgressView],
+        options: Set<AsyncButtonOptions> = [.disableButton, .showProgressView],
         role: ButtonRole? = nil,
         action: @escaping () async -> Void,
         label: @escaping () -> Label
@@ -22,7 +27,7 @@ struct AsyncButton<Label: View>: View {
         self.label = label
     }
     
-    var options = Set(Options.allCases)
+    var options = Set(AsyncButtonOptions.allCases)
     var role: ButtonRole?
     var action: () async -> Void
     @ViewBuilder var label: () -> Label
@@ -95,13 +100,6 @@ struct AsyncButton<Label: View>: View {
         .buttonStyle(ClerkDangerButtonStyle())
     }
     
-}
-
-extension AsyncButton {
-    enum Options: CaseIterable {
-        case disableButton
-        case showProgressView
-    }
 }
 
 #endif
