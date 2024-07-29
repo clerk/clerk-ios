@@ -401,7 +401,7 @@ extension User {
     
     /// Deletes the user's profile image.
     @discardableResult @MainActor
-    public func deleteProfileImage() async throws -> ClerkImageResource {
+    public func deleteProfileImage() async throws -> Deletion {
         let request = ClerkAPI.v1.me.profileImage.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )

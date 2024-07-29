@@ -22,7 +22,7 @@ extension ClerkAPI.V1Endpoint.MeEndpoint {
             .init(path: path, method: .post, query: queryItems.asTuples, headers: headers)
         }
         
-        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<ClerkImageResource>> {
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
             .init(path: path, method: .delete, query: queryItems.asTuples)
         }
     }
