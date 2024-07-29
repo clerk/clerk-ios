@@ -253,7 +253,7 @@ struct SignUpFormView: View {
             }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
-                try await signUp.update(params: .init(strategy: .saml))
+                try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
             }
             
             switch signUp.nextStrategyToVerify {

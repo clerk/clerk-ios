@@ -230,7 +230,7 @@ final public class Clerk: ObservableObject {
             imageUrls.append(logoUrl)
         }
         
-        environment.userSettings.enabledOAuthProviders.forEach { provider in
+        environment.userSettings.authenticatableSocialProviders.forEach { provider in
             imageUrls.append(provider.iconImageUrl())
             if provider.hasDarkModeVariant {
                 imageUrls.append(provider.iconImageUrl(darkMode: true))
@@ -249,7 +249,7 @@ final public class Clerk: ObservableObject {
 extension Clerk {
     
     /**
-     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. The current client will be deleted. You can also specify a specific session to sign out by passing the sessionId parameter.
+     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
     public func signOut(sessionId: String? = nil) async throws {

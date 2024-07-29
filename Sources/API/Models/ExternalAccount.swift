@@ -61,14 +61,14 @@ extension ExternalAccount: Comparable {
         if lhs.verification?.status != rhs.verification?.status  {
             return lhs.verification?.status == .verified
         } else {
-            return (lhs.oauthProvider?.providerData.name ?? "") < (rhs.oauthProvider?.providerData.name ?? "")
+            return (lhs.socialProvider?.providerData.name ?? "") < (rhs.socialProvider?.providerData.name ?? "")
         }
     }
 }
 
 extension ExternalAccount {
     
-    var oauthProvider: OAuthProvider? {
+    var socialProvider: SocialProvider? {
         .init(strategy: provider)
     }
     

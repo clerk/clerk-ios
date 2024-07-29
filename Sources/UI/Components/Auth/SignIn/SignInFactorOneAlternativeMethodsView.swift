@@ -22,17 +22,17 @@ struct SignInFactorOneAlternativeMethodsView: View {
         clerk.client?.signIn
     }
     
-    private var oauthProviders: [OAuthProvider] {
-        (clerk.environment?.userSettings.enabledOAuthProviders ?? []).sorted()
+    private var socialProviders: [SocialProvider] {
+        (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
     }
     
-    private func signIn(provider: OAuthProvider) async {
+    private func signIn(provider: SocialProvider) async {
         do {
             if provider == .apple {
                 try await signInWithApple()
             } else {
                 try await SignIn
-                    .create(strategy: .oauth(provider))
+                    .create(strategy: .social(provider))
                     .authenticateWithRedirect()
             }
             
@@ -45,7 +45,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     }
     
     private func signInWithApple() async throws {
-        guard let appleIdCredential = try await OAuthUtils.getAppleIdCredential() else {
+        guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
             return
         }
         
@@ -72,7 +72,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(oauthProviders) { provider in
+            ForEach(socialProviders) { provider in
                 AsyncButton {
                     await signIn(provider: provider)
                 } label: {

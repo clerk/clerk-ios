@@ -1,5 +1,5 @@
 //
-//  OAuthUtils.swift
+//  ExternalAuthUtils.swift
 //
 //
 //  Created by Mike Pitre on 7/2/24.
@@ -8,7 +8,7 @@
 import Foundation
 import AuthenticationServices
 
-enum OAuthUtils {
+enum ExternalAuthUtils {
     
     static func nonceFromCallbackUrl(url: URL) -> String? {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
@@ -46,7 +46,7 @@ enum OAuthUtils {
     
 }
 
-public struct OAuthResult {
+public struct ExternalAuthResult {
     public var signIn: SignIn?
     public var signUp: SignUp?
 }

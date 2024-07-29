@@ -13,7 +13,7 @@ import NukeUI
 struct AuthProviderButton: View {
     @Environment(\.colorScheme) private var colorScheme
     
-    let provider: OAuthProvider
+    let provider: SocialProvider
     let label: String
     var style: Style = .regular
     
@@ -51,7 +51,7 @@ struct AuthProviderButton: View {
 
 extension AuthProviderButton {
     
-    init(provider: OAuthProvider, label: String? = nil, style: Style = .regular) {
+    init(provider: SocialProvider, label: String? = nil, style: Style = .regular) {
         self.provider = provider
         self.style = style
         if let label {
@@ -64,10 +64,10 @@ extension AuthProviderButton {
 }
 
 #Preview {
-    let limitedProviders: [OAuthProvider] = Array(OAuthProvider.allCases.prefix(2))
+    let limitedProviders: [SocialProvider] = Array(SocialProvider.allCases.prefix(2))
     let limitedColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(limitedProviders.count, limitedProviders.count <= 2 ? 1 : 4))
     
-    let manyProviders: [OAuthProvider] = Array(OAuthProvider.allCases)
+    let manyProviders: [SocialProvider] = Array(SocialProvider.allCases)
     let manyColumns: [GridItem] = Array(repeating: .init(.flexible()), count: min(manyProviders.count, manyProviders.count <= 2 ? 1 : 4))
     
     return VStack {

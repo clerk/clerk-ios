@@ -21,7 +21,7 @@ struct UserProfileDetailsView: View {
     }
     
     private var socialProvidersIsEnabled: Bool {
-        clerk.environment?.userSettings.enabledOAuthProviders.isEmpty == false
+        clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
     }
     
     var body: some View {

@@ -144,8 +144,8 @@ public struct SignIn: Codable, Sendable, Equatable {
         /// Creates a new sign in with the provided identifier
         /// - Examples of idenitifers are email address, username or phone number
         case identifier(_ identifier: String, password: String? = nil)
-        /// Creates a new sign in with the oauth provider
-        case oauth(_ provider: OAuthProvider)
+        /// Creates a new sign in with the social provider
+        case social(_ provider: SocialProvider)
         ///
         case transfer
     }
@@ -161,7 +161,7 @@ public struct SignIn: Codable, Sendable, Equatable {
                 password: password
             )
             
-        case .oauth(let provider):
+        case .social(let provider):
             
             return .init(
                 strategy: provider.providerData.strategy,
@@ -391,7 +391,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> OAuthResult? {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult? {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, var url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
@@ -410,10 +410,10 @@ public struct SignIn: Codable, Sendable, Equatable {
             return nil
         }
         
-        if let nonce = OAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
+        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
             
             let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
-            return OAuthResult(signIn: signIn)
+            return ExternalAuthResult(signIn: signIn)
             
         } else {
             // transfer flow
@@ -429,12 +429,12 @@ public struct SignIn: Codable, Sendable, Equatable {
             
             if botProtectionIsEnabled {
 
-                return OAuthResult(signIn: signIn)
+                return ExternalAuthResult(signIn: signIn)
                 
             } else {
                 
                 let signUp = try await SignUp.create(strategy: .transfer)
-                return OAuthResult(signUp: signUp)
+                return ExternalAuthResult(signUp: signUp)
                 
             }
         }
@@ -446,7 +446,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     static func signInWithAppleIdToken(
         idToken: String,
         code: String? = nil
-    ) async throws -> OAuthResult? {
+    ) async throws -> ExternalAuthResult? {
         
         var requestBody = [
             "strategy": "oauth_token_apple",
@@ -464,15 +464,15 @@ public struct SignIn: Codable, Sendable, Equatable {
             if botProtectionIsEnabled {
                 // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
                 let signIn = try await Client.get()?.signIn
-                return OAuthResult(signIn: signIn)
+                return ExternalAuthResult(signIn: signIn)
             } else {
                 let signUp = try await SignUp.create(strategy: .transfer)
-                return OAuthResult(signUp: signUp)
+                return ExternalAuthResult(signUp: signUp)
             }
         } else {
             // this is a completed sign in
             try await Client.get()
-            return OAuthResult(signIn: signIn)
+            return ExternalAuthResult(signIn: signIn)
         }
     }
 }
@@ -502,7 +502,7 @@ extension SignIn {
     @MainActor
     private var startingSignInFirstFactor: SignInFactor? {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
-        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
+        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and social
         
         switch preferredStrategy {
         case .password:
@@ -526,7 +526,7 @@ extension SignIn {
     }
     
     func alternativeFirstFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
-        // Remove the current factor, reset factors, oauth factors
+        // Remove the current factor, reset factors, social factors
         let firstFactors = supportedFirstFactors?.filter { factor in
             factor.strategy != currentFactor?.strategy &&
             factor.strategyEnum?.isResetStrategy == false  &&
