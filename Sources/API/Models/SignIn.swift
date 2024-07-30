@@ -82,7 +82,6 @@ public struct SignIn: Codable, Sendable, Equatable {
         case emailAddress = "email_address"
         case phoneNumber = "phone_number"
         case username
-        case web3Wallet = "web3_wallet"
         case passkey
         case unknown
         
@@ -584,8 +583,6 @@ extension SignIn {
             return signInFactor?.emailAddressId
         case .phoneCode, .resetPasswordPhoneCode:
             return signInFactor?.phoneNumberId
-        case .web3:
-            return signInFactor?.web3WalletId
         default:
             return nil
         }

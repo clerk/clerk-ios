@@ -18,9 +18,6 @@ public struct SignInFactor: Codable, Equatable, Hashable, Sendable {
     /// Unique identifier for the user's phone number that will receive an SMS message with the one-time authentication code. This parameter will work only when the phone_code strategy is specified.
     public let phoneNumberId: String?
     
-    /// Unique identifier for the user's web3 wallet public address. This parameter will work only when the web3_metamask_signature strategy is specified.
-    public let web3WalletId: String?
-    
     let safeIdentifier: String?
     let primary: Bool?
     let `default`: Bool?

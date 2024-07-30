@@ -62,9 +62,6 @@ public struct SignUp: Codable, Sendable, Equatable {
     /// The phone number supplied to the current sign-up. This attribute is available only if the selected contact information includes phone number. Check the available instance settings for more information.
     public let phoneNumber: String?
     
-    /// The Web3 wallet public address supplied to the current sign-up. In Ethereum, the address is made up of 0x + 40 hexadecimal characters.
-    public let web3Wallet: String?
-    
     /// The value of this attribute is true if a password was supplied to the current sign-up. This attribute is available only if password-based authentication is enabled. Check the available instance settings for more information.
     public let passwordEnabled: Bool
     
