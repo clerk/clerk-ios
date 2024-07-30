@@ -94,7 +94,6 @@ extension Clerk.Environment {
             case emailAddress
             case phoneNumber
             case username
-            case web3Wallet
             case firstName
             case lastName
             case password

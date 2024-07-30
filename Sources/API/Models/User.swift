@@ -47,12 +47,6 @@ public struct User: Codable, Equatable, Sendable {
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
     
-    /// The unique identifier for the Web3Wallet that the user signed up with.
-    public let primaryWeb3WalletId: String?
-    
-    /// An array of all the Web3Wallet objects associated with the user. Includes the primary.
-    public let web3Wallets: [String]
-    
     /// A boolean indicating whether the user has a password on their account.
     public let passwordEnabled: Bool
     
@@ -204,9 +198,6 @@ extension User {
         
         /// The unique identifier for the PhoneNumber that the user has set as primary.
         public var primaryPhoneNumberId: String?
-        
-        /// The unique identifier for the Web3Wallet that the user signed up with.
-        public var primaryWeb3WalletId: String?
         
         /**
         Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
