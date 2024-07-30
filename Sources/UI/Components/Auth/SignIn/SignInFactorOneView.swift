@@ -43,12 +43,6 @@ struct SignInFactorOneView: View {
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-//            case .emailLink:
-//                SignInFactorOneEmailLinkView()
-//                    .transition(.asymmetric(
-//                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-//                        removal: .opacity.animation(nil)
-//                    ))
             case .phoneCode:
                 SignInFactorOnePhoneCodeView()
                     .transition(.asymmetric(

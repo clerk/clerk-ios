@@ -53,8 +53,6 @@ struct UserProfileAddEmailView: View {
         switch preferredEmailVerificationStrategy {
         case .emailCode:
             return .emailCode
-//        case .emailLink:
-//            return .emailLink
         default:
             return .emailCode
         }
@@ -64,8 +62,6 @@ struct UserProfileAddEmailView: View {
         switch preferredEmailVerificationStrategy {
         case .emailCode:
             return "An email containing a verification code will be sent to this email address."
-//        case .emailLink:
-//            return "An email containing a verification link will be sent to this email address."
         default:
             return ""
         }

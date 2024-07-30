@@ -13,7 +13,6 @@ public enum Strategy: Codable, Equatable {
     case password
     case phoneCode
     case emailCode
-//    case emailLink
     case ticket
     case totp
     case backupCode
@@ -31,8 +30,6 @@ public enum Strategy: Codable, Equatable {
             return "phone_code"
         case .emailCode:
             return "email_code"
-//        case .emailLink:
-//            return "email_link"
         case .saml:
             return "saml"
         case .oauth(let provider):
@@ -60,9 +57,6 @@ public enum Strategy: Codable, Equatable {
             self = .phoneCode
         case Strategy.emailCode.stringValue:
             self = .emailCode
-//        Email Links are not supported on iOS yet
-//        case Strategy.emailLink.stringValue:
-//            self = .emailLink
         case Strategy.saml.stringValue:
             self = .saml
         case Strategy.ticket.stringValue:
