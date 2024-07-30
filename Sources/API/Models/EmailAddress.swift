@@ -62,15 +62,10 @@ extension EmailAddress {
         /// User will receive a one-time authentication code via email.
         case emailCode
         
-//        /// User will receive an email magic link via email.
-//        case emailLink
-        
         internal var requestBody: RequestBody {
             switch self {
             case .emailCode:
                 return .init(strategy: .emailCode)
-    //        case .emailLink:
-    //            return .init(strategy: .emailLink)
             }
         }
         

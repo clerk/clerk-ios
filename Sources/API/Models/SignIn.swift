@@ -221,7 +221,6 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     public enum PrepareFirstFactorStrategy {
         case emailCode
-//        case emailLink
         case phoneCode
         case saml
         case resetPasswordEmailCode
@@ -231,7 +230,6 @@ public struct SignIn: Codable, Sendable, Equatable {
     private func prepareFirstFactorParams(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) -> PrepareFirstFactorParams {
         let strategy: Strategy = switch prepareFirstFactorStrategy {
         case .emailCode: .emailCode
-//        case .emailLink: .emailLink
         case .phoneCode: .phoneCode
         case .saml: .saml
         case .resetPasswordEmailCode: .resetPasswordEmailCode
@@ -241,8 +239,6 @@ public struct SignIn: Codable, Sendable, Equatable {
         switch prepareFirstFactorStrategy {
         case .emailCode, .resetPasswordEmailCode:
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
-//        case .emailLink:
-//            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy), redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
         case .saml:
@@ -584,7 +580,7 @@ extension SignIn {
         let signInFactor = signInFactors.first(where: { $0.strategyEnum == strategy })
         
         switch strategy {
-        case .emailCode, .resetPasswordEmailCode /**, .emailLink */ :
+        case .emailCode, .resetPasswordEmailCode:
             return signInFactor?.emailAddressId
         case .phoneCode, .resetPasswordPhoneCode:
             return signInFactor?.phoneNumberId

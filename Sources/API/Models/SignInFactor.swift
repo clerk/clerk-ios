@@ -38,8 +38,6 @@ extension SignInFactor {
             return .phoneCode
         case .emailCode:
             return .emailCode
-//        case .emailLink:
-//            return .emailLink
         default:
             return nil
         }
@@ -62,9 +60,6 @@ extension SignInFactor {
         case .emailCode:
             guard let safeIdentifier else { return nil }
             return "Email code to \(safeIdentifier)"
-//        case .emailLink:
-//            guard let safeIdentifier else { return nil }
-//            return "Email link to \(safeIdentifier)"
         case .password:
             return "Sign in with your password"
         case .totp:
@@ -81,7 +76,6 @@ extension SignInFactor {
         case .password: 0
         case .emailCode: 1
         case .phoneCode: 2
-//        case .emailLink: 3
         default: 100
         }
     }
@@ -90,8 +84,7 @@ extension SignInFactor {
         switch self.strategyEnum {
         case .emailCode: 0
         case .phoneCode: 1
-//        case .emailLink: 2
-        case .password: 3
+        case .password: 2
         default: 100
         }
     }
