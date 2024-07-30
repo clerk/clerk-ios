@@ -124,8 +124,6 @@ extension Strategy {
             return "text.bubble.fill"
         case .emailCode:
             return "envelope.fill"
-//        case .emailLink:
-//            return "link"
         default:
             return nil
         }
@@ -137,8 +135,6 @@ extension Strategy {
             return .phoneCode
         case .emailCode:
             return .emailCode
-//        case .emailLink:
-//            return .emailLink
         case .saml:
             return .saml
         default:
