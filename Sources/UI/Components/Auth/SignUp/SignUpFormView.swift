@@ -37,7 +37,7 @@ struct SignUpFormView: View {
     }
     
     private var nameIsEnabled: Bool {
-        clerk.environment?.nameIsEnabled == true
+        clerk.environment?.userSettings.nameIsEnabled == true
     }
     
     private var emailIsEnabled: Bool {
