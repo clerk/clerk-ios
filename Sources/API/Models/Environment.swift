@@ -85,29 +85,9 @@ extension Clerk.Environment {
     
     public struct UserSettings: Codable, Equatable, Sendable {
         
-        public let attributes: [Attribute: AttributesConfig]
-        /// key is social provider strategy (`oauth_google`, `oauth_github`, etc.)
+        public let attributes: [String: AttributesConfig]
         public let social: [String: SocialConfig]
         public let actions: Actions
-        
-        public enum Attribute: String, Codable, CodingKeyRepresentable, Equatable, Sendable {
-            case emailAddress
-            case phoneNumber
-            case username
-            case firstName
-            case lastName
-            case password
-            case authenticatorApp
-            case ticket
-            case backupCode
-            case passkey
-            case web3Wallet
-            case unknown
-            
-            public init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
         
         public struct AttributesConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
@@ -145,48 +125,48 @@ extension Clerk.Environment {
 
 extension Clerk.Environment.UserSettings {
     
-    func config(for attribute: Attribute) -> AttributesConfig? {
+    func config(for attribute: String) -> AttributesConfig? {
         attributes[attribute]
     }
     
-    var enabledAttributes: [Attribute: AttributesConfig] {
+    var enabledAttributes: [String: AttributesConfig] {
         attributes.filter({ $0.value.enabled })
     }
     
-    var firstFactorAttributes: [Attribute: AttributesConfig] {
+    var firstFactorAttributes: [String: AttributesConfig] {
         enabledAttributes.filter(\.value.usedForFirstFactor)
     }
     
-    var secondFactorAttributes: [Attribute: AttributesConfig] {
+    var secondFactorAttributes: [String: AttributesConfig] {
         enabledAttributes.filter(\.value.usedForSecondFactor)
     }
     
-    func availableSecondFactors(user: User) -> [Attribute: AttributesConfig] {
+    func availableSecondFactors(user: User) -> [String: AttributesConfig] {
         var secondFactors = secondFactorAttributes
         
         if user.totpEnabled {
-            secondFactors.removeValue(forKey: .authenticatorApp)
+            secondFactors.removeValue(forKey: "authenticator_app")
         }
         
         
         if user.backupCodeEnabled || !user.twoFactorEnabled {
-            secondFactors.removeValue(forKey: .backupCode)
+            secondFactors.removeValue(forKey: "backup_code")
         }
         
         return secondFactors
     }
     
-    var requiredAttributes: [Attribute: AttributesConfig] {
+    var requiredAttributes: [String: AttributesConfig] {
         enabledAttributes.filter({ $0.value.required })
     }
     
     var instanceIsPasswordBased: Bool {
-        guard let passwordConfig = config(for: .password) else { return false }
+        guard let passwordConfig = config(for: "password") else { return false }
         return passwordConfig.enabled && passwordConfig.required
     }
     
     var hasValidAuthFactor: Bool {
-        if enabledAttributes.contains(where: { $0.key == .emailAddress || $0.key == .phoneNumber }) {
+        if enabledAttributes.contains(where: { $0.key == "email_address" || $0.key == "phone_number" }) {
             return true
         }
         
@@ -211,16 +191,16 @@ extension Clerk.Environment.UserSettings {
         }
     }
     
-    var attributesToVerifyAtSignUp: [Attribute: AttributesConfig] {
+    var attributesToVerifyAtSignUp: [String: AttributesConfig] {
         enabledAttributes.filter({ $0.value.verifyAtSignUp })
     }
     
-    private func userAttributeConfig(for key: Attribute) -> AttributesConfig? {
+    private func userAttributeConfig(for key: String) -> AttributesConfig? {
         return enabledAttributes.first(where: { $0.key == key && $0.value.enabled })?.value
     }
     
     var preferredEmailVerificationStrategy: Strategy? {
-        let emailAttribute = userAttributeConfig(for: .emailAddress)
+        let emailAttribute = userAttributeConfig(for: "email_address")
         let strategies = emailAttribute?.verificationStrategies ?? []
         
         if strategies.contains(where: { $0 == .emailCode }) {
@@ -243,8 +223,8 @@ extension Clerk.Environment.DisplayConfig {
 extension Clerk.Environment {
     
     var nameIsEnabled: Bool {
-        userSettings.config(for: .firstName)?.enabled == true ||
-        userSettings.config(for: .lastName)?.enabled == true
+        userSettings.config(for: "first_name")?.enabled == true ||
+        userSettings.config(for: "last_name")?.enabled == true
     }
     
 }

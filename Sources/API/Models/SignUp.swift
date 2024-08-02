@@ -407,10 +407,10 @@ extension SignUp {
             guard let attributesToVerify = Clerk.shared.environment?.userSettings.attributesToVerifyAtSignUp else { return nil }
 
             if unverifiedFields.contains(where: { $0 == "email_address" }) {
-                return attributesToVerify.first(where: { $0.key == .emailAddress })?.value.verificationStrategies.first
+                return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies.first
                 
             } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
-                return attributesToVerify.first(where: { $0.key == .phoneNumber })?.value.verificationStrategies.first
+                return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationStrategies.first
                 
             } else {
                 return nil

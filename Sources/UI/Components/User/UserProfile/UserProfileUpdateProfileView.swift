@@ -31,11 +31,11 @@ struct UserProfileUpdateProfileView: View {
     }
     
     private var firstNameIsEnabled: Bool {
-        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == .firstName }
+        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == "first_name" }
     }
     
     private var lastNameIsEnabled: Bool {
-        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == .lastName }
+        (clerk.environment?.userSettings.enabledAttributes ?? [:]).contains { $0.key == "last_name" }
     }
     
     private func updateUser() async {
