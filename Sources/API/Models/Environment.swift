@@ -101,6 +101,7 @@ extension Clerk.Environment {
             case ticket
             case backupCode
             case passkey
+            case web3Wallet
             case unknown
             
             public init(from decoder: Decoder) throws {
