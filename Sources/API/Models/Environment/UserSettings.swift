@@ -1,85 +1,11 @@
 //
-//  Environment.swift
+//  UserSettings.swift
+//  Clerk
 //
-//
-//  Created by Mike Pitre on 10/5/23.
+//  Created by Mike Pitre on 8/2/24.
 //
 
 import Foundation
-
-extension Clerk {
-        
-    public struct Environment: Codable, Sendable {
-        public let authConfig: AuthConfig
-        public let userSettings: UserSettings
-        public let displayConfig: DisplayConfig
-    }
-}
-
-extension Clerk.Environment {
-    
-    @discardableResult @MainActor
-    public static func get() async throws -> Clerk.Environment {
-        let request = ClerkAPI.v1.environment.get
-        let environment = try await Clerk.shared.apiClient.send(request).value
-        Clerk.shared.environment = environment
-        return environment
-    }
-    
-}
-
-extension Clerk.Environment {
-    
-    public struct AuthConfig: Codable, Sendable {
-        public let singleSessionMode: Bool
-    }
-    
-}
-
-extension Clerk.Environment {
-    
-    public struct DisplayConfig: Codable, Sendable {
-        public let applicationName: String
-        public let preferredSignInStrategy: PreferredSignInStrategy
-        public let branded: Bool
-        public let logoImageUrl: String
-        public let homeUrl: String
-        public let captchaPublicKey: String?
-        public let captchaWidgetType: CaptchaWidgetType?
-        public let captchaPublicKeyInvisible: String?
-        public let captchaProvider: CaptchaProvider?
-        
-        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
-            case password
-            case otp
-            case unknown
-            
-            public init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-        
-        public enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
-            case invisible
-            case smart
-            case unknown
-            
-            public init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-        
-        public enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
-            case turnstile
-            case unknown
-            
-            public init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-    }
-    
-}
 
 extension Clerk.Environment {
     
@@ -121,6 +47,7 @@ extension Clerk.Environment {
             public var createOrganization: Bool = false
         }
     }
+    
 }
 
 extension Clerk.Environment.UserSettings {
@@ -210,21 +137,9 @@ extension Clerk.Environment.UserSettings {
         return nil
     }
     
-}
-
-extension Clerk.Environment.DisplayConfig {
-    
-    public var botProtectionIsEnabled: Bool {
-        captchaWidgetType != nil
-    }
-    
-}
-
-extension Clerk.Environment {
-    
     var nameIsEnabled: Bool {
-        userSettings.config(for: "first_name")?.enabled == true ||
-        userSettings.config(for: "last_name")?.enabled == true
+        config(for: "first_name")?.enabled == true ||
+        config(for: "last_name")?.enabled == true
     }
     
 }

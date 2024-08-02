@@ -29,7 +29,7 @@ final class ASAuth: NSObject {
     private var requestedScopes: [ASAuthorization.Scope]? {
         var scopes: [ASAuthorization.Scope]? = [.email]
         
-        if Clerk.shared.environment?.nameIsEnabled == true {
+        if Clerk.shared.environment?.userSettings.nameIsEnabled == true {
             scopes?.append(.fullName)
         }
         
