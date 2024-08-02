@@ -33,8 +33,8 @@ struct SignUpStartView: View {
     }
     
     private var contactInfoEnabled: Bool {
-        clerk.environment?.userSettings.config(for: .emailAddress)?.enabled == true ||
-        clerk.environment?.userSettings.config(for: .phoneNumber)?.enabled == true
+        clerk.environment?.userSettings.config(for: "email_address")?.enabled == true ||
+        clerk.environment?.userSettings.config(for: "phone_number")?.enabled == true
     }
     
     var body: some View {

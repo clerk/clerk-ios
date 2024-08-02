@@ -41,15 +41,15 @@ struct SignUpFormView: View {
     }
     
     private var emailIsEnabled: Bool {
-        clerk.environment?.userSettings.config(for: .emailAddress)?.enabled == true
+        clerk.environment?.userSettings.config(for: "email_address")?.enabled == true
     }
     
     private var usernameEnabled: Bool {
-        clerk.environment?.userSettings.config(for: .username)?.enabled == true
+        clerk.environment?.userSettings.config(for: "username")?.enabled == true
     }
     
     private var phoneNumberIsEnabled: Bool {
-        clerk.environment?.userSettings.config(for: .phoneNumber)?.enabled == true
+        clerk.environment?.userSettings.config(for: "phone_number")?.enabled == true
     }
     
     private var passwordIsEnabled: Bool {
@@ -60,7 +60,7 @@ struct SignUpFormView: View {
         VStack(spacing: 24) {
             if nameIsEnabled {
                 HStack(spacing: 16) {
-                    if let firstName = clerk.environment?.userSettings.config(for: .firstName), firstName.enabled {
+                    if let firstName = clerk.environment?.userSettings.config(for: "first_name"), firstName.enabled {
                         VStack(alignment: .leading) {
                             HStack {
                                 Text("First name")
@@ -81,7 +81,7 @@ struct SignUpFormView: View {
                         }
                     }
                     
-                    if let lastName = clerk.environment?.userSettings.config(for: .lastName), lastName.enabled {
+                    if let lastName = clerk.environment?.userSettings.config(for: "last_name"), lastName.enabled {
                         VStack(alignment: .leading) {
                             HStack {
                                 Text("Last name")
@@ -104,7 +104,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let username = clerk.environment?.userSettings.config(for: .username), username.enabled {
+            if let username = clerk.environment?.userSettings.config(for: "username"), username.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Username")
@@ -126,7 +126,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let phoneNumber = clerk.environment?.userSettings.config(for: .phoneNumber), phoneNumber.enabled {
+            if let phoneNumber = clerk.environment?.userSettings.config(for: "phone_number"), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Phone number")
@@ -146,7 +146,7 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let email = clerk.environment?.userSettings.config(for: .emailAddress), email.enabled {
+            if let email = clerk.environment?.userSettings.config(for: "email_address"), email.enabled {
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Email address")

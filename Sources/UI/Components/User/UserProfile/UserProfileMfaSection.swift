@@ -21,16 +21,16 @@ struct UserProfileMfaSection: View {
         clerk.user
     }
     
-    private var secondFactors: [Clerk.Environment.UserSettings.Attribute: Clerk.Environment.UserSettings.AttributesConfig] {
+    private var secondFactors: [String: Clerk.Environment.UserSettings.AttributesConfig] {
         clerk.environment?.userSettings.secondFactorAttributes ?? [:]
     }
     
     private var showTotp: Bool  {
-        secondFactors.contains(where: { $0.key == .authenticatorApp }) && user?.totpEnabled == true
+        secondFactors.contains(where: { $0.key == "authenticator_app" }) && user?.totpEnabled == true
     }
     
     private var showBackupCode: Bool {
-        secondFactors.contains(where: { $0.key == .backupCode }) && user?.backupCodeEnabled == true
+        secondFactors.contains(where: { $0.key == "backup_code" }) && user?.backupCodeEnabled == true
     }
     
     private func removeTOTPAsSecondFactor() async {
@@ -76,7 +76,7 @@ struct UserProfileMfaSection: View {
             
             if let user, !user.availableSecondFactors.isEmpty {
                 Menu {
-                    if user.availableSecondFactors.contains(where: { $0.key == .phoneNumber }) {
+                    if user.availableSecondFactors.contains(where: { $0.key == "phone_number" }) {
                         Button {
                             phoneNumberIsPresented = true
                         } label: {
@@ -84,7 +84,7 @@ struct UserProfileMfaSection: View {
                         }
                     }
                     
-                    if user.availableSecondFactors.contains(where: { $0.key == .authenticatorApp }) {
+                    if user.availableSecondFactors.contains(where: { $0.key == "authenticator_app" }) {
                         Button {
                             authenticationAppIsPresented = true
                         } label: {

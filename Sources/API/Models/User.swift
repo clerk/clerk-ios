@@ -154,7 +154,7 @@ extension User {
     }
     
     @MainActor
-    var availableSecondFactors: [Clerk.Environment.UserSettings.Attribute: Clerk.Environment.UserSettings.AttributesConfig] {
+    var availableSecondFactors: [String: Clerk.Environment.UserSettings.AttributesConfig] {
         guard let environment = Clerk.shared.environment else { return [:] }
         return environment.userSettings.availableSecondFactors(user: self)
     }

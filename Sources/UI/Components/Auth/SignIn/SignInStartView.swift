@@ -19,9 +19,9 @@ struct SignInStartView: View {
     
     private var showSignInForm: Bool {
         (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains {
-            $0.key == .emailAddress ||
-            $0.key == .username ||
-            $0.key == .phoneNumber
+            $0.key == "email_address" ||
+            $0.key == "username" ||
+            $0.key == "phone_number"
         }
     }
     
