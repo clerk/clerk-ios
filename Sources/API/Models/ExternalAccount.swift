@@ -68,7 +68,7 @@ extension ExternalAccount: Comparable {
 
 extension ExternalAccount {
     
-    var socialProvider: SocialProvider? {
+    var socialProvider: OAuthProvider? {
         .init(strategy: provider)
     }
     

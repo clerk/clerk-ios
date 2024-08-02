@@ -19,7 +19,7 @@ public enum Strategy: Codable, Equatable {
     case resetPasswordPhoneCode
     case resetPasswordEmailCode
     case saml
-    case oauth(_ provider: SocialProvider)
+    case oauth(_ provider: OAuthProvider)
     
     var stringValue: String {
         switch self {
@@ -77,7 +77,7 @@ public enum Strategy: Codable, Equatable {
             
             if
                 let strategy = value.firstMatch(of: regex)?.output.0,
-                let provider = SocialProvider(strategy: String(strategy))
+                let provider = OAuthProvider(strategy: String(strategy))
             {
                 self = .oauth(provider)
             } else {

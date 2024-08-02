@@ -24,10 +24,6 @@ extension Clerk.Environment {
             public let secondFactors: [String]?
             public let verifications: [String]?
             public let verifyAtSignUp: Bool
-            
-            public var verificationStrategies: [Strategy] {
-                verifications?.compactMap({ .init(stringValue: $0) }) ?? []
-            }
         }
         
         public struct SocialConfig: Codable, Equatable, Sendable {
@@ -36,10 +32,6 @@ extension Clerk.Environment {
             public let authenticatable: Bool
             public let strategy: String
             public let notSelectable: Bool
-            
-            public var strategyEnum: Strategy? {
-                Strategy(stringValue: strategy)
-            }
         }
         
         public struct Actions: Codable, Equatable, Sendable {
@@ -102,19 +94,19 @@ extension Clerk.Environment.UserSettings {
         return false
      }
     
-    public var socialProviders: [SocialProvider] {
+    public var socialProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
         
         return authenticatableStrategies.compactMap { strategy in
-            SocialProvider(strategy: strategy)
+            OAuthProvider(strategy: strategy)
         }
     }
         
-    public var authenticatableSocialProviders: [SocialProvider] {
+    public var authenticatableSocialProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         
         return authenticatableStrategies.compactMap { strategy in
-            SocialProvider(strategy: strategy)
+            OAuthProvider(strategy: strategy)
         }
     }
     
@@ -140,6 +132,22 @@ extension Clerk.Environment.UserSettings {
     var nameIsEnabled: Bool {
         config(for: "first_name")?.enabled == true ||
         config(for: "last_name")?.enabled == true
+    }
+    
+}
+
+extension Clerk.Environment.UserSettings.AttributesConfig {
+    
+    var verificationStrategies: [Strategy] {
+        verifications?.compactMap({ .init(stringValue: $0) }) ?? []
+    }
+    
+}
+
+extension Clerk.Environment.UserSettings.SocialConfig {
+    
+    var strategyEnum: Strategy? {
+        Strategy(stringValue: strategy)
     }
     
 }

@@ -22,17 +22,17 @@ struct SignInFactorOneAlternativeMethodsView: View {
         clerk.client?.signIn
     }
     
-    private var socialProviders: [SocialProvider] {
+    private var socialProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
     }
     
-    private func signIn(provider: SocialProvider) async {
+    private func signIn(provider: OAuthProvider) async {
         do {
             if provider == .apple {
                 try await signInWithApple()
             } else {
                 try await SignIn
-                    .create(strategy: .social(provider))
+                    .create(strategy: .oauth(provider))
                     .authenticateWithRedirect()
             }
             

@@ -127,7 +127,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     
     public enum CreateStrategy {
         case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
-        case social(_ provider: SocialProvider)
+        case oauth(_ provider: OAuthProvider)
         case transfer
     }
     
@@ -136,7 +136,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
-        case .social(let provider):
+        case .oauth(let provider):
             return .init(strategy: provider.providerData.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
         case .transfer:
             return .init(transfer: true, captchaToken: captchaToken)

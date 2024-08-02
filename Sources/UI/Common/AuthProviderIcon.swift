@@ -13,7 +13,7 @@ import NukeUI
 struct AuthProviderIcon: View {
     @Environment(\.colorScheme) private var colorScheme
     
-    let provider: SocialProvider
+    let provider: OAuthProvider
     
     var iconImageUrl: URL? {
         provider.iconImageUrl(darkMode: colorScheme == .dark)

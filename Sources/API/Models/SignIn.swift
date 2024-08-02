@@ -143,8 +143,8 @@ public struct SignIn: Codable, Sendable, Equatable {
         /// Creates a new sign in with the provided identifier
         /// - Examples of idenitifers are email address, username or phone number
         case identifier(_ identifier: String, password: String? = nil)
-        /// Creates a new sign in with the social provider
-        case social(_ provider: SocialProvider)
+        /// Creates a new sign in with the oauth provider
+        case oauth(_ provider: OAuthProvider)
         ///
         case transfer
     }
@@ -160,7 +160,7 @@ public struct SignIn: Codable, Sendable, Equatable {
                 password: password
             )
             
-        case .social(let provider):
+        case .oauth(let provider):
             
             return .init(
                 strategy: provider.providerData.strategy,
@@ -497,7 +497,7 @@ extension SignIn {
     @MainActor
     private var startingSignInFirstFactor: SignInFactor? {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
-        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and social
+        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
         switch preferredStrategy {
         case .password:
@@ -521,7 +521,7 @@ extension SignIn {
     }
     
     func alternativeFirstFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
-        // Remove the current factor, reset factors, social factors
+        // Remove the current factor, reset factors, oauth factors
         let firstFactors = supportedFirstFactors?.filter { factor in
             factor.strategy != currentFactor?.strategy &&
             factor.strategyEnum?.isResetStrategy == false  &&
