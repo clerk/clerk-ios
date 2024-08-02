@@ -20,7 +20,7 @@ struct UserProfileAddExternalAccountView: View {
         clerk.client?.lastActiveSession?.user
     }
     
-    private func create(provider: SocialProvider) async {
+    private func create(provider: OAuthProvider) async {
         do {
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             if provider == .apple {

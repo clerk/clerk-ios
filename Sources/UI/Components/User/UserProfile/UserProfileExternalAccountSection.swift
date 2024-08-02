@@ -150,7 +150,7 @@ struct UserProfileExternalAccountSection: View {
             }
         }
         
-        private func retryConnection(_ provider: SocialProvider) async {
+        private func retryConnection(_ provider: OAuthProvider) async {
             do {
 //                if provider == .apple {
 //                    try await user?.linkAppleAccount()

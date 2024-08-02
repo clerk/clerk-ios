@@ -19,11 +19,11 @@ struct AuthSocialProvidersView: View {
     
     var onSuccess:((_ externalAuthResult: ExternalAuthResult) -> Void)?
     
-    private var socialProviders: [SocialProvider] {
+    private var socialProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
     }
     
-    private var chunkedProviders: ChunksOfCountCollection<[SocialProvider]> {
+    private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
         socialProviders.chunks(ofCount: 4)
     }
         
@@ -55,7 +55,7 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func startAuth(provider: SocialProvider) async {
+    private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
 
 		var externalAuthResult: ExternalAuthResult?        
@@ -65,7 +65,7 @@ struct AuthSocialProvidersView: View {
                 externalAuthResult = try await signUpWithApple()
             } else {
             	externalAuthResult = try await SignIn
-                	.create(strategy: .social(provider))
+                	.create(strategy: .oauth(provider))
                 	.authenticateWithRedirect()
 			}
             

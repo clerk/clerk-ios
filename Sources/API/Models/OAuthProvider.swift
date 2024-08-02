@@ -1,5 +1,5 @@
 //
-//  SocialProvider.swift
+//  OAuthProvider.swift
 //
 //
 //  Created by Mike Pitre on 10/18/23.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// The available social providers.
-public enum SocialProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
+/// The available oauth providers.
+public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
     public var id: Self { self }
     
     case facebook
@@ -45,14 +45,14 @@ public enum SocialProvider: Codable, CaseIterable, Identifiable, Sendable, Equat
         }
     }
     
-    public struct SocialProviderData {
+    public struct OAuthProviderData {
         public let provider: String
         public let strategy: String
         public let name: String
         let docsUrl: String
     }
     
-    public var providerData: SocialProviderData {
+    public var providerData: OAuthProviderData {
         switch self {
         case .facebook:
             return .init(
@@ -248,7 +248,7 @@ public enum SocialProvider: Codable, CaseIterable, Identifiable, Sendable, Equat
     }
 }
 
-extension SocialProvider: Comparable {
+extension OAuthProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
         return lhs.providerData.name < rhs.providerData.name
     }
