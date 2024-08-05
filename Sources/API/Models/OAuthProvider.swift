@@ -6,11 +6,11 @@
 //
 
 import Foundation
+import RegexBuilder
 
 /// The available oauth providers.
-public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equatable {
-    public var id: Self { self }
-    
+public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable {
+    case custom(strategy: String)
     case facebook
     case google
     case hubspot
@@ -37,198 +37,97 @@ public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equata
     case slack
     case linear
     
-    init?(strategy: String) {
+    // **
+    // WHEN ADDING A NEW CASE, MAKE SURE TO ADD IT TO THE ALL CASES ARRAY
+    // (CUSTOM SHOULD NOT BE INCLUDED)
+    // **
+    
+    static public var allCases: [OAuthProvider] {
+        [
+            .facebook,
+            .google,
+            .hubspot,
+            .github,
+            .tiktok,
+            .gitlab,
+            .discord,
+            .twitter,
+            .twitch,
+            .linkedin,
+            .linkedin_oidc,
+            .dropbox,
+            .atlassian,
+            .bitbucket,
+            .microsoft,
+            .notion,
+            .apple,
+            .line,
+            .instagram,
+            .coinbase,
+            .spotify,
+            .xero,
+            .box,
+            .slack,
+            .linear
+        ]
+    }
+    
+    public var id: String { providerData.strategy }
+    
+    init(strategy: String) {
         if let provider = Self.allCases.first(where: { $0.providerData.strategy == strategy }) {
             self = provider
         } else {
-            return nil
+            self = .custom(strategy: strategy)
         }
     }
     
-    public struct OAuthProviderData {
-        public let provider: String
-        public let strategy: String
-        public let name: String
-        let docsUrl: String
+    @MainActor
+    public var name: String {
+        switch self {
+        case .custom(let strategy):
+            if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+                socialConfig.value.strategy == strategy
+            }) {
+                return socialConfig.value.name
+            }
+            
+            return OAuthProvider.providerFromStrategy(strategy).replacingOccurrences(of: "_", with: " ")
+        default:
+            return providerData.name
+        }
     }
     
-    public var providerData: OAuthProviderData {
+    public var strategy: String {
         switch self {
-        case .facebook:
-            return .init(
-                provider: "facebook",
-                strategy: "oauth_facebook",
-                name: "Facebook",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-facebook"
-            )
-        case .google:
-            return .init(
-                provider: "google",
-                strategy: "oauth_google",
-                name: "Google",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-google"
-            )
-        case .hubspot:
-            return .init(
-                provider: "hubspot",
-                strategy: "oauth_hubspot",
-                name: "HubSpot",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-hubspot"
-            )
-        case .github:
-            return .init(
-                provider: "github",
-                strategy: "oauth_github",
-                name: "GitHub",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-github"
-            )
-        case .tiktok:
-            return .init(
-                provider: "tiktok",
-                strategy: "oauth_tiktok",
-                name: "TikTok",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-tiktok"
-            )
-        case .gitlab:
-            return .init(
-                provider: "gitlab",
-                strategy: "oauth_gitlab",
-                name: "GitLab",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-gitlab"
-            )
-        case .discord:
-            return .init(
-                provider: "discord",
-                strategy: "oauth_discord",
-                name: "Discord",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-discord"
-            )
-        case .twitter:
-            return .init(
-                provider: "twitter",
-                strategy: "oauth_twitter",
-                name: "Twitter",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-twitter"
-            )
-        case .twitch:
-            return .init(
-                provider: "twitch",
-                strategy: "oauth_twitch",
-                name: "Twitch",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-twitch"
-            )
-        case .linkedin:
-            return .init(
-                provider: "linkedin",
-                strategy: "oauth_linkedin",
-                name: "LinkedIn",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-linkedin"
-            )
-        case .linkedin_oidc:
-            return .init(
-                provider: "linkedin_oidc",
-                strategy: "oauth_linkedin_oidc",
-                name: "LinkedIn",
-                docsUrl: "https://clerk.com/docs/authentication/social-connections/linkedin-oidc"
-            )
-        case .dropbox:
-            return .init(
-                provider: "dropbox",
-                strategy: "oauth_dropbox",
-                name: "Dropbox",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-dropbox"
-            )
-        case .atlassian:
-            return .init(
-                provider: "atlassian",
-                strategy: "oauth_atlassian",
-                name: "Atlassian",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-atlassian"
-            )
-        case .bitbucket:
-            return .init(
-                provider: "bitbucket",
-                strategy: "oauth_bitbucket",
-                name: "Bitbucket",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-bitbucket"
-            )
-        case .microsoft:
-            return .init(
-                provider: "microsoft",
-                strategy: "oauth_microsoft",
-                name: "Microsoft",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-microsoft"
-            )
-        case .notion:
-            return .init(
-                provider: "notion",
-                strategy: "oauth_notion",
-                name: "Notion",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-notion"
-            )
-        case .apple:
-            return .init(
-                provider: "apple",
-                strategy: "oauth_apple",
-                name: "Apple",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-apple"
-            )
-        case .line:
-            return .init(
-                provider: "line",
-                strategy: "oauth_line",
-                name: "LINE",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-line"
-            )
-        case .instagram:
-            return .init(
-                provider: "instagram",
-                strategy: "oauth_instagram",
-                name: "Instagram",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-instagram"
-            )
-        case .coinbase:
-            return .init(
-                provider: "coinbase",
-                strategy: "oauth_coinbase",
-                name: "Coinbase",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-coinbase"
-            )
-        case .spotify:
-            return .init(
-                provider: "spotify",
-                strategy: "oauth_spotify",
-                name: "Spotify",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-spotify"
-            )
-        case .xero:
-            return .init(
-                provider: "xero",
-                strategy: "oauth_xero",
-                name: "Xero",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-xero"
-            )
-        case .box:
-            return .init(
-                provider: "box",
-                strategy: "oauth_box",
-                name: "Box",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-box"
-            )
-        case .slack:
-            return .init(
-                provider: "slack",
-                strategy: "oauth_slack",
-                name: "Slack",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-slack"
-            )
-        case .linear:
-            return .init(
-                provider: "linear",
-                strategy: "oauth_linear",
-                name: "Linear",
-                docsUrl: "https://clerk.com/docs/authentication/social-connection-with-linear"
-            )
+        case .custom(let strategy):
+            return strategy
+        default:
+            return providerData.strategy
+        }
+    }
+    
+    @MainActor
+    public func iconImageUrl(darkMode: Bool = false) -> URL? {
+        switch self {
+        case .custom(let strategy):
+            if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+                socialConfig.value.strategy == strategy
+            }) {
+                if socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+                    return nil
+                }
+                
+                return URL(string: socialConfig.value.logoUrl ?? "")
+            }
+            
+            return nil
+            
+        default:
+            
+            var iconName = providerData.provider
+            if darkMode && hasDarkModeVariant { iconName += "-dark" }
+            return URL(string: "https://img.clerk.com/static/\(iconName).png")
         }
     }
     
@@ -241,15 +140,179 @@ public enum OAuthProvider: Codable, CaseIterable, Identifiable, Sendable, Equata
         }
     }
     
-    public func iconImageUrl(darkMode: Bool = false) -> URL? {
-        var iconName = providerData.provider
-        if darkMode && hasDarkModeVariant { iconName += "-dark" }
-        return URL(string: "https://img.clerk.com/static/\(iconName).png")
+    private struct OAuthProviderData {
+        public let strategy: String
+        public let name: String
+        public var provider: String {
+            OAuthProvider.providerFromStrategy(strategy)
+        }
+    }
+        
+    private var providerData: OAuthProviderData {
+        switch self {
+        case .facebook:
+            return .init(
+                strategy: "oauth_facebook",
+                name: "Facebook"
+            )
+        case .google:
+            return .init(
+                strategy: "oauth_google",
+                name: "Google"
+            )
+        case .hubspot:
+            return .init(
+                strategy: "oauth_hubspot",
+                name: "HubSpot"
+            )
+        case .github:
+            return .init(
+                strategy: "oauth_github",
+                name: "GitHub"
+            )
+        case .tiktok:
+            return .init(
+                strategy: "oauth_tiktok",
+                name: "TikTok"
+            )
+        case .gitlab:
+            return .init(
+                strategy: "oauth_gitlab",
+                name: "GitLab"
+            )
+        case .discord:
+            return .init(
+                strategy: "oauth_discord",
+                name: "Discord"
+            )
+        case .twitter:
+            return .init(
+                strategy: "oauth_twitter",
+                name: "Twitter"
+            )
+        case .twitch:
+            return .init(
+                strategy: "oauth_twitch",
+                name: "Twitch"
+            )
+        case .linkedin:
+            return .init(
+                strategy: "oauth_linkedin",
+                name: "LinkedIn"
+            )
+        case .linkedin_oidc:
+            return .init(
+                strategy: "oauth_linkedin_oidc",
+                name: "LinkedIn"
+            )
+        case .dropbox:
+            return .init(
+                strategy: "oauth_dropbox",
+                name: "Dropbox"
+            )
+        case .atlassian:
+            return .init(
+                strategy: "oauth_atlassian",
+                name: "Atlassian"
+            )
+        case .bitbucket:
+            return .init(
+                strategy: "oauth_bitbucket",
+                name: "Bitbucket"
+            )
+        case .microsoft:
+            return .init(
+                strategy: "oauth_microsoft",
+                name: "Microsoft"
+            )
+        case .notion:
+            return .init(
+                strategy: "oauth_notion",
+                name: "Notion"
+            )
+        case .apple:
+            return .init(
+                strategy: "oauth_apple",
+                name: "Apple"
+            )
+        case .line:
+            return .init(
+                strategy: "oauth_line",
+                name: "LINE"
+            )
+        case .instagram:
+            return .init(
+                strategy: "oauth_instagram",
+                name: "Instagram"
+            )
+        case .coinbase:
+            return .init(
+                strategy: "oauth_coinbase",
+                name: "Coinbase"
+            )
+        case .spotify:
+            return .init(
+                strategy: "oauth_spotify",
+                name: "Spotify"
+            )
+        case .xero:
+            return .init(
+                strategy: "oauth_xero",
+                name: "Xero"
+            )
+        case .box:
+            return .init(
+                strategy: "oauth_box",
+                name: "Box"
+            )
+        case .slack:
+            return .init(
+                strategy: "oauth_slack",
+                name: "Slack"
+            )
+        case .linear:
+            return .init(
+                strategy: "oauth_linear",
+                name: "Linear"
+            )
+        case .custom(let strategy):
+            return .init(
+                strategy: strategy,
+                name: ""
+            )
+        }
+    }
+    
+    private static func providerFromStrategy(_ strategy: String) -> String {
+        let standardRegex = Regex {
+            "oauth_"
+            Capture {
+                OneOrMore(.any)
+            }
+        }
+        
+        let customRegex = Regex {
+            "oauth_custom_"
+            Capture {
+                OneOrMore(.any)
+            }
+        }
+        
+        var provider: String
+        
+        // custom must come before standard because it is more stringent
+        if let providerName = strategy.firstMatch(of: customRegex)?.output.0 ?? strategy.firstMatch(of: standardRegex)?.output.0 {
+            provider = String(providerName)
+        } else {
+            provider = ""
+        }
+        
+        return provider
     }
 }
 
 extension OAuthProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.providerData.name < rhs.providerData.name
+        return lhs.strategy < rhs.strategy
     }
 }

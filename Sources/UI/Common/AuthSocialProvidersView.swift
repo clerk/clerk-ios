@@ -26,7 +26,7 @@ struct AuthSocialProvidersView: View {
     private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
         socialProviders.chunks(ofCount: 4)
     }
-        
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(chunkedProviders, id: \.self) { chunk in
@@ -57,17 +57,17 @@ struct AuthSocialProvidersView: View {
     
     private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
-
-		var externalAuthResult: ExternalAuthResult?        
-
+        
+        var externalAuthResult: ExternalAuthResult?
+        
         do {
 			if provider == .apple {
                 externalAuthResult = try await signInWithApple()
             } else {
-            	externalAuthResult = try await SignIn
-                	.create(strategy: .oauth(provider))
-                	.authenticateWithRedirect()
-			}
+                externalAuthResult = try await SignIn
+                    .create(strategy: .oauth(provider))
+                    .authenticateWithRedirect()
+            }
             
             if let externalAuthResult {
                 onSuccess?(externalAuthResult)
@@ -86,7 +86,7 @@ struct AuthSocialProvidersView: View {
         guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
-                        
+        
         let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
         
         let externalAuthResult = try await SignIn.signInWithAppleIdToken(

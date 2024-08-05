@@ -32,6 +32,8 @@ extension Clerk.Environment {
             public let authenticatable: Bool
             public let strategy: String
             public let notSelectable: Bool
+            public let name: String
+            public let logoUrl: String?
         }
         
         public struct Actions: Codable, Equatable, Sendable {
@@ -95,17 +97,17 @@ extension Clerk.Environment.UserSettings {
      }
     
     public var socialProviders: [OAuthProvider] {
-        let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
+        let authenticatableProviders = social.values.filter({ $0.enabled }).map(\.strategy)
         
-        return authenticatableStrategies.compactMap { strategy in
+        return authenticatableProviders.compactMap { strategy in
             OAuthProvider(strategy: strategy)
         }
     }
         
     public var authenticatableSocialProviders: [OAuthProvider] {
-        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        let authenticatableProviders = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         
-        return authenticatableStrategies.compactMap { strategy in
+        return authenticatableProviders.compactMap { strategy in
             OAuthProvider(strategy: strategy)
         }
     }
@@ -120,9 +122,9 @@ extension Clerk.Environment.UserSettings {
     
     var preferredEmailVerificationStrategy: Strategy? {
         let emailAttribute = userAttributeConfig(for: "email_address")
-        let strategies = emailAttribute?.verificationStrategies ?? []
+        let Providers = emailAttribute?.verificationProviders ?? []
         
-        if strategies.contains(where: { $0 == .emailCode }) {
+        if Providers.contains(where: { $0 == .emailCode }) {
             return .emailCode
         }
         
@@ -138,7 +140,7 @@ extension Clerk.Environment.UserSettings {
 
 extension Clerk.Environment.UserSettings.AttributesConfig {
     
-    var verificationStrategies: [Strategy] {
+    var verificationProviders: [Strategy] {
         verifications?.compactMap({ .init(stringValue: $0) }) ?? []
     }
     

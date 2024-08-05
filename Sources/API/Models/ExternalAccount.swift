@@ -61,14 +61,15 @@ extension ExternalAccount: Comparable {
         if lhs.verification?.status != rhs.verification?.status  {
             return lhs.verification?.status == .verified
         } else {
-            return (lhs.socialProvider?.providerData.name ?? "") < (rhs.socialProvider?.providerData.name ?? "")
+            return lhs.oauthProvider.strategy < rhs.oauthProvider.strategy
         }
     }
 }
 
 extension ExternalAccount {
     
-    var socialProvider: OAuthProvider? {
+    var oauthProvider: OAuthProvider {
+        // provider on an external account is the strategy value
         .init(strategy: provider)
     }
     
