@@ -149,7 +149,7 @@ extension User {
     var unconnectedProviders: [OAuthProvider] {
         guard let environment = Clerk.shared.environment else { return []}
         let allExternalProviders = environment.userSettings.authenticatableSocialProviders.sorted()
-        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.socialProvider)
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.oauthProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
@@ -246,7 +246,7 @@ extension User {
         let request = ClerkAPI.v1.me.externalAccounts.create(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
             body: [
-                "strategy": provider.providerData.strategy,
+                "strategy": provider.strategy,
                 "redirect_url": Clerk.shared.redirectConfig.redirectUrl
             ]
         )

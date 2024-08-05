@@ -160,10 +160,10 @@ public struct SignIn: Codable, Sendable, Equatable {
                 password: password
             )
             
-        case .oauth(let provider):
+        case .oauth(let oauthStrategy):
             
             return .init(
-                strategy: provider.providerData.strategy,
+                strategy: oauthStrategy.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
@@ -207,7 +207,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     /**
      Begins the first factor verification process. This is a required step in order to complete a sign in, as users should be verified at least by one factor of authentication.
      
-     Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
+     Common scenarios are one-time code (OTP) or social account (SSO) verification. This is determined by the accepted strategy parameter values. Each authentication identifier supports different Providers.
      */
     @discardableResult @MainActor
     public func prepareFirstFactor(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) async throws -> SignIn {
@@ -246,7 +246,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     }
     
     public struct PrepareFirstFactorParams: Encodable {
-        /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
+        /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification Providers.
         public let strategy: String
         
         /// Unique identifier for the user's email address that will receive an email message with the one-time authentication code. This parameter will work only when the `email_code` strategy is specified.
@@ -310,7 +310,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     /**
      Begins the second factor verification process. This step is optional in order to complete a sign in.
      
-     A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
+     A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different Providers.
      */
     @discardableResult @MainActor
     public func prepareSecondFactor(for prepareSecondFactorStrategy: PrepareSecondFactorStrategy) async throws -> SignIn {
@@ -494,7 +494,7 @@ extension SignIn {
     @MainActor
     private var startingSignInFirstFactor: SignInFactor? {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
-        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
+        let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset Providers and oauth
         
         switch preferredStrategy {
         case .password:
