@@ -10,7 +10,7 @@ import RegexBuilder
 
 /// The available oauth providers.
 public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable {
-    case custom(strategy: String)
+    case custom(_ strategy: String)
     case facebook
     case google
     case hubspot
@@ -78,7 +78,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         if let provider = Self.allCases.first(where: { $0.providerData.strategy == strategy }) {
             self = provider
         } else {
-            self = .custom(strategy: strategy)
+            self = .custom(strategy)
         }
     }
     
