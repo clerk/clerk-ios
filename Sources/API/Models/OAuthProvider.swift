@@ -125,9 +125,23 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             
         default:
             
-            var iconName = providerData.provider
-            if darkMode && hasDarkModeVariant { iconName += "-dark" }
-            return URL(string: "https://img.clerk.com/static/\(iconName).png")
+            if self == .apple {
+                
+                var iconName = providerData.provider
+                if darkMode && hasDarkModeVariant { iconName += "-dark" }
+                return URL(string: "https://img.clerk.com/static/\(iconName).png")
+                
+            } else {
+                
+                if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+                    socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+                }) {
+                    return URL(string: socialConfig.value.logoUrl ?? "")
+                }
+                
+                return nil
+            }
+            
         }
     }
     
