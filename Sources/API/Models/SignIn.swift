@@ -438,7 +438,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     /// Creates a sign up with an id token (like the one from Sign in with Apple)
     @discardableResult @MainActor
-    static func signInWithAppleIdToken(
+    public static func signInWithAppleIdToken(
         idToken: String,
         code: String? = nil
     ) async throws -> ExternalAuthResult? {
