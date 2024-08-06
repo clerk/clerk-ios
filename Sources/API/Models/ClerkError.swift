@@ -25,7 +25,7 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
 
 /// Custom Clerk error created on the client.
 public struct ClerkClientError: Error, LocalizedError {
-    public init(message: String? = nil) {
+    init(message: String? = nil) {
         self.message = message
     }
     
