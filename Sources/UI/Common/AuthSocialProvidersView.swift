@@ -86,12 +86,9 @@ struct AuthSocialProvidersView: View {
         guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
-                        
-        let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
         
         let externalAuthResult = try await SignIn.signInWithAppleIdToken(
-            idToken: token,
-            code: authCode
+            idToken: token
         )
         
         return externalAuthResult
