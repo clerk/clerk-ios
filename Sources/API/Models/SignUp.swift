@@ -349,7 +349,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     }
     #endif
     
-    /// Creates a sign up with an id token (like the one from Sign in with Apple)
+    /// Creates a sign up with an Apple id token
     @discardableResult @MainActor
     public static func signUpWithAppleIdToken(
         idToken: String,

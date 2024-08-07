@@ -62,7 +62,7 @@ struct AuthSocialProvidersView: View {
 
         do {
 			if provider == .apple {
-                externalAuthResult = try await signUpWithApple()
+                externalAuthResult = try await signInWithApple()
             } else {
             	externalAuthResult = try await SignIn
                 	.create(strategy: .oauth(provider))
@@ -78,7 +78,7 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func signUpWithApple() async throws -> ExternalAuthResult? {
+    private func signInWithApple() async throws -> ExternalAuthResult? {
         guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
             return nil
         }
@@ -89,11 +89,9 @@ struct AuthSocialProvidersView: View {
                         
         let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
         
-        let externalAuthResult = try await SignUp.signUpWithAppleIdToken(
+        let externalAuthResult = try await SignIn.signInWithAppleIdToken(
             idToken: token,
-            code: authCode,
-            firstName: appleIdCredential.fullName?.givenName,
-            lastName: appleIdCredential.fullName?.familyName
+            code: authCode
         )
         
         return externalAuthResult
