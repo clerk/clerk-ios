@@ -8,16 +8,13 @@
 #if os(iOS)
 
 import SwiftUI
-import PhoneNumberKit
 
 struct IdentityPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     
     var label: String?
     var action: (() -> Void)?
-    
-    private let phoneNumberKit = PhoneNumberKit()
-    
+        
     var body: some View {
         HStack(spacing: 4) {
             if let label {

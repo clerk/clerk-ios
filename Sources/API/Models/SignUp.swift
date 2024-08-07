@@ -353,22 +353,19 @@ public struct SignUp: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public static func signUpWithAppleIdToken(
         idToken: String,
-        code: String? = nil,
         firstName: String? = nil,
         lastName: String? = nil,
         captchaToken: String? = nil
     ) async throws -> ExternalAuthResult? {
         
-        var requestBody = [
+        let requestBody = [
             "strategy": "oauth_token_apple",
             "token": idToken,
             "first_name": firstName,
             "last_name": lastName,
             "captcha_token": captchaToken
         ]
-        
-        if let code { requestBody["code"] = code }
-        
+                
         let request = ClerkAPI.v1.client.signUps.post(requestBody)
         let signUp = try await Clerk.shared.apiClient.send(request).value.response
         

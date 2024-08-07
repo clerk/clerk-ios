@@ -439,17 +439,14 @@ public struct SignIn: Codable, Sendable, Equatable {
     /// Creates a sign in with an Apple id token
     @discardableResult @MainActor
     public static func signInWithAppleIdToken(
-        idToken: String,
-        code: String? = nil
+        idToken: String
     ) async throws -> ExternalAuthResult? {
         
-        var requestBody = [
+        let requestBody = [
             "strategy": "oauth_token_apple",
             "token": idToken
         ]
-        
-        if let code { requestBody["code"] = code }
-        
+                
         let request = ClerkAPI.v1.client.signIns.post(requestBody)
         let signIn = try await Clerk.shared.apiClient.send(request).value.response
         

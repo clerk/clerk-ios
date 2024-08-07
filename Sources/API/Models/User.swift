@@ -275,15 +275,10 @@ extension User {
             throw ClerkClientError(message: "Unable to find your Apple ID credential.")
         }
                 
-        var requestBody = [
+        let requestBody = [
             "strategy": "oauth_token_apple",
             "token": token
         ]
-        
-        if let codeData = appleIdCredential.authorizationCode,
-           let code = String(data: codeData, encoding: .utf8) {
-            requestBody["code"] = code
-        }
         
         let request = ClerkAPI.v1.me.externalAccounts.create(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],

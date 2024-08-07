@@ -52,10 +52,10 @@ struct SignInFactorOneAlternativeMethodsView: View {
         guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
-                        
-        let authCode = appleIdCredential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) })
         
-        try await SignIn.signInWithAppleIdToken(idToken: token, code: authCode)
+        try await SignIn.signInWithAppleIdToken(
+            idToken: token
+        )
     }
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
