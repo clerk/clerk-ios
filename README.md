@@ -8,15 +8,15 @@
   <br />
 </p>
 <h1 align="center">
-  Official Clerk iOS SDK (Alpha)
+  Official Clerk iOS SDK (Beta)
 </h1>
 <h3 align="center">
   <strong>
-    ⚠️ The Clerk iOS SDK is in alpha and not recommended for use in production. ⚠️
+    ⚠️ The Clerk iOS SDK is in beta and not recommended for use in production. ⚠️
   </strong>
 </h3>
 <p align="center">
-  Breaking changes should be expected until the first stable release (1.0.0)
+  ❗️ Breaking changes should be expected until the first stable release (1.0.0) ❗️
 </p>
 <p align="center">
   <strong>
@@ -24,7 +24,6 @@
   </strong>
 </p>
 
-Visit [clerk.com](https://clerk.com) to signup for an account.
 
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fclerk%2Fclerk-ios%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/clerk/clerk-ios)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fclerk%2Fclerk-ios%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/clerk/clerk-ios)
@@ -44,7 +43,7 @@ Would you like to work on Open Source software and help maintain this repository
 
 1. [Sign up for an account](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=clerk_ios_repo_readme)
 1. Create an application in your Clerk dashboard
-1. Spin up a new codebase with one of the [quickstart guides](https://clerk.com/docs/quickstarts/overview?utm_source=github&utm_medium=clerk_ios_repo_readme)
+1. Spin up a new codebase with the [quickstart guide](https://clerk.com/docs/quickstarts/ios?utm_source=github&utm_medium=clerk_ios_repo_readme)
 
 ## 🧑‍💻 Installation
 
@@ -85,20 +84,37 @@ dependencies: [
 ]
 ```
 
-### Manually
+## 🎓 Docs
 
-If you prefer not to use any of the aforementioned dependency managers, you can integrate Clerk into your project manually. Simply drag the `Sources` Folder into your Xcode project.
+- [Clerk iOS](https://clerk.com/docs/references/ios/overview)
+- [Custom Flows](https://clerk.com/docs/custom-flows/overview)
+- [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerksdk)
 
-## 🎓 Learning Clerk
+## Supported Features
 
-Clerk's full documentation is available at [clerk.com/docs](https://clerk.com/docs?utm_source=github&utm_medium=clerk_ios_repo_readme).
-
-- **We recommend starting with the [Quickstart guides](https://clerk.com/docs/quickstarts/overview).** It'll enable you to quickly add Clerk to your application.
-- **To learn more about Clerk's components and features, checkout the rest of the [Clerk documentation](https://clerk.com/docs?utm_source=github&utm_medium=clerk_ios_repo_readme).** You'll be able to e.g. browse the [component reference](https://clerk.com/docs/components/overview?utm_source=github&utm_medium=clerk_ios_repo_readme) page.
+| Feature | iOS Support
+--- | :---:
+Email/Phone/Username Authentication | ✅
+Email Code Verification | ✅
+SMS Code Verification | ✅
+Multi-Factor Authentication (TOTP / SMS) | ✅
+Sign in / Sign up with Social (OAuth) | ✅
+Native Sign in with Apple | ✅
+Session Management | ✅ 
+Multi-Session Applications | ✅ 
+Forgot Password | ✅
+User Management | ✅ 
+Prebuilt UI Components | ❌ 
+Magic Links | ❌ 
+Organizations | ❌ 
+SAML | ❌ 
+Sign Up via Invitation | ❌
+Passkeys | ❌
+Web3 Wallet | ❌
 
 ## 🚢 Release Notes
 
-Curious what we shipped recently? Check out our [changelog](https://clerk.com/changelog)!
+Curious what we shipped recently? Check out our [changelog](https://github.com/clerk/clerk-ios/releases)!
 
 <!---
 ## 🤝 How to Contribute
