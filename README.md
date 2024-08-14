@@ -90,7 +90,7 @@ dependencies: [
 - [Custom Flows](https://clerk.com/docs/custom-flows/overview)
 - [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerksdk)
 
-## Supported Features
+## ✅ Supported Features
 
 | Feature | iOS Support
 --- | :---:
@@ -98,7 +98,7 @@ Email/Phone/Username Authentication | ✅
 Email Code Verification | ✅
 SMS Code Verification | ✅
 Multi-Factor Authentication (TOTP / SMS) | ✅
-Sign in / Sign up with Social (OAuth) | ✅
+Sign in / Sign up with OAuth | ✅
 Native Sign in with Apple | ✅
 Session Management | ✅ 
 Multi-Session Applications | ✅ 
