@@ -114,7 +114,7 @@ Web3 Wallet | ❌
 
 ## 🚢 Release Notes
 
-Curious what we shipped recently? Check out our [changelog](https://github.com/clerk/clerk-ios/releases)!
+Curious what we shipped recently? Check out our [changelog](https://clerk.com/changelog)!
 
 <!---
 ## 🤝 How to Contribute
