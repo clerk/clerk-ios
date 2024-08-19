@@ -72,7 +72,7 @@ final public class Clerk: ObservableObject {
             
             setupNotificationObservers()
             
-            loadingState = .loadedFromNetwork
+            loadingState = .loaded
             
         } catch {
             loadingState = .failed
@@ -85,7 +85,7 @@ final public class Clerk: ObservableObject {
     
     public enum LoadingState {
         case notLoaded
-        case loadedFromNetwork
+        case loaded
         case failed
     }
     
