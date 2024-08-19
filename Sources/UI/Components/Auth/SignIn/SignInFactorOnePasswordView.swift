@@ -13,12 +13,11 @@ import SimpleKeychain
 struct SignInFactorOnePasswordView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    @State private var password: String = ""
     @State private var errorWrapper: ErrorWrapper?
-    @FocusState private var isFocused: Bool
     @State private var enableBiometry: Bool = true
+    @FocusState private var isFocused: Bool
     
     var signIn: SignIn? {
         clerk.client?.signIn
@@ -60,7 +59,7 @@ struct SignInFactorOnePasswordView: View {
                         }
                         .font(.footnote.weight(.medium))
                         
-                        PasswordInputView(password: $password)
+                        PasswordInputView(password: $config.signInPassword)
                             .textContentType(.password)
                             .focused($isFocused)
                             .task { isFocused = true }
@@ -107,10 +106,13 @@ struct SignInFactorOnePasswordView: View {
         do {
             let signInIdentifier = signIn?.identifier
             
-            try await signIn?.attemptFirstFactor(for: .password(password: password))
+            try await signIn?.attemptFirstFactor(for: .password(password: config.signInPassword))
             
             if let signInIdentifier, enableBiometry {
-                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: signInIdentifier, password: password)
+                try Clerk.LocalAuth.setLocalAuthCredentials(
+                    identifier: signInIdentifier,
+                    password: config.signInPassword
+                )
             }
             
             if signIn?.status == .needsSecondFactor {

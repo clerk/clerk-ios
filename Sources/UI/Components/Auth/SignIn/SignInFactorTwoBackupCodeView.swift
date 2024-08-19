@@ -12,9 +12,8 @@ import SwiftUI
 struct SignInFactorTwoBackupCodeView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
     private var signIn: SignIn? {
@@ -41,7 +40,7 @@ struct SignInFactorTwoBackupCodeView: View {
                             .foregroundStyle(clerkTheme.colors.textPrimary)
                         Spacer()
                     }
-                    CustomTextField(text: $code)
+                    CustomTextField(text: $config.signInFactorTwoBackupCode)
                 }
                 .padding(.bottom, 32)
                 
@@ -72,7 +71,9 @@ struct SignInFactorTwoBackupCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn?.attemptSecondFactor(for: .backupCode(code: code))
+            try await signIn?.attemptSecondFactor(
+                for: .backupCode(code: config.signInFactorTwoBackupCode)
+            )
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

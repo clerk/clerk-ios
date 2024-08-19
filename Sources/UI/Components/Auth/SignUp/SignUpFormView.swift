@@ -12,15 +12,9 @@ import SwiftUI
 struct SignUpFormView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
     @FocusState private var focusedField: Field?
-    
-    @State private var emailAddress: String = ""
-    @State private var phoneNumber: String = ""
-    @State private var username: String = ""
-    @State private var firstName: String = ""
-    @State private var lastName: String = ""
-    @State private var password: String = ""
     @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
@@ -74,7 +68,7 @@ struct SignUpFormView: View {
                                 }
                             }
                             
-                            CustomTextField(text: $firstName)
+                            CustomTextField(text: $config.signUpFirstName)
                                 .textContentType(.givenName)
                                 .autocorrectionDisabled(true)
                                 .focused($focusedField, equals: .firstName)
@@ -95,7 +89,7 @@ struct SignUpFormView: View {
                                 }
                             }
 
-                            CustomTextField(text: $lastName)
+                            CustomTextField(text: $config.signUpLastName)
                                 .textContentType(.familyName)
                                 .autocorrectionDisabled(true)
                                 .focused($focusedField, equals: .lastName)
@@ -118,7 +112,7 @@ struct SignUpFormView: View {
                         }
                     }
                     
-                    CustomTextField(text: $username)
+                    CustomTextField(text: $config.signUpUsername)
                         .textContentType(.username)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
@@ -140,7 +134,7 @@ struct SignUpFormView: View {
                         }
                     }
                     
-                    PhoneNumberField(text: $phoneNumber)
+                    PhoneNumberField(text: $config.signUpPhoneNumber)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                         .focused($focusedField, equals: .phoneNumber)
                 }
@@ -160,7 +154,7 @@ struct SignUpFormView: View {
                         }
                     }
                     
-                    CustomTextField(text: $emailAddress)
+                    CustomTextField(text: $config.signUpEmailAddress)
                         .textContentType(.username)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -178,7 +172,7 @@ struct SignUpFormView: View {
                         Spacer()
                     }
                     
-                    PasswordInputView(password: $password)
+                    PasswordInputView(password: $config.signUpPassword)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
                     
@@ -236,12 +230,12 @@ struct SignUpFormView: View {
     private func performSignUp() async {
         do {
             try await SignUp.create(strategy: .standard(
-                emailAddress: emailIsEnabled ? emailAddress : nil,
-                password: passwordIsEnabled ? password : nil,
-                firstName: nameIsEnabled ? firstName : nil,
-                lastName: nameIsEnabled ? lastName : nil,
-                username: usernameEnabled ? username : nil,
-                phoneNumber: phoneNumberIsEnabled ? phoneNumber : nil
+                emailAddress: emailIsEnabled ? config.signUpEmailAddress : nil,
+                password: passwordIsEnabled ? config.signUpPassword : nil,
+                firstName: nameIsEnabled ? config.signUpFirstName : nil,
+                lastName: nameIsEnabled ? config.signUpLastName : nil,
+                username: usernameEnabled ? config.signUpUsername : nil,
+                phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
             
             guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
@@ -249,7 +243,7 @@ struct SignUpFormView: View {
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
             if let identifer, enableBiometry {
-                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: password)
+                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: config.signUpPassword)
             }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {

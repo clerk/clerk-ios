@@ -12,9 +12,8 @@ import SwiftUI
 struct SignInFactorOneResetView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    @State private var code: String = ""
     @State private var errorWrapper: ErrorWrapper?
     
     private var signIn: SignIn? {
@@ -33,7 +32,7 @@ struct SignInFactorOneResetView: View {
                     .padding(.bottom, 24)
                 
                 VerificationCodeView(
-                    code: $code,
+                    code: $config.signInFactorOneResetCode,
                     title: "Reset your password",
                     subtitle: "First, enter the code sent to your \(useEmailCodeStrategy ? "email address" : "phone")",
                     safeIdentifier: signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier,
@@ -97,10 +96,14 @@ struct SignInFactorOneResetView: View {
             switch signIn?.currentFirstFactor?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn?.attemptFirstFactor(for: .resetPasswordEmailCode(code: code))
+                try await signIn?.attemptFirstFactor(
+                    for: .resetPasswordEmailCode(code: config.signInFactorOneResetCode)
+                )
                 
             case .resetPasswordPhoneCode:
-                try await signIn?.attemptFirstFactor(for: .resetPasswordPhoneCode(code: code))
+                try await signIn?.attemptFirstFactor(
+                    for: .resetPasswordPhoneCode(code: config.signInFactorOneResetCode)
+                )
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
@@ -110,7 +113,7 @@ struct SignInFactorOneResetView: View {
             
         } catch {
             errorWrapper = ErrorWrapper(error: error)
-            code = ""
+            config.signInFactorOneResetCode = ""
             dump(error)
         }
     }

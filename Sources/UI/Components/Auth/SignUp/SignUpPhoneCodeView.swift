@@ -12,8 +12,7 @@ import SwiftUI
 struct SignUpPhoneCodeView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
-    
-    @State private var code: String = ""
+    @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp? {
@@ -28,7 +27,7 @@ struct SignUpPhoneCodeView: View {
                     .padding(.bottom, 24)
                 
                 VerificationCodeView(
-                    code: $code,
+                    code: $config.signUpPhoneCode,
                     title: "Verify your phone number",
                     subtitle: "Enter the verification code sent to your phone number",
                     safeIdentifier: signUp?.phoneNumber
@@ -69,10 +68,12 @@ struct SignUpPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp?.attemptVerification(.phoneCode(code: code))
+            try await signUp?.attemptVerification(
+                .phoneCode(code: config.signUpPhoneCode)
+            )
         } catch {
             errorWrapper = ErrorWrapper(error: error)
-            code = ""
+            config.signUpPhoneCode = ""
             dump(error)
         }
     }

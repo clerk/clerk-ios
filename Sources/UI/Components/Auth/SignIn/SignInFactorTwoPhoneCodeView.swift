@@ -12,8 +12,7 @@ import SwiftUI
 struct SignInFactorTwoPhoneCodeView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
-    
-    @State private var code: String = ""
+    @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
     private var signIn: SignIn? {
@@ -28,7 +27,7 @@ struct SignInFactorTwoPhoneCodeView: View {
                     .padding(.bottom, 24)
                 
                 VerificationCodeView(
-                    code: $code,
+                    code: $config.signInFactorTwoPhoneCode,
                     title: "Two-step verification",
                     subtitle: "To continue, please enter the verification code sent to your phone"
                 )
@@ -67,10 +66,12 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn?.attemptSecondFactor(for: .phoneCode(code: code))
+            try await signIn?.attemptSecondFactor(
+                for: .phoneCode(code: config.signInFactorTwoPhoneCode)
+            )
         } catch {
             errorWrapper = ErrorWrapper(error: error)
-            code = ""
+            config.signInFactorTwoPhoneCode = ""
             dump(error)
         }
     }
