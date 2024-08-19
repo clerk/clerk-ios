@@ -12,10 +12,8 @@ import SwiftUI
 struct SignInFormView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    @State private var emailAddressOrUsername: String = ""
-    @State private var phoneNumber: String = ""
     @State private var displayingEmailOrUsernameEntry = true
     @State private var errorWrapper: ErrorWrapper?
     
@@ -85,7 +83,7 @@ struct SignInFormView: View {
                 
                 ZStack {
                     if displayingEmailOrUsernameEntry {
-                        CustomTextField(text: $emailAddressOrUsername)
+                        CustomTextField(text: $config.signInEmailAddressOrUsername)
                             .textContentType(.username)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
@@ -93,7 +91,7 @@ struct SignInFormView: View {
                             .focused($focusedField, equals: .emailOrUsername)
                             .transition(.move(edge: .leading).combined(with: .opacity))
                     } else {
-                        PhoneNumberField(text: $phoneNumber)
+                        PhoneNumberField(text: $config.signInPhoneNumber)
                             .focused($focusedField, equals: .phoneNumber)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
@@ -107,7 +105,9 @@ struct SignInFormView: View {
             
             AsyncButton {
                 await signInAction(
-                    strategy: .identifier(displayingEmailOrUsernameEntry ? emailAddressOrUsername : phoneNumber)
+                    strategy: .identifier(
+                        displayingEmailOrUsernameEntry ? config.signInEmailAddressOrUsername : config.signInPhoneNumber
+                    )
                 )
             } label: {
                 Text("Continue")

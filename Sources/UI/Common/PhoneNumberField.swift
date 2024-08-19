@@ -146,6 +146,9 @@ struct PhoneNumberField: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .strokeBorder(isFocused ? clerkTheme.colors.textPrimary : Color(.systemFill), lineWidth: 1)
         }
+        .onAppear {
+            textDidUpdate(text: text)
+        }
     }
     
     private func textDidUpdate(text: String) {

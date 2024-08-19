@@ -12,10 +12,8 @@ import SwiftUI
 struct SignInResetPasswordView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    @State private var password: String = ""
-    @State private var confirmPassword: String = ""
     @State private var signOutOfAllDevices = true
     @State private var errorWrapper: ErrorWrapper?
     
@@ -26,7 +24,7 @@ struct SignInResetPasswordView: View {
     private func resetPassword() async {
         do {
             try await signIn?.resetPassword(.init(
-                password: password,
+                password: config.signInResetPasswordPassword,
                 signOutOfOtherSessions: signOutOfAllDevices
             ))
             
@@ -59,7 +57,7 @@ struct SignInResetPasswordView: View {
                         }
                         
                         CustomTextField(
-                            text: $password,
+                            text: $config.signInResetPasswordPassword,
                             isSecureField: true
                         )
                         .textContentType(.newPassword)
@@ -74,7 +72,7 @@ struct SignInResetPasswordView: View {
                         }
                         
                         CustomTextField(
-                            text: $confirmPassword,
+                            text: $config.signInResetPasswordConfirmPassword,
                             isSecureField: true
                         )
                         .textContentType(.newPassword)
