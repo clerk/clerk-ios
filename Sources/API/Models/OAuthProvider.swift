@@ -315,7 +315,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         var provider: String
         
         // custom must come before standard because it is more stringent
-        if let providerName = strategy.firstMatch(of: customRegex)?.output.0 ?? strategy.firstMatch(of: standardRegex)?.output.0 {
+        if let providerName = strategy.firstMatch(of: customRegex)?.output.1 ?? strategy.firstMatch(of: standardRegex)?.output.1 {
             provider = String(providerName)
         } else {
             provider = ""
@@ -327,6 +327,6 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
 
 extension OAuthProvider: Comparable {
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.strategy < rhs.strategy
+        return lhs.providerData.provider < rhs.providerData.provider
     }
 }
