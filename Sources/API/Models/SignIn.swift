@@ -160,10 +160,10 @@ public struct SignIn: Codable, Sendable, Equatable {
                 password: password
             )
             
-        case .oauth(let oauthStrategy):
+        case .oauth(let oauthProvider):
             
             return .init(
-                strategy: oauthStrategy.strategy,
+                strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
