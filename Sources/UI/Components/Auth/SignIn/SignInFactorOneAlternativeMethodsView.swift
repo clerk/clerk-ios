@@ -80,7 +80,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                         AuthProviderIcon(provider: provider)
                             .frame(width: 16, height: 16)
                         
-                        Text("Continue with \(provider.providerData.name)")
+                        Text("Continue with \(provider.name)")
                     }
                     .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)

@@ -73,32 +73,28 @@ struct UserProfileExternalAccountSection: View {
         var body: some View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    if let provider = externalAccount.socialProvider {
-                        AuthProviderIcon(provider: provider)
-                            .frame(width: 16, height: 16)
-                    }
+                    AuthProviderIcon(provider: externalAccount.oauthProvider)
+                        .frame(width: 16, height: 16)
                     
-                    if let providerName = externalAccount.socialProvider?.providerData.name {
-                        Text(providerName)
-                            .font(.footnote)
-                            .confirmationDialog(
-                                Text(removeResource.messageLine1),
-                                isPresented: $confirmationSheetIsPresented,
-                                titleVisibility: .visible
-                            ) {
-                                AsyncButton(role: .destructive) {
-                                    do {
-                                        try await removeResource.deleteAction()
-                                    } catch {
-                                        errorWrapper = ErrorWrapper(error: error)
-                                    }
-                                } label: {
-                                    Text(removeResource.title)
+                    Text(externalAccount.oauthProvider.name)
+                        .font(.footnote)
+                        .confirmationDialog(
+                            Text(removeResource.messageLine1),
+                            isPresented: $confirmationSheetIsPresented,
+                            titleVisibility: .visible
+                        ) {
+                            AsyncButton(role: .destructive) {
+                                do {
+                                    try await removeResource.deleteAction()
+                                } catch {
+                                    errorWrapper = ErrorWrapper(error: error)
                                 }
-                            } message: {
-                                Text(removeResource.messageLine2)
+                            } label: {
+                                Text(removeResource.title)
                             }
-                    }
+                        } message: {
+                            Text(removeResource.messageLine2)
+                        }
                     
                     if !externalAccount.displayName.isEmpty {
                         Group {
@@ -141,23 +137,21 @@ struct UserProfileExternalAccountSection: View {
         
         @ViewBuilder
         private var retryConnectionButton: some View {
-            if let provider = externalAccount.socialProvider {
-                AsyncButton {
-                    await retryConnection(provider)
-                } label: {
-                    Text("Retry connection")
-                }
+            AsyncButton {
+                await retryConnection(externalAccount.oauthProvider)
+            } label: {
+                Text("Retry connection")
             }
         }
         
         private func retryConnection(_ provider: OAuthProvider) async {
             do {
-//                if provider == .apple {
-//                    try await user?.linkAppleAccount()
-//                } else {
+                if provider == .apple {
+                    try await user?.linkAppleAccount()
+                } else {
                     let externalAccount = try await user?.createExternalAccount(provider)
                     try await externalAccount?.reauthorize()
-//                }
+                }
             } catch {
                 if case ASAuthorizationError.canceled = error { return }
                 errorWrapper = ErrorWrapper(error: error)

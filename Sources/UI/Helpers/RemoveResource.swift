@@ -23,6 +23,7 @@ enum RemoveResource {
         }
     }
     
+    @MainActor
     var messageLine1: String {
         switch self {
         case .email(let emailAddress):
@@ -30,7 +31,7 @@ enum RemoveResource {
         case .phoneNumber(let phoneNumber):
             return "\(phoneNumber.formatted(.national)) will be removed from this account."
         case .externalAccount(let externalAccount):
-            return "\(externalAccount.socialProvider?.providerData.name ?? "This provider") will be removed from this account."
+            return "\(externalAccount.oauthProvider.name) will be removed from this account."
         }
     }
     

@@ -148,8 +148,8 @@ extension User {
     @MainActor
     var unconnectedProviders: [OAuthProvider] {
         guard let environment = Clerk.shared.environment else { return []}
-        let allExternalProviders = environment.userSettings.authenticatableSocialProviders.sorted()
-        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.socialProvider)
+        let allExternalProviders = environment.userSettings.socialProviders.sorted()
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.oauthProvider)
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
@@ -242,12 +242,13 @@ extension User {
      /// - If the connection was successful then externalAccount.verification.status should be verified.
      /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
     @discardableResult @MainActor
-    public func createExternalAccount(_ provider: OAuthProvider) async throws -> ExternalAccount {
+    public func createExternalAccount(_ provider: OAuthProvider, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
         let request = ClerkAPI.v1.me.externalAccounts.create(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
             body: [
-                "strategy": provider.providerData.strategy,
-                "redirect_url": Clerk.shared.redirectConfig.redirectUrl
+                "strategy": provider.strategy,
+                "redirect_url": Clerk.shared.redirectConfig.redirectUrl,
+                "additional_scopes": additionalScopes?.joined(separator: ",")
             ]
         )
         

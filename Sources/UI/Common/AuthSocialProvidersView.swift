@@ -26,7 +26,7 @@ struct AuthSocialProvidersView: View {
     private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {
         socialProviders.chunks(ofCount: 4)
     }
-        
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(chunkedProviders, id: \.self) { chunk in
@@ -57,17 +57,17 @@ struct AuthSocialProvidersView: View {
     
     private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
-
-		var externalAuthResult: ExternalAuthResult?        
-
+        
+        var externalAuthResult: ExternalAuthResult?
+        
         do {
 			if provider == .apple {
                 externalAuthResult = try await signInWithApple()
             } else {
-            	externalAuthResult = try await SignIn
-                	.create(strategy: .oauth(provider))
-                	.authenticateWithRedirect()
-			}
+                externalAuthResult = try await SignIn
+                    .create(strategy: .oauth(provider))
+                    .authenticateWithRedirect()
+            }
             
             if let externalAuthResult {
                 onSuccess?(externalAuthResult)

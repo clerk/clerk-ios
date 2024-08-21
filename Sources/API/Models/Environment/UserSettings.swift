@@ -32,6 +32,8 @@ extension Clerk.Environment {
             public let authenticatable: Bool
             public let strategy: String
             public let notSelectable: Bool
+            public let name: String
+            public let logoUrl: String?
         }
         
         public struct Actions: Codable, Equatable, Sendable {

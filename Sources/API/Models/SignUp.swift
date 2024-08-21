@@ -136,8 +136,8 @@ public struct SignUp: Codable, Sendable, Equatable {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
-        case .oauth(let provider):
-            return .init(strategy: provider.providerData.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
+        case .oauth(let oauthStrategy):
+            return .init(strategy: oauthStrategy.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
         case .transfer:
             return .init(transfer: true, captchaToken: captchaToken)
         }
@@ -192,7 +192,7 @@ public struct SignUp: Codable, Sendable, Equatable {
          The strategy to use for the sign-up flow.
          
          The following strategies are supported:
-         - `oauth_<provider>`: The user will be authenticated with their Social login account. See available OAuth Strategies.
+         - `oauth_<provider>`: The user will be authenticated with their Social login account. See available OAuth Providers.
          - `saml`: The user will be authenticated with SAML.
          - `ticket`: The user will be authenticated via the ticket or token generated from the Backend API.
          */

@@ -52,7 +52,7 @@ struct UserProfileAddExternalAccountView: View {
                         } label: {
                             AuthProviderButton(
                                 provider: provider,
-                                label: "Connect \(provider.providerData.name) account"
+                                label: "Connect \(provider.name) account"
                             )
                             .font(.footnote)
                             .clerkStandardButtonPadding()

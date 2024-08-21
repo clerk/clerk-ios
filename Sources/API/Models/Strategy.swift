@@ -32,7 +32,7 @@ public enum Strategy: Codable, Equatable {
         case .saml:
             return "saml"
         case .oauth(let provider):
-            return provider.providerData.strategy
+            return provider.strategy
         case .ticket:
             return "ticket"
         case .totp:
@@ -75,11 +75,8 @@ public enum Strategy: Codable, Equatable {
                 }
             }
             
-            if
-                let strategy = value.firstMatch(of: regex)?.output.0,
-                let provider = OAuthProvider(strategy: String(strategy))
-            {
-                self = .oauth(provider)
+            if let strategy = value.firstMatch(of: regex)?.output.0 {
+                self = .oauth(OAuthProvider(strategy: String(strategy)))
             } else {
                 return nil
             }
