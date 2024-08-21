@@ -92,6 +92,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
                 return socialConfig.value.name
             }
             
+            // Sensible fallback, but name value should be on the social config
             return OAuthProvider.providerFromStrategy(strategy).replacingOccurrences(of: "_", with: " ")
         default:
             return providerData.name
@@ -160,6 +161,11 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         
     private var providerData: OAuthProviderData {
         switch self {
+        case .custom(let strategy):
+            return .init(
+                strategy: strategy,
+                name: ""
+            )
         case .facebook:
             return .init(
                 strategy: "oauth_facebook",
@@ -284,11 +290,6 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             return .init(
                 strategy: "oauth_linear",
                 name: "Linear"
-            )
-        case .custom(let strategy):
-            return .init(
-                strategy: strategy,
-                name: ""
             )
         }
     }
