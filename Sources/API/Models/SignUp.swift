@@ -191,7 +191,7 @@ public struct SignUp: Codable, Sendable, Equatable {
         /**
          The strategy to use for the sign-up flow.
          
-         The following Providers are supported:
+         The following strategies are supported:
          - `oauth_<provider>`: The user will be authenticated with their Social login account. See available OAuth Providers.
          - `saml`: The user will be authenticated with SAML.
          - `ticket`: The user will be authenticated via the ticket or token generated from the Backend API.
@@ -404,10 +404,10 @@ extension SignUp {
             guard let attributesToVerify = Clerk.shared.environment?.userSettings.attributesToVerifyAtSignUp else { return nil }
 
             if unverifiedFields.contains(where: { $0 == "email_address" }) {
-                return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationProviders.first
+                return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verificationStrategies.first
                 
             } else if unverifiedFields.contains(where: { $0 == "phone_number" }) {
-                return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationProviders.first
+                return attributesToVerify.first(where: { $0.key == "phone_number" })?.value.verificationStrategies.first
                 
             } else {
                 return nil

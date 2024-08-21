@@ -97,17 +97,17 @@ extension Clerk.Environment.UserSettings {
      }
     
     public var socialProviders: [OAuthProvider] {
-        let authenticatableProviders = social.values.filter({ $0.enabled }).map(\.strategy)
+        let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
         
-        return authenticatableProviders.compactMap { strategy in
+        return authenticatableStrategies.compactMap { strategy in
             OAuthProvider(strategy: strategy)
         }
     }
         
     public var authenticatableSocialProviders: [OAuthProvider] {
-        let authenticatableProviders = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
+        let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         
-        return authenticatableProviders.compactMap { strategy in
+        return authenticatableStrategies.compactMap { strategy in
             OAuthProvider(strategy: strategy)
         }
     }
@@ -122,9 +122,9 @@ extension Clerk.Environment.UserSettings {
     
     var preferredEmailVerificationStrategy: Strategy? {
         let emailAttribute = userAttributeConfig(for: "email_address")
-        let Providers = emailAttribute?.verificationProviders ?? []
+        let strategies = emailAttribute?.verificationStrategies ?? []
         
-        if Providers.contains(where: { $0 == .emailCode }) {
+        if strategies.contains(where: { $0 == .emailCode }) {
             return .emailCode
         }
         
@@ -140,7 +140,7 @@ extension Clerk.Environment.UserSettings {
 
 extension Clerk.Environment.UserSettings.AttributesConfig {
     
-    var verificationProviders: [Strategy] {
+    var verificationStrategies: [Strategy] {
         verifications?.compactMap({ .init(stringValue: $0) }) ?? []
     }
     
