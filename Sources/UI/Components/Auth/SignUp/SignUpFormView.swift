@@ -242,7 +242,7 @@ struct SignUpFormView: View {
             
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
-            if let identifer, enableBiometry {
+            if let identifer, enableBiometry, passwordIsEnabled {
                 try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: config.signUpPassword)
             }
             
