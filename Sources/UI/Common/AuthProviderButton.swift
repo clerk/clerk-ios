@@ -55,6 +55,7 @@ struct AuthProviderButton: View {
 
 extension AuthProviderButton {
     
+    @MainActor
     init(provider: OAuthProvider, label: String? = nil, style: Style = .regular) {
         self.provider = provider
         self.style = style

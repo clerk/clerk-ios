@@ -15,6 +15,7 @@ struct AuthProviderIcon: View {
     
     let provider: OAuthProvider
     
+    @MainActor
     var iconImageUrl: URL? {
         provider.iconImageUrl(darkMode: colorScheme == .dark)
     }
