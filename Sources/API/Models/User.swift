@@ -149,7 +149,7 @@ extension User {
     var unconnectedProviders: [OAuthProvider] {
         guard let environment = Clerk.shared.environment else { return []}
         let allExternalProviders = environment.userSettings.socialProviders.sorted()
-        let verifiedExternalProviders = verifiedExternalAccounts.compactMap(\.oauthProvider)
+        let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
