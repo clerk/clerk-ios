@@ -22,8 +22,6 @@ extension AuthView {
         @Published var signInFactorTwoBackupCode = ""
         @Published var signInFactorTwoPhoneCode = ""
         @Published var signInFactorTwoTOTPCode = ""
-        @Published var signInResetPasswordPassword = ""
-        @Published var signInResetPasswordConfirmPassword = ""
         
         // Sign Up State
         @Published var signUpEmailAddress = ""
@@ -34,6 +32,27 @@ extension AuthView {
         @Published var signUpPassword = ""
         @Published var signUpEmailCode = ""
         @Published var signUpPhoneCode = ""
+        
+        func resetState() {
+            signInEmailAddressOrUsername = ""
+            signInPhoneNumber = ""
+            signInPassword = ""
+            signInFactorOneEmailCode = ""
+            signInFactorOnePhoneCode = ""
+            signInFactorOneResetCode = ""
+            signInFactorTwoBackupCode = ""
+            signInFactorTwoPhoneCode = ""
+            signInFactorTwoTOTPCode = ""
+            
+            signUpEmailAddress = ""
+            signUpPhoneNumber = ""
+            signUpUsername = ""
+            signUpFirstName = ""
+            signUpLastName = ""
+            signUpPassword = ""
+            signUpEmailCode = ""
+            signUpPhoneCode = ""
+        }
     }
 }
 
@@ -128,7 +147,11 @@ struct AuthView: View {
             .background(.ultraThinMaterial)
         })
         .animation(.snappy, value: clerkUIState.presentedAuthStep)
-        .dismissButtonOverlay()
+        .dismissButtonOverlay {
+            // clear the state before dismissing so Apple's keychain Heuristics
+            // dont think we changed a password if the user manually dismissed
+            config.resetState()
+        }
         .interactiveDismissDisabled()
         .scrollDismissesKeyboard(.interactively)
         .onChange(of: clerkUIState.presentedAuthStep) { _ in

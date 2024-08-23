@@ -98,28 +98,6 @@ struct SignUpFormView: View {
                 }
             }
             
-            if let username = clerk.environment?.userSettings.config(for: "username"), username.enabled {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Username")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(clerkTheme.colors.textPrimary)
-                        Spacer()
-                        if !username.required {
-                            Text("Optional")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(clerkTheme.colors.textTertiary)
-                        }
-                    }
-                    
-                    CustomTextField(text: $config.signUpUsername)
-                        .textContentType(.username)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .focused($focusedField, equals: .username)
-                }
-            }
-            
             if let phoneNumber = clerk.environment?.userSettings.config(for: "phone_number"), phoneNumber.enabled {
                 VStack(alignment: .leading) {
                     HStack {
@@ -155,11 +133,33 @@ struct SignUpFormView: View {
                     }
                     
                     CustomTextField(text: $config.signUpEmailAddress)
-                        .textContentType(.username)
+                        .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .emailAddress)
+                }
+            }
+            
+            if let username = clerk.environment?.userSettings.config(for: "username"), username.enabled {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Username")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                        if !username.required {
+                            Text("Optional")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(clerkTheme.colors.textTertiary)
+                        }
+                    }
+                    
+                    CustomTextField(text: $config.signUpUsername)
+                        .textContentType(.username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .username)
                 }
             }
             

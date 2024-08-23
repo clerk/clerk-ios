@@ -19,7 +19,7 @@
 		8FF70B572BC88E300053048D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF70B562BC88E300053048D /* ContentView.swift */; };
 		8FF70B592BC88E310053048D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B582BC88E310053048D /* Assets.xcassets */; };
 		8FF70B5C2BC88E310053048D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B5B2BC88E310053048D /* Preview Assets.xcassets */; };
-		8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8FF70B652BC88ED30053048D /* ClerkSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8FF70B642BC88ED30053048D /* ClerkSDK */; };
 /* End PBXBuildFile section */
 
@@ -304,7 +304,6 @@
 /* Begin PBXTargetDependency section */
 		8FF70B5E2BC88E310053048D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
 			target = 8FF70B512BC88E300053048D /* ClerkDemoWatch Watch App */;
 			targetProxy = 8FF70B5D2BC88E310053048D /* PBXContainerItemProxy */;
 		};
@@ -460,7 +459,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -502,7 +501,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;

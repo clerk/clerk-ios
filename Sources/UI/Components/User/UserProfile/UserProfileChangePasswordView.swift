@@ -35,21 +35,6 @@ struct UserProfileChangePasswordView: View {
         (newPassword != confirmPassword)
     }
     
-    private func updatePassword() async {
-        do {
-            try await user?.updatePassword(.init(
-                newPassword: newPassword,
-                currentPassword: currentPassword,
-                signOutOfOtherSessions: signOutOfOtherDevices
-            ))
-            
-            dismiss()
-        } catch {
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
@@ -58,48 +43,49 @@ struct UserProfileChangePasswordView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 30)
                 
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
+                    
                     VStack(alignment: .leading) {
                         Text("Current password").font(.footnote.weight(.medium))
-                        CustomTextField(text: $currentPassword, isSecureField: true)
+                        PasswordInputView(password: $currentPassword)
                             .textContentType(.password)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
                             .focused($focusedField, equals: .currentPassword)
                     }
                     
-                    VStack(alignment: .leading) {
-                        Text("New password").font(.footnote.weight(.medium))
-                        CustomTextField(text: $newPassword, isSecureField: true)
-                            .textContentType(.newPassword)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .newPassword)
-                    }
-                    
-                    VStack(alignment: .leading) {
-                        Text("Confirm password").font(.footnote.weight(.medium))
-                        CustomTextField(text: $confirmPassword, isSecureField: true)
-                            .textContentType(.password)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .confirmPassword)
-                    }
-                    
-                    HStack {
-                        Toggle(isOn: $signOutOfOtherDevices, label: { EmptyView() })
-                            .labelsHidden()
+                    if !currentPassword.isEmpty {
+                        VStack(alignment: .leading) {
+                            Text("New password").font(.footnote.weight(.medium))
+                            PasswordInputView(password: $newPassword)
+                                .focused($focusedField, equals: .newPassword)
+                                .hiddenTextField(text: .constant(user?.identifier ?? ""), textContentType: .username)
+                        }
                         
-                        Text("Sign out of all other devices")
-                            .font(.footnote.weight(.medium))
+                        VStack(alignment: .leading) {
+                            Text("Confirm password").font(.footnote.weight(.medium))
+                            PasswordInputView(password: $confirmPassword)
+                                .textContentType(.newPassword)
+                                .focused($focusedField, equals: .confirmPassword)
+                        }
+                        
+                        HStack {
+                            Toggle(isOn: $signOutOfOtherDevices, label: { EmptyView() })
+                                .labelsHidden()
+                            
+                            Text("Sign out of all other devices")
+                                .font(.footnote.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 30)
+                .animation(.default, value: currentPassword.isEmpty)
                 
                 HStack {
                     Button {
+                        currentPassword = ""
+                        newPassword = ""
+                        confirmPassword = ""
                         dismiss()
                     } label: {
                         Text("Cancel")
@@ -128,6 +114,21 @@ struct UserProfileChangePasswordView: View {
         }
         .dismissButtonOverlay()
         .clerkErrorPresenting($errorWrapper)
+    }
+    
+    private func updatePassword() async {
+        do {
+            try await user?.updatePassword(.init(
+                newPassword: newPassword,
+                currentPassword: currentPassword,
+                signOutOfOtherSessions: signOutOfOtherDevices
+            ))
+            
+            dismiss()
+        } catch {
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
     }
 }
 

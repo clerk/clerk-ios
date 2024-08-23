@@ -111,7 +111,7 @@ extension ExternalAccount {
             url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
-        let authSession = WebAuthSession(
+        let authSession = WebAuthentication(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
