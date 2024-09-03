@@ -36,7 +36,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     case box
     case slack
     case linear
-    case huggingface
+    case huggingFace
     
     // **
     // WHEN ADDING A NEW CASE, MAKE SURE TO ADD IT TO THE ALL CASES ARRAY
@@ -70,7 +70,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             .box,
             .slack,
             .linear,
-            .huggingface
+            .huggingFace
         ]
     }
     
@@ -293,7 +293,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
                 strategy: "oauth_linear",
                 name: "Linear"
             )
-        case .huggingface:
+        case .huggingFace:
             return .init(
                 strategy: "oauth_huggingface",
                 name: "Hugging Face"
