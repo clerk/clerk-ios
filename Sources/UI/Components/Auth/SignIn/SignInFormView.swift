@@ -85,7 +85,6 @@ struct SignInFormView: View {
                     if displayingEmailOrUsernameEntry {
                         CustomTextField(text: $config.signInEmailAddressOrUsername)
                             .textContentType(.username)
-                            .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                             .focused($focusedField, equals: .emailOrUsername)
@@ -101,12 +100,28 @@ struct SignInFormView: View {
                         focusedField = showingEmail ? .emailOrUsername : .phoneNumber
                     }
                 }
+                .hiddenTextField(text: $config.signInPassword, textContentType: .password)
+            }
+            
+            if !config.signInPassword.isEmpty {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Password")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                    }
+                    
+                    PasswordInputView(password: $config.signInPassword)
+                        .textContentType(.password)
+                }
             }
             
             AsyncButton {
                 await signInAction(
                     strategy: .identifier(
-                        displayingEmailOrUsernameEntry ? config.signInEmailAddressOrUsername : config.signInPhoneNumber
+                        displayingEmailOrUsernameEntry ? config.signInEmailAddressOrUsername : config.signInPhoneNumber,
+                        password: config.signInPassword.isEmpty ? nil : config.signInPassword
                     )
                 )
             } label: {
@@ -135,6 +150,7 @@ struct SignInFormView: View {
                 .padding(.vertical)
             }
         }
+        .animation(.default, value: config.signInPassword.isEmpty)
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber

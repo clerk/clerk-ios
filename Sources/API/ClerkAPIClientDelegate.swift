@@ -24,7 +24,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         await request.setValue(deviceID, forHTTPHeaderField: "x-native-device-id")
         
         request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
-        request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "4.70.0")])
+        request.url?.append(queryItems: [.init(name: "_clerk_js_version", value: "5.15.0")])
 
         // Encode body with url-encoded form
         if let data = request.httpBody {

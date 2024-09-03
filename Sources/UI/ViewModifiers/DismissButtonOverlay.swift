@@ -14,6 +14,7 @@ struct DismissButtonOverlayModifier: ViewModifier {
     @Environment(\.dismiss) private var dismiss
     let alignment: Alignment
     let hidden: Bool
+    let beforeDismissAction: (() -> Void)?
     
     func body(content: Content) -> some View {
         if hidden {
@@ -21,7 +22,7 @@ struct DismissButtonOverlayModifier: ViewModifier {
         } else {
             content
                 .overlay(alignment: alignment) {
-                    DismissButton()
+                    DismissButton(beforeDismissAction: beforeDismissAction)
                         .padding()
                 }
         }
@@ -31,8 +32,8 @@ struct DismissButtonOverlayModifier: ViewModifier {
 }
 
 extension View {
-    public func dismissButtonOverlay(alignment: Alignment = .topTrailing, hidden: Bool = false) -> some View {
-        modifier(DismissButtonOverlayModifier(alignment: alignment, hidden: hidden))
+    public func dismissButtonOverlay(alignment: Alignment = .topTrailing, hidden: Bool = false, beforeDismissAction: (() -> Void)? = nil) -> some View {
+        modifier(DismissButtonOverlayModifier(alignment: alignment, hidden: hidden, beforeDismissAction: beforeDismissAction))
     }
 }
 

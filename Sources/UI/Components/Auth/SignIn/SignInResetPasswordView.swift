@@ -14,24 +14,13 @@ struct SignInResetPasswordView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
+    @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var signOutOfAllDevices = true
     @State private var errorWrapper: ErrorWrapper?
     
     private var signIn: SignIn? {
         clerk.client?.signIn
-    }
-    
-    private func resetPassword() async {
-        do {
-            try await signIn?.resetPassword(.init(
-                password: config.signInResetPasswordPassword,
-                signOutOfOtherSessions: signOutOfAllDevices
-            ))
-            
-            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-        } catch {
-            errorWrapper = ErrorWrapper(error: error)
-        }
     }
     
     var body: some View {
@@ -56,11 +45,8 @@ struct SignInResetPasswordView: View {
                             Spacer()
                         }
                         
-                        CustomTextField(
-                            text: $config.signInResetPasswordPassword,
-                            isSecureField: true
-                        )
-                        .textContentType(.newPassword)
+                        PasswordInputView(password: $password)
+                            .hiddenTextField(text: .constant(signIn?.identifier ?? ""), textContentType: .username)
                     }
                     
                     VStack(spacing: 8) {
@@ -71,11 +57,8 @@ struct SignInResetPasswordView: View {
                             Spacer()
                         }
                         
-                        CustomTextField(
-                            text: $config.signInResetPasswordConfirmPassword,
-                            isSecureField: true
-                        )
-                        .textContentType(.newPassword)
+                        PasswordInputView(password: $confirmPassword)
+                            .textContentType(.newPassword)
                     }
                 }
                 .padding(.bottom, 24)
@@ -107,7 +90,7 @@ struct SignInResetPasswordView: View {
                 .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInStart
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
@@ -117,6 +100,19 @@ struct SignInResetPasswordView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 32)
+        }
+    }
+    
+    private func resetPassword() async {
+        do {
+            try await signIn?.resetPassword(.init(
+                password: password,
+                signOutOfOtherSessions: signOutOfAllDevices
+            ))
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+        } catch {
+            errorWrapper = ErrorWrapper(error: error)
         }
     }
 }

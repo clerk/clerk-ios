@@ -13,8 +13,11 @@ struct DismissButton: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     
+    var beforeDismissAction: (() -> Void)?
+    
     var body: some View {
         Button(action: {
+            beforeDismissAction?()
             dismiss()
         }, label: {
             Image(systemName: "xmark")

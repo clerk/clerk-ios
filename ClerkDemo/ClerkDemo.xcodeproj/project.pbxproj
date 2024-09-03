@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8F743BFA2C765C7E00C6A006 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8F743BF92C765C7E00C6A006 /* Atlantis */; };
 		8F81166A2B9BC35B00E2858C /* ClerkDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */; };
 		8F81166E2B9BC35C00E2858C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F81166D2B9BC35C00E2858C /* Assets.xcassets */; };
 		8F8116712B9BC35C00E2858C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F8116702B9BC35C00E2858C /* Preview Assets.xcassets */; };
@@ -14,12 +15,11 @@
 		8F81167F2B9BC45000E2858C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F81167E2B9BC45000E2858C /* HomeView.swift */; };
 		8FA348152B9F5D4C00C63315 /* DemoAppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA348142B9F5D4C00C63315 /* DemoAppSettingsView.swift */; };
 		8FA348172B9F73F600C63315 /* ClerkDemoSettingsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA348162B9F73F600C63315 /* ClerkDemoSettingsModifier.swift */; };
-		8FF1DAF12C46C4530075382A /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FF1DAF02C46C4530075382A /* Atlantis */; };
 		8FF70B552BC88E300053048D /* ClerkDemoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */; };
 		8FF70B572BC88E300053048D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF70B562BC88E300053048D /* ContentView.swift */; };
 		8FF70B592BC88E310053048D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B582BC88E310053048D /* Assets.xcassets */; };
 		8FF70B5C2BC88E310053048D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FF70B5B2BC88E310053048D /* Preview Assets.xcassets */; };
-		8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8FF70B5F2BC88E310053048D /* ClerkDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8FF70B652BC88ED30053048D /* ClerkSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 8FF70B642BC88ED30053048D /* ClerkSDK */; };
 /* End PBXBuildFile section */
 
@@ -48,7 +48,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8F4CA5402C06847F0052C1F2 /* ClerkDemoWatch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ClerkDemoWatch Watch App.entitlements"; sourceTree = "<group>"; };
+		8F1D8F472C35A8D4001C12DC /* ClerkDemoWatch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ClerkDemoWatch Watch App.entitlements"; sourceTree = "<group>"; };
 		8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClerkDemo.entitlements; sourceTree = "<group>"; };
 		8F8116662B9BC35B00E2858C /* ClerkDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoApp.swift; sourceTree = "<group>"; };
@@ -60,6 +60,8 @@
 		8F8407862BA36ACB00218DB3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8FA348142B9F5D4C00C63315 /* DemoAppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoAppSettingsView.swift; sourceTree = "<group>"; };
 		8FA348162B9F73F600C63315 /* ClerkDemoSettingsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoSettingsModifier.swift; sourceTree = "<group>"; };
+		8FB194D02C35D3E700A8D36F /* ClerkDemoDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClerkDemoDebug.entitlements; sourceTree = "<group>"; };
+		8FB194D12C35D42100A8D36F /* ClerkDemoWatch Watch AppDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ClerkDemoWatch Watch AppDebug.entitlements"; sourceTree = "<group>"; };
 		8FF70B522BC88E300053048D /* ClerkDemoWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ClerkDemoWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkDemoWatchApp.swift; sourceTree = "<group>"; };
 		8FF70B562BC88E300053048D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -72,7 +74,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8FF1DAF12C46C4530075382A /* Atlantis in Frameworks */,
+				8F743BFA2C765C7E00C6A006 /* Atlantis in Frameworks */,
 				8F81167A2B9BC38200E2858C /* ClerkSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -112,6 +114,7 @@
 		8F8116682B9BC35B00E2858C /* ClerkDemo */ = {
 			isa = PBXGroup;
 			children = (
+				8FB194D02C35D3E700A8D36F /* ClerkDemoDebug.entitlements */,
 				8F74DCDA2BC74C8700C7C5F6 /* ClerkDemo.entitlements */,
 				8F8407862BA36ACB00218DB3 /* Info.plist */,
 				8F8116692B9BC35B00E2858C /* ClerkDemoApp.swift */,
@@ -150,7 +153,8 @@
 		8FF70B532BC88E300053048D /* ClerkDemoWatch Watch App */ = {
 			isa = PBXGroup;
 			children = (
-				8F4CA5402C06847F0052C1F2 /* ClerkDemoWatch Watch App.entitlements */,
+				8FB194D12C35D42100A8D36F /* ClerkDemoWatch Watch AppDebug.entitlements */,
+				8F1D8F472C35A8D4001C12DC /* ClerkDemoWatch Watch App.entitlements */,
 				8FF70B542BC88E300053048D /* ClerkDemoWatchApp.swift */,
 				8FF70B562BC88E300053048D /* ContentView.swift */,
 				8FF70B582BC88E310053048D /* Assets.xcassets */,
@@ -187,7 +191,7 @@
 			name = ClerkDemo;
 			packageProductDependencies = (
 				8F8116792B9BC38200E2858C /* ClerkSDK */,
-				8FF1DAF02C46C4530075382A /* Atlantis */,
+				8F743BF92C765C7E00C6A006 /* Atlantis */,
 			);
 			productName = ClerkDemo;
 			productReference = 8F8116662B9BC35B00E2858C /* ClerkDemo.app */;
@@ -221,7 +225,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 1530;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					8F8116652B9BC35B00E2858C = {
 						CreatedOnToolsVersion = 15.3;
@@ -241,7 +245,7 @@
 			);
 			mainGroup = 8F81165D2B9BC35B00E2858C;
 			packageReferences = (
-				8FF1DAEF2C46C4530075382A /* XCRemoteSwiftPackageReference "atlantis" */,
+				8F743BF82C765C7E00C6A006 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			productRefGroup = 8F8116672B9BC35B00E2858C /* Products */;
 			projectDirPath = "";
@@ -300,7 +304,6 @@
 /* Begin PBXTargetDependency section */
 		8FF70B5E2BC88E310053048D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
 			target = 8FF70B512BC88E300053048D /* ClerkDemoWatch Watch App */;
 			targetProxy = 8FF70B5D2BC88E310053048D /* PBXContainerItemProxy */;
 		};
@@ -359,7 +362,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = Default;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -416,7 +419,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = Default;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -429,15 +432,15 @@
 		8F8116752B9BC35C00E2858C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemo.entitlements;
+				CODE_SIGN_ENTITLEMENTS = ClerkDemo/ClerkDemoDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemo/Preview Content\"";
 				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ClerkDemo/Info.plist;
@@ -471,7 +474,6 @@
 		8F8116762B9BC35C00E2858C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -480,6 +482,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemo/Preview Content\"";
 				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ClerkDemo/Info.plist;
@@ -515,7 +518,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "ClerkDemoWatch Watch App/ClerkDemoWatch Watch App.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "ClerkDemoWatch Watch App/ClerkDemoWatch Watch AppDebug.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClerkDemoWatch Watch App/Preview Content\"";
@@ -607,7 +610,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8FF1DAEF2C46C4530075382A /* XCRemoteSwiftPackageReference "atlantis" */ = {
+		8F743BF82C765C7E00C6A006 /* XCRemoteSwiftPackageReference "atlantis" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ProxymanApp/atlantis";
 			requirement = {
@@ -618,14 +621,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8F743BF92C765C7E00C6A006 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F743BF82C765C7E00C6A006 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
+		};
 		8F8116792B9BC38200E2858C /* ClerkSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkSDK;
-		};
-		8FF1DAF02C46C4530075382A /* Atlantis */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8FF1DAEF2C46C4530075382A /* XCRemoteSwiftPackageReference "atlantis" */;
-			productName = Atlantis;
 		};
 		8FF70B642BC88ED30053048D /* ClerkSDK */ = {
 			isa = XCSwiftPackageProductDependency;

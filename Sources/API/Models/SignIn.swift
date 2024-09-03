@@ -396,7 +396,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
-        let authSession = WebAuthSession(
+        let authSession = WebAuthentication(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
@@ -405,7 +405,14 @@ public struct SignIn: Codable, Sendable, Equatable {
             return nil
         }
         
-        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: callbackUrl) {
+        let externalAuthResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
+        return externalAuthResult
+    }
+    #endif
+    
+    @MainActor
+    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult? {
+        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
             let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
             return ExternalAuthResult(signIn: signIn)
@@ -434,7 +441,6 @@ public struct SignIn: Codable, Sendable, Equatable {
             }
         }
     }
-    #endif
     
     /// Creates a sign in with an Apple id token
     @discardableResult @MainActor

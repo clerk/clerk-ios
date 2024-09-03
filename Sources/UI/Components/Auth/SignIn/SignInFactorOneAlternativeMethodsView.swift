@@ -28,32 +28,36 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: OAuthProvider) async {
         do {
+            var result: ExternalAuthResult?
+            
             if provider == .apple {
-                try await signInWithApple()
+                result = try await signInWithApple()
             } else {
-                try await SignIn
+                result = try await SignIn
                     .create(strategy: .oauth(provider))
                     .authenticateWithRedirect()
             }
             
-            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            // if the user didnt cancel
+            if result != nil {
+                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            }
         } catch {
             errorWrapper = ErrorWrapper(error: error)
-			clerkUIState.presentedAuthStep = .signInStart
             dump(error)
         }
     }
     
-    private func signInWithApple() async throws {
+    private func signInWithApple() async throws -> ExternalAuthResult? {
         guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
-            return
+            return nil
         }
         
         guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
         
-        try await SignIn.signInWithAppleIdToken(
+        return try await SignIn.signInWithAppleIdToken(
             idToken: token
         )
     }

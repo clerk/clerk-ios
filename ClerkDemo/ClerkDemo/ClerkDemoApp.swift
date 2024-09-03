@@ -20,6 +20,9 @@ struct ClerkDemoApp: App {
                     Clerk.shared.configure(publishableKey: publishableKey, debugMode: true)
                     try? await Clerk.shared.load()
                 }
+                .onOpenURL { url in
+                    Task { await Clerk.handleUrl(url) }
+                }
                 #if os(iOS)
                 .clerkProvider()
                 #endif
