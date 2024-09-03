@@ -258,13 +258,9 @@ extension Clerk {
             let response = try await Clerk.shared.apiClient.send(request)
             Clerk.shared.client = response.value.client
         } else {
-            guard let client else { return }
-            let sessionIds = client.sessions.map(\.id)
-            for sessionId in sessionIds {
-                let request = ClerkAPI.v1.client.sessions.id(sessionId).remove.post
-                let response = try await Clerk.shared.apiClient.send(request)
-                Clerk.shared.client = response.value.client
-            }
+            let request = ClerkAPI.v1.client.sessions.delete
+            let response = try await Clerk.shared.apiClient.send(request)
+            Clerk.shared.client = response.value.client
         }
     }
     
