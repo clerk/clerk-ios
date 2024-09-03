@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Get
 
 extension ClerkAPI.V1Endpoint.ClientEndpoint {
     
@@ -16,6 +17,10 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint {
     struct SessionsEndpoint {
         /// Path: `v1/client/sessions`
         let path: String
+        
+        var delete: Request<ClientResponse<Client>> {
+            .init(path: path, method: .delete)
+        }
     }
     
 }
