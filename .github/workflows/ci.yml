@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   test:
-    name: Test
+    name: Build and Test
     runs-on: macOS-latest
     timeout-minutes: 30
     env:
@@ -26,13 +26,13 @@ jobs:
       matrix:
         destination:
           - "platform=macOS"
-          - "platform=iOS Simulator,name=iPhone 15"
-          - "platform=tvOS Simulator,name=Apple TV"
+          - "platform=iOS Simulator,name=iPhone 15 Pro"
+          - "platform=tvOS Simulator,name=Apple TV 4K"
           - "platform=visionOS Simulator,name=Apple Vision Pro"
-          - "platform=watchOS Simulator,name=Apple Watch Series 6 (40mm)"
+          - "platform=watchOS Simulator,name=Apple Watch Series 9 (40mm)"
           - "platform=macOS,variant=Mac Catalyst"
 
     steps:
       - uses: actions/checkout@v4
       - name: Test platform ${{ matrix.destination }}
-        run: set -o pipefail && xcodebuild -scheme ClerkSDK -destination "${{ matrix.destination }}" test | xcbeautify
+        run: set -o pipefail && xcodebuild -scheme Clerk -destination "${{ matrix.destination }}" test | xcbeautify
