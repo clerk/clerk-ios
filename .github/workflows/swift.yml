@@ -1,25 +1,38 @@
-name: Swift
+name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - '.spi.yml'
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
+  test:
+    name: Test
+    runs-on: macOS-14
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_15.4.app/Contents/Developer
     strategy:
       matrix:
-        os: [macos-latest]
-        swift: ["5.10", "6.0"]
-    runs-on: ${{ matrix.os }}
+        destination:
+          - "platform=macOS"
+          - "platform=iOS Simulator,name=iPhone 15"
+          - "platform=tvOS Simulator,name=Apple TV"
+          - "platform=visionOS Simulator,name=Apple Vision Pro"
+          - "platform=watchOS Simulator,name=Apple Watch Series 6 (40mm)"
+          - "platform=macOS,variant=Mac Catalyst"
+
     steps:
-      - uses: swift-actions/setup-swift@65540b95f51493d65f5e59e97dcef9629ddf11bf
-        with:
-          swift-version: ${{ matrix.swift }}
       - uses: actions/checkout@v4
-      - name: Build
-        run: swift build
-      - name: Run tests
-        run: swift test
+      - name: Test platform ${{ matrix.destination }}
+        run: set -o pipefail && xcodebuild -scheme ClerkSDK -destination "${{ matrix.destination }}" test | xcbeautify
