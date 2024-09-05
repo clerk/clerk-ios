@@ -35,4 +35,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Test platform ${{ matrix.destination }}
-        run: set -o pipefail && xcodebuild -scheme ClerkSDK -destination "${{ matrix.destination }}" test | xcbeautify
+        run: set -o pipefail && xcodebuild -scheme Clerk -destination "${{ matrix.destination }}" test | xcbeautify
