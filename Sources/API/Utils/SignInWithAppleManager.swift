@@ -11,17 +11,7 @@
 import Foundation
 import AuthenticationServices
 
-final class ASAuth: NSObject {
-    
-    enum AuthType {
-        case signInWithApple
-    }
-    
-    let authType: AuthType
-    
-    init(authType: AuthType) {
-        self.authType = authType
-    }
+final class SignInWithAppleManager: NSObject {
     
     private var continuation: CheckedContinuation<ASAuthorization?,Error>?
     
@@ -40,25 +30,21 @@ final class ASAuth: NSObject {
     func start() async throws -> ASAuthorization? {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
+                                            
+            let appleIDProvider = ASAuthorizationAppleIDProvider()
+            let appleRequest = appleIDProvider.createRequest()
+            appleRequest.requestedScopes = requestedScopes
+            appleRequest.nonce = UUID().uuidString
             
-            switch authType {
-                
-            case .signInWithApple:
-                
-                let appleIDProvider = ASAuthorizationAppleIDProvider()
-                let appleRequest = appleIDProvider.createRequest()
-                appleRequest.requestedScopes = requestedScopes
-                appleRequest.nonce = UUID().uuidString
-                let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
-                authorizationController.delegate = self
-                authorizationController.presentationContextProvider = self
-                authorizationController.performRequests()
-            }
+            let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
+            authorizationController.delegate = self
+            authorizationController.presentationContextProvider = self
+            authorizationController.performRequests()
         }
     }
 }
 
-extension ASAuth: ASAuthorizationControllerDelegate {
+extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         continuation?.resume(returning: authorization)
@@ -74,7 +60,7 @@ extension ASAuth: ASAuthorizationControllerDelegate {
     
 }
 
-extension ASAuth: ASAuthorizationControllerPresentationContextProviding {
+extension SignInWithAppleManager: ASAuthorizationControllerPresentationContextProviding {
     
     @MainActor
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {

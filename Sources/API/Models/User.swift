@@ -258,10 +258,51 @@ extension User {
     }
     
     #if canImport(AuthenticationServices) && !os(watchOS)
+    @MainActor
+    public func createPasskey() async throws -> Passkey? {
+        let passkey = try await Passkey.create()
+        
+        guard
+            let nonceJson = passkey.verification?.nonce?.toJSON(),
+            let challengeString = nonceJson.challenge?.stringValue,
+            let challenge = challengeString.data(using: .utf8)
+        else {
+            throw ClerkClientError(message: "Unable to get the challenge from the server.")
+        }
+        
+        guard let name = nonceJson.user?.name?.stringValue else {
+            throw ClerkClientError(message: "Unable to get the user name from the server.")
+        }
+        
+        guard let userId = id.data(using: .utf8) else {
+            throw ClerkClientError(message: "Unable to convert user id to type Data")
+        }
+        
+        let manager = PasskeyManager()
+        guard let authorization = try await manager.createPasskey(
+            challenge: challenge,
+            name: name,
+            userId: userId
+        ) else {
+            // user cancelled
+            return nil
+        }
+        
+        guard let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration else {
+            throw ClerkClientError(message: "Invalid credential type.")
+        }
+        
+        // TODO: Attempt Verification
+        dump(credentialRegistration)
+        return passkey
+    }
+    #endif
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
     @discardableResult @MainActor
     public func linkAppleAccount() async throws -> ExternalAccount? {
-        let authManager = ASAuth(authType: .signInWithApple)
-        let authorization = try await authManager.start()
+        let manager = SignInWithAppleManager()
+        let authorization = try await manager.start()
         
         if authorization == nil {
             // cancelled

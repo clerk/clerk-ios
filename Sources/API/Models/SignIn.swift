@@ -222,6 +222,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case emailCode
         case phoneCode
         case saml
+        case passkey
         case resetPasswordEmailCode
         case resetPasswordPhoneCode
     }
@@ -231,6 +232,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case .emailCode: .emailCode
         case .phoneCode: .phoneCode
         case .saml: .saml
+        case .passkey: .passkey
         case .resetPasswordEmailCode: .resetPasswordEmailCode
         case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
@@ -240,7 +242,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
-        case .saml:
+        case .saml, .passkey:
             return .init(strategy: strategy.stringValue)
         }
     }

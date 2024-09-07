@@ -28,7 +28,7 @@ enum ExternalAuthUtils {
     /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
     @MainActor
     static func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential? {
-        let authManager = ASAuth(authType: .signInWithApple)
+        let authManager = SignInWithAppleManager()
         let authorization = try await authManager.start()
         
         if authorization == nil {
