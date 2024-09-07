@@ -124,7 +124,7 @@ extension ExternalAccount {
     
     /// Deletes this external account.
     @discardableResult @MainActor
-    public func destroy() async throws -> Deletion {
+    public func destroy() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.externalAccounts.id(id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )

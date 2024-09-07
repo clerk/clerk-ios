@@ -361,7 +361,7 @@ extension User {
     
     /// Disables TOTP by deleting the user's TOTP secret.
     @discardableResult @MainActor
-    public func disableTOTP() async throws -> Deletion {
+    public func disableTOTP() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.totp.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
@@ -429,7 +429,7 @@ extension User {
     
     /// Deletes the user's profile image.
     @discardableResult @MainActor
-    public func deleteProfileImage() async throws -> Deletion {
+    public func deleteProfileImage() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.profileImage.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
@@ -448,7 +448,7 @@ extension User {
     
     /// Deletes the current user.
     @discardableResult @MainActor
-    public func delete() async throws -> Deletion {
+    public func delete() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
