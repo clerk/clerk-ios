@@ -12,8 +12,22 @@ import SwiftUI
 struct UserProfilePasskeyView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var renameIsPresented = false
+    @State private var confirmationSheetIsPresented = false
+    @State private var errorWrapper: ErrorWrapper?
     
     let passkey: Passkey
+    
+    private var removeResource: RemoveResource {
+        .passkey(passkey)
+    }
+    
+    let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .short
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
     
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -22,15 +36,31 @@ struct UserProfilePasskeyView: View {
                     .font(.footnote.weight(.medium))
                 
                 Group {
-                    Text("Created: " + passkey.createdAt.formatted(Date.RelativeFormatStyle(presentation: .named)))
+                    Text("Created: " + dateFormatter.string(from: passkey.createdAt))
                     if let lastUsedAt = passkey.lastUsedAt {
-                        Text("Last used: " + lastUsedAt.formatted(Date.RelativeFormatStyle(presentation: .named)))
+                        Text("Last used: " + dateFormatter.string(from: lastUsedAt))
                     }
                 }
                 .foregroundStyle(clerkTheme.colors.textSecondary)
                 .font(.footnote)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .confirmationDialog(
+                Text(removeResource.messageLine1),
+                isPresented: $confirmationSheetIsPresented,
+                titleVisibility: .visible
+            ) {
+                AsyncButton(role: .destructive) {
+                    do {
+                        try await removeResource.deleteAction()
+                    } catch {
+                        errorWrapper = ErrorWrapper(error: error)
+                    }
+                } label: {
+                    Text(removeResource.title)
+                }
+            } message: {
+                Text(removeResource.messageLine2)
+            }
             
             Spacer()
             
@@ -42,7 +72,7 @@ struct UserProfilePasskeyView: View {
                 }
                 
                 AsyncButton(role: .destructive) {
-                    //
+                    confirmationSheetIsPresented = true
                 } label: {
                     Text("Remove")
                 }

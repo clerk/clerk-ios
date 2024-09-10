@@ -23,7 +23,7 @@ struct UserProfilePasskeySection: View {
             Text("Passkeys")
                 .font(.footnote.weight(.medium))
             
-            if let user {
+            if let user, !user.passkeys.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(user.passkeys) { passkey in
                         UserProfilePasskeyView(passkey: passkey)
@@ -45,6 +45,7 @@ struct UserProfilePasskeySection: View {
             Divider()
         }
         .clerkErrorPresenting($errorWrapper)
+        .animation(.snappy, value: user?.passkeys)
     }
 }
 

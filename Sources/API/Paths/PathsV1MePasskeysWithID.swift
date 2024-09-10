@@ -19,7 +19,20 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PasskeysEndpoint {
         let path: String
         
         func patch(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<Passkey>> {
-            .init(path: path, method: .patch, query: queryItems.asTuples, body: body)
+            .init(
+                path: path,
+                method: .patch,
+                query: queryItems.asTuples,
+                body: body
+            )
+        }
+        
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<DeletedObject>> {
+            .init(
+                path: path,
+                method: .delete,
+                query: queryItems.asTuples
+            )
         }
     }
     
