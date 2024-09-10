@@ -110,7 +110,7 @@ extension Clerk.Environment.UserSettings {
     
     var preferredEmailVerificationStrategy: Strategy? {
         guard let emailAttribute = config(for: "email_address") else { return nil }
-        let strategies = emailAttribute.verificationStrategies ?? []
+        let strategies = emailAttribute.verificationStrategies
         
         if strategies.contains(where: { $0 == .emailCode }) {
             return .emailCode

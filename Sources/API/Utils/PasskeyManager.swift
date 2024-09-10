@@ -58,6 +58,7 @@ final class PasskeyManager: NSObject {
         }
     }
 
+    #if !os(macOS)
     @MainActor
     func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization? {
         return try await withCheckedThrowingContinuation { continuation in
@@ -74,6 +75,7 @@ final class PasskeyManager: NSObject {
             authController.performAutoFillAssistedRequests()
         }
     }
+    #endif
     
     @MainActor
     func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization? {
