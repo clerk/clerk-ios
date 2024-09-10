@@ -7,13 +7,13 @@
 
 import Foundation
 
-public struct Passkey: Codable {
-    let id: String
-    let name: String
-    let lastUsedAt: Date?
-    let createdAt: Date
-    let updatedAt: Date
-    let verification: Verification?
+public struct Passkey: Codable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let lastUsedAt: Date?
+    public let createdAt: Date
+    public let updatedAt: Date
+    public let verification: Verification?
 }
 
 extension Passkey {
@@ -42,6 +42,28 @@ extension Passkey {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
+    }
+    
+}
+
+extension Passkey {
+    
+    static var mock: Passkey {
+        .init(
+            id: UUID().uuidString,
+            name: "iCloud Keychain",
+            lastUsedAt: .now,
+            createdAt: .now,
+            updatedAt: .now,
+            verification: .init(
+                status: .verified,
+                strategy: Strategy.passkey.stringValue,
+                attempts: 0,
+                expireAt: .now,
+                error: nil,
+                nonce: nil
+            )
+        )
     }
     
 }

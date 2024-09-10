@@ -47,6 +47,9 @@ public struct User: Codable, Equatable, Sendable {
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
     
+    /// An array of all the Passkey objects associated with the user.
+    public let passkeys: [Passkey]
+    
     /// A boolean indicating whether the user has a password on their account.
     public let passwordEnabled: Bool
     
@@ -264,13 +267,13 @@ extension User {
         
         guard
             let nonceJson = passkey.verification?.nonce?.toJSON(),
-            let challengeString = nonceJson.challenge?.stringValue,
-            let challenge = challengeString.data(using: .utf8)
+            let challengeString = nonceJson["challenge"]?.stringValue,
+            let challenge = challengeString.dataFromBase64URL()
         else {
             throw ClerkClientError(message: "Unable to get the challenge from the server.")
         }
         
-        guard let name = nonceJson.user?.name?.stringValue else {
+        guard let name = nonceJson["user"]?["name"]?.stringValue else {
             throw ClerkClientError(message: "Unable to get the user name from the server.")
         }
         
@@ -288,13 +291,29 @@ extension User {
             return nil
         }
         
-        guard let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration else {
+        guard let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+              let rawAttestationObject = credentialRegistration.rawAttestationObject
+        else {
             throw ClerkClientError(message: "Invalid credential type.")
         }
         
-        // TODO: Attempt Verification
-        dump(credentialRegistration)
-        return passkey
+        let publicKeyCredential: [String: any Encodable] = [
+            "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "type": "public-key",
+            "response": [
+                "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+                "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
+            ]
+        ]
+        
+        let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+        
+        let registeredPasskey = try await passkey.attemptVerification(
+            credential: publicKeyCredentialJSON.debugDescription
+        )
+        
+        return registeredPasskey
     }
     #endif
     

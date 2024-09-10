@@ -12,6 +12,7 @@ import SwiftUI
 struct UserProfilePasskeySection: View {
     @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
+    @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
         clerk.client?.lastActiveSession?.user
@@ -22,8 +23,17 @@ struct UserProfilePasskeySection: View {
             Text("Passkeys")
                 .font(.footnote.weight(.medium))
             
-            Button(action: {
-                Task { await createPasskey() }
+            if let user {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(user.passkeys) { passkey in
+                        UserProfilePasskeyView(passkey: passkey)
+                    }
+                }
+                .padding(.leading, 12)
+            }
+            
+            AsyncButton(action: {
+                await createPasskey()
             }, label: {
                 Text("+ Add a passkey")
                     .font(.caption.weight(.medium))
@@ -34,6 +44,7 @@ struct UserProfilePasskeySection: View {
             
             Divider()
         }
+        .clerkErrorPresenting($errorWrapper)
     }
 }
 
@@ -46,7 +57,7 @@ extension UserProfilePasskeySection {
         do {
             try await user.createPasskey()
         } catch {
-            dump(error)
+            self.errorWrapper = ErrorWrapper(error: error)
         }
     }
     
