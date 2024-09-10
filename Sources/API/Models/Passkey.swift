@@ -44,6 +44,20 @@ extension Passkey {
         return response.value.response
     }
     
+    @discardableResult @MainActor
+    func update(name: String) async throws -> Passkey {
+        let request = ClerkAPI.v1.me.passkeys.withId(id).patch(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: [
+                "name": name
+            ]
+        )
+        
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    
 }
 
 extension Passkey {

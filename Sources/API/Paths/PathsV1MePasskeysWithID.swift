@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Get
 
 extension ClerkAPI.V1Endpoint.MeEndpoint.PasskeysEndpoint {
     
@@ -16,6 +17,10 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PasskeysEndpoint {
     struct WithIdEndpoint {
         /// Path: `/v1/me/passkeys/{id}`
         let path: String
+        
+        func patch(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<Passkey>> {
+            .init(path: path, method: .patch, query: queryItems.asTuples, body: body)
+        }
     }
     
 }
