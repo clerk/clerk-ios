@@ -266,18 +266,18 @@ extension User {
         let passkey = try await Passkey.create()
         
         guard
-            let nonceJson = passkey.verification?.nonce?.toJSON(),
-            let challengeString = nonceJson["challenge"]?.stringValue,
+            let nonceJSON = passkey.verification?.nonce?.toJSON(),
+            let challengeString = nonceJSON["challenge"]?.stringValue,
             let challenge = challengeString.dataFromBase64URL()
         else {
             throw ClerkClientError(message: "Unable to get the challenge from the server.")
         }
         
-        guard let name = nonceJson["user"]?["name"]?.stringValue else {
+        guard let name = nonceJSON["user"]?["name"]?.stringValue else {
             throw ClerkClientError(message: "Unable to get the user name from the server.")
         }
         
-        guard let userId = id.data(using: .utf8) else {
+        guard let userId = nonceJSON["user"]?["id"]?.stringValue?.base64URLFromBase64String().dataFromBase64URL() else {
             throw ClerkClientError(message: "Unable to convert user id to type Data")
         }
         

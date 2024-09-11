@@ -23,10 +23,6 @@ struct SignInFormView: View {
         case emailOrUsername, phoneNumber
     }
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
     // returns true if email OR username is used for sign in AND phone number is used for sign in
     private var showPhoneNumberToggle: Bool {
         guard let environment = clerk.environment else { return false }
@@ -132,6 +128,19 @@ struct SignInFormView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
             
+            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true,
+               clerk.environment?.userSettings.passkeySettings?.showSignInButton == true {
+                AsyncButton {
+                    await signInWithPasskey()
+                } label: {
+                    Label("Use passkey instead", systemImage: "person.badge.key.fill")
+                        .lineLimit(1)
+                        .clerkStandardButtonPadding()
+                }
+                .buttonStyle(ClerkSecondaryButtonStyle())
+                .padding(.top, 8)
+            }
+            
             if Clerk.LocalAuth.displayLocalAuthOption {
                 AsyncButton {
                     do {
@@ -156,19 +165,30 @@ struct SignInFormView: View {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
         }
     }
+}
+
+extension SignInFormView {
     
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            try await SignIn.create(strategy: strategy)
+            var signIn = try await SignIn.create(strategy: strategy)
             
-            if let prepareStrategy = signIn?.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
-                try await signIn?.prepareFirstFactor(for: prepareStrategy)
+            if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
+                signIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
                 
                 // If the prepare function resulted in a verification with an external verification url,
                 // trigger the external auth flow
-                if signIn?.firstFactorVerification?.status == .unverified, signIn?.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    try await signIn?.authenticateWithRedirect()
+                if signIn.firstFactorVerification?.status == .unverified, signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+                    let authResult = try await signIn.authenticateWithRedirect()
+                    
+                    if let signIn = authResult?.signIn {
+                        clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                    } else if let signUp = authResult?.signUp {
+                        clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+                    }
+                    
+                    return
                 }
             }
             
@@ -178,6 +198,21 @@ struct SignInFormView: View {
             dump(error)
         }
     }
+    
+    private func signInWithPasskey() async {
+        do {
+            KeyboardHelpers.dismissKeyboard()
+            let signIn = try await SignIn.authenticateWithPasskey()
+            if let signIn {
+                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            }
+        } catch {
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
+    }
+    
+    
 }
 
 #Preview {

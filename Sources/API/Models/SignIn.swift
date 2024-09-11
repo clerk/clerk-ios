@@ -133,7 +133,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
         let params = SignIn.createSignInParams(for: strategy)
-        let request = ClerkAPI.v1.client.signIns.post(params)
+        let request = ClerkAPI.v1.client.signIns.post(body: params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
@@ -154,14 +154,12 @@ public struct SignIn: Codable, Sendable, Equatable {
         switch strategy {
             
         case .identifier(let identifier, let password):
-            
             return .init(
                 identifier: identifier,
                 password: password
             )
             
         case .oauth(let oauthProvider):
-            
             return .init(
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
@@ -169,7 +167,6 @@ public struct SignIn: Codable, Sendable, Equatable {
             )
             
         case .transfer:
-            
             return .init(transfer: true)
             
         }
@@ -222,7 +219,6 @@ public struct SignIn: Codable, Sendable, Equatable {
         case emailCode
         case phoneCode
         case saml
-        case passkey
         case resetPasswordEmailCode
         case resetPasswordPhoneCode
     }
@@ -232,7 +228,6 @@ public struct SignIn: Codable, Sendable, Equatable {
         case .emailCode: .emailCode
         case .phoneCode: .phoneCode
         case .saml: .saml
-        case .passkey: .passkey
         case .resetPasswordEmailCode: .resetPasswordEmailCode
         case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
@@ -242,7 +237,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
-        case .saml, .passkey:
+        case .saml:
             return .init(strategy: strategy.stringValue)
         }
     }
@@ -274,7 +269,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     @discardableResult @MainActor
     public func attemptFirstFactor(for attemptFirstFactorStrategy: AttemptFirstFactorStrategy) async throws -> SignIn {
         let params = attemptFirstFactorParams(for: attemptFirstFactorStrategy)
-        let request = ClerkAPI.v1.client.signIns.id(id).attemptFirstFactor.post(params)
+        let request = ClerkAPI.v1.client.signIns.id(id).attemptFirstFactor.post(body: params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
@@ -307,6 +302,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         public let strategy: String
         public var code: String?
         public var password: String?
+        public var publicKeyCredential: String?
     }
     
     /**
@@ -444,6 +440,65 @@ public struct SignIn: Codable, Sendable, Equatable {
         }
     }
     
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @discardableResult @MainActor
+    public static func authenticateWithPasskey() async throws -> SignIn? {
+        
+        let createRequest = ClerkAPI.v1.client.signIns.post(
+            body: ["strategy": Strategy.passkey.stringValue]
+        )
+        let signIn = try await Clerk.shared.apiClient.send(createRequest).value.response
+        
+        guard
+            let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
+            let challengeString = nonceJSON["challenge"]?.stringValue,
+            let challenge = challengeString.dataFromBase64URL()
+        else {
+            throw ClerkClientError(message: "Unable to get the challenge from the server.")
+        }
+        
+        let manager = PasskeyManager()
+        guard let authorization = try await manager.signIn(
+            challenge: challenge,
+            preferImmediatelyAvailableCredentials: false
+        ) else {
+            // user cancelled
+            return nil
+        }
+        
+        guard let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
+              let authenticatorData = credentialAssertion.rawAuthenticatorData
+        else {
+            throw ClerkClientError(message: "Invalid credential type.")
+        }
+                
+        let publicKeyCredential: [String: any Encodable] = [
+            "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "type": "public-key",
+            "response": [
+                "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
+                "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+                "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
+                "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String()
+            ]
+        ]
+        
+        let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+        
+        let attemptRequest = ClerkAPI.v1.client.signIns.id(signIn.id).attemptFirstFactor.post(
+            body: [
+                "strategy": Strategy.passkey.stringValue,
+                "public_key_credential" : publicKeyCredentialJSON.debugDescription
+            ]
+        )
+        
+        let response = try await Clerk.shared.apiClient.send(attemptRequest)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    #endif
+    
     /// Creates a sign in with an Apple id token
     @discardableResult @MainActor
     public static func signInWithAppleIdToken(
@@ -455,7 +510,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             "token": idToken
         ]
                 
-        let request = ClerkAPI.v1.client.signIns.post(requestBody)
+        let request = ClerkAPI.v1.client.signIns.post(body: requestBody)
         let signIn = try await Clerk.shared.apiClient.send(request).value.response
         
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true

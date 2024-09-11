@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint {
         /// Path: `v1/client/sign_ins`
         let path: String
         
-        func post(_ params: Encodable) -> Request<ClientResponse<SignIn>> {
-            .init(path: path, method: .post, body: params)
+        func post(body: any Encodable) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: body)
         }
     }
     

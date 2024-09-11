@@ -120,8 +120,6 @@ extension Strategy {
             return .emailCode
         case .saml:
             return .saml
-        case .passkey:
-            return .passkey
         default:
             return nil
         }
