@@ -442,7 +442,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     #if canImport(AuthenticationServices) && !os(watchOS)
     @discardableResult @MainActor
-    public static func authenticateWithPasskey() async throws -> SignIn? {
+    public static func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true, autofill: Bool = false) async throws -> SignIn? {
         
         let createRequest = ClerkAPI.v1.client.signIns.post(
             body: ["strategy": Strategy.passkey.stringValue]
@@ -458,10 +458,18 @@ public struct SignIn: Codable, Sendable, Equatable {
         }
         
         let manager = PasskeyManager()
-        guard let authorization = try await manager.signIn(
-            challenge: challenge,
-            preferImmediatelyAvailableCredentials: false
-        ) else {
+        var authorization: ASAuthorization?
+
+        if autofill {
+            authorization = try await manager.beginAutoFillAssistedPasskeySignIn(challenge: challenge)
+        } else {
+            authorization = try await manager.signIn(
+                challenge: challenge,
+                preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+            )
+        }
+        
+        guard let authorization else {
             // user cancelled
             return nil
         }

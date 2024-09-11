@@ -23,10 +23,10 @@ final class PasskeyManager: NSObject {
         return host?.replacingOccurrences(of: "www.", with: "") ?? ""
     }
     
-    private var continuation: CheckedContinuation<ASAuthorization?,Error>?
+    private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
     @MainActor
-    func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization? {
+    func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -34,12 +34,8 @@ final class PasskeyManager: NSObject {
 
             let assertionRequest = publicKeyCredentialProvider.createCredentialAssertionRequest(challenge: challenge)
 
-            // Also allow the user to use a saved password, if they have one.
-            let passwordCredentialProvider = ASAuthorizationPasswordProvider()
-            let passwordRequest = passwordCredentialProvider.createRequest()
-
             // Pass in any mix of supported sign-in request types.
-            let authController = ASAuthorizationController(authorizationRequests: [ assertionRequest, passwordRequest ] )
+            let authController = ASAuthorizationController(authorizationRequests: [ assertionRequest ] )
             authController.delegate = self
             authController.presentationContextProvider = self
 
@@ -139,11 +135,7 @@ extension PasskeyManager: ASAuthorizationControllerDelegate {
     }
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
-        if case ASAuthorizationError.canceled = error {
-            continuation?.resume(returning: nil)
-        } else {
-            continuation?.resume(throwing: error)
-        }
+        continuation?.resume(throwing: error)
     }
     
 }

@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignInFormView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -164,6 +165,13 @@ struct SignInFormView: View {
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
         }
+        .task {
+            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
+                config.didAutoDisplayPasskey = true
+                try? await Task.sleep(for: .seconds(0.5))
+                await signInWithPasskey()
+            }
+        }
     }
 }
 
@@ -199,19 +207,22 @@ extension SignInFormView {
         }
     }
     
-    private func signInWithPasskey() async {
+    private func signInWithPasskey(autofill: Bool = false) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            let signIn = try await SignIn.authenticateWithPasskey()
+            let signIn = try await SignIn.authenticateWithPasskey(autofill: autofill)
             if let signIn {
                 clerkUIState.setAuthStepToCurrentStatus(for: signIn)
             }
         } catch {
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
+            if case ASAuthorizationError.canceled = error {
+                // user cancelled
+            } else {
+                errorWrapper = ErrorWrapper(error: error)
+                dump(error)
+            }
         }
     }
-    
     
 }
 
