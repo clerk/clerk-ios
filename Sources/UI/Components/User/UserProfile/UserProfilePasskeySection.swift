@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct UserProfilePasskeySection: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -58,7 +59,12 @@ extension UserProfilePasskeySection {
         do {
             try await user.createPasskey()
         } catch {
-            self.errorWrapper = ErrorWrapper(error: error)
+            if case ASAuthorizationError.canceled = error {
+                // user cancelled
+            } else {
+                errorWrapper = ErrorWrapper(error: error)
+                dump(error)
+            }
         }
     }
     

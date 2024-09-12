@@ -21,6 +21,14 @@ struct OrgLogoView: View {
                     .resizable()
                     .scaledToFit()
             }
+            
+            #if targetEnvironment(simulator)
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                Image(systemName: "circle.square.fill")
+                    .resizable()
+                    .scaledToFit()
+            }
+            #endif
         }
     }
 }

@@ -8,10 +8,13 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignInStartView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
+    @State private var errorWrapper: ErrorWrapper?
     
     private var socialProvidersEnabled: Bool {
         clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
@@ -79,7 +82,33 @@ struct SignInStartView: View {
             .padding()
             .padding(.top, 30)
         }
+        .task {
+            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
+                config.didAutoDisplayPasskey = true
+                try? await Task.sleep(for: .seconds(0.5))
+                await signInWithPasskey()
+            }
+        }
     }
+}
+
+extension SignInStartView {
+    
+    private func signInWithPasskey() async {
+        do {
+            KeyboardHelpers.dismissKeyboard()
+            let signIn = try await SignIn.authenticateWithPasskey()
+            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+        } catch {
+            if case ASAuthorizationError.canceled = error {
+                // user cancelled
+            } else {
+                errorWrapper = ErrorWrapper(error: error)
+                dump(error)
+            }
+        }
+    }
+    
 }
 
 #Preview {

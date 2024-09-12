@@ -129,6 +129,7 @@ struct SignInFactorOnePasswordView: View {
 
 #Preview {
     SignInFactorOnePasswordView()
+        .environmentObject(AuthView.Config())
         .environmentObject(ClerkUIState())
 }
 

@@ -145,6 +145,8 @@ public struct SignIn: Codable, Sendable, Equatable {
         case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the oauth provider
         case oauth(_ provider: OAuthProvider)
+        /// Creates a new sign in with a passkey
+        case passkey
         ///
         case transfer
     }
@@ -165,6 +167,9 @@ public struct SignIn: Codable, Sendable, Equatable {
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
+            
+        case .passkey:
+            return .init(strategy: Strategy.passkey.stringValue)
             
         case .transfer:
             return .init(transfer: true)
@@ -219,6 +224,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case emailCode
         case phoneCode
         case saml
+        case passkey
         case resetPasswordEmailCode
         case resetPasswordPhoneCode
     }
@@ -228,6 +234,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case .emailCode: .emailCode
         case .phoneCode: .phoneCode
         case .saml: .saml
+        case .passkey: .passkey
         case .resetPasswordEmailCode: .resetPasswordEmailCode
         case .resetPasswordPhoneCode: .resetPasswordPhoneCode
         }
@@ -237,7 +244,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
-        case .saml:
+        case .saml, .passkey:
             return .init(strategy: strategy.stringValue)
         }
     }
@@ -279,6 +286,7 @@ public struct SignIn: Codable, Sendable, Equatable {
         case password(password: String)
         case emailCode(code: String)
         case phoneCode(code: String)
+        case passkey(publicKeyCredential: String)
         case resetPasswordEmailCode(code: String)
         case resetPasswordPhoneCode(code: String)
     }
@@ -291,6 +299,8 @@ public struct SignIn: Codable, Sendable, Equatable {
             return .init(strategy: Strategy.emailCode.stringValue, code: code)
         case .phoneCode(let code):
             return .init(strategy: Strategy.phoneCode.stringValue, code: code)
+        case .passkey(let publicKeyCredential):
+            return .init(strategy: Strategy.passkey.stringValue, publicKeyCredential: publicKeyCredential)
         case .resetPasswordEmailCode(let code):
             return  .init(strategy: Strategy.resetPasswordEmailCode.stringValue, code: code)
         case .resetPasswordPhoneCode(let code):
@@ -441,16 +451,43 @@ public struct SignIn: Codable, Sendable, Equatable {
     }
     
     #if canImport(AuthenticationServices) && !os(watchOS)
+    
+    // Used to create and attempt with a passkey in one step
     @discardableResult @MainActor
-    public static func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true, autofill: Bool = false) async throws -> SignIn? {
+    public static func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
         
-        let createRequest = ClerkAPI.v1.client.signIns.post(
-            body: ["strategy": Strategy.passkey.stringValue]
+        let signIn = try await SignIn.create(strategy: .passkey)
+        
+        let publicKeyCredentialJSON = try await signIn.createPublicKeyCredentialForPasskey(
+            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
         )
-        let signIn = try await Clerk.shared.apiClient.send(createRequest).value.response
+        
+        let verifiedSignIn = try await signIn.attemptFirstFactor(
+            for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)
+        )
+        
+        return verifiedSignIn
+    }
+    
+    // Used when you have already prepared a sign in with the passkey strategy
+    @discardableResult @MainActor
+    public func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
+        
+        let publicKeyCredentialJSON = try await createPublicKeyCredentialForPasskey(
+            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+        )
+        
+        let verifiedSignIn = try await attemptFirstFactor(
+            for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)
+        )
+        
+        return verifiedSignIn
+    }
+    
+    func createPublicKeyCredentialForPasskey(preferImmediatelyAvailableCredentials: Bool) async throws -> JSON {
         
         guard
-            let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
+            let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
             let challengeString = nonceJSON["challenge"]?.stringValue,
             let challenge = challengeString.dataFromBase64URL()
         else {
@@ -458,21 +495,10 @@ public struct SignIn: Codable, Sendable, Equatable {
         }
         
         let manager = PasskeyManager()
-        var authorization: ASAuthorization?
-
-        if autofill {
-            authorization = try await manager.beginAutoFillAssistedPasskeySignIn(challenge: challenge)
-        } else {
-            authorization = try await manager.signIn(
-                challenge: challenge,
-                preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-            )
-        }
-        
-        guard let authorization else {
-            // user cancelled
-            return nil
-        }
+        let authorization = try await manager.signIn(
+            challenge: challenge,
+            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+        )
         
         guard let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
               let authenticatorData = credentialAssertion.rawAuthenticatorData
@@ -492,18 +518,7 @@ public struct SignIn: Codable, Sendable, Equatable {
             ]
         ]
         
-        let publicKeyCredentialJSON = try JSON(publicKeyCredential)
-        
-        let attemptRequest = ClerkAPI.v1.client.signIns.id(signIn.id).attemptFirstFactor.post(
-            body: [
-                "strategy": Strategy.passkey.stringValue,
-                "public_key_credential" : publicKeyCredentialJSON.debugDescription
-            ]
-        )
-        
-        let response = try await Clerk.shared.apiClient.send(attemptRequest)
-        Clerk.shared.client = response.value.client
-        return response.value.response
+        return try JSON(publicKeyCredential)
     }
     #endif
     
@@ -567,6 +582,12 @@ extension SignIn {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
+        // Passkey should be prioritized, but the environment `preferredSignInStrategy` doesnt account for that yet
+        // this hardcodes passkeys to be preferred
+        if let passkeyFactor = firstFactors.first(where: { $0.strategyEnum == .passkey }) {
+            return passkeyFactor
+        }
+        
         switch preferredStrategy {
         case .password:
             let sortedFactors = firstFactors.sorted { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }
@@ -596,7 +617,7 @@ extension SignIn {
             !(factor.strategy).hasPrefix("oauth_")
         }
         
-        return firstFactors ?? []
+        return firstFactors?.sorted(by: { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }) ?? []
     }
     
     func firstFactor(for strategy: Strategy) -> SignInFactor? {

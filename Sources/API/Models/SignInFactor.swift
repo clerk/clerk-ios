@@ -57,6 +57,8 @@ extension SignInFactor {
         case .emailCode:
             guard let safeIdentifier else { return nil }
             return "Email code to \(safeIdentifier)"
+        case .passkey:
+            return "Sign in with your passkey"
         case .password:
             return "Sign in with your password"
         case .totp:
@@ -69,20 +71,32 @@ extension SignInFactor {
     }
     
     var sortOrderPasswordPreferred: Int {
-        switch self.strategyEnum {
-        case .password: 0
-        case .emailCode: 1
-        case .phoneCode: 2
-        default: 100
+        let options: [Strategy] = [
+            .passkey,
+            .password,
+            .emailCode,
+            .phoneCode
+        ]
+        
+        if let strategyEnum {
+            return options.firstIndex(of: strategyEnum) ?? 100
+        } else {
+            return 100
         }
     }
     
     var sortOrderOTPPreferred: Int {
-        switch self.strategyEnum {
-        case .emailCode: 0
-        case .phoneCode: 1
-        case .password: 2
-        default: 100
+        let options: [Strategy] = [
+            .passkey,
+            .emailCode,
+            .phoneCode,
+            .password,
+        ]
+        
+        if let strategyEnum {
+            return options.firstIndex(of: strategyEnum) ?? 100
+        } else {
+            return 100
         }
     }
     

@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import AuthenticationServices
 
 struct SignInFormView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -129,19 +128,6 @@ struct SignInFormView: View {
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
             
-            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true,
-               clerk.environment?.userSettings.passkeySettings?.showSignInButton == true {
-                AsyncButton {
-                    await signInWithPasskey()
-                } label: {
-                    Label("Use passkey instead", systemImage: "person.badge.key.fill")
-                        .lineLimit(1)
-                        .clerkStandardButtonPadding()
-                }
-                .buttonStyle(ClerkSecondaryButtonStyle())
-                .padding(.top, 8)
-            }
-            
             if Clerk.LocalAuth.displayLocalAuthOption {
                 AsyncButton {
                     do {
@@ -164,13 +150,6 @@ struct SignInFormView: View {
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
-        }
-        .task {
-            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
-                config.didAutoDisplayPasskey = true
-                try? await Task.sleep(for: .seconds(0.5))
-                await signInWithPasskey()
-            }
         }
     }
 }
@@ -204,23 +183,6 @@ extension SignInFormView {
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
-        }
-    }
-    
-    private func signInWithPasskey(autofill: Bool = false) async {
-        do {
-            KeyboardHelpers.dismissKeyboard()
-            let signIn = try await SignIn.authenticateWithPasskey(autofill: autofill)
-            if let signIn {
-                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-            }
-        } catch {
-            if case ASAuthorizationError.canceled = error {
-                // user cancelled
-            } else {
-                errorWrapper = ErrorWrapper(error: error)
-                dump(error)
-            }
         }
     }
     
