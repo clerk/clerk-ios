@@ -23,7 +23,7 @@ struct SignInFactorOnePasskeyView: View {
             VStack(spacing: .zero) {
                 OrgLogoView()
                     .frame(width: 32, height: 32)
-                    .padding(.bottom, 60)
+                    .padding(.bottom, 24)
                 
                 VStack {
                     Image(systemName: "person.badge.key.fill")

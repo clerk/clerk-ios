@@ -23,8 +23,16 @@ struct SignUpVerificationView: View {
             switch signUp.nextStrategyToVerify {
             case .phoneCode:
                 SignUpPhoneCodeView(signUp: signUp)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             case .emailCode:
                 SignUpEmailCodeView(signUp: signUp)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .opacity.animation(nil)
+                    ))
             default:
                 GetHelpView(
                     title: "Cannot sign up",
@@ -47,7 +55,6 @@ struct SignUpVerificationView: View {
                 ))
             }
         }
-        .transition(.offset(y: 50).combined(with: .opacity))
         .animation(.snappy, value: signUp.nextStrategyToVerify)
         .onChange(of: signUp.nextStrategyToVerify) { _ in
             KeyboardHelpers.dismissKeyboard()
