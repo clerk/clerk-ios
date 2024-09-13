@@ -11,15 +11,13 @@ import SwiftUI
 import Nuke
 import NukeUI
 
-public struct UserButton: View {
+struct UserButton: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
     
     @State private var popoverIsPresented = false
-    
-    public init() {}
-    
+        
     private var imageRequest: ImageRequest {
         .init(
             url: URL(string: clerk.user?.imageUrl ?? ""),
@@ -27,7 +25,7 @@ public struct UserButton: View {
         )
     }
     
-    public var body: some View {
+    var body: some View {
         Button(action: {
             userButtonAction()
         }, label: {

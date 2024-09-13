@@ -9,14 +9,12 @@
 
 import Foundation
 
-public final class ClerkUIState: ObservableObject {
-    
-    public init() {}
-    
+final class ClerkUIState: ObservableObject {
+        
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false
 
-    public enum AuthStep: Equatable {
+    enum AuthStep: Equatable {
         case signInStart
         case signInFactorOne(_ factor: SignInFactor?)
         case signInFactorOneUseAnotherMethod(_ currentFactor: SignInFactor?)
@@ -29,21 +27,21 @@ public final class ClerkUIState: ObservableObject {
         case ssoCallback
     }
     
-    @Published public var presentedAuthStep: AuthStep = .signInStart {
+    @Published var presentedAuthStep: AuthStep = .signInStart {
         willSet {
             authIsPresented = true
         }
     }
     
     /// Is the user profile view being displayed
-    @Published public var userProfileIsPresented = false
+    @Published var userProfileIsPresented = false
 }
 
 extension ClerkUIState {
     
     /// Sets the current auth step to the status determined by the API
     @MainActor
-    public func setAuthStepToCurrentStatus(for signIn: SignIn?) {
+    func setAuthStepToCurrentStatus(for signIn: SignIn?) {
         if signIn?.firstFactorVerification?.status == .transferable, Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true {
             presentedAuthStep = .ssoCallback
             return
@@ -65,7 +63,7 @@ extension ClerkUIState {
     
     /// Sets the current auth step to the status determined by the API
     @MainActor
-    public func setAuthStepToCurrentStatus(for signUp: SignUp?) {
+    func setAuthStepToCurrentStatus(for signUp: SignUp?) {
         switch signUp?.status {
         case .missingRequirements:
             if (signUp?.unverifiedFields ?? []).contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
