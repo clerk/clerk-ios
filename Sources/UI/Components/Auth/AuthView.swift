@@ -65,104 +65,124 @@ struct AuthView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @StateObject private var config = Config()
     
-    // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
+    func viewForAuthStep(_ authStep: ClerkUIState.AuthStep) -> AnyView {
+        // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
+        
+        switch clerkUIState.presentedAuthStep {
+        case .signInStart:
+            SignInStartView()
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInFactorOne(let signIn, let factor):
+            SignInFactorOneView(signIn: signIn, factor: factor)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInFactorOneUseAnotherMethod(let signIn, let currentFactor):
+            SignInFactorOneUseAnotherMethodView(signIn: signIn, currentFactor: currentFactor)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInFactorTwo(let signIn, let factor):
+            SignInFactorTwoView(signIn: signIn, factor: factor)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInFactorTwoUseAnotherMethod(let signIn, let currentFactor):
+            SignInFactorTwoUseAnotherMethodView(signIn: signIn, currentFactor: currentFactor)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInForgotPassword(let signIn):
+            SignInForgotPasswordView(signIn: signIn)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signInResetPassword(let signIn):
+            SignInResetPasswordView(signIn: signIn)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signUpStart:
+            SignUpStartView()
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signUpVerification(let signUp):
+            SignUpVerificationView(signUp: signUp)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .signUpCreatePasskey(let signUp, let user):
+            SignUpCreatePasskeyView(signUp: signUp, user: user)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        case .ssoCallback(let signIn):
+            SSOCallbackView(signIn: signIn)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .opacity.animation(nil)
+                ))
+                .eraseToAnyView()
+        }
+    }
     
     var body: some View {
-        Group {
-            switch clerkUIState.presentedAuthStep {
-            case .signInStart:
-                SignInStartView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorOne:
-                SignInFactorOneView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorOneUseAnotherMethod(let currentFactor):
-                SignInFactorOneUseAnotherMethodView(currentFactor: currentFactor)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorTwo:
-                SignInFactorTwoView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInFactorTwoUseAnotherMethod(let currentFactor):
-                SignInFactorTwoUseAnotherMethodView(currentFactor: currentFactor)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInForgotPassword:
-                SignInForgotPasswordView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signInResetPassword:
-                SignInResetPasswordView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signUpStart:
-                SignUpStartView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .signUpVerification:
-                SignUpVerificationView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            case .ssoCallback:
-                SSOCallbackView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
-            }
-        }
-        .environmentObject(config)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
-            VStack(spacing: 0) {
-                footerView
-                if clerk.environment?.displayConfig.branded == true {
-                    SecuredByClerkView()
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity)
-                        .overlay(alignment: .top) {
-                            Divider()
-                        }
+        viewForAuthStep(clerkUIState.presentedAuthStep)
+            .id(clerkUIState.presentedAuthStep)
+            .environmentObject(config)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
+                VStack(spacing: 0) {
+                    footerView
+                    if clerk.environment?.displayConfig.branded == true {
+                        SecuredByClerkView()
+                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity)
+                            .overlay(alignment: .top) {
+                                Divider()
+                            }
+                    }
                 }
+                .background(.ultraThinMaterial)
+            })
+            .animation(.snappy, value: clerkUIState.presentedAuthStep)
+            .dismissButtonOverlay {
+                // clear the state before dismissing so Apple's keychain Heuristics
+                // dont think we changed a password if the user manually dismissed
+                config.resetState()
             }
-            .background(.ultraThinMaterial)
-        })
-        .animation(.snappy, value: clerkUIState.presentedAuthStep)
-        .dismissButtonOverlay {
-            // clear the state before dismissing so Apple's keychain Heuristics
-            // dont think we changed a password if the user manually dismissed
-            config.resetState()
-        }
-        .interactiveDismissDisabled()
-        .scrollDismissesKeyboard(.interactively)
-        .onChange(of: clerkUIState.presentedAuthStep) { _ in
-            KeyboardHelpers.dismissKeyboard()
-            FeedbackGenerator.success()
-        }
-        .task {
-            _ = try? await Clerk.Environment.get()
-        }
+            .interactiveDismissDisabled()
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: clerkUIState.presentedAuthStep) { _ in
+                KeyboardHelpers.dismissKeyboard()
+                FeedbackGenerator.success()
+            }
+            .task {
+                _ = try? await Clerk.Environment.get()
+            }
     }
     
     @ViewBuilder

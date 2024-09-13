@@ -16,6 +16,8 @@ struct SSOCallbackView: View {
     @State private var showCaptcha = false
     @State private var captchaToken: String?
     
+    let signIn: SignIn
+    
     var body: some View {
         ZStack {
             ProgressView("Verifying...")
@@ -46,7 +48,7 @@ struct SSOCallbackView: View {
     }
     
     private func handleTransferFlow(token: String) async throws {
-        guard clerk.client?.signIn?.needsTransferToSignUp == true else {
+        guard signIn.needsTransferToSignUp == true else {
             clerkUIState.presentedAuthStep = .signInStart
             return
         }
@@ -58,7 +60,7 @@ struct SSOCallbackView: View {
 }
 
 #Preview {
-    SSOCallbackView()
+    SSOCallbackView(signIn: .mock)
 }
 
 #endif

@@ -59,12 +59,9 @@ extension UserProfilePasskeySection {
         do {
             try await user.createPasskey()
         } catch {
-            if case ASAuthorizationError.canceled = error {
-                // user cancelled
-            } else {
-                errorWrapper = ErrorWrapper(error: error)
-                dump(error)
-            }
+            if case ASAuthorizationError.canceled = error { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
         }
     }
     

@@ -15,7 +15,7 @@ import AuthenticationServices
 
  Finally, a `User` object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally to store arbitrary information. The metadata are split into `publicMetadata` and `privateMetadata`. Both types are set from the Backend API, but public metadata can also be accessed from the Frontend API.
  */
-public struct User: Codable, Equatable, Sendable {
+public struct User: Codable, Equatable, Sendable, Hashable {
     
     /// A unique identifier for the user.
     public let id: String
@@ -475,6 +475,41 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
+    }
+    
+}
+
+extension User {
+    
+    static var mock: User {
+        
+        .init(
+            id: UUID().uuidString,
+            firstName: "First",
+            lastName: "Last",
+            username: "Username",
+            imageUrl: "",
+            hasImage: false,
+            primaryEmailAddressId: nil,
+            emailAddresses: [],
+            primaryPhoneNumberId: nil,
+            phoneNumbers: [],
+            passkeys: [],
+            passwordEnabled: false,
+            twoFactorEnabled: false,
+            totpEnabled: false,
+            backupCodeEnabled: false,
+            deleteSelfEnabled: true,
+            externalAccounts: [],
+            samlAccounts: nil,
+            publicMetadata: nil,
+            unsafeMetadata: nil,
+            lastSignInAt: .now,
+            createdAt: .now,
+            updatedAt: .now,
+            createOrganizationEnabled: false
+        )
+        
     }
     
 }

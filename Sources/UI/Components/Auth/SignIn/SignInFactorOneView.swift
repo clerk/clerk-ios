@@ -14,55 +14,46 @@ struct SignInFactorOneView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
-    private var strategy: Strategy? {
-        guard signIn?.status == .needsFirstFactor else { return nil }
-        if case .signInFactorOne(let factor) = clerkUIState.presentedAuthStep {
-            return factor?.strategyEnum
-        }
-        return nil
-    }
+    let signIn: SignIn
+    let factor: SignInFactor?
     
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
     var body: some View {
         Group {
-            switch strategy {
+            switch factor?.strategyEnum {
             case .passkey:
-                SignInFactorOnePasskeyView()
+                SignInFactorOnePasskeyView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .password:
-                SignInFactorOnePasswordView()
+                SignInFactorOnePasswordView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .emailCode:
-                SignInFactorOneEmailCodeView()
+                SignInFactorOneEmailCodeView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .phoneCode:
-                SignInFactorOnePhoneCodeView()
+                SignInFactorOnePhoneCodeView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-                SignInFactorOneResetView()
+                SignInFactorOneResetView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
                 
-            case nil where clerk.session == nil:
+            default:
                 GetHelpView(
                     title: "Cannot sign in",
                     description: """
@@ -78,23 +69,18 @@ struct SignInFactorOneView: View {
                         clerkUIState.presentedAuthStep = .signInStart
                     })
                 )
-                .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
-
-            default:
-                ProgressView()
-                    .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
             }
         }
-        .animation(.snappy, value: strategy)
+        .animation(.snappy, value: factor?.strategyEnum)
     }
 }
 
 #Preview {
-    SignInFactorOneView()
+    SignInFactorOneView(signIn: .mock, factor: .mock)
         .environmentObject(ClerkUIState())
 }
 

@@ -29,14 +29,6 @@ struct SignInStartView: View {
         }
     }
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-    
     private var headerTitle: String {
         var string = "Sign in"
         if let environment = clerk.environment {
@@ -83,6 +75,7 @@ struct SignInStartView: View {
             .padding()
             .padding(.top, 30)
         }
+        .clerkErrorPresenting($errorWrapper)
         .task {
             if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
                 config.didAutoDisplayPasskey = true
@@ -103,12 +96,9 @@ extension SignInStartView {
             })
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
-            if case ASAuthorizationError.canceled = error {
-                // user cancelled
-            } else {
-                errorWrapper = ErrorWrapper(error: error)
-                dump(error)
-            }
+            if case ASAuthorizationError.canceled = error { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
         }
         
         isLoading = false

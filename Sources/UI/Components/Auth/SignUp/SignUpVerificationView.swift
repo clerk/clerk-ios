@@ -16,18 +16,16 @@ struct SignUpVerificationView: View {
     @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?
         
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
+    let signUp: SignUp
     
     var body: some View {
         Group {
-            switch signUp?.nextStrategyToVerify {
+            switch signUp.nextStrategyToVerify {
             case .phoneCode:
-                SignUpPhoneCodeView()
+                SignUpPhoneCodeView(signUp: signUp)
             case .emailCode:
-                SignUpEmailCodeView()
-            case nil where signUp?.status == .missingRequirements:
+                SignUpEmailCodeView(signUp: signUp)
+            default:
                 GetHelpView(
                     title: "Cannot sign up",
                     description: """
@@ -43,20 +41,15 @@ struct SignUpVerificationView: View {
                         clerkUIState.presentedAuthStep = .signUpStart
                     })
                 )
-                .task { clerkUIState.setAuthStepToCurrentStatus(for: signUp) }
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
-            default:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task { clerkUIState.setAuthStepToCurrentStatus(for: signUp) }
             }
         }
         .transition(.offset(y: 50).combined(with: .opacity))
-        .animation(.snappy, value: signUp?.nextStrategyToVerify)
-        .onChange(of: signUp?.nextStrategyToVerify) { _ in
+        .animation(.snappy, value: signUp.nextStrategyToVerify)
+        .onChange(of: signUp.nextStrategyToVerify) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
         }
@@ -64,7 +57,7 @@ struct SignUpVerificationView: View {
 }
 
 #Preview {
-    return SignUpVerificationView()
+    return SignUpVerificationView(signUp: .mock)
         .environmentObject(ClerkUIState())
 }
 

@@ -25,11 +25,7 @@ struct SignUpFormView: View {
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password
     }
-    
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-    
+        
     private var nameIsEnabled: Bool {
         clerk.environment?.userSettings.nameIsEnabled == true
     }
@@ -229,7 +225,9 @@ struct SignUpFormView: View {
     
     private func performSignUp() async {
         do {
-            try await SignUp.create(strategy: .standard(
+            var signUp: SignUp
+            
+            signUp = try await SignUp.create(strategy: .standard(
                 emailAddress: emailIsEnabled ? config.signUpEmailAddress : nil,
                 password: passwordIsEnabled ? config.signUpPassword : nil,
                 firstName: nameIsEnabled ? config.signUpFirstName : nil,
@@ -237,9 +235,7 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
-                        
-            guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
-            
+                                    
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
             if let identifer, enableBiometry, passwordIsEnabled {
@@ -247,12 +243,18 @@ struct SignUpFormView: View {
             }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
-                try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
+                signUp = try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
             }
             
             switch signUp.nextStrategyToVerify {
             case .oauth, .saml:
-                try await signUp.authenticateWithRedirect()
+                let externalAuthResult = try await signUp.authenticateWithRedirect()
+                if let signUp = externalAuthResult?.signUp {
+                    clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+                } else if let signIn = externalAuthResult?.signIn {
+                    clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                }
+                return
             default:
                 break
             }

@@ -24,7 +24,7 @@ import AuthenticationServices
  - Those that hold the different values that we supply to the sign-up. Examples of these are `username`, `emailAddress`, `firstName`, etc.
  - Those that contain references to the created resources once the sign-up is complete, i.e. `createdSessionId` and `createdUserId`.
  */
-public struct SignUp: Codable, Sendable, Equatable {
+public struct SignUp: Codable, Sendable, Equatable, Hashable {
     
     let id: String
     
@@ -419,6 +419,37 @@ extension SignUp {
                 return nil
             }
         }
+    }
+    
+}
+
+extension SignUp {
+    
+    static var mock: SignUp {
+        
+        .init(
+            id: UUID().uuidString,
+            status: .unknown,
+            requiredFields: [],
+            optionalFields: [],
+            missingFields: [],
+            unverifiedFields: [],
+            verifications: [:],
+            username: nil,
+            emailAddress: nil,
+            phoneNumber: nil,
+            passwordEnabled: true,
+            firstName: nil,
+            lastName: nil,
+            unsafeMetadata: nil,
+            publicMetadata: nil,
+            customAction: false,
+            externalId: nil,
+            createdSessionId: nil,
+            createdUserId: nil,
+            abandonAt: .now
+        )
+        
     }
     
 }

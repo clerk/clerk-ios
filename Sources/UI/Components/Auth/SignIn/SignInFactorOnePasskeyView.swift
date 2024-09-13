@@ -16,24 +16,21 @@ struct SignInFactorOnePasskeyView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
     
     var body: some View {
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
                     .frame(width: 32, height: 32)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 60)
                 
                 VStack {
                     Image(systemName: "person.badge.key.fill")
-                        .resizable()
-                        .scaledToFit()
                         .imageScale(.large)
-                        .frame(width: 40, height: 40)
-                        .offset(x: 7)
+                        .padding()
+                        .background(.regularMaterial)
+                        .clipShape(.rect(cornerRadius: 8, style: .continuous))
                     
                     HeaderView(
                         title: "Use your passkey",
@@ -41,7 +38,7 @@ struct SignInFactorOnePasskeyView: View {
                     )
                     .multilineTextAlignment(.center)
                     
-                    if let identifier = signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier {
+                    if let identifier = signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier {
                         IdentityPreviewView(
                             label: identifier,
                             action: {
@@ -60,7 +57,10 @@ struct SignInFactorOnePasskeyView: View {
                     .padding(.bottom, 18)
                     
                     AsyncButton {
-                        clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn?.firstFactor(for: .passkey))
+                        clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(
+                            signIn: signIn,
+                            currentFactor: signIn.firstFactor(for: .passkey)
+                        )
                     } label: {
                         Text("Use another method")
                             .font(.footnote.weight(.medium))
@@ -80,30 +80,22 @@ extension SignInFactorOnePasskeyView {
     
     private func signInWithPasskey() async {
         do {
-            guard let signIn else {
-                throw ClerkClientError(message: "Something went wrong. Please use another method.")
-                return
-            }
-            
             let attemptedSignIn = try await signIn
                 .prepareFirstFactor(for: .passkey)
                 .authenticateWithPasskey()
             
             clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {
-            if case ASAuthorizationError.canceled = error {
-                // user cancelled
-            } else {
-                errorWrapper = ErrorWrapper(error: error)
-                dump(error)
-            }
+            if case ASAuthorizationError.canceled = error { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
         }
     }
     
 }
 
 #Preview {
-    SignInFactorOnePasskeyView()
+    SignInFactorOnePasskeyView(signIn: .mock)
         .environmentObject(ClerkUIState())
 }
 

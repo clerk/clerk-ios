@@ -9,18 +9,14 @@
 
 import SwiftUI
 import NukeUI
-import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
+    let signIn: SignIn
     let currentFactor: SignInFactor?
-    
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
     
     private var socialProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
@@ -39,7 +35,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
             }
             
             // if the user didnt cancel
-            if result != nil {
+            if let signIn = result?.signIn {
                 clerkUIState.setAuthStepToCurrentStatus(for: signIn)
             }
         } catch {
@@ -64,10 +60,12 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
         do {
+            var signIn = signIn
+            
             if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                try await signIn?.prepareFirstFactor(for: prepareStrategy)
+                signIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
             }
-            clerkUIState.presentedAuthStep = .signInFactorOne(factor)
+            clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: factor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -92,7 +90,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             
-            ForEach(signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
+            ForEach(signIn.alternativeFirstFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateFirstFactor(factor)
@@ -117,7 +115,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
 }
 
 #Preview {
-    SignInFactorOneAlternativeMethodsView(currentFactor: nil)
+    SignInFactorOneAlternativeMethodsView(signIn: .mock, currentFactor: nil)
         .padding()
 }
 

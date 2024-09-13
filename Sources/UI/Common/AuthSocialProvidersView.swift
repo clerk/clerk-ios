@@ -9,7 +9,6 @@
 
 import SwiftUI
 import Algorithms
-import AuthenticationServices
 
 struct AuthSocialProvidersView: View {
     @ObservedObject private var clerk = Clerk.shared

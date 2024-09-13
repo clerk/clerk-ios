@@ -20,7 +20,7 @@ import AuthenticationServices
  Information about the current sign in status in general and which authentication identifiers, authentication methods and verifications are supported.
  Information about the user and the provided authentication identifier value (email address, phone number or username).Information about each verification, either the first factor (logging in) or the second factor (2FA).
  */
-public struct SignIn: Codable, Sendable, Equatable {
+public struct SignIn: Codable, Sendable, Equatable, Hashable {
     
     /// String representing the object's type. Objects of the same type share the same value.
     let object: Object
@@ -78,7 +78,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     }
     
     /// Authentication identifier that is supported for this sign in.
-    public enum SupportedIdentifier: String, Codable, Sendable, Equatable {
+    public enum SupportedIdentifier: String, Codable, Sendable, Equatable, Hashable {
         case emailAddress = "email_address"
         case phoneNumber = "phone_number"
         case username
@@ -118,7 +118,7 @@ public struct SignIn: Codable, Sendable, Equatable {
     }
     
     /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.
-    public struct UserData: Codable, Sendable, Equatable {
+    public struct UserData: Codable, Sendable, Equatable, Hashable {
         public let firstName: String?
         public let lastName: String?
         public let imageUrl: String?
@@ -701,6 +701,29 @@ extension SignIn {
         }
         
         return nil
+    }
+    
+}
+
+extension SignIn {
+    
+    static var mock: SignIn {
+        
+        .init(
+            object: .signInAttempt,
+            id: UUID().uuidString,
+            status: .unknown,
+            identifier: nil,
+            supportedIdentifiers: nil,
+            supportedFirstFactors: nil,
+            supportedSecondFactors: nil,
+            firstFactorVerification: nil,
+            secondFactorVerification: nil,
+            userData: nil,
+            createdSessionId: nil,
+            abandonAt: .now
+        )
+        
     }
     
 }

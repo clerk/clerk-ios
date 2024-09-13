@@ -19,9 +19,7 @@ struct SignInResetPasswordView: View {
     @State private var signOutOfAllDevices = true
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
     
     var body: some View {
         ScrollView {
@@ -46,7 +44,7 @@ struct SignInResetPasswordView: View {
                         }
                         
                         PasswordInputView(password: $password)
-                            .hiddenTextField(text: .constant(signIn?.identifier ?? ""), textContentType: .username)
+                            .hiddenTextField(text: .constant(signIn.identifier ?? ""), textContentType: .username)
                     }
                     
                     VStack(spacing: 8) {
@@ -105,12 +103,12 @@ struct SignInResetPasswordView: View {
     
     private func resetPassword() async {
         do {
-            try await signIn?.resetPassword(.init(
+            let resetSignIn = try await signIn.resetPassword(.init(
                 password: password,
                 signOutOfOtherSessions: signOutOfAllDevices
             ))
             
-            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            clerkUIState.setAuthStepToCurrentStatus(for: resetSignIn)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -118,7 +116,7 @@ struct SignInResetPasswordView: View {
 }
 
 #Preview {
-    SignInResetPasswordView()
+    SignInResetPasswordView(signIn: .mock)
 }
 
 #endif
