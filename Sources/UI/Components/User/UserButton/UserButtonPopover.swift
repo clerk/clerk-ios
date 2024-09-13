@@ -9,7 +9,7 @@
 
 import SwiftUI
 
-struct UserButtonPopover: View {
+public struct UserButtonPopover: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
@@ -40,7 +40,7 @@ struct UserButtonPopover: View {
         }
     }
         
-    var body: some View {
+    public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
                 if let currentSession = clerk.session, let user = currentSession.user {
