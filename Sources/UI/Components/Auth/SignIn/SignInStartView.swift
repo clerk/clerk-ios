@@ -15,6 +15,7 @@ struct SignInStartView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
+    @State private var isLoading = false
     
     private var socialProvidersEnabled: Bool {
         clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
@@ -74,7 +75,7 @@ struct SignInStartView: View {
                 }
                 
                 if showSignInForm {
-                    SignInFormView()
+                    SignInFormView(isLoading: $isLoading)
                         .padding(.bottom, 32)
                 }
             }
@@ -97,7 +98,9 @@ extension SignInStartView {
     private func signInWithPasskey() async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            let signIn = try await SignIn.authenticateWithPasskey()
+            let signIn = try await SignIn.authenticateWithPasskey(onWillAttemptVerification: {
+                isLoading = true
+            })
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             if case ASAuthorizationError.canceled = error {
@@ -107,6 +110,8 @@ extension SignInStartView {
                 dump(error)
             }
         }
+        
+        isLoading = false
     }
     
 }

@@ -454,13 +454,18 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     // Used to create and attempt with a passkey in one step
     @discardableResult @MainActor
-    public static func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
+    public static func authenticateWithPasskey(
+        preferImmediatelyAvailableCredentials: Bool = true,
+        onWillAttemptVerification: (() async -> Void)? = nil
+    ) async throws -> SignIn {
         
         let signIn = try await SignIn.create(strategy: .passkey)
         
         let publicKeyCredentialJSON = try await signIn.createPublicKeyCredentialForPasskey(
             preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
         )
+        
+        await onWillAttemptVerification?()
         
         let verifiedSignIn = try await signIn.attemptFirstFactor(
             for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)
@@ -471,11 +476,16 @@ public struct SignIn: Codable, Sendable, Equatable {
     
     // Used when you have already prepared a sign in with the passkey strategy
     @discardableResult @MainActor
-    public func authenticateWithPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
+    public func authenticateWithPasskey(
+        preferImmediatelyAvailableCredentials: Bool = true,
+        onWillAttemptVerification: (() async -> Void)? = nil
+    ) async throws -> SignIn {
         
         let publicKeyCredentialJSON = try await createPublicKeyCredentialForPasskey(
             preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
         )
+        
+        await onWillAttemptVerification?()
         
         let verifiedSignIn = try await attemptFirstFactor(
             for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)

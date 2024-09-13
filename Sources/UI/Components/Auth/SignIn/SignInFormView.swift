@@ -16,6 +16,7 @@ struct SignInFormView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var displayingEmailOrUsernameEntry = true
     @State private var errorWrapper: ErrorWrapper?
+    @Binding var isLoading: Bool
     
     @FocusState private var focusedField: Field?
     
@@ -122,6 +123,13 @@ struct SignInFormView: View {
                 )
             } label: {
                 Text("Continue")
+                    .opacity(isLoading ? 0 : 1)
+                    .overlay {
+                        if isLoading {
+                            ProgressView()
+                        }
+                    }
+                    .animation(.snappy, value: isLoading)
                     .clerkStandardButtonPadding()
                     .frame(maxWidth: .infinity)
             }
@@ -189,7 +197,7 @@ extension SignInFormView {
 }
 
 #Preview {
-    SignInFormView()
+    SignInFormView(isLoading: .constant(false))
         .padding()
         .environmentObject(ClerkUIState())
 }
