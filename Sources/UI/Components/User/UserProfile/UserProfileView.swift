@@ -9,18 +9,16 @@
 
 import SwiftUI
 
-public struct UserProfileView: View {
+struct UserProfileView: View {
     @ObservedObject private var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.dismiss) private var dismiss
-        
-    public init() {}
-    
+            
     private var user: User? {
         clerk.user
     }
     
-    public var body: some View {
+    var body: some View {
         ScrollView {
             LazyVStack(spacing: 30) {
                 UserProfileDetailsView()

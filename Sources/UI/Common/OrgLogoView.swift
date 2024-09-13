@@ -10,13 +10,11 @@
 import SwiftUI
 import NukeUI
 
-public struct OrgLogoView: View {
+struct OrgLogoView: View {
     @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
-    
-    public init() {}
-    
-    public var body: some View {
+        
+    var body: some View {
         LazyImage(request: .init(url: URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))) { state in
             if let image = state.image {
                 image
