@@ -39,7 +39,9 @@ public struct UserButtonPopover: View {
             dump(error)
         }
     }
-        
+
+    public init() {}
+
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
