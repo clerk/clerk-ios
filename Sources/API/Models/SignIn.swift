@@ -147,6 +147,8 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         case oauth(_ provider: OAuthProvider)
         /// Creates a new sign in with a passkey
         case passkey
+        /// Creates a new sign in with an ID token
+        case idToken(provider: IDTokenProvider, idToken: String)
         ///
         case transfer
     }
@@ -168,6 +170,9 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
             
+        case .idToken(let provider, let idToken):
+            return .init(strategy: provider.strategy, idToken: idToken)
+            
         case .passkey:
             return .init(strategy: Strategy.passkey.stringValue)
             
@@ -184,7 +189,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         public var redirectUrl: String?
         public var actionCompleteRedirectUrl: String?
         public var transfer: Bool?
-        public var code: String?
+        public var idToken: String?
     }
     
     /// Resets a user's password.
@@ -450,58 +455,17 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         }
     }
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    
-    // Used to create and attempt with a passkey in one step
-    @discardableResult @MainActor
-    public static func authenticateWithPasskey(
-        preferImmediatelyAvailableCredentials: Bool = true,
-        onWillAttemptVerification: (() async -> Void)? = nil
-    ) async throws -> SignIn {
-        
-        let signIn = try await SignIn.create(strategy: .passkey)
-        
-        let publicKeyCredentialJSON = try await signIn.createPublicKeyCredentialForPasskey(
-            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-        )
-        
-        await onWillAttemptVerification?()
-        
-        let verifiedSignIn = try await signIn.attemptFirstFactor(
-            for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)
-        )
-        
-        return verifiedSignIn
-    }
-    
-    // Used when you have already prepared a sign in with the passkey strategy
-    @discardableResult @MainActor
-    public func authenticateWithPasskey(
-        preferImmediatelyAvailableCredentials: Bool = true,
-        onWillAttemptVerification: (() async -> Void)? = nil
-    ) async throws -> SignIn {
-        
-        let publicKeyCredentialJSON = try await createPublicKeyCredentialForPasskey(
-            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-        )
-        
-        await onWillAttemptVerification?()
-        
-        let verifiedSignIn = try await attemptFirstFactor(
-            for: .passkey(publicKeyCredential: publicKeyCredentialJSON.debugDescription)
-        )
-        
-        return verifiedSignIn
-    }
-    
-    func createPublicKeyCredentialForPasskey(preferImmediatelyAvailableCredentials: Bool) async throws -> JSON {
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    /// Will present the system sheet asking the user if they want to sign in with their passkey.
+    @MainActor
+    public func getCredentialForPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
         
         guard
             let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
             let challengeString = nonceJSON["challenge"]?.stringValue,
             let challenge = challengeString.dataFromBase64URL()
         else {
-            throw ClerkClientError(message: "Unable to get the challenge from the server.")
+            throw ClerkClientError(message: "Unable to locate the challenge for the passkey.")
         }
         
         let manager = PasskeyManager()
@@ -528,27 +492,17 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             ]
         ]
         
-        return try JSON(publicKeyCredential)
+        return try JSON(publicKeyCredential).debugDescription
     }
     #endif
     
-    /// Creates a sign in with an Apple id token
+    /// Authenticate with an ID Token
     @discardableResult @MainActor
-    public static func signInWithAppleIdToken(
-        idToken: String
-    ) async throws -> ExternalAuthResult? {
-        
-        let requestBody = [
-            "strategy": "oauth_token_apple",
-            "token": idToken
-        ]
-                
-        let request = ClerkAPI.v1.client.signIns.post(body: requestBody)
-        let signIn = try await Clerk.shared.apiClient.send(request).value.response
+    public func authenticateWithIdToken() async throws -> ExternalAuthResult? {
         
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         
-        if signIn.needsTransferToSignUp {
+        if needsTransferToSignUp {
             if botProtectionIsEnabled {
                 // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
                 let signIn = try await Client.get()?.signIn
@@ -558,9 +512,8 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
                 return ExternalAuthResult(signUp: signUp)
             }
         } else {
-            // this is a completed sign in
-            try await Client.get()
-            return ExternalAuthResult(signIn: signIn)
+            // this should be a completed sign in
+            return ExternalAuthResult(signIn: self)
         }
     }
 }

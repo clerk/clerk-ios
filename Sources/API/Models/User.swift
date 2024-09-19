@@ -270,11 +270,11 @@ extension User {
             let challengeString = nonceJSON["challenge"]?.stringValue,
             let challenge = challengeString.dataFromBase64URL()
         else {
-            throw ClerkClientError(message: "Unable to get the challenge from the server.")
+            throw ClerkClientError(message: "Unable to locate the challenge for the passkey.")
         }
         
         guard let name = nonceJSON["user"]?["name"]?.stringValue else {
-            throw ClerkClientError(message: "Unable to get the user name from the server.")
+            throw ClerkClientError(message: "Unable to get the username for the passkey.")
         }
         
         guard let userId = nonceJSON["user"]?["id"]?.stringValue?.base64URLFromBase64String().dataFromBase64URL() else {

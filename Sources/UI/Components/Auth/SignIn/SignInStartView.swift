@@ -79,7 +79,7 @@ struct SignInStartView: View {
         .task {
             if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
                 config.didAutoDisplayPasskey = true
-                try? await Task.sleep(for: .seconds(0.5))
+                try? await Task.sleep(for: .seconds(0.3))
                 await signInWithPasskey()
             }
         }
@@ -91,10 +91,20 @@ extension SignInStartView {
     private func signInWithPasskey() async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            let signIn = try await SignIn.authenticateWithPasskey(onWillAttemptVerification: {
-                isLoading = true
-            })
-            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            
+            let signIn = try await SignIn
+                .create(strategy: .passkey)
+            
+            let credential = try await signIn
+                .getCredentialForPasskey()
+
+            isLoading = true
+            
+            let attemptedSignIn = try await signIn.attemptFirstFactor(
+                for: .passkey(publicKeyCredential: credential)
+            )
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {
             if case ASAuthorizationError.canceled = error { return }
             errorWrapper = ErrorWrapper(error: error)

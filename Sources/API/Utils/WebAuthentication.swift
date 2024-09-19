@@ -97,7 +97,9 @@ final class WebAuthentication: NSObject {
     }
     
     func cancel() {
+        #if !os(tvOS)
         Self.currentSession?.cancel()
+        #endif
         Self.currentSession = nil
     }
     

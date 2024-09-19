@@ -82,13 +82,13 @@ struct AuthSocialProvidersView: View {
             return nil
         }
         
-        guard let token = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+        guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
         
-        let externalAuthResult = try await SignIn.signInWithAppleIdToken(
-            idToken: token
-        )
+        let externalAuthResult = try await SignIn
+            .create(strategy: .idToken(provider: .apple, idToken: idToken))
+            .authenticateWithIdToken()
         
         return externalAuthResult
     }

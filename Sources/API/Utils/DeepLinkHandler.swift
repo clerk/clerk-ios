@@ -26,6 +26,7 @@ extension Clerk {
     
     @MainActor
     private static func handleOAuthCallback(urlComponents: URLComponents) async {
+        #if !os(tvOS)
         guard let finalRedirectUrl = urlComponents.queryItems?.first(
             where: { $0.name == "_final_redirect_url" }
         )?.value else {
@@ -49,6 +50,7 @@ extension Clerk {
         } catch {
             dump(error)
         }
+        #endif
     }
     
 }

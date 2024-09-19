@@ -80,9 +80,15 @@ extension SignInFactorOnePasskeyView {
     
     private func signInWithPasskey() async {
         do {
-            let attemptedSignIn = try await signIn
+            let preparedSignIn = try await signIn
                 .prepareFirstFactor(for: .passkey)
-                .authenticateWithPasskey()
+            
+            let credential = try await preparedSignIn
+                .getCredentialForPasskey()
+            
+            let attemptedSignIn = try await preparedSignIn.attemptFirstFactor(
+                for: .passkey(publicKeyCredential: credential)
+            )
             
             clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {

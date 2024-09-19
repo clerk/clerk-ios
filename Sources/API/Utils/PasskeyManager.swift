@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  PasskeyManager.swift
+//
 //
 //  Created by Mike Pitre on 9/5/24.
 //
@@ -39,6 +39,8 @@ final class PasskeyManager: NSObject {
             authController.delegate = self
             authController.presentationContextProvider = self
 
+            #if !os(tvOS)
+            
             if preferImmediatelyAvailableCredentials {
                 // If credentials are available, presents a modal sign-in sheet.
                 // If there are no locally saved credentials, no UI appears and
@@ -51,10 +53,16 @@ final class PasskeyManager: NSObject {
                 // passkey from a nearby device.
                 authController.performRequests()
             }
+            
+            #else
+            
+            authController.performRequests()
+            
+            #endif
         }
     }
 
-    #if !os(macOS)
+    #if !os(macOS) && !os(tvOS)
     @MainActor
     func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization? {
         return try await withCheckedThrowingContinuation { continuation in
