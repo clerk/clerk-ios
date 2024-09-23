@@ -22,7 +22,6 @@ extension AuthView {
         @Published var signInFactorTwoBackupCode = ""
         @Published var signInFactorTwoPhoneCode = ""
         @Published var signInFactorTwoTOTPCode = ""
-        var didAutoDisplayPasskey = false
         
         // Sign Up State
         @Published var signUpEmailAddress = ""
@@ -44,7 +43,6 @@ extension AuthView {
             signInFactorTwoBackupCode = ""
             signInFactorTwoPhoneCode = ""
             signInFactorTwoTOTPCode = ""
-            didAutoDisplayPasskey = false
             
             signUpEmailAddress = ""
             signUpPhoneNumber = ""

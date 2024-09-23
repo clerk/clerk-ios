@@ -18,6 +18,27 @@ public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
 
 extension Passkey {
     
+    private var nonceJSON: JSON? {
+        verification?.nonce?.toJSON()
+    }
+    
+    public var challenge: Data? {
+        let challengeString = nonceJSON?["challenge"]?.stringValue
+        return challengeString?.dataFromBase64URL()
+    }
+    
+    public var username: String? {
+        nonceJSON?["user"]?["name"]?.stringValue
+    }
+    
+    public var userId: Data? {
+        nonceJSON?["user"]?["id"]?.stringValue?.base64URLFromBase64String().dataFromBase64URL()
+    }
+    
+}
+
+extension Passkey {
+    
     @discardableResult @MainActor
     static func create() async throws -> Passkey {
         let request = ClerkAPI.v1.me.passkeys.post(

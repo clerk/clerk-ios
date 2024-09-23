@@ -51,64 +51,7 @@ extension Clerk {
             } catch {
                 throw error
             }
-        }
-        
-        private static let localAuthAccountKey = "localAuthAccountKey"
-        
-        @MainActor
-        static var displayLocalAuthOption: Bool {
-            accountForLocalAuth != nil && !localAuthAccountAlreadySignedIn
-        }
-        
-        static var accountForLocalAuth: String? {
-            try? SimpleKeychain().string(forKey: localAuthAccountKey)
-        }
-        
-        static func clearLocalAuthAccount() {
-            try? SimpleKeychain().deleteItem(forKey: localAuthAccountKey)
-        }
-        
-        public static func getLocalAuthCredentials() throws -> Credentials {
-            guard let identifier = accountForLocalAuth else {
-                throw ClerkClientError(message: "Unable to find an account with biometric authentication enabled.")
-            }
-            
-            guard let password = try? SimpleKeychain().string(forKey: identifier) else {
-                throw ClerkClientError(message: "Unable to find credentials for the account enrolled in biometric authentication.")
-            }
-            
-            return Credentials(identifier: identifier, password: password)
-        }
-        
-        public static func setLocalAuthCredentials(identifier: String, password: String) throws {
-            try SimpleKeychain().set(identifier, forKey: localAuthAccountKey)
-            let context = LAContext()
-            context.touchIDAuthenticationAllowableReuseDuration = 10
-            try SimpleKeychain(accessibility: .whenPasscodeSetThisDeviceOnly, accessControlFlags: .biometryCurrentSet, context: context)
-                .set(password, forKey: identifier)
-        }
-        
-        static func accountForLocalAuthBelongsToUser(_ user: User) -> Bool {
-            guard let accountForLocalAuth else { return false }
-            var identifiers = user.emailAddresses.map(\.emailAddress) + user.phoneNumbers.map(\.phoneNumber)
-            if let username = user.username { identifiers.append(username) }
-            return identifiers.contains(accountForLocalAuth)
-        }
-        
-        @MainActor
-        static var localAuthAccountAlreadySignedIn: Bool {
-            guard let client = Clerk.shared.client else { return false }
-            let signedInUsers = client.activeSessions.compactMap(\.user)
-            if signedInUsers.contains(where: { accountForLocalAuthBelongsToUser($0) }) {
-                return true
-            }
-            
-            return false
-        }
-        
-        static func deleteCurrentAccountForLocalAuth() {
-            try? SimpleKeychain().deleteItem(forKey: localAuthAccountKey)
-        }
+        }        
     }
     
 }

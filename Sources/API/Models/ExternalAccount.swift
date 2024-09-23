@@ -95,8 +95,8 @@ extension ExternalAccount {
     
     #if !os(tvOS) && !os(watchOS)
     /// Invokes a re-authorization flow for an existing external account.
-    @MainActor
-    public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws {
+    @discardableResult @MainActor
+    public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
             var url = URL(string: redirectUrl)
@@ -117,6 +117,11 @@ extension ExternalAccount {
         _ = try await authSession.start()
         
         try await Client.get()
+        guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
+            throw ClerkClientError(message: "Something went wrong. Please try again.")
+        }
+        
+        return externalAccount
     }
     #endif
     

@@ -14,7 +14,6 @@ struct SignInStartView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @EnvironmentObject private var config: AuthView.Config
-    @State private var errorWrapper: ErrorWrapper?
     @State private var isLoading = false
     
     private var socialProvidersEnabled: Bool {
@@ -75,45 +74,7 @@ struct SignInStartView: View {
             .padding()
             .padding(.top, 30)
         }
-        .clerkErrorPresenting($errorWrapper)
-        .task {
-            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true, !config.didAutoDisplayPasskey {
-                config.didAutoDisplayPasskey = true
-                try? await Task.sleep(for: .seconds(0.3))
-                await signInWithPasskey()
-            }
-        }
     }
-}
-
-extension SignInStartView {
-    
-    private func signInWithPasskey() async {
-        do {
-            KeyboardHelpers.dismissKeyboard()
-            
-            let signIn = try await SignIn
-                .create(strategy: .passkey)
-            
-            let credential = try await signIn
-                .getCredentialForPasskey()
-
-            isLoading = true
-            
-            let attemptedSignIn = try await signIn.attemptFirstFactor(
-                for: .passkey(publicKeyCredential: credential)
-            )
-            
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
-        } catch {
-            if error.isCancelledError { return }
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-        
-        isLoading = false
-    }
-    
 }
 
 #Preview {

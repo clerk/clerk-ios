@@ -16,7 +16,6 @@ struct SignInFactorOnePasswordView: View {
     @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
-    @State private var enableBiometry: Bool = true
     @FocusState private var isFocused: Bool
     
     let signIn: SignIn
@@ -61,18 +60,6 @@ struct SignInFactorOnePasswordView: View {
                             .textContentType(.password)
                             .focused($isFocused)
                             .task { isFocused = true }
-                        
-                        if Clerk.LocalAuth.availableBiometryType != .none {
-                            HStack {
-                                Toggle(isOn: $enableBiometry, label: { EmptyView() })
-                                    .labelsHidden()
-                                
-                                Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
-                                    .font(.footnote.weight(.medium))
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top)
-                        }
                     }
                     
                     AsyncButton(action: attempt) {
@@ -110,13 +97,6 @@ struct SignInFactorOnePasswordView: View {
             let attemptedSignIn = try await signIn.attemptFirstFactor(
                 for: .password(password: config.signInPassword)
             )
-            
-            if let signInIdentifier, enableBiometry {
-                try Clerk.LocalAuth.setLocalAuthCredentials(
-                    identifier: signInIdentifier,
-                    password: config.signInPassword
-                )
-            }
             
             clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {

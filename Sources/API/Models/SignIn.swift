@@ -171,7 +171,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             )
             
         case .idToken(let provider, let idToken):
-            return .init(strategy: provider.strategy, idToken: idToken)
+            return .init(strategy: provider.strategy, token: idToken)
             
         case .passkey:
             return .init(strategy: Strategy.passkey.stringValue)
@@ -189,7 +189,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         public var redirectUrl: String?
         public var actionCompleteRedirectUrl: String?
         public var transfer: Bool?
-        public var idToken: String?
+        public var token: String?
     }
     
     /// Resets a user's password.
@@ -455,7 +455,10 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
     /// Will present the system sheet asking the user if they want to sign in with their passkey.
     @MainActor
-    public func getCredentialForPasskey(preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
+    public func getCredentialForPasskey(
+        autofill: Bool = false,
+        preferImmediatelyAvailableCredentials: Bool = true
+    ) async throws -> String {
         
         guard
             let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
@@ -466,13 +469,22 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         }
         
         let manager = PasskeyManager()
-        let authorization = try await manager.signIn(
-            challenge: challenge,
-            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-        )
+        var authorization: ASAuthorization
         
-        guard let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-              let authenticatorData = credentialAssertion.rawAuthenticatorData
+        if autofill {
+            authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
+                challenge: challenge
+            )
+        } else {
+            authorization = try await manager.signIn(
+                challenge: challenge,
+                preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+            )
+        }
+        
+        guard
+            let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
+            let authenticatorData = credentialAssertion.rawAuthenticatorData
         else {
             throw ClerkClientError(message: "Invalid credential type.")
         }

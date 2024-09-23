@@ -20,22 +20,6 @@ struct UserProfileAddExternalAccountView: View {
         clerk.client?.lastActiveSession?.user
     }
     
-    private func create(provider: OAuthProvider) async {
-        do {
-            guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
-            if provider == .apple {
-                try await user.linkAppleAccount()
-            } else {
-                let newExternalAccount = try await user.createExternalAccount(provider)
-                try await newExternalAccount.reauthorize()
-            }
-        } catch {
-            if error.isCancelledError { return }
-            errorWrapper = ErrorWrapper(error: error)
-            dump(error)
-        }
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
@@ -88,6 +72,46 @@ struct UserProfileAddExternalAccountView: View {
             _ = try? await Clerk.Environment.get()
         }
     }
+}
+
+extension UserProfileAddExternalAccountView {
+    
+    private func create(provider: OAuthProvider) async {
+        do {
+            guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
+            if provider == .apple {
+                try await linkAppleAccount()
+            } else {
+                let newExternalAccount = try await user.createExternalAccount(provider)
+                try await newExternalAccount.reauthorize()
+            }
+        } catch {
+            if error.isCancelledError { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
+    }
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    private func linkAppleAccount() async throws {
+        
+        guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
+        
+        let manager = SignInWithAppleManager()
+        let authorization = try await manager.start()
+        
+        guard
+            let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+            let tokenData = appleIdCredential.identityToken,
+            let idToken = String(data: tokenData, encoding: .utf8)
+        else {
+            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
+        }
+        
+        try await user.createExternalAccount(.apple, idToken: idToken)
+    }
+    #endif
+    
 }
 
 #Preview {

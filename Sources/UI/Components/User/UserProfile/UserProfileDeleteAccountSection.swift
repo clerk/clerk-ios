@@ -109,13 +109,6 @@ private struct DeleteAccountConfirmationView: View {
             
             try await user.delete()
             
-            if
-                let localAuthAccount = Clerk.LocalAuth.accountForLocalAuth,
-                user.identifierBelongsToUser(identifier: localAuthAccount)
-            {
-                Clerk.LocalAuth.clearLocalAuthAccount()
-            }
-            
             clerkUIState.userProfileIsPresented = false
         } catch {
             errorWrapper = ErrorWrapper(error: error)

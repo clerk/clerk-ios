@@ -126,9 +126,26 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     }
     
     public enum CreateStrategy {
-        case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
-        case oauth(_ provider: OAuthProvider)
-        case idToken(_ provider: IDTokenProvider, idToken: String, firstName: String? = nil, lastName: String? = nil)
+        case standard(
+            emailAddress: String? = nil,
+            password: String? = nil,
+            firstName: String? = nil,
+            lastName: String? = nil,
+            username: String? = nil,
+            phoneNumber: String? = nil
+        )
+        
+        case oauth(
+            _ provider: OAuthProvider
+        )
+        
+        case idToken(
+            _ provider: IDTokenProvider,
+            idToken: String,
+            firstName: String? = nil,
+            lastName: String? = nil
+        )
+        
         case transfer
     }
     
@@ -136,13 +153,38 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
+            return .init(
+                firstName: firstName,
+                lastName: lastName,
+                password: password,
+                emailAddress: emailAddress,
+                phoneNumber: phoneNumber,
+                username: username,
+                captchaToken: captchaToken
+            )
+            
         case .oauth(let oauthProvider):
-            return .init(strategy: oauthProvider.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
+            return .init(
+                strategy: oauthProvider.strategy,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                captchaToken: captchaToken
+            )
+            
         case .idToken(let provider, let idToken, let firstName, let lastName):
-            return .init(firstName: firstName, lastName: lastName, strategy: provider.strategy, idToken: idToken, captchaToken: captchaToken)
+            return .init(
+                firstName: firstName,
+                lastName: lastName,
+                strategy: provider.strategy,
+                token: idToken,
+                captchaToken: captchaToken
+            )
+            
         case .transfer:
-            return .init(transfer: true, captchaToken: captchaToken)
+            return .init(
+                transfer: true,
+                captchaToken: captchaToken
+            )
         }
     }
     
@@ -158,7 +200,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil,
-            idToken: String? = nil,
+            token: String? = nil,
             captchaToken: String? = nil
         ) {
             self.firstName = firstName
@@ -171,8 +213,8 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
+            self.token = token
             self.captchaToken = captchaToken
-            self.idToken = idToken
         }
         
         /// The user's first name. This option is available only if name is selected in personal information. Please check the instance settings for more information.
@@ -215,11 +257,11 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         /// Transfer the user to a dedicated sign-up for an OAuth flow.
         public let transfer: Bool?
         
+        /// Optional id token (used for sign up with apple, etc.)
+        public let token: String?
+        
         /// Optional captcha token for bot protection
         public let captchaToken: String?
-        
-        /// Optional id token (used for sign up with apple, etc.)
-        public let idToken: String?
     }
     
     /// This method is used to update the current sign-up.

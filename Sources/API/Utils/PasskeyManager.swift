@@ -13,6 +13,8 @@ import os
 
 final class PasskeyManager: NSObject {
     
+    static var controller: ASAuthorizationController?
+    
     @MainActor
     var domain: String {
         guard let urlComponents = URLComponents(string: Clerk.shared.frontendAPIURL) else {
@@ -38,7 +40,8 @@ final class PasskeyManager: NSObject {
             let authController = ASAuthorizationController(authorizationRequests: [ assertionRequest ] )
             authController.delegate = self
             authController.presentationContextProvider = self
-
+            Self.controller = authController
+            
             #if !os(tvOS)
             
             if preferImmediatelyAvailableCredentials {
@@ -64,7 +67,7 @@ final class PasskeyManager: NSObject {
 
     #if !os(macOS) && !os(tvOS)
     @MainActor
-    func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization? {
+    func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -76,13 +79,15 @@ final class PasskeyManager: NSObject {
             let authController = ASAuthorizationController(authorizationRequests: [ assertionRequest ] )
             authController.delegate = self
             authController.presentationContextProvider = self
+            Self.controller = authController
+            
             authController.performAutoFillAssistedRequests()
         }
     }
     #endif
     
     @MainActor
-    func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization? {
+    func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -99,6 +104,8 @@ final class PasskeyManager: NSObject {
             let authController = ASAuthorizationController(authorizationRequests: [ registrationRequest ] )
             authController.delegate = self
             authController.presentationContextProvider = self
+            Self.controller = authController
+            
             authController.performRequests()
         }
     }

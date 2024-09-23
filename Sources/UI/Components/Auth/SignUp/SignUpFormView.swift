@@ -16,7 +16,6 @@ struct SignUpFormView: View {
     @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
     @FocusState private var focusedField: Field?
-    @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
     @Binding var isSubmitting: Bool
@@ -172,18 +171,6 @@ struct SignUpFormView: View {
                     PasswordInputView(password: $config.signUpPassword)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
-                    
-                    if Clerk.LocalAuth.availableBiometryType != .none {
-                        HStack {
-                            Toggle(isOn: $enableBiometry, label: { EmptyView() })
-                                .labelsHidden()
-                            
-                            Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
-                                .font(.footnote.weight(.medium))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top)
-                    }
                 }
             }
             
@@ -238,10 +225,6 @@ struct SignUpFormView: View {
             ), captchaToken: captchaToken)
                                     
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
-            
-            if let identifer, enableBiometry, passwordIsEnabled {
-                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: config.signUpPassword)
-            }
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 signUp = try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))

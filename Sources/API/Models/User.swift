@@ -260,39 +260,48 @@ extension User {
         return response.value.response
     }
     
+    @discardableResult @MainActor
+    public func createExternalAccount(_ provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
+        let request = ClerkAPI.v1.me.externalAccounts.create(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: [
+                "strategy": provider.strategy,
+                "token": idToken
+            ]
+        )
+        
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    
     #if canImport(AuthenticationServices) && !os(watchOS)
     @MainActor
-    public func createPasskey() async throws -> Passkey? {
+    public func createPasskey() async throws -> Passkey {
         let passkey = try await Passkey.create()
         
-        guard
-            let nonceJSON = passkey.verification?.nonce?.toJSON(),
-            let challengeString = nonceJSON["challenge"]?.stringValue,
-            let challenge = challengeString.dataFromBase64URL()
-        else {
-            throw ClerkClientError(message: "Unable to locate the challenge for the passkey.")
+        guard let challenge = passkey.challenge else {
+            throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
         }
         
-        guard let name = nonceJSON["user"]?["name"]?.stringValue else {
+        guard let name = passkey.username else {
             throw ClerkClientError(message: "Unable to get the username for the passkey.")
         }
         
-        guard let userId = nonceJSON["user"]?["id"]?.stringValue?.base64URLFromBase64String().dataFromBase64URL() else {
-            throw ClerkClientError(message: "Unable to convert user id to type Data")
+        guard let userId = passkey.userId else {
+            throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
         }
         
         let manager = PasskeyManager()
-        guard let authorization = try await manager.createPasskey(
+        let authorization = try await manager.createPasskey(
             challenge: challenge,
             name: name,
             userId: userId
-        ) else {
-            // user cancelled
-            return nil
-        }
+        )
         
-        guard let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
-              let rawAttestationObject = credentialRegistration.rawAttestationObject
+        guard
+            let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+            let rawAttestationObject = credentialRegistration.rawAttestationObject
         else {
             throw ClerkClientError(message: "Invalid credential type.")
         }
@@ -314,41 +323,6 @@ extension User {
         )
         
         return registeredPasskey
-    }
-    #endif
-    
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    @discardableResult @MainActor
-    public func linkAppleAccount() async throws -> ExternalAccount? {
-        let manager = SignInWithAppleManager()
-        let authorization = try await manager.start()
-        
-        if authorization == nil {
-            // cancelled
-            return nil
-        }
-        
-        guard
-            let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-            let tokenData = appleIdCredential.identityToken,
-            let token = String(data: tokenData, encoding: .utf8)
-        else {
-            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
-        }
-                
-        let requestBody = [
-            "strategy": "oauth_token_apple",
-            "token": token
-        ]
-        
-        let request = ClerkAPI.v1.me.externalAccounts.create(
-            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: requestBody
-        )
-        
-        let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
-        return response.value.response
     }
     #endif
     
@@ -456,12 +430,6 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
 
-		#if !os(tvOS) && !os(watchOS)
-        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
-            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
-        }
-        #endif
-
         return response.value.response
     }
     
@@ -474,6 +442,7 @@ extension User {
         
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
+        
         return response.value.response
     }
     

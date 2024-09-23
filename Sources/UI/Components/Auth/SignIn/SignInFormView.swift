@@ -135,29 +135,19 @@ struct SignInFormView: View {
             }
             .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
-            
-            if Clerk.LocalAuth.displayLocalAuthOption {
-                AsyncButton {
-                    do {
-                        let creds = try Clerk.LocalAuth.getLocalAuthCredentials()
-                        await signInAction(strategy: .identifier(creds.identifier, password: creds.password))
-                    } catch {
-                        errorWrapper = ErrorWrapper(error: error)
-                    }
-                } label: {
-                    Image(systemName: Clerk.LocalAuth.availableBiometryType.systemImageName ?? "faceid")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
-                        .tint(.secondary)
-                }
-                .padding(.vertical)
-            }
         }
         .animation(.default, value: config.signInPassword.isEmpty)
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
+        }
+        .task {
+            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true {
+                await beginAutoFillAssistedPasskeySignIn()
+            }
+        }
+        .onDisappear {
+            PasskeyManager.controller?.cancel()
         }
     }
 }
@@ -188,6 +178,29 @@ extension SignInFormView {
             }
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+        } catch {
+            if error.isCancelledError { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
+    }
+    
+    private func beginAutoFillAssistedPasskeySignIn() async {
+        do {
+            let signIn = try await SignIn
+                .create(strategy: .passkey)
+            
+            let credential = try await signIn
+                .getCredentialForPasskey(autofill: true)
+            
+            isLoading = true
+            
+            let attemptedSignIn = try await signIn.attemptFirstFactor(
+                for: .passkey(publicKeyCredential: credential)
+            )
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            
         } catch {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
