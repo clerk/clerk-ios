@@ -39,15 +39,14 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 clerkUIState.setAuthStepToCurrentStatus(for: signIn)
             }
         } catch {
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
     
-    private func signInWithApple() async throws -> ExternalAuthResult? {
-        guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
-            return nil
-        }
+    private func signInWithApple() async throws -> ExternalAuthResult {
+        let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")

@@ -71,7 +71,7 @@ extension SignUpCreatePasskeyView {
             // we've added a passkey to the users account, so pass the signup back through the UI flow
             clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {
-            if case ASAuthorizationError.canceled = error { return }
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }

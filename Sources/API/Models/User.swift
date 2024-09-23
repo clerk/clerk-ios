@@ -329,7 +329,7 @@ extension User {
         }
         
         guard
-            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
+            let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
             let tokenData = appleIdCredential.identityToken,
             let token = String(data: tokenData, encoding: .utf8)
         else {

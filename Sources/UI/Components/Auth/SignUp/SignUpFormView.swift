@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignUpFormView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -249,9 +250,9 @@ struct SignUpFormView: View {
             switch signUp.nextStrategyToVerify {
             case .oauth, .saml:
                 let externalAuthResult = try await signUp.authenticateWithRedirect()
-                if let signUp = externalAuthResult?.signUp {
+                if let signUp = externalAuthResult.signUp {
                     clerkUIState.setAuthStepToCurrentStatus(for: signUp)
-                } else if let signIn = externalAuthResult?.signIn {
+                } else if let signIn = externalAuthResult.signIn {
                     clerkUIState.setAuthStepToCurrentStatus(for: signIn)
                 }
                 return
@@ -261,6 +262,7 @@ struct SignUpFormView: View {
             
             clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             isSubmitting = false
             captchaToken = nil

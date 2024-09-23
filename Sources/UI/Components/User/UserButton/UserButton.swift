@@ -11,7 +11,7 @@ import SwiftUI
 import Nuke
 import NukeUI
 
-struct UserButton: View {
+public struct UserButton: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
@@ -25,7 +25,9 @@ struct UserButton: View {
         )
     }
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         Button(action: {
             userButtonAction()
         }, label: {

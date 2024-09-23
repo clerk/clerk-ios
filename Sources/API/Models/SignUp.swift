@@ -313,7 +313,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult? {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -332,9 +332,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        guard let callbackUrl = try await authSession.start() else {
-            return nil
-        }
+        let callbackUrl = try await authSession.start()
         
         let externalAuthResult = try await SignUp.handleOAuthCallbackUrl(callbackUrl)
         return externalAuthResult
@@ -342,7 +340,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     #endif
     
     @MainActor
-    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult? {
+    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
             let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
@@ -351,11 +349,10 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         } else {
             // transfer flow
             
-            try await Client.get()
-            let signUp = Clerk.shared.client?.signUp
+            let signUp = try await Client.get()?.signUp
             
             guard signUp?.needsTransferToSignIn == true else {
-                return nil
+                return ExternalAuthResult(signUp: signUp)
             }
             
             let signIn = try await SignIn.create(strategy: .transfer)
@@ -365,7 +362,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     
     /// Creates a sign up with an Apple id token
     @discardableResult @MainActor
-    public func authenticateWithIdToken() async throws -> ExternalAuthResult? {
+    public func authenticateWithIdToken() async throws -> ExternalAuthResult {
         if needsTransferToSignIn {
             let signIn = try await SignIn.create(strategy: .transfer)
             return ExternalAuthResult(signIn: signIn)

@@ -399,7 +399,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult? {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
         guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, var url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
@@ -414,9 +414,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        guard let callbackUrl = try await authSession.start() else {
-            return nil
-        }
+        let callbackUrl = try await authSession.start()
         
         let externalAuthResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
         return externalAuthResult
@@ -424,7 +422,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     #endif
     
     @MainActor
-    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult? {
+    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
             let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
@@ -433,11 +431,10 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         } else {
             // transfer flow
             
-            try await Client.get()
-            let signIn = Clerk.shared.client?.signIn
+            let signIn = try await Client.get()?.signIn
             
             guard signIn?.needsTransferToSignUp == true else {
-                return nil
+                return ExternalAuthResult(signIn: signIn)
             }
             
             let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
@@ -498,7 +495,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     
     /// Authenticate with an ID Token
     @discardableResult @MainActor
-    public func authenticateWithIdToken() async throws -> ExternalAuthResult? {
+    public func authenticateWithIdToken() async throws -> ExternalAuthResult {
         
         let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
         

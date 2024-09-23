@@ -92,7 +92,7 @@ extension SignInFactorOnePasskeyView {
             
             clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {
-            if case ASAuthorizationError.canceled = error { return }
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }

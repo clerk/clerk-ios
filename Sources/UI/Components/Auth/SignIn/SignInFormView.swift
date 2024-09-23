@@ -177,9 +177,9 @@ extension SignInFormView {
                 if signIn.firstFactorVerification?.status == .unverified, signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
                     let authResult = try await signIn.authenticateWithRedirect()
                     
-                    if let signIn = authResult?.signIn {
+                    if let signIn = authResult.signIn {
                         clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                    } else if let signUp = authResult?.signUp {
+                    } else if let signUp = authResult.signUp {
                         clerkUIState.setAuthStepToCurrentStatus(for: signUp)
                     }
                     
@@ -189,6 +189,7 @@ extension SignInFormView {
             
             clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }

@@ -57,7 +57,7 @@ struct AuthSocialProvidersView: View {
     private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
         
-        var externalAuthResult: ExternalAuthResult?
+        var externalAuthResult: ExternalAuthResult
         
         do {
 			if provider == .apple {
@@ -68,19 +68,16 @@ struct AuthSocialProvidersView: View {
                     .authenticateWithRedirect()
             }
             
-            if let externalAuthResult {
-                onSuccess?(externalAuthResult)
-            }
+            onSuccess?(externalAuthResult)
         } catch {
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
     
-    private func signInWithApple() async throws -> ExternalAuthResult? {
-        guard let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential() else {
-            return nil
-        }
+    private func signInWithApple() async throws -> ExternalAuthResult {
+        let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")

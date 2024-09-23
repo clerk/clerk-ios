@@ -13,7 +13,7 @@ import AuthenticationServices
 
 final class SignInWithAppleManager: NSObject {
     
-    private var continuation: CheckedContinuation<ASAuthorization?,Error>?
+    private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
     @MainActor
     private var requestedScopes: [ASAuthorization.Scope]? {
@@ -27,7 +27,7 @@ final class SignInWithAppleManager: NSObject {
     }
     
     @MainActor
-    func start() async throws -> ASAuthorization? {
+    func start() async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
                                             
@@ -51,11 +51,7 @@ extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
     }
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
-        if case ASAuthorizationError.canceled = error {
-            continuation?.resume(returning: nil)
-        } else {
-            continuation?.resume(throwing: error)
-        }
+        continuation?.resume(throwing: error)
     }
     
 }
