@@ -10,7 +10,6 @@
 import Foundation
 import SwiftUI
 import LocalAuthentication
-import SimpleKeychain
 
 extension Clerk {
         
