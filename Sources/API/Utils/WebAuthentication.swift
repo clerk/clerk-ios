@@ -59,14 +59,6 @@ final class WebAuthentication: NSObject {
             Self.currentSession?.start()
         }
     }
-    
-    func cancel() {
-        #if !os(tvOS)
-        Self.currentSession?.cancel()
-        #endif
-        Self.currentSession = nil
-    }
-    
 }
 
 #if !os(watchOS) && !os(tvOS)

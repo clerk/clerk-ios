@@ -65,7 +65,7 @@ final class PasskeyManager: NSObject {
         }
     }
 
-    #if !os(macOS) && !os(tvOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     @MainActor
     func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in

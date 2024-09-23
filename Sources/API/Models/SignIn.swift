@@ -471,6 +471,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         let manager = PasskeyManager()
         var authorization: ASAuthorization
         
+        #if os(iOS) && !targetEnvironment(macCatalyst)
         if autofill {
             authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
                 challenge: challenge
@@ -481,6 +482,14 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
                 preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
             )
         }
+        #else
+            authorization = try await manager.signIn(
+                challenge: challenge,
+                preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+            )
+        #endif
+        
+        
         
         guard
             let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
