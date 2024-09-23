@@ -9,7 +9,6 @@
 
 import SwiftUI
 import NukeUI
-import AuthenticationServices
 
 struct SignInForgotPasswordView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -17,17 +16,15 @@ struct SignInForgotPasswordView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
     
     private func resetPassword() async {
         do {
-            guard let resetPasswordStrategy = signIn?.resetPasswordStrategy else {
+            guard let resetPasswordStrategy = signIn.resetPasswordStrategy else {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
-            try await signIn?.prepareFirstFactor(for: resetPasswordStrategy)
-            clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.currentFirstFactor)
+            let resetSignIn = try await signIn.prepareFirstFactor(for: resetPasswordStrategy)
+            clerkUIState.presentedAuthStep = .signInFactorOne(signIn: resetSignIn, factor: resetSignIn.currentFirstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -57,11 +54,11 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                SignInFactorOneAlternativeMethodsView(currentFactor: signIn?.firstFactor(for: .password))
+                SignInFactorOneAlternativeMethodsView(signIn: signIn, currentFactor: signIn.firstFactor(for: .password))
                     .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: signIn.firstFactor(for: .password))
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
@@ -77,7 +74,7 @@ struct SignInForgotPasswordView: View {
 }
 
 #Preview {
-    SignInForgotPasswordView()
+    SignInForgotPasswordView(signIn: .mock)
 }
 
 #endif

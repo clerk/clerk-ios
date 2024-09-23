@@ -30,7 +30,7 @@ extension ClerkAPI.V1Endpoint.MeEndpoint.PhoneNumbersEndpoint {
                 body: body)
         }
         
-        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Deletion>> {
+        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<DeletedObject>> {
             .init(
                 path: path,
                 method: .delete, 

@@ -18,8 +18,8 @@ extension ClerkAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
         /// Path: `v1/client/sign_ins/{id}/attempt_first_factor`
         let path: String
         
-        func post(_ params: SignIn.AttemptFirstFactorParams) -> Request<ClientResponse<SignIn>> {
-            .init(path: path, method: .post, body: params)
+        func post(body: any Encodable) -> Request<ClientResponse<SignIn>> {
+            .init(path: path, method: .post, body: body)
         }
     }
     

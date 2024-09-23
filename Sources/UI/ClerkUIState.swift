@@ -14,17 +14,19 @@ final class ClerkUIState: ObservableObject {
     /// Is the auth view  being displayed.
     @Published public var authIsPresented = false
 
-    enum AuthStep: Equatable {
+    enum AuthStep: Equatable, Hashable {
         case signInStart
-        case signInFactorOne(_ factor: SignInFactor?)
-        case signInFactorOneUseAnotherMethod(_ currentFactor: SignInFactor?)
-        case signInFactorTwo(_ factor: SignInFactor?)
-        case signInFactorTwoUseAnotherMethod(_ currentFactor: SignInFactor?)
-        case signInForgotPassword
-        case signInResetPassword
+        case signInFactorOne(signIn: SignIn, factor: SignInFactor?)
+        case signInFactorOneUseAnotherMethod(signIn: SignIn, currentFactor: SignInFactor?)
+        case signInFactorTwo(signIn: SignIn, factor: SignInFactor?)
+        case signInFactorTwoUseAnotherMethod(signIn: SignIn, currentFactor: SignInFactor?)
+        case signInForgotPassword(signIn: SignIn)
+        case signInResetPassword(signIn: SignIn)
+        case ssoCallback(signIn: SignIn)
+        
         case signUpStart
-        case signUpVerification
-        case ssoCallback
+        case signUpVerification(signUp: SignUp)
+        case signUpCreatePasskey(signUp: SignUp, user: User)
     }
     
     @Published var presentedAuthStep: AuthStep = .signInStart {
@@ -41,33 +43,42 @@ extension ClerkUIState {
     
     /// Sets the current auth step to the status determined by the API
     @MainActor
-    func setAuthStepToCurrentStatus(for signIn: SignIn?) {
-        if signIn?.firstFactorVerification?.status == .transferable, Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true {
-            presentedAuthStep = .ssoCallback
+    func setAuthStepToCurrentStatus(for signIn: SignIn) {
+        if signIn.firstFactorVerification?.status == .transferable, Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true {
+            presentedAuthStep = .ssoCallback(signIn: signIn)
             return
         }
         
-        switch signIn?.status {
+        switch signIn.status {
         case .needsIdentifier, .abandoned:
             presentedAuthStep = .signInStart
+            
         case .needsFirstFactor:
-            presentedAuthStep = .signInFactorOne(signIn?.currentFirstFactor)
+            guard let currentFirstFactor = signIn.currentFirstFactor else { authIsPresented = false; return }
+            presentedAuthStep = .signInFactorOne(signIn: signIn, factor: currentFirstFactor)
+            
         case .needsSecondFactor:
-            presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
+            guard let currentSecondFactor = signIn.currentSecondFactor else { authIsPresented = false; return }
+            presentedAuthStep = .signInFactorTwo(signIn: signIn, factor: currentSecondFactor)
+            
         case .needsNewPassword:
-            presentedAuthStep = .signInResetPassword
-        case .complete, .none, .unknown:
+            presentedAuthStep = .signInResetPassword(signIn: signIn)
+            
+        case .complete:
+            authIsPresented = false
+            
+        case .unknown:
             authIsPresented = false
         }
     }
     
     /// Sets the current auth step to the status determined by the API
     @MainActor
-    func setAuthStepToCurrentStatus(for signUp: SignUp?) {
-        switch signUp?.status {
+    func setAuthStepToCurrentStatus(for signUp: SignUp) {
+        switch signUp.status {
         case .missingRequirements:
-            if (signUp?.unverifiedFields ?? []).contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
-                presentedAuthStep = .signUpVerification
+            if (signUp.unverifiedFields ?? []).contains(where: { $0 == "email_address" || $0 == "phone_number" })  {
+                presentedAuthStep = .signUpVerification(signUp: signUp)
             } else {
                 presentedAuthStep = .signUpStart
             }
@@ -75,7 +86,21 @@ extension ClerkUIState {
         case .abandoned:
             presentedAuthStep = .signUpStart
             
-        case .complete, .none, .unknown:
+        case .complete:
+            // if a user just signed up, passkeys are enabled and they dont have any passkeys on their account
+            // then ask them if they would like to create one
+            if
+                Clerk.shared.environment?.userSettings.config(for: "passkey")?.enabled == true,
+                let user = Clerk.shared.user,
+                user.passkeys.isEmpty
+            {
+                presentedAuthStep = .signUpCreatePasskey(signUp: signUp, user: user)
+                return
+            }
+            
+            authIsPresented = false
+            
+        case .unknown:
             authIsPresented = false
         }
     }

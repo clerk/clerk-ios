@@ -83,6 +83,7 @@ struct UserProfileActiveDevicesSection: View {
                             CapsuleTag(text: "This device")
                         }
                     }
+                    
                     VStack(alignment: .leading) {
                         if !session.browserDisplayText.isEmpty {
                             Text(session.browserDisplayText)

@@ -24,10 +24,14 @@ struct UserProfileSecurityView: View {
                 Divider()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
+                        
             if clerk.environment?.userSettings.instanceIsPasswordBased == true, clerk.user?.passwordEnabled == true {
                 // todo: allow users without a password to set one
                 UserProfilePasswordSection()
+            }
+            
+            if clerk.environment?.userSettings.config(for: Strategy.passkey.stringValue)?.enabled == true {
+                UserProfilePasskeySection()
             }
             
             if clerk.environment?.userSettings.secondFactorAttributes.isEmpty == false {

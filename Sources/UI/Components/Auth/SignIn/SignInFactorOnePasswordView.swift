@@ -16,12 +16,9 @@ struct SignInFactorOnePasswordView: View {
     @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
-    @State private var enableBiometry: Bool = true
     @FocusState private var isFocused: Bool
     
-    var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
     
     var body: some View {
         ScrollView {
@@ -37,7 +34,7 @@ struct SignInFactorOnePasswordView: View {
                 .padding(.bottom, 4)
                 
                 IdentityPreviewView(
-                    label: signIn?.identifier,
+                    label: signIn.identifier,
                     action: {
                         clerkUIState.presentedAuthStep = .signInStart
                     }
@@ -51,7 +48,7 @@ struct SignInFactorOnePasswordView: View {
                                 .foregroundStyle(clerkTheme.colors.textPrimary)
                             Spacer()
                             Button(action: {
-                                clerkUIState.presentedAuthStep = .signInForgotPassword
+                                clerkUIState.presentedAuthStep = .signInForgotPassword(signIn: signIn)
                             }, label: {
                                 Text("Forgot password?")
                             })
@@ -63,18 +60,6 @@ struct SignInFactorOnePasswordView: View {
                             .textContentType(.password)
                             .focused($isFocused)
                             .task { isFocused = true }
-                        
-                        if Clerk.LocalAuth.availableBiometryType != .none {
-                            HStack {
-                                Toggle(isOn: $enableBiometry, label: { EmptyView() })
-                                    .labelsHidden()
-                                
-                                Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
-                                    .font(.footnote.weight(.medium))
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top)
-                        }
                     }
                     
                     AsyncButton(action: attempt) {
@@ -87,7 +72,10 @@ struct SignInFactorOnePasswordView: View {
                 .padding(.bottom, 18)
                 
                 AsyncButton {
-                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(signIn?.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(
+                        signIn: signIn,
+                        currentFactor: signIn.firstFactor(for: .password)
+                    )
                 } label: {
                     Text("Use another method")
                         .font(.footnote.weight(.medium))
@@ -104,22 +92,13 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
-            let signInIdentifier = signIn?.identifier
+            let signInIdentifier = signIn.identifier
             
-            try await signIn?.attemptFirstFactor(for: .password(password: config.signInPassword))
+            let attemptedSignIn = try await signIn.attemptFirstFactor(
+                for: .password(password: config.signInPassword)
+            )
             
-            if let signInIdentifier, enableBiometry {
-                try Clerk.LocalAuth.setLocalAuthCredentials(
-                    identifier: signInIdentifier,
-                    password: config.signInPassword
-                )
-            }
-            
-            if signIn?.status == .needsSecondFactor {
-                clerkUIState.presentedAuthStep = .signInFactorTwo(signIn?.currentSecondFactor)
-            } else {
-                clerkUIState.authIsPresented = false
-            }
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -128,7 +107,8 @@ struct SignInFactorOnePasswordView: View {
 }
 
 #Preview {
-    SignInFactorOnePasswordView()
+    SignInFactorOnePasswordView(signIn: .mock)
+        .environmentObject(AuthView.Config())
         .environmentObject(ClerkUIState())
 }
 

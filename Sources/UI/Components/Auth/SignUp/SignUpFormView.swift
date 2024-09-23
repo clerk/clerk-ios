@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignUpFormView: View {
     @ObservedObject private var clerk = Clerk.shared
@@ -15,7 +16,6 @@ struct SignUpFormView: View {
     @EnvironmentObject private var config: AuthView.Config
     @Environment(\.clerkTheme) private var clerkTheme
     @FocusState private var focusedField: Field?
-    @State private var enableBiometry = true
     @State private var errorWrapper: ErrorWrapper?
     
     @Binding var isSubmitting: Bool
@@ -25,11 +25,7 @@ struct SignUpFormView: View {
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password
     }
-    
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-    
+        
     private var nameIsEnabled: Bool {
         clerk.environment?.userSettings.nameIsEnabled == true
     }
@@ -175,18 +171,6 @@ struct SignUpFormView: View {
                     PasswordInputView(password: $config.signUpPassword)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
-                    
-                    if Clerk.LocalAuth.availableBiometryType != .none {
-                        HStack {
-                            Toggle(isOn: $enableBiometry, label: { EmptyView() })
-                                .labelsHidden()
-                            
-                            Text("Enable \(Clerk.LocalAuth.availableBiometryType.displayName)")
-                                .font(.footnote.weight(.medium))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top)
-                    }
                 }
             }
             
@@ -229,7 +213,9 @@ struct SignUpFormView: View {
     
     private func performSignUp() async {
         do {
-            try await SignUp.create(strategy: .standard(
+            var signUp: SignUp
+            
+            signUp = try await SignUp.create(strategy: .standard(
                 emailAddress: emailIsEnabled ? config.signUpEmailAddress : nil,
                 password: passwordIsEnabled ? config.signUpPassword : nil,
                 firstName: nameIsEnabled ? config.signUpFirstName : nil,
@@ -237,28 +223,29 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
-                        
-            guard let signUp else { throw ClerkClientError(message: "There was an error creating your sign up.") }
-            
+                                    
             let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
-            if let identifer, enableBiometry, passwordIsEnabled {
-                try Clerk.LocalAuth.setLocalAuthCredentials(identifier: identifer, password: config.signUpPassword)
-            }
-            
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
-                try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
+                signUp = try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
             }
             
             switch signUp.nextStrategyToVerify {
             case .oauth, .saml:
-                try await signUp.authenticateWithRedirect()
+                let externalAuthResult = try await signUp.authenticateWithRedirect()
+                if let signUp = externalAuthResult.signUp {
+                    clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+                } else if let signIn = externalAuthResult.signIn {
+                    clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                }
+                return
             default:
                 break
             }
             
             clerkUIState.setAuthStepToCurrentStatus(for: signUp)
         } catch {
+            if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             isSubmitting = false
             captchaToken = nil

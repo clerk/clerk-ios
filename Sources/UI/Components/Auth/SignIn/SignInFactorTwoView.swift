@@ -14,43 +14,33 @@ struct SignInFactorTwoView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
-    private var strategy: Strategy? {
-        guard signIn?.status == .needsSecondFactor else { return nil }
-        if case .signInFactorTwo(let factor) = clerkUIState.presentedAuthStep {
-            return factor?.strategyEnum
-        }
-        return nil
-    }
+    let signIn: SignIn
+    let factor: SignInFactor?
     
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
     var body: some View {
         Group {
-            switch strategy {
+            switch factor?.strategyEnum {
             case .phoneCode:
-                SignInFactorTwoPhoneCodeView()
+                SignInFactorTwoPhoneCodeView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .totp:
-                SignInFactorTwoTotpCodeView()
+                SignInFactorTwoTotpCodeView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .backupCode:
-                SignInFactorTwoBackupCodeView()
+                SignInFactorTwoBackupCodeView(signIn: signIn)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-                
-            case nil where clerk.session == nil:
+            default:
                 GetHelpView(
                     title: "Cannot sign in",
                     description: """
@@ -66,23 +56,18 @@ struct SignInFactorTwoView: View {
                         clerkUIState.presentedAuthStep = .signInStart
                     })
                 )
-                .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
-                
-            default:
-                ProgressView()
-                    .task { clerkUIState.setAuthStepToCurrentStatus(for: signIn) }
             }
         }
-        .animation(.snappy, value: strategy)
+        .animation(.snappy, value: factor?.strategyEnum)
     }
 }
 
 #Preview {
-    SignInFactorTwoView()
+    SignInFactorTwoView(signIn: .mock, factor: .mock)
 }
 
 #endif

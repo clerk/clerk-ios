@@ -110,7 +110,7 @@ extension EmailAddress {
     
     /// Deletes this email address.
     @discardableResult @MainActor
-    public func destroy() async throws -> Deletion {
+    public func destroy() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.emailAddresses.id(id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )

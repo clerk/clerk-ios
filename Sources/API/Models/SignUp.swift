@@ -24,7 +24,7 @@ import AuthenticationServices
  - Those that hold the different values that we supply to the sign-up. Examples of these are `username`, `emailAddress`, `firstName`, etc.
  - Those that contain references to the created resources once the sign-up is complete, i.e. `createdSessionId` and `createdUserId`.
  */
-public struct SignUp: Codable, Sendable, Equatable {
+public struct SignUp: Codable, Sendable, Equatable, Hashable {
     
     let id: String
     
@@ -126,8 +126,26 @@ public struct SignUp: Codable, Sendable, Equatable {
     }
     
     public enum CreateStrategy {
-        case standard(emailAddress: String? = nil, password: String? = nil, firstName: String? = nil, lastName: String? = nil, username: String? = nil, phoneNumber: String? = nil)
-        case oauth(_ provider: OAuthProvider)
+        case standard(
+            emailAddress: String? = nil,
+            password: String? = nil,
+            firstName: String? = nil,
+            lastName: String? = nil,
+            username: String? = nil,
+            phoneNumber: String? = nil
+        )
+        
+        case oauth(
+            _ provider: OAuthProvider
+        )
+        
+        case idToken(
+            _ provider: IDTokenProvider,
+            idToken: String,
+            firstName: String? = nil,
+            lastName: String? = nil
+        )
+        
         case transfer
     }
     
@@ -135,11 +153,38 @@ public struct SignUp: Codable, Sendable, Equatable {
     static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
-            return .init(firstName: firstName, lastName: lastName, password: password, emailAddress: emailAddress, phoneNumber: phoneNumber, username: username, captchaToken: captchaToken)
+            return .init(
+                firstName: firstName,
+                lastName: lastName,
+                password: password,
+                emailAddress: emailAddress,
+                phoneNumber: phoneNumber,
+                username: username,
+                captchaToken: captchaToken
+            )
+            
         case .oauth(let oauthProvider):
-            return .init(strategy: oauthProvider.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl, actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl, captchaToken: captchaToken)
+            return .init(
+                strategy: oauthProvider.strategy,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                captchaToken: captchaToken
+            )
+            
+        case .idToken(let provider, let idToken, let firstName, let lastName):
+            return .init(
+                firstName: firstName,
+                lastName: lastName,
+                strategy: provider.strategy,
+                token: idToken,
+                captchaToken: captchaToken
+            )
+            
         case .transfer:
-            return .init(transfer: true, captchaToken: captchaToken)
+            return .init(
+                transfer: true,
+                captchaToken: captchaToken
+            )
         }
     }
     
@@ -155,6 +200,7 @@ public struct SignUp: Codable, Sendable, Equatable {
             redirectUrl: String? = nil,
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil,
+            token: String? = nil,
             captchaToken: String? = nil
         ) {
             self.firstName = firstName
@@ -167,6 +213,7 @@ public struct SignUp: Codable, Sendable, Equatable {
             self.redirectUrl = redirectUrl
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
+            self.token = token
             self.captchaToken = captchaToken
         }
         
@@ -209,6 +256,9 @@ public struct SignUp: Codable, Sendable, Equatable {
         
         /// Transfer the user to a dedicated sign-up for an OAuth flow.
         public let transfer: Bool?
+        
+        /// Optional id token (used for sign up with apple, etc.)
+        public let token: String?
         
         /// Optional captcha token for bot protection
         public let captchaToken: String?
@@ -305,7 +355,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult? {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -324,9 +374,7 @@ public struct SignUp: Codable, Sendable, Equatable {
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
         
-        guard let callbackUrl = try await authSession.start() else {
-            return nil
-        }
+        let callbackUrl = try await authSession.start()
         
         let externalAuthResult = try await SignUp.handleOAuthCallbackUrl(callbackUrl)
         return externalAuthResult
@@ -334,7 +382,7 @@ public struct SignUp: Codable, Sendable, Equatable {
     #endif
     
     @MainActor
-    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult? {
+    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
             let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
@@ -343,11 +391,10 @@ public struct SignUp: Codable, Sendable, Equatable {
         } else {
             // transfer flow
             
-            try await Client.get()
-            let signUp = Clerk.shared.client?.signUp
+            let signUp = try await Client.get()?.signUp
             
             guard signUp?.needsTransferToSignIn == true else {
-                return nil
+                return ExternalAuthResult(signUp: signUp)
             }
             
             let signIn = try await SignIn.create(strategy: .transfer)
@@ -357,30 +404,13 @@ public struct SignUp: Codable, Sendable, Equatable {
     
     /// Creates a sign up with an Apple id token
     @discardableResult @MainActor
-    public static func signUpWithAppleIdToken(
-        idToken: String,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        captchaToken: String? = nil
-    ) async throws -> ExternalAuthResult? {
-        
-        let requestBody = [
-            "strategy": "oauth_token_apple",
-            "token": idToken,
-            "first_name": firstName,
-            "last_name": lastName,
-            "captcha_token": captchaToken
-        ]
-                
-        let request = ClerkAPI.v1.client.signUps.post(requestBody)
-        let signUp = try await Clerk.shared.apiClient.send(request).value.response
-        
-        if signUp.needsTransferToSignIn {
+    public func authenticateWithIdToken() async throws -> ExternalAuthResult {
+        if needsTransferToSignIn {
             let signIn = try await SignIn.create(strategy: .transfer)
             return ExternalAuthResult(signIn: signIn)
         } else {
             try await Client.get()
-            return ExternalAuthResult(signUp: signUp)
+            return ExternalAuthResult(signUp: self)
         }
     }
     
@@ -419,6 +449,37 @@ extension SignUp {
                 return nil
             }
         }
+    }
+    
+}
+
+extension SignUp {
+    
+    static var mock: SignUp {
+        
+        .init(
+            id: UUID().uuidString,
+            status: .unknown,
+            requiredFields: [],
+            optionalFields: [],
+            missingFields: [],
+            unverifiedFields: [],
+            verifications: [:],
+            username: nil,
+            emailAddress: nil,
+            phoneNumber: nil,
+            passwordEnabled: true,
+            firstName: nil,
+            lastName: nil,
+            unsafeMetadata: nil,
+            publicMetadata: nil,
+            customAction: false,
+            externalId: nil,
+            createdSessionId: nil,
+            createdUserId: nil,
+            abandonAt: .now
+        )
+        
     }
     
 }

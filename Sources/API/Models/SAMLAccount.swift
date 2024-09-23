@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SAMLAccount: Codable, Equatable, Sendable {
+public struct SAMLAccount: Codable, Equatable, Sendable, Hashable {
     public let object: String
     public let id: String
     public let provider: String

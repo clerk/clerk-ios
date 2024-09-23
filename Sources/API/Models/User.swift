@@ -15,7 +15,7 @@ import AuthenticationServices
 
  Finally, a `User` object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally to store arbitrary information. The metadata are split into `publicMetadata` and `privateMetadata`. Both types are set from the Backend API, but public metadata can also be accessed from the Frontend API.
  */
-public struct User: Codable, Equatable, Sendable {
+public struct User: Codable, Equatable, Sendable, Hashable {
     
     /// A unique identifier for the user.
     public let id: String
@@ -46,6 +46,9 @@ public struct User: Codable, Equatable, Sendable {
     
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
+    
+    /// An array of all the Passkey objects associated with the user.
+    public let passkeys: [Passkey]
     
     /// A boolean indicating whether the user has a password on their account.
     public let passwordEnabled: Bool
@@ -257,38 +260,69 @@ extension User {
         return response.value.response
     }
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
     @discardableResult @MainActor
-    public func linkAppleAccount() async throws -> ExternalAccount? {
-        let authManager = ASAuth(authType: .signInWithApple)
-        let authorization = try await authManager.start()
-        
-        if authorization == nil {
-            // cancelled
-            return nil
-        }
-        
-        guard
-            let appleIdCredential = authorization?.credential as? ASAuthorizationAppleIDCredential,
-            let tokenData = appleIdCredential.identityToken,
-            let token = String(data: tokenData, encoding: .utf8)
-        else {
-            throw ClerkClientError(message: "Unable to find your Apple ID credential.")
-        }
-                
-        let requestBody = [
-            "strategy": "oauth_token_apple",
-            "token": token
-        ]
-        
+    public func createExternalAccount(_ provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
         let request = ClerkAPI.v1.me.externalAccounts.create(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: requestBody
+            body: [
+                "strategy": provider.strategy,
+                "token": idToken
+            ]
         )
         
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
+    }
+    
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    @MainActor
+    public func createPasskey() async throws -> Passkey {
+        let passkey = try await Passkey.create()
+        
+        guard let challenge = passkey.challenge else {
+            throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+        }
+        
+        guard let name = passkey.username else {
+            throw ClerkClientError(message: "Unable to get the username for the passkey.")
+        }
+        
+        guard let userId = passkey.userId else {
+            throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+        }
+        
+        let manager = PasskeyManager()
+        let authorization = try await manager.createPasskey(
+            challenge: challenge,
+            name: name,
+            userId: userId
+        )
+        
+        guard
+            let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+            let rawAttestationObject = credentialRegistration.rawAttestationObject
+        else {
+            throw ClerkClientError(message: "Invalid credential type.")
+        }
+        
+        let publicKeyCredential: [String: any Encodable] = [
+            "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "type": "public-key",
+            "response": [
+                "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+                "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
+            ]
+        ]
+        
+        let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+        
+        let registeredPasskey = try await passkey.attemptVerification(
+            credential: publicKeyCredentialJSON.debugDescription
+        )
+        
+        return registeredPasskey
     }
     #endif
     
@@ -320,7 +354,7 @@ extension User {
     
     /// Disables TOTP by deleting the user's TOTP secret.
     @discardableResult @MainActor
-    public func disableTOTP() async throws -> Deletion {
+    public func disableTOTP() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.totp.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
@@ -388,7 +422,7 @@ extension User {
     
     /// Deletes the user's profile image.
     @discardableResult @MainActor
-    public func deleteProfileImage() async throws -> Deletion {
+    public func deleteProfileImage() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.profileImage.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
@@ -396,25 +430,55 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
 
-		#if !os(tvOS) && !os(watchOS)
-        if Clerk.LocalAuth.accountForLocalAuthBelongsToUser(self) {
-            Clerk.LocalAuth.deleteCurrentAccountForLocalAuth()
-        }
-        #endif
-
         return response.value.response
     }
     
     /// Deletes the current user.
     @discardableResult @MainActor
-    public func delete() async throws -> Deletion {
+    public func delete() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
+        
         return response.value.response
+    }
+    
+}
+
+extension User {
+    
+    static var mock: User {
+        
+        .init(
+            id: UUID().uuidString,
+            firstName: "First",
+            lastName: "Last",
+            username: "Username",
+            imageUrl: "",
+            hasImage: false,
+            primaryEmailAddressId: nil,
+            emailAddresses: [],
+            primaryPhoneNumberId: nil,
+            phoneNumbers: [],
+            passkeys: [],
+            passwordEnabled: false,
+            twoFactorEnabled: false,
+            totpEnabled: false,
+            backupCodeEnabled: false,
+            deleteSelfEnabled: true,
+            externalAccounts: [],
+            samlAccounts: nil,
+            publicMetadata: nil,
+            unsafeMetadata: nil,
+            lastSignInAt: .now,
+            createdAt: .now,
+            updatedAt: .now,
+            createOrganizationEnabled: false
+        )
+        
     }
     
 }

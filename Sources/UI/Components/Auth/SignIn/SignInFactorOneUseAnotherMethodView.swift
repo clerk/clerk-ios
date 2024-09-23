@@ -15,10 +15,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
+    let signIn: SignIn
     let currentFactor: SignInFactor?
     
     var body: some View {
@@ -35,11 +32,14 @@ struct SignInFactorOneUseAnotherMethodView: View {
                 .multilineTextAlignment(.center)
                 .padding(.bottom, 32)
                 
-                SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
-                    .padding(.bottom, 18)
+                SignInFactorOneAlternativeMethodsView(
+                    signIn: signIn,
+                    currentFactor: currentFactor
+                )
+                .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(currentFactor)
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: currentFactor)
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
@@ -55,7 +55,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
 }
 
 #Preview {
-    SignInFactorOneUseAnotherMethodView(currentFactor: nil)
+    SignInFactorOneUseAnotherMethodView(signIn: .mock, currentFactor: .mock)
         .environmentObject(ClerkUIState())
 }
 

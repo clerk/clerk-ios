@@ -16,12 +16,10 @@ struct SignInFactorOneResetView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
         
     private var useEmailCodeStrategy: Bool {
-        signIn?.firstFactorVerification?.strategyEnum == .resetPasswordEmailCode
+        signIn.firstFactorVerification?.strategyEnum == .resetPasswordEmailCode
     }
     
     var body: some View {
@@ -35,8 +33,8 @@ struct SignInFactorOneResetView: View {
                     code: $config.signInFactorOneResetCode,
                     title: "Reset your password",
                     subtitle: "First, enter the code sent to your \(useEmailCodeStrategy ? "email address" : "phone")",
-                    safeIdentifier: signIn?.currentFirstFactor?.safeIdentifier ?? signIn?.identifier,
-                    profileImageUrl: signIn?.userData?.imageUrl
+                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
+                    profileImageUrl: signIn.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signInStart
@@ -51,13 +49,13 @@ struct SignInFactorOneResetView: View {
                     //
                 }
                 .task {
-                    if signIn?.firstFactorHasBeenPrepared == false {
+                    if !signIn.firstFactorHasBeenPrepared {
                         await prepare()
                     }
                 }
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn?.firstFactor(for: .password))
+                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: signIn.firstFactor(for: .password))
                 } label: {
                     Text("Back to sign in")
                         .font(.footnote.weight(.medium))
@@ -73,13 +71,13 @@ struct SignInFactorOneResetView: View {
     
     private func prepare() async {
         do {
-            switch signIn?.firstFactorVerification?.strategyEnum {
+            switch signIn.firstFactorVerification?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn?.prepareFirstFactor(for: .resetPasswordEmailCode)
+                try await signIn.prepareFirstFactor(for: .resetPasswordEmailCode)
                 
             case .resetPasswordPhoneCode:
-                try await signIn?.prepareFirstFactor(for: .resetPasswordPhoneCode)
+                try await signIn.prepareFirstFactor(for: .resetPasswordPhoneCode)
                 
             default:
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
@@ -93,15 +91,17 @@ struct SignInFactorOneResetView: View {
     
     private func attempt() async {
         do {
-            switch signIn?.currentFirstFactor?.strategyEnum {
+            var resetSignIn: SignIn
+            
+            switch signIn.currentFirstFactor?.strategyEnum {
                 
             case .resetPasswordEmailCode:
-                try await signIn?.attemptFirstFactor(
+                resetSignIn = try await signIn.attemptFirstFactor(
                     for: .resetPasswordEmailCode(code: config.signInFactorOneResetCode)
                 )
                 
             case .resetPasswordPhoneCode:
-                try await signIn?.attemptFirstFactor(
+                resetSignIn = try await signIn.attemptFirstFactor(
                     for: .resetPasswordPhoneCode(code: config.signInFactorOneResetCode)
                 )
                 
@@ -109,7 +109,7 @@ struct SignInFactorOneResetView: View {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
             
-            clerkUIState.presentedAuthStep = .signInResetPassword
+            clerkUIState.setAuthStepToCurrentStatus(for: resetSignIn)
             
         } catch {
             errorWrapper = ErrorWrapper(error: error)
@@ -120,7 +120,7 @@ struct SignInFactorOneResetView: View {
 }
 
 #Preview {
-    SignInFactorOneResetView()
+    SignInFactorOneResetView(signIn: .mock)
 }
 
 #endif

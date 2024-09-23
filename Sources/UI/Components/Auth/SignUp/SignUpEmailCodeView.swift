@@ -15,9 +15,7 @@ struct SignUpEmailCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
+    let signUp: SignUp
     
     var body: some View {
         ScrollView {
@@ -30,8 +28,11 @@ struct SignUpEmailCodeView: View {
                     code: $config.signUpEmailCode,
                     title: "Verify your email",
                     subtitle: "Enter the verification code sent to your email address",
-                    safeIdentifier: signUp?.emailAddress
+                    safeIdentifier: signUp.emailAddress
                 )
+                .onContinueAction {
+                    //
+                }
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signUpStart
                 }
@@ -52,12 +53,6 @@ struct SignUpEmailCodeView: View {
     }
     
     private func prepare() async {
-        guard let signUp else { return }
-        let emailVerification = signUp.verifications.first(where: { $0.key == "email_address" })?.value
-        if emailVerification?.status == .verified {
-            return
-        }
-        
         do {
             try await signUp.prepareVerification(strategy: .emailCode)
         } catch {
@@ -68,9 +63,11 @@ struct SignUpEmailCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp?.attemptVerification(
+            let attemptedSignUp = try await signUp.attemptVerification(
                 .emailCode(code: config.signUpEmailCode)
             )
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignUp)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signUpEmailCode = ""
@@ -80,7 +77,7 @@ struct SignUpEmailCodeView: View {
 }
 
 #Preview {
-    return SignUpEmailCodeView()
+    return SignUpEmailCodeView(signUp: .mock)
         .environmentObject(ClerkUIState())
 }
 

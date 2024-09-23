@@ -15,18 +15,18 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
+    let signIn: SignIn
     let currentFactor: SignInFactor?
-    
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
     
     private func startAlternateSecondFactor(_ factor: SignInFactor) async {
         do {
+            var signIn = signIn
+            
             if let prepareStrategy = factor.prepareSecondFactorStrategy {
-                try await signIn?.prepareSecondFactor(for: prepareStrategy)
+                signIn = try await signIn.prepareSecondFactor(for: prepareStrategy)
             }
-            clerkUIState.presentedAuthStep = .signInFactorTwo(factor)
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -35,7 +35,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(signIn?.alternativeSecondFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
+            ForEach(signIn.alternativeSecondFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateSecondFactor(factor)
@@ -60,7 +60,7 @@ struct SignInFactorTwoAlternativeMethodsView: View {
 }
 
 #Preview {
-    SignInFactorTwoAlternativeMethodsView(currentFactor: nil)
+    SignInFactorTwoAlternativeMethodsView(signIn: .mock, currentFactor: nil)
 }
 
 #endif

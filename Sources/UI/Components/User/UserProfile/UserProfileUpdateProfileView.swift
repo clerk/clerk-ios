@@ -22,7 +22,7 @@ struct UserProfileUpdateProfileView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
-        clerk.client?.lastActiveSession?.user
+        clerk.user
     }
     
     private var continueButtonDisabled: Bool {

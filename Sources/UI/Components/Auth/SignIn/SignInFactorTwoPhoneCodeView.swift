@@ -15,9 +15,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
+    let signIn: SignIn
     
     var body: some View {
         ScrollView {
@@ -41,10 +39,13 @@ struct SignInFactorTwoPhoneCodeView: View {
                     //
                 }
                 .onUseAlernateMethod {
-                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(signIn?.secondFactor(for: .phoneCode))
+                    clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(
+                        signIn: signIn,
+                        currentFactor: signIn.secondFactor(for: .phoneCode)
+                    )
                 }
                 .task {
-                    if signIn?.secondFactorHasBeenPrepared == false {
+                    if !signIn.secondFactorHasBeenPrepared {
                         await prepare()
                     }
                 }
@@ -57,7 +58,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn?.prepareSecondFactor(for: .phoneCode)
+            try await signIn.prepareSecondFactor(for: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -66,9 +67,10 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signIn?.attemptSecondFactor(
+            let attemptedSignIn = try await signIn.attemptSecondFactor(
                 for: .phoneCode(code: config.signInFactorTwoPhoneCode)
             )
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signInFactorTwoPhoneCode = ""
@@ -78,7 +80,7 @@ struct SignInFactorTwoPhoneCodeView: View {
 }
 
 #Preview {
-    SignInFactorTwoPhoneCodeView()
+    SignInFactorTwoPhoneCodeView(signIn: .mock)
 }
 
 #endif

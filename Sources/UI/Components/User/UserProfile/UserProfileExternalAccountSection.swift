@@ -104,7 +104,7 @@ struct UserProfileExternalAccountSection: View {
                         .foregroundStyle(clerkTheme.colors.textSecondary)
                         .font(.footnote)
                     }
-                                    
+                    
                     if externalAccount.verification?.status != .verified {
                         CapsuleTag(text: "Requires action", style: .warning)
                     }
@@ -147,17 +147,37 @@ struct UserProfileExternalAccountSection: View {
         private func retryConnection(_ provider: OAuthProvider) async {
             do {
                 if provider == .apple {
-                    try await user?.linkAppleAccount()
+                    try await linkAppleAccount()
                 } else {
                     let externalAccount = try await user?.createExternalAccount(provider)
                     try await externalAccount?.reauthorize()
                 }
             } catch {
-                if case ASAuthorizationError.canceled = error { return }
+                if error.isCancelledError { return }
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
             }
         }
+        
+        #if canImport(AuthenticationServices) && !os(watchOS)
+        private func linkAppleAccount() async throws {
+            
+            guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
+            
+            let manager = SignInWithAppleManager()
+            let authorization = try await manager.start()
+            
+            guard
+                let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let tokenData = appleIdCredential.identityToken,
+                let idToken = String(data: tokenData, encoding: .utf8)
+            else {
+                throw ClerkClientError(message: "Unable to find your Apple ID credential.")
+            }
+            
+            try await user.createExternalAccount(.apple, idToken: idToken)
+        }
+        #endif
     }
 }
 

@@ -12,7 +12,7 @@ import Foundation
 
  External account must be verified, so that you can make sure they can be assigned to their rightful owners. The ExternalAccount object holds all necessary state around the verification process.
  */
-public struct ExternalAccount: Codable, Identifiable, Sendable {
+public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equatable {
     
     /// A unique identifier for this external account.
     public let id: String
@@ -53,8 +53,6 @@ public struct ExternalAccount: Codable, Identifiable, Sendable {
     /// An object holding information on the verification of this external account.
     public let verification: Verification?
 }
-
-extension ExternalAccount: Equatable, Hashable {}
 
 extension ExternalAccount: Comparable {
     public static func < (lhs: ExternalAccount, rhs: ExternalAccount) -> Bool {
@@ -97,8 +95,8 @@ extension ExternalAccount {
     
     #if !os(tvOS) && !os(watchOS)
     /// Invokes a re-authorization flow for an existing external account.
-    @MainActor
-    public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws {
+    @discardableResult @MainActor
+    public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
             var url = URL(string: redirectUrl)
@@ -119,12 +117,17 @@ extension ExternalAccount {
         _ = try await authSession.start()
         
         try await Client.get()
+        guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
+            throw ClerkClientError(message: "Something went wrong. Please try again.")
+        }
+        
+        return externalAccount
     }
     #endif
     
     /// Deletes this external account.
     @discardableResult @MainActor
-    public func destroy() async throws -> Deletion {
+    public func destroy() async throws -> DeletedObject {
         let request = ClerkAPI.v1.me.externalAccounts.id(id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )

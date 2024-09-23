@@ -14,6 +14,7 @@ extension Clerk.Environment {
         public let attributes: [String: AttributesConfig]
         public let social: [String: SocialConfig]
         public let actions: Actions
+        public let passkeySettings: PasskeySettings?
         
         public struct AttributesConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
@@ -39,6 +40,11 @@ extension Clerk.Environment {
         public struct Actions: Codable, Equatable, Sendable {
             public var deleteSelf: Bool = false
             public var createOrganization: Bool = false
+        }
+        
+        public struct PasskeySettings: Codable, Equatable, Sendable {
+            public let allowAutofill: Bool
+            public let showSignInButton: Bool
         }
     }
     
@@ -77,24 +83,10 @@ extension Clerk.Environment.UserSettings {
         return secondFactors
     }
     
-    var requiredAttributes: [String: AttributesConfig] {
-        enabledAttributes.filter({ $0.value.required })
-    }
-    
     var instanceIsPasswordBased: Bool {
         guard let passwordConfig = config(for: "password") else { return false }
         return passwordConfig.enabled && passwordConfig.required
     }
-    
-    var hasValidAuthFactor: Bool {
-        if enabledAttributes.contains(where: { $0.key == "email_address" || $0.key == "phone_number" }) {
-            return true
-        }
-        
-        if instanceIsPasswordBased { return true }
-        
-        return false
-     }
     
     public var socialProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
@@ -116,13 +108,9 @@ extension Clerk.Environment.UserSettings {
         enabledAttributes.filter({ $0.value.verifyAtSignUp })
     }
     
-    private func userAttributeConfig(for key: String) -> AttributesConfig? {
-        return enabledAttributes.first(where: { $0.key == key && $0.value.enabled })?.value
-    }
-    
     var preferredEmailVerificationStrategy: Strategy? {
-        let emailAttribute = userAttributeConfig(for: "email_address")
-        let strategies = emailAttribute?.verificationStrategies ?? []
+        guard let emailAttribute = config(for: "email_address") else { return nil }
+        let strategies = emailAttribute.verificationStrategies
         
         if strategies.contains(where: { $0 == .emailCode }) {
             return .emailCode

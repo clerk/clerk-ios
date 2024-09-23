@@ -15,9 +15,7 @@ struct SignUpPhoneCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
+    let signUp: SignUp
     
     var body: some View {
         ScrollView {
@@ -30,8 +28,11 @@ struct SignUpPhoneCodeView: View {
                     code: $config.signUpPhoneCode,
                     title: "Verify your phone number",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signUp?.phoneNumber
+                    safeIdentifier: signUp.phoneNumber
                 )
+                .onContinueAction {
+                    //
+                }
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signUpStart
                 }
@@ -52,13 +53,7 @@ struct SignUpPhoneCodeView: View {
     }
     
     private func prepare() async {
-        guard let signUp else { return }
         do {
-            let signUpVerification = signUp.verifications.first(where: { $0.key == "phone_number" })?.value
-            if signUpVerification?.status == .verified {
-                return
-            }
-            
             try await signUp.prepareVerification(strategy: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
@@ -68,9 +63,11 @@ struct SignUpPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            try await signUp?.attemptVerification(
+            let attemptedSignUp = try await signUp.attemptVerification(
                 .phoneCode(code: config.signUpPhoneCode)
             )
+            
+            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignUp)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signUpPhoneCode = ""
@@ -80,7 +77,7 @@ struct SignUpPhoneCodeView: View {
 }
 
 #Preview {
-    SignUpPhoneCodeView()
+    SignUpPhoneCodeView(signUp: .mock)
         .environmentObject(ClerkUIState())
 }
 

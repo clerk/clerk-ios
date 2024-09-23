@@ -20,6 +20,7 @@ public enum Strategy: Codable, Equatable {
     case resetPasswordEmailCode
     case saml
     case oauth(_ provider: OAuthProvider)
+    case passkey
     
     var stringValue: String {
         switch self {
@@ -43,6 +44,8 @@ public enum Strategy: Codable, Equatable {
             return "reset_password_phone_code"
         case .resetPasswordEmailCode:
             return "reset_password_email_code"
+        case .passkey:
+            return "passkey"
         }
     }
     
@@ -80,7 +83,8 @@ public enum Strategy: Codable, Equatable {
             } else {
                 return nil
             }
-            
+        case Strategy.passkey.stringValue:
+            self = .passkey
         default:
             return nil
         }
@@ -101,6 +105,8 @@ extension Strategy {
             return "text.bubble.fill"
         case .emailCode:
             return "envelope.fill"
+        case .passkey:
+            return "person.badge.key.fill"
         default:
             return nil
         }

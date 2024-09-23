@@ -20,14 +20,6 @@ struct SignUpStartView: View {
     @State private var captchaIsActive = false
     @State private var errorWrapper: ErrorWrapper?
     
-    private var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-    
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
     private var socialProvidersEnabled: Bool {
         clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
     }

@@ -11,6 +11,7 @@ enum RemoveResource {
     case email(EmailAddress)
     case phoneNumber(PhoneNumber)
     case externalAccount(ExternalAccount)
+    case passkey(Passkey)
     
     var title: String {
         switch self {
@@ -20,6 +21,8 @@ enum RemoveResource {
             return "Remove phone number"
         case .externalAccount:
             return "Remove connected account"
+        case .passkey:
+            return "Remove passkey"
         }
     }
     
@@ -32,6 +35,8 @@ enum RemoveResource {
             return "\(phoneNumber.formatted(.national)) will be removed from this account."
         case .externalAccount(let externalAccount):
             return "\(externalAccount.oauthProvider.name) will be removed from this account."
+        case .passkey(let passkey):
+            return "\(passkey.name) will be removed from this account."
         }
     }
     
@@ -43,6 +48,8 @@ enum RemoveResource {
             return "You will no longer be able to sign in using this phone number."
         case .externalAccount:
             return "You will no longer be able to use this connected account and any dependent features will no longer work."
+        case .passkey:
+            return "You will no longer be able to sign in using this passkey."
         }
     }
     
@@ -54,6 +61,8 @@ enum RemoveResource {
             try await phoneNumber.destroy()
         case .externalAccount(let externalAccount):
             try await externalAccount.destroy()
+        case .passkey(let passkey):
+            try await passkey.destroy()
         }
     }
 }

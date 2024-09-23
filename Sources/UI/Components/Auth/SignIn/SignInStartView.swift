@@ -8,10 +8,13 @@
 #if os(iOS)
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignInStartView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
+    @EnvironmentObject private var config: AuthView.Config
+    @State private var isLoading = false
     
     private var socialProvidersEnabled: Bool {
         clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
@@ -23,14 +26,6 @@ struct SignInStartView: View {
             $0.key == "username" ||
             $0.key == "phone_number"
         }
-    }
-    
-    private var signIn: SignIn? {
-        clerk.client?.signIn
-    }
-    
-    private var signUp: SignUp? {
-        clerk.client?.signUp
     }
     
     private var headerTitle: String {
@@ -71,7 +66,7 @@ struct SignInStartView: View {
                 }
                 
                 if showSignInForm {
-                    SignInFormView()
+                    SignInFormView(isLoading: $isLoading)
                         .padding(.bottom, 32)
                 }
             }
