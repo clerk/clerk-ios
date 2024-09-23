@@ -120,11 +120,8 @@ struct UserButtonPopover: View {
                         }
                         
                         Button {
-                            Task {
-                                dismiss()
-                                try? await Task.sleep(for: .seconds(0.5))
-                                clerkUIState.presentedAuthStep = .signInStart
-                            }
+                            dismiss()
+                            clerkUIState.presentedAuthStep = .signInStart
                         } label: {
                             HStack(spacing: 16) {
                                 Image(systemName: "plus")
