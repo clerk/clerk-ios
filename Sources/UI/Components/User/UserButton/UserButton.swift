@@ -11,7 +11,7 @@ import SwiftUI
 import Nuke
 import NukeUI
 
-public struct UserButton: View {
+struct UserButton: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.clerkTheme) var clerkTheme
@@ -24,8 +24,6 @@ public struct UserButton: View {
             processors: [ImageProcessors.Circle()]
         )
     }
-    
-    public init() {}
     
     public var body: some View {
         Button(action: {
