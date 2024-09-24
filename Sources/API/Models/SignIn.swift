@@ -226,31 +226,33 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     }
     
     public enum PrepareFirstFactorStrategy {
-        case emailCode
-        case phoneCode
+        case emailCode(emailAddressId: String? = nil)
+        case phoneCode(phoneNumberId: String? = nil)
         case saml
         case passkey
-        case resetPasswordEmailCode
-        case resetPasswordPhoneCode
+        case resetPasswordEmailCode(emailAddressId: String? = nil)
+        case resetPasswordPhoneCode(phoneNumberId: String? = nil)
+        
+        var strategy: Strategy {
+            switch self {
+            case .emailCode: .emailCode
+            case .phoneCode: .phoneCode
+            case .saml: .saml
+            case .passkey: .passkey
+            case .resetPasswordEmailCode: .resetPasswordEmailCode
+            case .resetPasswordPhoneCode: .resetPasswordPhoneCode
+            }
+        }
     }
     
     private func prepareFirstFactorParams(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) -> PrepareFirstFactorParams {
-        let strategy: Strategy = switch prepareFirstFactorStrategy {
-        case .emailCode: .emailCode
-        case .phoneCode: .phoneCode
-        case .saml: .saml
-        case .passkey: .passkey
-        case .resetPasswordEmailCode: .resetPasswordEmailCode
-        case .resetPasswordPhoneCode: .resetPasswordPhoneCode
-        }
-        
         switch prepareFirstFactorStrategy {
         case .emailCode, .resetPasswordEmailCode:
-            return .init(strategy: strategy.stringValue, emailAddressId: factorId(for: strategy))
+            return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue, emailAddressId: factorId(for: prepareFirstFactorStrategy))
         case .phoneCode, .resetPasswordPhoneCode:
-            return .init(strategy: strategy.stringValue, phoneNumberId: factorId(for: strategy))
+            return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue, phoneNumberId: factorId(for: prepareFirstFactorStrategy))
         case .saml, .passkey:
-            return .init(strategy: strategy.stringValue)
+            return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue)
         }
     }
     
@@ -421,7 +423,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     }
     #endif
     
-    @MainActor
+    @discardableResult @MainActor
     static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
@@ -547,7 +549,11 @@ extension SignIn {
     @MainActor
     var currentFirstFactor: SignInFactor? {
         if let firstFactorVerification,
-           let currentFirstFactor = supportedFirstFactors?.first(where: { $0.strategyEnum == firstFactorVerification.strategyEnum }) {
+           firstFactorVerification.strategyEnum != .passkey,
+           let currentFirstFactor = supportedFirstFactors?.first(where: {
+               $0.strategyEnum == firstFactorVerification.strategyEnum &&
+               $0.safeIdentifier == identifier
+           }) {
             return currentFirstFactor
         }
         
@@ -563,13 +569,8 @@ extension SignIn {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
-        // Passkey should be prioritized, but the environment `preferredSignInStrategy` doesnt account for that yet
-        // this hardcodes passkeys to be preferred
-        if let passkeyFactor = firstFactors.first(where: { $0.strategyEnum == .passkey }) {
-            return passkeyFactor
-        }
-        
         switch preferredStrategy {
+            
         case .password:
             let sortedFactors = firstFactors.sorted { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }
             if let passwordFactor = sortedFactors.first(where: { $0.strategyEnum == .password }) {
@@ -577,6 +578,7 @@ extension SignIn {
             }
             
             return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
+            
         case .otp:
             let sortedFactors = firstFactors.sorted { $0.sortOrderOTPPreferred < $1.sortOrderOTPPreferred }
             return sortedFactors.first(where: { $0.safeIdentifier == identifier }) ?? firstFactors.first
@@ -593,9 +595,10 @@ extension SignIn {
     func alternativeFirstFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
         // Remove the current factor, reset factors, oauth factors
         let firstFactors = supportedFirstFactors?.filter { factor in
-            factor.strategy != currentFactor?.strategy &&
+            factor != currentFactor &&
             factor.strategyEnum?.isResetStrategy == false  &&
-            !(factor.strategy).hasPrefix("oauth_")
+            !(factor.strategy).hasPrefix("oauth_") &&
+            factor.strategyEnum != .passkey
         }
         
         return firstFactors?.sorted(by: { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }) ?? []
@@ -605,13 +608,21 @@ extension SignIn {
         supportedFirstFactors?.first(where: { $0.strategyEnum == strategy })
     }
     
+    var resetFactor: SignInFactor? {
+        supportedFirstFactors?.first(where: {
+            $0.strategyEnum?.isResetStrategy == true
+        })
+    }
+    
     // Second SignInFactor
     
     var currentSecondFactor: SignInFactor? {
         guard status == .needsSecondFactor else { return nil }
         
         if let secondFactorVerification,
-           let currentSecondFactor = supportedSecondFactors?.first(where: { $0.strategy == secondFactorVerification.strategy })
+           let currentSecondFactor = supportedSecondFactors?.first(where: {
+               $0.strategy == secondFactorVerification.strategy
+           })
         {
             return currentSecondFactor
         }
@@ -637,22 +648,25 @@ extension SignIn {
     }
     
     func alternativeSecondFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
-        supportedSecondFactors?.filter { $0.strategy != currentFactor?.strategy } ?? []
+        supportedSecondFactors?.filter { $0 != currentFactor } ?? []
     }
     
     func secondFactor(for strategy: Strategy) -> SignInFactor? {
-        supportedSecondFactors?.first(where: { $0.strategyEnum == strategy })
+        supportedSecondFactors?.first(where: {
+            $0.strategyEnum == strategy &&
+            $0.safeIdentifier == identifier
+        })
     }
     
-    func factorId(for strategy: Strategy) -> String? {
+    private func factorId(for strategy: PrepareFirstFactorStrategy) -> String? {
         let signInFactors = (supportedFirstFactors ?? []) + (supportedSecondFactors ?? [])
-        let signInFactor = signInFactors.first(where: { $0.strategyEnum == strategy })
+        let defaultSignInFactor = signInFactors.first(where: { $0.strategyEnum == strategy.strategy && $0.safeIdentifier == identifier })
         
         switch strategy {
-        case .emailCode, .resetPasswordEmailCode:
-            return signInFactor?.emailAddressId
-        case .phoneCode, .resetPasswordPhoneCode:
-            return signInFactor?.phoneNumberId
+        case .emailCode(let emailAddressId), .resetPasswordEmailCode(let emailAddressId):
+            return emailAddressId ?? defaultSignInFactor?.emailAddressId
+        case .phoneCode(let phoneNumberId), .resetPasswordPhoneCode(let phoneNumberId):
+            return phoneNumberId ?? defaultSignInFactor?.phoneNumberId
         default:
             return nil
         }
@@ -664,11 +678,11 @@ extension SignIn {
         guard let supportedFirstFactors else { return nil }
         
         if supportedFirstFactors.contains(where: { $0.strategyEnum == .resetPasswordEmailCode }) {
-            return .resetPasswordEmailCode
+            return .resetPasswordEmailCode()
         }
         
         if supportedFirstFactors.contains(where: { $0.strategyEnum == .resetPasswordPhoneCode }) {
-            return .resetPasswordPhoneCode
+            return .resetPasswordPhoneCode()
         }
         
         return nil

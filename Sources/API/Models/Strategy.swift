@@ -112,17 +112,4 @@ extension Strategy {
         }
     }
     
-    var signInPrepareStrategy: SignIn.PrepareFirstFactorStrategy? {
-        switch self {
-        case .phoneCode:
-            return .phoneCode
-        case .emailCode:
-            return .emailCode
-        case .saml:
-            return .saml
-        default:
-            return nil
-        }
-    }
-    
 }

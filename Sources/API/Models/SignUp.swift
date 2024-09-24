@@ -381,7 +381,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     }
     #endif
     
-    @MainActor
+    @discardableResult @MainActor
     static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
