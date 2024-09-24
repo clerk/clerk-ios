@@ -16,23 +16,27 @@ struct SignUpVerificationView: View {
     @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?
         
-    let signUp: SignUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
+    }
     
     var body: some View {
         Group {
-            switch signUp.nextStrategyToVerify {
+            switch signUp?.nextStrategyToVerify {
             case .phoneCode:
-                SignUpPhoneCodeView(signUp: signUp)
+                SignUpPhoneCodeView()
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+                
             case .emailCode:
-                SignUpEmailCodeView(signUp: signUp)
+                SignUpEmailCodeView()
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+                
             default:
                 GetHelpView(
                     title: "Cannot sign up",
@@ -55,8 +59,8 @@ struct SignUpVerificationView: View {
                 ))
             }
         }
-        .animation(.snappy, value: signUp.nextStrategyToVerify)
-        .onChange(of: signUp.nextStrategyToVerify) { _ in
+        .animation(.snappy, value: signUp?.nextStrategyToVerify)
+        .onChange(of: signUp?.nextStrategyToVerify) { _ in
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
         }
@@ -64,7 +68,7 @@ struct SignUpVerificationView: View {
 }
 
 #Preview {
-    return SignUpVerificationView(signUp: .mock)
+    return SignUpVerificationView()
         .environmentObject(ClerkUIState())
 }
 

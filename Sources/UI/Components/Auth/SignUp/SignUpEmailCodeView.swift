@@ -15,7 +15,9 @@ struct SignUpEmailCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signUp: SignUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
+    }
     
     var body: some View {
         ScrollView {
@@ -28,7 +30,7 @@ struct SignUpEmailCodeView: View {
                     code: $config.signUpEmailCode,
                     title: "Verify your email",
                     subtitle: "Enter the verification code sent to your email address",
-                    safeIdentifier: signUp.emailAddress
+                    safeIdentifier: signUp?.emailAddress
                 )
                 .onContinueAction {
                     //
@@ -54,7 +56,7 @@ struct SignUpEmailCodeView: View {
     
     private func prepare() async {
         do {
-            try await signUp.prepareVerification(strategy: .emailCode)
+            try await signUp?.prepareVerification(strategy: .emailCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -63,11 +65,11 @@ struct SignUpEmailCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignUp = try await signUp.attemptVerification(
+            try await signUp?.attemptVerification(
                 .emailCode(code: config.signUpEmailCode)
             )
             
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignUp)
+            clerkUIState.setAuthStepToCurrentSignUpStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signUpEmailCode = ""
@@ -77,7 +79,7 @@ struct SignUpEmailCodeView: View {
 }
 
 #Preview {
-    return SignUpEmailCodeView(signUp: .mock)
+    return SignUpEmailCodeView()
         .environmentObject(ClerkUIState())
 }
 

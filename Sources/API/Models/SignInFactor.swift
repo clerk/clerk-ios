@@ -32,9 +32,15 @@ extension SignInFactor {
     var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy? {
         switch strategyEnum {
         case .phoneCode:
-            return .phoneCode
+            return .phoneCode(phoneNumberId: phoneNumberId)
         case .emailCode:
-            return .emailCode
+            return .emailCode(emailAddressId: emailAddressId)
+        case .resetPasswordPhoneCode:
+            return .resetPasswordPhoneCode(phoneNumberId: phoneNumberId)
+        case .resetPasswordEmailCode:
+            return .resetPasswordEmailCode(emailAddressId: emailAddressId)
+        case .passkey:
+            return .passkey
         default:
             return nil
         }

@@ -24,6 +24,10 @@ struct SignInFormView: View {
         case emailOrUsername, phoneNumber
     }
     
+    var signIn: SignIn? {
+        clerk.client?.signIn
+    }
+    
     // returns true if email OR username is used for sign in AND phone number is used for sign in
     private var showPhoneNumberToggle: Bool {
         guard let environment = clerk.environment else { return false }
@@ -157,28 +161,22 @@ extension SignInFormView {
     private func signInAction(strategy: SignIn.CreateStrategy) async {
         do {
             KeyboardHelpers.dismissKeyboard()
-            var signIn = try await SignIn.create(strategy: strategy)
             
-            if let prepareStrategy = signIn.currentFirstFactor?.strategyEnum?.signInPrepareStrategy {
-                signIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
-                
-                // If the prepare function resulted in a verification with an external verification url,
-                // trigger the external auth flow
-                if signIn.firstFactorVerification?.status == .unverified, signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-                    let authResult = try await signIn.authenticateWithRedirect()
-                    
-                    if let signIn = authResult.signIn {
-                        clerkUIState.setAuthStepToCurrentStatus(for: signIn)
-                    } else if let signUp = authResult.signUp {
-                        clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+            try await SignIn.create(strategy: strategy)
+            
+            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true, signIn?.firstFactor(for: .passkey) != nil {
+                do {
+                    try await attemptSignInWithPasskey()
+                } catch {
+                    if let prepareStrategy = signIn?.currentFirstFactor?.prepareFirstFactorStrategy {
+                        try await signIn?.prepareFirstFactor(for: prepareStrategy)
                     }
-                    
-                    return
                 }
             }
             
-            clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
+            isLoading = false
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -187,7 +185,7 @@ extension SignInFormView {
     
     private func beginAutoFillAssistedPasskeySignIn() async {
         do {
-            let signIn = try await SignIn
+            var signIn = try await SignIn
                 .create(strategy: .passkey)
             
             let credential = try await signIn
@@ -195,17 +193,36 @@ extension SignInFormView {
             
             isLoading = true
             
-            let attemptedSignIn = try await signIn.attemptFirstFactor(
+            signIn = try await signIn.attemptFirstFactor(
                 for: .passkey(publicKeyCredential: credential)
             )
             
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
             
         } catch {
+            isLoading = false
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
+    }
+    
+    private func attemptSignInWithPasskey() async throws {
+        PasskeyManager.controller?.cancel()
+        
+        guard var signIn else { throw ClerkClientError(message: "Unable to find a current sign in.") }
+        
+        signIn = try await signIn
+            .prepareFirstFactor(for: .passkey)
+        
+        let credential = try await signIn
+            .getCredentialForPasskey()
+        
+        isLoading = true
+        
+        try await signIn.attemptFirstFactor(
+            for: .passkey(publicKeyCredential: credential)
+        )
     }
     
 }

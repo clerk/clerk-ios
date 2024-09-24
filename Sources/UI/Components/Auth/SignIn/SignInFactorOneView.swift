@@ -14,40 +14,37 @@ struct SignInFactorOneView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
-    let signIn: SignIn
-    let factor: SignInFactor?
+    let factor: SignInFactor
     
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
+        
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
     var body: some View {
         Group {
-            switch factor?.strategyEnum {
-            case .passkey:
-                SignInFactorOnePasskeyView(signIn: signIn)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.animation(nil)
-                    ))
+            switch factor.strategyEnum {
             case .password:
-                SignInFactorOnePasswordView(signIn: signIn)
+                SignInFactorOnePasswordView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .emailCode:
-                SignInFactorOneEmailCodeView(signIn: signIn)
+                SignInFactorOneEmailCodeView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .phoneCode:
-                SignInFactorOnePhoneCodeView(signIn: signIn)
+                SignInFactorOnePhoneCodeView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
-            case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-                SignInFactorOneResetView(signIn: signIn)
+            case .resetPasswordEmailCode:
+                SignInFactorOneResetView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -75,12 +72,12 @@ struct SignInFactorOneView: View {
                 ))
             }
         }
-        .animation(.snappy, value: factor?.strategyEnum)
+        .animation(.snappy, value: factor.strategyEnum)
     }
 }
 
 #Preview {
-    SignInFactorOneView(signIn: .mock, factor: .mock)
+    SignInFactorOneView(factor: .mock)
         .environmentObject(ClerkUIState())
 }
 

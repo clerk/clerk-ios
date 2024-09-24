@@ -9,14 +9,22 @@
 
 import SwiftUI
 import NukeUI
+import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
     @ObservedObject private var clerk = Clerk.shared
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
-    let currentFactor: SignInFactor?
+    // The alternative sign in methods on the shared signin can change when initiating an oauth sign in
+    // this is a reference to the original alternatives to the UI doesnt change unexpectedly
+    @State private var initialAlternatives: [SignInFactor] = []
+    
+    let currentFactor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     private var socialProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
@@ -35,10 +43,14 @@ struct SignInFactorOneAlternativeMethodsView: View {
             }
             
             // if the user didnt cancel
-            if let signIn = result?.signIn {
-                clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+            if result?.signIn != nil {
+                clerkUIState.setAuthStepToCurrentSignInStatus()
             }
         } catch {
+            if case ASWebAuthenticationSessionError.canceledLogin = error {
+                clerkUIState.presentedAuthStep = .signInStart
+            }
+
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -59,12 +71,11 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
         do {
-            var signIn = signIn
-            
             if let prepareStrategy = factor.prepareFirstFactorStrategy {
-                signIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
+                try await signIn?.prepareFirstFactor(for: prepareStrategy)
             }
-            clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: factor)
+            
+            clerkUIState.presentedAuthStep = .signInFactorOne(factor: factor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -89,7 +100,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 .buttonStyle(ClerkSecondaryButtonStyle())
             }
             
-            ForEach(signIn.alternativeFirstFactors(currentFactor: currentFactor) ?? [], id: \.self) { factor in
+            ForEach(initialAlternatives, id: \.self) { factor in
                 if let actionText = factor.actionText {
                     AsyncButton {
                         await startAlternateFirstFactor(factor)
@@ -110,11 +121,14 @@ struct SignInFactorOneAlternativeMethodsView: View {
             }
         }
         .clerkErrorPresenting($errorWrapper)
+        .task {
+            initialAlternatives = signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
+        }
     }
 }
 
 #Preview {
-    SignInFactorOneAlternativeMethodsView(signIn: .mock, currentFactor: nil)
+    SignInFactorOneAlternativeMethodsView(currentFactor: .mock)
         .padding()
 }
 

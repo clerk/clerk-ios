@@ -15,7 +15,11 @@ struct SignInFactorTwoPhoneCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -40,12 +44,11 @@ struct SignInFactorTwoPhoneCodeView: View {
                 }
                 .onUseAlernateMethod {
                     clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.secondFactor(for: .phoneCode)
+                        currentFactor: factor
                     )
                 }
                 .task {
-                    if !signIn.secondFactorHasBeenPrepared {
+                    if signIn?.secondFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
@@ -58,7 +61,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareSecondFactor(for: .phoneCode)
+            try await signIn?.prepareSecondFactor(for: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -67,10 +70,10 @@ struct SignInFactorTwoPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn.attemptSecondFactor(
+            try await signIn?.attemptSecondFactor(
                 for: .phoneCode(code: config.signInFactorTwoPhoneCode)
             )
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signInFactorTwoPhoneCode = ""
@@ -80,7 +83,7 @@ struct SignInFactorTwoPhoneCodeView: View {
 }
 
 #Preview {
-    SignInFactorTwoPhoneCodeView(signIn: .mock)
+    SignInFactorTwoPhoneCodeView(factor: .mock)
 }
 
 #endif

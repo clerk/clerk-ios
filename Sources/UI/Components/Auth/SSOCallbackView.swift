@@ -16,7 +16,9 @@ struct SSOCallbackView: View {
     @State private var showCaptcha = false
     @State private var captchaToken: String?
     
-    let signIn: SignIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ZStack {
@@ -48,19 +50,19 @@ struct SSOCallbackView: View {
     }
     
     private func handleTransferFlow(token: String) async throws {
-        guard signIn.needsTransferToSignUp == true else {
+        guard signIn?.needsTransferToSignUp == true else {
             clerkUIState.presentedAuthStep = .signInStart
             return
         }
         
-        let signUp = try await SignUp.create(strategy: .transfer, captchaToken: token)
-        clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+        try await SignUp.create(strategy: .transfer, captchaToken: token)
+        clerkUIState.setAuthStepToCurrentSignUpStatus()
     }
     
 }
 
 #Preview {
-    SSOCallbackView(signIn: .mock)
+    SSOCallbackView()
 }
 
 #endif

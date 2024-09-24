@@ -25,7 +25,7 @@ struct UserButton: View {
         )
     }
     
-    public var body: some View {
+    var body: some View {
         Button(action: {
             userButtonAction()
         }, label: {

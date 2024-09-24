@@ -233,17 +233,17 @@ struct SignUpFormView: View {
             switch signUp.nextStrategyToVerify {
             case .oauth, .saml:
                 let externalAuthResult = try await signUp.authenticateWithRedirect()
-                if let signUp = externalAuthResult.signUp {
-                    clerkUIState.setAuthStepToCurrentStatus(for: signUp)
-                } else if let signIn = externalAuthResult.signIn {
-                    clerkUIState.setAuthStepToCurrentStatus(for: signIn)
+                if externalAuthResult.signUp != nil {
+                    clerkUIState.setAuthStepToCurrentSignUpStatus()
+                } else if externalAuthResult.signIn != nil {
+                    clerkUIState.setAuthStepToCurrentSignInStatus()
                 }
                 return
             default:
                 break
             }
             
-            clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+            clerkUIState.setAuthStepToCurrentSignUpStatus()
         } catch {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)

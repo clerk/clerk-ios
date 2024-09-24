@@ -14,28 +14,31 @@ struct SignInFactorTwoView: View {
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @Environment(\.openURL) private var openURL
         
-    let signIn: SignIn
-    let factor: SignInFactor?
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
     
     var body: some View {
         Group {
-            switch factor?.strategyEnum {
+            switch factor.strategyEnum {
             case .phoneCode:
-                SignInFactorTwoPhoneCodeView(signIn: signIn)
+                SignInFactorTwoPhoneCodeView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .totp:
-                SignInFactorTwoTotpCodeView(signIn: signIn)
+                SignInFactorTwoTotpCodeView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
             case .backupCode:
-                SignInFactorTwoBackupCodeView(signIn: signIn)
+                SignInFactorTwoBackupCodeView(factor: factor)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
@@ -62,12 +65,12 @@ struct SignInFactorTwoView: View {
                 ))
             }
         }
-        .animation(.snappy, value: factor?.strategyEnum)
+        .animation(.snappy, value: factor)
     }
 }
 
 #Preview {
-    SignInFactorTwoView(signIn: .mock, factor: .mock)
+    SignInFactorTwoView(factor: .mock)
 }
 
 #endif
