@@ -16,7 +16,11 @@ struct SignInFactorTwoBackupCodeView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -54,8 +58,7 @@ struct SignInFactorTwoBackupCodeView: View {
                 
                 AsyncButton {
                     clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.secondFactor(for: .backupCode)
+                        currentFactor: factor
                     )
                 } label: {
                     Text("Use another method")
@@ -72,11 +75,11 @@ struct SignInFactorTwoBackupCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn.attemptSecondFactor(
+            try await signIn?.attemptSecondFactor(
                 for: .backupCode(code: config.signInFactorTwoBackupCode)
             )
             
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -85,7 +88,7 @@ struct SignInFactorTwoBackupCodeView: View {
 }
 
 #Preview {
-    SignInFactorTwoBackupCodeView(signIn: .mock)
+    SignInFactorTwoBackupCodeView(factor: .mock)
 }
 
 #endif

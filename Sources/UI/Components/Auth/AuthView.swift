@@ -74,43 +74,43 @@ struct AuthView: View {
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInFactorOne(let signIn, let factor):
-            SignInFactorOneView(signIn: signIn, factor: factor)
+        case .signInFactorOne(let factor):
+            SignInFactorOneView(factor: factor)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInFactorOneUseAnotherMethod(let signIn, let currentFactor):
-            SignInFactorOneUseAnotherMethodView(signIn: signIn, currentFactor: currentFactor)
+        case .signInFactorOneUseAnotherMethod(let currentFactor):
+            SignInFactorOneUseAnotherMethodView(currentFactor: currentFactor)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInFactorTwo(let signIn, let factor):
-            SignInFactorTwoView(signIn: signIn, factor: factor)
+        case .signInFactorTwo(let factor):
+            SignInFactorTwoView(factor: factor)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInFactorTwoUseAnotherMethod(let signIn, let currentFactor):
-            SignInFactorTwoUseAnotherMethodView(signIn: signIn, currentFactor: currentFactor)
+        case .signInFactorTwoUseAnotherMethod(let currentFactor):
+            SignInFactorTwoUseAnotherMethodView(currentFactor: currentFactor)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInForgotPassword(let signIn):
-            SignInForgotPasswordView(signIn: signIn)
+        case .signInForgotPassword(let factor):
+            SignInForgotPasswordView(factor: factor)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signInResetPassword(let signIn):
-            SignInResetPasswordView(signIn: signIn)
+        case .signInResetPassword:
+            SignInResetPasswordView()
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
@@ -123,22 +123,22 @@ struct AuthView: View {
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signUpVerification(let signUp):
-            SignUpVerificationView(signUp: signUp)
+        case .signUpVerification:
+            SignUpVerificationView()
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .signUpCreatePasskey(let signUp, let user):
-            SignUpCreatePasskeyView(signUp: signUp, user: user)
+        case .signUpCreatePasskey:
+            SignUpCreatePasskeyView()
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .ssoCallback(let signIn):
-            SSOCallbackView(signIn: signIn)
+        case .ssoCallback:
+            SSOCallbackView()
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .opacity.animation(nil)

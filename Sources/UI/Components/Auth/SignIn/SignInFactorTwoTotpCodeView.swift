@@ -15,7 +15,11 @@ struct SignInFactorTwoTotpCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -37,8 +41,7 @@ struct SignInFactorTwoTotpCodeView: View {
                 }
                 .onUseAlernateMethod {
                     clerkUIState.presentedAuthStep = .signInFactorTwoUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.secondFactor(for: .totp)
+                        currentFactor: factor
                     )
                 }
             }
@@ -50,10 +53,10 @@ struct SignInFactorTwoTotpCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn.attemptSecondFactor(
+            try await signIn?.attemptSecondFactor(
                 for: .totp(code: config.signInFactorTwoTOTPCode)
             )
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signInFactorTwoTOTPCode = ""
@@ -63,7 +66,7 @@ struct SignInFactorTwoTotpCodeView: View {
 }
 
 #Preview {
-    SignInFactorTwoTotpCodeView(signIn: .mock)
+    SignInFactorTwoTotpCodeView(factor: .mock)
 }
 
 #endif

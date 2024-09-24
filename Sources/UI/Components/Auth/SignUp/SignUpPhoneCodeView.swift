@@ -15,7 +15,9 @@ struct SignUpPhoneCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signUp: SignUp
+    private var signUp: SignUp? {
+        clerk.client?.signUp
+    }
     
     var body: some View {
         ScrollView {
@@ -28,7 +30,7 @@ struct SignUpPhoneCodeView: View {
                     code: $config.signUpPhoneCode,
                     title: "Verify your phone number",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signUp.phoneNumber
+                    safeIdentifier: signUp?.phoneNumber
                 )
                 .onContinueAction {
                     //
@@ -54,7 +56,7 @@ struct SignUpPhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signUp.prepareVerification(strategy: .phoneCode)
+            try await signUp?.prepareVerification(strategy: .phoneCode)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -63,11 +65,11 @@ struct SignUpPhoneCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignUp = try await signUp.attemptVerification(
+            try await signUp?.attemptVerification(
                 .phoneCode(code: config.signUpPhoneCode)
             )
             
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignUp)
+            clerkUIState.setAuthStepToCurrentSignUpStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signUpPhoneCode = ""
@@ -77,7 +79,7 @@ struct SignUpPhoneCodeView: View {
 }
 
 #Preview {
-    SignUpPhoneCodeView(signUp: .mock)
+    SignUpPhoneCodeView()
         .environmentObject(ClerkUIState())
 }
 

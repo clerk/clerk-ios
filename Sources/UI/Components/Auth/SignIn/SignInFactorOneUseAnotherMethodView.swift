@@ -15,8 +15,11 @@ struct SignInFactorOneUseAnotherMethodView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
-    let signIn: SignIn
-    let currentFactor: SignInFactor?
+    let currentFactor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -33,13 +36,12 @@ struct SignInFactorOneUseAnotherMethodView: View {
                 .padding(.bottom, 32)
                 
                 SignInFactorOneAlternativeMethodsView(
-                    signIn: signIn,
                     currentFactor: currentFactor
                 )
                 .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: currentFactor)
+                    clerkUIState.presentedAuthStep = .signInFactorOne(factor: currentFactor)
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
@@ -55,7 +57,7 @@ struct SignInFactorOneUseAnotherMethodView: View {
 }
 
 #Preview {
-    SignInFactorOneUseAnotherMethodView(signIn: .mock, currentFactor: .mock)
+    SignInFactorOneUseAnotherMethodView(currentFactor: .mock)
         .environmentObject(ClerkUIState())
 }
 

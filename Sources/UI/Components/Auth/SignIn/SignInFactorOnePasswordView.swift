@@ -17,8 +17,12 @@ struct SignInFactorOnePasswordView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     @FocusState private var isFocused: Bool
+        
+    let factor: SignInFactor
     
-    let signIn: SignIn
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -34,7 +38,7 @@ struct SignInFactorOnePasswordView: View {
                 .padding(.bottom, 4)
                 
                 IdentityPreviewView(
-                    label: signIn.identifier,
+                    label: signIn?.identifier,
                     action: {
                         clerkUIState.presentedAuthStep = .signInStart
                     }
@@ -48,7 +52,11 @@ struct SignInFactorOnePasswordView: View {
                                 .foregroundStyle(clerkTheme.colors.textPrimary)
                             Spacer()
                             Button(action: {
-                                clerkUIState.presentedAuthStep = .signInForgotPassword(signIn: signIn)
+                                if let resetFactor = signIn?.resetFactor {
+                                    clerkUIState.presentedAuthStep = .signInForgotPassword(factor: resetFactor)
+                                } else {
+                                    errorWrapper = ErrorWrapper(error: ClerkClientError(message: "Unable to determine the reset factor."))
+                                }
                             }, label: {
                                 Text("Forgot password?")
                             })
@@ -73,8 +81,7 @@ struct SignInFactorOnePasswordView: View {
                 
                 AsyncButton {
                     clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.firstFactor(for: .password)
+                        currentFactor: factor
                     )
                 } label: {
                     Text("Use another method")
@@ -92,13 +99,11 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
-            let signInIdentifier = signIn.identifier
-            
-            let attemptedSignIn = try await signIn.attemptFirstFactor(
+            let attemptedSignIn = try await signIn?.attemptFirstFactor(
                 for: .password(password: config.signInPassword)
             )
             
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -107,7 +112,7 @@ struct SignInFactorOnePasswordView: View {
 }
 
 #Preview {
-    SignInFactorOnePasswordView(signIn: .mock)
+    SignInFactorOnePasswordView(factor: .mock)
         .environmentObject(AuthView.Config())
         .environmentObject(ClerkUIState())
 }

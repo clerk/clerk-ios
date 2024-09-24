@@ -11,13 +11,19 @@ import SwiftUI
 import AuthenticationServices
 
 struct SignUpCreatePasskeyView: View {
+    @ObservedObject private var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @EnvironmentObject private var clerkUIState: ClerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let signUp: SignUp
-    let user: User
+    private var signUp: SignUp? {
+        clerk.client?.signUp
+    }
     
+    private var user: User? {
+        clerk.user
+    }
+        
     var body: some View {
         VStack(spacing: .zero) {
             OrgLogoView()
@@ -67,9 +73,9 @@ extension SignUpCreatePasskeyView {
     
     private func createPasskey() async {
         do {
-            try await user.createPasskey()
+            try await user?.createPasskey()
             // we've added a passkey to the users account, so pass the signup back through the UI flow
-            clerkUIState.setAuthStepToCurrentStatus(for: signUp)
+            clerkUIState.setAuthStepToCurrentSignUpStatus()
         } catch {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
@@ -80,7 +86,7 @@ extension SignUpCreatePasskeyView {
 }
 
 #Preview {
-    SignUpCreatePasskeyView(signUp: .mock, user: .mock)
+    SignUpCreatePasskeyView()
         .environmentObject(ClerkUIState())
 }
 

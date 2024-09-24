@@ -15,7 +15,11 @@ struct SignInFactorOneEmailCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -28,8 +32,8 @@ struct SignInFactorOneEmailCodeView: View {
                     code: $config.signInFactorOnePhoneCode,
                     title: "Check your email",
                     subtitle: "Enter the verification code sent to your email address",
-                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
-                    profileImageUrl: signIn.userData?.imageUrl
+                    safeIdentifier: factor.safeIdentifier,
+                    profileImageUrl: signIn?.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signInStart
@@ -43,15 +47,14 @@ struct SignInFactorOneEmailCodeView: View {
                 .onContinueAction {
                     //
                 }
-                .onUseAlernateMethod {
+                .onUseAlernateMethod {                    
                     clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.firstFactor(for: .emailCode)
+                        currentFactor: factor
                     )
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
-                    if !signIn.firstFactorHasBeenPrepared {
+                    if signIn?.firstFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
@@ -63,7 +66,7 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareFirstFactor(for: .emailCode)
+            try await signIn?.prepareFirstFactor(for: .emailCode(emailAddressId: factor.emailAddressId))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,10 +75,10 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn.attemptFirstFactor(
+            try await signIn?.attemptFirstFactor(
                 for: .emailCode(code: config.signInFactorOnePhoneCode)
             )
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signInFactorOnePhoneCode = ""
@@ -85,7 +88,7 @@ struct SignInFactorOneEmailCodeView: View {
 }
 
 #Preview {
-    SignInFactorOneEmailCodeView(signIn: .mock)
+    SignInFactorOneEmailCodeView(factor: .mock)
 }
 
 #endif

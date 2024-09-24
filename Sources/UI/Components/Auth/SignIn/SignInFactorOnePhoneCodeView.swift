@@ -15,7 +15,11 @@ struct SignInFactorOnePhoneCodeView: View {
     @EnvironmentObject private var config: AuthView.Config
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     var body: some View {
         ScrollView {
@@ -28,8 +32,8 @@ struct SignInFactorOnePhoneCodeView: View {
                     code: $config.signInFactorOnePhoneCode,
                     title: "Check your phone",
                     subtitle: "Enter the verification code sent to your phone number",
-                    safeIdentifier: signIn.currentFirstFactor?.safeIdentifier ?? signIn.identifier,
-                    profileImageUrl: signIn.userData?.imageUrl
+                    safeIdentifier: factor.safeIdentifier,
+                    profileImageUrl: signIn?.userData?.imageUrl
                 )
                 .onIdentityPreviewTapped {
                     clerkUIState.presentedAuthStep = .signInStart
@@ -45,13 +49,12 @@ struct SignInFactorOnePhoneCodeView: View {
                 }
                 .onUseAlernateMethod {
                     clerkUIState.presentedAuthStep = .signInFactorOneUseAnotherMethod(
-                        signIn: signIn,
-                        currentFactor: signIn.firstFactor(for: .phoneCode)
+                        currentFactor: factor
                     )
                 }
                 .clerkErrorPresenting($errorWrapper)
                 .task {
-                    if !signIn.firstFactorHasBeenPrepared {
+                    if signIn?.firstFactorHasBeenPrepared == false {
                         await prepare()
                     }
                 }
@@ -63,7 +66,11 @@ struct SignInFactorOnePhoneCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn.prepareFirstFactor(for: .phoneCode)
+            guard let prepareFirstFactorStrategy = factor.prepareFirstFactorStrategy else {
+                throw ClerkClientError(message: "Unable to determine the first factor strategy to prepare.")
+            }
+            
+            try await signIn?.prepareFirstFactor(for: prepareFirstFactorStrategy)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
@@ -72,10 +79,10 @@ struct SignInFactorOnePhoneCodeView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn.attemptFirstFactor(
+            try await signIn?.attemptFirstFactor(
                 for: .phoneCode(code: config.signInFactorOnePhoneCode)
             )
-            clerkUIState.setAuthStepToCurrentStatus(for: attemptedSignIn)
+            clerkUIState.setAuthStepToCurrentSignInStatus()
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             config.signInFactorOnePhoneCode = ""
@@ -85,7 +92,7 @@ struct SignInFactorOnePhoneCodeView: View {
 }
 
 #Preview {
-    SignInFactorOnePhoneCodeView(signIn: .mock)
+    SignInFactorOnePhoneCodeView(factor: .mock)
 }
 
 #endif

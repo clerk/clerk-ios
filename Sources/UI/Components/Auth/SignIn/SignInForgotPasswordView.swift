@@ -16,15 +16,26 @@ struct SignInForgotPasswordView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    let signIn: SignIn
+    let factor: SignInFactor
+    
+    private var signIn: SignIn? {
+        clerk.client?.signIn
+    }
     
     private func resetPassword() async {
         do {
-            guard let resetPasswordStrategy = signIn.resetPasswordStrategy else {
+            guard let resetPasswordStrategy = signIn?.resetPasswordStrategy else {
                 throw ClerkClientError(message: "Unable to determine the reset password strategy for this account.")
             }
-            let resetSignIn = try await signIn.prepareFirstFactor(for: resetPasswordStrategy)
-            clerkUIState.presentedAuthStep = .signInFactorOne(signIn: resetSignIn, factor: resetSignIn.currentFirstFactor)
+            
+            try await signIn?.prepareFirstFactor(for: resetPasswordStrategy)
+            
+            guard let firstFactor = self.signIn?.currentFirstFactor else {
+                clerkUIState.setAuthStepToCurrentSignInStatus()
+                return
+            }
+            
+            clerkUIState.presentedAuthStep = .signInFactorOne(factor: firstFactor)
         } catch {
             errorWrapper = ErrorWrapper(error: error)
         }
@@ -54,11 +65,15 @@ struct SignInForgotPasswordView: View {
                 TextDivider(text: "Or, sign in with another method")
                     .padding(.vertical, 24)
                 
-                SignInFactorOneAlternativeMethodsView(signIn: signIn, currentFactor: signIn.firstFactor(for: .password))
+                SignInFactorOneAlternativeMethodsView(currentFactor: factor)
                     .padding(.bottom, 18)
                 
                 Button {
-                    clerkUIState.presentedAuthStep = .signInFactorOne(signIn: signIn, factor: signIn.firstFactor(for: .password))
+                    if let passwordFactor = signIn?.firstFactor(for: .password) {
+                        clerkUIState.presentedAuthStep = .signInFactorOne(factor: passwordFactor)
+                    } else {
+                        clerkUIState.presentedAuthStep = .signInStart
+                    }
                 } label: {
                     Text("Back to previous method")
                         .font(.footnote.weight(.medium))
@@ -74,7 +89,7 @@ struct SignInForgotPasswordView: View {
 }
 
 #Preview {
-    SignInForgotPasswordView(signIn: .mock)
+    SignInForgotPasswordView(factor: .mock)
 }
 
 #endif
