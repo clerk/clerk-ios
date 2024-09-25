@@ -57,6 +57,14 @@ struct SignInFormView: View {
         let string = stringComponents.joined(separator: " or ")
         return string
     }
+    
+    private var passkeysAreEnabled: Bool {
+        clerk.environment?.userSettings.config(for: "passkey")?.enabled == true
+    }
+    
+    private var passkeyAutoFillIsEnabled: Bool {
+        clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
+    }
         
     var body: some View {
         VStack(spacing: 24) {
@@ -144,11 +152,8 @@ struct SignInFormView: View {
         .clerkErrorPresenting($errorWrapper)
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
-        }
-        .task {
-            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true,
-               clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
-            {
+            
+            if passkeysAreEnabled && passkeyAutoFillIsEnabled {
                 await beginAutoFillAssistedPasskeySignIn()
             }
         }
@@ -166,7 +171,7 @@ extension SignInFormView {
             
             try await SignIn.create(strategy: strategy)
             
-            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true, signIn?.firstFactor(for: .passkey) != nil {
+            if passkeysAreEnabled, signIn?.firstFactor(for: .passkey) != nil {
                 do {
                     try await attemptSignInWithPasskey()
                 } catch {
