@@ -203,8 +203,6 @@ extension SignInFormView {
             
         } catch {
             isLoading = false
-            if error.isCancelledError { return }
-            errorWrapper = ErrorWrapper(error: error)
             dump(error)
         }
     }
