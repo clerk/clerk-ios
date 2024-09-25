@@ -146,7 +146,9 @@ struct SignInFormView: View {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
         }
         .task {
-            if clerk.environment?.userSettings.passkeySettings?.allowAutofill == true {
+            if clerk.environment?.userSettings.config(for: "passkeys")?.enabled == true,
+               clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
+            {
                 await beginAutoFillAssistedPasskeySignIn()
             }
         }
