@@ -13,7 +13,8 @@ final class WebAuthentication: NSObject {
     let url: URL
     let prefersEphemeralWebBrowserSession: Bool
     
-    static var currentSession: ASWebAuthenticationSession?
+    private static var currentSession: ASWebAuthenticationSession?
+    private static var continuation: CheckedContinuation<URL, any Error>?
     
     init(
         url: URL,
@@ -29,23 +30,26 @@ final class WebAuthentication: NSObject {
         return components
     }
     
+    private static func completionHandler(_ url: URL?, error: Error?) -> Void {
+        Self.currentSession = nil
+        
+        if let url {
+            Self.continuation?.resume(returning: url)
+        } else if let error {
+            Self.continuation?.resume(throwing: error)
+        } else {
+            Self.continuation?.resume(throwing: ClerkClientError(message: "Missing callback URL"))
+        }
+    }
+    
     func start() async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
+            Self.continuation = continuation
                 
             Self.currentSession = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme,
-                completionHandler: { url, error in
-                    Self.currentSession = nil
-                    
-                    if let url {
-                        continuation.resume(returning: url)
-                    } else if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume(throwing: ClerkClientError(message: "Missing callback URL"))
-                    }
-                }
+                completionHandler: Self.completionHandler
             )
 
             #if !os(watchOS) && !os(tvOS)
@@ -58,6 +62,10 @@ final class WebAuthentication: NSObject {
             
             Self.currentSession?.start()
         }
+    }
+    
+    static func finishWithDeeplinkUrl(url: URL) {
+        completionHandler(url, error: nil)
     }
 }
 

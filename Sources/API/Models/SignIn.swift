@@ -435,20 +435,24 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             
             let signIn = try await Client.get()?.signIn
             
-            guard signIn?.needsTransferToSignUp == true else {
-                return ExternalAuthResult(signIn: signIn)
-            }
-            
-            let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
-            
-            if botProtectionIsEnabled {
+            if signIn?.needsTransferToSignUp == true {
+                
+                let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.botProtectionIsEnabled == true
+                
+                if botProtectionIsEnabled {
 
-                return ExternalAuthResult(signIn: signIn)
+                    return ExternalAuthResult(signIn: signIn)
+                    
+                } else {
+                    
+                    let signUp = try await SignUp.create(strategy: .transfer)
+                    return ExternalAuthResult(signUp: signUp)
+                    
+                }
                 
             } else {
                 
-                let signUp = try await SignUp.create(strategy: .transfer)
-                return ExternalAuthResult(signUp: signUp)
+                return ExternalAuthResult(signIn: signIn)
                 
             }
         }

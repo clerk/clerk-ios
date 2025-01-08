@@ -393,12 +393,12 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             
             let signUp = try await Client.get()?.signUp
             
-            guard signUp?.needsTransferToSignIn == true else {
+            if signUp?.needsTransferToSignIn == true {
+                let signIn = try await SignIn.create(strategy: .transfer)
+                return ExternalAuthResult(signIn: signIn)
+            } else {
                 return ExternalAuthResult(signUp: signUp)
             }
-            
-            let signIn = try await SignIn.create(strategy: .transfer)
-            return ExternalAuthResult(signIn: signIn)
         }
     }
     
