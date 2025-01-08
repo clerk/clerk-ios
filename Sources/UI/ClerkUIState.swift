@@ -69,7 +69,7 @@ extension ClerkUIState {
         case .needsNewPassword:
             presentedAuthStep = .signInResetPassword
             
-        case .complete, .none:
+        case .complete:
             authIsPresented = false
             
         case .abandoned:
@@ -77,6 +77,9 @@ extension ClerkUIState {
             
         case .unknown:
             authIsPresented = false
+            
+        case .none:
+            return
         }
     }
     
@@ -97,7 +100,7 @@ extension ClerkUIState {
         case .abandoned:
             presentedAuthStep = .signUpStart
             
-        case .complete, .none:
+        case .complete:
             
             // if a user just signed up, passkeys are enabled and they dont have any passkeys on their account
             // then ask them if they would like to create one
@@ -113,6 +116,9 @@ extension ClerkUIState {
             
         case .unknown:
             authIsPresented = false
+            
+        case .none:
+            return
         }
     }
 }
