@@ -17,7 +17,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-algorithms", .upToNextMajor(from: "1.2.0")),
         .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.1.6")),
-//        .package(url: "https://github.com/hmlongco/Factory", branch: "swift6"),
         .package(url: "https://github.com/hmlongco/Factory", .upToNextMajor(from: "2.3.1")),
         .package(url: "https://github.com/kean/Nuke", .upToNextMajor(from: "12.1.6")),
         .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "3.7.4"))
@@ -32,6 +31,7 @@ let package = Package(
                 "SimpleKeychain",
                 "Get",
                 "Factory",
+                .product(name: "Nuke", package: "Nuke"),
                 .product(name: "NukeUI", package: "Nuke"),
                 "PhoneNumberKit"
             ],

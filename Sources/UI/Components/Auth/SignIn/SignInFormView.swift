@@ -28,6 +28,11 @@ struct SignInFormView: View {
         clerk.client?.signIn
     }
     
+    var hasAnInProgressPasskeyAuth: Bool {
+        signIn?.firstFactorVerification?.strategyEnum == .passkey &&
+        signIn?.firstFactorVerification?.expireAt ?? Date.now > Date.now
+    }
+    
     // returns true if email OR username is used for sign in AND phone number is used for sign in
     private var showPhoneNumberToggle: Bool {
         guard let environment = clerk.environment else { return false }
@@ -153,7 +158,7 @@ struct SignInFormView: View {
         .task(id: clerk.environment?.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
             
-            if passkeysAreEnabled && passkeyAutoFillIsEnabled {
+            if passkeysAreEnabled, passkeyAutoFillIsEnabled {
                 await beginAutoFillAssistedPasskeySignIn()
             }
         }
@@ -192,15 +197,19 @@ extension SignInFormView {
     
     private func beginAutoFillAssistedPasskeySignIn() async {
         do {
-            var signIn = try await SignIn
-                .create(strategy: .passkey)
+            if !hasAnInProgressPasskeyAuth {
+                try await SignIn
+                    .create(strategy: .passkey)
+            }
+            
+            guard let signIn else { return }
             
             let credential = try await signIn
                 .getCredentialForPasskey(autofill: true)
             
             isLoading = true
             
-            signIn = try await signIn.attemptFirstFactor(
+            try await signIn.attemptFirstFactor(
                 for: .passkey(publicKeyCredential: credential)
             )
             

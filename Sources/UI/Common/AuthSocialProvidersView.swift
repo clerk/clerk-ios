@@ -16,6 +16,11 @@ struct AuthSocialProvidersView: View {
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var stackWidth: CGFloat = .zero
     
+    enum UseCase {
+        case signIn, signUp
+    }
+
+    var useCase: UseCase = .signIn
     var onSuccess:((_ externalAuthResult: ExternalAuthResult) -> Void)?
     
     private var socialProviders: [OAuthProvider] {
@@ -61,11 +66,9 @@ struct AuthSocialProvidersView: View {
         
         do {
 			if provider == .apple {
-                externalAuthResult = try await signInWithApple()
+                externalAuthResult = try await authenticateWithApple()
             } else {
-                externalAuthResult = try await SignIn
-                    .create(strategy: .oauth(provider))
-                    .authenticateWithRedirect()
+                externalAuthResult = try await authenticateWithOAuth(provider: provider)
             }
             
             onSuccess?(externalAuthResult)
@@ -76,16 +79,56 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func signInWithApple() async throws -> ExternalAuthResult {
-        let appleIdCredential = try await ExternalAuthUtils.getAppleIdCredential()
+    private func authenticateWithOAuth(provider: OAuthProvider) async throws -> ExternalAuthResult {
+        var externalAuthResult: ExternalAuthResult
+        
+        switch useCase {
+        case .signIn:
+            externalAuthResult = try await SignIn
+                .create(strategy: .oauth(provider))
+                .authenticateWithRedirect()
+        case .signUp:
+            externalAuthResult = try await SignUp
+                .create(strategy: .oauth(provider))
+                .authenticateWithRedirect()
+        }
+        
+        if let signUp = externalAuthResult.signUp,
+           let externalAccountVerification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+           let error = externalAccountVerification.error {
+            throw error
+        }
+        
+        return externalAuthResult
+    }
+    
+    private func authenticateWithApple() async throws -> ExternalAuthResult {
+        let appleIdCredential = try await SignInWithAppleManager.getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
         
-        let externalAuthResult = try await SignIn
-            .create(strategy: .idToken(provider: .apple, idToken: idToken))
-            .authenticateWithIdToken()
+        var externalAuthResult: ExternalAuthResult
+        
+        switch useCase {
+        case .signIn:
+            externalAuthResult = try await SignIn
+                .create(strategy: .idToken(provider: .apple, idToken: idToken))
+                .authenticateWithIdToken()
+            
+        case .signUp:
+            externalAuthResult = try await SignUp
+                .create(
+                    strategy: .idToken(
+                        .apple,
+                        idToken: idToken,
+                        firstName: appleIdCredential.fullName?.givenName,
+                        lastName: appleIdCredential.fullName?.familyName
+                    )
+                )
+                .authenticateWithIdToken()
+        }
         
         return externalAuthResult
     }

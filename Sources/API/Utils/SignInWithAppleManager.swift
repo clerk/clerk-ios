@@ -11,7 +11,7 @@
 import Foundation
 import AuthenticationServices
 
-final class SignInWithAppleManager: NSObject {
+final public class SignInWithAppleManager: NSObject {
     
     private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
@@ -42,15 +42,29 @@ final class SignInWithAppleManager: NSObject {
             authorizationController.performRequests()
         }
     }
+    
+    /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
+    @MainActor
+    static public func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential {
+        let authManager = SignInWithAppleManager()
+        let authorization = try await authManager.start()
+        
+        guard let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            throw ClerkClientError(message: "Unable to get your Apple ID credential.")
+        }
+        
+        return appleIdCredential
+    }
+    
 }
 
 extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
     
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         continuation?.resume(returning: authorization)
     }
     
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
         continuation?.resume(throwing: error)
     }
     
@@ -59,7 +73,7 @@ extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
 extension SignInWithAppleManager: ASAuthorizationControllerPresentationContextProviding {
     
     @MainActor
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         ASPresentationAnchor()
     }
     

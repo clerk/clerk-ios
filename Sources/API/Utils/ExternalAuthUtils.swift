@@ -24,24 +24,4 @@ enum ExternalAuthUtils {
         return nonceQueryItem.value
     }
     
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
-    @MainActor
-    static func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential {
-        let authManager = SignInWithAppleManager()
-        let authorization = try await authManager.start()
-        
-        guard let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            throw ClerkClientError(message: "Unable to get your Apple ID credential.")
-        }
-        
-        return appleIdCredential
-    }
-    #endif
-    
-}
-
-public struct ExternalAuthResult {
-    public var signIn: SignIn?
-    public var signUp: SignUp?
 }

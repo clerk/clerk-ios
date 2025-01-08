@@ -32,21 +32,13 @@ extension Clerk {
         )?.value else {
             return
         }
-        
+                
         guard let url = URL(string: finalRedirectUrl) else {
             return
         }
         
         do {
-            if try await SignIn.handleOAuthCallbackUrl(url) != nil {
-                WebAuthentication.currentSession?.cancel()
-                return
-            }
-            
-            if try await SignUp.handleOAuthCallbackUrl(url) != nil {
-                WebAuthentication.currentSession?.cancel()
-                return
-            }
+            WebAuthentication.finishWithDeeplinkUrl(url: url)
         } catch {
             dump(error)
         }
