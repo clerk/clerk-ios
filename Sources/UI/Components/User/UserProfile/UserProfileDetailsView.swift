@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileDetailsView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     
     private var emailIsEnabled: Bool {
         clerk.environment?.userSettings.config(for: "email_address")?.enabled == true

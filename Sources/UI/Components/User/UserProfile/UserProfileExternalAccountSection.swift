@@ -12,7 +12,7 @@ import NukeUI
 import AuthenticationServices
 
 struct UserProfileExternalAccountSection: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var addExternalAccountIsPresented = false
     @Namespace private var namespace

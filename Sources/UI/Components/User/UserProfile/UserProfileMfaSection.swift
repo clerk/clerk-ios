@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileMfaSection: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var phoneNumberIsPresented: Bool = false
     @State private var authenticationAppIsPresented: Bool = false

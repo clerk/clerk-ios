@@ -10,28 +10,28 @@
 import SwiftUI
 
 extension AuthView {
-    @MainActor
-    final class Config: ObservableObject {
+    @Observable
+    final class Config {
         // Sign In State
-        @Published var signInEmailAddressOrUsername = ""
-        @Published var signInPhoneNumber = ""
-        @Published var signInPassword = ""
-        @Published var signInFactorOneEmailCode = ""
-        @Published var signInFactorOnePhoneCode = ""
-        @Published var signInFactorOneResetCode = ""
-        @Published var signInFactorTwoBackupCode = ""
-        @Published var signInFactorTwoPhoneCode = ""
-        @Published var signInFactorTwoTOTPCode = ""
+        var signInEmailAddressOrUsername = ""
+        var signInPhoneNumber = ""
+        var signInPassword = ""
+        var signInFactorOneEmailCode = ""
+        var signInFactorOnePhoneCode = ""
+        var signInFactorOneResetCode = ""
+        var signInFactorTwoBackupCode = ""
+        var signInFactorTwoPhoneCode = ""
+        var signInFactorTwoTOTPCode = ""
         
         // Sign Up State
-        @Published var signUpEmailAddress = ""
-        @Published var signUpPhoneNumber = ""
-        @Published var signUpUsername = ""
-        @Published var signUpFirstName = ""
-        @Published var signUpLastName = ""
-        @Published var signUpPassword = ""
-        @Published var signUpEmailCode = ""
-        @Published var signUpPhoneCode = ""
+        var signUpEmailAddress = ""
+        var signUpPhoneNumber = ""
+        var signUpUsername = ""
+        var signUpFirstName = ""
+        var signUpLastName = ""
+        var signUpPassword = ""
+        var signUpEmailCode = ""
+        var signUpPhoneCode = ""
         
         func resetState() {
             signInEmailAddressOrUsername = ""
@@ -57,11 +57,11 @@ extension AuthView {
 }
 
 struct AuthView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
-    @StateObject private var config = Config()
+    @State private var config = Config()
     
     func viewForAuthStep(_ authStep: ClerkUIState.AuthStep) -> AnyView {
         // Note: For some reason, attaching the transition modifier to every view individually works, but attached it once to the Group does not work consistently.
@@ -150,7 +150,7 @@ struct AuthView: View {
     var body: some View {
         viewForAuthStep(clerkUIState.presentedAuthStep)
             .id(clerkUIState.presentedAuthStep)
-            .environmentObject(config)
+            .environment(config)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
                 VStack(spacing: 0) {
@@ -223,7 +223,7 @@ struct AuthView: View {
 
 #Preview {
     AuthView()
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

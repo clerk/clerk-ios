@@ -11,8 +11,8 @@ import SwiftUI
 import Factory
 
 struct SignUpVerificationView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?
         
@@ -36,6 +36,9 @@ struct SignUpVerificationView: View {
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .opacity.animation(nil)
                     ))
+                
+            case .none:
+                ProgressView()
                 
             default:
                 GetHelpView(
@@ -69,7 +72,7 @@ struct SignUpVerificationView: View {
 
 #Preview {
     return SignUpVerificationView()
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

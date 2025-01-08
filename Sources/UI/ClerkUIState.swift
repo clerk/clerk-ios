@@ -9,10 +9,11 @@
 
 import Foundation
 
-final class ClerkUIState: ObservableObject {
+@Observable
+final class ClerkUIState {
         
     /// Is the auth view  being displayed.
-    @Published public var authIsPresented = false
+    public var authIsPresented = false
 
     enum AuthStep: Equatable, Hashable {
         case signInStart
@@ -29,14 +30,14 @@ final class ClerkUIState: ObservableObject {
         case signUpCreatePasskey
     }
     
-    @Published var presentedAuthStep: AuthStep = .signInStart {
+    var presentedAuthStep: AuthStep = .signInStart {
         willSet {
             authIsPresented = true
         }
     }
     
     /// Is the user profile view being displayed
-    @Published var userProfileIsPresented = false
+    var userProfileIsPresented = false
 }
 
 extension ClerkUIState {

@@ -19,8 +19,9 @@ import UIKit
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
+@Observable
 @MainActor
-final public class Clerk: ObservableObject {
+final public class Clerk {
     
     nonisolated init() {}
     
@@ -90,7 +91,7 @@ final public class Clerk: ObservableObject {
     }
     
     /// The loading state of the Clerk object.
-    @Published private(set) public var loadingState: LoadingState = .notLoaded
+    private(set) public var loadingState: LoadingState = .notLoaded
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     private(set) public var publishableKey: String = "" {
@@ -130,7 +131,7 @@ final public class Clerk: ObservableObject {
     }
     
     /// The Client object for the current device.
-    @Published internal(set) public var client: Client? {
+    internal(set) public var client: Client? {
         didSet {
             if let lastActiveSessionId = client?.lastActiveSessionId {
                 try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
@@ -141,12 +142,12 @@ final public class Clerk: ObservableObject {
     }
         
     /// The Environment for the clerk instance.
-    @Published internal(set) public var environment: Clerk.Environment?
+    internal(set) public var environment: Clerk.Environment?
     
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    @Published var sessionsByUserId: [String: [Session]] = .init()
+    var sessionsByUserId: [String: [Session]] = .init()
     
     /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
     public var redirectConfig = RedirectConfig()

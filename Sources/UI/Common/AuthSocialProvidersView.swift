@@ -11,7 +11,7 @@ import SwiftUI
 import Algorithms
 
 struct AuthSocialProvidersView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var stackWidth: CGFloat = .zero

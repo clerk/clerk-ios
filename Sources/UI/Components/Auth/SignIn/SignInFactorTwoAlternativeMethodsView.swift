@@ -11,8 +11,8 @@ import SwiftUI
 import NukeUI
 
 struct SignInFactorTwoAlternativeMethodsView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
     let currentFactor: SignInFactor

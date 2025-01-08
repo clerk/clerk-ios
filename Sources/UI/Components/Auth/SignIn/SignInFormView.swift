@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFormView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @EnvironmentObject private var config: AuthView.Config
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var displayingEmailOrUsernameEntry = true
     @State private var errorWrapper: ErrorWrapper?
@@ -72,6 +72,8 @@ struct SignInFormView: View {
     }
         
     var body: some View {
+        @Bindable var config = config
+        
         VStack(spacing: 24) {
             VStack {
                 HStack {
@@ -244,7 +246,7 @@ extension SignInFormView {
 #Preview {
     SignInFormView(isLoading: .constant(false))
         .padding()
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

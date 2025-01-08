@@ -11,9 +11,9 @@ import SwiftUI
 import AuthenticationServices
 
 struct SignUpFormView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @EnvironmentObject private var config: AuthView.Config
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
     @Environment(\.clerkTheme) private var clerkTheme
     @FocusState private var focusedField: Field?
     @State private var errorWrapper: ErrorWrapper?
@@ -47,6 +47,8 @@ struct SignUpFormView: View {
     }
     
     var body: some View {
+        @Bindable var config = config
+        
         VStack(spacing: 24) {
             if nameIsEnabled {
                 HStack(spacing: 16) {
