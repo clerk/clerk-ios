@@ -8,13 +8,13 @@
 import Foundation
 
 extension Clerk {
-    static let authEventEmitter = EventEmitter<AuthEvent>()
+    static public let authEventEmitter = EventEmitter<AuthEvent>()
 }
 
-final class EventEmitter<Event> {
+final public class EventEmitter<Event> {
     private var continuation: AsyncStream<Event>.Continuation?
     
-    var events: AsyncStream<Event> {
+    public var events: AsyncStream<Event> {
         AsyncStream { continuation in
             self.continuation = continuation
         }
@@ -25,7 +25,7 @@ final class EventEmitter<Event> {
     }
 }
 
-enum AuthEvent {
+public enum AuthEvent {
     case signInCompleted(signIn: SignIn)
     case signUpCompleted(signUp: SignUp)
 }
