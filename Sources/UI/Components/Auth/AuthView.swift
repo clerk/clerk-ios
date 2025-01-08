@@ -179,6 +179,14 @@ struct AuthView: View {
                 FeedbackGenerator.success()
             }
             .task {
+                for await event in Clerk.authEventEmitter.events {
+                    switch event {
+                    case .signInCompleted, .signUpCompleted:
+                        clerkUIState.authIsPresented = false
+                    }
+                }
+            }
+            .task {
                 _ = try? await Clerk.Environment.get()
             }
     }
