@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
 
 struct UserProfileSection: View {
     var clerk = Clerk.shared

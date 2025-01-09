@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
 import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {

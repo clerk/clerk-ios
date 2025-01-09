@@ -8,8 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
-import Nuke
+import Kingfisher
 
 struct UserPreviewView: View {
     @Environment(\.clerkTheme) private var clerkTheme
@@ -21,18 +20,12 @@ struct UserPreviewView: View {
     var body: some View {
         HStack(spacing: 16) {
             if let imageUrl {
-                LazyImage(
-                    request: .init(url: URL(string: imageUrl), processors: [ImageProcessors.Circle()]),
-                    transaction: .init(animation: .default)
-                ) { imageState in
-                    if let image = imageState.image {
-                        image.resizable().scaledToFill()
-                    } else {
-                        Color(.secondarySystemBackground)
-                    }
-                }
-                .frame(width: 50, height: 50)
-                .clipShape(.circle)
+                KFImage(URL(string: imageUrl))
+                    .resizable()
+                    .placeholder { Color(.secondarySystemBackground) }
+                    .scaledToFill()
+                    .frame(width: 50, height: 50)
+                    .clipShape(.circle)
             }
             
             VStack(alignment: .leading) {

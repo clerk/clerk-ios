@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
 
 struct AuthProviderButton: View {
     @Environment(\.colorScheme) private var colorScheme
