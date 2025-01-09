@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [macOS, iOS, tvOS, watchOS, visionOS]
+        swift: [5.10, 6.0] # Only run both versions on macOS
+        exclude:
+          - platform: iOS
+            swift: 6.0
+          - platform: tvOS
+            swift: 6.0
+          - platform: watchOS
+            swift: 6.0
+          - platform: visionOS
+            swift: 6.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Xcode
+        uses: actions/setup-xcode@v3
+        with:
+          xcode-version: 16
+
+      - name: Set Swift version
+        if: ${{ matrix.platform == 'macOS' }}
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          swiftenv install ${{ matrix.swift }} || true
+          swiftenv global ${{ matrix.swift }}
+          swift --version
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.swiftpm
+            .build
+          key: ${{ runner.os }}-spm-${{ matrix.platform }}-${{ matrix.swift }}-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ matrix.platform }}-${{ matrix.swift }}-
+
+      - name: Build and test for ${{ matrix.platform }} on Swift ${{ matrix.swift }}
+        run: |
+          set -o pipefail
+          case "${{ matrix.platform }}" in
+            macOS)
+              destination='platform=macOS'
+              ;;
+            iOS)
+              destination='platform=iOS Simulator,name=iPhone 14'
+              ;;
+            tvOS)
+              destination='platform=tvOS Simulator,name=Apple TV'
+              ;;
+            watchOS)
+              destination='platform=watchOS Simulator,name=Apple Watch Series 8 (45mm)'
+              ;;
+            visionOS)
+              destination='platform=visionOS Simulator,name=Vision Pro'
+              ;;
+          esac
+          xcodebuild -scheme YourSchemeName \
+            -destination "$destination" \
+            clean build test | xcpretty
