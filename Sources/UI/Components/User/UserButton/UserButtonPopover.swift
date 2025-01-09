@@ -174,7 +174,7 @@ struct UserButtonPopover: View {
             }
             .animation(.snappy, value: clerk.session)
             .frame(minWidth: 376, maxWidth: .infinity, alignment: .leading)
-            .onChange(of: clerk.session) { session in
+            .onChange(of: clerk.session) { _, session in
                 FeedbackGenerator.success()
                 if session == nil { dismiss() }
             }

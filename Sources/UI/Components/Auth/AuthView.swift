@@ -173,7 +173,7 @@ struct AuthView: View {
             }
             .interactiveDismissDisabled()
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: clerkUIState.presentedAuthStep) { _ in
+            .onChange(of: clerkUIState.presentedAuthStep) {
                 KeyboardHelpers.dismissKeyboard()
                 FeedbackGenerator.success()
             }

@@ -75,7 +75,7 @@ struct UserProfileUpdateProfileView: View {
                             )
                             .font(.footnote)
                             .tint(clerkTheme.colors.textPrimary)
-                            .onChange(of: photosPickerItem) { photosPickerItem in
+                            .onChange(of: photosPickerItem) { _, photosPickerItem in
                                 guard let photosPickerItem else { return }
                                 Task {
                                     do {

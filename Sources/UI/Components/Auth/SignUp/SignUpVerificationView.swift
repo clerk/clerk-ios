@@ -63,7 +63,7 @@ struct SignUpVerificationView: View {
             }
         }
         .animation(.snappy, value: signUp?.nextStrategyToVerify)
-        .onChange(of: signUp?.nextStrategyToVerify) { _ in
+        .onChange(of: signUp?.nextStrategyToVerify) {
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
         }

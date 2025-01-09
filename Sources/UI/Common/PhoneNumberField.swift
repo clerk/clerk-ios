@@ -137,7 +137,7 @@ struct PhoneNumberField: View {
                 .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
                 .padding(.horizontal)
                 .tint(clerkTheme.colors.textPrimary)
-                .onChange(of: displayNumber) { newValue in
+                .onChange(of: displayNumber) { _, newValue in
                     textDidUpdate(text: newValue)
                 }
 

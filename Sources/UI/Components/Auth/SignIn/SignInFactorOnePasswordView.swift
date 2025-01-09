@@ -101,7 +101,7 @@ struct SignInFactorOnePasswordView: View {
     
     private func attempt() async {
         do {
-            let attemptedSignIn = try await signIn?.attemptFirstFactor(
+            try await signIn?.attemptFirstFactor(
                 for: .password(password: config.signInPassword)
             )
             

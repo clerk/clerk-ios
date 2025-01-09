@@ -111,7 +111,7 @@ struct SignInFormView: View {
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
-                .onChange(of: displayingEmailOrUsernameEntry) { showingEmail in
+                .onChange(of: displayingEmailOrUsernameEntry) { _, showingEmail in
                     if focusedField != nil {
                         focusedField = showingEmail ? .emailOrUsername : .phoneNumber
                     }

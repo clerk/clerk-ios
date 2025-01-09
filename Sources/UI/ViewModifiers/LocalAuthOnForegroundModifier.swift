@@ -43,7 +43,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
             .task {
                 isPresented = true
             }
-            .onChange(of: isPresented) { newValue in
+            .onChange(of: isPresented) { _, newValue in
                 if newValue && hasSession {
                     showLocalAuthView(withAnimation: shouldAnimate) {
                         shouldAnimate = true
@@ -52,7 +52,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
                     dismissView(withAnimation: shouldAnimate)
                 }
             }
-            .onChange(of: scenePhase) { newValue in
+            .onChange(of: scenePhase) { _, newValue in
                 guard hasSession else { return }
                 switch newValue {
                 case .active:

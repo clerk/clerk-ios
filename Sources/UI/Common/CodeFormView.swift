@@ -24,7 +24,7 @@ struct CodeFormView: View {
             OTPFieldView(code: $code)
                 .frame(maxWidth: 250)
                 .padding(.vertical)
-                .onChange(of: code) { newValue in
+                .onChange(of: code) { _, newValue in
                     if newValue.count == requiredOtpCodeLength {
                         Task {
                             isSubmittingCode = true

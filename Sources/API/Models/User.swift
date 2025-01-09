@@ -277,6 +277,7 @@ extension User {
     
     #if canImport(AuthenticationServices) && !os(watchOS)
     @MainActor
+    @discardableResult
     public func createPasskey() async throws -> Passkey {
         let passkey = try await Passkey.create()
         
