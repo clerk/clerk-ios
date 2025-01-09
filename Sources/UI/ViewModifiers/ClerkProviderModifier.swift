@@ -16,14 +16,14 @@ import SwiftUI
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
-    @StateObject private var clerkUIState = ClerkUIState()
+    @State private var clerkUIState = ClerkUIState()
         
     func body(content: Content) -> some View {
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
-            // this must be the last modifier
-            .environmentObject(clerkUIState)
+            .environment(clerkUIState)
+            .environment(Clerk.shared)
     }
 }
 

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileSecurityView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     
     private var user: User? {
         clerk.session?.user

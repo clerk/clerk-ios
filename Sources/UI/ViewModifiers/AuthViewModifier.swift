@@ -12,7 +12,7 @@ import SwiftUI
 
 struct AuthViewModifier: ViewModifier {
     @Environment(\.clerkTheme) private var clerkTheme
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    @Environment(ClerkUIState.self) private var clerkUIState
     
     @Binding var isPresented: Bool
 
@@ -20,7 +20,7 @@ struct AuthViewModifier: ViewModifier {
         content
             .sheet(isPresented: $isPresented, content: {
                 AuthView()
-                    .environmentObject(clerkUIState)
+                    .environment(clerkUIState)
             })
     }
 }
@@ -34,7 +34,7 @@ extension View {
 #Preview {
     Text("SignIn")
         .authView(isPresented: .constant(true))
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignUpPhoneCodeView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @EnvironmentObject private var config: AuthView.Config
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
     @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp? {
@@ -20,6 +20,8 @@ struct SignUpPhoneCodeView: View {
     }
     
     var body: some View {
+        @Bindable var config = config
+        
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
@@ -80,7 +82,7 @@ struct SignUpPhoneCodeView: View {
 
 #Preview {
     SignUpPhoneCodeView()
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

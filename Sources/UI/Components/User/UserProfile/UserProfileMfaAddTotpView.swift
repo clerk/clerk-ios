@@ -19,7 +19,7 @@ extension UserProfileMfaAddTotpView {
 }
 
 struct UserProfileMfaAddTotpView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.dismiss) private var dismiss
     @State private var step: Step = .loading
     @State private var errorWrapper: ErrorWrapper?
@@ -163,7 +163,7 @@ private struct AddTOTPView: View {
 }
 
 private struct VerifyTOTPView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @State private var code = ""
     @State private var errorWrapper: ErrorWrapper?
     @Binding var step: UserProfileMfaAddTotpView.Step

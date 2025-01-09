@@ -11,8 +11,8 @@ import SwiftUI
 import NukeUI
 
 struct SignInForgotPasswordView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     

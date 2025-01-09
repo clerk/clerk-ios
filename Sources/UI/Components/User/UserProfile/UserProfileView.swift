@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.dismiss) private var dismiss
             

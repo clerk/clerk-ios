@@ -11,9 +11,9 @@ import SwiftUI
 import AuthenticationServices
 
 struct SignUpCreatePasskeyView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
     private var signUp: SignUp? {
@@ -87,7 +87,7 @@ extension SignUpCreatePasskeyView {
 
 #Preview {
     SignUpCreatePasskeyView()
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

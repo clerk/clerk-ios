@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfilePhoneNumberSection: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     
     @State private var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?

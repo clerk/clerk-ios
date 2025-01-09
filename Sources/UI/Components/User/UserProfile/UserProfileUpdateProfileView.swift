@@ -13,7 +13,7 @@ import Nuke
 import PhotosUI
 
 struct UserProfileUpdateProfileView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var firstName: String = ""

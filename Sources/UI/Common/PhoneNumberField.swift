@@ -12,8 +12,9 @@ import Factory
 import PhoneNumberKit
 
 extension PhoneNumberField {
+    @Observable
     @MainActor
-    final class Model: ObservableObject {
+    final class Model {
         private let phoneNumberKit = Container.shared.phoneNumberKit()
         let textField: PhoneNumberTextField
         
@@ -21,10 +22,12 @@ extension PhoneNumberField {
             self.textField = .init(withPhoneNumberKit: phoneNumberKit)
         }
         
-        lazy var allCountries: [CountryCodePickerViewController.Country] = phoneNumberKit
-            .allCountries()
-            .compactMap({ CountryCodePickerViewController.Country(for: $0, with: self.phoneNumberKit) })
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+        var allCountries: [CountryCodePickerViewController.Country] {
+            phoneNumberKit
+                .allCountries()
+                .compactMap({ CountryCodePickerViewController.Country(for: $0, with: self.phoneNumberKit) })
+                .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+        }
         
         var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
             allCountries.filter({ $0.code != defaultCountry?.code })
@@ -76,7 +79,7 @@ struct PhoneNumberField: View {
     @Binding var text: String
     @State private var displayNumber = ""
     
-    @StateObject var model = Model()
+    @State var model = Model()
     @FocusState private var isFocused: Bool
     @Environment(\.clerkTheme) private var clerkTheme
     
@@ -155,7 +158,6 @@ struct PhoneNumberField: View {
         model.textField.text = text
         self.displayNumber = model.phoneNumberFormattedForDisplay()
         self.text = model.phoneNumberFormattedForData()
-        model.objectWillChange.send()
     }
 }
 

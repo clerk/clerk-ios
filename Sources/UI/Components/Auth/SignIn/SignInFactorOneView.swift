@@ -10,8 +10,8 @@
 import SwiftUI
 
 struct SignInFactorOneView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.openURL) private var openURL
         
     let factor: SignInFactor
@@ -78,7 +78,7 @@ struct SignInFactorOneView: View {
 
 #Preview {
     SignInFactorOneView(factor: .mock)
-        .environmentObject(ClerkUIState())
+        .environment(ClerkUIState())
 }
 
 #endif

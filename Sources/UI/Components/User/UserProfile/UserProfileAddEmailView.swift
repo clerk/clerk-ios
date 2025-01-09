@@ -19,7 +19,7 @@ extension UserProfileAddEmailView {
 }
 
 struct UserProfileAddEmailView: View {
-    @ObservedObject private var clerk = Clerk.shared
+    var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     

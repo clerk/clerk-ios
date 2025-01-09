@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFactorTwoBackupCodeView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @EnvironmentObject private var config: AuthView.Config
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
@@ -23,6 +23,8 @@ struct SignInFactorTwoBackupCodeView: View {
     }
     
     var body: some View {
+        @Bindable var config = config
+        
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()

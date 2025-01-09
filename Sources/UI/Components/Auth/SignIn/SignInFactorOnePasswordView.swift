@@ -11,9 +11,9 @@ import SwiftUI
 import SimpleKeychain
 
 struct SignInFactorOnePasswordView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
-    @EnvironmentObject private var config: AuthView.Config
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     @FocusState private var isFocused: Bool
@@ -25,6 +25,8 @@ struct SignInFactorOnePasswordView: View {
     }
     
     var body: some View {
+        @Bindable var config = config
+        
         ScrollView {
             VStack(spacing: .zero) {
                 OrgLogoView()
@@ -113,8 +115,8 @@ struct SignInFactorOnePasswordView: View {
 
 #Preview {
     SignInFactorOnePasswordView(factor: .mock)
-        .environmentObject(AuthView.Config())
-        .environmentObject(ClerkUIState())
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
 }
 
 #endif

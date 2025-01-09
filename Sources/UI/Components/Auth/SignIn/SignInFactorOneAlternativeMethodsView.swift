@@ -12,8 +12,8 @@ import NukeUI
 import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
-    @ObservedObject private var clerk = Clerk.shared
-    @EnvironmentObject private var clerkUIState: ClerkUIState
+    private let clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
     // The alternative sign in methods on the shared signin can change when initiating an oauth sign in
