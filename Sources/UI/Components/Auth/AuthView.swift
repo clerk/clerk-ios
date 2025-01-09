@@ -59,7 +59,6 @@ extension AuthView {
 struct AuthView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var clerkTheme
     @State private var config = Config()
     
