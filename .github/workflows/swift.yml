@@ -9,69 +9,41 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  build:
     runs-on: macos-latest
     strategy:
-      fail-fast: true
+      fail-fast: true  # Fail fast on the first failure in the matrix
       matrix:
-        platform: [macOS, iOS, tvOS, watchOS, visionOS]
-        swift: [5.10, 6.0] # Only run both versions on macOS
-        exclude:
-          - platform: iOS
-            swift: 6.0
-          - platform: tvOS
-            swift: 6.0
-          - platform: watchOS
-            swift: 6.0
-          - platform: visionOS
-            swift: 6.0
+        swift-version: [5.10, 6.0]  # Adjusted to Swift versions 5.10 and 6.0
+        platform: [iOS, macCatalyst, macOS, tvOS, visionOS, watchOS]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up Xcode
-        uses: actions/setup-xcode@v3
-        with:
-          xcode-version: 16
+    - name: Set up Swift
+      uses: actions/setup-swift@v2
+      with:
+        swift-version: ${{ matrix.swift-version }}
 
-      - name: Set Swift version
-        if: ${{ matrix.platform == 'macOS' }}
-        run: |
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-          swiftenv install ${{ matrix.swift }} || true
-          swiftenv global ${{ matrix.swift }}
-          swift --version
+    - name: Install dependencies
+      run: swift package resolve
 
-      - name: Cache SPM dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.swiftpm
-            .build
-          key: ${{ runner.os }}-spm-${{ matrix.platform }}-${{ matrix.swift }}-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-${{ matrix.platform }}-${{ matrix.swift }}-
+    - name: Build for ${{ matrix.platform }} with Swift ${{ matrix.swift-version }}
+      run: |
+        if [[ "${{ matrix.platform }}" == "iOS" ]]; then
+          swift build -x ios
+        elif [[ "${{ matrix.platform }}" == "macCatalyst" ]]; then
+          swift build -x macCatalyst
+        elif [[ "${{ matrix.platform }}" == "macOS" ]]; then
+          swift build -x macos
+        elif [[ "${{ matrix.platform }}" == "tvOS" ]]; then
+          swift build -x tvOS
+        elif [[ "${{ matrix.platform }}" == "visionOS" ]]; then
+          swift build -x visionOS
+        elif [[ "${{ matrix.platform }}" == "watchOS" ]]; then
+          swift build -x watchOS
+        fi
 
-      - name: Build and test for ${{ matrix.platform }} on Swift ${{ matrix.swift }}
-        run: |
-          set -o pipefail
-          case "${{ matrix.platform }}" in
-            macOS)
-              destination='platform=macOS'
-              ;;
-            iOS)
-              destination='platform=iOS Simulator,name=iPhone 14'
-              ;;
-            tvOS)
-              destination='platform=tvOS Simulator,name=Apple TV'
-              ;;
-            watchOS)
-              destination='platform=watchOS Simulator,name=Apple Watch Series 8 (45mm)'
-              ;;
-            visionOS)
-              destination='platform=visionOS Simulator,name=Vision Pro'
-              ;;
-          esac
-          xcodebuild -scheme YourSchemeName \
-            -destination "$destination" \
-            clean build test | xcpretty
+    - name: Run tests
+      run: swift test
