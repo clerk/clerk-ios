@@ -7,75 +7,90 @@
 
 import AuthenticationServices
 
+actor WebAuthSessionManager {
+    private var currentSession: ASWebAuthenticationSession?
+    private var continuation: CheckedContinuation<URL, any Error>?
+    
+    func setSession(_ session: ASWebAuthenticationSession, continuation: CheckedContinuation<URL, any Error>) {
+        self.currentSession = session
+        self.continuation = continuation
+    }
+    
+    func completeSession(with url: URL?, error: Error?) {
+        defer {
+            currentSession = nil
+            continuation = nil
+        }
+        
+        guard let continuation = continuation else {
+            dump("Continuation already completed. Ignoring.")
+            return
+        }
+        
+        if let url {
+            continuation.resume(returning: url)
+        } else if let error {
+            continuation.resume(throwing: error)
+        } else {
+            continuation.resume(throwing: ClerkClientError(message: "Missing callback URL"))
+        }
+    }
+}
+
+
 @available(tvOS 16.0, watchOS 6.2, *)
 @MainActor
 final class WebAuthentication: NSObject {
+    private static let sessionManager = WebAuthSessionManager()
+    
     let url: URL
     let prefersEphemeralWebBrowserSession: Bool
     
-    private static var currentSession: ASWebAuthenticationSession?
-    private static var continuation: CheckedContinuation<URL, any Error>?
-    
-    init(
-        url: URL,
-        prefersEphemeralWebBrowserSession: Bool = false
-    ) {
+    init(url: URL, prefersEphemeralWebBrowserSession: Bool = false) {
         self.url = url
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     }
     
-    private var urlComponents: URLComponents? {
-        let url = URL(string: Clerk.shared.frontendAPIURL)!
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        return components
-    }
-    
-    private static func completionHandler(_ url: URL?, error: Error?) -> Void {
-        Self.currentSession = nil
-        
-        if let url {
-            Self.continuation?.resume(returning: url)
-        } else if let error {
-            Self.continuation?.resume(throwing: error)
-        } else {
-            Self.continuation?.resume(throwing: ClerkClientError(message: "Missing callback URL"))
-        }
-    }
-    
     func start() async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
-            Self.continuation = continuation
+            Task {
+                let session = ASWebAuthenticationSession(
+                    url: url,
+                    callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme,
+                    completionHandler: { [weak self] url, error in
+                        Task {
+                            await WebAuthentication.sessionManager.completeSession(with: url, error: error)
+                        }
+                    }
+                )
                 
-            Self.currentSession = ASWebAuthenticationSession(
-                url: url,
-                callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme,
-                completionHandler: Self.completionHandler
-            )
-
-            #if !os(watchOS) && !os(tvOS)
-            Self.currentSession?.presentationContextProvider = self
-            #endif
-            
-            #if !os(tvOS)
-            Self.currentSession?.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
-            #endif
-            
-            Self.currentSession?.start()
+                #if !os(watchOS) && !os(tvOS)
+                session.presentationContextProvider = self
+                #endif
+                
+                #if !os(tvOS)
+                session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+                #endif
+                
+                await WebAuthentication.sessionManager.setSession(session, continuation: continuation)
+                session.start()
+            }
         }
     }
     
     static func finishWithDeeplinkUrl(url: URL) {
-        completionHandler(url, error: nil)
+        Task {
+            await sessionManager.completeSession(with: url, error: nil)
+        }
     }
 }
 
 #if !os(watchOS) && !os(tvOS)
 extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
-    
     @MainActor
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         ASPresentationAnchor()
     }
-    
 }
 #endif
+
