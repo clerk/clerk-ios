@@ -18,6 +18,7 @@ actor WebAuthSessionManager {
     
     func completeSession(with url: URL?, error: Error?) {
         defer {
+            currentSession?.cancel()
             currentSession = nil
             continuation = nil
         }
@@ -93,4 +94,3 @@ extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
     }
 }
 #endif
-
