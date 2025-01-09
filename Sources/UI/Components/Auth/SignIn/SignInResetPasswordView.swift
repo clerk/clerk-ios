@@ -67,7 +67,7 @@ struct SignInResetPasswordView: View {
                     HStack(spacing: 10) {
                         CheckBoxView(isSelected: $signOutOfAllDevices)
                             .frame(width: 18, height: 18)
-                            .onChange(of: signOutOfAllDevices) { _ in
+                            .onChange(of: signOutOfAllDevices) {
                                 FeedbackGenerator.success()
                             }
                         

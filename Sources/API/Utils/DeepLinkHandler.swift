@@ -37,11 +37,7 @@ extension Clerk {
             return
         }
         
-        do {
-            WebAuthentication.finishWithDeeplinkUrl(url: url)
-        } catch {
-            dump(error)
-        }
+        WebAuthentication.finishWithDeeplinkUrl(url: url)
         #endif
     }
     

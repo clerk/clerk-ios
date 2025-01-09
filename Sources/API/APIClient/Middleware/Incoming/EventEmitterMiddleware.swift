@@ -11,11 +11,11 @@ struct EventEmitterMiddleware {
     
     static func process(_ data: Data) {
         if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response, signIn.status == .complete {
-            Clerk.authEventEmitter.send(.signInCompleted(signIn: signIn))
+            Task { await Clerk.authEventEmitter.send(.signInCompleted(signIn: signIn)) }
         }
         
         if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response, signUp.status == .complete {
-            Clerk.authEventEmitter.send(.signUpCompleted(signUp: signUp))
+            Task { await Clerk.authEventEmitter.send(.signUpCompleted(signUp: signUp)) }
         }
     }
     

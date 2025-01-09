@@ -48,7 +48,7 @@ struct UserProfileView: View {
         .task {
            _ = try? await Clerk.Environment.get()
         }
-        .onChange(of: clerk.session) { lastActiveSession in
+        .onChange(of: clerk.session) { _, lastActiveSession in
             if lastActiveSession == nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     dismiss()

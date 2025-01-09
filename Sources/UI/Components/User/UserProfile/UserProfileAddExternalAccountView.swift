@@ -63,8 +63,8 @@ struct UserProfileAddExternalAccountView: View {
         }
         .clerkErrorPresenting($errorWrapper)
         .dismissButtonOverlay()
-        .onChange(of: user) { [user] newValue in
-            if newValue?.unconnectedProviders.count ?? 0 < user?.unconnectedProviders.count ?? 0 {
+        .onChange(of: user) { oldValue, newValue in
+            if newValue?.unconnectedProviders.count ?? 0 < oldValue?.unconnectedProviders.count ?? 0 {
                 dismiss()
             }
         }

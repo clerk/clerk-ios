@@ -63,7 +63,7 @@ final class WebAuthentication: NSObject {
                 let session = ASWebAuthenticationSession(
                     url: url,
                     callbackURLScheme: Clerk.shared.redirectConfig.callbackUrlScheme,
-                    completionHandler: { [weak self] url, error in
+                    completionHandler: { url, error in
                         Task {
                             await WebAuthentication.sessionManager.completeSession(with: url, error: error)
                         }

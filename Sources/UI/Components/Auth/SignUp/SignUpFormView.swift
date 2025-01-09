@@ -194,7 +194,7 @@ struct SignUpFormView: View {
             .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
-        .onChange(of: captchaToken) { token in
+        .onChange(of: captchaToken) { _, token in
             if token != nil && isSubmitting {
                 Task { await performSignUp() }
             }
@@ -225,8 +225,6 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
-                                    
-            let identifer = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber
             
             if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
                 signUp = try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))

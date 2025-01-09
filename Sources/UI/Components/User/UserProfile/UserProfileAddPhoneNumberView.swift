@@ -55,7 +55,7 @@ struct UserProfileAddPhoneNumberView: View {
                 codeContent
             }
         }
-        .onChange(of: step) { _ in
+        .onChange(of: step) {
             KeyboardHelpers.dismissKeyboard()
             FeedbackGenerator.success()
         }
