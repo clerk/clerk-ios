@@ -8,28 +8,25 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
+import Kingfisher
 
 struct OrgLogoView: View {
     var clerk = Clerk.shared
     @Environment(\.clerkTheme) private var clerkTheme
         
     var body: some View {
-        LazyImage(request: .init(url: URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))) { state in
-            if let image = state.image {
-                image
-                    .resizable()
-                    .scaledToFit()
+        KFImage(URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))
+            .resizable()
+            .placeholder {
+                #if targetEnvironment(simulator)
+                if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                    Image(systemName: "circle.square.fill")
+                        .resizable()
+                        .scaledToFit()
+                }
+                #endif
             }
-            
-            #if targetEnvironment(simulator)
-            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-                Image(systemName: "circle.square.fill")
-                    .resizable()
-                    .scaledToFit()
-            }
-            #endif
-        }
+            .scaledToFit()
     }
 }
 

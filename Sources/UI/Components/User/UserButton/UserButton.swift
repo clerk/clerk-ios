@@ -8,8 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
-import Nuke
-import NukeUI
+import Kingfisher
 
 struct UserButton: View {
     var clerk = Clerk.shared
@@ -18,29 +17,21 @@ struct UserButton: View {
     
     @State private var popoverIsPresented = false
         
-    private var imageRequest: ImageRequest {
-        .init(
-            url: URL(string: clerk.user?.imageUrl ?? ""),
-            processors: [ImageProcessors.Circle()]
-        )
-    }
-    
     var body: some View {
         Button(action: {
             userButtonAction()
         }, label: {
-            LazyImage(request: imageRequest) { state in
-                if let image = state.image {
-                    image.resizable().scaledToFill()
-                } else {
+            KFImage(URL(string: clerk.user?.imageUrl ?? ""))
+                .resizable()
+                .placeholder {
                     Image(systemName: "person.crop.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .symbolRenderingMode(.monochrome)
                 }
-            }
-            .frame(width: 32, height: 32)
-            .clipShape(.circle)
+                .scaledToFill()
+                .frame(width: 32, height: 32)
+                .clipShape(.circle)
         })
         .tint(clerkTheme.colors.textPrimary)
         .onChange(of: clerk.client?.lastActiveSession?.user) { user in

@@ -8,7 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
-import NukeUI
+import Kingfisher
 
 struct AuthProviderIcon: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -21,13 +21,9 @@ struct AuthProviderIcon: View {
     }
     
     var body: some View {
-        LazyImage(url: iconImageUrl) { state in
-            if let image = state.image {
-                image
-                    .resizable()
-                    .scaledToFit()
-            }
-        }
+        KFImage(iconImageUrl)
+            .resizable()
+            .scaledToFit()
     }
 }
 

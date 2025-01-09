@@ -8,7 +8,7 @@
 import Foundation
 import Factory
 import RegexBuilder
-import Nuke
+import Kingfisher
 import Get
 import SimpleKeychain
 
@@ -222,8 +222,6 @@ final public class Clerk {
         sessionPollingTask = nil
     }
     
-    private let imagePrefetcher = ImagePrefetcher(pipeline: .shared, destination: .diskCache)
-    
     private func prefetchImages(environment: Clerk.Environment) {
         var imageUrls: [URL?] = []
         
@@ -238,7 +236,8 @@ final public class Clerk {
             }
         }
         
-        imagePrefetcher.startPrefetching(with: imageUrls.compactMap { $0 })
+        let prefetcher = ImagePrefetcher(urls: imageUrls.compactMap { $0 })
+        prefetcher.start()
     }
     
     /// Enable for additional debugging signals
