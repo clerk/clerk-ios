@@ -10,7 +10,6 @@ import Foundation
 import SwiftUI
 
 extension EnvironmentValues {
-    @Entry var clerk = Clerk.shared
     #if os(iOS)
     @Entry var clerkUIState = ClerkUIState()
     @Entry var authViewConfig = AuthView.Config()

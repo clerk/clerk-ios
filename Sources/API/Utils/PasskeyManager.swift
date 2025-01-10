@@ -11,6 +11,7 @@ import Foundation
 import AuthenticationServices
 import os
 
+@MainActor
 final class PasskeyManager: NSObject {
     
     static var controller: ASAuthorizationController?

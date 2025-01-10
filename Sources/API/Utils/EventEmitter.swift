@@ -11,7 +11,8 @@ extension Clerk {
     static public let authEventEmitter = EventEmitter<AuthEvent>()
 }
 
-final public class EventEmitter<Event> {
+@MainActor
+final public class EventEmitter<Event: Sendable> {
     private var continuation: AsyncStream<Event>.Continuation?
     
     public var events: AsyncStream<Event> {
@@ -25,7 +26,7 @@ final public class EventEmitter<Event> {
     }
 }
 
-public enum AuthEvent {
+public enum AuthEvent: Sendable {
     case signInCompleted(signIn: SignIn)
     case signUpCompleted(signUp: SignUp)
 }
