@@ -11,14 +11,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode: ['15.4', '16.0']
-        macos: ['macos-14']
+        xcode: ['15.2']
+        macos: ['macos-14.2']
         scheme: ['Clerk']
         command: ['test']
         platform: ['macOS', 'iOS', 'tvOS', 'watchOS', 'mac-catalyst']
     steps:
     - name: Switch xcode to ${{ matrix.xcode }}
-      uses: maxim-lobanov/setup-xcode@v1.2.3
+      uses: maxim-lobanov/setup-xcode@v1.6.0
       with:
         xcode-version: ${{ matrix.xcode }}
     - name: Double-check macOS version (${{ matrix.macos }})
