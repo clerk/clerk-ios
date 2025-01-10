@@ -4,35 +4,58 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "README.md"
-      - ".spi.yml"
   pull_request:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  test:
-    name: Build and Test
-    runs-on: macOS-latest
-    timeout-minutes: 30
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_15.4.app/Contents/Developer
+  build-and-test:
+    runs-on: macos-latest
     strategy:
       matrix:
-        destination:
-          - "platform=macOS"
-          - "platform=iOS Simulator,name=iPhone 15"
-          - "platform=tvOS Simulator,name=Apple TV"
-          - "platform=visionOS Simulator,name=Apple Vision Pro"
-          - "platform=watchOS Simulator,name=Apple Watch Series 6 (40mm)"
-          - "platform=macOS,variant=Mac Catalyst"
-
+        platform:
+          - iOS
+          - macOS
+          - tvOS
+          - watchOS
+          - visionOS
+        swift_version:
+          - "5.10"
+          - "6.0"
     steps:
-      - uses: actions/checkout@v4
-      - name: Test platform ${{ matrix.destination }}
-        run: set -o pipefail && xcodebuild -scheme Clerk -destination "${{ matrix.destination }}" test | xcbeautify
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: fwal/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift_version }}
+
+      - name: Build and test ${{ matrix.platform }}
+        run: |
+          set -eo pipefail
+          case "${{ matrix.platform }}" in
+            iOS)
+              destination="platform=iOS Simulator,name=iPhone 15 Pro,OS=latest"
+              ;;
+            macOS)
+              destination="platform=macOS,arch=x86_64"
+              ;;
+            tvOS)
+              destination="platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest"
+              ;;
+            watchOS)
+              destination="platform=watchOS Simulator,name=Apple Watch Series 9 (41mm),OS=latest"
+              ;;
+            visionOS)
+              destination="platform=visionOS,name=Vision Pro,OS=latest"
+              ;;
+          esac
+
+          # Build and test the Clerk iOS package
+          xcodebuild clean test \
+            -scheme Clerk \
+            -destination "$destination" \
+            -sdk $(xcodebuild -showdestinations -scheme Clerk | grep -oE 'iphonesimulator|macosx|appletvsimulator|watchsimulator|xros' | head -n 1) \
+            -parallel-testing-enabled YES \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty
