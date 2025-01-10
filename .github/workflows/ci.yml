@@ -1,37 +1,42 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
+  xcodebuild:
     runs-on: macos-latest
     strategy:
       matrix:
-        platform:
-          - iOS
-          - macOS
-          - tvOS
-          - watchOS
-          - visionOS
-        swift_version:
-          - "5.10"
-          - "6.0"
+        platform: [iOS, macOS, tvOS, watchOS, visionOS]
+        configuration: [Debug, Release]
+        exclude:
+          - { platform: visionOS, configuration: Release } # Example exclusion
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Swift
-        uses: fwal/setup-swift@v1
+      - name: Cache Derived Data
+        uses: actions/cache@v3
         with:
-          swift-version: ${{ matrix.swift_version }}
+          path: ~/.derivedData
+          key: deriveddata-${{ matrix.platform }}-${{ matrix.configuration }}-${{ hashFiles('**/Sources/**/*.swift', '**/Tests/**/*.swift') }}
+          restore-keys: |
+            deriveddata-${{ matrix.platform }}-${{ matrix.configuration }}-
 
-      - name: Build and test ${{ matrix.platform }}
+      - name: Set IgnoreFileSystemDeviceInodeChanges flag
+        run: defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+
+      - name: Update mtime for incremental builds
+        uses: chetan/git-restore-mtime-action@v2
+
+      - name: Build and Test
         run: |
           set -eo pipefail
           case "${{ matrix.platform }}" in
@@ -52,10 +57,8 @@ jobs:
               ;;
           esac
 
-          # Build and test the Clerk iOS package
-          xcodebuild clean test \
+          xcodebuild clean build test \
             -scheme Clerk \
+            -configuration "${{ matrix.configuration }}" \
             -destination "$destination" \
-            -sdk $(xcodebuild -showdestinations -scheme Clerk | grep -oE 'iphonesimulator|macosx|appletvsimulator|watchsimulator|xros' | head -n 1) \
-            -parallel-testing-enabled YES \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty
