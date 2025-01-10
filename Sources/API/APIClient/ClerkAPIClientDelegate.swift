@@ -18,11 +18,9 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     }
     
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
-        Task {
-            try DeviceTokenSavingMiddleware.process(response)
-            await EventEmitterMiddleware.process(data)
-            try ErrorThrowingMiddleware.process(response, data: data)
-        }
+        try DeviceTokenSavingMiddleware.process(response)
+        EventEmitterMiddleware.process(data)
+        try ErrorThrowingMiddleware.process(response, data: data)
     }
     
     func client(_ client: APIClient, shouldRetry task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
