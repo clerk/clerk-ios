@@ -22,7 +22,11 @@ struct KeyboardIgnoringBottomViewModifier<BottomView: View>: ViewModifier, Keybo
                 VStack {
                     Spacer()
                     bottomView
-                        .readSize { bottomViewSize = $0 }
+                        .onGeometryChange(for: CGSize.self, of: { proxy in
+                            proxy.size
+                        }, action: { size in
+                            bottomViewSize = size
+                        })
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
             }
@@ -37,7 +41,11 @@ struct KeyboardIgnoringBottomViewModifier<BottomView: View>: ViewModifier, Keybo
                 VStack {
                     Spacer()
                     bottomView
-                        .readSize { bottomViewSize = $0 }
+                        .onGeometryChange(for: CGSize.self, of: { proxy in
+                            proxy.size
+                        }, action: { size in
+                            bottomViewSize = size
+                        })
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
             }

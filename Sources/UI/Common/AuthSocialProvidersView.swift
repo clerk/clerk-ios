@@ -54,9 +54,11 @@ struct AuthSocialProvidersView: View {
         }
         .frame(maxWidth: .infinity)
         .clerkErrorPresenting($errorWrapper)
-        .readSize { stackSize in
-            stackWidth = stackSize.width
-        }
+        .onGeometryChange(for: CGSize.self, of: { proxy in
+            proxy.size
+        }, action: { size in
+            stackWidth = size.width
+        })
     }
     
     private func startAuth(provider: OAuthProvider) async {

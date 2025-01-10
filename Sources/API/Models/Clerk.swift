@@ -57,20 +57,11 @@ final public class Clerk {
         }
         
         do {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { @MainActor [weak self] in
-                    try await Client.getOrCreate()
-                    self?.startSessionTokenPolling()
-                }
-                
-                group.addTask { @MainActor [weak self] in
-                    let environment = try await Environment.get()
-                    self?.prefetchImages(environment: environment)
-                }
-                
-                while let _ = try await group.next() {}
-            }
+            try await Client.getOrCreate()
+            let environment = try await Environment.get()
             
+            prefetchImages(environment: environment)
+            startSessionTokenPolling()
             setupNotificationObservers()
             
             loadingState = .loaded
@@ -175,20 +166,15 @@ final public class Clerk {
         
         willEnterForegroundTask = Task {
             for await _ in NotificationCenter.default.notifications(named: UIApplication.willEnterForegroundNotification).map({ _ in () }) {
-                await withTaskGroup(of: Void.self) { group in
-                    
-                    group.addTask { @MainActor [weak self] in
-                        self?.startSessionTokenPolling()
-                    }
-                    
-                    group.addTask { @MainActor in
-                        _ = try? await Client.getOrCreate()
-                    }
-                    
-                    group.addTask { @MainActor in
-                        _ = try? await Clerk.Environment.get()
-                    }
-                    
+                self.startSessionTokenPolling()
+                
+                // Start both functions concurrently without waiting for them
+                Task.detached {
+                    _ = try? await Client.getOrCreate()
+                }
+                
+                Task.detached {
+                    _ = try? await Clerk.Environment.get()
                 }
             }
         }
@@ -201,6 +187,7 @@ final public class Clerk {
         
         #endif
     }
+
         
     private func startSessionTokenPolling() {
         guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
