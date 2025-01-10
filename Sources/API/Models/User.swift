@@ -67,9 +67,9 @@ public struct User: Codable, Equatable, Sendable, Hashable {
     
     /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
     public let externalAccounts: [ExternalAccount]
-    
-    /// An experimental list of saml accounts associated with the user.
-    public let samlAccounts: [SAMLAccount]?
+        
+    /// A list of enterprise accounts associated with the user.
+    public let enterpriseAccounts: [EnterpriseAccount]?
     
     /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
     public let publicMetadata: JSON?
@@ -471,7 +471,7 @@ extension User {
             backupCodeEnabled: false,
             deleteSelfEnabled: true,
             externalAccounts: [],
-            samlAccounts: nil,
+            enterpriseAccounts: nil,
             publicMetadata: nil,
             unsafeMetadata: nil,
             lastSignInAt: .now,

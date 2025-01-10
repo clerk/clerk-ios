@@ -105,10 +105,10 @@ Multi-Session Applications | ✅
 Forgot Password | ✅
 User Management | ✅ 
 Passkeys | ✅
+Enterprise SSO (SAML) | ✅ 
 Prebuilt UI Components | ❌ 
 Magic Links | ❌ 
 Organizations | ❌ 
-SAML | ❌ 
 Sign Up via Invitation | ❌
 Web3 Wallet | ❌
 

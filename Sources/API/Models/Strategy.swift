@@ -18,6 +18,7 @@ public enum Strategy: Codable, Equatable {
     case backupCode
     case resetPasswordPhoneCode
     case resetPasswordEmailCode
+    case enterpriseSSO
     case saml
     case oauth(_ provider: OAuthProvider)
     case passkey
@@ -30,6 +31,8 @@ public enum Strategy: Codable, Equatable {
             return "phone_code"
         case .emailCode:
             return "email_code"
+        case .enterpriseSSO:
+            return "enterprise_sso"
         case .saml:
             return "saml"
         case .oauth(let provider):
@@ -57,6 +60,8 @@ public enum Strategy: Codable, Equatable {
             self = .phoneCode
         case Strategy.emailCode.stringValue:
             self = .emailCode
+        case Strategy.enterpriseSSO.stringValue:
+            self = .enterpriseSSO
         case Strategy.saml.stringValue:
             self = .saml
         case Strategy.ticket.stringValue:

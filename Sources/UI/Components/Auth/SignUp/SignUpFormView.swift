@@ -226,12 +226,17 @@ struct SignUpFormView: View {
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ), captchaToken: captchaToken)
             
-            if signUp.missingFields.contains(where: { $0 == Strategy.saml.stringValue }) {
-                signUp = try await signUp.update(params: .init(strategy: Strategy.saml.stringValue))
+            if signUp.missingFields.contains(where: {
+                $0 == Strategy.enterpriseSSO.stringValue || $0 == Strategy.saml.stringValue
+            }) {
+                signUp = try await signUp.update(params: .init(
+                    strategy: Strategy.enterpriseSSO.stringValue,
+                    redirectUrl: Clerk.shared.redirectConfig.redirectUrl
+                ))
             }
             
             switch signUp.nextStrategyToVerify {
-            case .oauth, .saml:
+            case .oauth, .enterpriseSSO, .saml:
                 let externalAuthResult = try await signUp.authenticateWithRedirect()
                 if externalAuthResult.signUp != nil {
                     clerkUIState.setAuthStepToCurrentSignUpStatus()
