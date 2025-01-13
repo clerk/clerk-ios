@@ -176,16 +176,16 @@ extension SignInFormView {
         do {
             KeyboardHelpers.dismissKeyboard()
             
-            try await SignIn.create(strategy: strategy)
+            let signIn = try await SignIn.create(strategy: strategy)
             
-            if passkeysAreEnabled, signIn?.firstFactor(for: .passkey) != nil {
+            if passkeysAreEnabled, signIn.firstFactor(for: .passkey) != nil {
                 do {
                     try await attemptSignInWithPasskey()
                 } catch {
-                    if let prepareStrategy = signIn?.currentFirstFactor?.prepareFirstFactorStrategy {
-                        try await signIn?.prepareFirstFactor(for: prepareStrategy)
-                    }
+                    try await prepareFirstFactorIfNeeded(signIn)
                 }
+            } else {
+                try await prepareFirstFactorIfNeeded(signIn)
             }
             
             clerkUIState.setAuthStepToCurrentSignInStatus()
@@ -194,6 +194,17 @@ extension SignInFormView {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
+        }
+    }
+    
+    private func prepareFirstFactorIfNeeded(_ signIn: SignIn) async throws {
+        if let prepareStrategy = signIn.currentFirstFactor?.prepareFirstFactorStrategy {
+            let preparedSignIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
+            
+            if preparedSignIn.firstFactorVerification?.status == .unverified,
+               preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+                try await preparedSignIn.authenticateWithRedirect()
+            }
         }
     }
     

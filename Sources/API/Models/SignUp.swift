@@ -139,6 +139,11 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             _ provider: OAuthProvider
         )
         
+        case enterpriseSSO(
+            emailAddress: String,
+            password: String? = nil
+        )
+        
         case idToken(
             _ provider: IDTokenProvider,
             idToken: String,
@@ -168,6 +173,15 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                captchaToken: captchaToken
+            )
+            
+        case .enterpriseSSO(let emailAddress, let password):
+            return .init(
+                password: password,
+                emailAddress: emailAddress,
+                strategy: Strategy.enterpriseSSO.stringValue,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 captchaToken: captchaToken
             )
             
@@ -240,7 +254,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
          
          The following strategies are supported:
          - `oauth_<provider>`: The user will be authenticated with their Social login account. See available OAuth Providers.
-         - `saml`: The user will be authenticated with SAML.
+         - `enterprise_sso`: The user will be authenticated via an Enterprise SSO account.
          - `ticket`: The user will be authenticated via the ticket or token generated from the Backend API.
          */
         public let strategy: String?
@@ -250,7 +264,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         
         /**
          The URL that the user will be redirected to, after successful authorization from the OAuth provider and Clerk sign in.
-         This parameter is required only if `strategy` is set to an OAuth strategy like `oauth_<provider>`, or set to `saml`.
+         This parameter is required only if `strategy` is set to an OAuth strategy like `oauth_<provider>`, or set to `enterprise_sso`.
          */
         public let actionCompleteRedirectUrl: String?
         
@@ -359,14 +373,9 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
-            var url = URL(string: redirectUrl)
+            let url = URL(string: redirectUrl)
         else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-        }
-        
-        // if the url query doesnt contain prompt, add it
-        if let query = url.query(), !query.contains("prompt") {
-            url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
         let authSession = WebAuthentication(

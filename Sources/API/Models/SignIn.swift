@@ -145,6 +145,8 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         case identifier(_ identifier: String, password: String? = nil)
         /// Creates a new sign in with the oauth provider
         case oauth(_ provider: OAuthProvider)
+        /// Creates a new sign in with the enterprise sso provider
+        case enterpriseSSO(_ identifier: String)
         /// Creates a new sign in with a passkey
         case passkey
         /// Creates a new sign in with an ID token
@@ -168,6 +170,13 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
+            )
+            
+        case .enterpriseSSO(let identifier):
+            return .init(
+                identifier: identifier,
+                strategy: Strategy.enterpriseSSO.stringValue,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
             
         case .idToken(let provider, let idToken):
@@ -228,7 +237,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     public enum PrepareFirstFactorStrategy {
         case emailCode(emailAddressId: String? = nil)
         case phoneCode(phoneNumberId: String? = nil)
-        case saml
+        case enterpriseSSO
         case passkey
         case resetPasswordEmailCode(emailAddressId: String? = nil)
         case resetPasswordPhoneCode(phoneNumberId: String? = nil)
@@ -237,7 +246,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             switch self {
             case .emailCode: .emailCode
             case .phoneCode: .phoneCode
-            case .saml: .saml
+            case .enterpriseSSO: .enterpriseSSO
             case .passkey: .passkey
             case .resetPasswordEmailCode: .resetPasswordEmailCode
             case .resetPasswordPhoneCode: .resetPasswordPhoneCode
@@ -245,14 +254,17 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         }
     }
     
+    @MainActor
     private func prepareFirstFactorParams(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) -> PrepareFirstFactorParams {
         switch prepareFirstFactorStrategy {
         case .emailCode, .resetPasswordEmailCode:
             return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue, emailAddressId: factorId(for: prepareFirstFactorStrategy))
         case .phoneCode, .resetPasswordPhoneCode:
             return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue, phoneNumberId: factorId(for: prepareFirstFactorStrategy))
-        case .saml, .passkey:
+        case .passkey:
             return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue)
+        case .enterpriseSSO:
+            return .init(strategy: prepareFirstFactorStrategy.strategy.stringValue, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
         }
     }
     
@@ -402,13 +414,8 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
-        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, var url = URL(string: redirectUrl) else {
+        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-        }
-        
-        // if the url query doesnt contain prompt, add it
-        if let query = url.query(), !query.contains("prompt") {
-            url.append(queryItems: [.init(name: "prompt", value: "login")])
         }
         
         let authSession = WebAuthentication(
@@ -561,8 +568,10 @@ extension SignIn {
             return currentFirstFactor
         }
         
-        if status == .needsIdentifier, let samlFactor = supportedFirstFactors?.first(where: { $0.strategyEnum == .saml }) {
-            return samlFactor
+        if status == .needsIdentifier, let enterpriseSSOFactor = supportedFirstFactors?.first(where: {
+            $0.strategyEnum == .enterpriseSSO || $0.strategyEnum == .saml
+        }) {
+            return enterpriseSSOFactor
         }
         
         return startingSignInFirstFactor

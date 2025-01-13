@@ -41,6 +41,8 @@ extension SignInFactor {
             return .resetPasswordEmailCode(emailAddressId: emailAddressId)
         case .passkey:
             return .passkey
+        case .enterpriseSSO:
+            return .enterpriseSSO
         default:
             return nil
         }
