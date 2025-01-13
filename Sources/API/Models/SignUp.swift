@@ -139,6 +139,11 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             _ provider: OAuthProvider
         )
         
+        case enterpriseSSO(
+            emailAddress: String,
+            password: String? = nil
+        )
+        
         case idToken(
             _ provider: IDTokenProvider,
             idToken: String,
@@ -168,6 +173,15 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                captchaToken: captchaToken
+            )
+            
+        case .enterpriseSSO(let emailAddress, let password):
+            return .init(
+                password: password,
+                emailAddress: emailAddress,
+                strategy: Strategy.enterpriseSSO.stringValue,
+                redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 captchaToken: captchaToken
             )
             
