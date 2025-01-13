@@ -182,22 +182,10 @@ extension SignInFormView {
                 do {
                     try await attemptSignInWithPasskey()
                 } catch {
-                    if let prepareStrategy = signIn.currentFirstFactor?.prepareFirstFactorStrategy {
-                        try await signIn.prepareFirstFactor(for: prepareStrategy)
-                    }
+                    try await prepareFirstFactorIfNeeded(signIn)
                 }
             } else {
-                if let prepareStrategy = signIn.currentFirstFactor?.prepareFirstFactorStrategy {
-                    let preparedSignIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
-                    
-                    // If the prepare function resulted in a verification with an external verification url,
-                    // trigger the web auth flow
-                    if preparedSignIn.firstFactorVerification?.status == .unverified,
-                       preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl != nil
-                    {
-                        try await preparedSignIn.authenticateWithRedirect()
-                    }
-                }
+                try await prepareFirstFactorIfNeeded(signIn)
             }
             
             clerkUIState.setAuthStepToCurrentSignInStatus()
@@ -206,6 +194,17 @@ extension SignInFormView {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             dump(error)
+        }
+    }
+    
+    private func prepareFirstFactorIfNeeded(_ signIn: SignIn) async throws {
+        if let prepareStrategy = signIn.currentFirstFactor?.prepareFirstFactorStrategy {
+            let preparedSignIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
+            
+            if preparedSignIn.firstFactorVerification?.status == .unverified,
+               preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+                try await preparedSignIn.authenticateWithRedirect()
+            }
         }
     }
     
