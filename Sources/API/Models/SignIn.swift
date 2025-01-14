@@ -568,8 +568,8 @@ extension SignIn {
             return currentFirstFactor
         }
         
-        if status == .needsIdentifier, let enterpriseSSOFactor = supportedFirstFactors?.first(where: {
-            $0.strategyEnum == .enterpriseSSO || $0.strategyEnum == .saml
+        if status == .needsFirstFactor, let enterpriseSSOFactor = supportedFirstFactors?.first(where: {
+            $0.strategyEnum == .enterpriseSSO
         }) {
             return enterpriseSSOFactor
         }
@@ -606,11 +606,13 @@ extension SignIn {
     }
     
     func alternativeFirstFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
-        // Remove the current factor, reset factors, oauth factors
+        // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
         let firstFactors = supportedFirstFactors?.filter { factor in
             factor != currentFactor &&
             factor.strategyEnum?.isResetStrategy == false  &&
             !(factor.strategy).hasPrefix("oauth_") &&
+            factor.strategyEnum != .enterpriseSSO &&
+            factor.strategyEnum != .saml &&
             factor.strategyEnum != .passkey
         }
         
