@@ -146,7 +146,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         /// Creates a new sign in with the oauth provider
         case oauth(_ provider: OAuthProvider)
         /// Creates a new sign in with the enterprise sso provider
-        case enterpriseSSO(_ identifier: String)
+        case enterpriseSSO(_ emailAddress: String)
         /// Creates a new sign in with a passkey
         case passkey
         /// Creates a new sign in with an ID token
@@ -172,9 +172,9 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
             
-        case .enterpriseSSO(let identifier):
+        case .enterpriseSSO(let emailAddress):
             return .init(
-                identifier: identifier,
+                identifier: emailAddress,
                 strategy: Strategy.enterpriseSSO.stringValue,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl
             )
