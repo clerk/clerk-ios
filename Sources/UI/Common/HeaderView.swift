@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct HeaderView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     let title: String
     var subtitle: String?

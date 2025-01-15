@@ -12,7 +12,7 @@ import SwiftUI
 struct SignInForgotPasswordView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
     let factor: SignInFactor

@@ -12,7 +12,7 @@ import AuthenticationServices
 
 struct UserProfilePasskeySection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {

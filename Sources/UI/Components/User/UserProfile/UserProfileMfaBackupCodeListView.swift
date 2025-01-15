@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileMfaBackupCodeListView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     let backupCodes: [String]
     

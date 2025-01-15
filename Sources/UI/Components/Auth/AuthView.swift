@@ -59,7 +59,7 @@ extension AuthView {
 struct AuthView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var config = Config()
     
     func viewForAuthStep(_ authStep: ClerkUIState.AuthStep) -> AnyView {

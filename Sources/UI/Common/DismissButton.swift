@@ -11,7 +11,7 @@ import SwiftUI
 
 struct DismissButton: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var beforeDismissAction: (() -> Void)?
     

@@ -13,7 +13,7 @@ import Kingfisher
 struct UserButton: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @State private var popoverIsPresented = false
         

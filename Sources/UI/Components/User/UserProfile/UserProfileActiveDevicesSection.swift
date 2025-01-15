@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfileActiveDevicesSection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     private var user: User? {
         clerk.user
@@ -51,7 +51,7 @@ struct UserProfileActiveDevicesSection: View {
     private struct ActiveDeviceView: View {
         var clerk = Clerk.shared
         @Environment(\.colorScheme) private var colorScheme
-        @Environment(\.clerkTheme) private var clerkTheme
+        @Environment(ClerkTheme.self) private var clerkTheme
         @State private var errorWrapper: ErrorWrapper?
         @State private var isSigningOutOfDevice: Bool = false
 

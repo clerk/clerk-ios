@@ -11,7 +11,7 @@ import SwiftUI
 
 struct CustomTextField: View {
     @FocusState private var isFocused: Bool
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var text: String
     var placeholder: String = ""

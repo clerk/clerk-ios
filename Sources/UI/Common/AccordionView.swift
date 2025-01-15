@@ -12,7 +12,7 @@ import SwiftUI
 struct AccordionView<Content: View, ExpandedContent: View>: View {
     @State private var isExpanded = false
     var horizontalSpacing: CGFloat? = nil
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @ViewBuilder var content: Content
     @ViewBuilder var expandedContent: ExpandedContent

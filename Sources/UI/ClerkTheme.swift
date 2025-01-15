@@ -9,7 +9,8 @@
 
 import SwiftUI
 
-public struct ClerkTheme: @unchecked Sendable {
+@Observable
+public class ClerkTheme {
     public init(colors: ClerkTheme.Colors) {
         self.colors = colors
     }
@@ -24,7 +25,8 @@ public struct ClerkTheme: @unchecked Sendable {
             textTertiary: Color,
             textOnPrimaryBackground: Color,
             borderPrimary: Color,
-            danger: Color
+            danger: Color,
+            linkColor: Color
         ) {
             self.primary = primary
             self.textPrimary = textPrimary
@@ -33,6 +35,7 @@ public struct ClerkTheme: @unchecked Sendable {
             self.textOnPrimaryBackground = textOnPrimaryBackground
             self.borderPrimary = borderPrimary
             self.danger = danger
+            self.linkColor = linkColor
         }
         
         public var primary: Color
@@ -42,6 +45,7 @@ public struct ClerkTheme: @unchecked Sendable {
         public var textOnPrimaryBackground: Color
         public var borderPrimary: Color
         public var danger: Color
+        public var linkColor: Color
     }
 }
 
@@ -55,7 +59,8 @@ extension ClerkTheme {
             textTertiary: Color(.clerkTextTertiary),
             textOnPrimaryBackground: .white,
             borderPrimary: Color(.systemFill),
-            danger: Color(.clerkDanger)
+            danger: Color(.clerkDanger),
+            linkColor: .blue
         )
     )
     
@@ -66,10 +71,7 @@ struct ClerkThemeKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
-  public var clerkTheme: ClerkTheme {
-    get { self[ClerkThemeKey.self] }
-    set { self[ClerkThemeKey.self] = newValue }
-  }
+    @Entry var clerkTheme: ClerkTheme = .clerkDefault
 }
 
 #endif

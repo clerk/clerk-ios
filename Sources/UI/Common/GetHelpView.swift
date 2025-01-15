@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct GetHelpView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var title = "Get Help"
     var description = "If you’re experiencing difficulty signing into your account, email us and we will work with you to restore access as soon as possible."

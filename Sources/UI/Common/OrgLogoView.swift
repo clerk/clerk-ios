@@ -12,7 +12,7 @@ import Kingfisher
 
 struct OrgLogoView: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
         
     var body: some View {
         KFImage(URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))

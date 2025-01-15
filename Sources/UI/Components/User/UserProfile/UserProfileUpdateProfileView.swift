@@ -13,7 +13,7 @@ import PhotosUI
 
 struct UserProfileUpdateProfileView: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var firstName: String = ""
     @State private var lastName: String = ""

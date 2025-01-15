@@ -11,7 +11,7 @@ import SwiftUI
 import Kingfisher
 
 struct UserPreviewView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var title: String?
     var subtitle: String?

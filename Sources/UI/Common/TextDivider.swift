@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct TextDivider: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     let text: String?
     

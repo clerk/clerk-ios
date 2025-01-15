@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfilePasswordSection: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var changePasswordIsPresented = false
     
     var body: some View {

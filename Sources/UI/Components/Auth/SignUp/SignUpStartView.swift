@@ -12,7 +12,7 @@ import SwiftUI
 struct SignUpStartView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @State private var formIsSubmitting = false
     @State private var captchaToken: String?

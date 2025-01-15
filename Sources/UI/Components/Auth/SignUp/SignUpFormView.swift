@@ -14,7 +14,7 @@ struct SignUpFormView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(AuthView.Config.self) private var config
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @FocusState private var focusedField: Field?
     @State private var errorWrapper: ErrorWrapper?
     

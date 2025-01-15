@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct CheckBoxView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var isSelected: Bool
     

@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 struct AuthViewModifier: ViewModifier {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(ClerkUIState.self) private var clerkUIState
     
     @Binding var isPresented: Bool

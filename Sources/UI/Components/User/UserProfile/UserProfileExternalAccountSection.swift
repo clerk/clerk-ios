@@ -12,7 +12,7 @@ import AuthenticationServices
 
 struct UserProfileExternalAccountSection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var addExternalAccountIsPresented = false
     @Namespace private var namespace
     
@@ -65,7 +65,7 @@ struct UserProfileExternalAccountSection: View {
         let namespace: Namespace.ID
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
-        @Environment(\.clerkTheme) private var clerkTheme
+        @Environment(ClerkTheme.self) private var clerkTheme
         
         private var removeResource: RemoveResource { .externalAccount(externalAccount) }
         
