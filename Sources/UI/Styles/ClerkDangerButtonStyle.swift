@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct ClerkDangerButtonStyle: ButtonStyle {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

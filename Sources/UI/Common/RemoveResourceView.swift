@@ -11,7 +11,7 @@ import SwiftUI
 
 struct RemoveResourceView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var title: String
     var messageLine1: String

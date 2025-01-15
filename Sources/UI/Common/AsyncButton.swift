@@ -35,7 +35,7 @@ struct AsyncButton<Label: View>: View {
     @State private var isDisabled = false
     @State private var showProgressView = false
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     // Combines environment value and local state
     private var disabled: Bool {

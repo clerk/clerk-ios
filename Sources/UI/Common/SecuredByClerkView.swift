@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SecuredByClerkView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var body: some View {
         HStack(spacing: 4) {

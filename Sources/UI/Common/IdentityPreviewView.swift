@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct IdentityPreviewView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var label: String?
     var action: (() -> Void)?

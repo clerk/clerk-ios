@@ -24,6 +24,7 @@ struct ClerkProviderModifier: ViewModifier {
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             .environment(clerkUIState)
             .environment(Clerk.shared)
+            .environment(ClerkTheme.clerkDefault)
     }
 }
 

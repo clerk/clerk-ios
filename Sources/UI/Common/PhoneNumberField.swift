@@ -81,7 +81,7 @@ struct PhoneNumberField: View {
     
     @State var model = Model()
     @FocusState private var isFocused: Bool
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var body: some View {
         HStack(spacing: 0) {

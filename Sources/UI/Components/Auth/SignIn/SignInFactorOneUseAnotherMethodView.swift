@@ -12,7 +12,7 @@ import SwiftUI
 struct SignInFactorOneUseAnotherMethodView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
     let currentFactor: SignInFactor

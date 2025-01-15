@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfileMfaAddSmsView: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var addPhoneNumberPresented = false
     @State private var errorWrapper: ErrorWrapper?

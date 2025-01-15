@@ -11,7 +11,7 @@ import SwiftUI
 
 struct ClerkBottomBrandingModifier: ViewModifier {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
         
     func body(content: Content) -> some View {
         if clerk.environment?.displayConfig.branded == true {

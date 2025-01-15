@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct MoreActionsView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     var body: some View {
         Image(systemName: "ellipsis")

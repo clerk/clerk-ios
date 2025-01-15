@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfileSection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var updateProfileIsPresented = false
     
     private var user: User? {

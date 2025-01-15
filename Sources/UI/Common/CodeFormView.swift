@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct CodeFormView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var code: String
     @Binding var isSubmittingCode: Bool

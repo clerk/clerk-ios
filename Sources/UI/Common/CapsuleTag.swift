@@ -17,7 +17,7 @@ extension CapsuleTag {
 }
 
 struct CapsuleTag: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     let text: String
     var style: Style = .regular

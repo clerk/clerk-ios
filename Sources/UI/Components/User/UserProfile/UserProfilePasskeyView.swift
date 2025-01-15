@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfilePasskeyView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var renameIsPresented = false
     @State private var confirmationSheetIsPresented = false
     @State private var errorWrapper: ErrorWrapper?

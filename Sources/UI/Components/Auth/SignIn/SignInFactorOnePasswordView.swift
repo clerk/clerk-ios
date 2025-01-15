@@ -14,7 +14,7 @@ struct SignInFactorOnePasswordView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(AuthView.Config.self) private var config
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     @FocusState private var isFocused: Bool
         

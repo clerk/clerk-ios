@@ -12,7 +12,7 @@ import AuthenticationServices
 
 struct SignUpCreatePasskeyView: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     

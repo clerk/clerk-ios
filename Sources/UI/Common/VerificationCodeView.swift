@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct VerificationCodeView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var code: String
     @State private var isSubmittingCode: Bool = false

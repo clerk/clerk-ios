@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct OTPFieldView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var code: String
     let numberOfInputs: Int = 6

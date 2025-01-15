@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfileEmailSection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
     
     @Namespace private var namespace
@@ -74,7 +74,7 @@ struct UserProfileEmailSection: View {
         @Binding var addEmailAddressStep: UserProfileAddEmailView.Step?
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
-        @Environment(\.clerkTheme) private var clerkTheme
+        @Environment(ClerkTheme.self) private var clerkTheme
         
         private var removeResource: RemoveResource { .email(emailAddress) }
         

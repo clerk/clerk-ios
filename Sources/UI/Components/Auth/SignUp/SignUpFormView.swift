@@ -14,7 +14,7 @@ struct SignUpFormView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(AuthView.Config.self) private var config
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @FocusState private var focusedField: Field?
     @State private var errorWrapper: ErrorWrapper?
     
@@ -44,6 +44,10 @@ struct SignUpFormView: View {
     
     private var passwordIsEnabled: Bool {
         clerk.environment?.userSettings.instanceIsPasswordBased == true
+    }
+    
+    private var legalIsEnabled: Bool {
+        clerk.environment?.userSettings.signUp.legalConsentEnabled == true
     }
     
     var body: some View {
@@ -176,21 +180,28 @@ struct SignUpFormView: View {
                 }
             }
             
-            AsyncButton {
-                await continueAction()
-            } label: {
-                Text("Continue")
-                    .opacity(isSubmitting ? 0 : 1)
-                    .overlay {
-                        if isSubmitting {
-                            ProgressView()
+            VStack(spacing: 0) {
+                if legalIsEnabled {
+                    LegalConsentView(agreedToLegalConsent: $config.signUpLegalConsentAccepted)
+                        .padding(.bottom, 20)
+                }
+                
+                AsyncButton {
+                    await continueAction()
+                } label: {
+                    Text("Continue")
+                        .opacity(isSubmitting ? 0 : 1)
+                        .overlay {
+                            if isSubmitting {
+                                ProgressView()
+                            }
                         }
-                    }
-                    .animation(.snappy, value: isSubmitting)
-                    .clerkStandardButtonPadding()
-                    .frame(maxWidth: .infinity)
+                        .animation(.snappy, value: isSubmitting)
+                        .clerkStandardButtonPadding()
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(ClerkPrimaryButtonStyle())
             }
-            .buttonStyle(ClerkPrimaryButtonStyle())
             .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
@@ -217,14 +228,18 @@ struct SignUpFormView: View {
         do {
             var signUp: SignUp
             
-            signUp = try await SignUp.create(strategy: .standard(
+            signUp = try await SignUp.create(
+                strategy: .standard(
                 emailAddress: emailIsEnabled ? config.signUpEmailAddress : nil,
                 password: passwordIsEnabled ? config.signUpPassword : nil,
                 firstName: nameIsEnabled ? config.signUpFirstName : nil,
                 lastName: nameIsEnabled ? config.signUpLastName : nil,
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
-            ), captchaToken: captchaToken)
+            ),
+                legalAccepted: legalIsEnabled ? config.signUpLegalConsentAccepted : nil,
+                captchaToken: captchaToken
+            )
             
             if signUp.missingFields.contains(where: {
                 $0 == Strategy.enterpriseSSO.stringValue || $0 == Strategy.saml.stringValue
@@ -268,6 +283,9 @@ struct SignUpFormView: View {
         captchaIsActive: .constant(false)
     )
     .padding()
+    .environment(ClerkUIState())
+    .environment(AuthView.Config())
+    .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

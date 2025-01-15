@@ -32,6 +32,7 @@ extension AuthView {
         var signUpPassword = ""
         var signUpEmailCode = ""
         var signUpPhoneCode = ""
+        var signUpLegalConsentAccepted = false
         
         func resetState() {
             signInEmailAddressOrUsername = ""
@@ -52,6 +53,7 @@ extension AuthView {
             signUpPassword = ""
             signUpEmailCode = ""
             signUpPhoneCode = ""
+            signUpLegalConsentAccepted = false
         }
     }
 }
@@ -59,7 +61,7 @@ extension AuthView {
 struct AuthView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var config = Config()
     
     func viewForAuthStep(_ authStep: ClerkUIState.AuthStep) -> AnyView {

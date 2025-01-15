@@ -221,7 +221,7 @@ private struct VerifyTOTPView: View {
 }
 
 private struct TOTPBackupCodesView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
     let backupCodes: [String]

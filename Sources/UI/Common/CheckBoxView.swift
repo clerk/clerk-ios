@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct CheckBoxView: View {
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @Binding var isSelected: Bool
     
@@ -50,7 +50,8 @@ struct CheckBoxView: View {
                         .transition(.scale)
                 }
             }
-            .animation(.bouncy, value: isSelected)
+            .contentShape(.rect)
+            .animation(.bouncy.speed(2), value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -59,6 +60,7 @@ struct CheckBoxView: View {
 #Preview {
     CheckBoxView(isSelected: .constant(true))
         .frame(width: 40, height: 40)
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

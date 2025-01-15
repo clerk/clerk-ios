@@ -12,7 +12,7 @@ import SwiftUI
 struct UserButtonPopover: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     @State private var errorWrapper: ErrorWrapper?
     @Namespace private var namespace

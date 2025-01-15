@@ -91,6 +91,9 @@ public struct User: Codable, Equatable, Sendable, Hashable {
     
     /// A boolean indicating whether the organization creation is enabled for the user or not.
     public let createOrganizationEnabled: Bool
+
+    /// The date on which the user accepted the legal requirements if required.
+    public let legalAcceptedAt: Date?
     
     /// A boolean that returns true if the user is signed in.
     @MainActor
@@ -477,7 +480,8 @@ extension User {
             lastSignInAt: .now,
             createdAt: .now,
             updatedAt: .now,
-            createOrganizationEnabled: false
+            createOrganizationEnabled: false,
+            legalAcceptedAt: nil
         )
         
     }

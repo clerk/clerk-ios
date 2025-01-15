@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfilePhoneNumberSection: View {
     var clerk = Clerk.shared
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     @State private var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
     @State private var confirmDeletePhoneNumber: PhoneNumber?
@@ -76,7 +76,7 @@ struct UserProfilePhoneNumberSection: View {
         @Binding var addPhoneNumberStep: UserProfileAddPhoneNumberView.Step?
         @State private var confirmationSheetIsPresented = false
         @State private var errorWrapper: ErrorWrapper?
-        @Environment(\.clerkTheme) private var clerkTheme
+        @Environment(ClerkTheme.self) private var clerkTheme
         
         private var removeResource: RemoveResource { .phoneNumber(phoneNumber) }
         

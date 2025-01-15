@@ -16,7 +16,7 @@ struct ErrorWrapper: Identifiable {
 
 struct ErrorView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     
     let errorWrapper: ErrorWrapper
     

@@ -13,7 +13,7 @@ struct SignInFormView: View {
     var clerk = Clerk.shared
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(AuthView.Config.self) private var config
-    @Environment(\.clerkTheme) private var clerkTheme
+    @Environment(ClerkTheme.self) private var clerkTheme
     @State private var displayingEmailOrUsernameEntry = true
     @State private var errorWrapper: ErrorWrapper?
     @Binding var isLoading: Bool
@@ -26,11 +26,6 @@ struct SignInFormView: View {
     
     var signIn: SignIn? {
         clerk.client?.signIn
-    }
-    
-    var hasAnInProgressPasskeyAuth: Bool {
-        signIn?.firstFactorVerification?.strategyEnum == .passkey &&
-        signIn?.firstFactorVerification?.expireAt ?? Date.now > Date.now
     }
     
     // returns true if email OR username is used for sign in AND phone number is used for sign in
@@ -69,6 +64,11 @@ struct SignInFormView: View {
     
     private var passkeyAutoFillIsEnabled: Bool {
         clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
+    }
+    
+    var hasAnInProgressPasskeyAuth: Bool {
+        signIn?.firstFactorVerification?.strategyEnum == .passkey &&
+        signIn?.firstFactorVerification?.status == .unverified
     }
         
     var body: some View {
@@ -211,23 +211,14 @@ extension SignInFormView {
     private func beginAutoFillAssistedPasskeySignIn() async {
         do {
             if !hasAnInProgressPasskeyAuth {
-                try await SignIn
-                    .create(strategy: .passkey)
+                try await SignIn.create(strategy: .passkey)
             }
             
             guard let signIn else { return }
-            
-            let credential = try await signIn
-                .getCredentialForPasskey(autofill: true)
-            
+            let credential = try await signIn.getCredentialForPasskey(autofill: true)
             isLoading = true
-            
-            try await signIn.attemptFirstFactor(
-                for: .passkey(publicKeyCredential: credential)
-            )
-            
+            try await signIn.attemptFirstFactor(for: .passkey(publicKeyCredential: credential))
             clerkUIState.setAuthStepToCurrentSignInStatus()
-            
         } catch {
             isLoading = false
             dump(error)
@@ -239,17 +230,10 @@ extension SignInFormView {
         
         guard var signIn else { throw ClerkClientError(message: "Unable to find a current sign in.") }
         
-        signIn = try await signIn
-            .prepareFirstFactor(for: .passkey)
-        
-        let credential = try await signIn
-            .getCredentialForPasskey()
-        
+        signIn = try await signIn.prepareFirstFactor(for: .passkey)
+        let credential = try await signIn.getCredentialForPasskey()
         isLoading = true
-        
-        try await signIn.attemptFirstFactor(
-            for: .passkey(publicKeyCredential: credential)
-        )
+        try await signIn.attemptFirstFactor(for: .passkey(publicKeyCredential: credential))
     }
     
 }
