@@ -117,8 +117,12 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
      However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
      */
     @discardableResult @MainActor
-    public static func create(strategy: SignUp.CreateStrategy, captchaToken: String? = nil) async throws -> SignUp {
-        let params = SignUp.createParams(for: strategy, captchaToken: captchaToken)
+    public static func create(
+        strategy: SignUp.CreateStrategy,
+        legalAccepted: Bool? = nil,
+        captchaToken: String? = nil
+    ) async throws -> SignUp {
+        let params = SignUp.createParams(for: strategy, legalAccepted: legalAccepted, captchaToken: captchaToken)
         let request = ClerkAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
@@ -155,7 +159,11 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     }
     
     @MainActor
-    static func createParams(for strategy: CreateStrategy, captchaToken: String? = nil) -> CreateParams {
+    static func createParams(
+        for strategy: CreateStrategy,
+        legalAccepted: Bool? = nil,
+        captchaToken: String? = nil
+    ) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
             return .init(
@@ -165,6 +173,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 emailAddress: emailAddress,
                 phoneNumber: phoneNumber,
                 username: username,
+                legalAccepted: legalAccepted,
                 captchaToken: captchaToken
             )
             
@@ -173,6 +182,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                legalAccepted: legalAccepted,
                 captchaToken: captchaToken
             )
             
@@ -182,6 +192,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 emailAddress: emailAddress,
                 strategy: Strategy.enterpriseSSO.stringValue,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
+                legalAccepted: legalAccepted,
                 captchaToken: captchaToken
             )
             
@@ -191,12 +202,14 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 lastName: lastName,
                 strategy: provider.strategy,
                 token: idToken,
+                legalAccepted: legalAccepted,
                 captchaToken: captchaToken
             )
             
         case .transfer:
             return .init(
                 transfer: true,
+                legalAccepted: legalAccepted,
                 captchaToken: captchaToken
             )
         }
@@ -215,6 +228,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil,
             token: String? = nil,
+            legalAccepted: Bool? = nil,
             captchaToken: String? = nil
         ) {
             self.firstName = firstName
@@ -228,6 +242,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             self.actionCompleteRedirectUrl = actionCompleteRedirectUrl
             self.transfer = transfer
             self.token = token
+            self.legalAccepted = legalAccepted
             self.captchaToken = captchaToken
         }
         
@@ -273,6 +288,9 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         
         /// Optional id token (used for sign up with apple, etc.)
         public let token: String?
+        
+        /// Indicates if the user accepted the legal terms required to sign up
+        public let legalAccepted: Bool?
         
         /// Optional captcha token for bot protection
         public let captchaToken: String?

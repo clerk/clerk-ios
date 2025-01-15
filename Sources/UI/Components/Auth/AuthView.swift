@@ -32,6 +32,7 @@ extension AuthView {
         var signUpPassword = ""
         var signUpEmailCode = ""
         var signUpPhoneCode = ""
+        var signUpLegalConsentAccepted = false
         
         func resetState() {
             signInEmailAddressOrUsername = ""
@@ -52,6 +53,7 @@ extension AuthView {
             signUpPassword = ""
             signUpEmailCode = ""
             signUpPhoneCode = ""
+            signUpLegalConsentAccepted = false
         }
     }
 }

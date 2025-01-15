@@ -12,6 +12,7 @@ extension Clerk.Environment {
     public struct UserSettings: Codable, Equatable, Sendable {
         
         public let attributes: [String: AttributesConfig]
+        public let signUp: SignUp
         public let social: [String: SocialConfig]
         public let actions: Actions
         public let passkeySettings: PasskeySettings?
@@ -25,6 +26,15 @@ extension Clerk.Environment {
             public let secondFactors: [String]?
             public let verifications: [String]?
             public let verifyAtSignUp: Bool
+        }
+        
+        public struct SignUp: Codable, Equatable {
+            public let captchaEnabled: Bool
+            public let captchaWidgetType: String
+            public let customActionRequired: Bool
+            public let progressive: Bool
+            public let mode: String
+            public let legalConsentEnabled: Bool
         }
         
         public struct SocialConfig: Codable, Equatable, Sendable {
