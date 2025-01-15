@@ -139,14 +139,9 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             phoneNumber: String? = nil
         )
         
-        case oauth(
-            _ provider: OAuthProvider
-        )
+        case oauth(_ provider: OAuthProvider)
         
-        case enterpriseSSO(
-            emailAddress: String,
-            password: String? = nil
-        )
+        case enterpriseSSO(_ emailAddress: String)
         
         case idToken(
             _ provider: IDTokenProvider,
@@ -186,9 +181,8 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
                 captchaToken: captchaToken
             )
             
-        case .enterpriseSSO(let emailAddress, let password):
+        case .enterpriseSSO(let emailAddress):
             return .init(
-                password: password,
                 emailAddress: emailAddress,
                 strategy: Strategy.enterpriseSSO.stringValue,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
