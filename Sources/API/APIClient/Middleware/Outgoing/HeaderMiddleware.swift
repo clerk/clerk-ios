@@ -10,7 +10,7 @@ import SimpleKeychain
 
 struct HeaderMiddleware {
     
-    static func process(_ request: inout URLRequest) async throws {
+    static func process(_ request: inout URLRequest) async {
         // Set the device token on every request
         if let deviceToken = try? SimpleKeychain().string(forKey: "clerkDeviceToken") {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")

@@ -10,7 +10,7 @@ import SimpleKeychain
 
 struct DeviceTokenSavingMiddleware {
     
-    static func process(_ response: HTTPURLResponse) throws {
+    static func process(_ response: HTTPURLResponse) {
         
         // Set the device token from the response headers whenever received
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
