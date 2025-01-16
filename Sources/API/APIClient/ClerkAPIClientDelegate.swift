@@ -12,13 +12,13 @@ import SimpleKeychain
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
-        try await HeaderMiddleware.process(&request)
+        await HeaderMiddleware.process(&request)
         QueryItemMiddleware.process(&request)
         try URLEncodedFormMiddleware.process(&request)
     }
-    
+     
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
-        try DeviceTokenSavingMiddleware.process(response)
+        DeviceTokenSavingMiddleware.process(response)
         EventEmitterMiddleware.process(data)
         try ErrorThrowingMiddleware.process(response, data: data)
     }
