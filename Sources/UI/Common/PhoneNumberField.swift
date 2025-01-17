@@ -79,7 +79,7 @@ struct PhoneNumberField: View {
     @Binding var text: String
     @State private var displayNumber = ""
     
-    @State var model = Model()
+    @State private var model = Model()
     @FocusState private var isFocused: Bool
     @Environment(ClerkTheme.self) private var clerkTheme
     
