@@ -5,13 +5,17 @@ import PackageDescription
 
 let package = Package(
     name: "Clerk",
-    platforms: [.iOS(.v17), .macCatalyst(.v17), .macOS(.v14), .watchOS(.v10), .tvOS(.v17), .visionOS(.v1)],
+    platforms: [
+        .iOS(.v17),
+        .macCatalyst(.v17),
+        .macOS(.v14),
+        .watchOS(.v10),
+        .tvOS(.v17),
+        .visionOS(.v1)
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "ClerkSDK",
-            targets: ["ClerkSDK"]
-        )
+        .library(name: "Clerk", targets: ["Clerk"]),
+        .library(name: "ClerkUI", targets: ["ClerkUI"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-algorithms", .upToNextMajor(from: "1.2.0")),
@@ -22,31 +26,31 @@ let package = Package(
         .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "3.7.4"))
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "ClerkSDK",
+            name: "Clerk",
             dependencies: [
-                .product(name: "Algorithms", package: "swift-algorithms"),
-                "SimpleKeychain",
-                "Get",
-                "Factory",
-                "Kingfisher",
-                "PhoneNumberKit"
+                .product(name: "SimpleKeychain", package: "SimpleKeychain"),
+                .product(name: "Get", package: "Get"),
+                .product(name: "Factory", package: "Factory")
             ],
-            path: "Sources",
-            exclude: [],
             swiftSettings: [
-                // For < Swift 6.0 Tools
-//                .enableExperimentalFeature("StrictConcurrency")
-                // For >= Swift 6.0 Tools
-                .enableUpcomingFeature("StrictConcurrency")
+                .enableExperimentalFeature("StrictConcurrency")
+            ]
+        ),
+        .target(
+            name: "ClerkUI",
+            dependencies: [
+                "Clerk",
+                .product(name: "Kingfisher", package: "Kingfisher"),
+                .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
+                .product(name: "Algorithms", package: "swift-algorithms")
             ]
         ),
         .testTarget(
             name: "ClerkTests",
-            dependencies: ["ClerkSDK"],
-            path: "Tests"
+            dependencies: [
+                "Clerk"
+            ]
         ),
     ]
 )

@@ -1,5 +1,5 @@
 import XCTest
-@testable import ClerkSDK
+@testable import Clerk
 
 final class ClerkTests: XCTestCase {
     func testExample() throws {

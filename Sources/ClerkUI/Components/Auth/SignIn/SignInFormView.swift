@@ -1,0 +1,248 @@
+//
+//  SignInFormView.swift
+//
+//
+//  Created by Mike Pitre on 11/3/23.
+//
+
+#if os(iOS)
+
+import SwiftUI
+import Clerk
+
+struct SignInFormView: View {
+    var clerk = Clerk.shared
+    @Environment(ClerkUIState.self) private var clerkUIState
+    @Environment(AuthView.Config.self) private var config
+    @Environment(ClerkTheme.self) private var clerkTheme
+    @State private var displayingEmailOrUsernameEntry = true
+    @State private var errorWrapper: ErrorWrapper?
+    @Binding var isLoading: Bool
+    
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case emailOrUsername, phoneNumber
+    }
+    
+    var signIn: SignIn? {
+        clerk.client?.signIn
+    }
+    
+    // returns true if email OR username is used for sign in AND phone number is used for sign in
+    private var showPhoneNumberToggle: Bool {
+        guard let environment = clerk.environment else { return false }
+        return (environment.userSettings.firstFactorAttributes.contains { $0.key == "email_address" } ||
+        environment.userSettings.firstFactorAttributes.contains { $0.key == "username" }) &&
+        environment.userSettings.firstFactorAttributes.contains { $0.key == "phone_number" }
+    }
+    
+    // returns true if phone number is enabled, and both email and username are NOT
+    private var shouldDefaultToPhoneNumber: Bool {
+        guard let environment = clerk.environment else { return false }
+        return environment.userSettings.firstFactorAttributes.contains { $0.key == "phone_number" } &&
+        (environment.userSettings.firstFactorAttributes.contains(where: { $0.key == "email_address" }) == false &&
+        environment.userSettings.firstFactorAttributes.contains(where: { $0.key == "username" }) == false)
+    }
+    
+    private var emailOrUsernameLabel: String {
+        var stringComponents = [String]()
+        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == "email_address" }) {
+            stringComponents.append("email address")
+        }
+        
+        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == "username" }) {
+            stringComponents.append("username")
+        }
+        
+        let string = stringComponents.joined(separator: " or ")
+        return string
+    }
+    
+    private var passkeysAreEnabled: Bool {
+        clerk.environment?.userSettings.config(for: "passkey")?.enabled == true
+    }
+    
+    private var passkeyAutoFillIsEnabled: Bool {
+        clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
+    }
+    
+    var hasAnInProgressPasskeyAuth: Bool {
+        signIn?.firstFactorVerification?.strategy == "passkey" &&
+        signIn?.firstFactorVerification?.status == .unverified
+    }
+        
+    var body: some View {
+        @Bindable var config = config
+        
+        VStack(spacing: 24) {
+            VStack {
+                HStack {
+                    Text(displayingEmailOrUsernameEntry ? emailOrUsernameLabel.capitalizedSentence : "Phone number")
+                        .foregroundStyle(clerkTheme.colors.textPrimary)
+                        .animation(nil, value: displayingEmailOrUsernameEntry)
+                    Spacer()
+                    
+                    if showPhoneNumberToggle {
+                        Button {
+                            withAnimation(.snappy) {
+                                displayingEmailOrUsernameEntry.toggle()
+                            }
+                        } label: {
+                            Text(displayingEmailOrUsernameEntry ? "Use phone" : "Use \(emailOrUsernameLabel)".capitalizedSentence)
+                                .frame(alignment: .trailing)
+                                .animation(nil, value: displayingEmailOrUsernameEntry)
+                        }
+                        .tint(clerkTheme.colors.textPrimary)
+                    }
+                }
+                .font(.footnote.weight(.medium))
+                
+                ZStack {
+                    if displayingEmailOrUsernameEntry {
+                        CustomTextField(text: $config.signInEmailAddressOrUsername)
+                            .textContentType(.username)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($focusedField, equals: .emailOrUsername)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    } else {
+                        PhoneNumberField(text: $config.signInPhoneNumber)
+                            .focused($focusedField, equals: .phoneNumber)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+                .onChange(of: displayingEmailOrUsernameEntry) { _, showingEmail in
+                    if focusedField != nil {
+                        focusedField = showingEmail ? .emailOrUsername : .phoneNumber
+                    }
+                }
+                .hiddenTextField(text: $config.signInPassword, textContentType: .password)
+            }
+            
+            if !config.signInPassword.isEmpty {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Password")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(clerkTheme.colors.textPrimary)
+                        Spacer()
+                    }
+                    
+                    PasswordInputView(password: $config.signInPassword)
+                        .textContentType(.password)
+                }
+            }
+            
+            AsyncButton {
+                await signInAction(
+                    strategy: .identifier(
+                        displayingEmailOrUsernameEntry ? config.signInEmailAddressOrUsername : config.signInPhoneNumber,
+                        password: config.signInPassword.isEmpty ? nil : config.signInPassword
+                    )
+                )
+            } label: {
+                Text("Continue")
+                    .opacity(isLoading ? 0 : 1)
+                    .overlay {
+                        if isLoading {
+                            ProgressView()
+                        }
+                    }
+                    .animation(.snappy, value: isLoading)
+                    .clerkStandardButtonPadding()
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(ClerkPrimaryButtonStyle())
+            .padding(.top, 8)
+        }
+        .animation(.default, value: config.signInPassword.isEmpty)
+        .clerkErrorPresenting($errorWrapper)
+        .task(id: clerk.environment?.userSettings) {
+            displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
+            
+            if passkeysAreEnabled, passkeyAutoFillIsEnabled {
+                await beginAutoFillAssistedPasskeySignIn()
+            }
+        }
+        .onDisappear {
+            PasskeyManager.controller?.cancel()
+        }
+    }
+}
+
+extension SignInFormView {
+    
+    private func signInAction(strategy: SignIn.CreateStrategy) async {
+        do {
+            KeyboardHelpers.dismissKeyboard()
+            
+            let signIn = try await SignIn.create(strategy: strategy)
+            
+            if passkeysAreEnabled, signIn.firstFactor(for: "passkey") != nil {
+                do {
+                    try await attemptSignInWithPasskey()
+                } catch {
+                    try await prepareFirstFactorIfNeeded(signIn)
+                }
+            } else {
+                try await prepareFirstFactorIfNeeded(signIn)
+            }
+            
+            clerkUIState.setAuthStepToCurrentSignInStatus()
+        } catch {
+            isLoading = false
+            if error.isCancelledError { return }
+            errorWrapper = ErrorWrapper(error: error)
+            dump(error)
+        }
+    }
+    
+    private func prepareFirstFactorIfNeeded(_ signIn: SignIn) async throws {
+        if let prepareStrategy = signIn.currentFirstFactor?.prepareFirstFactorStrategy {
+            let preparedSignIn = try await signIn.prepareFirstFactor(for: prepareStrategy)
+            
+            if preparedSignIn.firstFactorVerification?.status == .unverified,
+               preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+                try await preparedSignIn.authenticateWithRedirect()
+            }
+        }
+    }
+    
+    private func beginAutoFillAssistedPasskeySignIn() async {
+        do {
+            if !hasAnInProgressPasskeyAuth {
+                try await SignIn.create(strategy: .passkey)
+            }
+            
+            guard let signIn else { return }
+            let credential = try await signIn.getCredentialForPasskey(autofill: true)
+            isLoading = true
+            try await signIn.attemptFirstFactor(for: .passkey(publicKeyCredential: credential))
+            clerkUIState.setAuthStepToCurrentSignInStatus()
+        } catch {
+            isLoading = false
+            dump(error)
+        }
+    }
+    
+    private func attemptSignInWithPasskey() async throws {
+        PasskeyManager.controller?.cancel()
+        
+        guard var signIn else { throw ClerkClientError(message: "Unable to find a current sign in.") }
+        
+        signIn = try await signIn.prepareFirstFactor(for: .passkey)
+        let credential = try await signIn.getCredentialForPasskey()
+        isLoading = true
+        try await signIn.attemptFirstFactor(for: .passkey(publicKeyCredential: credential))
+    }
+    
+}
+
+#Preview {
+    SignInFormView(isLoading: .constant(false))
+        .padding()
+        .environment(ClerkUIState())
+}
+
+#endif
