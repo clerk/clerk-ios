@@ -65,6 +65,36 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     /// The last active token for the session.
     public let lastActiveToken: TokenResource?
     
+    /// Represents the status of a session.
+    public enum SessionStatus: String, Codable, Sendable {
+        /// The session was abandoned client-side.
+        case abandoned
+        
+        /// The session is valid, and all activity is allowed.
+        case active
+        
+        /// The user signed out of the session, but the Session remains in the Client object.
+        case ended
+        
+        /// The period of allowed activity for this session has passed.
+        case expired
+        
+        /// The user signed out of the session, and the Session was removed from the Client object.
+        case removed
+        
+        /// The session has been replaced by another one, but the Session remains in the Client object.
+        case replaced
+        
+        /// The application ended the session, and the Session was removed from the Client object.
+        case revoked
+        
+        case unknown
+        
+        public init(from decoder: Decoder) throws {
+            self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
+    }
+    
     /// Information about the user that's publicly available.
     public struct PublicUserData: Codable, Equatable, Sendable {
         /// The user's first name. This attribute will only be populated if name is enabled in instance settings.
@@ -109,36 +139,6 @@ public struct SessionActivity: Codable, Equatable, Sendable {
     
     /// Will be set to true if the session activity came from a mobile device. Set to false otherwise.
     public let isMobile: Bool?
-}
-
-/// Represents the status of a session.
-public enum SessionStatus: String, Codable, Sendable {
-    /// The session was abandoned client-side.
-    case abandoned
-    
-    /// The session is valid, and all activity is allowed.
-    case active
-    
-    /// The user signed out of the session, but the Session remains in the Client object.
-    case ended
-    
-    /// The period of allowed activity for this session has passed.
-    case expired
-    
-    /// The user signed out of the session, and the Session was removed from the Client object.
-    case removed
-    
-    /// The session has been replaced by another one, but the Session remains in the Client object.
-    case replaced
-    
-    /// The application ended the session, and the Session was removed from the Client object.
-    case revoked
-    
-    case unknown
-    
-    public init(from decoder: Decoder) throws {
-        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-    }
 }
 
 extension Session {

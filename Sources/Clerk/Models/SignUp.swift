@@ -151,6 +151,9 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
             self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
         }
     }
+}
+
+extension SignUp {
     
     /**
      This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
@@ -482,4 +485,5 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
         Clerk.shared.client = response.value.client
         return response.value.response
     }
+    
 }

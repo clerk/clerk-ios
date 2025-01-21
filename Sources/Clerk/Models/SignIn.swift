@@ -153,6 +153,9 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         public let imageUrl: String?
         public let hasImage: Bool?
     }
+}
+
+extension SignIn {
     
     /**
      Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign-in lifecycle state.
@@ -606,4 +609,5 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
             return ExternalAuthResult(signIn: self)
         }
     }
+    
 }
