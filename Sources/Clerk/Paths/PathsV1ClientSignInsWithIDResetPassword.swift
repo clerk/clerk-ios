@@ -18,7 +18,7 @@ extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
         /// Path: `v1/client/sign_ins/{id}/reset_password`
         let path: String
         
-        func post(_ params: SignIn.ResetPasswordParams) -> Request<ClientResponse<SignIn>> {
+        func post(_ params: any Encodable) -> Request<ClientResponse<SignIn>> {
             .init(path: path, method: .post, body: params)
         }
     }

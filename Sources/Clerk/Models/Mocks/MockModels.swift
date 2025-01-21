@@ -11,18 +11,16 @@ extension SignIn {
     
     public static var mock: SignIn {
         SignIn(
-            object: .signInAttempt,
             id: "1",
-            status: .needsFirstFactor,
-            identifier: "identifier",
+            status: .needsIdentifier,
             supportedIdentifiers: [.emailAddress, .phoneNumber],
+            identifier: User.mock.emailAddresses.first?.emailAddress,
             supportedFirstFactors: [.mock],
-            supportedSecondFactors: [],
+            supportedSecondFactors: nil,
             firstFactorVerification: .mockEmailCodeVerification,
             secondFactorVerification: nil,
             userData: nil,
-            createdSessionId: nil,
-            abandonAt: .distantFuture
+            createdSessionId: nil
         )
     }
     

@@ -17,12 +17,16 @@ extension SignInFactor {
     var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy? {
         switch strategy {
         case "phone_code":
+            guard let phoneNumberId = phoneNumberId else { return nil }
             return .phoneCode(phoneNumberId: phoneNumberId)
         case "email_code":
+            guard let emailAddressId else { return nil }
             return .emailCode(emailAddressId: emailAddressId)
         case "reset_password_phone_code":
+            guard let phoneNumberId else { return nil }
             return .resetPasswordPhoneCode(phoneNumberId: phoneNumberId)
         case "reset_password_email_code":
+            guard let emailAddressId else { return nil }
             return .resetPasswordEmailCode(emailAddressId: emailAddressId)
         case "passkey":
             return .passkey

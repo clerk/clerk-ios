@@ -69,7 +69,8 @@ struct SignInFactorOneEmailCodeView: View {
     
     private func prepare() async {
         do {
-            try await signIn?.prepareFirstFactor(for: .emailCode(emailAddressId: factor.emailAddressId))
+            guard let emailAddressId = factor.emailAddressId else { return }
+            try await signIn?.prepareFirstFactor(for: .emailCode(emailAddressId: emailAddressId))
         } catch {
             errorWrapper = ErrorWrapper(error: error)
             dump(error)

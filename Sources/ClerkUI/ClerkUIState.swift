@@ -74,9 +74,6 @@ extension ClerkUIState {
         case .complete:
             authIsPresented = false
             
-        case .abandoned:
-            presentedAuthStep = .signInStart
-            
         case .unknown:
             authIsPresented = false
             

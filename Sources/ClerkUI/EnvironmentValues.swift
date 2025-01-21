@@ -12,12 +12,12 @@ import Clerk
 
 extension EnvironmentValues {
     #if os(iOS)
-    @Entry var clerkUIState: ClerkUIState.default
+    @Entry var clerkUIState = ClerkUIState.defaultClerkUIState
     @Entry var authViewConfig = AuthView.Config()
     #endif
 }
 
 extension ClerkUIState {
-    static let default = ClerkUIState()
+    static let defaultClerkUIState = ClerkUIState()
 }
 

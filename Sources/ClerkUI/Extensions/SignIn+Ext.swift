@@ -133,12 +133,18 @@ extension SignIn {
     var resetPasswordStrategy: SignIn.PrepareFirstFactorStrategy? {
         guard let supportedFirstFactors else { return nil }
         
-        if supportedFirstFactors.contains(where: { $0.strategy == "reset_password_email_code" }) {
-            return .resetPasswordEmailCode()
+        if let resetPasswordEmailFactor = supportedFirstFactors.first(where: { factor in
+            factor.strategy == "reset_password_email_code" &&
+            factor.safeIdentifier == identifier
+        }), let emailAddressId = resetPasswordEmailFactor.emailAddressId {
+            return .resetPasswordEmailCode(emailAddressId: emailAddressId)
         }
         
-        if supportedFirstFactors.contains(where: { $0.strategy == "reset_password_phone_code" }) {
-            return .resetPasswordPhoneCode()
+        if let resetPasswordEmailFactor = supportedFirstFactors.first(where: { factor in
+            factor.strategy == "reset_password_phone_code" &&
+            factor.safeIdentifier == identifier
+        }), let phoneNumberId = resetPasswordEmailFactor.phoneNumberId {
+            return .resetPasswordPhoneCode(phoneNumberId: phoneNumberId)
         }
         
         return nil
