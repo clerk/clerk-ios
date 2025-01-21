@@ -96,6 +96,9 @@ struct SignInFactorOnePhoneCodeView: View {
 
 #Preview {
     SignInFactorOnePhoneCodeView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

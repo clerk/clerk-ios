@@ -124,6 +124,9 @@ struct SignInFactorOneResetView: View {
 
 #Preview {
     SignInFactorOneResetView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

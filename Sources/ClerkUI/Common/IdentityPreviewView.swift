@@ -37,6 +37,7 @@ struct IdentityPreviewView: View {
 
 #Preview {
     IdentityPreviewView(label: "clerkuser@gmail.com")
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

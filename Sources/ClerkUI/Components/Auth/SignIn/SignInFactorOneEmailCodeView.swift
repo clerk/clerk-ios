@@ -92,6 +92,9 @@ struct SignInFactorOneEmailCodeView: View {
 
 #Preview {
     SignInFactorOneEmailCodeView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

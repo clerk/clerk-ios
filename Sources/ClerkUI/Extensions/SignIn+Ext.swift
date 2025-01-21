@@ -145,26 +145,3 @@ extension SignIn {
     }
     
 }
-
-extension SignIn {
-    
-    static var mock: SignIn {
-        
-        .init(
-            object: .signInAttempt,
-            id: UUID().uuidString,
-            status: .unknown,
-            identifier: nil,
-            supportedIdentifiers: nil,
-            supportedFirstFactors: nil,
-            supportedSecondFactors: nil,
-            firstFactorVerification: nil,
-            secondFactorVerification: nil,
-            userData: nil,
-            createdSessionId: nil,
-            abandonAt: .now
-        )
-        
-    }
-    
-}

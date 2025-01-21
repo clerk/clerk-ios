@@ -26,50 +26,6 @@ import AuthenticationServices
  */
 public struct SignUp: Codable, Sendable, Equatable, Hashable {
     
-    public init(
-        id: String,
-        status: SignUp.Status,
-        requiredFields: [String],
-        optionalFields: [String],
-        missingFields: [String],
-        unverifiedFields: [String],
-        verifications: [String : Verification?],
-        username: String? = nil,
-        emailAddress: String? = nil,
-        phoneNumber: String? = nil,
-        passwordEnabled: Bool,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        unsafeMetadata: JSON? = nil,
-        publicMetadata: JSON? = nil,
-        customAction: Bool,
-        externalId: String? = nil,
-        createdSessionId: String? = nil,
-        createdUserId: String? = nil,
-        abandonAt: Date
-    ) {
-        self.id = id
-        self.status = status
-        self.requiredFields = requiredFields
-        self.optionalFields = optionalFields
-        self.missingFields = missingFields
-        self.unverifiedFields = unverifiedFields
-        self.verifications = verifications
-        self.username = username
-        self.emailAddress = emailAddress
-        self.phoneNumber = phoneNumber
-        self.passwordEnabled = passwordEnabled
-        self.firstName = firstName
-        self.lastName = lastName
-        self.unsafeMetadata = unsafeMetadata
-        self.publicMetadata = publicMetadata
-        self.customAction = customAction
-        self.externalId = externalId
-        self.createdSessionId = createdSessionId
-        self.createdUserId = createdUserId
-        self.abandonAt = abandonAt
-    }
-    
     public let id: String
     
     /**

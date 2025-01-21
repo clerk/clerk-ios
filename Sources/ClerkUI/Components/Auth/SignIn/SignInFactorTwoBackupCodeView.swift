@@ -92,6 +92,9 @@ struct SignInFactorTwoBackupCodeView: View {
 
 #Preview {
     SignInFactorTwoBackupCodeView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

@@ -8,23 +8,6 @@
 import Foundation
 
 public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
-    
-    public init(
-        id: String,
-        name: String,
-        lastUsedAt: Date? = nil,
-        createdAt: Date,
-        updatedAt: Date,
-        verification: Verification? = nil
-    ) {
-        self.id = id
-        self.name = name
-        self.lastUsedAt = lastUsedAt
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.verification = verification
-    }
-    
     public let id: String
     public let name: String
     public let lastUsedAt: Date?

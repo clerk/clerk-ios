@@ -87,6 +87,9 @@ struct SignInFactorTwoPhoneCodeView: View {
 
 #Preview {
     SignInFactorTwoPhoneCodeView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

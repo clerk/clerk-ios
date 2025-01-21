@@ -79,7 +79,9 @@ struct SignInFactorOneView: View {
 
 #Preview {
     SignInFactorOneView(factor: .mock)
+        .environment(AuthView.Config())
         .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

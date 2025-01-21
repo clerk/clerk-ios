@@ -72,6 +72,9 @@ struct SignInFactorTwoView: View {
 
 #Preview {
     SignInFactorTwoView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

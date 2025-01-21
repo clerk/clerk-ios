@@ -22,35 +22,6 @@ import AuthenticationServices
  */
 public struct SignIn: Codable, Sendable, Equatable, Hashable {
     
-    public init(
-        object: SignIn.Object,
-        id: String,
-        status: SignIn.Status,
-        identifier: String? = nil,
-        supportedIdentifiers: [SignIn.SupportedIdentifier]? = nil,
-        supportedFirstFactors: [SignInFactor]? = nil,
-        supportedSecondFactors: [SignInFactor]? = nil,
-        firstFactorVerification: Verification? = nil,
-        secondFactorVerification: Verification? = nil,
-        userData: SignIn.UserData? = nil,
-        createdSessionId: String? = nil,
-        abandonAt: Date
-    ) {
-        self.object = object
-        self.id = id
-        self.status = status
-        self.identifier = identifier
-        self.supportedIdentifiers = supportedIdentifiers
-        self.supportedFirstFactors = supportedFirstFactors
-        self.supportedSecondFactors = supportedSecondFactors
-        self.firstFactorVerification = firstFactorVerification
-        self.secondFactorVerification = secondFactorVerification
-        self.userData = userData
-        self.createdSessionId = createdSessionId
-        self.abandonAt = abandonAt
-    }
-    
-    
     /// String representing the object's type. Objects of the same type share the same value.
     public let object: Object
     

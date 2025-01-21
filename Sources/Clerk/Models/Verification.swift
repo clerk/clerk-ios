@@ -10,24 +10,6 @@ import Foundation
 /// The state of the verification process of a sign-in or sign-up attempt.
 public struct Verification: Codable, Equatable, Hashable, Sendable {
     
-    public init(
-        status: Verification.Status? = nil,
-        strategy: String? = nil,
-        attempts: Int? = nil,
-        expireAt: Date? = nil,
-        error: ClerkAPIError? = nil,
-        externalVerificationRedirectUrl: String? = nil,
-        nonce: String? = nil
-    ) {
-        self.status = status
-        self.strategy = strategy
-        self.attempts = attempts
-        self.expireAt = expireAt
-        self.error = error
-        self.externalVerificationRedirectUrl = externalVerificationRedirectUrl
-        self.nonce = nonce
-    }
-    
     /// The state of the verification.
     public let status: Status?
     

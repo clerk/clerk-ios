@@ -90,6 +90,9 @@ struct SignInForgotPasswordView: View {
 
 #Preview {
     SignInForgotPasswordView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

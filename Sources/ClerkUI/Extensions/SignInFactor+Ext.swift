@@ -86,20 +86,3 @@ extension SignInFactor {
     }
     
 }
-
-extension SignInFactor {
-    
-    static var mock: SignInFactor {
-        
-        .init(
-            strategy: "",
-            emailAddressId: nil,
-            phoneNumberId: nil,
-            safeIdentifier: nil,
-            primary: nil,
-            default: nil
-        )
-        
-    }
-    
-}

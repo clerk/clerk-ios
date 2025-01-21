@@ -59,7 +59,9 @@ struct SignInFactorOneUseAnotherMethodView: View {
 
 #Preview {
     SignInFactorOneUseAnotherMethodView(currentFactor: .mock)
+        .environment(AuthView.Config())
         .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

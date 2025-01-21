@@ -9,7 +9,6 @@
 
 import SwiftUI
 import Clerk
-import SimpleKeychain
 
 struct SignInFactorOnePasswordView: View {
     var clerk = Clerk.shared
@@ -118,6 +117,7 @@ struct SignInFactorOnePasswordView: View {
     SignInFactorOnePasswordView(factor: .mock)
         .environment(AuthView.Config())
         .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

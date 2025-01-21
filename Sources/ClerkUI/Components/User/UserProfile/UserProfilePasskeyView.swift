@@ -92,6 +92,7 @@ struct UserProfilePasskeyView: View {
 #Preview {
     UserProfilePasskeyView(passkey: .mock)
         .padding()
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

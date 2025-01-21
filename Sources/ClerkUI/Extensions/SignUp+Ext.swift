@@ -32,34 +32,3 @@ extension SignUp {
     }
     
 }
-
-extension SignUp {
-    
-    static var mock: SignUp {
-        
-        .init(
-            id: UUID().uuidString,
-            status: .unknown,
-            requiredFields: [],
-            optionalFields: [],
-            missingFields: [],
-            unverifiedFields: [],
-            verifications: [:],
-            username: nil,
-            emailAddress: nil,
-            phoneNumber: nil,
-            passwordEnabled: true,
-            firstName: nil,
-            lastName: nil,
-            unsafeMetadata: nil,
-            publicMetadata: nil,
-            customAction: false,
-            externalId: nil,
-            createdSessionId: nil,
-            createdUserId: nil,
-            abandonAt: .now
-        )
-        
-    }
-    
-}

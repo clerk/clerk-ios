@@ -17,60 +17,6 @@ import AuthenticationServices
  */
 public struct User: Codable, Equatable, Sendable, Hashable {
     
-    public init(
-        id: String,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        username: String? = nil,
-        imageUrl: String,
-        hasImage: Bool,
-        primaryEmailAddressId: String? = nil,
-        emailAddresses: [EmailAddress],
-        primaryPhoneNumberId: String? = nil,
-        phoneNumbers: [PhoneNumber],
-        passkeys: [Passkey],
-        passwordEnabled: Bool,
-        twoFactorEnabled: Bool,
-        totpEnabled: Bool,
-        backupCodeEnabled: Bool,
-        deleteSelfEnabled: Bool,
-        externalAccounts: [ExternalAccount],
-        enterpriseAccounts: [EnterpriseAccount]? = nil,
-        publicMetadata: JSON? = nil,
-        unsafeMetadata: JSON? = nil,
-        lastSignInAt: Date,
-        createdAt: Date,
-        updatedAt: Date,
-        createOrganizationEnabled: Bool,
-        legalAcceptedAt: Date? = nil
-    ) {
-        self.id = id
-        self.firstName = firstName
-        self.lastName = lastName
-        self.username = username
-        self.imageUrl = imageUrl
-        self.hasImage = hasImage
-        self.primaryEmailAddressId = primaryEmailAddressId
-        self.emailAddresses = emailAddresses
-        self.primaryPhoneNumberId = primaryPhoneNumberId
-        self.phoneNumbers = phoneNumbers
-        self.passkeys = passkeys
-        self.passwordEnabled = passwordEnabled
-        self.twoFactorEnabled = twoFactorEnabled
-        self.totpEnabled = totpEnabled
-        self.backupCodeEnabled = backupCodeEnabled
-        self.deleteSelfEnabled = deleteSelfEnabled
-        self.externalAccounts = externalAccounts
-        self.enterpriseAccounts = enterpriseAccounts
-        self.publicMetadata = publicMetadata
-        self.unsafeMetadata = unsafeMetadata
-        self.lastSignInAt = lastSignInAt
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.createOrganizationEnabled = createOrganizationEnabled
-        self.legalAcceptedAt = legalAcceptedAt
-    }
-    
     /// A unique identifier for the user.
     public let id: String
     

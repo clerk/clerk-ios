@@ -77,6 +77,9 @@ struct SignInFactorTwoAlternativeMethodsView: View {
 
 #Preview {
     SignInFactorTwoAlternativeMethodsView(currentFactor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

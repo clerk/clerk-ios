@@ -10,22 +10,6 @@ import Foundation
 /// Each factor contains information about the verification strategy that can be used.
 public struct SignInFactor: Codable, Equatable, Hashable, Sendable {
     
-    public init(
-        strategy: String,
-        emailAddressId: String? = nil,
-        phoneNumberId: String? = nil,
-        safeIdentifier: String? = nil,
-        primary: Bool? = nil,
-        `default`: Bool? = nil
-    ) {
-        self.strategy = strategy
-        self.emailAddressId = emailAddressId
-        self.phoneNumberId = phoneNumberId
-        self.safeIdentifier = safeIdentifier
-        self.primary = primary
-        self.`default` = `default`
-    }
-    
     /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
     public let strategy: String
         

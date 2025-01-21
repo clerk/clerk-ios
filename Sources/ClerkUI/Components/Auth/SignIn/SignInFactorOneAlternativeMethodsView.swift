@@ -145,6 +145,9 @@ struct SignInFactorOneAlternativeMethodsView: View {
 #Preview {
     SignInFactorOneAlternativeMethodsView(currentFactor: .mock)
         .padding()
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

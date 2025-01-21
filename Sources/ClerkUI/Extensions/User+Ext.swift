@@ -86,39 +86,3 @@ extension User {
     }
     
 }
-
-extension User {
-    
-    static var mock: User {
-        
-        .init(
-            id: UUID().uuidString,
-            firstName: "First",
-            lastName: "Last",
-            username: "Username",
-            imageUrl: "",
-            hasImage: false,
-            primaryEmailAddressId: nil,
-            emailAddresses: [],
-            primaryPhoneNumberId: nil,
-            phoneNumbers: [],
-            passkeys: [],
-            passwordEnabled: false,
-            twoFactorEnabled: false,
-            totpEnabled: false,
-            backupCodeEnabled: false,
-            deleteSelfEnabled: true,
-            externalAccounts: [],
-            enterpriseAccounts: nil,
-            publicMetadata: nil,
-            unsafeMetadata: nil,
-            lastSignInAt: .now,
-            createdAt: .now,
-            updatedAt: .now,
-            createOrganizationEnabled: false,
-            legalAcceptedAt: nil
-        )
-        
-    }
-    
-}

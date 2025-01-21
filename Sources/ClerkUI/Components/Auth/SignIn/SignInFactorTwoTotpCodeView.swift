@@ -70,6 +70,9 @@ struct SignInFactorTwoTotpCodeView: View {
 
 #Preview {
     SignInFactorTwoTotpCodeView(factor: .mock)
+        .environment(AuthView.Config())
+        .environment(ClerkUIState())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif
