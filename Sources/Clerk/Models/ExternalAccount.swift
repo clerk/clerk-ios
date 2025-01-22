@@ -67,11 +67,6 @@ extension ExternalAccount {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        // if the url query doesnt contain prompt, add it
-        if let query = url.query(), !query.contains("prompt") {
-            url.append(queryItems: [.init(name: "prompt", value: "login")])
-        }
-        
         let authSession = WebAuthentication(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession

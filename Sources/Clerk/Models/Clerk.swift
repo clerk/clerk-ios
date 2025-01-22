@@ -208,24 +208,6 @@ final public class Clerk {
         sessionPollingTask = nil
     }
     
-//    private func prefetchImages(environment: Clerk.Environment) {
-//        var imageUrls: [URL?] = []
-//        
-//        if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
-//            imageUrls.append(logoUrl)
-//        }
-//        
-//        environment.userSettings.authenticatableSocialProviders.forEach { provider in
-//            imageUrls.append(provider.iconImageUrl())
-//            if provider.hasDarkModeVariant {
-//                imageUrls.append(provider.iconImageUrl(darkMode: true))
-//            }
-//        }
-//        
-//        let prefetcher = ImagePrefetcher(urls: imageUrls.compactMap { $0 })
-//        prefetcher.start()
-//    }
-    
     /// Enable for additional debugging signals
     public var debugMode: Bool = false
 }

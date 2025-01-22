@@ -45,15 +45,6 @@ public struct Client: Codable, Sendable, Equatable {
 
 extension Client {
     
-    /// Creates a new client for the current instance.
-    @discardableResult @MainActor
-    static func create() async throws -> Client {
-        let request = ClerkFAPI.v1.client.put
-        let client = try await Clerk.shared.apiClient.send(request).value.response
-        Clerk.shared.client = client
-        return client
-    }
-    
     /// Retrieves the current client.
     @discardableResult @MainActor
     public static func get() async throws -> Client? {
@@ -69,6 +60,15 @@ extension Client {
         try await Client.get()
     }
     
+    /// Creates a new client for the current instance.
+    @discardableResult @MainActor
+    static func create() async throws -> Client {
+        let request = ClerkFAPI.v1.client.put
+        let client = try await Clerk.shared.apiClient.send(request).value.response
+        Clerk.shared.client = client
+        return client
+    }
+    
     /// Fetches the client from the server, if one doesn't exist for the device then create one.
     @discardableResult @MainActor
     static func getOrCreate() async throws -> Client? {
@@ -78,29 +78,6 @@ extension Client {
         } else {
             return try await Client.create()
         }
-    }
-    
-    /**
-     Use this method to kick-off the sign in flow. It creates a SignIn object and stores the sign-in lifecycle state.
-     
-     Depending on the use-case and the params you pass to the create method, it can either complete the sign-in process in one go, or simply collect part of the necessary data for completing authentication at a later stage.
-     */
-    @discardableResult @MainActor
-    public func createSignIn(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-        try await SignIn.create(strategy: strategy)
-    }
-    
-    /**
-     This method initiates a new sign-up flow. It creates a new `SignUp` object and de-activates any existing `SignUp` that the client might already had in progress.
-     
-     Choices on the instance settings affect which options are available to use.
-     
-     This sign up might be complete if you supply the required fields in one go.
-     However, this is not mandatory. Our sign-up process provides great flexibility and allows users to easily create multi-step sign-up flows.
-     */
-    @discardableResult @MainActor
-    public func createSignUp(strategy: SignUp.CreateStrategy) async throws -> SignUp {
-        try await SignUp.create(strategy: strategy)
     }
     
 }
