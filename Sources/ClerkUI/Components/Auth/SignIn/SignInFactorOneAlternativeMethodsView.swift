@@ -38,7 +38,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
                 result = try await signInWithApple()
             } else {
                 result = try await SignIn
-                    .create(strategy: .oauth(provider))
+                    .create(strategy: .oauth(provider: provider))
                     .authenticateWithRedirect()
             }
             

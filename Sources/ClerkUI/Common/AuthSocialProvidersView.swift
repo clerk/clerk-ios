@@ -88,11 +88,10 @@ struct AuthSocialProvidersView: View {
         switch useCase {
         case .signIn:
             transferFlowResult = try await SignIn
-                .authenticateWithRedirect(.oauth(provider: provider))
+                .authenticateWithRedirect(strategy: .oauth(provider: provider))
         case .signUp:
             transferFlowResult = try await SignUp
-                .create(strategy: .oauth(provider))
-                .authenticateWithRedirect()
+                .authenticateWithRedirect(strategy: .oauth(provider: provider))
         }
         
         if case .signUp(let signUp) = transferFlowResult,
@@ -122,7 +121,7 @@ struct AuthSocialProvidersView: View {
             transferFlowResult = try await SignUp
                 .create(
                     strategy: .idToken(
-                        .apple,
+                        provider: .apple,
                         idToken: idToken,
                         firstName: appleIdCredential.fullName?.givenName,
                         lastName: appleIdCredential.fullName?.familyName

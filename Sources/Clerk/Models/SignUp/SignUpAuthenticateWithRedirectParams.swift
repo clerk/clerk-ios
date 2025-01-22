@@ -1,13 +1,13 @@
 //
-//  File.swift
+//  SignUpAuthenticateWithRedirectParams.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/21/25.
+//  Created by Mike Pitre on 1/22/25.
 //
 
 import Foundation
 
-extension SignIn {
+extension SignUp {
     
     /// Represents the parameters used for authenticating with a redirect.
     ///
@@ -43,7 +43,7 @@ extension SignIn {
         /// The user will be authenticated with their enterprise SSO account.
         case enterpriseSSO(identifier: String)
         
-        var signInStrategy: SignIn.CreateStrategy {
+        var signUpStrategy: SignUp.CreateStrategy {
             switch self {
             case .oauth(let provider):
                 return .oauth(provider: provider)

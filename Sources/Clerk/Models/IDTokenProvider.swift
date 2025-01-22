@@ -13,7 +13,7 @@ public enum IDTokenProvider {
     case apple
     
     /// Returns the corresponding strategy string for the identity provider.
-    public var strategy: String {
+    var strategy: String {
         switch self {
         case .apple:
             return "oauth_token_apple"

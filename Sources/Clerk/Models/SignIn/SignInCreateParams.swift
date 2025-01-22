@@ -60,7 +60,7 @@ extension SignIn {
         /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
         var oidcLoginHint: String?
         
-        /// The ID token provider used for authentication (e.g., SignInWithApple).
+        /// The ID token from a provider used for authentication (e.g., SignInWithApple).
         var token: String?
     }
 
@@ -72,9 +72,9 @@ extension SignIn {
         ///
         /// - Parameters:
         ///   - emailAddress: The email address associated with the user's enterprise SSO account.
-        case enterpriseSSO(_ emailAddress: String)
+        case enterpriseSSO(identifier: String)
         
-        /// The user will be authenticated with an ID token provider, such as SignInWithApple.
+        /// The user will be authenicated using an ID Token, typically obtained from third-party identity providers like Apple.
         ///
         /// - Parameters:
         ///   - provider: The ID token provider used for authentication (e.g., SignInWithApple).
@@ -92,7 +92,7 @@ extension SignIn {
         ///
         /// - Parameters:
         ///   - provider: The OAuth provider used for authentication, such as Google or Facebook.
-        case oauth(_ provider: OAuthProvider)
+        case oauth(provider: OAuthProvider)
 
         /// The user will be authenticated with their passkey.
         case passkey
@@ -101,6 +101,11 @@ extension SignIn {
         ///
         /// This is useful for seamlessly transitioning a user from a sign-up attempt to a sign-in attempt.
         case transfer
+        
+        /// The `SignIn` will be created without any parameters.
+        ///
+        /// This is useful for inspecting a newly created `SignIn` object before deciding on a strategy.
+        case none
 
         
         @MainActor
@@ -123,6 +128,9 @@ extension SignIn {
                 
             case .transfer:
                 .init(transfer: true)
+                
+            case .none:
+                .init()
             }
         }
     }

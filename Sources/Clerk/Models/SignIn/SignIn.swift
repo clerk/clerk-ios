@@ -203,7 +203,7 @@ extension SignIn {
     #if !os(tvOS) && !os(watchOS)
     /// Creates a new ``SignIn`` and initiates an external authentication flow using a redirect-based strategy.
     ///
-    /// This function handles the process of creating a sign-in instance,
+    /// This function handles the process of creating a ``SignIn`` instance,
     /// starting an external web authentication session, and processing the callback URL upon successful
     /// authentication.
     ///
@@ -222,10 +222,10 @@ extension SignIn {
     ///
     /// Example:
     /// ```swift
-    /// let result = try await SignIn.authenticateWithRedirect(.oauth(provider: .google))
+    /// let result = try await SignIn.authenticateWithRedirect(strategy: .oauth(provider: .google))
     /// ```
     @discardableResult @MainActor
-    public static func authenticateWithRedirect(_ strategy: AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    public static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
         let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
         
         guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
@@ -362,8 +362,7 @@ extension SignIn {
     /// Authenticates the user using an ID Token and a specified provider.
     ///
     /// This method facilitates authentication using an ID token provided by a specific authentication provider.
-    /// It determines whether the user needs to be transferred to a sign-up flow (e.g., if the current sign-in
-    /// cannot proceed).
+    /// It determines whether the user needs to be transferred to a sign-up flow.
     ///
     /// - Parameters:
     ///   - provider: The identity provider associated with the ID token. See ``IDTokenProvider`` for supported values.
@@ -390,8 +389,7 @@ extension SignIn {
     /// Authenticates the user using an ID Token and a specified provider.
     ///
     /// This method completes authentication using an ID token provided by a specific authentication provider.
-    /// It determines whether the user needs to be transferred to a sign-up flow (e.g., if the current sign-in
-    /// cannot proceed).
+    /// It determines whether the user needs to be transferred to a sign-up flow.
     ///
     /// - Throws:``ClerkClientError``
     ///
