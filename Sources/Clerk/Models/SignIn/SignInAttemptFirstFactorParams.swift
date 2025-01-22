@@ -7,6 +7,22 @@
 
 extension SignIn {
     
+    /// A parameter object for attempting the first factor verification process.
+    public struct AttemptFirstFactorParams: Encodable {
+        
+        /// The verification strategy being used.
+        public let strategy: String
+        
+        /// The one-time code sent to the user (if applicable).
+        public var code: String?
+        
+        /// The user's password (if applicable).
+        public var password: String?
+        
+        /// The user's passkey public key credential (if applicable).
+        public var publicKeyCredential: String?
+    }
+    
     /// Defines the available strategies for completing the first factor verification process.
     ///
     /// Each strategy specifies a method of verifying the user during the sign-in process. The selected strategy determines how the verification will be carried out and which parameters are required.
@@ -53,21 +69,5 @@ extension SignIn {
                 return .init(strategy: "reset_password_phone_code", code: code)
             }
         }
-    }
-
-    /// Represents the parameters required to attempt the first factor verification.
-    public struct AttemptFirstFactorParams: Encodable {
-        
-        /// The verification strategy being used.
-        public let strategy: String
-        
-        /// The one-time code sent to the user (if applicable).
-        public var code: String?
-        
-        /// The user's password (if applicable).
-        public var password: String?
-        
-        /// The user's passkey public key credential (if applicable).
-        public var publicKeyCredential: String?
     }
 }

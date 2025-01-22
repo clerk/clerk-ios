@@ -200,82 +200,113 @@ extension SignIn {
         return response.value.response
     }
     
-    /// Returns the current sign-in.
-    @discardableResult @MainActor
-    public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-        let request = ClerkFAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
-        return response.value.response
-    }
-        
     #if !os(tvOS) && !os(watchOS)
-    /// Signs in users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
+    /// Creates a new ``SignIn`` and initiates an external authentication flow using a redirect-based strategy.
+    ///
+    /// This function handles the process of creating a sign-in instance,
+    /// starting an external web authentication session, and processing the callback URL upon successful
+    /// authentication.
+    ///
+    /// - Parameters:
+    ///   - strategy: The authentication strategy to use for the external authentication flow.
+    ///               See ``SignIn/AuthenticateWithRedirectStrategy`` for available options.
+    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+    ///                                         browser session (default is `false`). When `true`, the session
+    ///                                         does not persist cookies or other data between sessions, ensuring
+    ///                                         a private browsing experience.
+    ///
+    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+    ///           encountered during the sign-in or authentication processes.
+    ///
+    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignIn`` or ``SignUp``.
+    ///
+    /// Example:
+    /// ```swift
+    /// let result = try await SignIn.authenticateWithRedirect(.oauth(provider: .google))
+    /// ```
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
-        guard let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: redirectUrl) else {
+    public static func authenticateWithRedirect(_ strategy: AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+        let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
+        
+        guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
+        let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+        let callbackUrl = try await authSession.start()
+        let transferFlowResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
+        return transferFlowResult
+    }
+    #endif
+        
+    #if !os(tvOS) && !os(watchOS)
+    /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignIn`` instance.
+    ///
+    /// This function starts an external web authentication session,
+    /// and processes the callback URL upon successful authentication.
+    ///
+    /// - Parameters:
+    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+    ///                                         browser session (default is `false`). When `true`, the session
+    ///                                         does not persist cookies or other data between sessions,
+    ///                                         ensuring a private browsing experience.
+    ///
+    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+    ///           encountered during the authentication process.
+    ///
+    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
+    ///            which can be either a ``SignIn`` or ``SignUp``.
+    ///
+    /// Example:
+    /// ```swift
+    /// let signIn = try await SignIn.create(strategy: .oauth(provider: .google))
+    /// let result = try await signIn.authenticateWithRedirect()
+    /// ```
+    @discardableResult @MainActor
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+        guard let externalVerificationRedirectUrl = firstFactorVerification?.externalVerificationRedirectUrl,
+              let url = URL(string: externalVerificationRedirectUrl) else {
+            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+        }
+
         let authSession = WebAuthentication(
             url: url,
             prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
-        
+
         let callbackUrl = try await authSession.start()
-        
-        let externalAuthResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
-        return externalAuthResult
+        let transferFlowResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
+        return transferFlowResult
     }
+
     #endif
     
-    private var needsTransferToSignUp: Bool {
-        firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
-    }
-    
-    @discardableResult @MainActor
-    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
-        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-            
-            let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce)
-            return ExternalAuthResult(signIn: signIn)
-            
-        } else {
-            // transfer flow
-            
-            let signIn = try await Client.get()?.signIn
-            
-            if signIn?.needsTransferToSignUp == true {
-                
-                let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.captchaWidgetType != nil
-                
-                if botProtectionIsEnabled {
-
-                    return ExternalAuthResult(signIn: signIn)
-                    
-                } else {
-                    
-                    let signUp = try await SignUp.create(strategy: .transfer)
-                    return ExternalAuthResult(signUp: signUp)
-                    
-                }
-                
-            } else {
-                
-                return ExternalAuthResult(signIn: signIn)
-                
-            }
-        }
-    }
-    
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    /// Will present the system sheet asking the user if they want to sign in with their passkey.
+    /// Presents the system sheet to allow the user to sign in using their passkey.
+    ///
+    /// This method handles the process of requesting a credential for passkey-based authentication by interacting with the
+    /// platform's authentication services. It supports both autofill-assisted flows and standard credential selection flows,
+    /// allowing for a seamless user experience.
+    ///
+    /// - Parameters:
+    ///   - autofill: A Boolean indicating whether to use an autofill-assisted flow (default is `false`).
+    ///   - preferImmediatelyAvailableCredentials: Tells the authorization controller to prefer credentials that are immediately available on the local device (default is `true`).
+    ///
+    /// - Throws: ``ClerkClientError``
+    ///
+    /// - Returns: A `String` containing the passkey credential as a JSON-encoded string. This includes the necessary
+    ///            information for verifying the user's identity with the public key credential response.
+    ///
+    /// Example:
+    /// ```swift
+    /// let signIn = try await SignIn.create(strategy: .passkey)
+    /// let credential = try await signIn.getCredentialForPasskey()
+    /// ```
+    ///
+    /// - Note: This method uses `ASAuthorizationPlatformPublicKeyCredentialAssertion` to retrieve the passkey credentials
+    ///         and formats them according to the WebAuthn standard.
     @MainActor
-    public func getCredentialForPasskey(
-        autofill: Bool = false,
-        preferImmediatelyAvailableCredentials: Bool = true
-    ) async throws -> String {
-        
+    public func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
         guard
             let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
             let challengeString = nonceJSON["challenge"]?.stringValue,
@@ -305,15 +336,13 @@ extension SignIn {
             )
         #endif
         
-        
-        
         guard
             let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
             let authenticatorData = credentialAssertion.rawAuthenticatorData
         else {
             throw ClerkClientError(message: "Invalid credential type.")
         }
-                
+        
         let publicKeyCredential: [String: any Encodable] = [
             "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
             "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
@@ -330,24 +359,102 @@ extension SignIn {
     }
     #endif
     
-    /// Authenticate with an ID Token
+    /// Authenticates the user using an ID Token and a specified provider.
+    ///
+    /// This method facilitates authentication using an ID token provided by a specific authentication provider.
+    /// It determines whether the user needs to be transferred to a sign-up flow (e.g., if the current sign-in
+    /// cannot proceed).
+    ///
+    /// - Parameters:
+    ///   - provider: The identity provider associated with the ID token. See ``IDTokenProvider`` for supported values.
+    ///   - idToken: The ID token to use for authentication, obtained from the provider during the sign-in process.
+    ///
+    /// - Throws:``ClerkClientError``
+    ///
+    /// - Returns: An ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
+    ///
+    /// ### Example
+    /// ```swift
+    /// let result = try await SignIn.authenticateWithIdToken(
+    ///     provider: .apple,
+    ///     idToken: idToken
+    /// )
+    /// ```
     @discardableResult @MainActor
-    public func authenticateWithIdToken() async throws -> ExternalAuthResult {
-        
-        let botProtectionIsEnabled = Clerk.shared.environment?.displayConfig.captchaWidgetType != nil
-        
-        if needsTransferToSignUp {
-            if botProtectionIsEnabled {
-                // this is a sign in that needs manual transfer (developer needs to provide captcha token to `SignUp.create()`)
-                let signIn = try await Client.get()?.signIn
-                return ExternalAuthResult(signIn: signIn)
-            } else {
-                let signUp = try await SignUp.create(strategy: .transfer)
-                return ExternalAuthResult(signUp: signUp)
-            }
+    public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+        let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))
+        let result = try await signIn.handleTransferFlow()
+        return result
+    }
+    
+    /// Authenticates the user using an ID Token and a specified provider.
+    ///
+    /// This method completes authentication using an ID token provided by a specific authentication provider.
+    /// It determines whether the user needs to be transferred to a sign-up flow (e.g., if the current sign-in
+    /// cannot proceed).
+    ///
+    /// - Throws:``ClerkClientError``
+    ///
+    /// - Returns: ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
+    ///
+    /// ### Example
+    /// ```swift
+    /// let signIn = try await SignIn.create(strategy: .idToken(provider: .apple, idToken: "idToken"))
+    /// let result = try await signIn.authenticateWithIdToken()
+    /// ```
+    @discardableResult @MainActor
+    public func authenticateWithIdToken() async throws -> TransferFlowResult {
+        try await self.handleTransferFlow()
+    }
+}
+
+extension SignIn {
+    
+    // MARK: - Private Helpers
+    
+    /// Helper to determine if the SignIn needs to be transferred to a SignUp
+    private var needsTransferToSignUp: Bool {
+        firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+    }
+    
+    /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
+    private func handleTransferFlow() async throws -> TransferFlowResult {
+        if needsTransferToSignUp == true {
+            let signUp = try await SignUp.create(strategy: .transfer)
+            return .signUp(signUp)
         } else {
-            // this should be a completed sign in
-            return ExternalAuthResult(signIn: self)
+            return .signIn(self)
+        }
+    }
+    
+    /// Returns the current sign-in.
+    @discardableResult @MainActor
+    public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
+        let request = ClerkFAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    
+    /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
+    @discardableResult @MainActor
+    private static func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
+            
+            guard let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce) else {
+                throw ClerkClientError(message: "Unable to retrieve the current sign in.")
+            }
+            
+            return .signIn(signIn)
+            
+        } else {
+            // transfer flow
+            guard let signIn = try await Client.get()?.signIn else {
+                throw ClerkClientError(message: "Unable to retrieve the current sign in.")
+            }
+            
+            let result = try await signIn.handleTransferFlow()
+            return result
         }
     }
     

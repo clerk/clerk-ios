@@ -29,7 +29,7 @@ public final class PasskeyManager: NSObject {
     private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
     @MainActor
-    public func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
+    func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -68,7 +68,7 @@ public final class PasskeyManager: NSObject {
 
     #if os(iOS) && !targetEnvironment(macCatalyst)
     @MainActor
-    public func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
+    func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             
@@ -88,7 +88,7 @@ public final class PasskeyManager: NSObject {
     #endif
     
     @MainActor
-    public func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
+    func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             

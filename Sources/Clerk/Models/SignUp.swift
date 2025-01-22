@@ -218,7 +218,7 @@ extension SignUp {
             actionCompleteRedirectUrl: String? = nil,
             transfer: Bool? = nil,
             token: String? = nil,
-            legalAccepted: Bool? = nil,
+            legalAccepted: Bool? = nil
         ) {
             self.firstName = firstName
             self.lastName = lastName
@@ -363,7 +363,7 @@ extension SignUp {
     #if !os(tvOS) && !os(watchOS)
     /// Signs up users via OAuth. This is commonly known as Single Sign On (SSO), where an external account is used for verifying the user's identity.
     @discardableResult @MainActor
-    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAuthResult {
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
         guard
             let verification = verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -379,8 +379,8 @@ extension SignUp {
         
         let callbackUrl = try await authSession.start()
         
-        let externalAuthResult = try await SignUp.handleOAuthCallbackUrl(callbackUrl)
-        return externalAuthResult
+        let transferFlowResult = try await SignUp.handleOAuthCallbackUrl(callbackUrl)
+        return transferFlowResult
     }
     #endif
     
@@ -388,37 +388,42 @@ extension SignUp {
         verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
     }
     
+    /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
+    private func handleTransferFlow() async throws -> TransferFlowResult {
+        if needsTransferToSignIn == true {
+            let signIn = try await SignIn.create(strategy: .transfer)
+            return .signIn(signIn)
+        } else {
+            return .signUp(self)
+        }
+    }
+    
     @discardableResult @MainActor
-    static func handleOAuthCallbackUrl(_ url: URL) async throws -> ExternalAuthResult {
+    static func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
             
-            let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce)
-            return ExternalAuthResult(signUp: signUp)
+            guard let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce) else {
+                throw ClerkClientError(message: "Unable to retrieve the current sign up.")
+            }
+            
+            return .signUp(signUp)
             
         } else {
             // transfer flow
             
-            let signUp = try await Client.get()?.signUp
-            
-            if signUp?.needsTransferToSignIn == true {
-                let signIn = try await SignIn.create(strategy: .transfer)
-                return ExternalAuthResult(signIn: signIn)
-            } else {
-                return ExternalAuthResult(signUp: signUp)
+            guard let signUp = try await Client.get()?.signUp else {
+                throw ClerkClientError(message: "Unable to retrive the current sign up.")
             }
+            
+            let result = try await signUp.handleTransferFlow()
+            return result
         }
     }
     
     /// Creates a sign up with an Apple id token
     @discardableResult @MainActor
-    public func authenticateWithIdToken() async throws -> ExternalAuthResult {
-        if needsTransferToSignIn {
-            let signIn = try await SignIn.create(strategy: .transfer)
-            return ExternalAuthResult(signIn: signIn)
-        } else {
-            try await Client.get()
-            return ExternalAuthResult(signUp: self)
-        }
+    public func authenticateWithIdToken() async throws -> TransferFlowResult {
+        try await handleTransferFlow()
     }
     
     /// Returns the current sign up.

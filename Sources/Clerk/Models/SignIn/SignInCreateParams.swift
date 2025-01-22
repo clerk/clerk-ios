@@ -1,0 +1,130 @@
+//
+//  SignInCreate.swift
+//  Clerk
+//
+//  Created by Mike Pitre on 1/21/25.
+//
+
+import Foundation
+
+extension SignIn {
+    
+    /// Represents the parameters required to initiate a sign-in flow.
+    ///
+    /// This structure encapsulates the various options for initiating a sign-in, including the authentication strategy, user identifier, optional passwords, and additional settings for redirect URLs or OAuth-specific parameters.
+    struct SignInCreateParams: Encodable {
+        
+        /// The first factor verification strategy to use in the sign-in flow.
+        ///
+        /// Depends on the `identifier` value, and each authentication identifier supports different verification strategies.
+        var strategy: String?
+        
+        /// The authentication identifier for the sign-in.
+        ///
+        /// This can be the value of the user's email address, phone number, username, or Web3 wallet address.
+        var identifier: String?
+        
+        /// The user's password.
+        ///
+        /// Only supported if the `strategy` is set to `'password'` and password authentication is enabled.
+        var password: String?
+        
+        /// A ticket or token generated from the Backend API.
+        ///
+        /// Required if the `strategy` is set to `'ticket'`.
+        var ticket: String?
+        
+        /// The URL to redirect to after successful authorization from the OAuth provider or during certain email-based sign-in flows.
+        ///
+        /// - If `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`, this specifies the full URL or path the OAuth provider should redirect to after successful authorization. Typically, this will be a `/sso-callback` route that calls `Clerk.handleRedirectCallback` or mounts the `<AuthenticateWithRedirectCallback />` component.
+        /// - If `strategy` is `'email_link'`, this specifies the URL that the user will be redirected to when they visit the email link.
+        var redirectUrl: String?
+        
+        /// The URL to redirect to after the sign-in is completed.
+        ///
+        /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
+        var actionCompleteRedirectUrl: String?
+        
+        /// Indicates whether the sign-in will attempt to retrieve information from the active sign-up instance to complete the sign-in process.
+        ///
+        /// Useful when transitioning seamlessly from a sign-up attempt to a sign-in attempt.
+        var transfer: Bool?
+        
+        /// The value to pass to the OIDC `prompt` parameter in the generated OAuth redirect URL.
+        ///
+        /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
+        var oidcPrompt: String?
+        
+        /// The value to pass to the OIDC `login_hint` parameter in the generated OAuth redirect URL.
+        ///
+        /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
+        var oidcLoginHint: String?
+        
+        /// The ID token provider used for authentication (e.g., SignInWithApple).
+        var token: String?
+    }
+
+    
+    /// Represents the various strategies for creating a `SignIn` request.
+    public enum CreateStrategy {
+        
+        /// The user will be authenticated either through SAML or OIDC depending on the configuration of their enterprise SSO account.
+        ///
+        /// - Parameters:
+        ///   - emailAddress: The email address associated with the user's enterprise SSO account.
+        case enterpriseSSO(_ emailAddress: String)
+        
+        /// The user will be authenticated with an ID token provider, such as SignInWithApple.
+        ///
+        /// - Parameters:
+        ///   - provider: The ID token provider used for authentication (e.g., SignInWithApple).
+        ///   - idToken: The ID token issued by the provider for authentication.
+        case idToken(provider: IDTokenProvider, idToken: String)
+
+        /// The user will be authenticated with the provided identifier.
+        ///
+        /// - Parameters:
+        ///   - identifier: The authentication identifier for the sign-in. This can be the user's email address, phone number, username, or Web3 wallet address.
+        ///   - password: The user's password. Only supported if the `strategy` is set to `'password'` and password authentication is enabled.
+        case identifier(_ identifier: String, password: String? = nil)
+
+        /// The user will be authenticated with their social connection account.
+        ///
+        /// - Parameters:
+        ///   - provider: The OAuth provider used for authentication, such as Google or Facebook.
+        case oauth(_ provider: OAuthProvider)
+
+        /// The user will be authenticated with their passkey.
+        case passkey
+
+        /// The `SignIn` will attempt to retrieve information from the active `SignUp` instance and use it to complete the sign-in process.
+        ///
+        /// This is useful for seamlessly transitioning a user from a sign-up attempt to a sign-in attempt.
+        case transfer
+
+        
+        @MainActor
+        var params: SignInCreateParams {
+            switch self {
+            case .identifier(let identifier, let password):
+                .init(identifier: identifier, password: password)
+                
+            case .oauth(let oauthProvider):
+                .init(strategy: oauthProvider.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+                
+            case .enterpriseSSO(let emailAddress):
+                .init(strategy: "enterprise_sso", identifier: emailAddress, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+                
+            case .idToken(let provider, let idToken):
+                .init(strategy: provider.strategy, token: idToken)
+                
+            case .passkey:
+                .init(strategy: "passkey")
+                
+            case .transfer:
+                .init(transfer: true)
+            }
+        }
+    }
+    
+}

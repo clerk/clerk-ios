@@ -24,7 +24,6 @@ final class ClerkUIState {
         case signInFactorTwoUseAnotherMethod(currentFactor: SignInFactor)
         case signInForgotPassword(factor: SignInFactor)
         case signInResetPassword
-        case ssoCallback
         
         case signUpStart
         case signUpVerification

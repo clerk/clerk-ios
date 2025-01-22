@@ -9,6 +9,12 @@ import Foundation
 
 extension SignIn {
     
+    /// A parameter object for preparing the second factor verification.
+    struct PrepareSecondFactorParams: Encodable {
+        /// The strategy used for second factor verification..
+        let strategy: String
+    }
+    
     /// A strategy for preparing the second factor verification process.
     public enum PrepareSecondFactorStrategy {
         
@@ -21,11 +27,5 @@ extension SignIn {
                 return .init(strategy: "phone_code")
             }
         }
-    }
-    
-    /// A parameter object for preparing the second factor verification.
-    struct PrepareSecondFactorParams: Encodable {
-        /// The strategy used for second factor verification..
-        let strategy: String
     }
 }

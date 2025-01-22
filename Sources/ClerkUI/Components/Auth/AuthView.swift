@@ -139,13 +139,6 @@ struct AuthView: View {
                     removal: .opacity.animation(nil)
                 ))
                 .eraseToAnyView()
-        case .ssoCallback:
-            SSOCallbackView()
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.95).combined(with: .opacity),
-                    removal: .opacity.animation(nil)
-                ))
-                .eraseToAnyView()
         }
     }
     

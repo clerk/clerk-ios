@@ -53,9 +53,10 @@ struct SignInStartView: View {
                 if socialProvidersEnabled {
                     AuthSocialProvidersView(useCase: .signIn)
                         .onSuccess { result in
-                            if result.signIn != nil {
+                            switch result {
+                            case .signIn:
                                 clerkUIState.setAuthStepToCurrentSignInStatus()
-                            } else if result.signUp != nil {
+                            case .signUp:
                                 clerkUIState.setAuthStepToCurrentSignUpStatus()
                             }
                         }

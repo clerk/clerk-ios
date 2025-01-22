@@ -22,7 +22,7 @@ struct AuthSocialProvidersView: View {
     }
 
     var useCase: UseCase = .signIn
-    var onSuccess:((_ externalAuthResult: ExternalAuthResult) -> Void)?
+    var onSuccess:((_ transferFlowResult: TransferFlowResult) -> Void)?
     
     private var socialProviders: [OAuthProvider] {
         (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
@@ -65,16 +65,16 @@ struct AuthSocialProvidersView: View {
     private func startAuth(provider: OAuthProvider) async {
         KeyboardHelpers.dismissKeyboard()
         
-        var externalAuthResult: ExternalAuthResult
+        var transferFlowResult: TransferFlowResult
         
         do {
 			if provider == .apple {
-                externalAuthResult = try await authenticateWithApple()
+                transferFlowResult = try await authenticateWithApple()
             } else {
-                externalAuthResult = try await authenticateWithOAuth(provider: provider)
+                transferFlowResult = try await authenticateWithOAuth(provider: provider)
             }
             
-            onSuccess?(externalAuthResult)
+            onSuccess?(transferFlowResult)
         } catch {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
@@ -82,46 +82,44 @@ struct AuthSocialProvidersView: View {
         }
     }
     
-    private func authenticateWithOAuth(provider: OAuthProvider) async throws -> ExternalAuthResult {
-        var externalAuthResult: ExternalAuthResult
+    private func authenticateWithOAuth(provider: OAuthProvider) async throws -> TransferFlowResult {
+        var transferFlowResult: TransferFlowResult
         
         switch useCase {
         case .signIn:
-            externalAuthResult = try await SignIn
-                .create(strategy: .oauth(provider))
-                .authenticateWithRedirect()
+            transferFlowResult = try await SignIn
+                .authenticateWithRedirect(.oauth(provider: provider))
         case .signUp:
-            externalAuthResult = try await SignUp
+            transferFlowResult = try await SignUp
                 .create(strategy: .oauth(provider))
                 .authenticateWithRedirect()
         }
         
-        if let signUp = externalAuthResult.signUp,
+        if case .signUp(let signUp) = transferFlowResult,
            let externalAccountVerification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-           let error = externalAccountVerification.error {
+           let error = externalAccountVerification.error  {
             throw error
         }
         
-        return externalAuthResult
+        return transferFlowResult
     }
     
-    private func authenticateWithApple() async throws -> ExternalAuthResult {
+    private func authenticateWithApple() async throws -> TransferFlowResult {
         let appleIdCredential = try await SignInWithAppleManager.getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
         
-        var externalAuthResult: ExternalAuthResult
+        var transferFlowResult: TransferFlowResult
         
         switch useCase {
         case .signIn:
-            externalAuthResult = try await SignIn
-                .create(strategy: .idToken(provider: .apple, idToken: idToken))
-                .authenticateWithIdToken()
+            transferFlowResult = try await SignIn
+                .authenticateWithIdToken(provider: .apple, idToken: idToken)
             
         case .signUp:
-            externalAuthResult = try await SignUp
+            transferFlowResult = try await SignUp
                 .create(
                     strategy: .idToken(
                         .apple,
@@ -133,13 +131,13 @@ struct AuthSocialProvidersView: View {
                 .authenticateWithIdToken()
         }
         
-        return externalAuthResult
+        return transferFlowResult
     }
 }
 
 extension AuthSocialProvidersView {
     
-    func onSuccess(perform action: @escaping (_ externalAuthResult: ExternalAuthResult) -> Void) -> Self {
+    func onSuccess(perform action: @escaping (_ transferFlowResult: TransferFlowResult) -> Void) -> Self {
         var copy = self
         copy.onSuccess = action
         return copy

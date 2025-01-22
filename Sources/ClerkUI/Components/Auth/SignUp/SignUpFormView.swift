@@ -241,11 +241,12 @@ struct SignUpFormView: View {
             
             switch signUp.nextStrategyToVerify {
             case "enterprise_sso", "saml":
-                let externalAuthResult = try await signUp.authenticateWithRedirect()
-                if externalAuthResult.signUp != nil {
-                    clerkUIState.setAuthStepToCurrentSignUpStatus()
-                } else if externalAuthResult.signIn != nil {
+                let transferFlowResult = try await signUp.authenticateWithRedirect()
+                switch transferFlowResult {
+                case .signIn:
                     clerkUIState.setAuthStepToCurrentSignInStatus()
+                case .signUp:
+                    clerkUIState.setAuthStepToCurrentSignUpStatus()
                 }
                 return
             default:

@@ -32,7 +32,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     private func signIn(provider: OAuthProvider) async {
         do {
-            var result: ExternalAuthResult?
+            var result: TransferFlowResult?
             
             if provider == .apple {
                 result = try await signInWithApple()
@@ -43,7 +43,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
             }
             
             // if the user didnt cancel
-            if result?.signIn != nil {
+            if case .signIn = result {
                 clerkUIState.setAuthStepToCurrentSignInStatus()
             }
         } catch {
@@ -57,16 +57,14 @@ struct SignInFactorOneAlternativeMethodsView: View {
         }
     }
     
-    private func signInWithApple() async throws -> ExternalAuthResult {
+    private func signInWithApple() async throws -> TransferFlowResult {
         let appleIdCredential = try await SignInWithAppleManager.getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")
         }
         
-        return try await SignIn
-            .create(strategy: .idToken(provider: .apple, idToken: idToken))
-            .authenticateWithIdToken()
+        return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
     }
     
     private func startAlternateFirstFactor(_ factor: SignInFactor) async {
