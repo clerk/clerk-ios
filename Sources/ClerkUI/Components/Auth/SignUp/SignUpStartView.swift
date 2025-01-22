@@ -16,9 +16,6 @@ struct SignUpStartView: View {
     @Environment(ClerkTheme.self) private var clerkTheme
     
     @State private var formIsSubmitting = false
-    @State private var captchaToken: String?
-    @State private var showCaptcha = false
-    @State private var captchaIsActive = false
     @State private var errorWrapper: ErrorWrapper?
     
     private var socialProvidersEnabled: Bool {
@@ -60,30 +57,8 @@ struct SignUpStartView: View {
                 }
 
                 if contactInfoEnabled {
-                    SignUpFormView(
-                        isSubmitting: $formIsSubmitting, 
-                        captchaToken: $captchaToken,
-                        captchaIsActive: $captchaIsActive
-                    )
-                    .padding(.bottom, 32)
-                }
-                
-                if clerk.environment?.displayConfig.captchaWidgetType != nil, captchaIsActive {
-                    TurnstileWebView(widgetType: .invisible)
-                        .onSuccess { token in
-                            captchaToken = token
-                        }
-                        .onDidFinishLoading {
-                            showCaptcha = true
-                        }
-                        .onError { errorMessage in
-                            errorWrapper = ErrorWrapper(error: ClerkClientError(message: errorMessage))
-                            formIsSubmitting = false
-                            dump(errorMessage)
-                        }
-                        .frame(width: 300, height: 65)
-                        .scaleEffect(showCaptcha ? 1 : 0)
-                        .animation(.bouncy.speed(1.5), value: showCaptcha)
+                    SignUpFormView(isSubmitting: $formIsSubmitting)
+                        .padding(.bottom, 32)
                 }
             }
             .frame(maxWidth: .infinity)

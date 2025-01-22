@@ -122,10 +122,9 @@ extension SignUp {
     @discardableResult @MainActor
     public static func create(
         strategy: SignUp.CreateStrategy,
-        legalAccepted: Bool? = nil,
-        captchaToken: String? = nil
+        legalAccepted: Bool? = nil
     ) async throws -> SignUp {
-        let params = SignUp.createParams(for: strategy, legalAccepted: legalAccepted, captchaToken: captchaToken)
+        let params = SignUp.createParams(for: strategy, legalAccepted: legalAccepted)
         let request = ClerkFAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
@@ -159,8 +158,7 @@ extension SignUp {
     @MainActor
     static func createParams(
         for strategy: CreateStrategy,
-        legalAccepted: Bool? = nil,
-        captchaToken: String? = nil
+        legalAccepted: Bool? = nil
     ) -> CreateParams {
         switch strategy {
         case .standard(let emailAddress, let password, let firstName, let lastName, let username,  let phoneNumber):
@@ -171,8 +169,7 @@ extension SignUp {
                 emailAddress: emailAddress,
                 phoneNumber: phoneNumber,
                 username: username,
-                legalAccepted: legalAccepted,
-                captchaToken: captchaToken
+                legalAccepted: legalAccepted
             )
             
         case .oauth(let oauthProvider):
@@ -180,8 +177,7 @@ extension SignUp {
                 strategy: oauthProvider.strategy,
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
                 actionCompleteRedirectUrl: Clerk.shared.redirectConfig.redirectUrl,
-                legalAccepted: legalAccepted,
-                captchaToken: captchaToken
+                legalAccepted: legalAccepted
             )
             
         case .enterpriseSSO(let emailAddress):
@@ -189,8 +185,7 @@ extension SignUp {
                 emailAddress: emailAddress,
                 strategy: "enterprise_sso",
                 redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
-                legalAccepted: legalAccepted,
-                captchaToken: captchaToken
+                legalAccepted: legalAccepted
             )
             
         case .idToken(let provider, let idToken, let firstName, let lastName):
@@ -199,15 +194,13 @@ extension SignUp {
                 lastName: lastName,
                 strategy: provider.strategy,
                 token: idToken,
-                legalAccepted: legalAccepted,
-                captchaToken: captchaToken
+                legalAccepted: legalAccepted
             )
             
         case .transfer:
             return .init(
                 transfer: true,
-                legalAccepted: legalAccepted,
-                captchaToken: captchaToken
+                legalAccepted: legalAccepted
             )
         }
     }
@@ -226,7 +219,6 @@ extension SignUp {
             transfer: Bool? = nil,
             token: String? = nil,
             legalAccepted: Bool? = nil,
-            captchaToken: String? = nil
         ) {
             self.firstName = firstName
             self.lastName = lastName
@@ -240,7 +232,6 @@ extension SignUp {
             self.transfer = transfer
             self.token = token
             self.legalAccepted = legalAccepted
-            self.captchaToken = captchaToken
         }
         
         /// The user's first name. This option is available only if name is selected in personal information. Please check the instance settings for more information.
@@ -288,9 +279,6 @@ extension SignUp {
         
         /// Indicates if the user accepted the legal terms required to sign up
         public let legalAccepted: Bool?
-        
-        /// Optional captcha token for bot protection
-        public let captchaToken: String?
     }
     
     /// UpdateParams is a mirror of CreateParams with the same fields and types.

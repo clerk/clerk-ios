@@ -20,8 +20,6 @@ struct SignUpFormView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     @Binding var isSubmitting: Bool
-    @Binding var captchaToken: String?
-    @Binding var captchaIsActive: Bool
     
     private enum Field {
         case emailAddress, phoneNumber, username, firstName, lastName, password
@@ -207,23 +205,13 @@ struct SignUpFormView: View {
             .padding(.top, 8)
         }
         .clerkErrorPresenting($errorWrapper)
-        .onChange(of: captchaToken) { _, token in
-            if token != nil && isSubmitting {
-                Task { await performSignUp() }
-            }
-        }
     }
     
     private func continueAction() async {
         isSubmitting = true
         KeyboardHelpers.dismissKeyboard()
-        
-        if clerk.environment?.displayConfig.captchaWidgetType != nil && captchaToken == nil {
-            captchaIsActive = true
-        } else {
-            await performSignUp()
-            isSubmitting = false
-        }
+        await performSignUp()
+        isSubmitting = false
     }
     
     private func performSignUp() async {
@@ -239,8 +227,7 @@ struct SignUpFormView: View {
                 username: usernameEnabled ? config.signUpUsername : nil,
                 phoneNumber: phoneNumberIsEnabled ? config.signUpPhoneNumber : nil
             ),
-                legalAccepted: legalIsEnabled ? config.signUpLegalConsentAccepted : nil,
-                captchaToken: captchaToken
+                legalAccepted: legalIsEnabled ? config.signUpLegalConsentAccepted : nil
             )
             
             if signUp.missingFields.contains(where: {
@@ -270,8 +257,6 @@ struct SignUpFormView: View {
             if error.isCancelledError { return }
             errorWrapper = ErrorWrapper(error: error)
             isSubmitting = false
-            captchaToken = nil
-            captchaIsActive = false
             dump(error)
         }
     }
@@ -279,15 +264,11 @@ struct SignUpFormView: View {
 }
 
 #Preview {
-    SignUpFormView(
-        isSubmitting: .constant(false),
-        captchaToken: .constant(nil),
-        captchaIsActive: .constant(false)
-    )
-    .padding()
-    .environment(ClerkUIState())
-    .environment(AuthView.Config())
-    .environment(ClerkTheme.clerkDefault)
+    SignUpFormView(isSubmitting: .constant(false))
+        .padding()
+        .environment(ClerkUIState())
+        .environment(AuthView.Config())
+        .environment(ClerkTheme.clerkDefault)
 }
 
 #endif

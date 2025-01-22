@@ -48,13 +48,6 @@ extension ClerkUIState {
     func setAuthStepToCurrentSignInStatus() {
         let signIn = Clerk.shared.client?.signIn
         
-        if signIn?.firstFactorVerification?.status == .transferable,
-           Clerk.shared.environment?.displayConfig.captchaWidgetType != nil
-        {
-            presentedAuthStep = .ssoCallback
-            return
-        }
-        
         switch signIn?.status {
             
         case .needsIdentifier:
