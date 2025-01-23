@@ -12,7 +12,7 @@ import Clerk
 import Kingfisher
 
 public struct UserButton: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(ClerkTheme.self) private var clerkTheme
     

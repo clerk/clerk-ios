@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileEmailSection: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var addEmailAddressStep: UserProfileAddEmailView.Step?
     

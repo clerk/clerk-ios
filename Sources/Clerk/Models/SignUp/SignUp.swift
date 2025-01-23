@@ -63,7 +63,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     public let web3Wallet: String?
 
     /// The value of this attribute is true if a password was supplied to the current sign-up. Only supported if password is enabled in the instance settings.
-    public let hasPassword: Bool
+    public let passwordEnabled: Bool
     
     /// The first name supplied to the current sign-up. Only supported if name is enabled in the instance settings.
     public let firstName: String?

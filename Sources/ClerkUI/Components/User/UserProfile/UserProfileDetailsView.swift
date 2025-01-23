@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileDetailsView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     
     private var emailIsEnabled: Bool {
         clerk.environment?.userSettings.config(for: "email_address")?.enabled == true

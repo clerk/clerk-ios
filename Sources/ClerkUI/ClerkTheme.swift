@@ -66,10 +66,6 @@ extension ClerkTheme {
     
 }
 
-struct ClerkThemeKey: EnvironmentKey {
-    static let defaultValue: ClerkTheme = .clerkDefault
-}
-
 extension EnvironmentValues {
     @Entry var clerkTheme: ClerkTheme = .clerkDefault
 }

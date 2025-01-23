@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct SignUpVerificationView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.openURL) private var openURL
     @State private var errorWrapper: ErrorWrapper?

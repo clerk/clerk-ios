@@ -18,7 +18,7 @@ import SimpleKeychain
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 public struct LocalAuthOnForegroundModifier: ViewModifier {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(\.scenePhase) private var scenePhase
     @State private var isPresented = false
     @State private var shouldTryAuth = true
@@ -100,7 +100,7 @@ public struct LocalAuthOnForegroundModifier: ViewModifier {
 }
 
 fileprivate struct LocalAuthOverlay: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     let onUnlock: () -> Void
     let onSignOut: () -> Void
     

@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @State private var errorWrapper: ErrorWrapper?
     @Environment(\.dismiss) private var dismiss
             

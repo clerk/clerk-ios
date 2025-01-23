@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct ClerkBottomBrandingModifier: ViewModifier {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
         
     func body(content: Content) -> some View {

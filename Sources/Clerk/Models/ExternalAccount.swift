@@ -62,7 +62,7 @@ extension ExternalAccount {
     public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
         guard
             let redirectUrl = verification?.externalVerificationRedirectUrl,
-            var url = URL(string: redirectUrl)
+            let url = URL(string: redirectUrl)
         else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }

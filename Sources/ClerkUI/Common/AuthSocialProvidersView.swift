@@ -12,7 +12,7 @@ import Clerk
 import Algorithms
 
 struct AuthSocialProvidersView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @State private var errorWrapper: ErrorWrapper?
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var stackWidth: CGFloat = .zero

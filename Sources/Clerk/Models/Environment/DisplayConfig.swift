@@ -10,6 +10,7 @@ import Foundation
 extension Clerk.Environment {
     
     public struct DisplayConfig: Codable, Sendable {
+        public let instanceEnvironmentType: InstanceEnvironmentType
         public let applicationName: String
         public let preferredSignInStrategy: PreferredSignInStrategy
         public let branded: Bool
@@ -21,6 +22,16 @@ extension Clerk.Environment {
         public let captchaWidgetType: CaptchaWidgetType?
         public let captchaPublicKeyInvisible: String?
         public let captchaProvider: CaptchaProvider?
+        
+        public enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
+            case production
+            case development
+            case unknown
+            
+            public init(from decoder: Decoder) throws {
+                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+            }
+        }
         
         public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password

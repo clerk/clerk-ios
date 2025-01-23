@@ -11,16 +11,12 @@ import Foundation
 import SwiftUI
 
 struct AuthViewModifier: ViewModifier {
-    @Environment(ClerkTheme.self) private var clerkTheme
-    @Environment(ClerkUIState.self) private var clerkUIState
-    
     @Binding var isPresented: Bool
 
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $isPresented, content: {
                 AuthView()
-                    .environment(clerkUIState)
             })
     }
 }
@@ -34,7 +30,6 @@ extension View {
 #Preview {
     Text("SignIn")
         .authView(isPresented: .constant(true))
-        .environment(ClerkUIState())
 }
 
 #endif

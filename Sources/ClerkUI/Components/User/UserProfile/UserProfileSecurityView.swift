@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileSecurityView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     
     private var user: User? {
         clerk.session?.user

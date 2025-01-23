@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileActiveDevicesSection: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
     
     private var user: User? {
@@ -50,7 +50,7 @@ struct UserProfileActiveDevicesSection: View {
     }
     
     private struct ActiveDeviceView: View {
-        var clerk = Clerk.shared
+        @Environment(Clerk.self) private var clerk
         @Environment(\.colorScheme) private var colorScheme
         @Environment(ClerkTheme.self) private var clerkTheme
         @State private var errorWrapper: ErrorWrapper?

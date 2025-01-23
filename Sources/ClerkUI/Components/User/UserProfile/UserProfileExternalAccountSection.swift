@@ -12,7 +12,7 @@ import Clerk
 import AuthenticationServices
 
 struct UserProfileExternalAccountSection: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var addExternalAccountIsPresented = false
     @Namespace private var namespace

@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileMfaSection: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var phoneNumberIsPresented: Bool = false
     @State private var authenticationAppIsPresented: Bool = false

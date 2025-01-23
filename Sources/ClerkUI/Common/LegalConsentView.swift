@@ -54,7 +54,7 @@ extension LegalConsentView {
 
 struct LegalConsentView: View {
     @Environment(ClerkTheme.self) private var clerkTheme
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @State private var viewModel = ViewModel()
     
     @Binding var agreedToLegalConsent: Bool

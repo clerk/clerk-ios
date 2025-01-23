@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct SignInFactorTwoAlternativeMethodsView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     

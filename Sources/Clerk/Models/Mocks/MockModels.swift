@@ -58,7 +58,7 @@ extension SignUp {
             emailAddress: User.mock.emailAddresses.first?.emailAddress,
             phoneNumber: User.mock.phoneNumbers.first?.phoneNumber,
             web3Wallet: nil,
-            hasPassword: User.mock.passwordEnabled,
+            passwordEnabled: User.mock.passwordEnabled,
             firstName: User.mock.firstName,
             lastName: User.mock.lastName,
             unsafeMetadata: nil,

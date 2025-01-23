@@ -12,7 +12,7 @@ import Kingfisher
 import Clerk
 
 struct OrgLogoView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
         
     var body: some View {

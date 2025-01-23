@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct SignInFactorTwoBackupCodeView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(AuthView.Config.self) private var config
     @Environment(ClerkTheme.self) private var clerkTheme

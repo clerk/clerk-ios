@@ -85,7 +85,7 @@ extension SignIn {
         ///
         /// - Parameters:
         ///   - identifier: The authentication identifier for the sign-in. This can be the user's email address, phone number, username, or Web3 wallet address.
-        ///   - password: The user's password. Only supported if the `strategy` is set to `'password'` and password authentication is enabled.
+        ///   - password: The user's password.
         case identifier(_ identifier: String, password: String? = nil)
 
         /// The user will be authenticated with their social connection account.

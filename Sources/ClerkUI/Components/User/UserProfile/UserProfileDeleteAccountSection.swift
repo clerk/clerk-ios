@@ -11,7 +11,7 @@ import SwiftUI
 import Clerk
 
 struct UserProfileDeleteAccountSection: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @State private var confirmationIsPresented = false
     
     var body: some View {
@@ -42,7 +42,7 @@ struct UserProfileDeleteAccountSection: View {
 }
 
 private struct DeleteAccountConfirmationView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @State private var confirmationText = ""
     @State private var errorWrapper: ErrorWrapper?

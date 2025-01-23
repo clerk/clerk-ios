@@ -9,6 +9,7 @@
 
 import Foundation
 import Clerk
+import SwiftUI
 
 @Observable
 final class ClerkUIState {
@@ -112,6 +113,10 @@ extension ClerkUIState {
             return
         }
     }
+}
+
+extension EnvironmentValues {
+    @Entry var clerkUIState = ClerkUIState()
 }
 
 #endif

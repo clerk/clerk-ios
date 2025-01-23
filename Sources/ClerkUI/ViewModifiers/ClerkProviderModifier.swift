@@ -17,15 +17,17 @@ import Clerk
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
+    @State private var clerk = Clerk.shared
     @State private var clerkUIState = ClerkUIState()
-        
+    @State private var clerkTheme = ClerkTheme.clerkDefault
+    
     func body(content: Content) -> some View {
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
+            .environment(clerk)
             .environment(clerkUIState)
-            .environment(Clerk.shared)
-            .environment(ClerkTheme.clerkDefault)
+            .environment(clerkTheme)
     }
 }
 

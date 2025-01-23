@@ -20,7 +20,7 @@ extension UserProfileAddPhoneNumberView {
 }
 
 struct UserProfileAddPhoneNumberView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     

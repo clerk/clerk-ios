@@ -7,10 +7,6 @@
 
 import Foundation
 
-extension Clerk {
-    static public let authEventEmitter = EventEmitter<AuthEvent>()
-}
-
 @MainActor
 final public class EventEmitter<Event: Sendable> {
     private var continuation: AsyncStream<Event>.Continuation?

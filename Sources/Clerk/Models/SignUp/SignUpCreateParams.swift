@@ -179,14 +179,14 @@ extension SignUp {
         @MainActor
         var params: CreateParams {
             switch self {
-            case .standard(let value):
+            case .standard(let emailAddress, let password, let firstName, let lastName, let username, let phoneNumber):
                 .init(
-                    firstName: value.firstName,
-                    lastName: value.lastName,
-                    password: value.password,
-                    emailAddress: value.emailAddress,
-                    phoneNumber: value.phoneNumber,
-                    username: value.username
+                    firstName: firstName,
+                    lastName: lastName,
+                    password: password,
+                    emailAddress: emailAddress,
+                    phoneNumber: phoneNumber,
+                    username: username
                 )
             case .oauth(let provider):
                 .init(
@@ -200,12 +200,12 @@ extension SignUp {
                     emailAddress: identifier,
                     redirectUrl: Clerk.shared.redirectConfig.redirectUrl
                 )
-            case .idToken(let value):
+            case .idToken(let provider, let idToken, let firstName, let lastName):
                 .init(
-                    strategy: value.provider.strategy,
-                    firstName: value.firstName,
-                    lastName: value.lastName,
-                    token: value.idToken
+                    strategy: provider.strategy,
+                    firstName: firstName,
+                    lastName: lastName,
+                    token: idToken
                 )
             case .transfer:
                 .init(transfer: true)

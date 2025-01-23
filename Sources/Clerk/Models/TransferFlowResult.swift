@@ -25,7 +25,7 @@ import Foundation
 ///     print("Transferred to sign-up: \(signUp)")
 /// }
 /// ```
-public enum TransferFlowResult {
+public enum TransferFlowResult: Sendable {
     /// The authentication flow resulted in a sign-in instance. This case indicates that the user is
     /// being signed in, although further steps may be required to complete the process.
     case signIn(SignIn)

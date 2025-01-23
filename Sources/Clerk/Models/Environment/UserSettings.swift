@@ -28,7 +28,7 @@ extension Clerk.Environment {
             public let verifyAtSignUp: Bool
         }
         
-        public struct SignUp: Codable, Equatable {
+        public struct SignUp: Codable, Equatable, Sendable {
             public let captchaEnabled: Bool
             public let captchaWidgetType: String
             public let customActionRequired: Bool

@@ -59,8 +59,12 @@ extension AuthView {
     }
 }
 
+extension EnvironmentValues {
+    @Entry var authViewConfig = AuthView.Config()
+}
+
 struct AuthView: View {
-    var clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var config = Config()
@@ -174,7 +178,7 @@ struct AuthView: View {
                 FeedbackGenerator.success()
             }
             .task {
-                for await event in Clerk.authEventEmitter.events {
+                for await event in clerk.authEventEmitter.events {
                     switch event {
                     case .signInCompleted, .signUpCompleted:
                         clerkUIState.authIsPresented = false
