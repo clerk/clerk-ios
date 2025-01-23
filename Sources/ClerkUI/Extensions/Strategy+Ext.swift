@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/23/25.
 //
 
+import Clerk
+
 extension Strategy {
     
     var icon: String? {
