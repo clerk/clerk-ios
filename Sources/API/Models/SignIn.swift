@@ -153,6 +153,8 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         case idToken(provider: IDTokenProvider, idToken: String)
         ///
         case transfer
+        /// The user will be authenticated via the ticket or token generated from the Backend API.
+        case ticket(String)
     }
     
     @MainActor
@@ -188,6 +190,9 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         case .transfer:
             return .init(transfer: true)
             
+        case .ticket(let ticket):
+            return .init(strategy: Strategy.ticket.stringValue, ticket: ticket)
+            
         }
     }
     
@@ -199,6 +204,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
         public var actionCompleteRedirectUrl: String?
         public var transfer: Bool?
         public var token: String?
+        public var ticket: String?
     }
     
     /// Resets a user's password.
