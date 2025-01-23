@@ -26,23 +26,28 @@ extension SignIn {
         
         /// The user's password.
         ///
-        /// Only supported if the `strategy` is set to `'password'` and password authentication is enabled.
+        /// Only supported if the `strategy` is set to `password` and password authentication is enabled.
         var password: String?
         
         /// A ticket or token generated from the Backend API.
         ///
-        /// Required if the `strategy` is set to `'ticket'`.
+        /// Required if the `strategy` is set to `ticket`.
         var ticket: String?
+        
+        /// The ID token from a provider used for authentication (e.g., SignInWithApple).
+        ///
+        /// Required is strategy is set to `oauth_token_<provider>`
+        var token: String?
         
         /// The URL to redirect to after successful authorization from the OAuth provider or during certain email-based sign-in flows.
         ///
-        /// - If `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`, this specifies the full URL or path the OAuth provider should redirect to after successful authorization. Typically, this will be a `/sso-callback` route that calls `Clerk.handleRedirectCallback` or mounts the `<AuthenticateWithRedirectCallback />` component.
+        /// - If `strategy` is `oauth_<provider>` or `enterprise_sso`, this specifies the full URL or path the OAuth provider should redirect to after successful authorization.
         /// - If `strategy` is `'email_link'`, this specifies the URL that the user will be redirected to when they visit the email link.
         var redirectUrl: String?
         
         /// The URL to redirect to after the sign-in is completed.
         ///
-        /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
+        /// Optional if `strategy` is `oauth_<provider>` or `enterprise_sso`.
         var actionCompleteRedirectUrl: String?
         
         /// Indicates whether the sign-in will attempt to retrieve information from the active sign-up instance to complete the sign-in process.
@@ -59,9 +64,6 @@ extension SignIn {
         ///
         /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
         var oidcLoginHint: String?
-        
-        /// The ID token from a provider used for authentication (e.g., SignInWithApple).
-        var token: String?
     }
 
     
@@ -96,6 +98,9 @@ extension SignIn {
 
         /// The user will be authenticated with their passkey.
         case passkey
+        
+        /// The user will be authenticated via the ticket or token generated from the Backend API.
+        case ticket(String)
 
         /// The `SignIn` will attempt to retrieve information from the active `SignUp` instance and use it to complete the sign-in process.
         ///
@@ -125,6 +130,9 @@ extension SignIn {
                 
             case .passkey:
                 .init(strategy: "passkey")
+                
+            case .ticket(let ticket):
+                .init(strategy: Strategy.ticket.stringValue, ticket: ticket)
                 
             case .transfer:
                 .init(transfer: true)
