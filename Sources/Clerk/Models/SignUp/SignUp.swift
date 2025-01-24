@@ -30,8 +30,8 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     
     /// The status of the current sign-up.
     ///
-    /// See ``SignUpStatus`` for supported values.
-    public let status: SignUpStatus
+    /// See ``SignUp/Status-swift.enum`` for supported values.
+    public let status: Status
     
     /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
     public let requiredFields: [String]

@@ -46,11 +46,13 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     /// Unique identifier for this sign in.
     public let id: String
     
-    /// The current status of the sign-in.
-    public let status: SignInStatus
+    /// The status of the current sign-in.
+    ///
+    /// See ``SignIn/Status-swift.enum`` for supported values.
+    public let status: Status
     
     /// Array of all the authentication identifiers that are supported for this sign in.
-    public let supportedIdentifiers: [SignInIdentifier]?
+    public let supportedIdentifiers: [Identifier]?
     
     /// The authentication identifier value for the current sign-in.
     public let identifier: String?

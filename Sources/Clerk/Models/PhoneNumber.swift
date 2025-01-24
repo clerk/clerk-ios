@@ -8,9 +8,6 @@
 import Foundation
 import Factory
 
-/// Used to avoid naming collision with PhoneNumber from PhoneNumberKit
-public typealias ClerkPhoneNumber = PhoneNumber
-
 /// The `PhoneNumber` object describes a phone number.
 ///
 /// Phone numbers can be used as a proof of identification for users, or simply as a means of contacting users.
@@ -53,6 +50,8 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 extension PhoneNumber {
     
     /// Creates a new phone number for the current user.
+    /// - Parameters:
+    ///     - phoneNumber: The phone number to add to the current user.
     @discardableResult @MainActor
     public static func create(_ phoneNumber: String) async throws -> PhoneNumber {
         guard let user = Clerk.shared.user else {

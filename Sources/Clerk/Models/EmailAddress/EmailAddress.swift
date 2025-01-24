@@ -38,6 +38,18 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 
 extension EmailAddress {
     
+    /// Creates a new email address for the current user.
+    /// - Parameters:
+    ///     - email: The email address to add to the current user.
+    @discardableResult @MainActor
+    public static func create(_ email: String) async throws -> EmailAddress {
+        guard let user = Clerk.shared.user else {
+            throw ClerkClientError(message: "Unable to determine the current user.")
+        }
+        
+        return try await user.createEmailAddress(email)
+    }
+    
     /// Prepares the verification process for this email address.
     ///
     /// An email message with a one-time code or an email link will be sent to the email address box.

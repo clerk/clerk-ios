@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// An interface that represents an error returned by the Clerk API.
+/// An object that represents an error returned by the Clerk API.
 public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable {
     /// A string code that represents the error, such as `username_exists_code`.
     public let code: String
@@ -27,8 +27,15 @@ extension ClerkAPIError {
     public var errorDescription: String? { longMessage ?? message }
 }
 
-/// The body of Clerk API Error responses, can contain multiple `ClerkAPIError`.
+/// Represents the body of Clerk API error responses.
+///
+/// The `ClerkErrorResponse` structure encapsulates multiple API errors that may occur during a request.
+/// It also includes a unique trace ID for debugging purposes.
 public struct ClerkErrorResponse: Codable, Equatable {
+    /// An array of `ClerkAPIError` objects, each describing an individual error.
     public let errors: [ClerkAPIError]
+    
+    /// A unique identifier for tracing the specific request, useful for debugging.
     public let clerkTraceId: String
 }
+

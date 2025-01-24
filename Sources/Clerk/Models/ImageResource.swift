@@ -10,11 +10,11 @@ import Foundation
 /// Represents information about an image.
 public struct ImageResource: Codable, Sendable {
     /// The unique identifier of the image.
-    let id: String
+    public let id: String
     
     /// The name of the image.
-    let name: String?
+    public let name: String?
     
     /// The publicly accessible URL for the image.
-    let publicUrl: String?
+    public let publicUrl: String?
 }

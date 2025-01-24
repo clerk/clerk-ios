@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// An interface that represents an error created by Clerk on the client.
+/// An object that represents an error created by Clerk on the client.
 public struct ClerkClientError: Error, LocalizedError {
     /// A message that describes the error.
     public let message: String?
