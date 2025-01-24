@@ -19,12 +19,13 @@ import UIKit
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
 @Observable
-final public class Clerk {
+final public class Clerk: Sendable {
     
     @MainActor
     public static let shared: Clerk = Container.shared.clerk()
     
     /// A getter to see if the Clerk object is ready for use or not.
+    @MainActor
     private(set) public var isLoaded: Bool = false
     
     /// A getter to see if a Clerk instance is running in production or development mode.
@@ -34,6 +35,7 @@ final public class Clerk {
     }
     
     /// The Client object for the current device.
+    @MainActor
     internal(set) public var client: Client? {
         didSet {
             if let lastActiveSessionId = client?.lastActiveSessionId {
@@ -45,16 +47,19 @@ final public class Clerk {
     }
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
+    @MainActor
     public var session: Session? {
         client?.lastActiveSession
     }
     
     /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
+    @MainActor
     public var user: User? {
         client?.lastActiveSession?.user
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
+    @MainActor
     private(set) public var publishableKey: String = "" {
         didSet {
             let liveRegex = Regex {
@@ -79,23 +84,28 @@ final public class Clerk {
     }
     
     /// Frontend API URL
+    @MainActor
     private(set) var frontendAPIURL: String = ""
     
     /// The Environment for the clerk instance.
+    @MainActor
     internal(set) public var environment: Clerk.Environment?
     
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
+    @MainActor
     internal(set) public var sessionsByUserId: [String: [Session]] = .init()
     
     /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
+    @MainActor
     public var redirectConfig = RedirectConfig()
     
     /// The event emitter for auth events
     public let authEventEmitter = EventEmitter<AuthEvent>()
     
     /// Enable for additional debugging signals
+    @MainActor
     private(set) public var debugMode: Bool = false
     
     // MARK: - Private Properties
@@ -108,15 +118,19 @@ final public class Clerk {
     /// - e.g. `sess_abc12345` or `sess_abc12345-supabase`
     ///
     /// - Is set by the `getToken` function on a session.
+    @MainActor
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
                 
     /// Holds a reference to the task performed when the app will enter the foreground.
+    @MainActor
     private var willEnterForegroundTask: Task<Void, Error>?
     
     /// Holds a reference to the task performed when the app entered the background.
+    @MainActor
     private var didEnterBackgroundTask: Task<Void, Error>?
     
     /// Holds a reference to the session polling task.
+    @MainActor
     private var sessionPollingTask: Task<Void, Error>?
 }
 
@@ -126,6 +140,7 @@ extension Clerk {
     /// - Parameters:
     ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
     ///     - debugMode: Enable for additional debugging signals.
+    @MainActor
     public func configure(publishableKey: String, debugMode: Bool = false) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk configured without a publishable key. Please include a valid publishable key.")
@@ -190,6 +205,7 @@ extension Clerk {
     
     // MARK: - Private Properties
     
+    @MainActor
     var apiClient: APIClient {
         Container.shared.apiClient(frontendAPIURL)
     }
@@ -242,6 +258,7 @@ extension Clerk {
         }
     }
     
+    @MainActor
     private func stopSessionTokenPolling() {
         sessionPollingTask?.cancel()
         sessionPollingTask = nil
