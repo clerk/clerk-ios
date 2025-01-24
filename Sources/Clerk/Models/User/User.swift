@@ -8,16 +8,23 @@
 import Foundation
 import AuthenticationServices
 
-/**
- The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account. Each user has a unique authentication identifier which might be their email address, phone number, or a username.
-
- A user can be contacted at their primary email address or primary phone number. They can have more than one registered email address, but only one of them will be their primary email address. This goes for phone numbers as well; a user can have more than one, but only one phone number will be their primary. At the same time, a user can also have one or more external accounts by connecting to OAuth providers such as Google, Apple, Facebook, and many more.
-
- Finally, a `User` object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally to store arbitrary information. The metadata are split into `publicMetadata` and `privateMetadata`. Both types are set from the Backend API, but public metadata can also be accessed from the Frontend API.
- */
+/// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
+///
+/// Each user has a unique authentication identifier which might be their email address, phone number, or a username.
+///
+/// A user can be contacted at their primary email address or primary phone number. They can have more than one registered email address,
+/// but only one of them will be their primary email address. This goes for phone numbers as well; a user can have more than one,
+/// but only one phone number will be their primary. At the same time, a user can also have one or more external accounts by connecting
+/// to social providers such as Google, Apple, Facebook, and many more.
+///
+/// Finally, a `User` object holds profile data like the user's name, profile picture, and a set of metadata that can be used internally
+/// to store arbitrary information. The metadata are split into `publicMetadata` and `privateMetadata`. Both types are set from the
+/// Backend API, but public metadata can also be accessed from the Frontend API.
+///
+/// The Clerk iOS SDK provides some helper methods on the User object to help retrieve and update user information and authentication status.
 public struct User: Codable, Equatable, Sendable, Hashable {
     
-    /// A unique identifier for the user.
+    /// The unique identifier for the user.
     public let id: String
     
     /// The user's first name.
@@ -29,11 +36,19 @@ public struct User: Codable, Equatable, Sendable, Hashable {
     /// The user's username.
     public let username: String?
     
-    /// Holds the users profile image or avatar.
-    public let imageUrl: String
-    
     /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
     public let hasImage: Bool
+    
+    /// Holds the default avatar or user's uploaded profile image
+    public let imageUrl: String
+    
+    /// An array of all the Passkey objects associated with the user.
+    public let passkeys: [Passkey]
+    
+    /// Information about the user's primary email address.
+    public var primaryEmailAddress: EmailAddress? {
+        emailAddresses.first(where: { $0.id == primaryEmailAddressId })
+    }
     
     /// The unique identifier for the EmailAddress that the user has set as primary.
     public let primaryEmailAddressId: String?
@@ -41,35 +56,71 @@ public struct User: Codable, Equatable, Sendable, Hashable {
     /// An array of all the EmailAddress objects associated with the user. Includes the primary.
     public let emailAddresses: [EmailAddress]
     
+    /// A getter boolean to check if the user has verified an email address.
+    public var hasVerifiedEmailAddress: Bool {
+        emailAddresses.contains { emailAddress in
+            emailAddress.verification?.status == .verified
+        }
+    }
+    
+    /// Information about the user's primary phone number.
+    public var primaryPhoneNumber: PhoneNumber? {
+        phoneNumbers.first(where: { $0.id == primaryPhoneNumberId })
+    }
+    
     /// The unique identifier for the PhoneNumber that the user has set as primary.
     public let primaryPhoneNumberId: String?
     
     /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
     public let phoneNumbers: [PhoneNumber]
     
-    /// An array of all the Passkey objects associated with the user.
-    public let passkeys: [Passkey]
+    /// A getter boolean to check if the user has verified a phone number.
+    public var hasVerifiedPhoneNumber: Bool {
+        phoneNumbers.contains { phoneNumber in
+            phoneNumber.verification?.status == .verified
+        }
+    }
+    
+    /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
+    public let externalAccounts: [ExternalAccount]
+    
+    /// A getter for the user's list of verified external accounts.
+    public var verifiedExternalAccounts: [ExternalAccount] {
+        externalAccounts.filter { externalAccount in
+            externalAccount.verification?.status == .verified
+        }
+    }
+    
+    /// A getter for the user's list of unverified external accounts.
+    public var unverifiedExternalAccounts: [ExternalAccount] {
+        externalAccounts.filter { externalAccount in
+            externalAccount.verification?.status == .unverified
+        }
+    }
+    
+    /// A list of enterprise accounts associated with the user.
+    public let enterpriseAccounts: [EnterpriseAccount]?
     
     /// A boolean indicating whether the user has a password on their account.
     public let passwordEnabled: Bool
     
-    /// A boolean indicating whether the user has enabled two-factor authentication.
-    public let twoFactorEnabled: Bool
-    
     /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
     public let totpEnabled: Bool
     
+    /// A boolean indicating whether the user has enabled two-factor authentication.
+    public let twoFactorEnabled: Bool
+    
     /// A boolean indicating whether the user has enabled Backup codes.
     public let backupCodeEnabled: Bool
+
+    /// A boolean indicating whether the organization creation is enabled for the user or not.
+    public let createOrganizationEnabled: Bool
+    
+    /// An integer indicating the number of organizations that can be created by the user. If the value is 0, then the user can create unlimited organizations. Default is null.
+    public let createOrganizationsLimit: Int?
     
     /// A boolean indicating whether the user is able to delete their own account or not.
     public let deleteSelfEnabled: Bool
-    
-    /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
-    public let externalAccounts: [ExternalAccount]
-        
-    /// A list of enterprise accounts associated with the user.
-    public let enterpriseAccounts: [EnterpriseAccount]?
     
     /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
     public let publicMetadata: JSON?
@@ -80,20 +131,17 @@ public struct User: Codable, Equatable, Sendable, Hashable {
      */
     public let unsafeMetadata: JSON?
     
+    /// The date on which the user accepted the legal requirements if required.
+    public let legalAcceptedAt: Date?
+    
     /// Date when the user last signed in. May be empty if the user has never signed in.
-    public let lastSignInAt: Date
+    public let lastSignInAt: Date?
     
     /// Date when the user was first created.
     public let createdAt: Date
     
     /// Date of the last time the user was updated.
     public let updatedAt: Date
-    
-    /// A boolean indicating whether the organization creation is enabled for the user or not.
-    public let createOrganizationEnabled: Bool
-
-    /// The date on which the user accepted the legal requirements if required.
-    public let legalAcceptedAt: Date?
 }
 
 extension User {
@@ -109,46 +157,6 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
-    }
-    
-    public struct UpdateParams: Encodable {
-        
-        public init(
-            username: String? = nil,
-            firstName: String? = nil,
-            lastName: String? = nil,
-            primaryEmailAddressId: String? = nil,
-            primaryPhoneNumberId: String? = nil,
-            unsafeMetadata: JSON? = nil
-        ) {
-            self.username = username
-            self.firstName = firstName
-            self.lastName = lastName
-            self.primaryEmailAddressId = primaryEmailAddressId
-            self.primaryPhoneNumberId = primaryPhoneNumberId
-            self.unsafeMetadata = unsafeMetadata
-        }
-        
-        /// The user's username.
-        public var username: String?
-        
-        /// The user's first name.
-        public var firstName: String?
-        
-        /// The user's last name.
-        public var lastName: String?
-        
-        /// The unique identifier for the EmailAddress that the user has set as primary.
-        public var primaryEmailAddressId: String?
-        
-        /// The unique identifier for the PhoneNumber that the user has set as primary.
-        public var primaryPhoneNumberId: String?
-        
-        /**
-        Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
-        Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
-         */
-        public var unsafeMetadata: JSON?
     }
     
     /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
@@ -330,26 +338,6 @@ extension User {
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
-    }
-    
-    public struct UpdatePasswordParams: Encodable {
-        
-        public init(
-            newPassword: String,
-            currentPassword: String,
-            signOutOfOtherSessions: Bool
-        ) {
-            self.newPassword = newPassword
-            self.currentPassword = currentPassword
-            self.signOutOfOtherSessions = signOutOfOtherSessions
-        }
-        
-        /// The user's new password.
-        public let newPassword: String
-        /// The user's current password.
-        public let currentPassword: String
-        /// If set to true, all sessions will be signed out.
-        public let signOutOfOtherSessions: Bool
     }
     
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
