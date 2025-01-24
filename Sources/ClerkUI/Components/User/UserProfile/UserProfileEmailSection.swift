@@ -17,7 +17,7 @@ struct UserProfileEmailSection: View {
     @Namespace private var namespace
     
     private var user: User? {
-        clerk.client?.lastActiveSession?.user
+        clerk.user
     }
     
     private var emailAddresses: [EmailAddress] {

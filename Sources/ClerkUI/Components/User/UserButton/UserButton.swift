@@ -36,7 +36,7 @@ public struct UserButton: View {
                 .clipShape(.circle)
         })
         .tint(clerkTheme.colors.textPrimary)
-        .onChange(of: clerk.client?.lastActiveSession?.user) { _, user in
+        .onChange(of: clerk.user) { _, user in
             if user == nil { popoverIsPresented = false }
         }
         .popover(isPresented: $popoverIsPresented, content: {

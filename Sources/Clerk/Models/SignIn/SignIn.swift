@@ -44,7 +44,7 @@ import AuthenticationServices
 public struct SignIn: Codable, Sendable, Equatable, Hashable {
     
     /// Unique identifier for this sign in.
-    let id: String
+    public let id: String
     
     /// The current status of the sign-in.
     public let status: SignInStatus

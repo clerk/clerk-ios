@@ -15,7 +15,7 @@ struct UserProfileSection: View {
     @State private var updateProfileIsPresented = false
     
     private var user: User? {
-        clerk.client?.lastActiveSession?.user
+        clerk.user
     }
     
     var body: some View {

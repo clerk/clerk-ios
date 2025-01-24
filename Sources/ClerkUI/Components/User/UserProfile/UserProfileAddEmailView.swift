@@ -42,7 +42,7 @@ struct UserProfileAddEmailView: View {
     }
     
     private var user: User? {
-        clerk.client?.lastActiveSession?.user
+        clerk.user
     }
     
     private var preferredEmailVerificationStrategy: String {

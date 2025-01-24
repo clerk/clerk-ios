@@ -18,7 +18,7 @@ struct UserProfileActiveDevicesSection: View {
     }
     
     private var sessions: [Session] {
-        guard let user = clerk.client?.lastActiveSession?.user else { return [] }
+        guard let user = clerk.user else { return [] }
         let sessions = clerk.sessionsByUserId[user.id, default: []]
         return sessions.sorted { lhs, rhs in
             if (lhs.id == clerk.client?.lastActiveSessionId) != (rhs.id == clerk.client?.lastActiveSessionId)  {
@@ -149,7 +149,7 @@ struct UserProfileActiveDevicesSection: View {
         private func revokeSession() async {
             do {
                 try await session.revoke()
-                try await clerk.client?.lastActiveSession?.user?.getSessions()
+                try await clerk.user?.getSessions()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)

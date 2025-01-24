@@ -16,7 +16,7 @@ struct UserProfilePasskeySection: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var user: User? {
-        clerk.client?.lastActiveSession?.user
+        clerk.user
     }
 
     var body: some View {

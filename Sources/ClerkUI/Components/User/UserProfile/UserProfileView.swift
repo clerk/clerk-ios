@@ -39,7 +39,7 @@ struct UserProfileView: View {
         .clerkErrorPresenting($errorWrapper)
         .task(id: user?.id) {
             do {
-                try await clerk.client?.lastActiveSession?.user?.getSessions()
+                try await clerk.user?.getSessions()
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)
