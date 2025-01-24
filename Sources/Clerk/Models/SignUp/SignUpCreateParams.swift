@@ -168,6 +168,7 @@ extension SignUp {
         /// Converts the strategy into the appropriate `CreateParams` object for a `SignUp` request.
         ///
         /// This computed property maps each strategy case to its corresponding `CreateParams` object.
+        ///
         /// For example:
         /// - `.standard`: Populates fields such as `firstName`, `lastName`, `emailAddress`, etc.
         /// - `.oauth`: Sets OAuth-specific fields such as `strategy` and `redirectUrl`.
