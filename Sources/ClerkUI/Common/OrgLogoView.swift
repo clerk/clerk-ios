@@ -9,7 +9,6 @@
 
 import SwiftUI
 import Kingfisher
-import Clerk
 
 struct OrgLogoView: View {
     @Environment(Clerk.self) private var clerk

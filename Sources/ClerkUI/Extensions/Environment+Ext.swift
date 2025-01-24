@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Clerk
 
 extension Clerk.Environment.UserSettings {
     

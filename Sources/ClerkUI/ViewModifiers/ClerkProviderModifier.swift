@@ -9,7 +9,6 @@
 
 import Foundation
 import SwiftUI
-import Clerk
 
 /**
  This modifier injects the clerkUIState into the environment and attaches the needed UI modifiers.

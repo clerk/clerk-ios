@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 import Kingfisher
 
 struct AuthProviderIcon: View {

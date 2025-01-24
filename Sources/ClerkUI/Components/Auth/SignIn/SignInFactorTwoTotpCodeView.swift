@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 struct SignInFactorTwoTotpCodeView: View {
     @Environment(Clerk.self) private var clerk

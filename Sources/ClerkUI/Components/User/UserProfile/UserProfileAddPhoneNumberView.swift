@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 extension UserProfileAddPhoneNumberView {
     enum Step: Hashable, Identifiable {

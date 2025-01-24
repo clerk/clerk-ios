@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 struct UserProfilePasskeyView: View {
     @Environment(ClerkTheme.self) private var clerkTheme

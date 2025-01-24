@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 struct SignUpVerificationView: View {
     @Environment(Clerk.self) private var clerk

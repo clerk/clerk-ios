@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftUI
-import Clerk
 
 extension EnvironmentValues {
     @MainActor @Entry public var clerk = Clerk.shared

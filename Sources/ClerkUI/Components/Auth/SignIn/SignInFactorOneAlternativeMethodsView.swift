@@ -8,11 +8,10 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 import AuthenticationServices
 
 struct SignInFactorOneAlternativeMethodsView: View {
-    private let clerk = Clerk.shared
+    @Environment(Clerk.self) private var clerk
     @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     

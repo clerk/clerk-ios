@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 struct AuthProviderButton: View {
     let provider: OAuthProvider

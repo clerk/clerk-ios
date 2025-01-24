@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Clerk
 
 enum RemoveResource {
     case email(EmailAddress)

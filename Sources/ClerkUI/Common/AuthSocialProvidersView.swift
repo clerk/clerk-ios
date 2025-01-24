@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 import Algorithms
 
 struct AuthSocialProvidersView: View {

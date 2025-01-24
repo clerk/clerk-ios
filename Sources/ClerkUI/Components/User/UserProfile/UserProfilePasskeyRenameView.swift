@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import SwiftUI
-import Clerk
 
 struct UserProfilePasskeyRenameView: View {
     let passkey: Passkey
