@@ -58,12 +58,12 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
     /// Array of the first factors that are supported in the current sign-in.
     ///
     ///  Each factor contains information about the verification strategy that can be used. See the `SignInFirstFactor` type reference for more information.
-    public let supportedFirstFactors: [SignInFactor]?
+    public let supportedFirstFactors: [Factor]?
     
     /// Array of the second factors that are supported in the current sign-in.
     ///
     /// Each factor contains information about the verification strategy that can be used. This property is populated only when the first factor is verified. See the `SignInSecondFactor` type reference for more information.
-    public let supportedSecondFactors: [SignInFactor]?
+    public let supportedSecondFactors: [Factor]?
     
     /// The state of the verification process for the selected first factor.
     ///

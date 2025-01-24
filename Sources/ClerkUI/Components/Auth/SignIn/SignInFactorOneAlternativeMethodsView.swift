@@ -18,9 +18,9 @@ struct SignInFactorOneAlternativeMethodsView: View {
     
     // The alternative sign in methods on the shared signin can change when initiating an oauth sign in
     // this is a reference to the original alternatives to the UI doesnt change unexpectedly
-    @State private var initialAlternatives: [SignInFactor] = []
+    @State private var initialAlternatives: [Factor] = []
     
-    let currentFactor: SignInFactor
+    let currentFactor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn
@@ -67,7 +67,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
         return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
     }
     
-    private func startAlternateFirstFactor(_ factor: SignInFactor) async {
+    private func startAlternateFirstFactor(_ factor: Factor) async {
         do {
             if let prepareStrategy = factor.prepareFirstFactorStrategy {
                 try await signIn?.prepareFirstFactor(for: prepareStrategy)

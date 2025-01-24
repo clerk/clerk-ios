@@ -15,13 +15,13 @@ struct SignInFactorTwoAlternativeMethodsView: View {
     @Environment(ClerkUIState.self) private var clerkUIState
     @State private var errorWrapper: ErrorWrapper?
     
-    let currentFactor: SignInFactor
+    let currentFactor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn
     }
             
-    private func startAlternateSecondFactor(_ factor: SignInFactor) async {
+    private func startAlternateSecondFactor(_ factor: Factor) async {
         do {
             if let prepareStrategy = factor.prepareSecondFactorStrategy {
                 try await signIn?.prepareSecondFactor(for: prepareStrategy)

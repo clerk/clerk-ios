@@ -15,7 +15,7 @@ struct SignInFactorOneView: View {
     @Environment(ClerkUIState.self) private var clerkUIState
     @Environment(\.openURL) private var openURL
         
-    let factor: SignInFactor
+    let factor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn

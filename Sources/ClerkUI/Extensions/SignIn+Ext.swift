@@ -13,7 +13,7 @@ extension SignIn {
     // First SignInFactor
     
     @MainActor
-    var currentFirstFactor: SignInFactor? {
+    var currentFirstFactor: Factor? {
         if let firstFactorVerification,
            firstFactorVerification.strategy != "passkey",
            let currentFirstFactor = supportedFirstFactors?.first(where: {
@@ -33,7 +33,7 @@ extension SignIn {
     }
     
     @MainActor
-    private var startingSignInFirstFactor: SignInFactor? {
+    private var startingSignInFirstFactor: Factor? {
         guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
@@ -60,7 +60,7 @@ extension SignIn {
         firstFactorVerification != nil
     }
     
-    func alternativeFirstFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
+    func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
         // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
         let firstFactors = supportedFirstFactors?.filter { factor in
             factor != currentFactor &&
@@ -74,11 +74,11 @@ extension SignIn {
         return firstFactors?.sorted(by: { $0.sortOrderPasswordPreferred < $1.sortOrderPasswordPreferred }) ?? []
     }
     
-    func firstFactor(for strategy: String) -> SignInFactor? {
+    func firstFactor(for strategy: String) -> Factor? {
         supportedFirstFactors?.first(where: { $0.strategy == strategy })
     }
     
-    var resetFactor: SignInFactor? {
+    var resetFactor: Factor? {
         supportedFirstFactors?.first(where: {
             $0.isResetFactor
         })
@@ -86,7 +86,7 @@ extension SignIn {
     
     // Second SignInFactor
     
-    var currentSecondFactor: SignInFactor? {
+    var currentSecondFactor: Factor? {
         guard status == .needsSecondFactor else { return nil }
         
         if let secondFactorVerification,
@@ -101,7 +101,7 @@ extension SignIn {
     }
     
     // The priority of second factors is: TOTP -> Phone code -> any other factor
-    private var startingSignInSecondFactor: SignInFactor? {
+    private var startingSignInSecondFactor: Factor? {
         if let totp = supportedSecondFactors?.first(where: { $0.strategy == "totp" }) {
             return totp
         }
@@ -117,11 +117,11 @@ extension SignIn {
         secondFactorVerification != nil
     }
     
-    func alternativeSecondFactors(currentFactor: SignInFactor?) -> [SignInFactor] {
+    func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
         supportedSecondFactors?.filter { $0 != currentFactor } ?? []
     }
     
-    func secondFactor(for strategy: String) -> SignInFactor? {
+    func secondFactor(for strategy: String) -> Factor? {
         supportedSecondFactors?.first(where: {
             $0.strategy == strategy &&
             $0.safeIdentifier == identifier

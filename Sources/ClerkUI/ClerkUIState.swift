@@ -19,11 +19,11 @@ final class ClerkUIState {
 
     enum AuthStep: Equatable, Hashable {
         case signInStart
-        case signInFactorOne(factor: SignInFactor)
-        case signInFactorOneUseAnotherMethod(currentFactor: SignInFactor)
-        case signInFactorTwo(factor: SignInFactor)
-        case signInFactorTwoUseAnotherMethod(currentFactor: SignInFactor)
-        case signInForgotPassword(factor: SignInFactor)
+        case signInFactorOne(factor: Factor)
+        case signInFactorOneUseAnotherMethod(currentFactor: Factor)
+        case signInFactorTwo(factor: Factor)
+        case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
+        case signInForgotPassword(factor: Factor)
         case signInResetPassword
         
         case signUpStart

@@ -17,7 +17,7 @@ struct SignInFactorOneResetView: View {
     @Environment(ClerkTheme.self) private var clerkTheme
     @State private var errorWrapper: ErrorWrapper?
     
-    let factor: SignInFactor
+    let factor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn

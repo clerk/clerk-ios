@@ -10,5 +10,5 @@ import SwiftUI
 import Clerk
 
 extension EnvironmentValues {
-    @Entry public var clerk = Clerk.shared
+    @MainActor @Entry public var clerk = Clerk.shared
 }

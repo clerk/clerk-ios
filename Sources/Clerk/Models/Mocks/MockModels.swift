@@ -26,17 +26,17 @@ extension SignIn {
     
 }
 
-extension SignInFactor {
+extension Factor {
     
-    public static var mock: SignInFactor {
+    public static var mock: Factor {
         
-        SignInFactor(
+        Factor(
             strategy: "email_code",
             emailAddressId: "1",
             phoneNumberId: "1",
+            web3WalletId: nil,
             safeIdentifier: User.mock.emailAddresses.first?.emailAddress,
-            primary: true,
-            default: true
+            primary: true
         )
         
     }

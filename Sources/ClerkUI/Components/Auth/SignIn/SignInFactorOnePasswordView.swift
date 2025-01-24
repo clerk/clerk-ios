@@ -18,7 +18,7 @@ struct SignInFactorOnePasswordView: View {
     @State private var errorWrapper: ErrorWrapper?
     @FocusState private var isFocused: Bool
         
-    let factor: SignInFactor
+    let factor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn

@@ -16,7 +16,7 @@ struct SignInFactorTwoPhoneCodeView: View {
     @Environment(AuthView.Config.self) private var config
     @State private var errorWrapper: ErrorWrapper?
     
-    let factor: SignInFactor
+    let factor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn

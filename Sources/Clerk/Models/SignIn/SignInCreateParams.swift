@@ -132,7 +132,7 @@ extension SignIn {
                 .init(strategy: "passkey")
                 
             case .ticket(let ticket):
-                .init(strategy: Strategy.ticket.stringValue, ticket: ticket)
+                .init(strategy: "ticket", ticket: ticket)
                 
             case .transfer:
                 .init(transfer: true)

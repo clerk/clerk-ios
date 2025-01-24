@@ -16,7 +16,7 @@ struct SignInFactorTwoUseAnotherMethodView: View {
     @Environment(ClerkTheme.self) private var clerkTheme
     @Environment(\.dismiss) private var dismiss
     
-    let currentFactor: SignInFactor
+    let currentFactor: Factor
     
     private var signIn: SignIn? {
         clerk.client?.signIn

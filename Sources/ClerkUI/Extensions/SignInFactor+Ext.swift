@@ -8,7 +8,7 @@
 import Foundation
 import Clerk
 
-extension SignInFactor {
+extension Factor {
     
     var isResetFactor: Bool {
         ["reset_password_email_code", "reset_password_phone_code"].contains(strategy)

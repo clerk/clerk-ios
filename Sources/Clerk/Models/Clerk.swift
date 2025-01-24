@@ -18,24 +18,21 @@ import UIKit
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
+@MainActor
 @Observable
 final public class Clerk: Sendable {
     
-    @MainActor
     public static let shared: Clerk = Container.shared.clerk()
     
     /// A getter to see if the Clerk object is ready for use or not.
-    @MainActor
     private(set) public var isLoaded: Bool = false
     
     /// A getter to see if a Clerk instance is running in production or development mode.
-    @MainActor
     public var instanceType: Clerk.Environment.DisplayConfig.InstanceEnvironmentType {
         Clerk.shared.environment?.displayConfig.instanceEnvironmentType ?? .unknown
     }
     
     /// The Client object for the current device.
-    @MainActor
     internal(set) public var client: Client? {
         didSet {
             if let lastActiveSessionId = client?.lastActiveSessionId {
@@ -47,19 +44,16 @@ final public class Clerk: Sendable {
     }
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
-    @MainActor
     public var session: Session? {
         client?.lastActiveSession
     }
     
     /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
-    @MainActor
     public var user: User? {
         client?.lastActiveSession?.user
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    @MainActor
     private(set) public var publishableKey: String = "" {
         didSet {
             let liveRegex = Regex {
@@ -84,33 +78,28 @@ final public class Clerk: Sendable {
     }
     
     /// Frontend API URL
-    @MainActor
     private(set) var frontendAPIURL: String = ""
     
     /// The Environment for the clerk instance.
-    @MainActor
     internal(set) public var environment: Clerk.Environment?
     
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    @MainActor
     internal(set) public var sessionsByUserId: [String: [Session]] = .init()
     
     /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
-    @MainActor
     public var redirectConfig = RedirectConfig()
     
     /// The event emitter for auth events
     public let authEventEmitter = EventEmitter<AuthEvent>()
     
     /// Enable for additional debugging signals
-    @MainActor
     private(set) public var debugMode: Bool = false
     
     // MARK: - Private Properties
     
-    init() {}
+    nonisolated init() {}
     
     /// The cached session tokens.
     ///
@@ -118,19 +107,15 @@ final public class Clerk: Sendable {
     /// - e.g. `sess_abc12345` or `sess_abc12345-supabase`
     ///
     /// - Is set by the `getToken` function on a session.
-    @MainActor
     var sessionTokensByCacheKey: [String: TokenResource] = .init()
                 
     /// Holds a reference to the task performed when the app will enter the foreground.
-    @MainActor
     private var willEnterForegroundTask: Task<Void, Error>?
     
     /// Holds a reference to the task performed when the app entered the background.
-    @MainActor
     private var didEnterBackgroundTask: Task<Void, Error>?
     
     /// Holds a reference to the session polling task.
-    @MainActor
     private var sessionPollingTask: Task<Void, Error>?
 }
 
@@ -140,7 +125,6 @@ extension Clerk {
     /// - Parameters:
     ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
     ///     - debugMode: Enable for additional debugging signals.
-    @MainActor
     public func configure(publishableKey: String, debugMode: Bool = false) {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk configured without a publishable key. Please include a valid publishable key.")
@@ -153,7 +137,6 @@ extension Clerk {
     
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
@@ -178,7 +161,6 @@ extension Clerk {
      Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. You can also specify a specific session to sign out by passing the sessionId parameter.
      - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
      */
-    @MainActor
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
@@ -193,7 +175,6 @@ extension Clerk {
     
     /// A method used to set the active session and/or organization.
     /// - Parameter sessionId: The session ID to be set as active.
-    @MainActor
     public func setActive(sessionId: String) async throws {
         let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
         let response = try await Clerk.shared.apiClient.send(request)
@@ -205,12 +186,10 @@ extension Clerk {
     
     // MARK: - Private Properties
     
-    @MainActor
     var apiClient: APIClient {
         Container.shared.apiClient(frontendAPIURL)
     }
     
-    @MainActor
     private func setupNotificationObservers() {
         #if !os(watchOS) && !os(macOS)
         
@@ -242,7 +221,6 @@ extension Clerk {
         #endif
     }
 
-    @MainActor
     private func startSessionTokenPolling() {
         guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
             return
@@ -258,7 +236,6 @@ extension Clerk {
         }
     }
     
-    @MainActor
     private func stopSessionTokenPolling() {
         sessionPollingTask?.cancel()
         sessionPollingTask = nil
@@ -267,7 +244,6 @@ extension Clerk {
 }
 
 extension Container {
-    
     var clerk: Factory<Clerk> {
         self { Clerk() }.singleton
     }
