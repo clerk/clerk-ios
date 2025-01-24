@@ -11,8 +11,6 @@ import SwiftUI
 import Clerk
 
 struct AuthProviderButton: View {
-    @Environment(\.colorScheme) private var colorScheme
-    
     let provider: OAuthProvider
     let label: String
     var style: Style = .regular
@@ -29,7 +27,6 @@ struct AuthProviderButton: View {
         }
     }
     
-    @MainActor
     @ViewBuilder
     private var compactStyleButton: some View {
         if provider.iconImageUrl() != nil {
@@ -38,7 +35,6 @@ struct AuthProviderButton: View {
         }
     }
     
-    @MainActor
     @ViewBuilder
     private var regularStyleButton: some View {
         HStack(spacing: 16) {
@@ -55,7 +51,6 @@ struct AuthProviderButton: View {
 
 extension AuthProviderButton {
     
-    @MainActor
     init(provider: OAuthProvider, label: String? = nil, style: Style = .regular) {
         self.provider = provider
         self.style = style
