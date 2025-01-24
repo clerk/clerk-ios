@@ -45,12 +45,13 @@ final public class Clerk: Sendable {
     
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
-        client?.lastActiveSession
+        guard let client else { return nil }
+        return client.sessions.first(where: { $0.id == client.lastActiveSessionId })
     }
     
     /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
     public var user: User? {
-        client?.lastActiveSession?.user
+        session?.user
     }
     
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.

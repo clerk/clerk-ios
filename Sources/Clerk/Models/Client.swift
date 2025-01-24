@@ -56,12 +56,3 @@ extension Client {
     }
     
 }
-
-extension Client {
-    
-    /// The last active session on this client.
-    var lastActiveSession: Session? {
-        sessions.first(where: { $0.id == lastActiveSessionId })
-    }
-    
-}
