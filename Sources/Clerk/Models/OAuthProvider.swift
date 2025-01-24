@@ -8,9 +8,8 @@
 import Foundation
 import RegexBuilder
 
-/// The available oauth providers.
+/// A type that represents the OAuth provider.
 public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable {
-    case custom(_ strategy: String)
     case facebook
     case google
     case hubspot
@@ -38,9 +37,12 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     case linear
     case huggingFace
     
+    /// A type that represents a custom OAuth strategy.
+    case custom(_ strategy: String)
+    
     // **
-    // WHEN ADDING A NEW CASE, MAKE SURE TO ADD IT TO THE ALL CASES ARRAY
-    // (CUSTOM SHOULD NOT BE INCLUDED)
+    // When adding a new case, make sure to add it to the all cases array
+    // (.custom SHOULD NOT be included)
     // **
     
     static public var allCases: [OAuthProvider] {
@@ -84,6 +86,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         }
     }
     
+    /// The name of the OAuth provider (e.g. "Google")
     @MainActor
     public var name: String {
         switch self {
@@ -101,6 +104,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         }
     }
     
+    /// The String strategy for the provider. (e.g. "oauth_google" or "oauth_custom_google")
     public var strategy: String {
         switch self {
         case .custom(let strategy):
@@ -110,6 +114,10 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         }
     }
     
+    /// The icon of the provider.
+    ///
+    /// - Parameters:
+    ///     - darkMode: Will return the dark mode variant of the image. Does not apply to custom providers.
     @MainActor
     public func iconImageUrl(darkMode: Bool = false) -> URL? {
         switch self {

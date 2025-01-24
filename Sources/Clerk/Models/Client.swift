@@ -42,17 +42,24 @@ extension Client {
     
     /// Retrieves the current client.
     @discardableResult @MainActor
-    public static func get() async throws -> Client? {
+    static func get() async throws -> Client? {
         let request = ClerkFAPI.v1.client.get
         let client = try await Clerk.shared.apiClient.send(request).value.response
         Clerk.shared.client = client
         return client
     }
     
-    /// Retrieves the current client.
-    @discardableResult @MainActor
-    public func get() async throws -> Client? {
-        try await Client.get()
-    }
-    
+}
+
+
+/// The ClerkAPI oftens returns the requested object along with the Client Object (piggy-backed).
+///
+/// This wrapper object can be used to decode the requested object along with the client object.
+/// ### Example
+/// ```swift
+/// func post(_ params: SignUp.CreateParams) -> Request<ClientResponse<SignUp>>
+/// ```
+struct ClientResponse<Response: Decodable & Sendable>: Decodable, Sendable {
+    let response: Response
+    let client: Client?
 }

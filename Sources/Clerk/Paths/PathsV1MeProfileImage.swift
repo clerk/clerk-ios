@@ -18,7 +18,7 @@ extension ClerkFAPI.V1Endpoint.MeEndpoint {
         /// Path: `v1/me/profile_image`
         let path: String
         
-        func post(queryItems: [URLQueryItem] = [], headers: [String: String]? = nil) -> Request<ClientResponse<ClerkImageResource>> {
+        func post(queryItems: [URLQueryItem] = [], headers: [String: String]? = nil) -> Request<ClientResponse<ImageResource>> {
             .init(path: path, method: .post, query: queryItems.asTuples, headers: headers)
         }
         

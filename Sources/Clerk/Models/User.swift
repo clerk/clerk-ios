@@ -354,7 +354,7 @@ extension User {
     
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
     @discardableResult @MainActor
-    public func setProfileImage(_ imageData: Data) async throws -> ClerkImageResource {
+    public func setProfileImage(_ imageData: Data) async throws -> ImageResource {
         
         let boundary = UUID().uuidString
         var data = Data()

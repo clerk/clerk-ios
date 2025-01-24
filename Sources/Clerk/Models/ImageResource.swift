@@ -8,13 +8,13 @@
 import Foundation
 
 /// Represents information about an image.
-public struct ClerkImageResource: Codable, Sendable {
+public struct ImageResource: Codable, Sendable {
     /// The unique identifier of the image.
-    var id: String
+    let id: String
     
     /// The name of the image.
-    var name: String?
+    let name: String?
     
     /// The publicly accessible URL for the image.
-    var publicUrl: String?
+    let publicUrl: String?
 }

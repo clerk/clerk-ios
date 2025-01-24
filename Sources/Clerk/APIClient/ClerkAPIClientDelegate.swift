@@ -45,7 +45,7 @@ extension Container {
         var headers = [
             "Content-Type": "application/x-www-form-urlencoded",
             "clerk-api-version": "2024-10-01",
-            "x-ios-sdk-version": version
+            "x-ios-sdk-version": Clerk.version
         ]
         
         #if os(iOS)

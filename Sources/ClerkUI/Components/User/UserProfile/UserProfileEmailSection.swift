@@ -150,7 +150,7 @@ struct UserProfileEmailSection: View {
         
         private func setAsPrimary(emailAddress: EmailAddress) async {
             do {
-                try await emailAddress.setAsPrimary()
+                try await user.update(.init(primaryEmailAddressId: emailAddress.id))
             } catch {
                 errorWrapper = ErrorWrapper(error: error)
                 dump(error)

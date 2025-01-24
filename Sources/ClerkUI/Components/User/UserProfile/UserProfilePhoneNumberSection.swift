@@ -149,7 +149,7 @@ struct UserProfilePhoneNumberSection: View {
         private var setAsPrimaryButton: some View {
             AsyncButton {
                 do {
-                    try await phoneNumber.setAsPrimary()
+                    try await user.update(.init(primaryPhoneNumberId: phoneNumber.id))
                 } catch {
                     errorWrapper = ErrorWrapper(error: error)
                     dump(error)

@@ -58,11 +58,11 @@ enum RemoveResource {
         case .email(let emailAddress):
             try await emailAddress.destroy()
         case .phoneNumber(let phoneNumber):
-            try await phoneNumber.destroy()
+            try await phoneNumber.delete()
         case .externalAccount(let externalAccount):
             try await externalAccount.destroy()
         case .passkey(let passkey):
-            try await passkey.destroy()
+            try await passkey.delete()
         }
     }
 }

@@ -147,10 +147,10 @@ extension Passkey {
         Passkey(
             id: UUID().uuidString,
             name: "iCloud Keychain",
-            lastUsedAt: .now,
+            verification: .mockPasskeyVerification,
             createdAt: .distantPast,
             updatedAt: .now,
-            verification: .mockPasskeyVerification
+            lastUsedAt: .now
         )
     }
     
@@ -162,7 +162,6 @@ extension EmailAddress {
         EmailAddress(
             id: "1",
             emailAddress: "user@email.com",
-            reserved: false,
             verification: .mockEmailCodeVerification,
             linkedTo: nil
         )
