@@ -147,6 +147,11 @@ public struct User: Codable, Equatable, Sendable, Hashable {
 extension User {
     
     /// Updates the user's attributes. Use this method to save information you collected about the user.
+    ///
+    /// The appropriate settings must be enabled in the Clerk Dashboard for the user to be able to update their attributes.
+    ///
+    /// For example, if you want to use the `update(.init(firstName:))` method, you must enable the Name setting.
+    /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
     @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
         let request = ClerkFAPI.v1.me.update(
@@ -160,7 +165,7 @@ extension User {
     }
     
     /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
-    /// - Parameter email: The value of the email address
+    /// - Parameter email: The value of the email address.
     @discardableResult @MainActor
     public func createEmailAddress(_ email: String) async throws -> EmailAddress {
         let request = ClerkFAPI.v1.me.emailAddresses.post(
@@ -173,7 +178,7 @@ extension User {
         return response.value.response
     }
     
-    /// Creates a new phone number for the current user.
+    /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
     /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
     @discardableResult @MainActor
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
@@ -187,13 +192,12 @@ extension User {
         return response.value.response
     }
     
-     /// Adds an external account for the user. A new `ExternalAccount` will be created and associated with the user.
-     ///
-     /// The initial state of the returned ExternalAccount will be unverified. To initiate the connection with the external provider one should redirect to the externalAccount.verification.externalVerificationRedirectURL contained in the result of createExternalAccount.
-     /// Upon return, one can inspect within the user.externalAccounts the entry that corresponds to the requested strategy:
-     ///
-     /// - If the connection was successful then externalAccount.verification.status should be verified.
-     /// - If the connection was not successful, then the externalAccount.verification.status will not be verified and the externalAccount.verification.error will contain the error encountered so that you can present corresponding feedback to the user.
+    /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
+    ///
+    /// This method is useful if you want to allow an already signed-in user to connect their account with an external OAuth provider, such as Facebook, GitHub, etc., so that they can sign in with that provider in the future.
+    /// - Parameters:
+    ///     - provider: The OAuth provider. For example: `.facebook`, `.github`, etc.
+    ///     - additionalScopes: Additional scopes for your user to be prompted to approve.
     @discardableResult @MainActor
     public func createExternalAccount(_ provider: OAuthProvider, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
         let request = ClerkFAPI.v1.me.externalAccounts.create(
@@ -210,6 +214,12 @@ extension User {
         return response.value.response
     }
     
+    /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
+    ///
+    /// This method is useful if you want to allow an already signed-in user to connect their account with an external provider using an ID token provider, such as Apple, etc., so that they can sign in with that provider in the future.
+    /// - Parameters:
+    ///     - provider: The IDTokenProvider. For example: `.apple`.
+    ///     - additionalScopes: Additional scopes for your user to be prompted to approve.
     @discardableResult @MainActor
     public func createExternalAccount(_ provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
         let request = ClerkFAPI.v1.me.externalAccounts.create(
@@ -226,8 +236,10 @@ extension User {
     }
     
     #if canImport(AuthenticationServices) && !os(watchOS)
-    @MainActor
-    @discardableResult
+    /// Creates a passkey for the signed-in user.
+    ///
+    /// - Returns: ``Passkey``
+    @discardableResult @MainActor
     public func createPasskey() async throws -> Passkey {
         let passkey = try await Passkey.create()
         
@@ -277,7 +289,9 @@ extension User {
     }
     #endif
     
-    /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. Note that if this method is called again (while still unverified), it replaces the previously generated secret.
+    /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice.
+    ///
+    /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
     @discardableResult @MainActor
     public func createTOTP() async throws -> TOTPResource {
         let request = ClerkFAPI.v1.me.totp.post(
@@ -289,7 +303,10 @@ extension User {
         return response.value.response
     }
     
-    /// Verifies a TOTP secret after a user has created it. The user must provide a code from their authenticator app, that has been generated using the previously created secret. This way, correct set up and ownership of the authenticator app can be validated.
+    /// Verifies a TOTP secret after a user has created it.
+    ///
+    /// The user must provide a code from their authenticator app, that has been generated using the previously created secret.
+    /// This way, correct set up and ownership of the authenticator app can be validated.
     /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
     @discardableResult @MainActor
     public func verifyTOTP(code: String) async throws -> TOTPResource {
@@ -316,6 +333,8 @@ extension User {
     }
     
     /// Retrieves all active sessions for this user.
+    ///
+    /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
     @discardableResult @MainActor
     public func getSessions() async throws -> [Session] {
         let request = ClerkFAPI.v1.me.sessions.active.get(
@@ -327,7 +346,7 @@ extension User {
         return sessions
     }
     
-    /// Updates the user's password.
+    /// Updates the user's password. Passwords must be at least 8 characters long.
     @discardableResult @MainActor
     public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
         let request = ClerkFAPI.v1.me.changePassword.post(
@@ -341,6 +360,8 @@ extension User {
     }
     
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
+    /// - Parameters:
+    ///     - imageData: The image, in data format, to set as the user's profile image.
     @discardableResult @MainActor
     public func setProfileImage(_ imageData: Data) async throws -> ImageResource {
         
