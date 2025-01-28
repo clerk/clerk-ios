@@ -14,7 +14,7 @@ struct ClerkBottomBrandingModifier: ViewModifier {
     @Environment(ClerkTheme.self) private var clerkTheme
         
     func body(content: Content) -> some View {
-        if clerk.environment?.displayConfig.branded == true {
+        if clerk.environment.displayConfig?.branded == true {
             VStack(spacing: 0) {
                 content
                         

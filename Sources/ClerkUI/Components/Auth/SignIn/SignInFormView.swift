@@ -30,27 +30,27 @@ struct SignInFormView: View {
     
     // returns true if email OR username is used for sign in AND phone number is used for sign in
     private var showPhoneNumberToggle: Bool {
-        guard let environment = clerk.environment else { return false }
-        return (environment.userSettings.firstFactorAttributes.contains { $0.key == "email_address" } ||
-        environment.userSettings.firstFactorAttributes.contains { $0.key == "username" }) &&
-        environment.userSettings.firstFactorAttributes.contains { $0.key == "phone_number" }
+        guard let userSettings = Clerk.shared.environment.userSettings else { return false }
+        return (userSettings.firstFactorAttributes.contains { $0.key == "email_address" } ||
+        userSettings.firstFactorAttributes.contains { $0.key == "username" }) &&
+        userSettings.firstFactorAttributes.contains { $0.key == "phone_number" }
     }
     
     // returns true if phone number is enabled, and both email and username are NOT
     private var shouldDefaultToPhoneNumber: Bool {
-        guard let environment = clerk.environment else { return false }
-        return environment.userSettings.firstFactorAttributes.contains { $0.key == "phone_number" } &&
-        (environment.userSettings.firstFactorAttributes.contains(where: { $0.key == "email_address" }) == false &&
-        environment.userSettings.firstFactorAttributes.contains(where: { $0.key == "username" }) == false)
+        guard let userSettings = Clerk.shared.environment.userSettings else { return false }
+        return userSettings.firstFactorAttributes.contains { $0.key == "phone_number" } &&
+        (userSettings.firstFactorAttributes.contains(where: { $0.key == "email_address" }) == false &&
+        userSettings.firstFactorAttributes.contains(where: { $0.key == "username" }) == false)
     }
     
     private var emailOrUsernameLabel: String {
         var stringComponents = [String]()
-        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == "email_address" }) {
+        if (clerk.environment.userSettings?.firstFactorAttributes ?? [:]).contains(where: { $0.key == "email_address" }) {
             stringComponents.append("email address")
         }
         
-        if (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains(where: { $0.key == "username" }) {
+        if (clerk.environment.userSettings?.firstFactorAttributes ?? [:]).contains(where: { $0.key == "username" }) {
             stringComponents.append("username")
         }
         
@@ -59,11 +59,11 @@ struct SignInFormView: View {
     }
     
     private var passkeysAreEnabled: Bool {
-        clerk.environment?.userSettings.config(for: "passkey")?.enabled == true
+        clerk.environment.userSettings?.config(for: "passkey")?.enabled == true
     }
     
     private var passkeyAutoFillIsEnabled: Bool {
-        clerk.environment?.userSettings.passkeySettings?.allowAutofill == true
+        clerk.environment.userSettings?.passkeySettings?.allowAutofill == true
     }
     
     var hasAnInProgressPasskeyAuth: Bool {
@@ -157,7 +157,7 @@ struct SignInFormView: View {
         }
         .animation(.default, value: config.signInPassword.isEmpty)
         .clerkErrorPresenting($errorWrapper)
-        .task(id: clerk.environment?.userSettings) {
+        .task(id: clerk.environment.userSettings) {
             displayingEmailOrUsernameEntry = !shouldDefaultToPhoneNumber
             
             if passkeysAreEnabled, passkeyAutoFillIsEnabled {

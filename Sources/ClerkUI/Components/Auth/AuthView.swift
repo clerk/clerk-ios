@@ -153,7 +153,7 @@ struct AuthView: View {
             .keyboardIgnoringBottomView(inFrontOfContent: true, content: {
                 VStack(spacing: 0) {
                     footerView
-                    if clerk.environment?.displayConfig.branded == true {
+                    if clerk.environment.displayConfig?.branded == true {
                         SecuredByClerkView()
                             .padding(.vertical, 16)
                             .frame(maxWidth: .infinity)

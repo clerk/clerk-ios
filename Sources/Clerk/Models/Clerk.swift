@@ -98,6 +98,9 @@ final public class Clerk {
     /// Enable for additional debugging signals
     private(set) public var debugMode: Bool = false
     
+    /// The Clerk environment for the instance.
+    internal(set) public var environment = Environment()
+        
     // MARK: - Private Properties
     
     nonisolated init() {}
@@ -208,7 +211,7 @@ extension Clerk {
                 }
                 
                 Task.detached {
-                    _ = try? await Clerk.Environment.get()
+                    _ = try? await Environment.get()
                 }
             }
         }

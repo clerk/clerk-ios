@@ -6,14 +6,16 @@
 //
 
 import Foundation
+import Factory
 
 extension Clerk {
-        
-    public struct Environment: Codable, Sendable {
-        public let authConfig: AuthConfig
-        public let userSettings: UserSettings
-        public let displayConfig: DisplayConfig
+    
+     public struct Environment: Codable, Sendable {
+        public var authConfig: AuthConfig?
+        public var userSettings: UserSettings?
+        public var displayConfig: DisplayConfig?
     }
+    
 }
 
 extension Clerk.Environment {

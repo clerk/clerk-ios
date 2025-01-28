@@ -13,15 +13,15 @@ struct UserProfileDetailsView: View {
     @Environment(Clerk.self) private var clerk
     
     private var emailIsEnabled: Bool {
-        clerk.environment?.userSettings.config(for: "email_address")?.enabled == true
+        clerk.environment.userSettings?.config(for: "email_address")?.enabled == true
     }
     
     private var phoneNumberIsEnabled: Bool {
-        clerk.environment?.userSettings.config(for: "phone_number")?.enabled == true
+        clerk.environment.userSettings?.config(for: "phone_number")?.enabled == true
     }
     
     private var socialProvidersIsEnabled: Bool {
-        clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
+        clerk.environment.userSettings?.authenticatableSocialProviders.isEmpty == false
     }
     
     var body: some View {

@@ -33,14 +33,16 @@ extension User {
         username ?? primaryEmailAddress?.emailAddress ?? primaryPhoneNumber?.phoneNumber
     }
     
-    func unconnectedProviders(environment: ClerkEnvironment) -> [OAuthProvider] {
-        guard let allExternalProviders = environment.userSettings?.socialProviders.sorted() else { return [] }
+    @MainActor
+    var unconnectedProviders: [OAuthProvider] {
+        guard let allExternalProviders = Clerk.shared.environment.userSettings?.socialProviders.sorted() else { return [] }
         let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
-    func availableSecondFactors(environment: ClerkEnvironment) -> [String: ClerkEnvironment.UserSettings.AttributesConfig] {
-        environment.userSettings?.availableSecondFactors(user: self) ?? [:]
+    @MainActor
+    var availableSecondFactors: [String: Clerk.Environment.UserSettings.AttributesConfig] {
+        Clerk.shared.environment.userSettings?.availableSecondFactors(user: self) ?? [:]
     }
     
     var phoneNumbersAvailableForSecondFactor: [PhoneNumber] {

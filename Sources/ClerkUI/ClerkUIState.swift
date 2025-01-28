@@ -95,7 +95,7 @@ extension ClerkUIState {
             
             // if a user just signed up, passkeys are enabled and they dont have any passkeys on their account
             // then ask them if they would like to create one
-            if Clerk.shared.environment?.userSettings.config(for: "passkey")?.enabled == true,
+            if Clerk.shared.environment.userSettings?.config(for: "passkey")?.enabled == true,
                let user = Clerk.shared.user,
                user.passkeys.isEmpty
             {

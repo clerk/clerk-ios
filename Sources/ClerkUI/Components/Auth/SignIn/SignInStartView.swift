@@ -17,11 +17,11 @@ struct SignInStartView: View {
     @State private var isLoading = false
     
     private var socialProvidersEnabled: Bool {
-        clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
+        clerk.environment.userSettings?.authenticatableSocialProviders.isEmpty == false
     }
     
     private var showSignInForm: Bool {
-        (clerk.environment?.userSettings.firstFactorAttributes ?? [:]).contains {
+        (clerk.environment.userSettings?.firstFactorAttributes ?? [:]).contains {
             $0.key == "email_address" ||
             $0.key == "username" ||
             $0.key == "phone_number"
@@ -30,8 +30,8 @@ struct SignInStartView: View {
     
     private var headerTitle: String {
         var string = "Sign in"
-        if let environment = clerk.environment {
-            string += " to \(environment.displayConfig.applicationName)"
+        if let appName = Clerk.shared.environment.displayConfig?.applicationName {
+            string += " to \(appName)"
         }
         return string
     }

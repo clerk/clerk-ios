@@ -93,7 +93,7 @@ struct UserButtonPopover: View {
                     .zIndex(10)
                 }
                 
-                if clerk.environment?.authConfig.singleSessionMode == false {
+                if clerk.environment.authConfig?.singleSessionMode == false {
                     VStack(alignment: .leading, spacing: .zero) {
                         ForEach(otherSessions) { session in
                             if let user = session.user {

@@ -75,7 +75,7 @@ struct TurnstileWebView: UIViewRepresentable {
     
     @MainActor
     private var displayConfig: Clerk.Environment.DisplayConfig? {
-        Clerk.shared.environment?.displayConfig
+        Clerk.shared.environment.displayConfig
     }
     
     @MainActor
@@ -139,7 +139,7 @@ struct TurnstileWebView: UIViewRepresentable {
         </html>
         """
 
-        if let homeURL = Clerk.shared.environment?.displayConfig.homeUrl {
+        if let homeURL = Clerk.shared.environment.displayConfig?.homeUrl {
             webView.loadHTMLString(html, baseURL: URL(string: homeURL))
         } else {
             webView.loadHTMLString(html, baseURL: nil)

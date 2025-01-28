@@ -87,17 +87,17 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     }
     
     /// Returns the name for a built in OAuth provider. Returns an empty string for custom providers.
+    @MainActor
     public var name: String {
         switch self {
         case .custom(let strategy):
-            if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+            if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
                 socialConfig.value.strategy == strategy
             }) {
                 return socialConfig.value.name
             }
             
-            // Sensible fallback, but name value should be on the social config
-            return OAuthProvider.providerFromStrategy(strategy).replacingOccurrences(of: "_", with: " ")
+            return ""
         default:
             return providerData.name
         }
@@ -121,7 +121,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     public func iconImageUrl(darkMode: Bool = false) -> URL? {
         switch self {
         case .custom(let strategy):
-            if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+            if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
                 socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
             }) {
                 return URL(string: socialConfig.value.logoUrl ?? "")
@@ -131,7 +131,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             
         default:
                 
-            if let socialConfig = Clerk.shared.environment?.userSettings.social.first(where: { socialConfig in
+            if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
                 socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
             }) {
                 if var logoUrl = socialConfig.value.logoUrl {

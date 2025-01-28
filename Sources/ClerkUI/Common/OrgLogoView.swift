@@ -15,7 +15,7 @@ struct OrgLogoView: View {
     @Environment(ClerkTheme.self) private var clerkTheme
         
     var body: some View {
-        KFImage(URL(string: clerk.environment?.displayConfig.logoImageUrl ?? ""))
+        KFImage(URL(string: clerk.environment.displayConfig?.logoImageUrl ?? ""))
             .resizable()
             .placeholder {
                 #if targetEnvironment(simulator)

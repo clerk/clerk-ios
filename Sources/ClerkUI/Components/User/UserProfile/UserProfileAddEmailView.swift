@@ -46,7 +46,7 @@ struct UserProfileAddEmailView: View {
     }
     
     private var preferredEmailVerificationStrategy: String {
-        clerk.environment?.userSettings.preferredEmailVerificationStrategy ?? "email_code"
+        clerk.environment.userSettings?.preferredEmailVerificationStrategy ?? "email_code"
     }
     
     private var prepareStrategy: EmailAddress.PrepareStrategy {

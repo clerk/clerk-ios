@@ -18,12 +18,12 @@ struct SignUpStartView: View {
     @State private var errorWrapper: ErrorWrapper?
     
     private var socialProvidersEnabled: Bool {
-        clerk.environment?.userSettings.authenticatableSocialProviders.isEmpty == false
+        clerk.environment.userSettings?.authenticatableSocialProviders.isEmpty == false
     }
     
     private var contactInfoEnabled: Bool {
-        clerk.environment?.userSettings.config(for: "email_address")?.enabled == true ||
-        clerk.environment?.userSettings.config(for: "phone_number")?.enabled == true
+        clerk.environment.userSettings?.config(for: "email_address")?.enabled == true ||
+        clerk.environment.userSettings?.config(for: "phone_number")?.enabled == true
     }
     
     var body: some View {

@@ -24,7 +24,7 @@ struct AuthSocialProvidersView: View {
     var onSuccess:((_ transferFlowResult: TransferFlowResult) -> Void)?
     
     private var socialProviders: [OAuthProvider] {
-        (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
+        (clerk.environment.userSettings?.authenticatableSocialProviders ?? []).sorted()
     }
     
     private var chunkedProviders: ChunksOfCountCollection<[OAuthProvider]> {

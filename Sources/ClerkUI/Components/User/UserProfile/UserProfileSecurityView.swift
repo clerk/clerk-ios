@@ -25,16 +25,16 @@ struct UserProfileSecurityView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
                         
-            if clerk.environment?.userSettings.instanceIsPasswordBased == true, clerk.user?.passwordEnabled == true {
+            if clerk.environment.userSettings?.instanceIsPasswordBased == true, clerk.user?.passwordEnabled == true {
                 // todo: allow users without a password to set one
                 UserProfilePasswordSection()
             }
             
-            if clerk.environment?.userSettings.config(for: "passkey")?.enabled == true {
+            if clerk.environment.userSettings?.config(for: "passkey")?.enabled == true {
                 UserProfilePasskeySection()
             }
             
-            if clerk.environment?.userSettings.secondFactorAttributes.isEmpty == false {
+            if clerk.environment.userSettings?.secondFactorAttributes.isEmpty == false {
                 UserProfileMfaSection()
             }
             
@@ -42,7 +42,7 @@ struct UserProfileSecurityView: View {
                 UserProfileActiveDevicesSection()
             }
             
-            if clerk.environment?.userSettings.actions.deleteSelf == true && user?.deleteSelfEnabled == true {
+            if clerk.environment.userSettings?.actions.deleteSelf == true && user?.deleteSelfEnabled == true {
                 UserProfileDeleteAccountSection()
             }
         }

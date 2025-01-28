@@ -33,7 +33,7 @@ extension SignIn {
     
     @MainActor
     private var startingSignInFirstFactor: Factor? {
-        guard let preferredStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy else { return nil }
+        guard let preferredStrategy = Clerk.shared.environment.displayConfig?.preferredSignInStrategy else { return nil }
         let firstFactors = alternativeFirstFactors(currentFactor: nil) // filters out reset strategies and oauth
         
         switch preferredStrategy {

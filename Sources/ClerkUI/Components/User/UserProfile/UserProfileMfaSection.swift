@@ -22,7 +22,7 @@ struct UserProfileMfaSection: View {
     }
     
     private var secondFactors: [String: Clerk.Environment.UserSettings.AttributesConfig] {
-        clerk.environment?.userSettings.secondFactorAttributes ?? [:]
+        clerk.environment.userSettings?.secondFactorAttributes ?? [:]
     }
     
     private var showTotp: Bool  {

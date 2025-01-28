@@ -15,12 +15,12 @@ extension LegalConsentView {
     final class ViewModel {
                 
         var privacyPolicyUrl: URL? {
-            guard let urlString = Clerk.shared.environment?.displayConfig.privacyPolicyUrl else { return nil }
+            guard let urlString = Clerk.shared.environment.displayConfig?.privacyPolicyUrl else { return nil }
             return URL(string: urlString)
         }
         
         var termsURL: URL? {
-            guard let urlString = Clerk.shared.environment?.displayConfig.termsUrl else { return nil }
+            guard let urlString = Clerk.shared.environment.displayConfig?.termsUrl else { return nil }
             return URL(string: urlString)
         }
         

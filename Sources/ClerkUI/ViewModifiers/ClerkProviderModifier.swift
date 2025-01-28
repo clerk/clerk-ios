@@ -26,14 +26,8 @@ struct ClerkProviderModifier: ViewModifier {
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
             .environment(Clerk.shared)
-            .environment(ClerkEnvironment.shared)
             .environment(clerkUIState)
             .environment(clerkTheme)
-            .onChange(of: clerk.isLoaded) { oldValue, newValue in
-                if newValue {
-                    Task { try? await clerkEnvironment.get() }
-                }
-            }
     }
 }
 

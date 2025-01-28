@@ -8,4 +8,3 @@
 import Foundation
 
 @_exported import Clerk
-@_exported import Shared

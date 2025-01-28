@@ -16,7 +16,7 @@ extension SignUp {
         if let externalVerification = verifications.first(where: { $0.value?.externalVerificationRedirectUrl != nil && $0.value?.status == .unverified }) {
             return externalVerification.value?.strategy
         } else {
-            guard let attributesToVerify = Clerk.shared.environment?.userSettings.attributesToVerifyAtSignUp else { return nil }
+            guard let attributesToVerify = Clerk.shared.environment.userSettings?.attributesToVerifyAtSignUp else { return nil }
 
             if unverifiedFields.contains(where: { $0 == "email_address" }) {
                 return attributesToVerify.first(where: { $0.key == "email_address" })?.value.verifications?.first

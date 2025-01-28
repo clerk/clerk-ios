@@ -26,7 +26,7 @@ struct SignInFactorOneAlternativeMethodsView: View {
     }
     
     private var socialProviders: [OAuthProvider] {
-        (clerk.environment?.userSettings.authenticatableSocialProviders ?? []).sorted()
+        (clerk.environment.userSettings?.authenticatableSocialProviders ?? []).sorted()
     }
     
     private func signIn(provider: OAuthProvider) async {

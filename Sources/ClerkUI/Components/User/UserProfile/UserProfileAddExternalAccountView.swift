@@ -97,14 +97,9 @@ extension UserProfileAddExternalAccountView {
         
         guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
         
-        let manager = SignInWithAppleManager()
-        let authorization = try await manager.start()
+        let credential = try await SignInWithAppleManager.getAppleIdCredential()
         
-        guard
-            let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-            let tokenData = appleIdCredential.identityToken,
-            let idToken = String(data: tokenData, encoding: .utf8)
-        else {
+        guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to find your Apple ID credential.")
         }
         

@@ -29,9 +29,9 @@ let package = Package(
         .target(
             name: "Clerk",
             dependencies: [
-                "Shared",
                 .product(name: "Get", package: "Get"),
-                .product(name: "Factory", package: "Factory")
+                .product(name: "Factory", package: "Factory"),
+                .product(name: "SimpleKeychain", package: "SimpleKeychain")
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
@@ -41,16 +41,9 @@ let package = Package(
             name: "ClerkUI",
             dependencies: [
                 "Clerk",
-                "Shared",
                 .product(name: "Kingfisher", package: "Kingfisher"),
                 .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
                 .product(name: "Algorithms", package: "swift-algorithms")
-            ]
-        ),
-        .target(
-            name: "Shared",
-            dependencies: [
-                .product(name: "SimpleKeychain", package: "SimpleKeychain")
             ]
         ),
         .testTarget(
