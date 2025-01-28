@@ -88,7 +88,7 @@ extension SignIn {
         /// - Parameters:
         ///   - identifier: The authentication identifier for the sign-in. This can be the user's email address, phone number, username, or Web3 wallet address.
         ///   - password: The user's password.
-        case identifier(_ identifier: String, password: String? = nil)
+        case identifier(_ identifier: String, password: String? = nil, strategy: String? = nil)
 
         /// The user will be authenticated with their social connection account.
         ///
@@ -116,8 +116,8 @@ extension SignIn {
         @MainActor
         var params: SignInCreateParams {
             switch self {
-            case .identifier(let identifier, let password):
-                .init(identifier: identifier, password: password)
+            case .identifier(let identifier, let password, let strategy):
+                .init(strategy: strategy, identifier: identifier, password: password)
                 
             case .oauth(let oauthProvider):
                 .init(strategy: oauthProvider.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)

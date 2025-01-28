@@ -92,23 +92,47 @@ extension SignUp {
     /// It deactivates any existing sign-up process and stores the sign-up lifecycle state in the `status` property of the new `SignUp` object.
     /// If required fields are provided, the sign-up process can be completed in one step. If not, Clerk's flexible sign-up process allows multi-step flows.
     ///
+    /// What you must pass to params depends on which sign-up options you have enabled in your Clerk application instance.
+    ///
     /// - Parameters:
     ///   - strategy: The strategy to use for creating the sign-up. This defines the parameters used for the sign-up process. See ``SignUp/CreateStrategy`` for available strategies.
-    ///   - legalAccepted: A Boolean value indicating whether the user has accepted the legal terms. This is optional and, if provided, will be included in the sign-up request.
-    ///
-    /// - Throws:
-    ///   - ``ClerkClientError`` if the request fails or the provided parameters are invalid.
+    ///   - legalAccepted: A Boolean value indicating whether the user has accepted the legal terms.
     ///
     /// - Returns: A `SignUp` object containing the current status and details of the sign-up process. The `status` property reflects the current state of the sign-up.
     ///
     /// ### Example Usage:
     /// ```swift
-    /// let signUp = try await SignUp.create(strategy: .oauth(provider: .google), legalAccepted: true)
+    /// let signUp = try await SignUp.create(strategy: .standard(emailAddress: "user@email.com", password: "••••••••"))
     /// ```
     @discardableResult @MainActor
     public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
         var params = strategy.params
         params.legalAccepted = legalAccepted
+        let request = ClerkFAPI.v1.client.signUps.post(params)
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    
+    /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
+    ///
+    /// This method initiates a new sign-up process by sending the appropriate parameters to Clerk's API.
+    /// It deactivates any existing sign-up process and stores the sign-up lifecycle state in the `status` property of the new `SignUp` object.
+    /// If required fields are provided, the sign-up process can be completed in one step. If not, Clerk's flexible sign-up process allows multi-step flows.
+    ///
+    /// What you must pass to params depends on which sign-up options you have enabled in your Clerk application instance.
+    ///
+    /// - Parameters:
+    ///   - params: A dictionary of parameters used to create the sign-up.
+    ///
+    /// - Returns: A `SignUp` object containing the current status and details of the sign-up process. The `status` property reflects the current state of the sign-up.
+    ///
+    /// ### Example Usage:
+    /// ```swift
+    /// let signUp = try await SignUp.create(["email_address": "user@email.com", "password": "••••••••"])
+    /// ```
+    @discardableResult @MainActor
+    public static func create<T: Encodable>(_ params: T) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client

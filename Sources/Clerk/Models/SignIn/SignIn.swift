@@ -99,9 +99,40 @@ extension SignIn {
     ///
     /// - Returns: A new `SignIn` object.
     /// - Throws: An error if the sign-in request fails.
+    ///
+    ///### Example Usage:
+    /// ```swift
+    /// let signIn = try await SignIn.create(
+    ///     strategy: .identifier("user@email.com", password: "••••••••"))
+    /// )
+    /// ```
     @discardableResult @MainActor
     public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.post(body: strategy.params)
+        let response = try await Clerk.shared.apiClient.send(request)
+        Clerk.shared.client = response.value.client
+        return response.value.response
+    }
+    
+    /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
+    ///
+    /// - Parameters:
+    ///   - params: A dictionary of parameters used to create the sign-in.
+    ///
+    /// What you must pass to `params` depends on which sign-in options you have enabled in your Clerk application instance.
+    ///
+    /// - Returns: A new `SignIn` object.
+    /// - Throws: An error if the sign-in request fails.
+    ///
+    ///### Example Usage:
+    /// ```swift
+    /// let signIn = try await SignIn.create(
+    ///     params: ["identifier": "user@email.com", "password": "••••••••"])
+    /// )
+    /// ```
+    @discardableResult @MainActor
+    public static func create<T: Encodable>(_ params: T) async throws -> SignIn {
+        let request = ClerkFAPI.v1.client.signIns.post(body: params)
         let response = try await Clerk.shared.apiClient.send(request)
         Clerk.shared.client = response.value.client
         return response.value.response
