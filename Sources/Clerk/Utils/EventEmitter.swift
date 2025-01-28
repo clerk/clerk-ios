@@ -11,6 +11,18 @@ import Foundation
 ///
 /// `EventEmitter` allows you to emit strongly typed events and provides an `AsyncStream`
 /// to listen for those events asynchronously.
+///
+/// You can use the `events` stream to listen for events emitted by the `EventEmitter`.
+/// For example, you can iterate over the stream using `for await` to handle each event as it occurs.
+///
+/// ### Example:
+/// ```swift
+/// Task {
+///     for await event in emitter.events {
+///         // Handle the event
+///     }
+/// }
+/// ```
 @MainActor
 final public class EventEmitter<Event: Sendable> {
     
@@ -56,8 +68,6 @@ final public class EventEmitter<Event: Sendable> {
 ///
 /// `AuthEvent` represents specific events that occur during authentication processes,
 /// such as signing in or signing up.
-///
-/// See ``AuthEvent`` for available events.
 public enum AuthEvent: Sendable {
     /// The current sign in was completed.
     case signInCompleted(signIn: SignIn)
