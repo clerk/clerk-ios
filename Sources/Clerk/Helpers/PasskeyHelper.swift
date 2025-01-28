@@ -12,7 +12,7 @@ import AuthenticationServices
 import os
 
 @MainActor
-public final class PasskeyManager: NSObject {
+final class PasskeyHelper: NSObject {
     
     public static var controller: ASAuthorizationController?
     
@@ -113,7 +113,7 @@ public final class PasskeyManager: NSObject {
     
 }
 
-extension PasskeyManager: ASAuthorizationControllerDelegate {
+extension PasskeyHelper: ASAuthorizationControllerDelegate {
     
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         let logger = Logger()
@@ -156,7 +156,7 @@ extension PasskeyManager: ASAuthorizationControllerDelegate {
     
 }
 
-extension PasskeyManager: ASAuthorizationControllerPresentationContextProviding {
+extension PasskeyHelper: ASAuthorizationControllerPresentationContextProviding {
     
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {

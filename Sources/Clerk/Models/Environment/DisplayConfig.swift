@@ -9,55 +9,55 @@ import Foundation
 
 extension Clerk.Environment {
     
-    public struct DisplayConfig: Codable, Sendable {
-        public let instanceEnvironmentType: InstanceEnvironmentType
-        public let applicationName: String
-        public let preferredSignInStrategy: PreferredSignInStrategy
-        public let branded: Bool
-        public let logoImageUrl: String
-        public let homeUrl: String
-        public let privacyPolicyUrl: String?
-        public let termsUrl: String?
-        public let captchaPublicKey: String?
-        public let captchaWidgetType: CaptchaWidgetType?
-        public let captchaPublicKeyInvisible: String?
-        public let captchaProvider: CaptchaProvider?
+    struct DisplayConfig: Codable, Sendable {
+        let instanceEnvironmentType: InstanceEnvironmentType
+        let applicationName: String
+        let preferredSignInStrategy: PreferredSignInStrategy
+        let branded: Bool
+        let logoImageUrl: String
+        let homeUrl: String
+        let privacyPolicyUrl: String?
+        let termsUrl: String?
+        let captchaPublicKey: String?
+        let captchaWidgetType: CaptchaWidgetType?
+        let captchaPublicKeyInvisible: String?
+        let captchaProvider: CaptchaProvider?
         
-        public enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
+        enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
             case production
             case development
             case unknown
             
-            public init(from decoder: Decoder) throws {
+            init(from decoder: Decoder) throws {
                 self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
             }
         }
         
-        public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
+        enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password
             case otp
             case unknown
             
-            public init(from decoder: Decoder) throws {
+            init(from decoder: Decoder) throws {
                 self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
             }
         }
         
-        public enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
+        enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
             case invisible
             case smart
             case unknown
             
-            public init(from decoder: Decoder) throws {
+            init(from decoder: Decoder) throws {
                 self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
             }
         }
         
-        public enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
+        enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
             case turnstile
             case unknown
             
-            public init(from decoder: Decoder) throws {
+            init(from decoder: Decoder) throws {
                 self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
             }
         }

@@ -219,7 +219,7 @@ extension User {
     /// This method is useful if you want to allow an already signed-in user to connect their account with an external provider using an ID token provider, such as Apple, etc., so that they can sign in with that provider in the future.
     /// - Parameters:
     ///     - provider: The IDTokenProvider. For example: `.apple`.
-    ///     - additionalScopes: Additional scopes for your user to be prompted to approve.
+    ///     - idToken: The ID token from the provider.
     @discardableResult @MainActor
     public func createExternalAccount(_ provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
         let request = ClerkFAPI.v1.me.externalAccounts.create(
@@ -255,7 +255,7 @@ extension User {
             throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
         }
         
-        let manager = PasskeyManager()
+        let manager = PasskeyHelper()
         let authorization = try await manager.createPasskey(
             challenge: challenge,
             name: name,

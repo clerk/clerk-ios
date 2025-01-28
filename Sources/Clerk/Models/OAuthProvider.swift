@@ -36,8 +36,6 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     case slack
     case linear
     case huggingFace
-    
-    /// A type that represents a custom OAuth strategy.
     case custom(_ strategy: String)
     
     // **
@@ -76,6 +74,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         ]
     }
     
+    @_documentation(visibility: internal)
     public var id: String { providerData.strategy }
     
     public init(strategy: String) {
@@ -83,6 +82,16 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             self = provider
         } else {
             self = .custom(strategy)
+        }
+    }
+    
+    /// Returns the string value of strategy for the OAuth provider.
+    public var strategy: String {
+        switch self {
+        case .custom(let strategy):
+            return strategy
+        default:
+            return providerData.strategy
         }
     }
     
@@ -97,19 +106,9 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
                 return socialConfig.value.name
             }
             
-            return ""
+            fallthrough
         default:
             return providerData.name
-        }
-    }
-    
-    /// Returns the string value of strategy for the OAuth provider.
-    public var strategy: String {
-        switch self {
-        case .custom(let strategy):
-            return strategy
-        default:
-            return providerData.strategy
         }
     }
     
@@ -118,7 +117,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     /// - Parameters:
     ///     - darkMode: Will return the dark mode variant of the image. Does not apply to custom providers.
     @MainActor
-    public func iconImageUrl(darkMode: Bool = false) -> URL? {
+    func iconImageUrl(darkMode: Bool = false) -> URL? {
         switch self {
         case .custom(let strategy):
             if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in

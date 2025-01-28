@@ -317,7 +317,7 @@ extension SignIn {
             throw ClerkClientError(message: "Unable to locate the challenge for the passkey.")
         }
         
-        let manager = PasskeyManager()
+        let manager = PasskeyHelper()
         var authorization: ASAuthorization
         
         #if os(iOS) && !targetEnvironment(macCatalyst)

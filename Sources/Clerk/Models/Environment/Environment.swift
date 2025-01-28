@@ -10,10 +10,10 @@ import Factory
 
 extension Clerk {
     
-     public struct Environment: Codable, Sendable {
-        public var authConfig: AuthConfig?
-        public var userSettings: UserSettings?
-        public var displayConfig: DisplayConfig?
+    struct Environment: Codable, Sendable {
+        var authConfig: AuthConfig?
+        var userSettings: UserSettings?
+        var displayConfig: DisplayConfig?
     }
     
 }
@@ -21,7 +21,7 @@ extension Clerk {
 extension Clerk.Environment {
     
     @discardableResult @MainActor
-    public static func get() async throws -> Clerk.Environment {
+    static func get() async throws -> Clerk.Environment {
         let request = ClerkFAPI.v1.environment.get
         let environment = try await Clerk.shared.apiClient.send(request).value
         Clerk.shared.environment = environment
