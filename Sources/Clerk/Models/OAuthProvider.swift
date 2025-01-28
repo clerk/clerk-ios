@@ -95,7 +95,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         }
     }
     
-    /// Returns the name for a built in OAuth provider. Returns an empty string for custom providers.
+    /// Returns the name for a built in OAuth provider.
     @MainActor
     public var name: String {
         switch self {
