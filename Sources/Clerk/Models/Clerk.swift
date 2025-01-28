@@ -99,7 +99,7 @@ final public class Clerk {
     private(set) public var debugMode: Bool = false
     
     /// The Clerk environment for the instance.
-    internal(set) public var environment = Environment()
+    var environment = Environment()
         
     // MARK: - Private Properties
     

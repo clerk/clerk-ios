@@ -45,7 +45,7 @@ extension Clerk.Environment.UserSettings {
         return passwordConfig.enabled && passwordConfig.required
     }
     
-    public var socialProviders: [OAuthProvider] {
+    var socialProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled }).map(\.strategy)
         
         return authenticatableStrategies.compactMap { strategy in
@@ -53,7 +53,7 @@ extension Clerk.Environment.UserSettings {
         }
     }
         
-    public var authenticatableSocialProviders: [OAuthProvider] {
+    var authenticatableSocialProviders: [OAuthProvider] {
         let authenticatableStrategies = social.values.filter({ $0.enabled && $0.authenticatable }).map(\.strategy)
         
         return authenticatableStrategies.compactMap { strategy in
