@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk {
     
-    public static func handleUrl(_ url: URL) async {
+    static func handleUrl(_ url: URL) async {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return
         }

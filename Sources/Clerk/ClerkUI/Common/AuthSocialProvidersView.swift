@@ -103,7 +103,7 @@ struct AuthSocialProvidersView: View {
     }
     
     private func authenticateWithApple() async throws -> TransferFlowResult {
-        let appleIdCredential = try await SignInWithAppleManager.getAppleIdCredential()
+        let appleIdCredential = try await SignInWithAppleHelper().getAppleIdCredential()
         
         guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
             throw ClerkClientError(message: "Unable to get ID token from Apple ID Credential.")

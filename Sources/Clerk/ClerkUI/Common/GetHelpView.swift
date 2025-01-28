@@ -17,6 +17,11 @@ struct GetHelpView: View {
     var primaryButtonConfig: ButtonConfig?
     var secondaryButtonConfig: ButtonConfig?
     
+    struct ButtonConfig {
+        var label: String?
+        var action: (() -> Void)?
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: .zero) {

@@ -11,7 +11,7 @@
 import Foundation
 import AuthenticationServices
 
-final public class SignInWithAppleManager: NSObject {
+final public class SignInWithAppleHelper: NSObject {
     
     private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
@@ -34,8 +34,8 @@ final public class SignInWithAppleManager: NSObject {
     
     /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
     @MainActor
-    static public func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
-        let authManager = SignInWithAppleManager()
+    public func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
+        let authManager = SignInWithAppleHelper()
         let authorization = try await authManager.start(requestedScopes: requestedScopes)
         
         guard let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
@@ -47,7 +47,7 @@ final public class SignInWithAppleManager: NSObject {
     
 }
 
-extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
+extension SignInWithAppleHelper: ASAuthorizationControllerDelegate {
     
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         continuation?.resume(returning: authorization)
@@ -59,7 +59,7 @@ extension SignInWithAppleManager: ASAuthorizationControllerDelegate {
     
 }
 
-extension SignInWithAppleManager: ASAuthorizationControllerPresentationContextProviding {
+extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
     
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {

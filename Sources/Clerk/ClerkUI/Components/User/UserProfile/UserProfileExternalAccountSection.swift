@@ -163,7 +163,7 @@ struct UserProfileExternalAccountSection: View {
             
             guard let user else { throw ClerkClientError(message: "Unable to find the current user.") }
             
-            let credential = try await SignInWithAppleManager.getAppleIdCredential()
+            let credential = try await SignInWithAppleHelper().getAppleIdCredential()
             
             guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
                 throw ClerkClientError(message: "Unable to find your Apple ID credential.")
