@@ -92,7 +92,7 @@ final public class Clerk {
     /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
     public var redirectConfig = RedirectConfig()
     
-    /// The event emitter for auth events
+    /// The event emitter for auth events.
     public let authEventEmitter = EventEmitter<AuthEvent>()
     
     /// Enable for additional debugging signals
