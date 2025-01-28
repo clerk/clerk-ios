@@ -9,7 +9,7 @@ import Foundation
 
 extension SignIn {
     
-    public static var mock: SignIn {
+    static var mock: SignIn {
         SignIn(
             id: "1",
             status: .needsIdentifier,
@@ -28,7 +28,7 @@ extension SignIn {
 
 extension Factor {
     
-    public static var mock: Factor {
+    static var mock: Factor {
         
         Factor(
             strategy: "email_code",
@@ -45,7 +45,7 @@ extension Factor {
 
 extension SignUp {
     
-    public static var mock: SignUp {
+    static var mock: SignUp {
         SignUp(
             id: "1",
             status: .missingRequirements,
@@ -72,7 +72,7 @@ extension SignUp {
 
 extension Verification {
     
-    public static var mockEmailCodeVerification: Verification {
+    static var mockEmailCodeVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "email_code",
@@ -83,7 +83,7 @@ extension Verification {
         )
     }
     
-    public static var mockPhoneCodeVerification: Verification {
+    static var mockPhoneCodeVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "phone_code",
@@ -94,7 +94,7 @@ extension Verification {
         )
     }
     
-    public static var mockPasskeyVerification: Verification {
+    static var mockPasskeyVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "passkey",
@@ -109,7 +109,7 @@ extension Verification {
 
 extension User {
     
-    public static var mock: User {
+    static var mock: User {
         User(
             id: "1",
             firstName: "First",
@@ -144,7 +144,7 @@ extension User {
 
 extension Passkey {
     
-    public static var mock: Passkey {
+    static var mock: Passkey {
         Passkey(
             id: UUID().uuidString,
             name: "iCloud Keychain",
@@ -159,7 +159,7 @@ extension Passkey {
 
 extension EmailAddress {
     
-    public static var mock: EmailAddress {
+    static var mock: EmailAddress {
         EmailAddress(
             id: "1",
             emailAddress: "user@email.com",
@@ -172,7 +172,7 @@ extension EmailAddress {
 
 extension PhoneNumber {
     
-    public static var mock: PhoneNumber {
+    static var mock: PhoneNumber {
         PhoneNumber(
             id: "1",
             phoneNumber: "15551234567",
