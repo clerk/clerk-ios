@@ -13,7 +13,6 @@ import LocalAuthentication
 
         
 /// A utility class for handling local authentication mechanisms, including biometrics and device owner authentication.
-@MainActor
 final public class LocalAuthHelper {
     
     /// A structure representing user credentials with an identifier and password.
@@ -28,7 +27,7 @@ final public class LocalAuthHelper {
     /// A shared authentication context used for UI updates during authentication.
     ///
     /// - Note: The context is refreshed before each authentication attempt to avoid unintended reuse of previously successful authentication results.
-    public static var context = LAContext()
+    nonisolated(unsafe) public static var context = LAContext()
     
     /// The type of biometry available on the device.
     ///

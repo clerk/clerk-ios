@@ -81,13 +81,13 @@ final public class Clerk {
         }
     }
     
-    /// Frontend API URL
-    private(set) public var frontendApiUrl: String = ""
+    /// Frontend API URL.
+    private(set) var frontendApiUrl: String = ""
     
     /// The retrieved active sessions for this user.
     ///
     /// Is set by the `getSessions` function on a user.
-    internal(set) public var sessionsByUserId: [String: [Session]] = .init()
+    var sessionsByUserId: [String: [Session]] = .init()
     
     /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
     public var redirectConfig = RedirectConfig()
@@ -95,7 +95,7 @@ final public class Clerk {
     /// The event emitter for auth events.
     public let authEventEmitter = EventEmitter<AuthEvent>()
     
-    /// Enable for additional debugging signals
+    /// Enable for additional debugging signals.
     private(set) public var debugMode: Bool = false
     
     /// The Clerk environment for the instance.
