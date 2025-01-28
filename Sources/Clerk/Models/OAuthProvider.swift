@@ -112,12 +112,12 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         }
     }
     
-    /// The icon of the provider.
+    /// The url to an the icon for the provider.
     ///
     /// - Parameters:
     ///     - darkMode: Will return the dark mode variant of the image. Does not apply to custom providers.
     @MainActor
-    func iconImageUrl(darkMode: Bool = false) -> URL? {
+    public func iconImageUrl(darkMode: Bool = false) -> URL? {
         switch self {
         case .custom(let strategy):
             if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
