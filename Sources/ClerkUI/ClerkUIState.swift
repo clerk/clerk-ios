@@ -114,8 +114,4 @@ extension ClerkUIState {
     }
 }
 
-extension EnvironmentValues {
-    @Entry var clerkUIState = ClerkUIState()
-}
-
 #endif

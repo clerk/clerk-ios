@@ -9,13 +9,6 @@ import Foundation
 
 extension User {
     
-    /// A boolean that returns true if the user is signed in.
-    @MainActor
-    public var isSignedIn: Bool {
-        let activeUserIds = Clerk.shared.client?.activeSessions.compactMap(\.user?.id) ?? []
-        return activeUserIds.contains(id)
-    }
-    
     /// The user's full name.
     public var fullName: String? {
         let joinedString = [firstName, lastName]
@@ -25,23 +18,6 @@ extension User {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         return joinedString.isEmpty ? nil : joinedString
-    }
-    
-    /// Information about the user's primary email address.
-    public var primaryEmailAddress: EmailAddress? {
-        guard let primaryEmailAddressId else { return nil }
-        return emailAddresses.first(where: { $0.id == primaryEmailAddressId })
-    }
-    
-    /// Information about the user's primary phone number.
-    public var primaryPhoneNumber: PhoneNumber? {
-        guard let primaryPhoneNumberId else { return nil }
-        return phoneNumbers.first(where: { $0.id == primaryPhoneNumberId })
-    }
-    
-    /// A getter for the user's list of verified external accounts.
-    public var verifiedExternalAccounts: [ExternalAccount] {
-        externalAccounts.filter { $0.verification?.status == .verified }
     }
     
     var initials: String? {
@@ -57,23 +33,14 @@ extension User {
         username ?? primaryEmailAddress?.emailAddress ?? primaryPhoneNumber?.phoneNumber
     }
     
-    func identifierBelongsToUser(identifier: String) -> Bool {
-        let allIdentifiers = emailAddresses.map(\.emailAddress) + phoneNumbers.map(\.phoneNumber) + [username]
-        return allIdentifiers.contains(identifier)
-    }
-    
-    @MainActor
-    var unconnectedProviders: [OAuthProvider] {
-        guard let environment = Clerk.shared.environment else { return []}
-        let allExternalProviders = environment.userSettings.socialProviders.sorted()
+    func unconnectedProviders(environment: ClerkEnvironment) -> [OAuthProvider] {
+        guard let allExternalProviders = environment.userSettings?.socialProviders.sorted() else { return [] }
         let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
         return allExternalProviders.filter { !verifiedExternalProviders.contains($0) }
     }
     
-    @MainActor
-    var availableSecondFactors: [String: Clerk.Environment.UserSettings.AttributesConfig] {
-        guard let environment = Clerk.shared.environment else { return [:] }
-        return environment.userSettings.availableSecondFactors(user: self)
+    func availableSecondFactors(environment: ClerkEnvironment) -> [String: ClerkEnvironment.UserSettings.AttributesConfig] {
+        environment.userSettings?.availableSecondFactors(user: self) ?? [:]
     }
     
     var phoneNumbersAvailableForSecondFactor: [PhoneNumber] {

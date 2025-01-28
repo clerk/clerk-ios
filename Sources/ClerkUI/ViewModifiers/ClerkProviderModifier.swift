@@ -16,17 +16,24 @@ import SwiftUI
  You should apply this modifier to the root view of your application. Most likely in your `App` file.
  */
 struct ClerkProviderModifier: ViewModifier {
-    @State private var clerk = Clerk.shared
     @State private var clerkUIState = ClerkUIState()
     @State private var clerkTheme = ClerkTheme.clerkDefault
     
     func body(content: Content) -> some View {
+        @Bindable var clerkUIState = clerkUIState
+        
         content
             .authView(isPresented: $clerkUIState.authIsPresented)
             .userProfileView(isPresented: $clerkUIState.userProfileIsPresented)
-            .environment(clerk)
+            .environment(Clerk.shared)
+            .environment(ClerkEnvironment.shared)
             .environment(clerkUIState)
             .environment(clerkTheme)
+            .onChange(of: clerk.isLoaded) { oldValue, newValue in
+                if newValue {
+                    Task { try? await clerkEnvironment.get() }
+                }
+            }
     }
 }
 

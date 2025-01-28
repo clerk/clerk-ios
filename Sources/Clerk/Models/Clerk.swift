@@ -20,7 +20,7 @@ import UIKit
  */
 @MainActor
 @Observable
-final public class Clerk: Sendable {
+final public class Clerk {
     
     public static let shared: Clerk = Container.shared.clerk()
     
@@ -28,8 +28,11 @@ final public class Clerk: Sendable {
     private(set) public var isLoaded: Bool = false
     
     /// A getter to see if a Clerk instance is running in production or development mode.
-    public var instanceType: Clerk.Environment.DisplayConfig.InstanceEnvironmentType {
-        Clerk.shared.environment?.displayConfig.instanceEnvironmentType ?? .unknown
+    public var instanceType: InstanceEnvironmentType {
+        if publishableKey.starts(with: "pk_live_") {
+            return .production
+        }
+        return .development
     }
     
     /// The Client object for the current device.
@@ -73,16 +76,13 @@ final public class Clerk: Sendable {
             
             if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
                let apiUrl = String(match).base64String() {
-                frontendAPIURL = "https://\(apiUrl.dropLast())"
+                frontendApiUrl = "https://\(apiUrl.dropLast())"
             }
         }
     }
     
     /// Frontend API URL
-    private(set) var frontendAPIURL: String = ""
-    
-    /// The Environment for the clerk instance.
-    internal(set) public var environment: Clerk.Environment?
+    private(set) public var frontendApiUrl: String = ""
     
     /// The retrieved active sessions for this user.
     ///
@@ -188,7 +188,7 @@ extension Clerk {
     // MARK: - Private Properties
     
     var apiClient: APIClient {
-        Container.shared.apiClient(frontendAPIURL)
+        Container.shared.apiClient(frontendApiUrl)
     }
     
     private func setupNotificationObservers() {

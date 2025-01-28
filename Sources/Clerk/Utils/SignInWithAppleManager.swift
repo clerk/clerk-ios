@@ -16,19 +16,7 @@ final public class SignInWithAppleManager: NSObject {
     private var continuation: CheckedContinuation<ASAuthorization,Error>?
     
     @MainActor
-    private var requestedScopes: [ASAuthorization.Scope]? {
-        var scopes: [ASAuthorization.Scope]? = [.email]
-        
-        if Clerk.shared.environment?.userSettings.attributes["first_name"]?.enabled == true ||
-            Clerk.shared.environment?.userSettings.attributes["last_name"]?.enabled == true {
-            scopes?.append(.fullName)
-        }
-        
-        return scopes
-    }
-    
-    @MainActor
-    public func start() async throws -> ASAuthorization {
+    func start(requestedScopes: [ASAuthorization.Scope]) async throws -> ASAuthorization {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
                                             
@@ -46,9 +34,9 @@ final public class SignInWithAppleManager: NSObject {
     
     /// Presents the native sign in with apple sheet to get an ASAuthorizationAppleIDCredential
     @MainActor
-    static public func getAppleIdCredential() async throws -> ASAuthorizationAppleIDCredential {
+    static public func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
         let authManager = SignInWithAppleManager()
-        let authorization = try await authManager.start()
+        let authorization = try await authManager.start(requestedScopes: requestedScopes)
         
         guard let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             throw ClerkClientError(message: "Unable to get your Apple ID credential.")

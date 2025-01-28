@@ -66,8 +66,4 @@ extension ClerkTheme {
     
 }
 
-extension EnvironmentValues {
-    @Entry var clerkTheme: ClerkTheme = .clerkDefault
-}
-
 #endif

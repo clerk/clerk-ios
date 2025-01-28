@@ -18,7 +18,7 @@ public final class PasskeyManager: NSObject {
     
     @MainActor
     var domain: String {
-        guard let urlComponents = URLComponents(string: Clerk.shared.frontendAPIURL) else {
+        guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
             return ""
         }
         
