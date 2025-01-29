@@ -127,7 +127,7 @@ extension SignIn {
     ///### Example Usage:
     /// ```swift
     /// let signIn = try await SignIn.create(
-    ///     params: ["identifier": "user@email.com", "password": "••••••••"])
+    ///     ["identifier": "user@email.com", "password": "••••••••"]
     /// )
     /// ```
     @discardableResult @MainActor
