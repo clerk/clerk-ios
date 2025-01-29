@@ -152,6 +152,18 @@ extension Clerk {
             async let client = Client.get()
             async let environment = Environment.get()
             _ = try await (client, environment)
+            
+            // TODO: Check environment before doing this
+            if !AppAttestHelper.hasKeyId {
+                Task.detached {
+                    do {
+                        try await AppAttestHelper.performDeviceAttestation()
+                    } catch {
+                        dump(error)
+                    }
+                }
+            }
+            
             startSessionTokenPolling()
             setupNotificationObservers()
             isLoaded = true
