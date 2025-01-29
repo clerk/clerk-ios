@@ -161,10 +161,21 @@ extension Clerk {
         }
     }
     
-    /**
-     Signs out the active user from all sessions in a multi-session application, or simply the current session in a single-session context. You can also specify a specific session to sign out by passing the sessionId parameter.
-     - Parameter sessionId: Specify a specific session to sign out. Useful for multi-session applications.
-     */
+    /// Signs out the active user.
+    ///
+    /// - In a **multi-session** application: Signs out the active user from all sessions.
+    /// - In a **single-session** context: Signs out the active user from the current session.
+    /// - You can specify a specific session to sign out by passing the `sessionId` parameter.
+    ///
+    /// - Parameter sessionId: An optional session ID to specify a particular session to sign out.
+    ///   Useful for multi-session applications.
+    ///
+    /// - Throws: An error if the sign-out process fails.
+    ///
+    /// - Example:
+    /// ```swift
+    /// try await clerk.signOut()
+    /// ```
     public func signOut(sessionId: String? = nil) async throws {
         if let sessionId {
             let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
@@ -177,7 +188,10 @@ extension Clerk {
         }
     }
     
-    /// A method used to set the active session and/or organization.
+    /// A method used to set the active session.
+    ///
+    /// Useful for multi-session applications.
+    ///
     /// - Parameter sessionId: The session ID to be set as active.
     public func setActive(sessionId: String) async throws {
         let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
