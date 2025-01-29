@@ -20,7 +20,7 @@ import AuthenticationServices
 /// ```swift
 /// do {
 ///     // Create an instance of the helper and get the Apple ID credential.
-///     let appleIdCredential = try await SignInWithAppleHelper().getAppleIdCredential()
+///     let appleIdCredential = try await SignInWithAppleHelper.getAppleIdCredential()
 ///
 ///     // Extract the ID token from the credential.
 ///     guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
@@ -76,7 +76,7 @@ final public class SignInWithAppleHelper: NSObject {
     /// - Returns: An `ASAuthorizationAppleIDCredential` object containing the user's Apple ID credentials.
     /// - Throws: An error if the authorization fails or if the credential cannot be retrieved.
     @MainActor
-    public func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
+    public static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
         let authManager = SignInWithAppleHelper()
         let authorization = try await authManager.start(requestedScopes: requestedScopes)
         
