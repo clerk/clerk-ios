@@ -12,8 +12,8 @@ extension Clerk {
     
     struct Environment: Codable, Sendable {
         var authConfig: AuthConfig?
-        var userSettings: UserSettings?
         var displayConfig: DisplayConfig?
+        var userSettings: UserSettings?
     }
     
 }

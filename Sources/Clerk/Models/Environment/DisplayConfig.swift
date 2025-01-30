@@ -16,6 +16,8 @@ extension Clerk.Environment {
         let branded: Bool
         let logoImageUrl: String
         let homeUrl: String
+        let signInUrl: String
+        let signUpUrl: String
         let privacyPolicyUrl: String?
         let termsUrl: String?
         let captchaPublicKey: String?
