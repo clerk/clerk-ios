@@ -21,9 +21,5 @@ extension ClerkFAPI.V1Endpoint {
         var get: Request<ClientResponse<Client?>> {
             .init(path: path)
         }
-        
-        var put: Request<ClientResponse<Client>> {
-            .init(path: path, method: .put)
-        }
     }
 }

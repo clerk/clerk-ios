@@ -1,5 +1,5 @@
 //
-//  ChallengesEndpoint.swift
+//  PathsV1ClientDeviceAttestationVerify.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/29/25.

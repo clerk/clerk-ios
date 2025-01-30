@@ -38,10 +38,8 @@ final public class Clerk {
     /// The Client object for the current device.
     internal(set) public var client: Client? {
         didSet {
-            if let lastActiveSessionId = client?.lastActiveSessionId {
-                try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
-            } else {
-                try? SimpleKeychain().deleteItem(forKey: "lastActiveSessionId")
+            if let clientId = client?.id {
+                try? SimpleKeychain().set(clientId, forKey: "clientId")
             }
         }
     }
