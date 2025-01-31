@@ -45,7 +45,6 @@ extension Client {
     static func get() async throws -> Client? {
         let request = ClerkFAPI.v1.client.get
         let client = try await Clerk.shared.apiClient.send(request).value.response
-        Clerk.shared.client = client
         return client
     }
     

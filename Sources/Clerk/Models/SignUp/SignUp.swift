@@ -110,7 +110,6 @@ extension SignUp {
         params.legalAccepted = legalAccepted
         let request = ClerkFAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -135,7 +134,6 @@ extension SignUp {
     public static func create<T: Encodable>(_ params: T) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -155,7 +153,6 @@ extension SignUp {
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).patch(params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -175,7 +172,6 @@ extension SignUp {
     public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).prepareVerification.post(strategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -193,7 +189,6 @@ extension SignUp {
     public func attemptVerification(_ strategy: AttemptStrategy) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).attemptVerification.post(strategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -235,7 +230,7 @@ extension SignUp {
         
         let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
+        let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
     }
 #endif
@@ -279,7 +274,7 @@ extension SignUp {
         )
         
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await SignUp.handleOAuthCallbackUrl(callbackUrl)
+        let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
     }
     #endif
@@ -350,22 +345,13 @@ extension SignUp {
     }
     
     @discardableResult @MainActor
-    private static func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+    private func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-            
-            guard let signUp = try await Clerk.shared.client?.signUp?.get(rotatingTokenNonce: nonce) else {
-                throw ClerkClientError(message: "Unable to retrieve the current sign up.")
-            }
-            
-            return .signUp(signUp)
-            
+            let updatedSignUp = try await get(rotatingTokenNonce: nonce)
+            return .signUp(updatedSignUp)
         } else {
             // transfer flow
-            
-            guard let signUp = try await Client.get()?.signUp else {
-                throw ClerkClientError(message: "Unable to retrive the current sign up.")
-            }
-            
+            let signUp = try await get()
             let result = try await signUp.handleTransferFlow()
             return result
         }
@@ -376,7 +362,6 @@ extension SignUp {
     private func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     

@@ -110,7 +110,6 @@ extension SignIn {
     public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.post(body: strategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -134,7 +133,6 @@ extension SignIn {
     public static func create<T: Encodable>(_ params: T) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.post(body: params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -150,7 +148,6 @@ extension SignIn {
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).resetPassword.post(params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -168,7 +165,6 @@ extension SignIn {
     public func prepareFirstFactor(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).prepareFirstFactor.post(prepareFirstFactorStrategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -187,7 +183,6 @@ extension SignIn {
     public func attemptFirstFactor(for attemptFirstFactorStrategy: AttemptFirstFactorStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).attemptFirstFactor.post(body: attemptFirstFactorStrategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -207,7 +202,6 @@ extension SignIn {
     public func prepareSecondFactor(for prepareSecondFactorStrategy: PrepareSecondFactorStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).prepareSecondFactor.post(prepareSecondFactorStrategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -229,7 +223,6 @@ extension SignIn {
     public func attemptSecondFactor(for strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).attemptSecondFactor.post(strategy.params)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
@@ -267,7 +260,7 @@ extension SignIn {
         
         let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
+        let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
     }
     #endif
@@ -308,7 +301,7 @@ extension SignIn {
         )
 
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await SignIn.handleOAuthCallbackUrl(callbackUrl)
+        let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
     }
 
@@ -463,27 +456,18 @@ extension SignIn {
     public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
         let request = ClerkFAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
     
     /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
     @discardableResult @MainActor
-    private static func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+    private func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
         if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-            
-            guard let signIn = try await Clerk.shared.client?.signIn?.get(rotatingTokenNonce: nonce) else {
-                throw ClerkClientError(message: "Unable to retrieve the current sign in.")
-            }
-            
-            return .signIn(signIn)
-            
+            let updatedSignIn = try await get(rotatingTokenNonce: nonce)
+            return .signIn(updatedSignIn)
         } else {
             // transfer flow
-            guard let signIn = try await Client.get()?.signIn else {
-                throw ClerkClientError(message: "Unable to retrieve the current sign in.")
-            }
-            
+            let signIn = try await get()
             let result = try await signIn.handleTransferFlow()
             return result
         }

@@ -180,12 +180,10 @@ extension Clerk {
         if let sessionId {
             let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
             let response = try await Clerk.shared.apiClient.send(request)
-            Clerk.shared.client = response.value.client
-        } else {
+            } else {
             let request = ClerkFAPI.v1.client.sessions.delete
             let response = try await Clerk.shared.apiClient.send(request)
-            Clerk.shared.client = response.value.client
-        }
+            }
     }
     
     /// A method used to set the active session.
@@ -196,7 +194,6 @@ extension Clerk {
     public func setActive(sessionId: String) async throws {
         let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
     }
 }
 
