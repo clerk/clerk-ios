@@ -86,9 +86,9 @@ dependencies: [
 
 ## 🎓 Docs
 
+- [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerk)
 - [Clerk iOS](https://clerk.com/docs/references/ios/overview)
 - [Custom Flows](https://clerk.com/docs/custom-flows/overview)
-- [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerksdk)
 
 ## ✅ Supported Features
 
