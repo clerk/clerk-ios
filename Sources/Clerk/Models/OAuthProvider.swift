@@ -321,7 +321,8 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
 }
 
 extension OAuthProvider: Comparable {
+    @MainActor
     public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.providerData.provider < rhs.providerData.provider
+        return lhs.name < rhs.name
     }
 }
