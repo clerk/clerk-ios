@@ -321,7 +321,19 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
 }
 
 extension OAuthProvider: Comparable {
-    public static func <(lhs: Self, rhs: Self) -> Bool {
-        return lhs.providerData.provider < rhs.providerData.provider
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        let lhsName = lhs.providerData.name
+        let rhsName = rhs.providerData.name
+        
+        if lhsName.isEmpty && rhsName.isEmpty {
+            return false
+        } else if lhsName.isEmpty {
+            return false
+        } else if rhsName.isEmpty {
+            return true
+        }
+        
+        return lhsName < rhsName
     }
+
 }

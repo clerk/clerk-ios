@@ -95,7 +95,6 @@ extension ExternalAccount {
         )
         
         let response = try await Clerk.shared.apiClient.send(request)
-        Clerk.shared.client = response.value.client
         return response.value.response
     }
 }
