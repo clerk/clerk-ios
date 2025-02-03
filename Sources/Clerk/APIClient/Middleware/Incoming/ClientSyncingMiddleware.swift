@@ -10,7 +10,7 @@ import Get
 
 struct ClientSyncingMiddleware {
     
-    static func process(client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) {
+    static func process(_ data: Data) {
         Task { @MainActor in
             if let client = decodeClient(from: data) {
                 Clerk.shared.client = client

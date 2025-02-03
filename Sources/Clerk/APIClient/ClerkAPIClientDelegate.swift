@@ -20,7 +20,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
      
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
         DeviceTokenSavingMiddleware.process(response)
-        ClientSyncingMiddleware.process(client: client, validateResponse: response, data: data, task: task)
+        ClientSyncingMiddleware.process(data)
         EventEmitterMiddleware.process(data)
         try ErrorThrowingMiddleware.process(response, data: data)
     }
