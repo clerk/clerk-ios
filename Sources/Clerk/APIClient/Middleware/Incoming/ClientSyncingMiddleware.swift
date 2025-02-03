@@ -28,18 +28,18 @@ struct ClientSyncingMiddleware {
 
             init(from decoder: Decoder) throws {
                 let container = try? decoder.container(keyedBy: CodingKeys.self)
+                
+                if let clientClient = try? container?.decode(Client.self, forKey: .client) {
+                    self.client = clientClient
+                    return
+                }
 
                 if let responseClient = try? container?.decode(Client.self, forKey: .response) {
                     self.client = responseClient
                     return
                 }
 
-                if let clientClient = try? container?.decode(Client.self, forKey: .client) {
-                    self.client = clientClient
-                    return
-                }
-
-                // If `Client` is the top-level object, attempt direct decoding
+                // If `Client` is the top-level object, attempt direct decoding (least common)
                 if let topLevelClient = try? Client(from: decoder) {
                     self.client = topLevelClient
                     return
