@@ -81,7 +81,7 @@ public struct User: Codable, Equatable, Sendable, Hashable {
         }
     }
     
-    /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
+    /// An array of all the ```ExternalAccount``` objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
     public let externalAccounts: [ExternalAccount]
     
     /// A getter for the user's list of verified external accounts.
@@ -98,8 +98,11 @@ public struct User: Codable, Equatable, Sendable, Hashable {
         }
     }
     
-    /// A list of enterprise accounts associated with the user.
-    public let enterpriseAccounts: [EnterpriseAccount]?
+    /// A list of ```EnterpriseAccount```s associated with the user.
+    public let enterpriseAccounts: [EnterpriseAccount]
+    
+    /// A list of ```OrganizationMembership```s representing the list of organizations the user is a member of.
+    public let organizationMemberships: [OrganizationMembership]
     
     /// A boolean indicating whether the user has a password on their account.
     public let passwordEnabled: Bool

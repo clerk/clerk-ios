@@ -124,6 +124,7 @@ extension User {
             phoneNumbers: [.mock],
             externalAccounts: [],
             enterpriseAccounts: [],
+            organizationMemberships: [],
             passwordEnabled: true,
             totpEnabled: true,
             twoFactorEnabled: true,
