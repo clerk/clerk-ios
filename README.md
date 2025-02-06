@@ -17,19 +17,19 @@
 </p>
 
 <div align="center">
-  <a href="https://swiftpackageindex.com/clerk/clerk-ios">
+  <a href="https://swiftpackageindex.com/clerk/clerk-ios" style="text-decoration: none;">
     <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fclerk%2Fclerk-ios%2Fbadge%3Ftype%3Dswift-versions" alt="Swift Versions">
   </a>
-  <a href="https://swiftpackageindex.com/clerk/clerk-ios">
+  <a href="https://swiftpackageindex.com/clerk/clerk-ios" style="text-decoration: none;">
     <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fclerk%2Fclerk-ios%2Fbadge%3Ftype%3Dplatforms" alt="Platforms">
   </a>
-  <a href="https://clerk.com/discord">
+  <a href="https://clerk.com/discord" style="text-decoration: none;">
     <img src="https://img.shields.io/discord/856971667393609759.svg?logo=discord" alt="Chat on Discord">
   </a>
-  <a href="https://clerk.com/docs">
+  <a href="https://clerk.com/docs" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/documentation-clerk-green.svg" alt="Documentation">
   </a>
-  <a href="https://twitter.com/intent/follow?screen_name=ClerkDev">
+  <a href="https://twitter.com/intent/follow?screen_name=ClerkDev" style="text-decoration: none;">
     <img src="https://img.shields.io/twitter/follow/ClerkDev?style=social" alt="Follow on Twitter">
   </a>
 </div>
