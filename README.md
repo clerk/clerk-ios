@@ -10,14 +10,6 @@
 <h1 align="center">
   Official Clerk iOS SDK (Beta)
 </h1>
-<h3 align="center">
-  <strong>
-    ⚠️ The Clerk iOS SDK is in beta and not recommended for use in production. ⚠️
-  </strong>
-</h3>
-<p align="center">
-  ❗️ Breaking changes should be expected until the first stable release (1.0.0) ❗️
-</p>
 <p align="center">
   <strong>
     Clerk helps developers build user management. We provide streamlined user experiences for your users to sign up, sign in, and manage their profile.
@@ -30,6 +22,10 @@
 [![chat on Discord](https://img.shields.io/discord/856971667393609759.svg?logo=discord)](https://clerk.com/discord)
 [![documentation](https://img.shields.io/badge/documentation-clerk-green.svg)](https://clerk.com/docs)
 [![twitter](https://img.shields.io/twitter/follow/ClerkDev?style=social)](https://twitter.com/intent/follow?screen_name=ClerkDev)
+
+<p align="center">
+  ℹ️ While minor breaking changes (method names, parameter names, etc.) can be expected until version 1.0.0, the iOS SDK is considered stable.
+</p>
 
 ---
 
