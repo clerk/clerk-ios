@@ -10,11 +10,11 @@ import Get
 
 extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint {
     
-    func id(_ id: String) -> WithIDEndpoint {
-        WithIDEndpoint(path: path + "/\(id)")
+    func id(_ id: String) -> WithIdEndpoint {
+        WithIdEndpoint(path: path + "/\(id)")
     }
 
-    struct WithIDEndpoint {
+    struct WithIdEndpoint {
         /// Path: `/v1/client/sign_ins/{id}`
         let path: String
         

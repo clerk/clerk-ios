@@ -8,7 +8,7 @@
 import Foundation
 import Get
 
-extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIDEndpoint {
+extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignInsEndpoint.WithIdEndpoint {
     
     var prepareFirstFactor: PrepareFirstFactorEndpoint {
         PrepareFirstFactorEndpoint(path: path + "/prepare_first_factor")

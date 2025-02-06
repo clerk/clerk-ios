@@ -45,7 +45,7 @@ extension Passkey {
     /// Updates the name of the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func update(name: String) async throws -> Passkey {
-        let request = ClerkFAPI.v1.me.passkeys.withId(id).patch(
+        let request = ClerkFAPI.v1.me.passkeys.id(id).patch(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
             body: [
                 "name": name
@@ -59,7 +59,7 @@ extension Passkey {
     /// Attempts to verify the passkey with a credential.
     @discardableResult @MainActor
     public func attemptVerification(credential: String) async throws -> Passkey {
-        let request = ClerkFAPI.v1.me.passkeys.withId(id).attemptVerification.post(
+        let request = ClerkFAPI.v1.me.passkeys.id(id).attemptVerification.post(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
             body: [
                 "strategy": "passkey",
@@ -74,7 +74,7 @@ extension Passkey {
     /// Deletes the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        let request = ClerkFAPI.v1.me.passkeys.withId(id).delete(
+        let request = ClerkFAPI.v1.me.passkeys.id(id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         

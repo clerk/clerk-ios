@@ -9,7 +9,7 @@ import Foundation
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.SessionsEndpoint {
     
-    func withId(id: String) -> WithIdEndpoint {
+    func id(_ id: String) -> WithIdEndpoint {
         WithIdEndpoint(path: path + "/\(id)")
     }
     

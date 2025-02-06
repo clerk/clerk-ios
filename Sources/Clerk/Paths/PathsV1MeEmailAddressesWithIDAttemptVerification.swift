@@ -8,7 +8,7 @@
 import Foundation
 import Get
 
-extension ClerkFAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithID {
+extension ClerkFAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint.WithIdEndpoint {
     
     var attemptVerification: AttemptVerificationEndpoint {
         AttemptVerificationEndpoint(path: path + "/attempt_verification")

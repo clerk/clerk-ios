@@ -10,11 +10,11 @@ import Get
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
     
-    func id(_ id: String) -> WithID {
-        WithID(path: path + "/\(id)")
+    func id(_ id: String) -> WithIdEndpoint {
+        WithIdEndpoint(path: path + "/\(id)")
     }
 
-    struct WithID {
+    struct WithIdEndpoint {
         /// Path: `/v1/client/email_addresses/{id}`
         let path: String
         
