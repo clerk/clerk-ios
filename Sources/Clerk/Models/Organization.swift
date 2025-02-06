@@ -50,3 +50,32 @@ public struct Organization: Codable, Equatable, Sendable, Hashable {
     public let publicMetadata: JSON
 }
 
+extension Organization {
+    
+    /// Updates an organization's attributes. Returns an Organization object.
+    ///
+    /// - Parameters:
+    ///   - name: The organization name.
+    ///   - slug: (Optional) The organization slug.
+    @MainActor
+    public func update(name: String, slug: String? = nil) async throws -> Organization {
+        let request = ClerkFAPI.v1.organizations.id(id).patch(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["name": name, "slug": slug]
+        )
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Deletes the organization. Only administrators can delete an organization.
+    ///
+    /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
+    @MainActor
+    public func destroy() async throws -> DeletedObject {
+        let request = ClerkFAPI.v1.organizations.id(id).delete(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        return try await Clerk.shared.apiClient.send(request).value
+    }
+    
+}
+
