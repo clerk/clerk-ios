@@ -18,7 +18,7 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint.WithIdEndpoint {
         /// Path: `/v1/organizations/{id}/roles`
         let path: String
         
-        func get(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Organization>> {
+        func get(queryItems: [URLQueryItem] = []) -> Request<ClerkPaginatedResponse<RoleResource>> {
             .init(path: path, method: .post, query: queryItems.asTuples)
         }
     }
