@@ -42,7 +42,7 @@ extension Client {
     
     /// Retrieves the current client.
     @discardableResult @MainActor
-    static func get() async throws -> Client? {
+    public static func get() async throws -> Client? {
         let request = ClerkFAPI.v1.client.get
         let client = try await Clerk.shared.apiClient.send(request).value.response
         return client
