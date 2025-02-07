@@ -57,7 +57,7 @@ extension Organization {
     /// - Parameters:
     ///   - name: The organization name.
     ///   - slug: (Optional) The organization slug.
-    @MainActor
+    @discardableResult @MainActor
     public func update(name: String, slug: String? = nil) async throws -> Organization {
         let request = ClerkFAPI.v1.organizations.id(id).patch(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
@@ -69,12 +69,42 @@ extension Organization {
     /// Deletes the organization. Only administrators can delete an organization.
     ///
     /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
-    @MainActor
+    @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
         let request = ClerkFAPI.v1.organizations.id(id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Clerk.shared.apiClient.send(request).value
+    }
+    
+    /// Sets or replaces an organization's logo.
+    ///
+    /// The logo must be an image and its size cannot exceed 10MB.
+    /// - Returns: ```Organization```
+    @discardableResult @MainActor
+    public func setLogo(_ imageData: Data) async throws -> Organization {
+        
+        let boundary = UUID().uuidString
+        var data = Data()
+        data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        data.append(imageData)
+        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        let request = ClerkFAPI.v1.organizations.id(id).logo.post(
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+        )
+        
+        return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
+    }
+    
+    /// Returns a ClerkPaginatedResponse of RoleResource objects.
+    @discardableResult @MainActor
+    public func getRoles(initialPage: Int? = nil, pageSize: Int? = nil) async throws -> ClerkPaginatedResponse<RoleResource> {
+        // TODO: Continue work here
+        return .init(data: [], totalCount: 0)
     }
     
 }
