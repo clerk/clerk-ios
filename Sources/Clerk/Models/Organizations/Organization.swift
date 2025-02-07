@@ -101,10 +101,20 @@ extension Organization {
     }
     
     /// Returns a ClerkPaginatedResponse of RoleResource objects.
+    ///
+    /// - Parameters:
+    ///     - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
+    ///     - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
     @discardableResult @MainActor
-    public func getRoles(initialPage: Int? = nil, pageSize: Int? = nil) async throws -> ClerkPaginatedResponse<RoleResource> {
-        // TODO: Continue work here
-        return .init(data: [], totalCount: 0)
+    public func getRoles(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<RoleResource> {
+        let request = ClerkFAPI.v1.organizations.id(id).roles.get(
+            queryItems: [
+                .init(name: "offset", value: String(initialPage)),
+                .init(name: "limit", value: String(pageSize))
+            ]
+        )
+        
+        return try await Clerk.shared.apiClient.send(request).value
     }
     
 }
