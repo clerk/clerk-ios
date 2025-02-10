@@ -78,10 +78,9 @@ extension Organization {
     /// Sets or replaces an organization's logo.
     ///
     /// The logo must be an image and its size cannot exceed 10MB.
-    /// - Returns: ```Organization```
+    /// - Returns: ``Organization``
     @discardableResult @MainActor
     public func setLogo(_ imageData: Data) async throws -> Organization {
-        
         let boundary = UUID().uuidString
         var data = Data()
         data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
@@ -101,11 +100,85 @@ extension Organization {
     /// - Parameters:
     ///     - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
     ///     - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-    @discardableResult @MainActor
+    /// - Returns:
+    ///     A ``ClerkPaginatedResponse`` of ``RoleResource`` objects.
+    @MainActor
     public func getRoles(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<RoleResource> {
         var request = ClerkFAPI.v1.organizations.id(id).roles.get
         request.query = [("offset", String(initialPage)), ("limit", String(pageSize))]
         return try await Clerk.shared.apiClient.send(request).value
+    }
+    
+    /// Retrieves the list of memberships for the currently active organization.
+    ///
+    /// - Parameters:
+    ///     - query: Returns members that match the given query. For possible matches, we check for any of the user's identifier, usernames, user ids, first and last names. The query value doesn't need to match the exact value you are looking for, it is capable of partial matches as well.
+    ///     - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
+    ///     - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+    ///
+    /// - Returns:
+    ///     A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
+    @MainActor
+    public func getMemberships(query: String? = nil, initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+        var request = ClerkFAPI.v1.organizations.id(id).memberships.get
+        request.query = [
+            ("query", query),
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize)),
+            ("paginated", String(true))
+        ]
+        return try await Clerk.shared.apiClient.send(request).value
+    }
+    
+    /// Adds a user as a member to an organization.
+    ///
+    /// A user can only be added to an organization if they are not already a member of it
+    /// and if they already exist in the same instance as the organization.
+    ///
+    /// Only administrators can add members to an organization.
+    ///
+    /// - Parameters:
+    ///   - userId: The ID of the user to be added as a member to the organization.
+    ///   - role: The role that the user will have in the organization.
+    ///
+    /// - Returns:
+    ///   An ``OrganizationMembership`` object.
+    @discardableResult @MainActor
+    public func addMember(userId: String, role: String) async throws -> OrganizationMembership {
+        var request = ClerkFAPI.v1.organizations.id(id).memberships.post
+        request.query = [("userId", userId), ("role", role)]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Updates a member of an organization.
+    ///
+    /// Currently, only a user's role can be updated.
+    ///
+    /// - Parameters:
+    ///   - userId: The ID of the user to update.
+    ///   - role: The new role for the member.
+    ///
+    /// - Returns:
+    ///   An ``OrganizationMembership`` object.
+    @discardableResult @MainActor
+    public func updateMember(userId: String, role: String) async throws -> OrganizationMembership {
+        var request = ClerkFAPI.v1.organizations.id(id).memberships.patch
+        request.query = [("userId", userId), ("role", role)]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Removes a member from the organization based on the user ID.
+    ///
+    /// - Parameter userId:
+    ///   The ID of the user to remove from the organization.
+    ///
+    /// - Returns:
+    ///   An ``OrganizationMembership`` object.
+    @discardableResult @MainActor
+    func removeMember(userId: String) async throws -> OrganizationMembership {
+        var request = ClerkFAPI.v1.organizations.id(id).memberships.delete
+        request.query = [("userId", userId)]
+        return try await Clerk.shared.apiClient.send(request).value.response
     }
     
 }
