@@ -18,12 +18,12 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint.WithIdEndpoint {
         /// Path: `/v1/organizations/{id}/logo`
         let path: String
         
-        func post(queryItems: [URLQueryItem] = [], headers: [String: String]? = nil) -> Request<ClientResponse<Organization>> {
-            .init(path: path, method: .post, query: queryItems.asTuples, headers: headers)
+        var post: Request<ClientResponse<Organization>> {
+            .init(path: path, method: .post)
         }
         
-        func delete(queryItems: [URLQueryItem] = []) -> Request<DeletedObject> {
-            .init(path: path, method: .delete, query: queryItems.asTuples)
+        var delete: Request<DeletedObject> {
+            .init(path: path, method: .delete)
         }
     }
 }

@@ -59,10 +59,9 @@ extension Organization {
     ///   - slug: (Optional) The organization slug.
     @discardableResult @MainActor
     public func update(name: String, slug: String? = nil) async throws -> Organization {
-        let request = ClerkFAPI.v1.organizations.id(id).patch(
-            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["name": name, "slug": slug]
-        )
+        var request = ClerkFAPI.v1.organizations.id(id).patch
+        request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        request.body = ["name": name, "slug": slug]
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -71,9 +70,8 @@ extension Organization {
     /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        let request = ClerkFAPI.v1.organizations.id(id).delete(
-            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        var request = ClerkFAPI.v1.organizations.id(id).delete
+        request.query = [("_clerk_session_id", Clerk.shared.session?.id)]
         return try await Clerk.shared.apiClient.send(request).value
     }
     
@@ -92,11 +90,9 @@ extension Organization {
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
         
-        let request = ClerkFAPI.v1.organizations.id(id).logo.post(
-            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-        )
-        
+        var request = ClerkFAPI.v1.organizations.id(id).logo.post
+        request.headers = ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+        request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
         return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
     }
     
@@ -107,13 +103,8 @@ extension Organization {
     ///     - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
     @discardableResult @MainActor
     public func getRoles(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<RoleResource> {
-        let request = ClerkFAPI.v1.organizations.id(id).roles.get(
-            queryItems: [
-                .init(name: "offset", value: String(initialPage)),
-                .init(name: "limit", value: String(pageSize))
-            ]
-        )
-        
+        var request = ClerkFAPI.v1.organizations.id(id).roles.get
+        request.query = [("offset", String(initialPage)), ("limit", String(pageSize))]
         return try await Clerk.shared.apiClient.send(request).value
     }
     
