@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct ClerkPaginatedResponse<T: Decodable & Sendable>: Decodable {
+public struct ClerkPaginatedResponse<T: Decodable & Sendable>: Decodable, Sendable {
     let data: [T]
     let totalCount: Int
 }
