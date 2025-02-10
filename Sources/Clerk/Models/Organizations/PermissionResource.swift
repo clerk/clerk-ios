@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/7/25.
 //
 
-
 import Foundation
 
 /// An experimental interface that includes information about a user's permission.

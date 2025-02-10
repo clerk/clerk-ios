@@ -58,7 +58,10 @@ extension Organization {
     ///   - name: The organization name.
     ///   - slug: (Optional) The organization slug.
     @discardableResult @MainActor
-    public func update(name: String, slug: String? = nil) async throws -> Organization {
+    public func update(
+        name: String,
+        slug: String? = nil
+    ) async throws -> Organization {
         var request = ClerkFAPI.v1.organizations.id(id).patch
         request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
         request.body = ["name": name, "slug": slug]
@@ -103,7 +106,10 @@ extension Organization {
     /// - Returns:
     ///     A ``ClerkPaginatedResponse`` of ``RoleResource`` objects.
     @MainActor
-    public func getRoles(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<RoleResource> {
+    public func getRoles(
+        initialPage: Int = 0,
+        pageSize: Int = 20
+    ) async throws -> ClerkPaginatedResponse<RoleResource> {
         var request = ClerkFAPI.v1.organizations.id(id).roles.get
         request.query = [("offset", String(initialPage)), ("limit", String(pageSize))]
         return try await Clerk.shared.apiClient.send(request).value
@@ -119,7 +125,11 @@ extension Organization {
     /// - Returns:
     ///     A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
     @MainActor
-    public func getMemberships(query: String? = nil, initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    public func getMemberships(
+        query: String? = nil,
+        initialPage: Int = 0,
+        pageSize: Int = 20
+    ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.get
         request.query = [
             ("query", query),
@@ -144,7 +154,10 @@ extension Organization {
     /// - Returns:
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
-    public func addMember(userId: String, role: String) async throws -> OrganizationMembership {
+    public func addMember(
+        userId: String,
+        role: String
+    ) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.post
         request.query = [("userId", userId), ("role", role)]
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -161,7 +174,10 @@ extension Organization {
     /// - Returns:
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
-    public func updateMember(userId: String, role: String) async throws -> OrganizationMembership {
+    public func updateMember(
+        userId: String,
+        role: String
+    ) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.patch
         request.query = [("userId", userId), ("role", role)]
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -175,7 +191,7 @@ extension Organization {
     /// - Returns:
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
-    func removeMember(userId: String) async throws -> OrganizationMembership {
+    public func removeMember(userId: String) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.delete
         request.query = [("userId", userId)]
         return try await Clerk.shared.apiClient.send(request).value.response
