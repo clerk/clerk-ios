@@ -18,12 +18,12 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint {
         /// Path: `/v1/organizations/{id}`
         let path: String
         
-        func patch(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<Organization>> {
-            .init(path: path, method: .patch, query: queryItems.asTuples, body: body)
+        var patch: Request<ClientResponse<Organization>> {
+            .init(path: path, method: .patch)
         }
         
-        func delete(queryItems: [URLQueryItem] = []) -> Request<DeletedObject> {
-            .init(path: path, method: .delete, query: queryItems.asTuples)
+        var delete: Request<DeletedObject> {
+            .init(path: path, method: .delete)
         }
     }
 }
