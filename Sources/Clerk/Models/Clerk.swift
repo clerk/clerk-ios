@@ -192,8 +192,10 @@ extension Clerk {
     /// Useful for multi-session applications.
     ///
     /// - Parameter sessionId: The session ID to be set as active.
-    public func setActive(sessionId: String) async throws {
-        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+    /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
+    public func setActive(sessionId: String, organizationId: String? = nil) async throws {
+        var request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+        request.query = [("active_organization_id", organizationId)]
         try await Clerk.shared.apiClient.send(request)
     }
 }
