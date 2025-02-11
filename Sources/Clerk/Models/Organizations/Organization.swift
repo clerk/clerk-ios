@@ -314,5 +314,28 @@ extension Organization {
         var request = ClerkFAPI.v1.organizations.id(id).domains.id(domainId).get
         return try await Clerk.shared.apiClient.send(request).value.response
     }
+    
+    /// Retrieves the list of membership requests for the currently active organization.
+    ///
+    /// - Parameters:
+    ///   - initialPage: A number that can be used to skip the first n-1 pages.
+    ///                  For example, if `initialPage` is set to 10, it will skip the first 9 pages and fetch the 10th page.
+    ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+    ///   - status: The status of the membership requests that will be included in the response.
+    /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembershipRequest`` objects.
+    @MainActor
+    public func getMembershipRequests(
+        initialPage: Int = 0,
+        pageSize: Int = 20,
+        status: String? = nil
+    ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+        var request = ClerkFAPI.v1.organizations.id(id).membershipRequests.get
+        request.query = [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize)),
+            ("status", status)
+        ]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
 }
 
