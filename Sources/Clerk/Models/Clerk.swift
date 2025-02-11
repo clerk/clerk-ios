@@ -151,7 +151,7 @@ extension Clerk {
             async let environment = Environment.get()
             _ = try await (client, environment)
             
-            attestDeviceIfNeeded()
+            try? await attestDeviceIfNeeded(environment: environment)
             startSessionTokenPolling()
             setupNotificationObservers()
             isLoaded = true
@@ -256,13 +256,15 @@ extension Clerk {
         sessionPollingTask = nil
     }
     
-    private func attestDeviceIfNeeded() {
-        if !AppAttestHelper.hasKeyId {
-            Task.detached {
-                do {
-                    try await AppAttestHelper.performDeviceAttestation()
-                } catch {
-                    dump(error)
+    private func attestDeviceIfNeeded(environment: Environment) {
+        if [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
+            if !AppAttestHelper.hasKeyId {
+                Task.detached {
+                    do {
+                        try await AppAttestHelper.performDeviceAttestation()
+                    } catch {
+                        dump(error)
+                    }
                 }
             }
         }

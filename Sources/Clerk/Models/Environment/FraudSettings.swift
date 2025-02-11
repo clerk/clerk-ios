@@ -14,7 +14,19 @@ extension Clerk.Environment {
         let native: Native
         
         struct Native: Codable, Sendable {
-            let requireDeviceAttestation: Bool
+            
+            let deviceAttestationMode: DeviceAttestationMode
+            
+            enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable {
+                case disabled
+                case onboarding
+                case enforced
+                case unknown
+                
+                public init(from decoder: Decoder) throws {
+                    self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+                }
+            }
         }
     }
 }
