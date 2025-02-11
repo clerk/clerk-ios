@@ -19,7 +19,7 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint.WithIdEndpoint {
         /// Path: `/v1/organizations/{id}/memberships`
         let path: String
         
-        var get: Request<ClerkPaginatedResponse<OrganizationMembership>> {
+        var get: Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>> {
             .init(path: path)
         }
         

@@ -64,7 +64,10 @@ extension Organization {
     ) async throws -> Organization {
         var request = ClerkFAPI.v1.organizations.id(id).patch
         request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        request.body = ["name": name, "slug": slug]
+        request.body = [
+            "name": name,
+            "slug": slug
+        ]
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -111,8 +114,11 @@ extension Organization {
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<RoleResource> {
         var request = ClerkFAPI.v1.organizations.id(id).roles.get
-        request.query = [("offset", String(initialPage)), ("limit", String(pageSize))]
-        return try await Clerk.shared.apiClient.send(request).value
+        request.query = [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize))
+        ]
+        return try await Clerk.shared.apiClient.send(request).value.response
     }
     
     /// Retrieves the list of memberships for the currently active organization.
@@ -137,7 +143,7 @@ extension Organization {
             ("limit", String(pageSize)),
             ("paginated", String(true))
         ]
-        return try await Clerk.shared.apiClient.send(request).value
+        return try await Clerk.shared.apiClient.send(request).value.response
     }
     
     /// Adds a user as a member to an organization.
@@ -159,7 +165,10 @@ extension Organization {
         role: String
     ) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.post
-        request.query = [("userId", userId), ("role", role)]
+        request.query = [
+            ("user_id", userId),
+            ("role", role)
+        ]
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -179,7 +188,10 @@ extension Organization {
         role: String
     ) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.patch
-        request.query = [("userId", userId), ("role", role)]
+        request.query = [
+            ("user_id", userId),
+            ("role", role)
+        ]
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -193,9 +205,114 @@ extension Organization {
     @discardableResult @MainActor
     public func removeMember(userId: String) async throws -> OrganizationMembership {
         var request = ClerkFAPI.v1.organizations.id(id).memberships.delete
-        request.query = [("userId", userId)]
+        request.query = [("user_id", userId)]
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
+    /// Retrieves the list of invitations for the currently active organization.
+    ///
+    /// - Parameters:
+    ///   - initialPage: A number that can be used to skip the first n-1 pages.
+    ///     For example, if `initialPage` is set to 10, it will skip the first 9 pages and fetch the 10th page.
+    ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+    ///   - status: The status an invitation can have.
+    ///
+    /// - Returns:
+    ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
+    @MainActor
+    public func getInvitations(
+        initialPage: Int = 0,
+        pageSize: Int = 20,
+        status: String? = nil
+    ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+        var request = ClerkFAPI.v1.organizations.id(id).invitations.get
+        request.query = [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize)),
+            ("status", status)
+        ]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Creates and sends an invitation to the target email address to become a member with the specified role.
+    ///
+    /// - Parameters:
+    ///   - emailAddress: The email address to invite.
+    ///   - role: The role of the new member.
+    ///
+    /// - Returns:
+    ///   An ``OrganizationInvitation`` object.
+    @discardableResult @MainActor
+    public func inviteMember(
+        emailAddress: String,
+        role: String
+    ) async throws -> OrganizationInvitation {
+        var request = ClerkFAPI.v1.organizations.id(id).invitations.post
+        request.body = [
+            "email_address": emailAddress,
+            "role": role
+        ]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
+    ///
+    /// - Parameters:
+    ///   - params: ``InviteMembersParams``
+    ///
+    /// - Returns:
+    ///   An array of ``OrganizationInvitation`` objects.
+    @discardableResult @MainActor
+    public func inviteMembers(params: InviteMembersParams) async throws -> [OrganizationInvitation] {
+        var request = ClerkFAPI.v1.organizations.id(id).invitations.bulk.post
+        request.body = params
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Creates a new domain for the currently active organization.
+    ///
+    /// - Parameters:
+    ///   - domainName: The domain name that will be added to the organization.
+    /// - Returns: An ``OrganizationDomain`` object.
+    @discardableResult @MainActor
+    public func createDomain(domainName: String) async throws -> OrganizationDomain {
+        var request = ClerkFAPI.v1.organizations.id(id).domains.post
+        request.body = ["name": domainName]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Retrieves the list of domains for the currently active organization.
+    ///
+    /// Returns a `ClerkPaginatedResponse` of `OrganizationDomain` objects.
+    ///
+    /// - Parameters:
+    ///   - initialPage: A number that can be used to skip the first n-1 pages.
+    ///                  For example, if `initialPage` is set to 10, it will skip the first 9 pages and fetch the 10th page.
+    ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+    ///
+    /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
+    @MainActor
+    public func getDomains(
+        initialPage: Int = 0,
+        pageSize: Int = 20
+    ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+        var request = ClerkFAPI.v1.organizations.id(id).domains.get
+        request.query = [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize))
+        ]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Retrieves a domain for an organization based on the given domain ID.
+    ///
+    /// - Parameters:
+    ///   - domainId: The ID of the domain that will be fetched.
+    /// - Returns: An ``OrganizationDomain`` object.
+    @MainActor
+    public func getDomain(domainId: String) async throws -> OrganizationDomain {
+        var request = ClerkFAPI.v1.organizations.id(id).domains.id(domainId).get
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
 }
 

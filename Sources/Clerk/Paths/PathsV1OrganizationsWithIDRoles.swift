@@ -18,8 +18,8 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint.WithIdEndpoint {
         /// Path: `/v1/organizations/{id}/roles`
         let path: String
         
-        var get: Request<ClerkPaginatedResponse<RoleResource>> {
-            .init(path: path, method: .post)
+        var get: Request<ClientResponse<ClerkPaginatedResponse<RoleResource>>> {
+            .init(path: path)
         }
     }
 }
