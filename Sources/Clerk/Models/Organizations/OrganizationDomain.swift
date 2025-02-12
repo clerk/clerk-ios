@@ -116,3 +116,44 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
         }
     }
 }
+
+extension OrganizationDomain {
+    
+    /// Deletes the organization domain and removes it from the organization.
+    @discardableResult @MainActor
+    public func delete() async throws -> DeletedObject {
+        var request = ClerkFAPI.v1.organizations.id(organizationId).domains.id(id).delete
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Begins the verification process of a created organization domain.
+    ///
+    /// This is a required step to complete the registration of the domain under the organization.
+    ///
+    /// - Parameter affiliationEmailAddress: An email address affiliated with the domain name (e.g., `user@example.com`).
+    /// - Returns: The unverified ``OrganizationDomain`` object.
+    /// - Throws: An error if the verification process cannot be initiated.
+    @discardableResult @MainActor
+    public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
+        var request = ClerkFAPI.v1.organizations.id(organizationId).domains.id(id).prepareAffiliationVerification.post
+        request.body = ["affiliation_email_address": affiliationEmailAddress]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Attempts to complete the domain verification process.
+    ///
+    /// This is a required step to complete the registration of a domain under an organization, as the administrator should be verified as a person affiliated with that domain.
+    ///
+    /// Make sure that an ``OrganizationDomain`` object already exists before calling this method by first calling ``prepareAffiliationVerification(affiliationEmailAddress:)``.
+    ///
+    /// - Parameter code: The one-time code sent to the user as part of this verification step.
+    /// - Returns: The verified ``OrganizationDomain`` object.
+    /// - Throws: An error if the verification process cannot be completed.
+    @discardableResult @MainActor
+    public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
+        var request = ClerkFAPI.v1.organizations.id(organizationId).domains.id(id).attemptAffiliationVerification.post
+        request.body = ["code": code]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+}

@@ -21,6 +21,10 @@ extension ClerkFAPI.V1Endpoint.OrganizationsEndpoint.WithIdEndpoint.DomainsEndpo
         var get: Request<ClientResponse<OrganizationDomain>> {
             .init(path: path)
         }
+        
+        var delete: Request<ClientResponse<DeletedObject>> {
+            .init(path: path, method: .delete)
+        }
     }
     
 }

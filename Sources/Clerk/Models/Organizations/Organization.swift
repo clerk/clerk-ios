@@ -63,7 +63,6 @@ extension Organization {
         slug: String? = nil
     ) async throws -> Organization {
         var request = ClerkFAPI.v1.organizations.id(id).patch
-        request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
         request.body = [
             "name": name,
             "slug": slug
@@ -77,7 +76,6 @@ extension Organization {
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
         var request = ClerkFAPI.v1.organizations.id(id).delete
-        request.query = [("_clerk_session_id", Clerk.shared.session?.id)]
         return try await Clerk.shared.apiClient.send(request).value
     }
     
@@ -97,7 +95,6 @@ extension Organization {
         
         var request = ClerkFAPI.v1.organizations.id(id).logo.post
         request.headers = ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-        request.query = [("_clerk_session_id", value: Clerk.shared.session?.id)]
         return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
     }
     
