@@ -20,7 +20,7 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
     public let status: Status
     
     /// Public information about the user that this request belongs to.
-    public let publicUserData: JSON
+    public let publicUserData: PublicUserData?
     
     /// The date when the membership request was created.
     public let createdAt: Date
