@@ -18,7 +18,7 @@ extension ClerkFAPI.V1Endpoint.ClientEndpoint {
         /// Path: `v1/client/verify`
         let path: String
         
-        func post(_ body: any Encodable) -> Request<Client> {
+        func post(_ body: any Encodable) -> Request<ClientResponse<Client>> {
             .init(path: path, method: .post, body: body)
         }
     }

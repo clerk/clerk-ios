@@ -257,14 +257,12 @@ extension Clerk {
     }
     
     private func attestDeviceIfNeeded(environment: Environment) {
-        if [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
-            if !AppAttestHelper.hasKeyId {
-                Task.detached {
-                    do {
-                        try await AppAttestHelper.performDeviceAttestation()
-                    } catch {
-                        dump(error)
-                    }
+        if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
+            Task.detached {
+                do {
+                    try await AppAttestHelper.performDeviceAttestation()
+                } catch {
+                    dump(error)
                 }
             }
         }
