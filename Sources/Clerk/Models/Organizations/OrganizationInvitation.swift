@@ -61,3 +61,14 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
         }
     }
 }
+
+extension OrganizationInvitation {
+    
+    /// Revokes the invitation for the email it corresponds to.
+    @discardableResult @MainActor
+    public func revoke() async throws -> OrganizationInvitation {
+        let request = ClerkFAPI.v1.organizations.id(organizationId).invitations.id(id).revoke.post
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+}
