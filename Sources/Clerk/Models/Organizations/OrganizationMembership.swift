@@ -20,6 +20,9 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable {
     
     /// The role of the current user in the organization.
     public let role: String
+
+    /// Public information about the user that this membership belongs to.
+    public let publicUserData: PublicUserData?
     
     /// The `Organization` object the membership belongs to.
     public let organization: Organization
@@ -29,5 +32,38 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable {
     
     /// The date when the membership was last updated.
     public let updatedAt: Date
+    
+}
+
+extension OrganizationMembership {
+    
+    /// Deletes the membership from the organization it belongs to.
+    ///
+    /// - Returns: ``OrganizationMembership``
+    /// - Throws: An error if the membership deletion fails.
+    @discardableResult @MainActor
+    public func destroy() async throws -> OrganizationMembership {
+        guard let userId = publicUserData?.userId else {
+            throw ClerkClientError(message: "Unable to delete membership: missing userId")
+        }
+        let request = ClerkFAPI.v1.organizations.id(organization.id).memberships.userId(userId).delete
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Updates the member's role in the organization.
+    ///
+    /// - Returns: ``OrganizationMembership``
+    /// - Parameter role: The role to assign to the member.
+    /// - Throws: An error if the membership update fails.
+    @discardableResult @MainActor
+    public func update(role: String) async throws -> OrganizationMembership {
+        guard let userId = publicUserData?.userId else {
+            throw ClerkClientError(message: "Unable to update membership: missing userId")
+        }
+        var request = ClerkFAPI.v1.organizations.id(organization.id).memberships.userId(userId).patch
+        request.body = ["role": role]
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
 }
 
