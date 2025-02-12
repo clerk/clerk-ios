@@ -17,39 +17,57 @@ struct DeviceAssertionMiddleware {
     
     private actor Manager {
         private var ongoingTask: Task<Bool, Error>?
+        private var ongoingErrorCode: String?
 
         func performDeviceAssertion(error: any Error) async throws -> Bool {
-            if let ongoingTask {
-                return try await ongoingTask.value
-            } else {
-                let newTask = Task<Bool, Error> {
-                    defer { ongoingTask = nil }
+            guard
+                let clerkAPIError = error as? ClerkAPIError,
+                clerkAPIError.code == "requires_assertion" || clerkAPIError.code == "requires_device_attestation"
+            else {
+                return false
+            }
+                        
+            // If there's already an ongoing task, decide if this error should wait or override
+            if let ongoingTask, let ongoingErrorCode {
+                switch (ongoingErrorCode, clerkAPIError.code) {
+                case ("requires_device_attestation", "requires_assertion"):
+                    // "requires_assertion" should wait for "requires_device_attestation"
+                    return try await ongoingTask.value
+                case ("requires_assertion", "requires_device_attestation"):
+                    // "requires_device_attestation" should override "requires_assertion"
+                    break
+                default:
+                    // Other cases wait for the ongoing task.
+                    return try await ongoingTask.value
+                }
+            }
+            
+            // Create a new task for the current error code
+            let newTask = Task<Bool, Error> {
+                defer {
+                    ongoingTask = nil
+                    ongoingErrorCode = nil
+                }
+                
+                switch clerkAPIError.code {
+                case "requires_assertion":
+                    try await AppAttestHelper.performAssertion()
+                    return true
                     
-                    if let clerkAPIError = error as? ClerkAPIError {
-                        switch clerkAPIError.code {
-                            
-                        case "requires_assertion":
-                            try await AppAttestHelper.performAssertion()
-                            return true
-
-                        case "requires_device_attestation":
-                            try await AppAttestHelper.performDeviceAttestation()
-                            try await AppAttestHelper.performAssertion()
-                            return true
-
-                        default:
-                            break
-                        }
-                    }
+                case "requires_device_attestation":
+                    try await AppAttestHelper.performDeviceAttestation()
+                    try await AppAttestHelper.performAssertion()
+                    return true
                     
+                default:
                     return false
                 }
-
-                ongoingTask = newTask
-
-                return try await newTask.value
             }
+            
+            ongoingTask = newTask
+            ongoingErrorCode = clerkAPIError.code
+            
+            return try await newTask.value
         }
     }
-    
 }
