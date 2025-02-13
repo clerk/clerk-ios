@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Get
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
@@ -46,7 +47,10 @@ extension OrganizationMembership {
         guard let userId = publicUserData?.userId else {
             throw ClerkClientError(message: "Unable to delete membership: missing userId")
         }
-        let request = ClerkFAPI.v1.organizations.id(organization.id).memberships.userId(userId).delete
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
+            method: .delete
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -60,8 +64,11 @@ extension OrganizationMembership {
         guard let userId = publicUserData?.userId else {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
-        var request = ClerkFAPI.v1.organizations.id(organization.id).memberships.userId(userId).patch
-        request.body = ["role": role]
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
+            method: .patch,
+            body: ["role": role]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
