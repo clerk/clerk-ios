@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Get
 
 /// The model that describes the request of a user to join an organization.
 public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {
@@ -48,5 +49,30 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
         public init(from decoder: Decoder) throws {
             self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
         }
+    }
+}
+
+extension OrganizationMembershipRequest {
+        
+    /// Accepts the request of a user to join the organization the request refers to.
+    @discardableResult @MainActor
+    public func accept() async throws -> OrganizationMembershipRequest {
+        let request = Request<ClientResponse<OrganizationMembershipRequest>>(
+            path: "/organizations/\(organizationId)/membership_requests/\(id)/accept",
+            method: .post
+        )
+        
+        return try await Clerk.shared.apiClient.send(request).value.response
+    }
+    
+    /// Rejects the request of a user to join the organization the request refers to.
+    @discardableResult @MainActor
+    public func reject() async throws -> OrganizationMembershipRequest {
+        let request = Request<ClientResponse<OrganizationMembershipRequest>>(
+            path: "/organizations/\(organizationId)/membership_requests/\(id)/reject",
+            method: .post
+        )
+        
+        return try await Clerk.shared.apiClient.send(request).value.response
     }
 }
