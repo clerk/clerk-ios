@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Get
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
 public struct Organization: Codable, Equatable, Sendable, Hashable {
@@ -62,11 +63,14 @@ extension Organization {
         name: String,
         slug: String? = nil
     ) async throws -> Organization {
-        var request = ClerkFAPI.v1.organizations.id(id).patch
-        request.body = [
-            "name": name,
-            "slug": slug
-        ]
+        let request = Request<ClientResponse<Organization>>(
+            path: "/v1/organizations/\(id)",
+            method: .patch,
+            body: [
+                "name": name,
+                "slug": slug
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -75,8 +79,11 @@ extension Organization {
     /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        var request = ClerkFAPI.v1.organizations.id(id).delete
-        return try await Clerk.shared.apiClient.send(request).value
+        let request = Request<ClientResponse<DeletedObject>>(
+            path: "/v1/organizations/\(id)",
+            method: .delete
+        )
+        return try await Clerk.shared.apiClient.send(request).value.response
     }
     
     /// Sets or replaces an organization's logo.
@@ -93,8 +100,11 @@ extension Organization {
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
         
-        var request = ClerkFAPI.v1.organizations.id(id).logo.post
-        request.headers = ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+        let request = Request<ClientResponse<Organization>>(
+            path: "/v1/organizations/\(id)/logo",
+            method: .post,
+            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+        )
         return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
     }
     
@@ -110,11 +120,13 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<RoleResource> {
-        var request = ClerkFAPI.v1.organizations.id(id).roles.get
-        request.query = [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize))
-        ]
+        let request = Request<ClientResponse<ClerkPaginatedResponse<RoleResource>>>(
+            path: "/v1/organizations/\(id)/roles",
+            query: [
+                ("offset", String(initialPage)),
+                ("limit", String(pageSize))
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -133,13 +145,15 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        var request = ClerkFAPI.v1.organizations.id(id).memberships.get
-        request.query = [
-            ("query", query),
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("paginated", String(true))
-        ]
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
+            path: "/v1/organizations/\(id)/memberships",
+            query: [
+                ("query", query),
+                ("offset", String(initialPage)),
+                ("limit", String(pageSize)),
+                ("paginated", String(true))
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -161,11 +175,14 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        var request = ClerkFAPI.v1.organizations.id(id).memberships.post
-        request.query = [
-            ("user_id", userId),
-            ("role", role)
-        ]
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(id)/memberships",
+            method: .post,
+            query: [
+                ("user_id", userId),
+                ("role", role)
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -184,11 +201,14 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        var request = ClerkFAPI.v1.organizations.id(id).memberships.patch
-        request.query = [
-            ("user_id", userId),
-            ("role", role)
-        ]
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(id)/memberships",
+            method: .patch,
+            query: [
+                ("user_id", userId),
+                ("role", role)
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -201,8 +221,11 @@ extension Organization {
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
     public func removeMember(userId: String) async throws -> OrganizationMembership {
-        var request = ClerkFAPI.v1.organizations.id(id).memberships.delete
-        request.query = [("user_id", userId)]
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(id)/memberships",
+            method: .delete,
+            query: [("user_id", userId)]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -222,12 +245,14 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-        var request = ClerkFAPI.v1.organizations.id(id).invitations.get
-        request.query = [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("status", status)
-        ]
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
+            path: "/v1/organizations/\(id)/invitations",
+            query: [
+                ("offset", String(initialPage)),
+                ("limit", String(pageSize)),
+                ("status", status)
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -244,11 +269,14 @@ extension Organization {
         emailAddress: String,
         role: String
     ) async throws -> OrganizationInvitation {
-        var request = ClerkFAPI.v1.organizations.id(id).invitations.post
-        request.body = [
-            "email_address": emailAddress,
-            "role": role
-        ]
+        let request = Request<ClientResponse<OrganizationInvitation>>(
+            path: "/v1/organizations/\(id)/invitations",
+            method: .post,
+            body: [
+                "email_address": emailAddress,
+                "role": role
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -261,8 +289,11 @@ extension Organization {
     ///   An array of ``OrganizationInvitation`` objects.
     @discardableResult @MainActor
     public func inviteMembers(params: InviteMembersParams) async throws -> [OrganizationInvitation] {
-        var request = ClerkFAPI.v1.organizations.id(id).invitations.bulk.post
-        request.body = params
+        let request = Request<ClientResponse<[OrganizationInvitation]>>(
+            path: "/v1/organizations/\(id)/invitations/bulk",
+            method: .post,
+            body: params
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -273,8 +304,11 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @discardableResult @MainActor
     public func createDomain(domainName: String) async throws -> OrganizationDomain {
-        var request = ClerkFAPI.v1.organizations.id(id).domains.post
-        request.body = ["name": domainName]
+        let request = Request<ClientResponse<OrganizationDomain>>(
+            path: "/v1/organizations/\(id)/domains",
+            method: .post,
+            body: ["name": domainName]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -293,11 +327,13 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-        var request = ClerkFAPI.v1.organizations.id(id).domains.get
-        request.query = [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize))
-        ]
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
+            path: "/v1/organizations/\(id)/domains",
+            query: [
+                ("offset", String(initialPage)),
+                ("limit", String(pageSize))
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -308,7 +344,9 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @MainActor
     public func getDomain(domainId: String) async throws -> OrganizationDomain {
-        var request = ClerkFAPI.v1.organizations.id(id).domains.id(domainId).get
+        let request = Request<ClientResponse<OrganizationDomain>>(
+            path: "/v1/organizations/\(id)/domains/\(domainId)"
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
@@ -326,12 +364,14 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-        var request = ClerkFAPI.v1.organizations.id(id).membershipRequests.get
-        request.query = [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("status", status)
-        ]
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
+            path: "/v1/organizations/{id}/membership_requests",
+            query: [
+                ("offset", String(initialPage)),
+                ("limit", String(pageSize)),
+                ("status", status)
+            ]
+        )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
 }

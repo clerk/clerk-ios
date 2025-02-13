@@ -58,7 +58,7 @@ extension OrganizationMembershipRequest {
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationMembershipRequest {
         let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-            path: "/organizations/\(organizationId)/membership_requests/\(id)/accept",
+            path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/accept",
             method: .post
         )
         
@@ -69,7 +69,7 @@ extension OrganizationMembershipRequest {
     @discardableResult @MainActor
     public func reject() async throws -> OrganizationMembershipRequest {
         let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-            path: "/organizations/\(organizationId)/membership_requests/\(id)/reject",
+            path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/reject",
             method: .post
         )
         
