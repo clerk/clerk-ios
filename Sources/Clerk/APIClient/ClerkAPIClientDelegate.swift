@@ -26,12 +26,11 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     }
     
     func client(_ client: APIClient, shouldRetry task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+        guard attempts == 1 else {
+            return false
+        }
         
-        if attempts == 1 {
-            if let lastPathComponent = task.originalRequest?.url?.pathComponents.last, lastPathComponent != "client" {
-                // if the original request wasn't a get client, try to get the client in sync with the server
-                _ = try? await Client.get()
-            }
+        if try await UnauthenticatedMiddleware.process(task: task, error: error) {
             return true
         }
         
