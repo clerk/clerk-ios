@@ -29,10 +29,10 @@ public struct Organization: Codable, Equatable, Sendable, Hashable {
     public let hasImage: Bool
     
     /// The number of members the associated organization contains.
-    public let membersCount: Int
+    public let membersCount: Int?
     
     /// The number of pending invitations to users to join the organization.
-    public let pendingInvitationsCount: Int
+    public let pendingInvitationsCount: Int?
     
     /// The maximum number of memberships allowed for the organization.
     public let maxAllowedMemberships: Int
@@ -48,7 +48,7 @@ public struct Organization: Codable, Equatable, Sendable, Hashable {
     
     /// Metadata that can be read from the Frontend API and Backend API
     /// and can be set only from the Backend API.
-    public let publicMetadata: JSON
+    public let publicMetadata: JSON?
 }
 
 extension Organization {
@@ -66,6 +66,7 @@ extension Organization {
         let request = Request<ClientResponse<Organization>>(
             path: "/v1/organizations/\(id)",
             method: .patch,
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
             body: [
                 "name": name,
                 "slug": slug
@@ -81,7 +82,8 @@ extension Organization {
     public func destroy() async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/organizations/\(id)",
-            method: .delete
+            method: .delete,
+            query: [("_clerk_session_id", Clerk.shared.session?.id)]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -102,7 +104,8 @@ extension Organization {
         
         let request = Request<ClientResponse<Organization>>(
             path: "/v1/organizations/\(id)/logo",
-            method: .post,
+            method: .put,
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
             headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
         )
         return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
@@ -124,7 +127,8 @@ extension Organization {
             path: "/v1/organizations/\(id)/roles",
             query: [
                 ("offset", String(initialPage)),
-                ("limit", String(pageSize))
+                ("limit", String(pageSize)),
+                ("_clerk_session_id", Clerk.shared.session?.id)
             ]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -142,6 +146,7 @@ extension Organization {
     @MainActor
     public func getMemberships(
         query: String? = nil,
+        role: String? = nil,
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
@@ -149,10 +154,12 @@ extension Organization {
             path: "/v1/organizations/\(id)/memberships",
             query: [
                 ("query", query),
+                ("role", role),
                 ("offset", String(initialPage)),
                 ("limit", String(pageSize)),
-                ("paginated", String(true))
-            ]
+                ("paginated", String(true)),
+                ("_clerk_session_id", Clerk.shared.session?.id)
+            ].filter { $1 != nil }
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -178,9 +185,10 @@ extension Organization {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(id)/memberships",
             method: .post,
-            query: [
-                ("user_id", userId),
-                ("role", role)
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
+            body: [
+                "user_id": userId,
+                "role": role
             ]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -202,12 +210,10 @@ extension Organization {
         role: String
     ) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
-            path: "/v1/organizations/\(id)/memberships",
+            path: "/v1/organizations/\(id)/memberships/\(userId)",
             method: .patch,
-            query: [
-                ("user_id", userId),
-                ("role", role)
-            ]
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
+            body: ["role": role]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -222,9 +228,9 @@ extension Organization {
     @discardableResult @MainActor
     public func removeMember(userId: String) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
-            path: "/v1/organizations/\(id)/memberships",
+            path: "/v1/organizations/\(id)/memberships/\(userId)",
             method: .delete,
-            query: [("user_id", userId)]
+            query: [("_clerk_session_id", Clerk.shared.session?.id)]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -250,8 +256,9 @@ extension Organization {
             query: [
                 ("offset", String(initialPage)),
                 ("limit", String(pageSize)),
-                ("status", status)
-            ]
+                ("status", status),
+                ("_clerk_session_id", Clerk.shared.session?.id)
+            ].filter { $1 != nil }
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -272,6 +279,7 @@ extension Organization {
         let request = Request<ClientResponse<OrganizationInvitation>>(
             path: "/v1/organizations/\(id)/invitations",
             method: .post,
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
             body: [
                 "email_address": emailAddress,
                 "role": role
@@ -280,22 +288,23 @@ extension Organization {
         return try await Clerk.shared.apiClient.send(request).value.response
     }
     
-    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
-    ///
-    /// - Parameters:
-    ///   - params: ``InviteMembersParams``
-    ///
-    /// - Returns:
-    ///   An array of ``OrganizationInvitation`` objects.
-    @discardableResult @MainActor
-    public func inviteMembers(params: InviteMembersParams) async throws -> [OrganizationInvitation] {
-        let request = Request<ClientResponse<[OrganizationInvitation]>>(
-            path: "/v1/organizations/\(id)/invitations/bulk",
-            method: .post,
-            body: params
-        )
-        return try await Clerk.shared.apiClient.send(request).value.response
-    }
+//    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
+//    ///
+//    /// - Parameters:
+//    ///   - params: ``InviteMembersParams``
+//    ///
+//    /// - Returns:
+//    ///   An array of ``OrganizationInvitation`` objects.
+//    @discardableResult @MainActor
+//    public func inviteMembers(params: InviteMembersParams) async throws -> [OrganizationInvitation] {
+//        let request = Request<ClientResponse<[OrganizationInvitation]>>(
+//            path: "/v1/organizations/\(id)/invitations/bulk",
+//            method: .post,
+//            query: [("_clerk_session_id", Clerk.shared.session?.id)],
+//            body: params
+//        )
+//        return try await Clerk.shared.apiClient.send(request).value.response
+//    }
     
     /// Creates a new domain for the currently active organization.
     ///
@@ -307,6 +316,7 @@ extension Organization {
         let request = Request<ClientResponse<OrganizationDomain>>(
             path: "/v1/organizations/\(id)/domains",
             method: .post,
+            query: [("_clerk_session_id", Clerk.shared.session?.id)],
             body: ["name": domainName]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -331,7 +341,8 @@ extension Organization {
             path: "/v1/organizations/\(id)/domains",
             query: [
                 ("offset", String(initialPage)),
-                ("limit", String(pageSize))
+                ("limit", String(pageSize)),
+                ("_clerk_session_id", Clerk.shared.session?.id)
             ]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
@@ -345,7 +356,8 @@ extension Organization {
     @MainActor
     public func getDomain(domainId: String) async throws -> OrganizationDomain {
         let request = Request<ClientResponse<OrganizationDomain>>(
-            path: "/v1/organizations/\(id)/domains/\(domainId)"
+            path: "/v1/organizations/\(id)/domains/\(domainId)",
+            query: [("_clerk_session_id", Clerk.shared.session?.id)]
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
@@ -365,12 +377,13 @@ extension Organization {
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
         let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
-            path: "/v1/organizations/{id}/membership_requests",
+            path: "/v1/organizations/\(id)/membership_requests",
             query: [
                 ("offset", String(initialPage)),
                 ("limit", String(pageSize)),
-                ("status", status)
-            ]
+                ("status", status),
+                ("_clerk_session_id", Clerk.shared.session?.id)
+            ].filter { $1 != nil }
         )
         return try await Clerk.shared.apiClient.send(request).value.response
     }
