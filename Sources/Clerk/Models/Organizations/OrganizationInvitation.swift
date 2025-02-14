@@ -29,7 +29,7 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
     public let role: String
     
     /// The status of the invitation.
-    public let status: InvitationStatus
+    public let status: Status
     
     /// The date when the invitation was created.
     public let createdAt: Date
@@ -38,7 +38,7 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
     public let updatedAt: Date
     
     /// Represents the possible statuses of an organization invitation.
-    public enum InvitationStatus: String, Codable, CodingKeyRepresentable, Sendable {
+    public enum Status: String, Codable, CodingKeyRepresentable, Sendable {
         /// The invitation has been sent but not yet responded to.
         case pending
         

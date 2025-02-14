@@ -68,10 +68,10 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
     public struct Verification: Codable, Sendable, Hashable {
         
         /// The status of the verification process.
-        public let status: VerificationStatus
+        public let status: Status
         
         /// The strategy used for the verification process.
-        public let strategy: VerificationStrategy
+        public let strategy: Strategy
         
         /// The number of attempts that have occurred to verify the domain.
         ///
@@ -81,10 +81,10 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
         /// The expiration date and time of the verification.
         ///
         /// Once the expiration date has passed, the verification process may need to be restarted.
-        public let expiresAt: Date
+        public let expireAt: Date?
         
         /// The possible statuses of the verification process.
-        public enum VerificationStatus: String, Codable, CodingKeyRepresentable, Sendable {
+        public enum Status: String, Codable, CodingKeyRepresentable, Sendable {
             
             /// The domain has not been verified.
             case unverified
@@ -102,7 +102,7 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
         }
         
         /// The strategy used for the domain verification process.
-        public enum VerificationStrategy: String, Codable, CodingKeyRepresentable, Sendable {
+        public enum Strategy: String, Codable, CodingKeyRepresentable, Sendable {
             
             /// Verification was conducted via email code.
             case emailCode
