@@ -147,16 +147,17 @@ extension Clerk {
         }
         
         do {
+            startSessionTokenPolling()
+            setupNotificationObservers()
+            
             async let client = Client.get()
             async let environment = Environment.get()
             _ = try await (client, environment)
             
             try? await attestDeviceIfNeeded(environment: environment)
-            startSessionTokenPolling()
-            setupNotificationObservers()
+            
             isLoaded = true
         } catch {
-            isLoaded = false
             throw error
         }
     }
