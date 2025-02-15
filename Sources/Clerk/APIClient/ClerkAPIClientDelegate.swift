@@ -34,7 +34,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             return true
         }
 
-        if try await UnauthenticatedMiddleware.process(task: task, error: error) {
+        if try await InvalidAuthMiddleware.process(task: task, error: error) {
             return true
         }
         
