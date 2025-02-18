@@ -30,7 +30,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
             return false
         }
         
-		if try await DeviceAssertionMiddleware.process(error: error) {
+		if try await DeviceAssertionMiddleware.process(task: task, error: error) {
             return true
         }
 
