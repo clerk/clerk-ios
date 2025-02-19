@@ -102,6 +102,7 @@ Forgot Password | ✅
 User Management | ✅ 
 Passkeys | ✅
 Enterprise SSO (SAML) | ✅ 
+Device Attestation | ✅
 Prebuilt UI Components | ❌ 
 Magic Links | ❌ 
 Organizations | ❌ 
