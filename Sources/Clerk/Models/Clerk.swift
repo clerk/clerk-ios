@@ -38,10 +38,8 @@ final public class Clerk {
     /// The Client object for the current device.
     internal(set) public var client: Client? {
         didSet {
-            if let lastActiveSessionId = client?.lastActiveSessionId {
-                try? SimpleKeychain().set(lastActiveSessionId, forKey: "lastActiveSessionId")
-            } else {
-                try? SimpleKeychain().deleteItem(forKey: "lastActiveSessionId")
+            if let clientId = client?.id {
+                try? SimpleKeychain().set(clientId, forKey: "clientId")
             }
         }
     }
@@ -149,14 +147,17 @@ extension Clerk {
         }
         
         do {
+            startSessionTokenPolling()
+            setupNotificationObservers()
+            
             async let client = Client.get()
             async let environment = Environment.get()
             _ = try await (client, environment)
-            startSessionTokenPolling()
-            setupNotificationObservers()
+            
+            try? await attestDeviceIfNeeded(environment: environment)
+            
             isLoaded = true
         } catch {
-            isLoaded = false
             throw error
         }
     }
@@ -254,6 +255,18 @@ extension Clerk {
     private func stopSessionTokenPolling() {
         sessionPollingTask?.cancel()
         sessionPollingTask = nil
+    }
+    
+    private func attestDeviceIfNeeded(environment: Environment) {
+        if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
+            Task.detached {
+                do {
+                    try await AppAttestHelper.performDeviceAttestation()
+                } catch {
+                    dump(error)
+                }
+            }
+        }
     }
     
 }

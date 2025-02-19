@@ -8,7 +8,7 @@
 import Foundation
 import Get
 
-struct UnauthenticatedMiddleware {
+struct InvalidAuthMiddleware {
     
     static func process(task: URLSessionTask, error: any Error) async throws -> Bool {
         

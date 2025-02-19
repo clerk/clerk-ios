@@ -14,6 +14,7 @@ extension Clerk {
         var authConfig: AuthConfig?
         var userSettings: UserSettings?
         var displayConfig: DisplayConfig?
+        var fraudSettings: FraudSettings?
     }
     
 }
