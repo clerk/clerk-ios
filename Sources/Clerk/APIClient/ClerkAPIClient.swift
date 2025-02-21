@@ -47,8 +47,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
 actor APIClientCache {
   static var shared = APIClientCache()
   
-  var cache: [URL: APIClient] = [:]
-  
+  private var cache: [URL: APIClient] = [:]
   private var _current: APIClient?
   
   var current: APIClient {
@@ -96,7 +95,7 @@ actor APIClientCache {
 
 @DependencyClient
 struct APIClientProvider {
-  var current: @Sendable () async throws -> APIClient = { .preview }
+  var current: @Sendable () async throws -> APIClient
   var client: @Sendable (_ baseUrl: String) async throws -> APIClient
 }
 
