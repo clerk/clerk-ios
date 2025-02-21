@@ -107,13 +107,6 @@ final public class Clerk {
   @ObservationIgnored
   @Dependency(\.apiClientProvider) private var apiClientProvider
   
-  /// The cached session tokens.
-  ///
-  /// Key is the session id + template name if there is one.
-  /// - e.g. `sess_abc12345` or `sess_abc12345-supabase`
-  ///
-  /// - Is set by the `getToken` function on a session.
-  var sessionTokensByCacheKey: [String: TokenResource] = .init()
   
   /// Holds a reference to the task performed when the app will enter the foreground.
   private var willEnterForegroundTask: Task<Void, Error>?
