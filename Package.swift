@@ -19,6 +19,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/hmlongco/Factory", .upToNextMajor(from: "2.4.3")),
         .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0"))
     ],
     targets: [
@@ -27,6 +28,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Factory", package: "Factory"),
                 .product(name: "Get", package: "Get"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "DependenciesMacros", package: "swift-dependencies"),
                 .product(name: "SimpleKeychain", package: "SimpleKeychain")
             ],
             swiftSettings: [
