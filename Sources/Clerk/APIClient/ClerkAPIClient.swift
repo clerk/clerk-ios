@@ -54,13 +54,14 @@ actor APIClientCache {
   var current: APIClient {
     get throws {
       guard let _current else {
-        throw ClerkClientError(
-          message: "Current API Client has not been initialized."
-        )
         dump("""
         You need to set the current API Client before accessing it. 
         You can do this by calling `client(for baseURL: String)`.
         """
+        )
+        
+        throw ClerkClientError(
+          message: "Current API Client has not been initialized."
         )
       }
       
@@ -93,16 +94,6 @@ actor APIClientCache {
   
 }
 
-extension APIClient {
-  static var preview: Self {
-    .init(baseURL: URL(string: "https://api.example.com")!) { configuration in
-      configuration.delegate = ClerkAPIClientDelegate()
-      configuration.encoder = .clerkEncoder
-      configuration.decoder = .clerkDecoder
-    }
-  }
-}
-
 @DependencyClient
 struct APIClientProvider {
   var current: @Sendable () async throws -> APIClient = { .preview }
@@ -133,5 +124,15 @@ extension DependencyValues {
   var apiClientProvider: APIClientProvider {
     get { self[APIClientProvider.self] }
     set { self[APIClientProvider.self] = newValue }
+  }
+}
+
+extension APIClient {
+  static var preview: Self {
+    .init(baseURL: URL(string: "https://api.example.com")!) { configuration in
+      configuration.delegate = ClerkAPIClientDelegate()
+      configuration.encoder = .clerkEncoder
+      configuration.decoder = .clerkDecoder
+    }
   }
 }
