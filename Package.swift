@@ -33,7 +33,8 @@ let package = Package(
                 .product(name: "SimpleKeychain", package: "SimpleKeychain")
             ],
             swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency")
+              .enableUpcomingFeature("InferSendableFromCaptures"),
+              .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         .testTarget(
