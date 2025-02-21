@@ -117,6 +117,8 @@ extension APIClientProvider: DependencyKey, TestDependencyKey {
       client: { _ in .preview }
     )
   }
+  
+  static let testValue = Self()
 }
 
 extension DependencyValues {

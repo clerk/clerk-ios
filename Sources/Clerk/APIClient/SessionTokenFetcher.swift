@@ -46,7 +46,7 @@ actor SessionTokenFetcher {
         let cacheKey = session.tokenCacheKey(template: options.template)
         
         if options.skipCache == false,
-           let token = Clerk.shared.sessionTokensByCacheKey[cacheKey],
+           let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
            let expiresAt = token.decodedJWT?.expiresAt,
            Date.now.distance(to: expiresAt) > options.expirationBuffer
         {
@@ -70,10 +70,33 @@ actor SessionTokenFetcher {
         }
         
         if let token {
-            Clerk.shared.sessionTokensByCacheKey[cacheKey] = token
+          await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
         }
         
         return token
     }
     
+}
+
+actor SessionTokensCache {
+  static var shared = SessionTokensCache()
+  
+  private var cache: [String: TokenResource] = [:]
+  
+  /// Returns a session token from the cache.
+  /// - Parameter cacheKey: cacheKey is the session id + template name if there is one.
+  ///                       For example, `sess_abc12345` or `sess_abc12345-supabase`.
+  /// - Returns: ``TokenResource``
+  func getToken(cacheKey: String) -> TokenResource? {
+    return cache[cacheKey]
+  }
+  
+  /// Inserts a session token into the cache.
+  /// - Parameters:
+  ///   - token: ``TokenResource``
+  ///   - cacheKey: cacheKey is the session id + template name if there is one.
+  ///               For example, `sess_abc12345` or `sess_abc12345-supabase`.
+  func insertToken(_ token: TokenResource, cacheKey: String) {
+    cache[cacheKey] = token
+  }
 }

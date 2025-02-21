@@ -10,6 +10,7 @@ import RegexBuilder
 import Get
 import SimpleKeychain
 import Dependencies
+import DependenciesMacros
 
 #if canImport(UIKit)
 import UIKit
@@ -104,16 +105,13 @@ final public class Clerk {
   
   nonisolated init() {}
   
+  // Dependencies
+  
   @ObservationIgnored
   @Dependency(\.apiClientProvider) private var apiClientProvider
   
-  /// The cached session tokens.
-  ///
-  /// Key is the session id + template name if there is one.
-  /// - e.g. `sess_abc12345` or `sess_abc12345-supabase`
-  ///
-  /// - Is set by the `getToken` function on a session.
-  var sessionTokensByCacheKey: [String: TokenResource] = .init()
+  @ObservationIgnored
+  @Dependency(\.clerkClient) private var clerkClient
   
   /// Holds a reference to the task performed when the app will enter the foreground.
   private var willEnterForegroundTask: Task<Void, Error>?
@@ -182,13 +180,7 @@ extension Clerk {
   /// try await clerk.signOut()
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
-    if let sessionId {
-      let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-      try await Clerk.shared.apiClient.send(request)
-    } else {
-      let request = ClerkFAPI.v1.client.sessions.delete
-      try await Clerk.shared.apiClient.send(request)
-    }
+    try await clerkClient.signOut(sessionId: sessionId)
   }
   
   /// A method used to set the active session.
@@ -197,8 +189,7 @@ extension Clerk {
   ///
   /// - Parameter sessionId: The session ID to be set as active.
   public func setActive(sessionId: String) async throws {
-    let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
-    try await Clerk.shared.apiClient.send(request)
+    try await clerkClient.setActive(sessionId: sessionId)
   }
 }
 
@@ -275,4 +266,39 @@ extension Clerk {
     }
   }
   
+}
+
+@DependencyClient
+struct ClerkClient {
+  var signOut: @Sendable (_ sessionId: String?) async throws -> Void
+  var setActive: @Sendable (_ sessionId: String) async throws -> Void
+}
+
+extension ClerkClient: DependencyKey, TestDependencyKey {
+  static var liveValue: ClerkClient {
+    .init(
+      signOut: { sessionId in
+        if let sessionId {
+          let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
+          try await Clerk.shared.apiClient.send(request)
+        } else {
+          let request = ClerkFAPI.v1.client.sessions.delete
+          try await Clerk.shared.apiClient.send(request)
+        }
+      },
+      setActive: { sessionId in
+        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+        try await Clerk.shared.apiClient.send(request)
+      }
+    )
+  }
+  
+  static let testValue = Self()
+}
+
+extension DependencyValues {
+  var clerkClient: ClerkClient {
+    get { self[ClerkClient.self] }
+    set { self[ClerkClient.self] = newValue }
+  }
 }
