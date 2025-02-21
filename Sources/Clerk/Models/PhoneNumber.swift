@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Factory
 
 /// The `PhoneNumber` object describes a phone number.
 ///

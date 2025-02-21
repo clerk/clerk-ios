@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Factory
 import RegexBuilder
 import Get
 import SimpleKeychain
@@ -23,7 +22,8 @@ import UIKit
 @Observable
 final public class Clerk {
   
-  public static let shared: Clerk = Container.shared.clerk()
+  /// The shared Clerk instance.
+  public static let shared = Clerk()
   
   /// A getter to see if the Clerk object is ready for use or not.
   private(set) public var isLoaded: Bool = false
@@ -273,13 +273,6 @@ extension Clerk {
         }
       }
     }
-  }
-  
-}
-
-extension Container {
-  var clerk: Factory<Clerk> {
-    self { Clerk() }.singleton
   }
   
 }
