@@ -49,21 +49,27 @@ actor APIClientCache {
   
   var cache: [URL: APIClient] = [:]
   
-  // Dummy initialized value.
-  // If attempted to be accessed will throw assertion error.
-  private var _current: APIClient = .preview
+  private var _current: APIClient?
   
   var current: APIClient {
-    get {
-      assert(
-        _current.configuration.baseURL == APIClient.preview.configuration.baseURL,
-        "You must call `client(for baseURL: URL)` at least once before accessing current."
-      )
+    get throws {
+      guard let _current else {
+        throw ClerkClientError(
+          message: "Current API Client has not been initialized."
+        )
+        dump("""
+        You need to set the current API Client before accessing it. 
+        You can do this by calling `client(for baseURL: String)`.
+        """
+        )
+      }
+      
       return _current
     }
-    set {
-      _current = newValue
-    }
+  }
+  
+  private func setCurrent(client: APIClient) {
+    _current = client
   }
   
   func client(for baseURL: String) throws -> APIClient {
@@ -80,7 +86,7 @@ actor APIClientCache {
         configuration.encoder = .clerkEncoder
       }
       cache[url] = newClient
-      current = newClient
+      setCurrent(client: newClient)
       return newClient
     }
   }
@@ -99,7 +105,7 @@ extension APIClient {
 
 @DependencyClient
 struct APIClientProvider {
-  var current: @Sendable () async -> APIClient = { .preview }
+  var current: @Sendable () async throws -> APIClient = { .preview }
   var client: @Sendable (_ baseUrl: String) async throws -> APIClient
 }
 
@@ -107,7 +113,7 @@ extension APIClientProvider: DependencyKey, TestDependencyKey {
   static var liveValue: APIClientProvider {
     .init(
       current: {
-        await APIClientCache.shared.current
+        try await APIClientCache.shared.current
       },
       client: { baseUrl in
         try await APIClientCache.shared.client(for: baseUrl)
