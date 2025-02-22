@@ -41,7 +41,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let clientId = client?.id {
-        try? SimpleKeychain().set(clientId, forKey: "clientId")
+        try? clerkClient.saveClientIdToKeychain(clientId: clientId)
       }
     }
   }
@@ -123,6 +123,59 @@ final public class Clerk {
   private var sessionPollingTask: Task<Void, Error>?
 }
 
+@DependencyClient
+struct ClerkClient {
+  var saveClientIdToKeychain: @Sendable (_ clientId: String) throws -> Void
+  var signOut: @Sendable (_ sessionId: String?) async throws -> Void
+  var setActive: @Sendable (_ sessionId: String) async throws -> Void
+}
+
+extension ClerkClient: DependencyKey, TestDependencyKey {
+  static var liveValue: ClerkClient {
+    .init(
+      saveClientIdToKeychain: { clientId in
+        try? SimpleKeychain().set(clientId, forKey: "clientId")
+      },
+      signOut: { sessionId in
+        @Dependency(\.apiClientProvider) var apiClientProvider
+        if let sessionId {
+          let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
+          try await apiClientProvider.current().send(request)
+        } else {
+          let request = ClerkFAPI.v1.client.sessions.delete
+          try await apiClientProvider.current().send(request)
+        }
+      },
+      setActive: { sessionId in
+        @Dependency(\.apiClientProvider) var apiClientProvider
+        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+        try await apiClientProvider.current().send(request)
+      }
+    )
+  }
+  
+  static var previewValue: ClerkClient {
+    .init(
+      saveClientIdToKeychain: { _ in },
+      signOut: { _ in },
+      setActive: { _ in }
+    )
+  }
+  
+  static let testValue = Self(
+    saveClientIdToKeychain: { _ in },
+    signOut: unimplemented("ClerkClient.signOut"),
+    setActive: unimplemented("ClerkClient.setActive")
+  )
+}
+
+extension DependencyValues {
+  var clerkClient: ClerkClient {
+    get { self[ClerkClient.self] }
+    set { self[ClerkClient.self] = newValue }
+  }
+}
+
 extension Clerk {
   
   /// Configures the shared clerk instance.
@@ -143,9 +196,9 @@ extension Clerk {
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   public func load() async throws {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
-      isLoaded = false
-      return
+      throw ClerkClientError(
+        message: "Clerk loaded without a publishable key. Please call configure() with a valid publishable key first."
+      )
     }
     
     do {
@@ -266,39 +319,4 @@ extension Clerk {
     }
   }
   
-}
-
-@DependencyClient
-struct ClerkClient {
-  var signOut: @Sendable (_ sessionId: String?) async throws -> Void
-  var setActive: @Sendable (_ sessionId: String) async throws -> Void
-}
-
-extension ClerkClient: DependencyKey, TestDependencyKey {
-  static var liveValue: ClerkClient {
-    .init(
-      signOut: { sessionId in
-        if let sessionId {
-          let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-          try await Clerk.shared.apiClient.send(request)
-        } else {
-          let request = ClerkFAPI.v1.client.sessions.delete
-          try await Clerk.shared.apiClient.send(request)
-        }
-      },
-      setActive: { sessionId in
-        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
-        try await Clerk.shared.apiClient.send(request)
-      }
-    )
-  }
-  
-  static let testValue = Self()
-}
-
-extension DependencyValues {
-  var clerkClient: ClerkClient {
-    get { self[ClerkClient.self] }
-    set { self[ClerkClient.self] = newValue }
-  }
 }

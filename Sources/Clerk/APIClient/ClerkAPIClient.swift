@@ -10,6 +10,7 @@ import Get
 import SimpleKeychain
 import Dependencies
 import DependenciesMacros
+import Mocker
 
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
@@ -113,12 +114,17 @@ extension APIClientProvider: DependencyKey, TestDependencyKey {
   
   static var previewValue: APIClientProvider {
     .init(
-      current: { .preview },
-      client: { _ in .preview }
+      current: { .mock },
+      client: { _ in .mock }
     )
   }
   
-  static let testValue = Self()
+  static var testValue: APIClientProvider {
+    .init(
+      current: { .mock },
+      client: { _ in .mock }
+    )
+  }
 }
 
 extension DependencyValues {
@@ -129,11 +135,17 @@ extension DependencyValues {
 }
 
 extension APIClient {
-  static var preview: Self {
-    .init(baseURL: URL(string: "https://api.example.com")!) { configuration in
-      configuration.delegate = ClerkAPIClientDelegate()
-      configuration.encoder = .clerkEncoder
+  
+  static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
+  
+  static let mock: APIClient = .init(
+    baseURL: mockBaseUrl,
+    { configuration in
       configuration.decoder = .clerkDecoder
+      configuration.encoder = .clerkEncoder
+      configuration.delegate = ClerkAPIClientDelegate()
+      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
     }
-  }
+  )
+  
 }

@@ -51,7 +51,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     public let actor: String?
     
     /// The user associated with the session.
-    public var user: User?
+    public let user: User?
     
     /// Public information about the user that this session belongs to.
     public let publicUserData: PublicUserData?
