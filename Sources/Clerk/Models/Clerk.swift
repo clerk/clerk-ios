@@ -132,12 +132,13 @@ struct ClerkClient {
 
 extension ClerkClient: DependencyKey, TestDependencyKey {
   static var liveValue: ClerkClient {
-    .init(
+    @Dependency(\.apiClientProvider) var apiClientProvider
+    
+    return .init(
       saveClientIdToKeychain: { clientId in
         try? SimpleKeychain().set(clientId, forKey: "clientId")
       },
       signOut: { sessionId in
-        @Dependency(\.apiClientProvider) var apiClientProvider
         if let sessionId {
           let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
           try await apiClientProvider.current().send(request)
@@ -147,7 +148,6 @@ extension ClerkClient: DependencyKey, TestDependencyKey {
         }
       },
       setActive: { sessionId in
-        @Dependency(\.apiClientProvider) var apiClientProvider
         let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
         try await apiClientProvider.current().send(request)
       }

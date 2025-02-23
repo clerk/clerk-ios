@@ -29,7 +29,6 @@ let package = Package(
         .product(name: "Get", package: "Get"),
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
-        .product(name: "Mocker", package: "Mocker"),
         .product(name: "SimpleKeychain", package: "SimpleKeychain")
       ],
       swiftSettings: [
@@ -40,7 +39,8 @@ let package = Package(
     .testTarget(
       name: "ClerkTests",
       dependencies: [
-        "Clerk"
+        "Clerk",
+        "Mocker"
       ]
     ),
   ]

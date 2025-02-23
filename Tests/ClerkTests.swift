@@ -1,11 +1,27 @@
 import Testing
 import Foundation
+import Mocker
 
 @testable import Clerk
 @testable import Dependencies
 @testable import Get
 @testable import ConcurrencyExtras
-@testable import Mocker
+
+extension APIClient {
+
+  static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
+
+  static let mock: APIClient = .init(
+    baseURL: mockBaseUrl,
+    { configuration in
+      configuration.decoder = .clerkDecoder
+      configuration.encoder = .clerkEncoder
+      configuration.delegate = ClerkAPIClientDelegate()
+      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+    }
+  )
+
+}
 
 struct ClerkTests {
   
@@ -13,6 +29,9 @@ struct ClerkTests {
   
   init() {
     self.clerk = Clerk()
+    prepareDependencies {
+      $0.apiClientProvider = .init(current: { .mock }, client: { _ in  .mock })
+    }
   }
   
   @MainActor
@@ -74,7 +93,6 @@ struct ClerkTests {
     
   @Test func testSignOutRequest() async throws {
     let clerk = withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
       Clerk()
@@ -94,7 +112,6 @@ struct ClerkTests {
   
   @Test func testSignOutWithSessionIdRequest() async throws {
     let clerk = withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
       Clerk()
@@ -114,7 +131,6 @@ struct ClerkTests {
   
   @Test func testSetActiveRequest() async throws {
     let clerk = withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
       Clerk()
