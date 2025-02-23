@@ -46,8 +46,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
 
 @DependencyClient
 struct APIClientProvider {
-  var current: @Sendable () async throws -> APIClient
-  var createClient: @Sendable (_ baseUrl: String) async throws -> APIClient
+  var current: @Sendable () throws -> APIClient
+  var createClient: @Sendable (_ baseUrl: String) -> APIClient = { baseUrl in .init(baseURL: URL(string: baseUrl)) }
 }
 
 extension APIClientProvider: DependencyKey, TestDependencyKey {
@@ -58,8 +58,8 @@ extension APIClientProvider: DependencyKey, TestDependencyKey {
       current: { [lastCreatedClient] in
         guard let lastCreatedClient = lastCreatedClient.value else {
           dump("""
-          You need to set the current API Client before accessing it. 
-          You can do this by calling `client(for baseURL: String)`.
+          You need to create an API Client before accessing it via `current()`. 
+          You can do this by calling `createClient(for baseURL: String)`.
           """
           )
           

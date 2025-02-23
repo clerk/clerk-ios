@@ -84,9 +84,7 @@ final public class Clerk {
   /// Frontend API URL.
   private(set) var frontendApiUrl: String = "" {
     didSet {
-      Task {
-        try await apiClientProvider.createClient(baseUrl: frontendApiUrl)
-      }
+        apiClientProvider.createClient(baseUrl: frontendApiUrl)
     }
   }
   
