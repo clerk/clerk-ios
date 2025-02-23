@@ -8,7 +8,7 @@ import Mocker
 @testable import ConcurrencyExtras
 
 extension APIClient {
-
+  
   static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
 
   static let mock: APIClient = .init(
@@ -29,9 +29,6 @@ struct ClerkTests {
   
   init() {
     self.clerk = Clerk()
-    prepareDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in  .mock })
-    }
   }
   
   @MainActor
@@ -92,60 +89,64 @@ struct ClerkTests {
   }
     
   @Test func testSignOutRequest() async throws {
-    let clerk = withDependencies {
+    try await withDependencies {
+      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
-      Clerk()
+      let clerk = Clerk()
+      
+      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions")
+      var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
+      ])
+      mock.onRequestHandler = OnRequestHandler { request in
+        #expect(request.httpMethod == "DELETE")
+        #expect(request.url!.path() == "/v1/client/sessions")
+      }
+      mock.register()
+      try await clerk.signOut()
     }
     
-    let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
-    ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == "/v1/client/sessions")
-    }
-    mock.register()
-    try await clerk.signOut()
   }
   
   @Test func testSignOutWithSessionIdRequest() async throws {
-    let clerk = withDependencies {
+    try await withDependencies {
+      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
-      Clerk()
+      let clerk = Clerk()
+      
+      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
+      var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
+      ])
+      mock.onRequestHandler = OnRequestHandler { request in
+        #expect(request.httpMethod == "POST")
+        #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/remove")
+      }
+      mock.register()
+      try await clerk.signOut(sessionId: Session.mock.id)
     }
-    
-    let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
-    ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/remove")
-    }
-    mock.register()
-    try await clerk.signOut(sessionId: Session.mock.id)
   }
   
   @Test func testSetActiveRequest() async throws {
-    let clerk = withDependencies {
+    try await withDependencies {
+      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
       $0.clerkClient = .liveValue
     } operation: {
-      Clerk()
+      let clerk = Clerk()
+      
+      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
+      var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
+      ])
+      mock.onRequestHandler = OnRequestHandler { request in
+        #expect(request.httpMethod == "POST")
+        #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/touch")
+      }
+      mock.register()
+      try await clerk.setActive(sessionId: Session.mock.id)
     }
-    
-    let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
-    ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/touch")
-    }
-    mock.register()
-    try await clerk.setActive(sessionId: Session.mock.id)
   }
   
   
