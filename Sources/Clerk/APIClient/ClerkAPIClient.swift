@@ -44,55 +44,6 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
 }
 
-actor APIClientCache {
-  static var shared = APIClientCache()
-  
-  private var cache: [URL: APIClient] = [:]
-  private var _current: APIClient?
-  
-  var current: APIClient {
-    get throws {
-      guard let _current else {
-        dump("""
-        You need to set the current API Client before accessing it. 
-        You can do this by calling `client(for baseURL: String)`.
-        """
-        )
-        
-        throw ClerkClientError(
-          message: "Current API Client has not been initialized."
-        )
-      }
-      
-      return _current
-    }
-  }
-  
-  private func setCurrent(client: APIClient) {
-    _current = client
-  }
-  
-  func client(for baseURL: String) throws -> APIClient {
-    guard let url = URL(string: baseURL) else {
-      throw ClerkClientError(message: "Invalid base URL.")
-    }
-    
-    if let cachedClient = cache[url] {
-      return cachedClient
-    } else {
-      let newClient = APIClient(baseURL: url) { configuration in
-        configuration.delegate = ClerkAPIClientDelegate()
-        configuration.decoder = .clerkDecoder
-        configuration.encoder = .clerkEncoder
-      }
-      cache[url] = newClient
-      setCurrent(client: newClient)
-      return newClient
-    }
-  }
-  
-}
-
 @DependencyClient
 struct APIClientProvider {
   var current: @Sendable () async throws -> APIClient
@@ -101,20 +52,31 @@ struct APIClientProvider {
 
 extension APIClientProvider: DependencyKey, TestDependencyKey {
   static var liveValue: APIClientProvider {
-    .init(
-      current: {
-        try await APIClientCache.shared.current
+    let lastCreatedClient: LockIsolated<APIClient?> = .init(nil)
+    
+    return .init(
+      current: { [lastCreatedClient] in
+        if let lastCreatedClient = lastCreatedClient.value {
+          return lastCreatedClient
+        }
+        
+        dump("""
+        You need to set the current API Client before accessing it. 
+        You can do this by calling `client(for baseURL: String)`.
+        """
+        )
+        
+        throw ClerkClientError(message: "Current API Client has not been initialized.")
       },
-      client: { baseUrl in
-        try await APIClientCache.shared.client(for: baseUrl)
+      client: { [lastCreatedClient] baseUrl in
+        let apiClient = APIClient(baseURL: URL(string: baseUrl)) { configuration in
+          configuration.delegate = ClerkAPIClientDelegate()
+          configuration.decoder = .clerkDecoder
+          configuration.encoder = .clerkEncoder
+        }
+        lastCreatedClient.setValue(apiClient)
+        return apiClient
       }
-    )
-  }
-  
-  static var previewValue: APIClientProvider {
-    .init(
-      current: { .preview },
-      client: { _ in .preview }
     )
   }
   
@@ -126,19 +88,4 @@ extension DependencyValues {
     get { self[APIClientProvider.self] }
     set { self[APIClientProvider.self] = newValue }
   }
-}
-
-extension APIClient {
-  
-  static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
-  
-  static let preview: APIClient = .init(
-    baseURL: mockBaseUrl,
-    { configuration in
-      configuration.decoder = .clerkDecoder
-      configuration.encoder = .clerkEncoder
-      configuration.delegate = ClerkAPIClientDelegate()
-    }
-  )
-  
 }
