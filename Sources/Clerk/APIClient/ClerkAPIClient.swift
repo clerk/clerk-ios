@@ -47,7 +47,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
 @DependencyClient
 struct APIClientProvider {
   var current: @Sendable () async throws -> APIClient
-  var client: @Sendable (_ baseUrl: String) async throws -> APIClient
+  var createClient: @Sendable (_ baseUrl: String) async throws -> APIClient
 }
 
 extension APIClientProvider: DependencyKey, TestDependencyKey {
@@ -56,19 +56,19 @@ extension APIClientProvider: DependencyKey, TestDependencyKey {
     
     return .init(
       current: { [lastCreatedClient] in
-        if let lastCreatedClient = lastCreatedClient.value {
-          return lastCreatedClient
+        guard let lastCreatedClient = lastCreatedClient.value else {
+          dump("""
+          You need to set the current API Client before accessing it. 
+          You can do this by calling `client(for baseURL: String)`.
+          """
+          )
+          
+          throw ClerkClientError(message: "Current API Client has not been initialized.")
         }
         
-        dump("""
-        You need to set the current API Client before accessing it. 
-        You can do this by calling `client(for baseURL: String)`.
-        """
-        )
-        
-        throw ClerkClientError(message: "Current API Client has not been initialized.")
+        return lastCreatedClient
       },
-      client: { [lastCreatedClient] baseUrl in
+      createClient: { [lastCreatedClient] baseUrl in
         let apiClient = APIClient(baseURL: URL(string: baseUrl)) { configuration in
           configuration.delegate = ClerkAPIClientDelegate()
           configuration.decoder = .clerkDecoder

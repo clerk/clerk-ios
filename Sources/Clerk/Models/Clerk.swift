@@ -82,7 +82,13 @@ final public class Clerk {
   }
   
   /// Frontend API URL.
-  private(set) var frontendApiUrl: String = ""
+  private(set) var frontendApiUrl: String = "" {
+    didSet {
+      Task {
+        try await apiClientProvider.createClient(baseUrl: frontendApiUrl)
+      }
+    }
+  }
   
   /// The retrieved active sessions for this user.
   ///
@@ -252,7 +258,7 @@ extension Clerk {
   
   var apiClient: APIClient {
     get async throws {
-      try await apiClientProvider.client(baseUrl: frontendApiUrl)
+      try await apiClientProvider.current()
     }
   }
   

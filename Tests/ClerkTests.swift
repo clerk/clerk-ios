@@ -90,7 +90,7 @@ struct ClerkTests {
     
   @Test func testSignOutRequest() async throws {
     try await withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
+      $0.apiClientProvider.current = { .mock }
       $0.clerkClient = .liveValue
     } operation: {
       let clerk = Clerk()
@@ -111,7 +111,7 @@ struct ClerkTests {
   
   @Test func testSignOutWithSessionIdRequest() async throws {
     try await withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
+      $0.apiClientProvider.current = { .mock }
       $0.clerkClient = .liveValue
     } operation: {
       let clerk = Clerk()
@@ -131,7 +131,7 @@ struct ClerkTests {
   
   @Test func testSetActiveRequest() async throws {
     try await withDependencies {
-      $0.apiClientProvider = .init(current: { .mock }, client: { _ in .mock })
+      $0.apiClientProvider.current = { .mock }
       $0.clerkClient = .liveValue
     } operation: {
       let clerk = Clerk()
