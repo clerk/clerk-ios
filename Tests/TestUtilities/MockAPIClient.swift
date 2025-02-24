@@ -11,10 +11,9 @@ import Mocker
 @testable import Clerk
 @testable import Get
 
-extension APIClient {
-  
-  static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
+let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
 
+extension APIClient {
   static let mock: APIClient = .init(
     baseURL: mockBaseUrl,
     { configuration in

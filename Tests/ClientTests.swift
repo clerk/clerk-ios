@@ -27,7 +27,7 @@ struct ClientTests {
       $0.apiClientProvider.current = { .mock }
       $0.clientClient = .liveValue
     } operation: {
-      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client")
+      let originalUrl = mockBaseUrl.appending(path: "/v1/client")
       var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
         .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
       ])

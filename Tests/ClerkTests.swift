@@ -82,7 +82,7 @@ struct ClerkTests {
     } operation: {
       let clerk = Clerk()
       
-      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions")
+      let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions")
       var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
         .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
       ])
@@ -103,7 +103,7 @@ struct ClerkTests {
     } operation: {
       let clerk = Clerk()
       
-      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
+      let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
       var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
         .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
       ])
@@ -123,7 +123,7 @@ struct ClerkTests {
     } operation: {
       let clerk = Clerk()
       
-      let originalUrl = APIClient.mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
+      let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
       var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
         .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
       ])
