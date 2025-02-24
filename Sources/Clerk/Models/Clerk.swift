@@ -7,8 +7,10 @@
 
 import Factory
 import Get
+import Factory
 import Foundation
 import RegexBuilder
+import SimpleKeychain
 
 #if canImport(UIKit)
 import UIKit
@@ -39,7 +41,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let clientId = client?.id {
-        try? ClerkContainer.shared.saveClientIdToKeychain()(clientId)
+        try? Container.shared.clerkSaveClientIdToKeychain()(clientId)
       }
     }
   }
@@ -177,7 +179,7 @@ extension Clerk {
   /// try await clerk.signOut()
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
-    try await ClerkContainer.shared.signOut()(sessionId)
+    try await Container.shared.clerkSignOut()(sessionId)
   }
   
   /// A method used to set the active session.
@@ -186,7 +188,7 @@ extension Clerk {
   ///
   /// - Parameter sessionId: The session ID to be set as active.
   public func setActive(sessionId: String) async throws {
-    try await ClerkContainer.shared.setActive()(sessionId)
+    try await Container.shared.clerkSetActive()(sessionId)
   }
 }
 
@@ -263,6 +265,35 @@ extension Clerk {
         }
       }
     }
+  }
+  
+}
+
+extension Container {
+  
+  var clerkSaveClientIdToKeychain: Factory<(_ clientId: String) throws -> Void> {
+    self {{ clientId in
+      try SimpleKeychain().set(clientId, forKey: "clientId")
+    }}
+  }
+  
+  var clerkSignOut: Factory<(_ sessionId: String?) async throws -> Void> {
+    self {{ sessionId in
+      if let sessionId {
+        let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
+        try await Clerk.shared.apiClient.send(request)
+      } else {
+        let request = ClerkFAPI.v1.client.sessions.delete
+        try await Clerk.shared.apiClient.send(request)
+      }
+    }}
+  }
+  
+  var clerkSetActive: Factory<(_ sessionId: String) async throws -> Void> {
+    self {{ sessionId in
+      let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+      try await Clerk.shared.apiClient.send(request)
+    }}
   }
   
 }
