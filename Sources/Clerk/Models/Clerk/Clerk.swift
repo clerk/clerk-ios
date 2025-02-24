@@ -5,12 +5,10 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import Dependencies
+import Get
 import Foundation
 import RegexBuilder
-import Get
-import SimpleKeychain
-import Dependencies
-import DependenciesMacros
 
 #if canImport(UIKit)
 import UIKit
@@ -84,7 +82,7 @@ final public class Clerk {
   /// Frontend API URL.
   private(set) var frontendApiUrl: String = "" {
     didSet {
-        _ = apiClientProvider.createClient(baseUrl: frontendApiUrl)
+      _ = apiClientProvider.createClient(baseUrl: frontendApiUrl)
     }
   }
   
@@ -108,9 +106,7 @@ final public class Clerk {
   // MARK: - Private Properties
   
   nonisolated init() {}
-  
-  // Dependencies
-  
+    
   @ObservationIgnored
   @Dependency(\.apiClientProvider) private var apiClientProvider
   
@@ -127,59 +123,6 @@ final public class Clerk {
   private var sessionPollingTask: Task<Void, Error>?
 }
 
-@DependencyClient
-struct ClerkClient {
-  var saveClientIdToKeychain: @Sendable (_ clientId: String) throws -> Void
-  var signOut: @Sendable (_ sessionId: String?) async throws -> Void
-  var setActive: @Sendable (_ sessionId: String) async throws -> Void
-}
-
-extension ClerkClient: DependencyKey, TestDependencyKey {
-  static var liveValue: ClerkClient {
-    @Dependency(\.apiClientProvider) var apiClientProvider
-    
-    return .init(
-      saveClientIdToKeychain: { clientId in
-        try? SimpleKeychain().set(clientId, forKey: "clientId")
-      },
-      signOut: { sessionId in
-        if let sessionId {
-          let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-          try await apiClientProvider.current().send(request)
-        } else {
-          let request = ClerkFAPI.v1.client.sessions.delete
-          try await apiClientProvider.current().send(request)
-        }
-      },
-      setActive: { sessionId in
-        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
-        try await apiClientProvider.current().send(request)
-      }
-    )
-  }
-  
-  static var previewValue: ClerkClient {
-    .init(
-      saveClientIdToKeychain: { _ in },
-      signOut: { _ in },
-      setActive: { _ in }
-    )
-  }
-  
-  static let testValue = Self(
-    saveClientIdToKeychain: { _ in },
-    signOut: unimplemented("ClerkClient.signOut"),
-    setActive: unimplemented("ClerkClient.setActive")
-  )
-}
-
-extension DependencyValues {
-  var clerkClient: ClerkClient {
-    get { self[ClerkClient.self] }
-    set { self[ClerkClient.self] = newValue }
-  }
-}
-
 extension Clerk {
   
   /// Configures the shared clerk instance.
@@ -188,7 +131,10 @@ extension Clerk {
   ///     - debugMode: Enable for additional debugging signals.
   public func configure(publishableKey: String, debugMode: Bool = false) {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      dump("Clerk configured without a publishable key. Please include a valid publishable key.")
+      dump("""
+        Clerk configured without a publishable key. 
+        Please include a valid publishable key.
+        """)
       return
     }
     
@@ -201,7 +147,10 @@ extension Clerk {
   public func load() async throws {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       throw ClerkClientError(
-        message: "Clerk loaded without a publishable key. Please call configure() with a valid publishable key first."
+        message: """
+          Clerk loaded without a publishable key. 
+          Please call configure() with a valid publishable key first.
+        """
       )
     }
     
@@ -268,7 +217,9 @@ extension Clerk {
     didEnterBackgroundTask?.cancel()
     
     willEnterForegroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(named: UIApplication.willEnterForegroundNotification).map({ _ in () }) {
+      for await _ in NotificationCenter.default.notifications(
+        named: UIApplication.willEnterForegroundNotification
+      ).map({ _ in () }) {
         self.startSessionTokenPolling()
         
         // Start both functions concurrently without waiting for them
@@ -283,12 +234,14 @@ extension Clerk {
     }
     
     didEnterBackgroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(named: UIApplication.didEnterBackgroundNotification).map({ _ in () }) {
+      for await _ in NotificationCenter.default.notifications(
+        named: UIApplication.didEnterBackgroundNotification
+      ).map({ _ in () }) {
         stopSessionTokenPolling()
       }
     }
     
-  #endif
+    #endif
   }
   
   private func startSessionTokenPolling() {
