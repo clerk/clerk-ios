@@ -74,7 +74,57 @@ struct ClerkTests {
       try await clerk.load()
     }
   }
-    
+  
+  @MainActor
+  @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
+    try await withDependencies {
+      $0.clerkClient.saveClientIdToKeychain = { @Sendable _ in }
+      $0.environmentClient.get = { .init() }
+      $0.clientClient.get = { .mock }
+    } operation: {
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      try await clerk.load()
+      #expect(clerk.isLoaded)
+    }
+  }
+  
+  @MainActor
+  @Test func testLoadThrowsWhenClerkGetThrows() async throws {
+    await withDependencies {
+      $0.clerkClient.saveClientIdToKeychain = { @Sendable _ in }
+      $0.environmentClient.get = { .init() }
+      $0.clientClient.get = { throw ClerkAPIError.mock }
+    } operation: {
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      
+      await #expect(throws: Error.self, performing: {
+        try await clerk.load()
+      })
+      
+      #expect(!clerk.isLoaded)
+    }
+  }
+  
+  @MainActor
+  @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
+    await withDependencies {
+      $0.clerkClient.saveClientIdToKeychain = { @Sendable _ in }
+      $0.environmentClient.get = { throw ClerkAPIError.mock }
+      $0.clientClient.get = { .mock }
+    } operation: {
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      
+      await #expect(throws: Error.self, performing: {
+        try await clerk.load()
+      })
+      
+      #expect(!clerk.isLoaded)
+    }
+  }
+  
   @Test func testSignOutRequest() async throws {
     try await withDependencies {
       $0.apiClientProvider.current = { .mock }
