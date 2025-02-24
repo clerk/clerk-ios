@@ -5,7 +5,6 @@ import Mocker
 @testable import Clerk
 @testable import Dependencies
 @testable import Get
-@testable import ConcurrencyExtras
 
 struct ClerkTests {
   

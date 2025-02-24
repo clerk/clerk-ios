@@ -41,6 +41,22 @@ extension Session {
     lastActiveToken: nil
   )
   
+  static let mockExpired = Session(
+    id: "1",
+    status: .expired,
+    expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+    abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+    lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+    latestActivity: nil,
+    lastActiveOrganizationId: nil,
+    actor: nil,
+    user: .mock,
+    publicUserData: nil,
+    createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+    updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+    lastActiveToken: nil
+  )
+  
 }
 
 extension SignIn {
