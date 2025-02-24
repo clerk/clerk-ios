@@ -27,6 +27,7 @@ struct ClientTests {
       $0.apiClientProvider.current = { .mock }
       $0.clientClient = .liveValue
     } operation: {
+      let requestHandled = LockIsolated(false)
       let originalUrl = mockBaseUrl.appending(path: "/v1/client")
       var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
         .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
@@ -34,9 +35,11 @@ struct ClientTests {
       mock.onRequestHandler = OnRequestHandler { request in
         #expect(request.httpMethod == "GET")
         #expect(request.url!.path() == "/v1/client")
+        requestHandled.setValue(true)
       }
       mock.register()
       try await Client.get()
+      #expect(requestHandled.value)
     }
   }
 }

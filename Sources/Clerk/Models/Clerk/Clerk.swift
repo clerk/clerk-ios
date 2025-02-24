@@ -160,6 +160,7 @@ extension Clerk {
       
       async let client = Client.get()
       async let environment = Environment.get()
+      _ = try await client
       self.environment = try await environment
       
       try? await attestDeviceIfNeeded(environment: environment)
