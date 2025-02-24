@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import Factory
 import Foundation
 import SimpleKeychain
 
@@ -43,7 +44,18 @@ extension Client {
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
-    try await ClientContainer.shared.get()()
+    try await Container.shared.clientGet()()
+  }
+  
+}
+
+extension Container {
+  
+  var clientGet: Factory<() async throws -> Client?> {
+    self {{
+      let request = ClerkFAPI.v1.client.get
+      return try await Clerk.shared.apiClient.send(request).value.response
+    }}
   }
   
 }

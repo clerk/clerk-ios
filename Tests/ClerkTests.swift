@@ -10,8 +10,6 @@ import Mocker
       
   init() {
     Container.shared.reset()
-    ClerkContainer.shared.reset()
-    EnvironmentContainer.shared.reset()
   }
   
   @MainActor
@@ -26,7 +24,7 @@ import Mocker
   @MainActor
   @Test func testClientIdSavedToKeychainOnClientDidSet() throws {
     let clientIdInKeychain = LockIsolated<String?>(nil)
-    ClerkContainer.shared.saveClientIdToKeychain.register {{ clientId in
+    Container.shared.clerkSaveClientIdToKeychain.register {{ clientId in
       clientIdInKeychain.setValue(clientId)
     }}
     let clerk = Clerk()
@@ -68,8 +66,8 @@ import Mocker
   
   @MainActor
   @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
-    EnvironmentContainer.shared.get.register {{ .init() }}
-    ClientContainer.shared.get.register {{ .mock }}
+    Container.shared.environmentGet.register {{ .init() }}
+    Container.shared.clientGet.register {{ .mock }}
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
     try await clerk.load()
@@ -78,8 +76,8 @@ import Mocker
   
   @MainActor
   @Test func testLoadThrowsWhenClerkGetThrows() async throws {
-    EnvironmentContainer.shared.get.register {{ .init() }}
-    ClientContainer.shared.get.register {{ throw ClerkAPIError.mock }}
+    Container.shared.environmentGet.register {{ .init() }}
+    Container.shared.clientGet.register {{ throw ClerkAPIError.mock }}
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
     await #expect(throws: Error.self, performing: {
@@ -90,8 +88,8 @@ import Mocker
   
   @MainActor
   @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
-    EnvironmentContainer.shared.get.register {{ throw ClerkAPIError.mock }}
-    ClientContainer.shared.get.register {{ .mock }}
+    Container.shared.environmentGet.register {{ throw ClerkAPIError.mock }}
+    Container.shared.clientGet.register {{ .mock }}
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
     await #expect(throws: Error.self, performing: {
