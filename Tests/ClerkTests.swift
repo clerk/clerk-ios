@@ -12,7 +12,11 @@ struct ClerkTests {
   let clerk: Clerk
   
   init() {
-    self.clerk = Clerk()
+    clerk = withDependencies {
+      $0.clerkClient.saveClientIdToKeychain = { @Sendable _ in }
+    } operation: {
+      Clerk()
+    }
   }
   
   @MainActor

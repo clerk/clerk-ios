@@ -41,11 +41,7 @@ extension ClerkClient: DependencyKey, TestDependencyKey {
     )
   }
   
-  static let testValue = Self(
-    saveClientIdToKeychain: { _ in },
-    signOut: unimplemented("ClerkClient.signOut"),
-    setActive: unimplemented("ClerkClient.setActive")
-  )
+  static let testValue = Self()
 }
 
 extension DependencyValues {
