@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import Dependencies
+import Factory
 import Get
 import Foundation
 import RegexBuilder
@@ -39,7 +39,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let clientId = client?.id {
-        try? clerkClient.saveClientIdToKeychain(clientId: clientId)
+        try? ClerkContainer.shared.saveClientIdToKeychain()(clientId)
       }
     }
   }
@@ -80,11 +80,7 @@ final public class Clerk {
   }
   
   /// Frontend API URL.
-  private(set) var frontendApiUrl: String = "" {
-    didSet {
-      _ = apiClientProvider.createClient(baseUrl: frontendApiUrl)
-    }
-  }
+  private(set) var frontendApiUrl: String = ""
   
   /// The retrieved active sessions for this user.
   ///
@@ -107,12 +103,6 @@ final public class Clerk {
   
   nonisolated init() {}
     
-  @ObservationIgnored
-  @Dependency(\.apiClientProvider) private var apiClientProvider
-  
-  @ObservationIgnored
-  @Dependency(\.clerkClient) private var clerkClient
-  
   /// Holds a reference to the task performed when the app will enter the foreground.
   private var willEnterForegroundTask: Task<Void, Error>?
   
@@ -187,7 +177,7 @@ extension Clerk {
   /// try await clerk.signOut()
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
-    try await clerkClient.signOut(sessionId: sessionId)
+    try await ClerkContainer.shared.signOut()(sessionId)
   }
   
   /// A method used to set the active session.
@@ -196,7 +186,7 @@ extension Clerk {
   ///
   /// - Parameter sessionId: The session ID to be set as active.
   public func setActive(sessionId: String) async throws {
-    try await clerkClient.setActive(sessionId: sessionId)
+    try await ClerkContainer.shared.setActive()(sessionId)
   }
 }
 
@@ -205,9 +195,7 @@ extension Clerk {
   // MARK: - Private Properties
   
   var apiClient: APIClient {
-    get async throws {
-      try apiClientProvider.current()
-    }
+    Container.shared.apiClient(frontendApiUrl)
   }
   
   private func setupNotificationObservers() {

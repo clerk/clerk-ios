@@ -9,6 +9,7 @@ import Foundation
 import Mocker
 
 @testable import Clerk
+@testable import Factory
 @testable import Get
 
 let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
@@ -24,4 +25,12 @@ extension APIClient {
     }
   )
 
+}
+
+extension Container: @retroactive AutoRegistering {
+  
+  public func autoRegister() {
+    apiClient.context(.test) { _ in .mock }
+  }
+  
 }
