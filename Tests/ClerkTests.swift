@@ -7,22 +7,6 @@ import Mocker
 @testable import Get
 @testable import ConcurrencyExtras
 
-extension APIClient {
-  
-  static let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
-
-  static let mock: APIClient = .init(
-    baseURL: mockBaseUrl,
-    { configuration in
-      configuration.decoder = .clerkDecoder
-      configuration.encoder = .clerkEncoder
-      configuration.delegate = ClerkAPIClientDelegate()
-      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
-    }
-  )
-
-}
-
 struct ClerkTests {
   
   let clerk: Clerk

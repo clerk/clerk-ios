@@ -84,7 +84,7 @@ final public class Clerk {
   /// Frontend API URL.
   private(set) var frontendApiUrl: String = "" {
     didSet {
-        apiClientProvider.createClient(baseUrl: frontendApiUrl)
+        _ = apiClientProvider.createClient(baseUrl: frontendApiUrl)
     }
   }
   
@@ -256,7 +256,7 @@ extension Clerk {
   
   var apiClient: APIClient {
     get async throws {
-      try await apiClientProvider.current()
+      try apiClientProvider.current()
     }
   }
   
