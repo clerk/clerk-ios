@@ -5,12 +5,10 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import Dependencies
+import Get
 import Foundation
 import RegexBuilder
-import Get
-import SimpleKeychain
-import Dependencies
-import DependenciesMacros
 
 #if canImport(UIKit)
 import UIKit
@@ -41,7 +39,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let clientId = client?.id {
-        try? SimpleKeychain().set(clientId, forKey: "clientId")
+        try? clerkClient.saveClientIdToKeychain(clientId: clientId)
       }
     }
   }
@@ -82,7 +80,11 @@ final public class Clerk {
   }
   
   /// Frontend API URL.
-  private(set) var frontendApiUrl: String = ""
+  private(set) var frontendApiUrl: String = "" {
+    didSet {
+      _ = apiClientProvider.createClient(baseUrl: frontendApiUrl)
+    }
+  }
   
   /// The retrieved active sessions for this user.
   ///
@@ -104,9 +106,7 @@ final public class Clerk {
   // MARK: - Private Properties
   
   nonisolated init() {}
-  
-  // Dependencies
-  
+    
   @ObservationIgnored
   @Dependency(\.apiClientProvider) private var apiClientProvider
   
@@ -131,7 +131,10 @@ extension Clerk {
   ///     - debugMode: Enable for additional debugging signals.
   public func configure(publishableKey: String, debugMode: Bool = false) {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      dump("Clerk configured without a publishable key. Please include a valid publishable key.")
+      dump("""
+        Clerk configured without a publishable key. 
+        Please include a valid publishable key.
+        """)
       return
     }
     
@@ -143,9 +146,12 @@ extension Clerk {
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   public func load() async throws {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
-      isLoaded = false
-      return
+      throw ClerkClientError(
+        message: """
+          Clerk loaded without a publishable key. 
+          Please call configure() with a valid publishable key first.
+        """
+      )
     }
     
     do {
@@ -199,7 +205,7 @@ extension Clerk {
   
   var apiClient: APIClient {
     get async throws {
-      try await apiClientProvider.client(baseUrl: frontendApiUrl)
+      try apiClientProvider.current()
     }
   }
   
@@ -211,7 +217,9 @@ extension Clerk {
     didEnterBackgroundTask?.cancel()
     
     willEnterForegroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(named: UIApplication.willEnterForegroundNotification).map({ _ in () }) {
+      for await _ in NotificationCenter.default.notifications(
+        named: UIApplication.willEnterForegroundNotification
+      ).map({ _ in () }) {
         self.startSessionTokenPolling()
         
         // Start both functions concurrently without waiting for them
@@ -226,12 +234,14 @@ extension Clerk {
     }
     
     didEnterBackgroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(named: UIApplication.didEnterBackgroundNotification).map({ _ in () }) {
+      for await _ in NotificationCenter.default.notifications(
+        named: UIApplication.didEnterBackgroundNotification
+      ).map({ _ in () }) {
         stopSessionTokenPolling()
       }
     }
     
-  #endif
+    #endif
   }
   
   private func startSessionTokenPolling() {
@@ -266,39 +276,4 @@ extension Clerk {
     }
   }
   
-}
-
-@DependencyClient
-struct ClerkClient {
-  var signOut: @Sendable (_ sessionId: String?) async throws -> Void
-  var setActive: @Sendable (_ sessionId: String) async throws -> Void
-}
-
-extension ClerkClient: DependencyKey, TestDependencyKey {
-  static var liveValue: ClerkClient {
-    .init(
-      signOut: { sessionId in
-        if let sessionId {
-          let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-          try await Clerk.shared.apiClient.send(request)
-        } else {
-          let request = ClerkFAPI.v1.client.sessions.delete
-          try await Clerk.shared.apiClient.send(request)
-        }
-      },
-      setActive: { sessionId in
-        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
-        try await Clerk.shared.apiClient.send(request)
-      }
-    )
-  }
-  
-  static let testValue = Self()
-}
-
-extension DependencyValues {
-  var clerkClient: ClerkClient {
-    get { self[ClerkClient.self] }
-    set { self[ClerkClient.self] = newValue }
-  }
 }

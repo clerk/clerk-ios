@@ -8,7 +8,7 @@
 import Foundation
 
 /// The DeletedObject class represents an item that has been deleted from the database.
-public struct DeletedObject: Decodable, Sendable {
+public struct DeletedObject: Codable, Sendable {
     /// The object type that has been deleted.
     public let object: String?
     

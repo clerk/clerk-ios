@@ -44,96 +44,48 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
 }
 
-actor APIClientCache {
-  static var shared = APIClientCache()
-  
-  private var cache: [URL: APIClient] = [:]
-  private var _current: APIClient?
-  
-  var current: APIClient {
-    get throws {
-      guard let _current else {
-        dump("""
-        You need to set the current API Client before accessing it. 
-        You can do this by calling `client(for baseURL: String)`.
-        """
-        )
-        
-        throw ClerkClientError(
-          message: "Current API Client has not been initialized."
-        )
-      }
-      
-      return _current
-    }
-  }
-  
-  private func setCurrent(client: APIClient) {
-    _current = client
-  }
-  
-  func client(for baseURL: String) throws -> APIClient {
-    guard let url = URL(string: baseURL) else {
-      throw ClerkClientError(message: "Invalid base URL.")
-    }
-    
-    if let cachedClient = cache[url] {
-      return cachedClient
-    } else {
-      let newClient = APIClient(baseURL: url) { configuration in
-        configuration.delegate = ClerkAPIClientDelegate()
-        configuration.decoder = .clerkDecoder
-        configuration.encoder = .clerkEncoder
-      }
-      cache[url] = newClient
-      setCurrent(client: newClient)
-      return newClient
-    }
-  }
-  
-}
-
 @DependencyClient
 struct APIClientProvider {
-  var current: @Sendable () async throws -> APIClient
-  var client: @Sendable (_ baseUrl: String) async throws -> APIClient
+  var current: @Sendable () throws -> APIClient
+  var createClient: @Sendable (_ baseUrl: String) -> APIClient = { baseUrl in .init(baseURL: URL(string: baseUrl)) }
 }
 
 extension APIClientProvider: DependencyKey, TestDependencyKey {
   static var liveValue: APIClientProvider {
-    .init(
-      current: {
-        try await APIClientCache.shared.current
+    let lastCreatedClient: LockIsolated<APIClient?> = .init(nil)
+    
+    return .init(
+      current: { [lastCreatedClient] in
+        guard let lastCreatedClient = lastCreatedClient.value else {
+          dump("""
+          You need to create an API Client before accessing it via `current()`. 
+          You can do this by calling `createClient(for baseURL: String)`.
+          """
+          )
+          
+          throw ClerkClientError(message: "Current API Client has not been initialized.")
+        }
+        
+        return lastCreatedClient
       },
-      client: { baseUrl in
-        try await APIClientCache.shared.client(for: baseUrl)
+      createClient: { [lastCreatedClient] baseUrl in
+        let apiClient = APIClient(baseURL: URL(string: baseUrl)) { configuration in
+          configuration.delegate = ClerkAPIClientDelegate()
+          configuration.decoder = .clerkDecoder
+          configuration.encoder = .clerkEncoder
+        }
+        lastCreatedClient.setValue(apiClient)
+        return apiClient
       }
     )
   }
   
-  static var previewValue: APIClientProvider {
-    .init(
-      current: { .preview },
-      client: { _ in .preview }
-    )
-  }
-  
-  static let testValue = Self()
+  static let testValue: APIClientProvider = Self()
 }
 
 extension DependencyValues {
   var apiClientProvider: APIClientProvider {
     get { self[APIClientProvider.self] }
     set { self[APIClientProvider.self] = newValue }
-  }
-}
-
-extension APIClient {
-  static var preview: Self {
-    .init(baseURL: URL(string: "https://api.example.com")!) { configuration in
-      configuration.delegate = ClerkAPIClientDelegate()
-      configuration.encoder = .clerkEncoder
-      configuration.decoder = .clerkDecoder
-    }
   }
 }
