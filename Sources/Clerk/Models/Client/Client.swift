@@ -7,7 +7,6 @@
 
 import Foundation
 import SimpleKeychain
-import Dependencies
 
 /// The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
 ///
@@ -44,8 +43,7 @@ extension Client {
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
-    @Dependency(\.clientClient) var clientClient
-    return try await clientClient.get()
+    try await ClientContainer.shared.get()()
   }
   
 }

@@ -5,11 +5,10 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import Factory
 import Foundation
 import Get
 import SimpleKeychain
-import Dependencies
-import DependenciesMacros
 
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
@@ -44,48 +43,17 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
 }
 
-@DependencyClient
-struct APIClientProvider {
-  var current: @Sendable () throws -> APIClient
-  var createClient: @Sendable (_ baseUrl: String) -> APIClient = { baseUrl in .init(baseURL: URL(string: baseUrl)) }
-}
-
-extension APIClientProvider: DependencyKey, TestDependencyKey {
-  static var liveValue: APIClientProvider {
-    let lastCreatedClient: LockIsolated<APIClient?> = .init(nil)
-    
-    return .init(
-      current: { [lastCreatedClient] in
-        guard let lastCreatedClient = lastCreatedClient.value else {
-          dump("""
-          You need to create an API Client before accessing it via `current()`. 
-          You can do this by calling `createClient(for baseURL: String)`.
-          """
-          )
-          
-          throw ClerkClientError(message: "Current API Client has not been initialized.")
-        }
-        
-        return lastCreatedClient
-      },
-      createClient: { [lastCreatedClient] baseUrl in
-        let apiClient = APIClient(baseURL: URL(string: baseUrl)) { configuration in
-          configuration.delegate = ClerkAPIClientDelegate()
-          configuration.decoder = .clerkDecoder
-          configuration.encoder = .clerkEncoder
-        }
-        lastCreatedClient.setValue(apiClient)
-        return apiClient
+extension Container {
+  
+  var apiClient: ParameterFactory<String, APIClient> {
+    self {
+      APIClient(baseURL: URL(string: $0)) { configuration in
+        configuration.delegate = ClerkAPIClientDelegate()
+        configuration.decoder = .clerkDecoder
+        configuration.encoder = .clerkEncoder
       }
-    )
+    }
+    .cached
   }
   
-  static let testValue: APIClientProvider = Self()
-}
-
-extension DependencyValues {
-  var apiClientProvider: APIClientProvider {
-    get { self[APIClientProvider.self] }
-    set { self[APIClientProvider.self] = newValue }
-  }
 }

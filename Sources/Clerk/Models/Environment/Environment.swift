@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Dependencies
 
 extension Clerk {
   
@@ -23,8 +22,7 @@ extension Clerk.Environment {
   
   @MainActor
   static func get() async throws -> Clerk.Environment {
-    @Dependency(\.environmentClient) var environmentClient
-    return try await environmentClient.get()
+    return try await EnvironmentContainer.shared.get()()
   }
   
 }
