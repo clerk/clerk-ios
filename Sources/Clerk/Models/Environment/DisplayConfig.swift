@@ -23,16 +23,6 @@ extension Clerk.Environment {
         let captchaPublicKeyInvisible: String?
         let captchaProvider: CaptchaProvider?
         
-        enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
-            case production
-            case development
-            case unknown
-            
-            init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-        
         enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password
             case otp
