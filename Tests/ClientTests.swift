@@ -4,13 +4,11 @@ import Mocker
 
 @testable import Clerk
 @testable import Factory
-@testable import Get
 
-@Suite(.serialized) struct ClientTests {
-  
-  init() {
-    Container.shared.reset()
-  }
+// Any test that accesses Container.shared or performs networking
+// should be placed in the serialized tests below
+
+struct ClientTests {
   
   @Test func testActiveSessions() {
     let client = Client(
@@ -23,6 +21,14 @@ import Mocker
     )
     
     #expect(client.activeSessions.count == 2)
+  }
+  
+}
+
+@Suite(.serialized) struct ClientSerializedTests {
+  
+  init() {
+    Container.shared.reset()
   }
   
   @Test func testClientGet() async throws {

@@ -4,13 +4,11 @@ import Mocker
 
 @testable import Clerk
 @testable import Factory
-@testable import Get
 
-@Suite(.serialized) struct ClerkTests {
-      
-  init() {
-    Container.shared.reset()
-  }
+// Any test that accesses Container.shared or performs networking
+// should be placed in the serialized tests below
+
+struct ClerkTests {
   
   @MainActor
   @Test func testInstanceType() async throws {
@@ -19,17 +17,6 @@ import Mocker
     #expect(clerk.instanceType == .development)
     clerk.configure(publishableKey: "pk_live_123456789")
     #expect(clerk.instanceType == .production)
-  }
-  
-  @MainActor
-  @Test func testClientIdSavedToKeychainOnClientDidSet() throws {
-    let clientIdInKeychain = LockIsolated<String?>(nil)
-    Container.shared.clerkSaveClientIdToKeychain.register {{ clientId in
-      clientIdInKeychain.setValue(clientId)
-    }}
-    let clerk = Clerk()
-    clerk.client = .mock
-    #expect(clientIdInKeychain.value == Client.mock.id)
   }
   
   @MainActor
@@ -53,6 +40,25 @@ import Mocker
     let clerk = Clerk()
     clerk.configure(publishableKey: "     ")
     #expect(clerk.publishableKey == "")
+  }
+  
+}
+
+@Suite(.serialized) struct ClerkSerializedTests {
+      
+  init() {
+    Container.shared.reset()
+  }
+  
+  @MainActor
+  @Test func testClientIdSavedToKeychainOnClientDidSet() throws {
+    let clientIdInKeychain = LockIsolated<String?>(nil)
+    Container.shared.clerkSaveClientIdToKeychain.register {{ clientId in
+      clientIdInKeychain.setValue(clientId)
+    }}
+    let clerk = Clerk()
+    clerk.client = .mock
+    #expect(clientIdInKeychain.value == Client.mock.id)
   }
   
   @MainActor
