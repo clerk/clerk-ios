@@ -5,9 +5,9 @@
 //  Created by Mike Pitre on 1/29/25.
 //
 
-import Foundation
-import DeviceCheck
 import CryptoKit
+import DeviceCheck
+import Foundation
 import SimpleKeychain
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.

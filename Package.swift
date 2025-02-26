@@ -20,18 +20,18 @@ let package = Package(
     .package(url: "https://github.com/hmlongco/Factory", from: "2.0.0"),
     .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
-    .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0"))
+    .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
+    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1"))
   ],
   targets: [
     .target(
       name: "Clerk",
       dependencies: [
-        .product(name: "Get", package: "Get"),
         .product(name: "Factory", package: "Factory"),
+        .product(name: "Get", package: "Get"),
         .product(name: "SimpleKeychain", package: "SimpleKeychain")
       ],
       swiftSettings: [
-        .enableUpcomingFeature("InferSendableFromCaptures"),
         .enableExperimentalFeature("StrictConcurrency")
       ]
     ),
@@ -39,7 +39,11 @@ let package = Package(
       name: "ClerkTests",
       dependencies: [
         "Clerk",
-        "Mocker"
+        .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
+        .product(name: "Mocker", package: "Mocker")
+      ],
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency")
       ]
     ),
   ]

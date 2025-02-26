@@ -1,10 +1,10 @@
-import Testing
+import ConcurrencyExtras
+import Factory
 import Foundation
 import Mocker
+import Testing
 
 @testable import Clerk
-@testable import Factory
-@testable import Get
 
 @Suite(.serialized) struct EnvironmentSerializedTests {
   
@@ -12,7 +12,7 @@ import Mocker
     Container.shared.reset()
   }
   
-  @Test func testEnvironmentGet() async throws {
+  @Test func testGet() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/environment")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
