@@ -53,9 +53,11 @@ struct ClerkTests {
   @MainActor
   @Test func testClientIdSavedToKeychainOnClientDidSet() throws {
     let clientIdInKeychain = LockIsolated<String?>(nil)
-    Container.shared.clerkSaveClientIdToKeychain.register {{ clientId in
-      clientIdInKeychain.setValue(clientId)
-    }}
+    Container.shared.clerkService.register {
+      var mock = ClerkService.liveValue
+      mock.saveClientIdToKeychain = { clientIdInKeychain.setValue($0) }
+      return mock
+    }
     let clerk = Clerk()
     clerk.client = .mock
     #expect(clientIdInKeychain.value == Client.mock.id)
