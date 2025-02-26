@@ -8,7 +8,6 @@
 import Factory
 import Foundation
 import Get
-import SimpleKeychain
 
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   
@@ -51,6 +50,12 @@ extension Container {
         configuration.delegate = ClerkAPIClientDelegate()
         configuration.decoder = .clerkDecoder
         configuration.encoder = .clerkEncoder
+        configuration.sessionConfiguration.httpAdditionalHeaders = [
+          "Content-Type": "application/x-www-form-urlencoded",
+          "clerk-api-version": "2024-10-01",
+          "x-ios-sdk-version": Clerk.version,
+          "x-mobile": "1"
+        ]
       }
     }
     .cached
