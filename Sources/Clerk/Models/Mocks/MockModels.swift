@@ -130,6 +130,7 @@ extension Verification {
       attempts: nil,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
@@ -141,6 +142,7 @@ extension Verification {
       attempts: nil,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
@@ -152,6 +154,7 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
@@ -163,6 +166,7 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
@@ -174,6 +178,7 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: "12345"
     )
   }
@@ -185,6 +190,7 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
+      externalVerificationRedirectUrl: nil,
       nonce: "12345"
     )
   }
@@ -196,7 +202,8 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
-      nonce: "12345"
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
     )
   }
   
@@ -207,7 +214,8 @@ extension Verification {
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
-      nonce: "12345"
+      externalVerificationRedirectUrl: "https://accounts.google.com", 
+      nonce: nil
     )
   }
   

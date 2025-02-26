@@ -6,7 +6,10 @@ import Testing
 
 @testable import Clerk
 
-@Suite(.serialized) struct EmailAddressTests {
+// Any test that accesses Container.shared or performs networking
+// should be placed in the serialized tests below
+
+@Suite(.serialized) struct EmailAddressSerializedTests {
   
   init() {
     Container.shared.reset()
