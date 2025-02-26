@@ -1,9 +1,10 @@
-import Testing
+import ConcurrencyExtras
+import Factory
 import Foundation
 import Mocker
+import Testing
 
 @testable import Clerk
-@testable import Factory
 
 @Suite(.serialized) struct EmailAddressTests {
   
@@ -11,7 +12,7 @@ import Mocker
     Container.shared.reset()
   }
   
-  @Test func testEmailAddressPrepareVerificationRequest() async throws {
+  @Test func testPrepareVerificationRequest() async throws {
     let requestHandled = LockIsolated(false)
     let emailAddress = EmailAddress.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")
@@ -30,7 +31,7 @@ import Mocker
     #expect(requestHandled.value)
   }
   
-  @Test func testEmailAddressAttemptVerificationRequest() async throws {
+  @Test func testAttemptVerificationRequest() async throws {
     let requestHandled = LockIsolated(false)
     let emailAddress = EmailAddress.mock
     let code = "12345"
@@ -50,7 +51,7 @@ import Mocker
     #expect(requestHandled.value)
   }
   
-  @Test func testEmailAddressDestroyRequest() async throws {
+  @Test func testDestroyRequest() async throws {
     let requestHandled = LockIsolated(false)
     let emailAddress = EmailAddress.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses/\(emailAddress.id)")

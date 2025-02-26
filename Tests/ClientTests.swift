@@ -1,9 +1,10 @@
-import Testing
+import ConcurrencyExtras
+import Factory
 import Foundation
 import Mocker
+import Testing
 
 @testable import Clerk
-@testable import Factory
 
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
@@ -31,7 +32,7 @@ struct ClientTests {
     Container.shared.reset()
   }
   
-  @Test func testClientGet() async throws {
+  @Test func testGet() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [

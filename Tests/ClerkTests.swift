@@ -1,9 +1,10 @@
-import Testing
+import ConcurrencyExtras
+import Factory
 import Foundation
 import Mocker
+import Testing
 
 @testable import Clerk
-@testable import Factory
 
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
@@ -96,14 +97,16 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
-    Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
-    Container.shared.clientService.register { .init(get: { .mock }) }
-    let clerk = Clerk()
-    clerk.configure(publishableKey: "pk_test_")
-    await #expect(throws: Error.self, performing: {
-      try await clerk.load()
-    })
-    #expect(!clerk.isLoaded)
+    await withMainSerialExecutor {
+      Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
+      Container.shared.clientService.register { .init(get: { .mock }) }
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      await #expect(throws: Error.self, performing: {
+        try await clerk.load()
+      })
+      #expect(!clerk.isLoaded)
+    }
   }
   
   @Test func testSignOutRequest() async throws {
