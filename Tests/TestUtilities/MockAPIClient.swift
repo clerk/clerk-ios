@@ -22,6 +22,12 @@ extension APIClient {
       configuration.encoder = .clerkEncoder
       configuration.delegate = ClerkAPIClientDelegate()
       configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+      configuration.sessionConfiguration.httpAdditionalHeaders = [
+        "x-mobile": "1",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "clerk-api-version": "2024-10-01",
+        "x-ios-sdk-version": Clerk.version
+      ]
     }
   )
 

@@ -6,7 +6,7 @@ import Mocker
 @testable import Factory
 @testable import Get
 
-@Suite(.serialized) struct EnvironmentTests {
+@Suite(.serialized) struct EnvironmentSerializedTests {
   
   init() {
     Container.shared.reset()

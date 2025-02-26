@@ -68,7 +68,7 @@ extension SignIn {
       identifier: User.mock.emailAddresses.first?.emailAddress,
       supportedFirstFactors: [.mock],
       supportedSecondFactors: nil,
-      firstFactorVerification: .mockEmailCodeVerification,
+      firstFactorVerification: .mockEmailCodeUnverifiedVerification,
       secondFactorVerification: nil,
       userData: nil,
       createdSessionId: nil
@@ -104,7 +104,7 @@ extension SignUp {
       optionalFields: [],
       missingFields: [],
       unverifiedFields: [],
-      verifications: ["email_address": .mockEmailCodeVerification],
+      verifications: ["email_address": .mockPhoneCodeVerifiedVerification],
       username: User.mock.username,
       emailAddress: User.mock.emailAddresses.first?.emailAddress,
       phoneNumber: User.mock.phoneNumbers.first?.phoneNumber,
@@ -123,7 +123,18 @@ extension SignUp {
 
 extension Verification {
   
-  static var mockEmailCodeVerification: Verification {
+  static var mockEmailCodeVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "email_code",
+      attempts: nil,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockEmailCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "email_code",
@@ -134,7 +145,18 @@ extension Verification {
     )
   }
   
-  static var mockPhoneCodeVerification: Verification {
+  static var mockPhoneCodeVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "phone_code",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockPhoneCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "phone_code",
@@ -145,14 +167,47 @@ extension Verification {
     )
   }
   
-  static var mockPasskeyVerification: Verification {
+  static var mockPasskeyVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "passkey",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      nonce: "12345"
+    )
+  }
+  
+  static var mockPasskeyUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "passkey",
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       error: nil,
-      nonce: UUID().uuidString
+      nonce: "12345"
+    )
+  }
+  
+  static var mockExternalAccountVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "oauth_google",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      nonce: "12345"
+    )
+  }
+  
+  static var mockExternalAccountUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: "oauth_google",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      nonce: "12345"
     )
   }
   
@@ -173,7 +228,7 @@ extension User {
       emailAddresses: [.mock],
       primaryPhoneNumberId: "1",
       phoneNumbers: [.mock],
-      externalAccounts: [],
+      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
       enterpriseAccounts: [],
       passwordEnabled: true,
       totpEnabled: true,
@@ -197,9 +252,9 @@ extension Passkey {
   
   static var mock: Passkey {
     Passkey(
-      id: UUID().uuidString,
+      id: "1",
       name: "iCloud Keychain",
-      verification: .mockPasskeyVerification,
+      verification: .mockPasskeyVerifiedVerification,
       createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
       lastUsedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
@@ -214,7 +269,7 @@ extension EmailAddress {
     EmailAddress(
       id: "1",
       emailAddress: "user@email.com",
-      verification: .mockEmailCodeVerification,
+      verification: .mockEmailCodeVerifiedVerification,
       linkedTo: nil
     )
   }
@@ -229,9 +284,78 @@ extension PhoneNumber {
       phoneNumber: "15555550100",
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
-      verification: .mockPhoneCodeVerification,
+      verification: .mockPhoneCodeVerifiedVerification,
       linkedTo: nil,
       backupCodes: nil
+    )
+  }
+  
+}
+
+extension ExternalAccount {
+  
+  static var mockVerified: ExternalAccount {
+    .init(
+      id: "1",
+      identificationId: "1",
+      provider: "oauth_google",
+      providerUserId: "1",
+      emailAddress: "user@gmail.com",
+      approvedScopes: "email openid profile",
+      firstName: "First",
+      lastName: "Last",
+      imageUrl: nil,
+      username: "username",
+      publicMetadata: "{}",
+      label: nil,
+      verification: .mockExternalAccountVerifiedVerification
+    )
+  }
+  
+  static var mockUnverified: ExternalAccount {
+    .init(
+      id: "1",
+      identificationId: "1",
+      provider: "oauth_google",
+      providerUserId: "1",
+      emailAddress: "user@gmail.com",
+      approvedScopes: "email openid profile",
+      firstName: "First",
+      lastName: "Last",
+      imageUrl: nil,
+      username: "username",
+      publicMetadata: "{}",
+      label: nil,
+      verification: .mockExternalAccountUnverifiedVerification
+    )
+  }
+  
+}
+
+extension TOTPResource {
+  
+  static var mock: TOTPResource {
+    .init(
+      object: "totp_resource",
+      id: "1",
+      secret: "1234567890",
+      uri: "https://mock.com/totp",
+      verified: true,
+      backupCodes: ["123", "456"],
+      createdAt: .distantPast,
+      updatedAt: .distantPast
+    )
+  }
+  
+}
+
+extension DeletedObject {
+  
+  static var mock: DeletedObject {
+    .init(
+      object: "object",
+      id: "1",
+      deleted: true
     )
   }
   
