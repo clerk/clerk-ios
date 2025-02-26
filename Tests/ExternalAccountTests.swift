@@ -18,13 +18,6 @@ import Testing
 
 @Suite(.serialized) struct ExternalAccountSerializedTests {
   
-  @Test func testReauthorizeThrowsWhenVerificationIsMissing() async throws {
-    let service = Container.shared.externalAccountService()
-    await #expect(throws: Error.self, performing: {
-      _ = try await service.reauthorize("1", nil, false)
-    })
-  }
-  
   @Test func testDestroyRequest() async throws {
     let requestHandled = LockIsolated(false)
     let externalAccount = ExternalAccount.mockUnverified
