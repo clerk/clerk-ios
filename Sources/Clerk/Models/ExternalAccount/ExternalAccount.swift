@@ -55,7 +55,6 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
 
 extension ExternalAccount {
   
-  #if !os(tvOS) && !os(watchOS)
   /// Invokes a re-authorization flow for an existing external account.
   ///
   /// - Parameters:
@@ -65,13 +64,12 @@ extension ExternalAccount {
   ///                                         a private browsing experience.
   @discardableResult @MainActor
   public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
-    try await Container.shared.externalAccountService().reauthorize(id, verification, prefersEphemeralWebBrowserSession)
+    try await Container.shared.externalAccountService().reauthorize(self, prefersEphemeralWebBrowserSession)
   }
-  #endif
   
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await Container.shared.externalAccountService().destroy(id)
+    try await Container.shared.externalAccountService().destroy(self)
   }
 }
