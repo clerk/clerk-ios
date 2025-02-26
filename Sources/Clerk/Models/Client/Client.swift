@@ -7,7 +7,6 @@
 
 import Factory
 import Foundation
-import SimpleKeychain
 
 /// The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
 ///
@@ -44,18 +43,7 @@ extension Client {
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
-    try await Container.shared.clientGet()()
-  }
-  
-}
-
-extension Container {
-  
-  var clientGet: Factory<() async throws -> Client?> {
-    self {{
-      let request = ClerkFAPI.v1.client.get
-      return try await Clerk.shared.apiClient.send(request).value.response
-    }}
+    try await Container.shared.clientService().get()
   }
   
 }
