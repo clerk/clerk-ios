@@ -297,14 +297,7 @@ struct UserTests {
       emailAddresses: [.init(
         id: "1",
         emailAddress: "user@email.com",
-        verification: .init(
-          status: .unverified,
-          strategy: nil,
-          attempts: nil,
-          expireAt: nil,
-          error: nil,
-          nonce: nil
-        ),
+        verification: .mockPhoneCodeUnverifiedVerification,
         linkedTo: nil
       )],
       primaryPhoneNumberId: nil,

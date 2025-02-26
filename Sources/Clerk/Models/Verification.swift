@@ -26,7 +26,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
     public let error: ClerkAPIError?
     
     /// The redirect URL for an external verification.
-    public var externalVerificationRedirectUrl: String?
+    public let externalVerificationRedirectUrl: String?
     
     /// The nonce pertaining to the verification.
     public let nonce: String?
