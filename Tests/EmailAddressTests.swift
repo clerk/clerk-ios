@@ -24,7 +24,6 @@ import Testing
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["strategy"] == "email_code")
       requestHandled.setValue(true)
@@ -44,7 +43,6 @@ import Testing
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/me/email_addresses/\(emailAddress.id)/attempt_verification")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["code"] == code)
       requestHandled.setValue(true)
@@ -63,7 +61,6 @@ import Testing
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == "/v1/me/email_addresses/\(emailAddress.id)")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }

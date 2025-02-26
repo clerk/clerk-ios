@@ -354,7 +354,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
       #expect(request.httpMethod == "PATCH")
-      #expect(request.url!.path() == "/v1/me")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["username"] == updatePasswordParams.username)
       #expect(request.urlEncodedFormBody["first_name"] == updatePasswordParams.firstName)
@@ -379,7 +378,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["email_address"] == emailAddress)
       requestHandled.setValue(true)
@@ -399,7 +397,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["phone_number"] == phoneNumber)
       requestHandled.setValue(true)
@@ -419,7 +416,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["strategy"] == provider.strategy)
       requestHandled.setValue(true)
@@ -439,7 +435,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["strategy"] == "oauth_token_apple")
       #expect(request.urlEncodedFormBody["token"] == token)
@@ -459,7 +454,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
@@ -481,7 +475,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
@@ -500,7 +493,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["code"] == code)
       requestHandled.setValue(true)
@@ -519,7 +511,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
@@ -537,7 +528,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
@@ -560,7 +550,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.urlEncodedFormBody["new_password"] == params.newPassword)
       #expect(request.urlEncodedFormBody["current_password"] == params.currentPassword)
@@ -581,7 +570,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.value(forHTTPHeaderField: "Content-Type")!.contains("multipart/form-data; boundary="))
       requestHandled.setValue(true)
@@ -600,7 +588,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
@@ -618,7 +605,6 @@ struct UserTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == path)
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }

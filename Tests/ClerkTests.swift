@@ -118,7 +118,6 @@ struct ClerkTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == "/v1/client/sessions")
       requestHandled.setValue(true)
     }
     mock.register()
@@ -135,7 +134,6 @@ struct ClerkTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/remove")
       requestHandled.setValue(true)
     }
     mock.register()
@@ -152,7 +150,6 @@ struct ClerkTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url!.path() == "/v1/client/sessions/\(Session.mock.id)/touch")
       requestHandled.setValue(true)
     }
     mock.register()

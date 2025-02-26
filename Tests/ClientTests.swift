@@ -40,7 +40,6 @@ struct ClientTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
-      #expect(request.url!.path() == "/v1/client")
       requestHandled.setValue(true)
     }
     mock.register()

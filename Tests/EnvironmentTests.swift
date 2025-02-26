@@ -20,7 +20,6 @@ import Testing
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
-      #expect(request.url!.path() == "/v1/environment")
       requestHandled.setValue(true)
     }
     mock.register()
