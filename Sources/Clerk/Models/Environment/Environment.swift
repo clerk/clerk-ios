@@ -23,18 +23,7 @@ extension Clerk.Environment {
   
   @MainActor
   static func get() async throws -> Clerk.Environment {
-    return try await Container.shared.environmentGet()()
-  }
-  
-}
-
-extension Container {
-  
-  var environmentGet: Factory<() async throws -> Clerk.Environment> {
-    self {{
-      let request = ClerkFAPI.v1.environment.get
-      return try await Clerk.shared.apiClient.send(request).value
-    }}
+    return try await Container.shared.environmentService().get()
   }
   
 }

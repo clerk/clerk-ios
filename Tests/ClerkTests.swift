@@ -74,7 +74,7 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
-    Container.shared.environmentGet.register {{ .init() }}
+    Container.shared.environmentService.register { .init(get: { .init() }) }
     Container.shared.clientService.register { .init(get: { .mock }) }
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
@@ -84,7 +84,7 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadThrowsWhenClerkGetThrows() async throws {
-    Container.shared.environmentGet.register {{ .init() }}
+    Container.shared.environmentService.register { .init(get: { .init() }) }
     Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
@@ -96,7 +96,7 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
-    Container.shared.environmentGet.register {{ throw ClerkAPIError.mock }}
+    Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
     Container.shared.clientService.register { .init(get: { .mock }) }
     let clerk = Clerk()
     clerk.configure(publishableKey: "pk_test_")
