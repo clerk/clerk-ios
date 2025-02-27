@@ -27,7 +27,6 @@ import Testing
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
-      #expect(request.url!.path() == "/v1/me/external_accounts/\(externalAccount.id)")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }

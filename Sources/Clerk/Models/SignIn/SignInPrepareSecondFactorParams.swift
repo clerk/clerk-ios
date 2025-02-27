@@ -8,24 +8,24 @@
 import Foundation
 
 extension SignIn {
+  
+  /// A parameter object for preparing the second factor verification.
+  struct PrepareSecondFactorParams: Encodable {
+    /// The strategy used for second factor verification..
+    let strategy: String
+  }
+  
+  /// A strategy for preparing the second factor verification process.
+  public enum PrepareSecondFactorStrategy: Sendable {
     
-    /// A parameter object for preparing the second factor verification.
-    struct PrepareSecondFactorParams: Encodable {
-        /// The strategy used for second factor verification..
-        let strategy: String
-    }
+    /// phoneCode: The user will receive a one-time authentication code via SMS. At least one phone number should be on file for the user.
+    case phoneCode
     
-    /// A strategy for preparing the second factor verification process.
-    public enum PrepareSecondFactorStrategy {
-        
-        /// phoneCode: The user will receive a one-time authentication code via SMS. At least one phone number should be on file for the user.
-        case phoneCode
-        
-        var params: PrepareSecondFactorParams {
-            switch self {
-            case .phoneCode:
-                return .init(strategy: "phone_code")
-            }
-        }
+    var params: PrepareSecondFactorParams {
+      switch self {
+      case .phoneCode:
+        return .init(strategy: "phone_code")
+      }
     }
+  }
 }
