@@ -26,7 +26,7 @@ extension SignIn {
     /// Defines the available strategies for completing the first factor verification process.
     ///
     /// Each strategy specifies a method of verifying the user during the sign-in process. The selected strategy determines how the verification will be carried out and which parameters are required.
-    public enum AttemptFirstFactorStrategy {
+  public enum AttemptFirstFactorStrategy: Sendable {
         
         /// Verification using the user's password.
         /// - Parameter password: The user's password string to be verified.

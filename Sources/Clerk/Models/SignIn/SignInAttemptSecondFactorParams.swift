@@ -19,7 +19,7 @@ extension SignIn {
     }
     
     /// A strategy for attempting the second factor verification process.
-    public enum AttemptSecondFactorStrategy {
+  public enum AttemptSecondFactorStrategy: Sendable {
         /// User will receive a one-time authentication code via SMS. The code should be provided as part of the verification process.
         case phoneCode(code: String)
         

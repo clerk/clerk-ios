@@ -68,7 +68,7 @@ extension SignIn {
 
     
     /// Represents the various strategies for creating a `SignIn` request.
-    public enum CreateStrategy {
+  public enum CreateStrategy: Sendable {
         
         /// The user will be authenticated either through SAML or OIDC depending on the configuration of their enterprise SSO account.
         ///

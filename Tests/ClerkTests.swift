@@ -85,14 +85,16 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadThrowsWhenClerkGetThrows() async throws {
-    Container.shared.environmentService.register { .init(get: { .init() }) }
-    Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
-    let clerk = Clerk()
-    clerk.configure(publishableKey: "pk_test_")
-    await #expect(throws: Error.self, performing: {
-      try await clerk.load()
-    })
-    #expect(!clerk.isLoaded)
+    await withMainSerialExecutor {
+      Container.shared.environmentService.register { .init(get: { .init() }) }
+      Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      await #expect(throws: Error.self, performing: {
+        try await clerk.load()
+      })
+      #expect(!clerk.isLoaded)
+    }
   }
   
   @MainActor
@@ -109,6 +111,7 @@ struct ClerkTests {
     }
   }
   
+  @MainActor
   @Test func testSignOutRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
@@ -125,6 +128,7 @@ struct ClerkTests {
     #expect(requestHandled.value)
   }
   
+  @MainActor
   @Test func testSignOutWithSessionIdRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
@@ -141,6 +145,7 @@ struct ClerkTests {
     #expect(requestHandled.value)
   }
   
+  @MainActor
   @Test func testSetActiveRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)

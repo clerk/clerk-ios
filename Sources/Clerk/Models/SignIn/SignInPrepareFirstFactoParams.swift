@@ -30,7 +30,7 @@ extension SignIn {
     /// Represents the strategies for beginning the first factor verification process.
     ///
     /// The `PrepareFirstFactorStrategy` enum defines the different methods available for verifying the first factor in the sign-in process. Each strategy corresponds to a specific type of authentication.
-    public enum PrepareFirstFactorStrategy {
+  public enum PrepareFirstFactorStrategy: Sendable {
         /// The user will receive a one-time authentication code via email.
         /// - Parameters:
         ///   - emailAddressId: ID to specify a particular email address.

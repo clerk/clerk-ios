@@ -16,7 +16,7 @@ extension SignIn {
     }
     
     /// A strategy for preparing the second factor verification process.
-    public enum PrepareSecondFactorStrategy {
+  public enum PrepareSecondFactorStrategy: Sendable {
         
         /// phoneCode: The user will receive a one-time authentication code via SMS. At least one phone number should be on file for the user.
         case phoneCode

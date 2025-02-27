@@ -36,7 +36,7 @@ extension SignIn {
     }
     
     /// The strategy to use for authentication.
-    public enum AuthenticateWithRedirectStrategy: Codable {
+    public enum AuthenticateWithRedirectStrategy: Codable, Sendable {
         /// The user will be authenticated with their social connection account.
         case oauth(provider: OAuthProvider)
         
