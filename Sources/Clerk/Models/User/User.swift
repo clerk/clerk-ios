@@ -178,8 +178,8 @@ extension User {
   ///     - provider: The OAuth provider. For example: `.facebook`, `.github`, etc.
   ///     - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
-  public func createExternalAccount(_ provider: OAuthProvider, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-    try await Container.shared.userService().createExternalAccountOAuth(provider, additionalScopes)
+  public func createExternalAccount(_ provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
+    try await Container.shared.userService().createExternalAccountOAuth(provider, redirectUrl, additionalScopes)
   }
   
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.

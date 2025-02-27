@@ -104,9 +104,6 @@ final public class Clerk {
   /// Is set by the `getSessions` function on a user.
   var sessionsByUserId: [String: [Session]] = .init()
   
-  /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
-  public var redirectConfig = RedirectConfig()
-  
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
   

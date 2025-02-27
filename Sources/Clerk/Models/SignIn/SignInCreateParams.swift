@@ -45,11 +45,6 @@ extension SignIn {
     /// - If `strategy` is `'email_link'`, this specifies the URL that the user will be redirected to when they visit the email link.
     var redirectUrl: String?
     
-    /// The URL to redirect to after the sign-in is completed.
-    ///
-    /// Optional if `strategy` is `oauth_<provider>` or `enterprise_sso`.
-    var actionCompleteRedirectUrl: String?
-    
     /// Indicates whether the sign-in will attempt to retrieve information from the active sign-up instance to complete the sign-in process.
     ///
     /// Useful when transitioning seamlessly from a sign-up attempt to a sign-in attempt.
@@ -74,7 +69,7 @@ extension SignIn {
     ///
     /// - Parameters:
     ///   - emailAddress: The email address associated with the user's enterprise SSO account.
-    case enterpriseSSO(identifier: String)
+    case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
     
     /// The user will be authenicated using an ID Token, typically obtained from third-party identity providers like Apple.
     ///
@@ -94,7 +89,7 @@ extension SignIn {
     ///
     /// - Parameters:
     ///   - provider: The OAuth provider used for authentication, such as Google or Facebook.
-    case oauth(provider: OAuthProvider)
+    case oauth(provider: OAuthProvider, redirectUrl: String? = nil)
     
     /// The user will be authenticated with their passkey.
     case passkey
@@ -113,17 +108,16 @@ extension SignIn {
     case none
     
     
-    @MainActor
     var params: SignInCreateParams {
       switch self {
       case .identifier(let identifier, let password, let strategy):
           .init(strategy: strategy, identifier: identifier, password: password)
         
-      case .oauth(let oauthProvider):
-          .init(strategy: oauthProvider.strategy, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+      case .oauth(let oauthProvider, let redirectUrl):
+          .init(strategy: oauthProvider.strategy, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
         
-      case .enterpriseSSO(let emailAddress):
-          .init(strategy: "enterprise_sso", identifier: emailAddress, redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+      case .enterpriseSSO(let emailAddress, let redirectUrl):
+          .init(strategy: "enterprise_sso", identifier: emailAddress, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
         
       case .idToken(let provider, let idToken):
           .init(strategy: provider.strategy, token: idToken)

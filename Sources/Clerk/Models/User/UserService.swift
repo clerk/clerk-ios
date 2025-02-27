@@ -13,7 +13,7 @@ struct UserService {
   var update: @MainActor (_ params: User.UpdateParams) async throws -> User
   var createEmailAddress: @MainActor (_ email: String) async throws -> EmailAddress
   var createPhoneNumber: @MainActor (_ phoneNumber: String) async throws -> PhoneNumber
-  var createExternalAccountOAuth: @MainActor (_ provider: OAuthProvider, _ additionalScopes: [String]?) async throws -> ExternalAccount
+  var createExternalAccountOAuth: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
   var createExternalAccountIDToken: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount
   var createPasskey: @MainActor () async throws -> Passkey
   var createTOTP: @MainActor () async throws -> TOTPResource
@@ -51,12 +51,12 @@ extension UserService {
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
-      createExternalAccountOAuth: { provider, additionalScopes in
+      createExternalAccountOAuth: { provider, redirectUrl, additionalScopes in
         let request = ClerkFAPI.v1.me.externalAccounts.create(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": provider.strategy,
-            "redirect_url": Clerk.shared.redirectConfig.redirectUrl,
+            "redirect_url": redirectUrl ?? RedirectConfigDefaults.redirectUrl,
             "additional_scopes": additionalScopes?.joined(separator: ",")
           ]
         )

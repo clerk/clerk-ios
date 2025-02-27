@@ -22,9 +22,6 @@ extension SignIn {
     
     /// The URL that the OAuth provider should redirect to, on successful authorization on their part. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
     public var redirectUrl: String?
-    
-    /// The URL that the user will be redirected to, after successful authorization from the OAuth provider and Clerk sign in. This parameter is required only if you set the strategy param to an OAuth strategy like `oauth_<provider>`.
-    public var actionCompleteRedirectUrl: String?
   }
   
   /// Represents the strategies for beginning the first factor verification process.
@@ -42,7 +39,7 @@ extension SignIn {
     case phoneCode(phoneNumberId: String)
     
     /// The user will be authenticated either through SAML or OIDC, depending on the configuration of their enterprise SSO account.
-    case enterpriseSSO
+    case enterpriseSSO(redirectUrl: String? = nil)
     
     /// The verification will attempt to be completed using the user's passkey.
     case passkey
@@ -57,7 +54,6 @@ extension SignIn {
     ///   - phoneNumberId: ID to specify a particular phone number.
     case resetPasswordPhoneCode(phoneNumberId: String)
     
-    @MainActor
     var params: PrepareFirstFactorParams {
       switch self {
       case .emailCode(let emailAddressId):
@@ -66,8 +62,8 @@ extension SignIn {
         return .init(strategy: "phone_code", phoneNumberId: phoneNumberId)
       case .passkey:
         return .init(strategy: "passkey")
-      case .enterpriseSSO:
-        return .init(strategy: "enterprise_sso", redirectUrl: Clerk.shared.redirectConfig.redirectUrl)
+      case .enterpriseSSO(let redirectUrl):
+        return .init(strategy: "enterprise_sso", redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
       case .resetPasswordEmailCode(let emailAddressId):
         return .init(strategy: "reset_password_email_code", emailAddressId: emailAddressId)
       case .resetPasswordPhoneCode(let phoneNumberId):
