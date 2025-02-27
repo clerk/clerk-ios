@@ -75,7 +75,6 @@ struct SignInTest {
       "ticket": "ticket",
       "token": "token",
       "redirect_url": "url",
-      "action_complete_redirect_url": "complete_url",
       "transfer": String(describing: NSNumber(booleanLiteral: true)),
       "oidc_prompt": "prompt",
       "oidc_login_hint": "hint"
@@ -92,7 +91,6 @@ struct SignInTest {
       #expect(request.urlEncodedFormBody["ticket"] == params["ticket"])
       #expect(request.urlEncodedFormBody["token"] == params["token"])
       #expect(request.urlEncodedFormBody["redirect_url"] == params["redirect_url"])
-      #expect(request.urlEncodedFormBody["action_complete_redirect_url"] == params["action_complete_redirect_url"])
       #expect(request.urlEncodedFormBody["transfer"] == params["transfer"])
       #expect(request.urlEncodedFormBody["oidc_prompt"] == params["oidc_prompt"])
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == params["oidc_login_hint"])
