@@ -42,7 +42,7 @@ extension ExternalAccountService {
         let request = ClerkFAPI.v1.me.externalAccounts.id(externalAccount.id).delete(
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       }
     )
   }

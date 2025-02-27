@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 1/19/25.
 //
 
+import Factory
 import Foundation
 
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
@@ -62,11 +63,11 @@ actor SessionTokenFetcher {
                 .template(template)
                 .post()
             
-            token = try await Clerk.shared.apiClient.send(templateTokenRequest).value
+            token = try await Container.shared.apiClient().send(templateTokenRequest).value
         } else {
             let defaultTokenRequest = tokensRequest.post()
             
-            token = try await Clerk.shared.apiClient.send(defaultTokenRequest).value
+            token = try await Container.shared.apiClient().send(defaultTokenRequest).value
         }
         
         if let token {

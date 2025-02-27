@@ -81,7 +81,23 @@ final public class Clerk {
   }
   
   /// Frontend API URL.
-  private(set) var frontendApiUrl: String = ""
+  private(set) var frontendApiUrl: String = "" {
+    didSet {
+      Container.shared.apiClient.register { [frontendApiUrl] in
+        APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
+          configuration.delegate = ClerkAPIClientDelegate()
+          configuration.decoder = .clerkDecoder
+          configuration.encoder = .clerkEncoder
+          configuration.sessionConfiguration.httpAdditionalHeaders = [
+            "Content-Type": "application/x-www-form-urlencoded",
+            "clerk-api-version": "2024-10-01",
+            "x-ios-sdk-version": Clerk.version,
+            "x-mobile": "1"
+          ]
+        }
+      }
+    }
+  }
   
   /// The retrieved active sessions for this user.
   ///
@@ -194,10 +210,6 @@ extension Clerk {
 extension Clerk {
   
   // MARK: - Private Properties
-  
-  var apiClient: APIClient {
-    Container.shared.apiClient(frontendApiUrl)
-  }
   
   private func setupNotificationObservers() {
   #if !os(watchOS) && !os(macOS)

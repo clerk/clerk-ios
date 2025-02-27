@@ -35,21 +35,21 @@ extension UserService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: params
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createEmailAddress: { email in
         let request = ClerkFAPI.v1.me.emailAddresses.post(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["email_address": email]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createPhoneNumber: { phoneNumber in
         let request = ClerkFAPI.v1.me.phoneNumbers.post(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["phone_number": phoneNumber]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createExternalAccountOAuth: { provider, additionalScopes in
         let request = ClerkFAPI.v1.me.externalAccounts.create(
@@ -60,7 +60,7 @@ extension UserService {
             "additional_scopes": additionalScopes?.joined(separator: ",")
           ]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createExternalAccountIDToken: { provider, idToken in
         let request = ClerkFAPI.v1.me.externalAccounts.create(
@@ -70,7 +70,7 @@ extension UserService {
             "token": idToken
           ]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createPasskey: {
         #if canImport(AuthenticationServices) && !os(watchOS)
@@ -123,27 +123,27 @@ extension UserService {
         let request = ClerkFAPI.v1.me.totp.post(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       verifyTOTP: { code in
         let request = ClerkFAPI.v1.me.totp.attemptVerification.post(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["code": code]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       disableTOTP: {
         let request = ClerkFAPI.v1.me.totp.delete(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       getSessions: { userId in
         let request = ClerkFAPI.v1.me.sessions.active.get(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let sessions = try await Clerk.shared.apiClient.send(request).value
+        let sessions = try await Container.shared.apiClient().send(request).value
         Clerk.shared.sessionsByUserId[userId] = sessions
         return sessions
       },
@@ -152,7 +152,7 @@ extension UserService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: params
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       setProfileImage: { imageData in
         let boundary = UUID().uuidString
@@ -167,19 +167,19 @@ extension UserService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
         )
-        return try await Clerk.shared.apiClient.upload(for: request, from: data).value.response
+        return try await Container.shared.apiClient().upload(for: request, from: data).value.response
       },
       deleteProfileImage: {
         let request = ClerkFAPI.v1.me.profileImage.delete(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       delete: {
         let request = ClerkFAPI.v1.me.delete(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       }
     )
   }

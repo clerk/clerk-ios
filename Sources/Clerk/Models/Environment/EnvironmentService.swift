@@ -18,7 +18,7 @@ extension EnvironmentService {
     .init(
       get: {
         let request = ClerkFAPI.v1.environment.get
-        return try await Clerk.shared.apiClient.send(request).value
+        return try await Container.shared.apiClient().send(request).value
       }
     )
   }

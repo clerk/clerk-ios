@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 10/5/23.
 //
 
+import Factory
 import Foundation
 
 /**
@@ -165,7 +166,7 @@ extension Session {
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     

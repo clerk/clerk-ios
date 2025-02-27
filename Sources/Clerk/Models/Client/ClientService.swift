@@ -18,7 +18,7 @@ extension ClientService {
     .init(
       get: {
         let request = ClerkFAPI.v1.client.get
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       }
     )
   }

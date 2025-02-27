@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
+import Factory
 import Foundation
 
 /// The `PhoneNumber` object describes a phone number.
@@ -67,7 +68,7 @@ extension PhoneNumber {
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -80,7 +81,7 @@ extension PhoneNumber {
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -94,7 +95,7 @@ extension PhoneNumber {
             body: ["code": code]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -106,7 +107,7 @@ extension PhoneNumber {
             body: ["default_second_factor": true]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -119,7 +120,7 @@ extension PhoneNumber {
             body: ["reserved_for_second_factor": reserved]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     

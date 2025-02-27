@@ -31,31 +31,31 @@ extension SignInService {
     .init(
       create: { strategy in
         let request = ClerkFAPI.v1.client.signIns.post(body: strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createRaw: { params in
         let request = ClerkFAPI.v1.client.signIns.post(body: params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       resetPassword: { signIn, params in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).resetPassword.post(params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       prepareFirstFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareFirstFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       attemptFirstFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).attemptFirstFactor.post(body: strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       prepareSecondFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareSecondFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       attemptSecondFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).attemptSecondFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       authenticateWithRedirectCombined: { strategy, prefersEphemeralWebBrowserSession in
         let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
@@ -148,7 +148,7 @@ extension SignInService {
       },
       get: { signIn, rotatingTokenNonce in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
       }
     )
