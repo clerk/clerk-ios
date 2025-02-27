@@ -85,6 +85,7 @@ extension SignInService {
         return transferFlowResult
       },
       getCredentialForPasskey: { signIn, autofill, preferImmediatelyAvailableCredentials in
+        #if canImport(AuthenticationServices) && !os(watchOS)
         guard
           let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
           let challengeString = nonceJSON["challenge"]?.stringValue,
@@ -134,6 +135,9 @@ extension SignInService {
         ]
         
         return try JSON(publicKeyCredential).debugDescription
+        #else
+        throw ClerkClientError(message: "Passkeys authentication is not supported on this platform.")
+        #endif
       },
       authenticateWithIdTokenCombined: { provider, idToken in
         let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))

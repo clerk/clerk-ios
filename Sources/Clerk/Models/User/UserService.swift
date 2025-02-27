@@ -73,6 +73,7 @@ extension UserService {
         return try await Clerk.shared.apiClient.send(request).value.response
       },
       createPasskey: {
+        #if canImport(AuthenticationServices) && !os(watchOS)
         let passkey = try await Passkey.create()
         
         guard let challenge = passkey.challenge else {
@@ -114,6 +115,9 @@ extension UserService {
         let publicKeyCredentialJSON = try JSON(publicKeyCredential)
         
         return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
+        #else
+        throw ClerkClientError(message: "Passkey authentication is not supported on this platform.")
+        #endif
       },
       createTOTP: {
         let request = ClerkFAPI.v1.me.totp.post(
