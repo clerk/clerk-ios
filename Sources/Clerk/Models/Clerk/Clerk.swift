@@ -162,7 +162,7 @@ extension Clerk {
       _ = try await client
       self.environment = try await environment
       
-      try? await attestDeviceIfNeeded(environment: environment)
+      attestDeviceIfNeeded(environment: self.environment)
       
       isLoaded = true
     } catch {
