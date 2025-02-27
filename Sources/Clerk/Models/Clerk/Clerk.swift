@@ -99,11 +99,6 @@ final public class Clerk {
     }
   }
   
-  /// The retrieved active sessions for this user.
-  ///
-  /// Is set by the `getSessions` function on a user.
-  var sessionsByUserId: [String: [Session]] = .init()
-  
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
   

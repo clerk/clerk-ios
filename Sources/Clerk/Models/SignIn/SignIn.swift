@@ -127,7 +127,7 @@ extension SignIn {
   /// )
   /// ```
   @discardableResult @MainActor
-  public static func create<T: Encodable>(_ params: T) async throws -> SignIn {
+  public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
     try await Container.shared.signInService().createRaw(AnyEncodable(params))
   }
   

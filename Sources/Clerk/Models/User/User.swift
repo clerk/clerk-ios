@@ -232,7 +232,7 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    try await Container.shared.userService().getSessions(id)
+    try await Container.shared.userService().getSessions(self)
   }
   
   /// Updates the user's password. Passwords must be at least 8 characters long.
