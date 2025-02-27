@@ -22,9 +22,6 @@ extension SignIn {
     /// The full URL or path that the OAuth provider should redirect to, on successful authorization on their part.
     let redirectUrl: String
     
-    /// The full URL or path that the user will be redirected to once the sign-in is complete.
-    let redirectUrlComplete: String
-    
     /// The email address used to target an enterprise connection during sign-in. This is optional and only used when the strategy involves enterprise authentication.
     var emailAddress: String?
     
@@ -38,34 +35,31 @@ extension SignIn {
   /// The strategy to use for authentication.
   public enum AuthenticateWithRedirectStrategy: Codable, Sendable {
     /// The user will be authenticated with their social connection account.
-    case oauth(provider: OAuthProvider)
+    case oauth(provider: OAuthProvider, redirectUrl: String? = nil)
     
     /// The user will be authenticated with their enterprise SSO account.
-    case enterpriseSSO(identifier: String)
+    case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
     
     var signInStrategy: SignIn.CreateStrategy {
       switch self {
-      case .oauth(let provider):
-        return .oauth(provider: provider)
-      case .enterpriseSSO(let identifier):
-        return .enterpriseSSO(identifier: identifier)
+      case .oauth(let provider, let redirectUrl):
+        return .oauth(provider: provider, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
+      case .enterpriseSSO(let identifier, let redirectUrl):
+        return .enterpriseSSO(identifier: identifier, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
       }
     }
     
-    @MainActor
     var params: AuthenticateWithRedirectParams {
       switch self {
-      case .oauth(let provider):
+      case .oauth(let provider, let redirectUrl):
           .init(
             strategy: provider.strategy,
-            redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
-            redirectUrlComplete: Clerk.shared.redirectConfig.redirectUrl
+            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
           )
-      case .enterpriseSSO(let identifier):
+      case .enterpriseSSO(let identifier, let redirectUrl):
           .init(
             strategy: "enterprise_sso",
-            redirectUrl: Clerk.shared.redirectConfig.redirectUrl,
-            redirectUrlComplete: Clerk.shared.redirectConfig.redirectUrl,
+            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl,
             identifier: identifier
           )
       }

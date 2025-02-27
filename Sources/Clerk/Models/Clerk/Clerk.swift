@@ -81,15 +81,23 @@ final public class Clerk {
   }
   
   /// Frontend API URL.
-  private(set) var frontendApiUrl: String = ""
-  
-  /// The retrieved active sessions for this user.
-  ///
-  /// Is set by the `getSessions` function on a user.
-  var sessionsByUserId: [String: [Session]] = .init()
-  
-  /// The configurable redirect settings. For example: `redirectUrl`, `callbackUrlScheme`
-  public var redirectConfig = RedirectConfig()
+  private(set) var frontendApiUrl: String = "" {
+    didSet {
+      Container.shared.apiClient.register { [frontendApiUrl] in
+        APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
+          configuration.delegate = ClerkAPIClientDelegate()
+          configuration.decoder = .clerkDecoder
+          configuration.encoder = .clerkEncoder
+          configuration.sessionConfiguration.httpAdditionalHeaders = [
+            "Content-Type": "application/x-www-form-urlencoded",
+            "clerk-api-version": "2024-10-01",
+            "x-ios-sdk-version": Clerk.version,
+            "x-mobile": "1"
+          ]
+        }
+      }
+    }
+  }
   
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
@@ -154,7 +162,7 @@ extension Clerk {
       _ = try await client
       self.environment = try await environment
       
-      try? await attestDeviceIfNeeded(environment: environment)
+      attestDeviceIfNeeded(environment: self.environment)
       
       isLoaded = true
     } catch {
@@ -194,10 +202,6 @@ extension Clerk {
 extension Clerk {
   
   // MARK: - Private Properties
-  
-  var apiClient: APIClient {
-    Container.shared.apiClient(frontendApiUrl)
-  }
   
   private func setupNotificationObservers() {
   #if !os(watchOS) && !os(macOS)

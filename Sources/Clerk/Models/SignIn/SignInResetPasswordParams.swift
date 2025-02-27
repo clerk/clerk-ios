@@ -14,7 +14,7 @@ extension SignIn {
   /// - Parameters:
   ///   - password: The user's current password.
   ///   - signOutOfOtherSessions: If true, log the user out of all other authenticated sessions.
-  public struct ResetPasswordParams: Encodable {
+  public struct ResetPasswordParams: Encodable, Sendable {
     
     /// Creates a new `ResetPasswordParams` object.
     ///

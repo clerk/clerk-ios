@@ -25,15 +25,15 @@ extension ClerkService {
       signOut: { sessionId in
         if let sessionId {
           let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-          try await Clerk.shared.apiClient.send(request)
+          try await Container.shared.apiClient().send(request)
         } else {
           let request = ClerkFAPI.v1.client.sessions.delete
-          try await Clerk.shared.apiClient.send(request)
+          try await Container.shared.apiClient().send(request)
         }
       },
       setActive: { sessionId in
         let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
-        try await Clerk.shared.apiClient.send(request)
+        try await Container.shared.apiClient().send(request)
       }
     )
   }

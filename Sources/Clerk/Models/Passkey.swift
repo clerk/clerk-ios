@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 9/6/24.
 //
 
+import Factory
 import Foundation
 
 /// An object that represents a passkey associated with a user.
@@ -38,7 +39,7 @@ extension Passkey {
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -52,7 +53,7 @@ extension Passkey {
             ]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -67,7 +68,7 @@ extension Passkey {
             ]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -78,7 +79,7 @@ extension Passkey {
             queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     

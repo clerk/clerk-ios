@@ -10,19 +10,19 @@ import Factory
 import Foundation
 
 struct SignInService {
-  var create: @MainActor (_ strategy: SignIn.CreateStrategy) async throws -> SignIn
-  var createRaw: @MainActor (_ params: AnyEncodable) async throws -> SignIn
-  var resetPassword: @MainActor (_ signIn: SignIn, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
-  var prepareFirstFactor: @MainActor (_ signIn: SignIn, _ prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy) async throws -> SignIn
-  var attemptFirstFactor: @MainActor (_ signIn: SignIn, _ attemptFirstFactorStrategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
-  var prepareSecondFactor: @MainActor (_ signIn: SignIn, _ prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
-  var attemptSecondFactor: @MainActor (_ signIn: SignIn, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
-  var authenticateWithRedirectCombined: @MainActor (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
-  var authenticateWithRedirectTwoStep: @MainActor (_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
-  var getCredentialForPasskey: @MainActor (_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String
-  var authenticateWithIdTokenCombined: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
-  var authenticateWithIdTokenTwoStep: @MainActor (_ signIn: SignIn) async throws -> TransferFlowResult
-  var get: @MainActor (_ signIn: SignIn, _ rotatingTokenNonce: String?) async throws -> SignIn
+  var create: (_ strategy: SignIn.CreateStrategy) async throws -> SignIn
+  var createRaw: (_ params: AnyEncodable) async throws -> SignIn
+  var resetPassword: (_ signIn: SignIn, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
+  var prepareFirstFactor: (_ signIn: SignIn, _ prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy) async throws -> SignIn
+  var attemptFirstFactor: (_ signIn: SignIn, _ attemptFirstFactorStrategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
+  var prepareSecondFactor: (_ signIn: SignIn, _ prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
+  var attemptSecondFactor: (_ signIn: SignIn, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
+  var authenticateWithRedirectCombined: (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+  var authenticateWithRedirectTwoStep: (_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+  var getCredentialForPasskey: (_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String
+  var authenticateWithIdTokenCombined: (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
+  var authenticateWithIdTokenTwoStep: (_ signIn: SignIn) async throws -> TransferFlowResult
+  var get: (_ signIn: SignIn, _ rotatingTokenNonce: String?) async throws -> SignIn
 }
 
 extension SignInService {
@@ -31,31 +31,31 @@ extension SignInService {
     .init(
       create: { strategy in
         let request = ClerkFAPI.v1.client.signIns.post(body: strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       createRaw: { params in
         let request = ClerkFAPI.v1.client.signIns.post(body: params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       resetPassword: { signIn, params in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).resetPassword.post(params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       prepareFirstFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareFirstFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       attemptFirstFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).attemptFirstFactor.post(body: strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       prepareSecondFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareSecondFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       attemptSecondFactor: { signIn, strategy in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).attemptSecondFactor.post(strategy.params)
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
       },
       authenticateWithRedirectCombined: { strategy, prefersEphemeralWebBrowserSession in
         let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
@@ -64,7 +64,7 @@ extension SignInService {
           throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+        let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
         let callbackUrl = try await authSession.start()
         let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
@@ -75,11 +75,7 @@ extension SignInService {
           throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
         
-        let authSession = WebAuthentication(
-          url: url,
-          prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-        )
-        
+        let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
         let callbackUrl = try await authSession.start()
         let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
@@ -148,7 +144,7 @@ extension SignInService {
       },
       get: { signIn, rotatingTokenNonce in
         let request = ClerkFAPI.v1.client.signIns.id(signIn.id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
       }
     )

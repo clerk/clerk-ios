@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import Factory
 import Foundation
 import AuthenticationServices
 
@@ -109,7 +110,7 @@ extension SignUp {
         var params = strategy.params
         params.legalAccepted = legalAccepted
         let request = ClerkFAPI.v1.client.signUps.post(params)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -133,7 +134,7 @@ extension SignUp {
     @discardableResult @MainActor
     public static func create<T: Encodable>(_ params: T) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.post(params)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -152,7 +153,7 @@ extension SignUp {
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).patch(params)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -171,7 +172,7 @@ extension SignUp {
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).prepareVerification.post(strategy.params)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -188,7 +189,7 @@ extension SignUp {
     @discardableResult @MainActor
     public func attemptVerification(_ strategy: AttemptStrategy) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).attemptVerification.post(strategy.params)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     
@@ -361,7 +362,7 @@ extension SignUp {
     @discardableResult @MainActor
     private func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
         let request = ClerkFAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-        let response = try await Clerk.shared.apiClient.send(request)
+        let response = try await Container.shared.apiClient().send(request)
         return response.value.response
     }
     

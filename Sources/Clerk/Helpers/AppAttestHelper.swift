@@ -7,6 +7,7 @@
 
 import CryptoKit
 import DeviceCheck
+import Factory
 import Foundation
 import SimpleKeychain
 
@@ -28,7 +29,7 @@ struct AppAttestHelper {
     /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
     private static func getChallenge() async throws -> String {
         let request = ClerkFAPI.v1.client.deviceAttestation.challenges.post
-        guard let challenge = try await Clerk.shared.apiClient.send(request).value["challenge"] else {
+        guard let challenge = try await Container.shared.apiClient().send(request).value["challenge"] else {
             throw AttestationError.unableToGetChallengeFromServer
         }
         return challenge
@@ -73,7 +74,7 @@ struct AppAttestHelper {
         ]
         
         let request = ClerkFAPI.v1.client.deviceAttestation.verify.post(body)
-        try await Clerk.shared.apiClient.send(request)
+        try await Container.shared.apiClient().send(request)
     }
     
     /// Creates an assertion using the attestation key.
@@ -114,7 +115,7 @@ struct AppAttestHelper {
         ]
         
         let request = ClerkFAPI.v1.client.verify.post(body)
-        try await Clerk.shared.apiClient.send(request)
+        try await Container.shared.apiClient().send(request)
     }
     
     /// Checks whether a key ID is stored in the keychain.

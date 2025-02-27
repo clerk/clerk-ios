@@ -44,21 +44,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
 
 extension Container {
   
-  var apiClient: ParameterFactory<String, APIClient> {
-    self {
-      APIClient(baseURL: URL(string: $0)) { configuration in
-        configuration.delegate = ClerkAPIClientDelegate()
-        configuration.decoder = .clerkDecoder
-        configuration.encoder = .clerkEncoder
-        configuration.sessionConfiguration.httpAdditionalHeaders = [
-          "Content-Type": "application/x-www-form-urlencoded",
-          "clerk-api-version": "2024-10-01",
-          "x-ios-sdk-version": Clerk.version,
-          "x-mobile": "1"
-        ]
-      }
-    }
-    .cached
+  var apiClient: Factory< APIClient> {
+    self { APIClient(baseURL: URL(string: "")) }.cached
   }
   
 }

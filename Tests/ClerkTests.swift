@@ -75,12 +75,14 @@ struct ClerkTests {
   
   @MainActor
   @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
-    Container.shared.environmentService.register { .init(get: { .init() }) }
-    Container.shared.clientService.register { .init(get: { .mock }) }
-    let clerk = Clerk()
-    clerk.configure(publishableKey: "pk_test_")
-    try await clerk.load()
-    #expect(clerk.isLoaded)
+    try await withMainSerialExecutor {
+      Container.shared.environmentService.register { .init(get: { .init() }) }
+      Container.shared.clientService.register { .init(get: { .mock }) }
+      let clerk = Clerk()
+      clerk.configure(publishableKey: "pk_test_")
+      try await clerk.load()
+      #expect(clerk.isLoaded)
+    }
   }
   
   @MainActor

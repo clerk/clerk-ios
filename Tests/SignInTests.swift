@@ -54,7 +54,6 @@ struct SignInTest {
       #expect(request.urlEncodedFormBody["ticket"] == strategy.params.ticket)
       #expect(request.urlEncodedFormBody["token"] == strategy.params.token)
       #expect(request.urlEncodedFormBody["redirect_url"] == strategy.params.redirectUrl)
-      #expect(request.urlEncodedFormBody["action_complete_redirect_url"] == strategy.params.actionCompleteRedirectUrl)
       if let transfer = strategy.params.transfer {
         #expect(request.urlEncodedFormBody["transfer"] == String(describing: NSNumber(booleanLiteral: transfer)))
       }
@@ -76,7 +75,6 @@ struct SignInTest {
       "ticket": "ticket",
       "token": "token",
       "redirect_url": "url",
-      "action_complete_redirect_url": "complete_url",
       "transfer": String(describing: NSNumber(booleanLiteral: true)),
       "oidc_prompt": "prompt",
       "oidc_login_hint": "hint"
@@ -93,7 +91,6 @@ struct SignInTest {
       #expect(request.urlEncodedFormBody["ticket"] == params["ticket"])
       #expect(request.urlEncodedFormBody["token"] == params["token"])
       #expect(request.urlEncodedFormBody["redirect_url"] == params["redirect_url"])
-      #expect(request.urlEncodedFormBody["action_complete_redirect_url"] == params["action_complete_redirect_url"])
       #expect(request.urlEncodedFormBody["transfer"] == params["transfer"])
       #expect(request.urlEncodedFormBody["oidc_prompt"] == params["oidc_prompt"])
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == params["oidc_login_hint"])
@@ -129,7 +126,7 @@ struct SignInTest {
   @MainActor
   @Test("All prepare first factor strategies", arguments: [
     SignIn.PrepareFirstFactorStrategy.emailCode(emailAddressId: "1"),
-    .enterpriseSSO,
+    .enterpriseSSO(),
     .passkey,
     .phoneCode(phoneNumberId: "1"),
     .resetPasswordEmailCode(emailAddressId: "1"),
@@ -148,7 +145,6 @@ struct SignInTest {
       #expect(request.urlEncodedFormBody["email_address_id"] == strategy.params.emailAddressId)
       #expect(request.urlEncodedFormBody["phone_number_id"] == strategy.params.phoneNumberId)
       #expect(request.urlEncodedFormBody["redirect_url"] == strategy.params.redirectUrl)
-      #expect(request.urlEncodedFormBody["action_complete_redirect_url"] == strategy.params.actionCompleteRedirectUrl)
       requestHandled.setValue(true)
     }
     mock.register()

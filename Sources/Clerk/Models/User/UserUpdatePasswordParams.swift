@@ -7,7 +7,7 @@
 
 extension User {
     
-    public struct UpdatePasswordParams: Encodable {
+  public struct UpdatePasswordParams: Encodable, Sendable {
         
         public init(
             newPassword: String,
