@@ -23,7 +23,7 @@ import UIKit
 final public class Clerk {
   
   /// The shared Clerk instance.
-  public static let shared = Clerk()
+  public static let shared = Container.shared.clerk()
   
   /// A getter to see if the Clerk object is ready for use or not.
   private(set) public var isLoaded: Bool = false
@@ -268,6 +268,14 @@ extension Clerk {
         }
       }
     }
+  }
+  
+}
+
+extension Container {
+  
+  var clerk: Factory<Clerk> {
+    self { Clerk() }.singleton
   }
   
 }
