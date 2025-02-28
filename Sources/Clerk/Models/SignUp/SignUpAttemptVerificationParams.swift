@@ -10,7 +10,7 @@ import Foundation
 extension SignUp {
     
     /// Defines the strategies for attempting verification during the sign-up process.
-    public enum AttemptStrategy {
+  public enum AttemptStrategy: Sendable {
         /// Attempts verification using a code sent to the user's email address.
         /// - Parameter code: The one-time code sent to the user's email address.
         case emailCode(code: String)

@@ -33,7 +33,7 @@ extension SignUp {
   }
   
   /// The strategy to use for authentication.
-  public enum AuthenticateWithRedirectStrategy: Codable {
+  public enum AuthenticateWithRedirectStrategy: Codable, Sendable {
     /// The user will be authenticated with their social connection account.
     case oauth(provider: OAuthProvider, redirectUrl: String? = nil)
     
@@ -55,7 +55,6 @@ extension SignUp {
       }
     }
     
-    @MainActor
     var params: AuthenticateWithRedirectParams {
       switch self {
       case .oauth(let provider, let redirectUrl):

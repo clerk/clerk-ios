@@ -13,7 +13,7 @@ extension SignUp {
   ///
   /// The `CreateParams` struct defines all the parameters that can be passed when initiating a sign-up process.
   /// These parameters provide flexibility to support various authentication strategies, user details, and custom configurations.
-  public struct CreateParams: Encodable {
+  public struct CreateParams: Encodable, Sendable {
     
     /// The strategy to use for the sign-up flow.
     public var strategy: String?
@@ -108,7 +108,7 @@ extension SignUp {
   }
   
   /// Represents the various strategies for initiating a `SignUp` request.
-  public enum CreateStrategy {
+  public enum CreateStrategy: Sendable {
     
     /// Standard sign-up strategy, allowing the user to provide common details such as email, password, and personal information.
     ///
@@ -138,6 +138,9 @@ extension SignUp {
     /// - Parameter identifier: The unique identifier for the enterprise SSO user.
     case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
     
+    /// The user will be authenticated via the ticket or token generated from the Backend API.
+    case ticket(String)
+    
     /// Sign-up strategy using an ID Token, typically obtained from third-party identity providers like Apple.
     ///
     /// - Parameters:
@@ -164,15 +167,7 @@ extension SignUp {
     ///
     /// This computed property maps each strategy case to its corresponding `CreateParams` object.
     ///
-    /// For example:
-    /// - `.standard`: Populates fields such as `firstName`, `lastName`, `emailAddress`, etc.
-    /// - `.oauth`: Sets OAuth-specific fields such as `strategy` and `redirectUrl`.
-    /// - `.enterpriseSSO`: Sets fields required for enterprise SSO, such as the identifier and redirect URL.
-    /// - `.idToken`: Populates fields required for ID Token authentication.
-    /// - `.transfer`: Sets the `transfer` field to `true`.
-    ///
     /// - Returns: A `CreateParams` object containing all the necessary data for the `SignUp` request.
-    @MainActor
     var params: CreateParams {
       switch self {
       case .standard(let emailAddress, let password, let firstName, let lastName, let username, let phoneNumber):
@@ -194,6 +189,11 @@ extension SignUp {
             strategy: "enterprise_sso",
             emailAddress: identifier,
             redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          )
+      case .ticket(let ticket):
+          .init(
+            strategy: "ticket",
+            ticket: ticket
           )
       case .idToken(let provider, let idToken, let firstName, let lastName):
           .init(
