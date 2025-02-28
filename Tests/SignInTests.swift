@@ -11,7 +11,6 @@ import Testing
 
 struct SignInTest {
   
-  @MainActor
   @Test func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignIn.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
     #expect(enterpriseSSO.params.strategy == "enterprise_sso")
@@ -29,7 +28,6 @@ struct SignInTest {
     Container.shared.reset()
   }
   
-  @MainActor
   @Test("All create strategies", arguments: [
     SignIn.CreateStrategy.enterpriseSSO(identifier: "user@email.com"),
     .idToken(provider: .apple, idToken: "token"),
@@ -101,7 +99,6 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
   @Test func testResetPasswordRequest() async throws {
     let requestHandled = LockIsolated(false)
     let signIn = SignIn.mock
@@ -123,7 +120,6 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
   @Test("All prepare first factor strategies", arguments: [
     SignIn.PrepareFirstFactorStrategy.emailCode(emailAddressId: "1"),
     .enterpriseSSO(),
@@ -152,7 +148,6 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
   @Test("All attempt first factor strategies", arguments: [
     SignIn.AttemptFirstFactorStrategy.emailCode(code: "emailcode"),
     .passkey(publicKeyCredential: "credential"),
@@ -181,7 +176,6 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
   @Test("All prepare second factor strategies", arguments: [
     SignIn.PrepareSecondFactorStrategy.phoneCode
   ])
@@ -202,7 +196,6 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
   @Test("All attempt second factor strategies", arguments: [
     SignIn.AttemptSecondFactorStrategy.backupCode(code: "backupcode"),
     .phoneCode(code: "phonecode"),
@@ -226,8 +219,8 @@ struct SignInTest {
     #expect(requestHandled.value)
   }
   
-  @MainActor
-  @Test func testGetRequest() async throws {
+  @Test(arguments: [nil, UUID().uuidString])
+  func testGetRequest(rotatingTokenNonce: String?) async throws {
     let requestHandled = LockIsolated(false)
     let signIn = SignIn.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)")
@@ -236,29 +229,13 @@ struct SignInTest {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
+      if let rotatingTokenNonce {
+        #expect(request.url!.query()!.contains("rotating_token_nonce=\(rotatingTokenNonce)"))
+      }
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signIn.get()
-    #expect(requestHandled.value)
-  }
-  
-  @MainActor
-  @Test func testGetWithRotatingTokenNonceRequest() async throws {
-    let requestHandled = LockIsolated(false)
-    let signIn = SignIn.mock
-    let nonce = UUID().uuidString
-    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>.init(response: .mock, client: .mock))
-    ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url!.query()!.contains("rotating_token_nonce=\(nonce)"))
-      requestHandled.setValue(true)
-    }
-    mock.register()
-    _ = try await signIn.get(rotatingTokenNonce: nonce)
+    _ = try await signIn.get(rotatingTokenNonce: rotatingTokenNonce)
     #expect(requestHandled.value)
   }
   

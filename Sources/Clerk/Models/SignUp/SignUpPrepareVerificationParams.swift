@@ -10,7 +10,7 @@ import Foundation
 extension SignUp {
     
     /// Defines the strategies for preparing a verification step during the sign-up process.
-    public enum PrepareStrategy {
+  public enum PrepareStrategy: Sendable {
         /// Send an email with a unique token to input.
         case emailCode
         
