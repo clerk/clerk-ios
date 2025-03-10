@@ -20,7 +20,6 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
     
     /// Additional information about the error.
     public let meta: JSON?
-    
 }
 
 extension ClerkAPIError {
