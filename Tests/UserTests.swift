@@ -370,9 +370,8 @@ struct UserTests {
   
   @Test func testUserCreateEmailAddressRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/email_addresses"
     let emailAddress = "user@email.com"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>.init(response: .mock, client: .mock))
     ])
@@ -389,9 +388,8 @@ struct UserTests {
   
   @Test func testUserCreatePhoneNumberRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/phone_numbers"
     let phoneNumber = "5555550100"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
     ])
@@ -408,9 +406,8 @@ struct UserTests {
   
   @Test func testUserCreateExternalAccountOAuthRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/external_accounts"
     let provider = OAuthProvider.google
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>.init(response: .mockUnverified, client: .mock))
     ])
@@ -427,9 +424,8 @@ struct UserTests {
   
   @Test func testUserCreateExternalAccountIdTokenRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/external_accounts"
     let token = "12345"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>.init(response: .mockUnverified, client: .mock))
     ])
@@ -447,8 +443,7 @@ struct UserTests {
   
   @Test func testUserCreatePasskeyRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/passkeys"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>.init(response: .mock, client: .mock))
     ])
@@ -468,8 +463,7 @@ struct UserTests {
   
   @Test func testUserCreateTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/totp"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>.init(response: .mock, client: .mock))
     ])
@@ -485,9 +479,8 @@ struct UserTests {
   
   @Test func testUserVerifyTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/totp/attempt_verification"
     let code = "12345"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>.init(response: .mock, client: .mock))
     ])
@@ -504,8 +497,7 @@ struct UserTests {
   
   @Test func testUserDisableTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/totp"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
     ])
@@ -521,8 +513,7 @@ struct UserTests {
   
   @Test func testUserGetSessionsRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/sessions/active"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/sessions/active")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .get: try! JSONEncoder.clerkEncoder.encode([Session.mock, Session.mock])
     ])
@@ -538,13 +529,12 @@ struct UserTests {
   
   @Test func testUserUpdatePasswordRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/change_password"
     let params = User.UpdatePasswordParams(
       newPassword: "newPass",
       currentPassword: "currentPass",
       signOutOfOtherSessions: true
     )
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/change_password")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>.init(response: .mock, client: .mock))
     ])
@@ -563,8 +553,7 @@ struct UserTests {
   
   @Test func testUserSetProfileImageRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/profile_image"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>.init(response: .mock, client: .mock))
     ])
@@ -581,8 +570,7 @@ struct UserTests {
   
   @Test func testUserDeleteProfileImageRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me/profile_image"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
     ])
@@ -598,8 +586,7 @@ struct UserTests {
   
   @Test func testUserDeleteRequest() async throws {
     let requestHandled = LockIsolated(false)
-    let path = "/v1/me"
-    let originalUrl = mockBaseUrl.appending(path: path)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
     ])
