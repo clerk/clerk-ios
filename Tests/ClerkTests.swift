@@ -76,40 +76,52 @@ struct ClerkTests {
   @MainActor
   @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
     try await withMainSerialExecutor {
-      Container.shared.environmentService.register { .init(get: { .init() }) }
-      Container.shared.clientService.register { .init(get: { .mock }) }
-      let clerk = Clerk()
-      clerk.configure(publishableKey: "pk_test_")
-      try await clerk.load()
-      #expect(clerk.isLoaded)
+      let task = Task {
+        Container.shared.environmentService.register { .init(get: { .init() }) }
+        Container.shared.clientService.register { .init(get: { .mock }) }
+        let clerk = Clerk()
+        clerk.configure(publishableKey: "pk_test_")
+        try await clerk.load()
+        #expect(clerk.isLoaded)
+      }
+      
+      try await task.value
     }
   }
   
   @MainActor
   @Test func testLoadThrowsWhenClerkGetThrows() async throws {
     await withMainSerialExecutor {
-      Container.shared.environmentService.register { .init(get: { .init() }) }
-      Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
-      let clerk = Clerk()
-      clerk.configure(publishableKey: "pk_test_")
-      await #expect(throws: Error.self, performing: {
-        try await clerk.load()
-      })
-      #expect(!clerk.isLoaded)
+      let task = Task {
+        Container.shared.environmentService.register { .init(get: { .init() }) }
+        Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
+        let clerk = Clerk()
+        clerk.configure(publishableKey: "pk_test_")
+        await #expect(throws: Error.self, performing: {
+          try await clerk.load()
+        })
+        #expect(!clerk.isLoaded)
+      }
+      
+      await task.value
     }
   }
   
   @MainActor
   @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
     await withMainSerialExecutor {
-      Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
-      Container.shared.clientService.register { .init(get: { .mock }) }
-      let clerk = Clerk()
-      clerk.configure(publishableKey: "pk_test_")
-      await #expect(throws: Error.self, performing: {
-        try await clerk.load()
-      })
-      #expect(!clerk.isLoaded)
+      let task = Task {
+        Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
+        Container.shared.clientService.register { .init(get: { .mock }) }
+        let clerk = Clerk()
+        clerk.configure(publishableKey: "pk_test_")
+        await #expect(throws: Error.self, performing: {
+          try await clerk.load()
+        })
+        #expect(!clerk.isLoaded)
+      }
+      
+      await task.value
     }
   }
   
