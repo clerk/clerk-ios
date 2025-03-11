@@ -10,20 +10,20 @@ import Factory
 import Foundation
 
 struct UserService {
-  var update: (_ params: User.UpdateParams) async throws -> User
-  var createEmailAddress: (_ email: String) async throws -> EmailAddress
-  var createPhoneNumber: (_ phoneNumber: String) async throws -> PhoneNumber
-  var createExternalAccountOAuth: (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
-  var createExternalAccountIDToken: (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount
-  var createPasskey: () async throws -> Passkey
-  var createTOTP: () async throws -> TOTPResource
-  var verifyTOTP: (_ code: String) async throws -> TOTPResource
-  var disableTOTP: () async throws -> DeletedObject
-  var getSessions: (_ user: User) async throws -> [Session]
-  var updatePassword: (_ params: User.UpdatePasswordParams) async throws -> User
-  var setProfileImage: (_ imageData: Data) async throws -> ImageResource
-  var deleteProfileImage: () async throws -> DeletedObject
-  var delete: () async throws -> DeletedObject
+  var update: @MainActor (_ params: User.UpdateParams) async throws -> User
+  var createEmailAddress: @MainActor (_ email: String) async throws -> EmailAddress
+  var createPhoneNumber: @MainActor (_ phoneNumber: String) async throws -> PhoneNumber
+  var createExternalAccountOAuth: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
+  var createExternalAccountIDToken: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount
+  var createPasskey: @MainActor () async throws -> Passkey
+  var createTOTP: @MainActor () async throws -> TOTPResource
+  var verifyTOTP: @MainActor (_ code: String) async throws -> TOTPResource
+  var disableTOTP: @MainActor () async throws -> DeletedObject
+  var getSessions: @MainActor (_ user: User) async throws -> [Session]
+  var updatePassword: @MainActor (_ params: User.UpdatePasswordParams) async throws -> User
+  var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource
+  var deleteProfileImage: @MainActor () async throws -> DeletedObject
+  var delete: @MainActor () async throws -> DeletedObject
 }
 
 extension UserService {
@@ -32,28 +32,28 @@ extension UserService {
     .init(
       update: { params in
         let request = ClerkFAPI.v1.me.update(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: params
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       createEmailAddress: { email in
         let request = ClerkFAPI.v1.me.emailAddresses.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["email_address": email]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       createPhoneNumber: { phoneNumber in
         let request = ClerkFAPI.v1.me.phoneNumbers.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["phone_number": phoneNumber]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       createExternalAccountOAuth: { provider, redirectUrl, additionalScopes in
         let request = ClerkFAPI.v1.me.externalAccounts.create(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": provider.strategy,
             "redirect_url": redirectUrl ?? RedirectConfigDefaults.redirectUrl,
@@ -64,7 +64,7 @@ extension UserService {
       },
       createExternalAccountIDToken: { provider, idToken in
         let request = ClerkFAPI.v1.me.externalAccounts.create(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": provider.strategy,
             "token": idToken
@@ -121,32 +121,35 @@ extension UserService {
       },
       createTOTP: {
         let request = ClerkFAPI.v1.me.totp.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       verifyTOTP: { code in
         let request = ClerkFAPI.v1.me.totp.attemptVerification.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: ["code": code]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       disableTOTP: {
         let request = ClerkFAPI.v1.me.totp.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       getSessions: { user in
         let request = ClerkFAPI.v1.me.sessions.active.get(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        return try await Container.shared.apiClient().send(request).value
+        
+        let sessions = try await Container.shared.apiClient().send(request).value
+        Clerk.shared.sessionsByUserId[user.id] = sessions
+        return sessions
       },
       updatePassword: { params in
         let request = ClerkFAPI.v1.me.changePassword.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: params
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -161,26 +164,25 @@ extension UserService {
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
         
         let request = ClerkFAPI.v1.me.profileImage.post(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)],
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
         )
         return try await Container.shared.apiClient().upload(for: request, from: data).value.response
       },
       deleteProfileImage: {
         let request = ClerkFAPI.v1.me.profileImage.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       delete: {
         let request = ClerkFAPI.v1.me.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       }
     )
   }
-  
 }
 
 extension Container {

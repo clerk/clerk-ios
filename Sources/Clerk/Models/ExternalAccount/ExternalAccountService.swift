@@ -10,7 +10,7 @@ import Foundation
 
 struct ExternalAccountService {
   var reauthorize: (_ externalAccount: ExternalAccount, _ prefersEphemeralWebBrowserSession: Bool) async throws -> ExternalAccount
-  var destroy: (_ externalAccount: ExternalAccount) async throws -> DeletedObject
+  var destroy: @MainActor (_ externalAccount: ExternalAccount) async throws -> DeletedObject
 }
 
 extension ExternalAccountService {
@@ -37,7 +37,7 @@ extension ExternalAccountService {
       },
       destroy: { externalAccount in
         let request = ClerkFAPI.v1.me.externalAccounts.id(externalAccount.id).delete(
-            queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       }
