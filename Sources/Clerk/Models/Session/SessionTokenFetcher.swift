@@ -11,10 +11,10 @@ import Foundation
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
 // This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
 actor SessionTokenFetcher {
-    static let shared = SessionTokenFetcher()
+    static var shared = SessionTokenFetcher()
     
     // Key is `tokenCacheKey` property of a `session`
-    private var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
+    var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
     
     func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
         
@@ -43,44 +43,39 @@ actor SessionTokenFetcher {
      */
     @discardableResult @MainActor
     func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
-        
-        let cacheKey = session.tokenCacheKey(template: options.template)
-        
-        if options.skipCache == false,
-           let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
-           let expiresAt = token.decodedJWT?.expiresAt,
-           Date.now.distance(to: expiresAt) > options.expirationBuffer
-        {
-            return token
-        }
-                    
-        var token: TokenResource?
-        
-        let tokensRequest = ClerkFAPI.v1.client.sessions.id(session.id).tokens
-        
-        if let template = options.template {
-            let templateTokenRequest = tokensRequest
-                .template(template)
-                .post()
-            
-            token = try await Container.shared.apiClient().send(templateTokenRequest).value
-        } else {
-            let defaultTokenRequest = tokensRequest.post()
-            
-            token = try await Container.shared.apiClient().send(defaultTokenRequest).value
-        }
-        
-        if let token {
-          await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
-        }
-        
-        return token
+      let cacheKey = session.tokenCacheKey(template: options.template)
+      
+      if options.skipCache == false,
+         let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
+         let expiresAt = token.decodedJWT?.expiresAt,
+         Date.now.distance(to: expiresAt) > options.expirationBuffer
+      {
+          return token
+      }
+                  
+      var token: TokenResource?
+      
+      let tokensRequest = ClerkFAPI.v1.client.sessions.id(session.id).tokens
+      
+      if let template = options.template {
+          let templateTokenRequest = tokensRequest.template(template).post()
+          token = try await Container.shared.apiClient().send(templateTokenRequest).value
+      } else {
+          let defaultTokenRequest = tokensRequest.post()
+          token = try await Container.shared.apiClient().send(defaultTokenRequest).value
+      }
+      
+      if let token {
+        await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
+      }
+      
+      return token
     }
     
 }
 
 actor SessionTokensCache {
-  static var shared = SessionTokensCache()
+  static let shared = SessionTokensCache()
   
   private var cache: [String: TokenResource] = [:]
   
@@ -89,7 +84,7 @@ actor SessionTokensCache {
   ///                       For example, `sess_abc12345` or `sess_abc12345-supabase`.
   /// - Returns: ``TokenResource``
   func getToken(cacheKey: String) -> TokenResource? {
-    return cache[cacheKey]
+    cache[cacheKey]
   }
   
   /// Inserts a session token into the cache.

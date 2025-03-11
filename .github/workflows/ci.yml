@@ -67,4 +67,5 @@ jobs:
           set -o pipefail
           xcodebuild test \
             -scheme Clerk \
-            -destination "platform=iOS Simulator,name=iPhone 16 Pro" | xcpretty
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            -disable-concurrent-testing | xcpretty

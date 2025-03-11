@@ -11,7 +11,7 @@ extension Client {
   
   static var mock: Client {
     return Client(
-      id: "1",
+      id: "sess_1",
       signIn: .mock,
       signUp: .mock,
       sessions: [.mock],
@@ -55,6 +55,14 @@ extension Session {
     updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
     lastActiveToken: nil
   )
+  
+}
+
+extension TokenResource {
+  
+  static var mock: TokenResource {
+    .init(jwt: "jwt")
+  }
   
 }
 
