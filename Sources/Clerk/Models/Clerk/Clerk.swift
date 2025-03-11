@@ -56,6 +56,9 @@ final public class Clerk {
     session?.user
   }
   
+  /// A dictionary of a user's active sessions on all devices.
+  internal(set) public var sessionsByUserId: [String: [Session]] = [:]
+  
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   private(set) public var publishableKey: String = "" {
     didSet {
