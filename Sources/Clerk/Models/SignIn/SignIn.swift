@@ -356,21 +356,6 @@ extension SignIn {
   
   // MARK: - Internal Helpers
   
-  /// Helper to determine if the SignIn needs to be transferred to a SignUp
-  var needsTransferToSignUp: Bool {
-    firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
-  }
-  
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
-  func handleTransferFlow() async throws -> TransferFlowResult {
-    if needsTransferToSignUp == true {
-      let signUp = try await SignUp.create(strategy: .transfer)
-      return .signUp(signUp)
-    } else {
-      return .signIn(self)
-    }
-  }
-  
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
   func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
@@ -383,6 +368,21 @@ extension SignIn {
       let result = try await signIn.handleTransferFlow()
       return result
     }
+  }
+  
+  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
+  func handleTransferFlow() async throws -> TransferFlowResult {
+    if needsTransferToSignUp == true {
+      let signUp = try await SignUp.create(strategy: .transfer)
+      return .signUp(signUp)
+    } else {
+      return .signIn(self)
+    }
+  }
+  
+  /// Helper to determine if the SignIn needs to be transferred to a SignUp
+  var needsTransferToSignUp: Bool {
+    firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
   }
   
 }
