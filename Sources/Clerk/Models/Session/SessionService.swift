@@ -9,7 +9,7 @@ import Factory
 import Foundation
 
 struct SessionService {
-  var revoke: (_ session: Session) async throws -> Session
+  var revoke: @MainActor (_ session: Session) async throws -> Session
 }
 
 extension SessionService {
@@ -18,7 +18,7 @@ extension SessionService {
     .init(
       revoke: { session in
         let request = ClerkFAPI.v1.me.sessions.withId(id: session.id).revoke.post(
-            queryItems: [.init(name: "_clerk_session_id", value: await Clerk.shared.session?.id)]
+            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       }
