@@ -20,6 +20,54 @@ struct SignInTest {
     #expect(oauth.params.strategy == "oauth_google")
   }
   
+  @Test func testNeedsTransferToSignUp() {
+    let transferableSignIn1 = SignIn(
+      id: "1",
+      status: .needsFirstFactor,
+      supportedIdentifiers: [],
+      identifier: nil,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: .init(
+        status: .transferable,
+        strategy: nil,
+        attempts: nil,
+        expireAt: nil,
+        error: nil,
+        externalVerificationRedirectUrl: nil,
+        nonce: nil
+      ),
+      secondFactorVerification: nil,
+      userData: nil,
+      createdSessionId: nil
+    )
+    
+    #expect(transferableSignIn1.needsTransferToSignUp)
+    
+    let transferableSignIn2 = SignIn(
+      id: "1",
+      status: .needsFirstFactor,
+      supportedIdentifiers: [],
+      identifier: nil,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: nil,
+      secondFactorVerification: .init(
+        status: .transferable,
+        strategy: nil,
+        attempts: nil,
+        expireAt: nil,
+        error: nil,
+        externalVerificationRedirectUrl: nil,
+        nonce: nil
+      ),
+      userData: nil,
+      createdSessionId: nil
+    )
+    
+    #expect(transferableSignIn2.needsTransferToSignUp)
+  }
+  
 }
 
 @Suite(.serialized) struct SignInSerializedTests {
@@ -237,6 +285,135 @@ struct SignInTest {
     mock.register()
     _ = try await signIn.get(rotatingTokenNonce: rotatingTokenNonce)
     #expect(requestHandled.value)
+  }
+  
+  @Test func testHandleTransferFlow() async throws {
+    // Transferable
+    let transferableSignIn = SignIn(
+      id: "1",
+      status: .needsFirstFactor,
+      supportedIdentifiers: [],
+      identifier: nil,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: .init(
+        status: .transferable,
+        strategy: nil,
+        attempts: nil,
+        expireAt: nil,
+        error: nil,
+        externalVerificationRedirectUrl: nil,
+        nonce: nil
+      ),
+      secondFactorVerification: nil,
+      userData: nil,
+      createdSessionId: nil
+    )
+    
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["transfer"] == String(describing: NSNumber(booleanLiteral: true)))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    _ = try await transferableSignIn.handleTransferFlow()
+    #expect(requestHandled.value)
+  }
+  
+  @Test func handleOAuthCallbackUrlWithoutNonce() async throws {
+    let nonTransferableSignIn = SignIn.mock
+    let result = try await nonTransferableSignIn.handleTransferFlow()
+    if case .signIn(let signIn) = result {
+      #expect(signIn == .mock)
+    } else {
+      Issue.record("A signup was returned. Expected a sign in.")
+    }
+  }
+  
+  @Test func handleOAuthCallbackUrlWithNonce() async throws {
+    let signIn = SignIn.mock
+    let nonce = UUID().uuidString
+    
+    var components = URLComponents(url: mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)"), resolvingAgainstBaseURL: true)!
+    components.queryItems = [.init(name: "rotating_token_nonce", value: nonce), .init(name: "_is_native", value: "true")]
+    let callbackUrl = components.url!
+    
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>.init(response: .mock, client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("rotating_token_nonce=\(nonce)"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    let result = try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    if case .signIn(let signIn) = result {
+      #expect(signIn == .mock)
+    } else {
+      Issue.record("A signup was returned. Expected a sign in.")
+    }
+    #expect(requestHandled.value)
+  }
+  
+  @Test func handleOAuthCallbackUrlForTransferFlow() async throws {
+    let signIn = SignIn(
+      id: "1",
+      status: .needsFirstFactor,
+      supportedIdentifiers: [],
+      identifier: nil,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: .init(
+        status: .transferable,
+        strategy: nil,
+        attempts: nil,
+        expireAt: nil,
+        error: nil,
+        externalVerificationRedirectUrl: nil,
+        nonce: nil
+      ),
+      secondFactorVerification: nil,
+      userData: nil,
+      createdSessionId: nil
+    )
+    
+    var components = URLComponents(url: mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)"), resolvingAgainstBaseURL: true)!
+    let callbackUrl = components.url!
+    
+    let signInRequestHandled = LockIsolated(false)
+    let signInUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)")
+    var mockSignIn = Mock(url: signInUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>.init(response: signIn, client: .mock))
+    ])
+    mockSignIn.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      signInRequestHandled.setValue(true)
+    }
+    mockSignIn.register()
+    
+    let signUpRequestHandled = LockIsolated(false)
+    let signUpUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
+    var mockSignUp = Mock(url: signUpUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+    ])
+    mockSignUp.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["transfer"] == String(describing: NSNumber(booleanLiteral: true)))
+      signUpRequestHandled.setValue(true)
+    }
+    mockSignUp.register()
+    
+    _ = try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    #expect(signInRequestHandled.value)
+    #expect(signUpRequestHandled.value)
   }
   
 }

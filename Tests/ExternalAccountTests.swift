@@ -1,10 +1,3 @@
-//
-//  ExternalAccountTests.swift
-//  Clerk
-//
-//  Created by Mike Pitre on 2/26/25.
-//
-
 import ConcurrencyExtras
 import Factory
 import Foundation
