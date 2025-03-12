@@ -47,3 +47,18 @@ extension Client {
   }
   
 }
+
+extension Client {
+  
+  static var mock: Client {
+    return Client(
+      id: "sess_1",
+      signIn: .mock,
+      signUp: .mock,
+      sessions: [.mock],
+      lastActiveSessionId: "1",
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+    )
+  }
+  
+}

@@ -32,3 +32,20 @@ public struct TOTPResource: Codable, Hashable, Equatable, Sendable {
     /// Update timestamp of the TOTP secret.
     public let updatedAt: Date
 }
+
+extension TOTPResource {
+  
+  static var mock: TOTPResource {
+    .init(
+      object: "totp_resource",
+      id: "1",
+      secret: "1234567890",
+      uri: "https://mock.com/totp",
+      verified: true,
+      backupCodes: ["123", "456"],
+      createdAt: .distantPast,
+      updatedAt: .distantPast
+    )
+  }
+  
+}

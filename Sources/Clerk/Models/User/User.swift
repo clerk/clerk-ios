@@ -262,3 +262,38 @@ extension User {
   }
   
 }
+
+extension User {
+  
+  static var mock: User {
+    User(
+      id: "1",
+      firstName: "First",
+      lastName: "Last",
+      username: "username",
+      hasImage: false,
+      imageUrl: "",
+      passkeys: [.mock],
+      primaryEmailAddressId: "1",
+      emailAddresses: [.mock],
+      primaryPhoneNumberId: "1",
+      phoneNumbers: [.mock],
+      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
+      enterpriseAccounts: [],
+      passwordEnabled: true,
+      totpEnabled: true,
+      twoFactorEnabled: true,
+      backupCodeEnabled: true,
+      createOrganizationEnabled: true,
+      createOrganizationsLimit: nil,
+      deleteSelfEnabled: true,
+      publicMetadata: nil,
+      unsafeMetadata: nil,
+      legalAcceptedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      lastSignInAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+    )
+  }
+  
+}

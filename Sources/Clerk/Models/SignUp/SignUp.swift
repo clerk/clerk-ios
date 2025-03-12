@@ -323,3 +323,30 @@ extension SignUp {
   }
   
 }
+
+extension SignUp {
+  
+  static var mock: SignUp {
+    SignUp(
+      id: "1",
+      status: .missingRequirements,
+      requiredFields: [],
+      optionalFields: [],
+      missingFields: [],
+      unverifiedFields: [],
+      verifications: ["email_address": .mockPhoneCodeVerifiedVerification],
+      username: User.mock.username,
+      emailAddress: User.mock.emailAddresses.first?.emailAddress,
+      phoneNumber: User.mock.phoneNumbers.first?.phoneNumber,
+      web3Wallet: nil,
+      passwordEnabled: User.mock.passwordEnabled,
+      firstName: User.mock.firstName,
+      lastName: User.mock.lastName,
+      unsafeMetadata: nil,
+      createdSessionId: nil,
+      createdUserId: nil,
+      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+    )
+  }
+  
+}

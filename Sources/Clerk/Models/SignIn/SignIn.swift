@@ -386,3 +386,22 @@ extension SignIn {
   }
   
 }
+
+extension SignIn {
+  
+  static var mock: SignIn {
+    SignIn(
+      id: "1",
+      status: .needsIdentifier,
+      supportedIdentifiers: [.emailAddress, .phoneNumber],
+      identifier: User.mock.emailAddresses.first?.emailAddress,
+      supportedFirstFactors: [.mock],
+      supportedSecondFactors: nil,
+      firstFactorVerification: .mockEmailCodeUnverifiedVerification,
+      secondFactorVerification: nil,
+      userData: nil,
+      createdSessionId: nil
+    )
+  }
+  
+}

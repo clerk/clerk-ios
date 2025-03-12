@@ -90,3 +90,16 @@ extension EmailAddress {
   }
   
 }
+
+extension EmailAddress {
+  
+  static var mock: EmailAddress {
+    EmailAddress(
+      id: "1",
+      emailAddress: "user@email.com",
+      verification: .mockEmailCodeVerifiedVerification,
+      linkedTo: nil
+    )
+  }
+  
+}

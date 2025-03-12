@@ -38,3 +38,16 @@ public struct ClerkErrorResponse: Codable, Equatable {
     public let clerkTraceId: String
 }
 
+extension ClerkAPIError {
+  
+  static var mock: ClerkAPIError {
+    .init(
+      code: "error",
+      message: "An unknown error occurred.",
+      longMessage: "An unknown error occurred. Please try again or contact support.",
+      meta: nil
+    )
+  }
+  
+}
+

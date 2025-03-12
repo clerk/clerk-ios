@@ -20,3 +20,11 @@ public struct ClerkClientError: Error, LocalizedError {
 extension ClerkClientError {
     public var errorDescription: String? { message }
 }
+
+extension ClerkClientError {
+  
+  static var mock: ClerkClientError {
+    .init(message: "An unknown error occurred.")
+  }
+  
+}

@@ -93,3 +93,19 @@ extension PhoneNumber {
     }
     
 }
+
+extension PhoneNumber {
+  
+  static var mock: PhoneNumber {
+    PhoneNumber(
+      id: "1",
+      phoneNumber: "15555550100",
+      reservedForSecondFactor: false,
+      defaultSecondFactor: false,
+      verification: .mockPhoneCodeVerifiedVerification,
+      linkedTo: nil,
+      backupCodes: nil
+    )
+  }
+  
+}

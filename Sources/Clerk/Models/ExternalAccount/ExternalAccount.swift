@@ -73,3 +73,43 @@ extension ExternalAccount {
     try await Container.shared.externalAccountService().destroy(self)
   }
 }
+
+extension ExternalAccount {
+  
+  static var mockVerified: ExternalAccount {
+    .init(
+      id: "1",
+      identificationId: "1",
+      provider: "oauth_google",
+      providerUserId: "1",
+      emailAddress: "user@gmail.com",
+      approvedScopes: "email openid profile",
+      firstName: "First",
+      lastName: "Last",
+      imageUrl: nil,
+      username: "username",
+      publicMetadata: "{}",
+      label: nil,
+      verification: .mockExternalAccountVerifiedVerification
+    )
+  }
+  
+  static var mockUnverified: ExternalAccount {
+    .init(
+      id: "1",
+      identificationId: "1",
+      provider: "oauth_google",
+      providerUserId: "1",
+      emailAddress: "user@gmail.com",
+      approvedScopes: "email openid profile",
+      firstName: "First",
+      lastName: "Last",
+      imageUrl: nil,
+      username: "username",
+      publicMetadata: "{}",
+      label: nil,
+      verification: .mockExternalAccountUnverifiedVerification
+    )
+  }
+  
+}

@@ -385,7 +385,7 @@ struct SignInTest {
       createdSessionId: nil
     )
     
-    var components = URLComponents(url: mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)"), resolvingAgainstBaseURL: true)!
+    let components = URLComponents(url: mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)"), resolvingAgainstBaseURL: true)!
     let callbackUrl = components.url!
     
     let signInRequestHandled = LockIsolated(false)

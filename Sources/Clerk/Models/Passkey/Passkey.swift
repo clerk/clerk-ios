@@ -39,16 +39,16 @@ extension Passkey {
   }
   
   var challenge: Data? {
-    let challengeString = nonceJSON?["challenge"]?.stringValue
+    let challengeString = nonceJSON?.challenge?.stringValue
     return challengeString?.dataFromBase64URL()
   }
   
   var username: String? {
-    nonceJSON?["user"]?["name"]?.stringValue
+    nonceJSON?.user?.name?.stringValue
   }
   
   var userId: Data? {
-    nonceJSON?["user"]?["id"]?.stringValue?.base64URLFromBase64String().dataFromBase64URL()
+    nonceJSON?.user?.id?.stringValue?.base64URLFromBase64String().dataFromBase64URL()
   }
   
 }
@@ -77,6 +77,21 @@ extension Passkey {
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
     try await Container.shared.passkeyService().delete(self)
+  }
+  
+}
+
+extension Passkey {
+  
+  static var mock: Passkey {
+    Passkey(
+      id: "1",
+      name: "iCloud Keychain",
+      verification: .mockPasskeyVerifiedVerification,
+      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      lastUsedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+    )
   }
   
 }
