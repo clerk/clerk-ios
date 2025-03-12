@@ -46,3 +46,103 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
         }
     }
 }
+
+extension Verification {
+  
+  static var mockEmailCodeVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "email_code",
+      attempts: nil,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockEmailCodeUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: "email_code",
+      attempts: nil,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockPhoneCodeVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "phone_code",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockPhoneCodeUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: "phone_code",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockPasskeyVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "passkey",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: "12345"
+    )
+  }
+  
+  static var mockPasskeyUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: "passkey",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: "12345"
+    )
+  }
+  
+  static var mockExternalAccountVerifiedVerification: Verification {
+    Verification(
+      status: .verified,
+      strategy: "oauth_google",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+  
+  static var mockExternalAccountUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: "oauth_google",
+      attempts: 0,
+      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      error: nil,
+      externalVerificationRedirectUrl: "https://accounts.google.com",
+      nonce: nil
+    )
+  }
+  
+}

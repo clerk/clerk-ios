@@ -18,3 +18,15 @@ public struct DeletedObject: Codable, Sendable {
     /// A boolean checking if the item has been deleted or not.
     public let deleted: Bool?
 }
+
+extension DeletedObject {
+  
+  static var mock: DeletedObject {
+    .init(
+      object: "object",
+      id: "1",
+      deleted: true
+    )
+  }
+  
+}

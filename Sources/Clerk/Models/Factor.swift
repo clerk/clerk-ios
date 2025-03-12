@@ -28,3 +28,18 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     /// Whether the factor is the primary factor.
     public let primary: Bool?
 }
+
+extension Factor {
+  
+  static var mock: Factor {
+    Factor(
+      strategy: "email_code",
+      emailAddressId: "1",
+      phoneNumberId: "1",
+      web3WalletId: nil,
+      safeIdentifier: User.mock.emailAddresses.first?.emailAddress,
+      primary: true
+    )
+  }
+  
+}
