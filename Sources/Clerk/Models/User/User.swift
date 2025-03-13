@@ -230,14 +230,30 @@ extension User {
     try await Container.shared.userService().disableTOTP()
   }
   
+  /// Retrieves a list of organization invitations for the user.
+  /// - Parameters:
+  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
+  @discardableResult @MainActor
+  public func getOrganizationInvitations(
+    initialPage: Int = 0,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+    try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
+  }
+  
   /// Retrieves a list of organization memberships for the user.
   /// - Parameters:
   ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
   @discardableResult @MainActor
-  public func getOrganizationMemberships(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await Container.shared.userService().getOrganizationMemberships(self, initialPage, pageSize)
+  public func getOrganizationMemberships(
+    initialPage: Int = 0,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    try await Container.shared.userService().getOrganizationMemberships(initialPage, pageSize)
   }
   
   /// Retrieves all active sessions for this user.
