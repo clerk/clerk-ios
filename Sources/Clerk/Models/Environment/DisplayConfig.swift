@@ -18,33 +18,10 @@ extension Clerk.Environment {
         let homeUrl: String
         let privacyPolicyUrl: String?
         let termsUrl: String?
-        let captchaPublicKey: String?
-        let captchaWidgetType: CaptchaWidgetType?
-        let captchaPublicKeyInvisible: String?
-        let captchaProvider: CaptchaProvider?
         
         enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
             case password
             case otp
-            case unknown
-            
-            init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-        
-        enum CaptchaWidgetType: String, Codable, CodingKeyRepresentable, Sendable {
-            case invisible
-            case smart
-            case unknown
-            
-            init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
-        
-        enum CaptchaProvider: String, Codable, CodingKeyRepresentable, Sendable {
-            case turnstile
             case unknown
             
             init(from decoder: Decoder) throws {
