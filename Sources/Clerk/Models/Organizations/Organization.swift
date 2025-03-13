@@ -390,3 +390,24 @@ extension Organization {
   }
 }
 
+extension Organization {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      name: "Organization Name",
+      slug: "org-slug",
+      imageUrl: "",
+      hasImage: false,
+      membersCount: 3,
+      pendingInvitationsCount: 1,
+      maxAllowedMemberships: 100,
+      adminDeleteEnabled: true,
+      createdAt: Date.distantPast,
+      updatedAt: .now,
+      publicMetadata: nil
+    )
+  }
+  
+}
+

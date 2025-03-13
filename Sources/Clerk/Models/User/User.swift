@@ -24,94 +24,11 @@ import Foundation
 /// The Clerk iOS SDK provides some helper methods on the User object to help retrieve and update user information and authentication status.
 public struct User: Codable, Equatable, Sendable, Hashable {
   
-  /// The unique identifier for the user.
-  public let id: String
-  
-  /// The user's first name.
-  public let firstName: String?
-  
-  /// The user's last name.
-  public let lastName: String?
-  
-  /// The user's username.
-  public let username: String?
-  
-  /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
-  public let hasImage: Bool
-  
-  /// Holds the default avatar or user's uploaded profile image
-  public let imageUrl: String
-  
-  /// An array of all the Passkey objects associated with the user.
-  public let passkeys: [Passkey]
-  
-  /// Information about the user's primary email address.
-  public var primaryEmailAddress: EmailAddress? {
-    emailAddresses.first(where: { $0.id == primaryEmailAddressId })
-  }
-  
-  /// The unique identifier for the EmailAddress that the user has set as primary.
-  public let primaryEmailAddressId: String?
-  
-  /// An array of all the EmailAddress objects associated with the user. Includes the primary.
-  public let emailAddresses: [EmailAddress]
-  
-  /// A getter boolean to check if the user has verified an email address.
-  public var hasVerifiedEmailAddress: Bool {
-    emailAddresses.contains { emailAddress in
-      emailAddress.verification?.status == .verified
-    }
-  }
-  
-  /// Information about the user's primary phone number.
-  public var primaryPhoneNumber: PhoneNumber? {
-    phoneNumbers.first(where: { $0.id == primaryPhoneNumberId })
-  }
-  
-  /// The unique identifier for the PhoneNumber that the user has set as primary.
-  public let primaryPhoneNumberId: String?
-  
-  /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
-  public let phoneNumbers: [PhoneNumber]
-  
-  /// A getter boolean to check if the user has verified a phone number.
-  public var hasVerifiedPhoneNumber: Bool {
-    phoneNumbers.contains { phoneNumber in
-      phoneNumber.verification?.status == .verified
-    }
-  }
-  
-  /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
-  public let externalAccounts: [ExternalAccount]
-  
-  /// A getter for the user's list of verified external accounts.
-  public var verifiedExternalAccounts: [ExternalAccount] {
-    externalAccounts.filter { externalAccount in
-      externalAccount.verification?.status == .verified
-    }
-  }
-  
-  /// A getter for the user's list of unverified external accounts.
-  public var unverifiedExternalAccounts: [ExternalAccount] {
-    externalAccounts.filter { externalAccount in
-      externalAccount.verification?.status == .unverified
-    }
-  }
-  
-  /// A list of enterprise accounts associated with the user.
-  public let enterpriseAccounts: [EnterpriseAccount]?
-  
-  /// A boolean indicating whether the user has a password on their account.
-  public let passwordEnabled: Bool
-  
-  /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
-  public let totpEnabled: Bool
-  
-  /// A boolean indicating whether the user has enabled two-factor authentication.
-  public let twoFactorEnabled: Bool
-  
   /// A boolean indicating whether the user has enabled Backup codes.
   public let backupCodeEnabled: Bool
+  
+  /// Date when the user was first created.
+  public let createdAt: Date
   
   /// A boolean indicating whether the organization creation is enabled for the user or not.
   public let createOrganizationEnabled: Bool
@@ -122,8 +39,89 @@ public struct User: Codable, Equatable, Sendable, Hashable {
   /// A boolean indicating whether the user is able to delete their own account or not.
   public let deleteSelfEnabled: Bool
   
+  /// An array of all the EmailAddress objects associated with the user. Includes the primary.
+  public let emailAddresses: [EmailAddress]
+  
+  /// A list of enterprise accounts associated with the user.
+  public let enterpriseAccounts: [EnterpriseAccount]?
+  
+  /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
+  public let externalAccounts: [ExternalAccount]
+  
+  /// The user's first name.
+  public let firstName: String?
+  
+  /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
+  public let hasImage: Bool
+  
+  /// A getter boolean to check if the user has verified an email address.
+  public var hasVerifiedEmailAddress: Bool {
+    emailAddresses.contains { emailAddress in
+      emailAddress.verification?.status == .verified
+    }
+  }
+  
+  /// A getter boolean to check if the user has verified a phone number.
+  public var hasVerifiedPhoneNumber: Bool {
+    phoneNumbers.contains { phoneNumber in
+      phoneNumber.verification?.status == .verified
+    }
+  }
+  
+  /// The unique identifier for the user.
+  public let id: String
+  
+  /// Holds the default avatar or user's uploaded profile image
+  public let imageUrl: String
+  
+  /// Date when the user last signed in. May be empty if the user has never signed in.
+  public let lastSignInAt: Date?
+  
+  /// The user's last name.
+  public let lastName: String?
+  
+  /// The date on which the user accepted the legal requirements if required.
+  public let legalAcceptedAt: Date?
+  
+  /// A list of OrganizationMemberships representing the list of organizations the user is member with.
+  public let organizationMemberships: [OrganizationMembership]
+  
+  /// An array of all the Passkey objects associated with the user.
+  public let passkeys: [Passkey]
+  
+  /// A boolean indicating whether the user has a password on their account.
+  public let passwordEnabled: Bool
+  
+  /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
+  public let phoneNumbers: [PhoneNumber]
+  
+  /// Information about the user's primary email address.
+  public var primaryEmailAddress: EmailAddress? {
+    emailAddresses.first(where: { $0.id == primaryEmailAddressId })
+  }
+  
+  /// The unique identifier for the EmailAddress that the user has set as primary.
+  public let primaryEmailAddressId: String?
+  
+  /// Information about the user's primary phone number.
+  public var primaryPhoneNumber: PhoneNumber? {
+    phoneNumbers.first(where: { $0.id == primaryPhoneNumberId })
+  }
+  
+  /// The unique identifier for the PhoneNumber that the user has set as primary.
+  public let primaryPhoneNumberId: String?
+  
   /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
   public let publicMetadata: JSON?
+  
+  /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
+  public let totpEnabled: Bool
+  
+  /// A boolean indicating whether the user has enabled two-factor authentication.
+  public let twoFactorEnabled: Bool
+  
+  /// Date of the last time the user was updated.
+  public let updatedAt: Date
   
   /**
    Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
@@ -131,17 +129,22 @@ public struct User: Codable, Equatable, Sendable, Hashable {
    */
   public let unsafeMetadata: JSON?
   
-  /// The date on which the user accepted the legal requirements if required.
-  public let legalAcceptedAt: Date?
+  /// A getter for the user's list of unverified external accounts.
+  public var unverifiedExternalAccounts: [ExternalAccount] {
+    externalAccounts.filter { externalAccount in
+      externalAccount.verification?.status == .unverified
+    }
+  }
   
-  /// Date when the user last signed in. May be empty if the user has never signed in.
-  public let lastSignInAt: Date?
+  /// The user's username.
+  public let username: String?
   
-  /// Date when the user was first created.
-  public let createdAt: Date
-  
-  /// Date of the last time the user was updated.
-  public let updatedAt: Date
+  /// A getter for the user's list of verified external accounts.
+  public var verifiedExternalAccounts: [ExternalAccount] {
+    externalAccounts.filter { externalAccount in
+      externalAccount.verification?.status == .verified
+    }
+  }
 }
 
 extension User {
@@ -227,6 +230,16 @@ extension User {
     try await Container.shared.userService().disableTOTP()
   }
   
+  /// Retrieves a list of organization memberships for the user.
+  /// - Parameters:
+  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
+  @discardableResult @MainActor
+  public func getOrganizationMemberships(initialPage: Int = 0, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    try await Container.shared.userService().getOrganizationMemberships(self, initialPage, pageSize)
+  }
+  
   /// Retrieves all active sessions for this user.
   ///
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
@@ -260,39 +273,51 @@ extension User {
   public func delete() async throws -> DeletedObject {
     try await Container.shared.userService().delete()
   }
+
+  /// Retrieves a list of organization invitations for the user.
+  ///
+  /// - Parameters:
+  ///   - initialPage: A number to skip the first n-1 pages. For example, if `initialPage` is set to `10`, it will skip the first 9 pages and fetch the 10th page.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - status: The status an invitation can have. Valid values are `pending`, `accepted`, or `revoked`.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
+//  @MainActor
+//  public func getOrganizationInvitations() async throws -> ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>> {
+//  }
   
 }
 
 extension User {
   
-  static var mock: User {
-    User(
-      id: "1",
-      firstName: "First",
-      lastName: "Last",
-      username: "username",
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [.mock],
-      primaryEmailAddressId: "1",
+  static var mock: Self {
+    .init(
+      backupCodeEnabled: true,
+      createdAt: .distantPast,
+      createOrganizationEnabled: true,
+      createOrganizationsLimit: 0,
+      deleteSelfEnabled: true,
       emailAddresses: [.mock],
-      primaryPhoneNumberId: "1",
-      phoneNumbers: [.mock],
-      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
       enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: "First",
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
+      lastSignInAt: .now,
+      lastName: "Last",
+      legalAcceptedAt: .now,
+      organizationMemberships: [.mock],
+      passkeys: [.mock],
       passwordEnabled: true,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: "1",
+      primaryPhoneNumberId: "1",
+      publicMetadata: nil,
       totpEnabled: true,
       twoFactorEnabled: true,
-      backupCodeEnabled: true,
-      createOrganizationEnabled: true,
-      createOrganizationsLimit: nil,
-      deleteSelfEnabled: true,
-      publicMetadata: nil,
+      updatedAt: .now,
       unsafeMetadata: nil,
-      legalAcceptedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastSignInAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+      username: "username"
     )
   }
   

@@ -8,6 +8,7 @@
 import AuthenticationServices
 import Factory
 import Foundation
+import Get
 
 struct UserService {
   var update: @MainActor (_ params: User.UpdateParams) async throws -> User
@@ -19,6 +20,7 @@ struct UserService {
   var createTOTP: @MainActor () async throws -> TOTPResource
   var verifyTOTP: @MainActor (_ code: String) async throws -> TOTPResource
   var disableTOTP: @MainActor () async throws -> DeletedObject
+  var getOrganizationMemberships: @MainActor (_ user: User, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
   var getSessions: @MainActor (_ user: User) async throws -> [Session]
   var updatePassword: @MainActor (_ params: User.UpdatePasswordParams) async throws -> User
   var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource
@@ -135,6 +137,18 @@ extension UserService {
       disableTOTP: {
         let request = ClerkFAPI.v1.me.totp.delete(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        return try await Container.shared.apiClient().send(request).value.response
+      },
+      getOrganizationMemberships: { user, initialPage, pageSize in
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
+          path: "/v1/me/organization_memberships",
+          query: [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize)),
+            ("paginated", "true"),
+            ("_clerk_session_id", Clerk.shared.session?.id)
+          ]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
