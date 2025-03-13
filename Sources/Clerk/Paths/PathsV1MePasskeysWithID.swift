@@ -10,7 +10,7 @@ import Get
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.PasskeysEndpoint {
     
-    func id(_ id: String) -> WithIdEndpoint {
+    func withId(_ id: String) -> WithIdEndpoint {
         WithIdEndpoint(path: path + "/\(id)")
     }
     

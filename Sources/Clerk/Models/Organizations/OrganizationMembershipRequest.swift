@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
+import Factory
 import Foundation
 import Get
 
@@ -61,8 +62,7 @@ extension OrganizationMembershipRequest {
             path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/accept",
             method: .post
         )
-        
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
     /// Rejects the request of a user to join the organization the request refers to.
@@ -72,7 +72,6 @@ extension OrganizationMembershipRequest {
             path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/reject",
             method: .post
         )
-        
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
 }

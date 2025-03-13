@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
+import Factory
 import Foundation
 import Get
 
@@ -72,7 +73,7 @@ extension OrganizationInvitation {
             path: "/v1/organizations/\(organizationId)/invitations/\(id)/revoke",
             method: .post
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
 }

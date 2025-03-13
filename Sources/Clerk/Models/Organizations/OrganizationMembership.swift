@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 2/6/25.
 //
 
+import Factory
 import Foundation
 import Get
 
@@ -51,7 +52,7 @@ extension OrganizationMembership {
             path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
             method: .delete
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
     /// Updates the member's role in the organization.
@@ -69,7 +70,7 @@ extension OrganizationMembership {
             method: .patch,
             body: ["role": role]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
 }

@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
+import Factory
 import Foundation
 import Get
 
@@ -127,7 +128,7 @@ extension OrganizationDomain {
             path: "/v1/organizations/\(organizationId)/domains/\(id)",
             method: .delete
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
     /// Begins the verification process of a created organization domain.
@@ -144,7 +145,7 @@ extension OrganizationDomain {
             method: .post,
             body: ["affiliation_email_address": affiliationEmailAddress]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
     /// Attempts to complete the domain verification process.
@@ -163,7 +164,7 @@ extension OrganizationDomain {
             method: .post,
             body: ["code": code]
         )
-        return try await Clerk.shared.apiClient.send(request).value.response
+        return try await Container.shared.apiClient().send(request).value.response
     }
     
 }
