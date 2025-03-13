@@ -34,7 +34,7 @@ struct OAuthProviderTests {
     let mockEnvironment = Clerk.Environment.init(
       userSettings: .init(
         attributes: [:],
-        signUp: .init(captchaEnabled: false, captchaWidgetType: "", customActionRequired: false, progressive: false, mode: "", legalConsentEnabled: false),
+        signUp: .init(customActionRequired: false, progressive: false, mode: "", legalConsentEnabled: false),
         social: ["oauth_custom_provider": .init(
           enabled: true,
           required: false,
@@ -67,7 +67,7 @@ struct OAuthProviderTests {
     let mockEnvironment = Clerk.Environment.init(
       userSettings: .init(
         attributes: [:],
-        signUp: .init(captchaEnabled: false, captchaWidgetType: "", customActionRequired: false, progressive: false, mode: "", legalConsentEnabled: false),
+        signUp: .init(customActionRequired: false, progressive: false, mode: "", legalConsentEnabled: false),
         social: [
           "oauth_google": .init(
             enabled: true,
