@@ -139,6 +139,7 @@ extension Organization {
   ///
   /// - Parameters:
   ///     - query: Returns members that match the given query. For possible matches, we check for any of the user's identifier, usernames, user ids, first and last names. The query value doesn't need to match the exact value you are looking for, it is capable of partial matches as well.
+  ///     - role: Filter by roles. This can be one of the predefined roles or a custom role.
   ///     - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
   ///     - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
   ///
@@ -147,23 +148,25 @@ extension Organization {
   @MainActor
   public func getMemberships(
     query: String? = nil,
-    role: String? = nil,
+    role: [String]? = nil,
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    let roleQueries = role?.map { ("role[]", $0) } ?? []
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
       path: "/v1/organizations/\(id)/memberships",
-      query: [
+      query: ([
         ("query", query),
-        ("role", role),
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
         ("paginated", String(true)),
         ("_clerk_session_id", Clerk.shared.session?.id)
-      ].filter { $1 != nil }
+      ] + roleQueries)
+      .filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
+
   
   /// Adds a user as a member to an organization.
   ///
