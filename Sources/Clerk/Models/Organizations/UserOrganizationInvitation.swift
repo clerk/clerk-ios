@@ -5,7 +5,9 @@
 //  Created by Mike Pitre on 2/13/25.
 //
 
+import Factory
 import Foundation
+import Get
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
 public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
@@ -54,4 +56,22 @@ public struct PublicOrganizationData: Codable, Sendable {
   
   /// The slug of the organization.
   public let slug: String?
+}
+
+extension UserOrganizationInvitation {
+  
+  /// Accepts the organization invitation.
+  /// - Returns: The accepted ``OrganizationInvitation``.
+  @discardableResult @MainActor
+  public func accept() async throws -> OrganizationInvitation {
+    let request = Request<ClientResponse<OrganizationInvitation>>(
+      path: "/v1/me/organization_invitations/\(id)/accept",
+      method: .post,
+      query: [
+        ("_clerk_session_id", Clerk.shared.session?.id)
+      ].filter { $1 != nil }
+    )
+    return try await Container.shared.apiClient().send(request).value.response
+  }
+  
 }

@@ -71,7 +71,7 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 extension OrganizationSuggestion {
   
   /// Accepts the organization suggestion.
-  /// - Returns: The accepted OrganizationSuggestion.
+  /// - Returns: The accepted ``OrganizationSuggestion``.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationSuggestion {
     let request = Request<ClientResponse<OrganizationSuggestion>>(

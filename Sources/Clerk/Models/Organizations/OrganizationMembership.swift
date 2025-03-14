@@ -57,9 +57,9 @@ extension OrganizationMembership {
   
   /// Updates the member's role in the organization.
   ///
-  /// - Returns: ``OrganizationMembership``
   /// - Parameter role: The role to assign to the member.
   /// - Throws: An error if the membership update fails.
+  /// - Returns: ``OrganizationMembership``
   @discardableResult @MainActor
   public func update(role: String) async throws -> OrganizationMembership {
     guard let userId = publicUserData?.userId else {
