@@ -8,7 +8,7 @@
 import Foundation
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
-public struct UserOrganizationInvitation: Codable, Sendable {
+public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
   
   /// The unique identifier for this organization invitation.
   public let id: String

@@ -11,8 +11,8 @@ import Foundation
 public struct ClerkPaginatedResponse<T: Codable & Sendable>: Codable, Sendable {
     
     /// An array that contains the fetched data.
-    let data: [T]
+    public let data: [T]
     
     /// The total count of data that exists remotely.
-    let totalCount: Int
+    public let totalCount: Int
 }

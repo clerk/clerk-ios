@@ -11,7 +11,7 @@ import Get
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
-public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable {
+public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Identifiable {
   
   /// The unique identifier for this organization membership.
   public let id: String

@@ -22,6 +22,7 @@ struct UserService {
   var disableTOTP: @MainActor () async throws -> DeletedObject
   var getOrganizationInvitations: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
   var getOrganizationMemberships: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  var getOrganizationSuggestions: @MainActor (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
   var getSessions: @MainActor (_ user: User) async throws -> [Session]
   var updatePassword: @MainActor (_ params: User.UpdatePasswordParams) async throws -> User
   var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource
@@ -161,6 +162,18 @@ extension UserService {
             ("paginated", "true"),
             ("_clerk_session_id", Clerk.shared.session?.id)
           ]
+        )
+        return try await Container.shared.apiClient().send(request).value.response
+      },
+      getOrganizationSuggestions: { initialPage, pageSize, status in
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
+          path: "/v1/me/organization_suggestions",
+          query: [
+            ("offset", String(initialPage)),
+            ("limit", String(pageSize)),
+            ("status", status),
+            ("_clerk_session_id", Clerk.shared.session?.id)
+          ].filter({ $1 != nil })
         )
         return try await Container.shared.apiClient().send(request).value.response
       },

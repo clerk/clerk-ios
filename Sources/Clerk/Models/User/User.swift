@@ -256,6 +256,21 @@ extension User {
     try await Container.shared.userService().getOrganizationMemberships(initialPage, pageSize)
   }
   
+  /// Retrieves a list of organization suggestions for the user.
+  /// - Parameters:
+  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - status: The status an invitation can have.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
+  @discardableResult @MainActor
+  public func getOrganizationSuggestions(
+    initialPage: Int = 0,
+    pageSize: Int = 20,
+    status: String? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+    try await Container.shared.userService().getOrganizationSuggestions(initialPage, pageSize, status)
+  }
+  
   /// Retrieves all active sessions for this user.
   ///
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.

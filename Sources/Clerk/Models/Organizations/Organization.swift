@@ -10,7 +10,7 @@ import Foundation
 import Get
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
-public struct Organization: Codable, Equatable, Sendable, Hashable {
+public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable {
   
   /// The unique identifier of the related organization.
   public let id: String
