@@ -329,7 +329,7 @@ extension User {
       deleteSelfEnabled: true,
       emailAddresses: [.mock],
       enterpriseAccounts: [],
-      externalAccounts: [.mockVerified, .mockUnverified],
+      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
       firstName: "First",
       hasImage: false,
       id: "1",
