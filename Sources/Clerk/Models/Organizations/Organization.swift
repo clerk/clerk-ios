@@ -339,15 +339,17 @@ extension Organization {
   @MainActor
   public func getDomains(
     initialPage: Int = 0,
-    pageSize: Int = 20
+    pageSize: Int = 20,
+    enrollmentMode: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
       path: "/v1/organizations/\(id)/domains",
       query: [
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
+        ("enrollment_mode", enrollmentMode),
         ("_clerk_session_id", Clerk.shared.session?.id)
-      ]
+      ].filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
