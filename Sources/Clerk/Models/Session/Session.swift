@@ -95,24 +95,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
             self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
         }
     }
-    
-    /// Information about the user that's publicly available.
-    public struct PublicUserData: Codable, Equatable, Sendable {
-        /// The user's first name. This attribute will only be populated if name is enabled in instance settings.
-        public let firstName: String?
-        
-        /// The user's last name. This attribute will only be populated if name is enabled in instance settings.
-        public let lastName: String?
-        
-        /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
-        public let imageUrl: String
-        
-        /// Whether the user has a profile image.
-        public let hasImage: Bool
-        
-        /// The user's identifier (email address, phone number, username, etc) that was used for authentication when this session was created.
-        public let identifier: String
-    }
 }
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.

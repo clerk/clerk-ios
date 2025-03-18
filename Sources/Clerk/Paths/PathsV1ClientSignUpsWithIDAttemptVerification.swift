@@ -8,7 +8,7 @@
 import Foundation
 import Get
 
-extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithID {
+extension ClerkFAPI.V1Endpoint.ClientEndpoint.SignUpsEndpoint.WithIdEndpoint {
     
     var attemptVerification: AttemptVerificationEndpoint {
         AttemptVerificationEndpoint(path: path + "/attempt_verification")

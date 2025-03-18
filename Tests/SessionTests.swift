@@ -45,9 +45,17 @@ import Testing
   }
 }
 
-@Suite(.serialized) struct SessionSerializedTests {
+@Suite(.serialized) final class SessionSerializedTests {
   
   init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
     Container.shared.reset()
   }
   
@@ -57,7 +65,7 @@ import Testing
     let session = Session.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/sessions/\(session.id)/revoke")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")

@@ -10,24 +10,21 @@ import Testing
 // should be placed in the serialized tests below
 
 struct UserTests {
-
+  
   @Test func testUserPrimaryEmailAddress() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: "1",
+      backupCodeEnabled: true,
+      createdAt: .distantPast,
+      createOrganizationEnabled: true,
+      createOrganizationsLimit: 0,
+      deleteSelfEnabled: true,
       emailAddresses: [
         .init(
           id: "1",
           emailAddress: "primary@email.com",
           verification: nil,
           linkedTo: nil
-      ),
+        ),
         .init(
           id: "2",
           emailAddress: "secondary@email.com",
@@ -35,23 +32,27 @@ struct UserTests {
           linkedTo: nil
         )
       ],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
       enterpriseAccounts: [],
-      passwordEnabled: false,
-      totpEnabled: false,
-      twoFactorEnabled: false,
-      backupCodeEnabled: false,
-      createOrganizationEnabled: false,
-      createOrganizationsLimit: nil,
-      deleteSelfEnabled: false,
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: "First",
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
+      lastSignInAt: .now,
+      lastName: "Last",
+      legalAcceptedAt: .now,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: true,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: "1",
+      primaryPhoneNumberId: "1",
       publicMetadata: nil,
+      totpEnabled: true,
+      twoFactorEnabled: true,
+      updatedAt: .now,
       unsafeMetadata: nil,
-      legalAcceptedAt: nil,
-      lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      username: "username"
     )
     
     #expect(user.primaryEmailAddress?.emailAddress == "primary@email.com")
@@ -59,32 +60,33 @@ struct UserTests {
   
   @Test func testUserHasNoPrimaryEmailAddress() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
-      emailAddresses: [],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
-      enterpriseAccounts: [],
-      passwordEnabled: false,
-      totpEnabled: false,
-      twoFactorEnabled: false,
       backupCodeEnabled: false,
+      createdAt: .distantPast,
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      publicMetadata: nil,
-      unsafeMetadata: nil,
-      legalAcceptedAt: nil,
+      emailAddresses: [],
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
       lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: false,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: nil,
+      publicMetadata: nil,
+      totpEnabled: false,
+      twoFactorEnabled: false,
+      updatedAt: .distantPast,
+      unsafeMetadata: nil,
+      username: nil
     )
     
     #expect(user.primaryEmailAddress == nil)
@@ -92,37 +94,38 @@ struct UserTests {
   
   @Test func testUserHasVerifiedEmailAddress() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
+      backupCodeEnabled: false,
+      createdAt: .distantPast,
+      createOrganizationEnabled: false,
+      createOrganizationsLimit: nil,
+      deleteSelfEnabled: false,
       emailAddresses: [.init(
         id: "1",
         emailAddress: "user@email.com",
         verification: .mockEmailCodeVerifiedVerification,
         linkedTo: nil
       )],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
       enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
+      lastSignInAt: nil,
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
       passwordEnabled: false,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: nil,
+      publicMetadata: nil,
       totpEnabled: false,
       twoFactorEnabled: false,
-      backupCodeEnabled: false,
-      createOrganizationEnabled: false,
-      createOrganizationsLimit: nil,
-      deleteSelfEnabled: false,
-      publicMetadata: nil,
+      updatedAt: .distantPast,
       unsafeMetadata: nil,
-      legalAcceptedAt: nil,
-      lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      username: nil
     )
     
     #expect(user.hasVerifiedEmailAddress)
@@ -130,37 +133,38 @@ struct UserTests {
   
   @Test func testUserDoesNotHaveVerifiedEmailAddress() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
+      backupCodeEnabled: false,
+      createdAt: .distantPast,
+      createOrganizationEnabled: false,
+      createOrganizationsLimit: nil,
+      deleteSelfEnabled: false,
       emailAddresses: [.init(
         id: "1",
         emailAddress: "user@email.com",
         verification: .mockEmailCodeUnverifiedVerification,
         linkedTo: nil
       )],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
       enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
+      lastSignInAt: nil,
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
       passwordEnabled: false,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: nil,
+      publicMetadata: nil,
       totpEnabled: false,
       twoFactorEnabled: false,
-      backupCodeEnabled: false,
-      createOrganizationEnabled: false,
-      createOrganizationsLimit: nil,
-      deleteSelfEnabled: false,
-      publicMetadata: nil,
+      updatedAt: .distantPast,
       unsafeMetadata: nil,
-      legalAcceptedAt: nil,
-      lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      username: nil
     )
     
     #expect(!user.hasVerifiedEmailAddress)
@@ -168,16 +172,24 @@ struct UserTests {
   
   @Test func testUserHasPrimaryPhoneNumber() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
+      backupCodeEnabled: false,
+      createdAt: .distantPast,
+      createOrganizationEnabled: false,
+      createOrganizationsLimit: nil,
+      deleteSelfEnabled: false,
       emailAddresses: [],
-      primaryPhoneNumberId: "1",
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
+      lastSignInAt: nil,
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: false,
       phoneNumbers: [
         .init(
           id: "1",
@@ -198,21 +210,14 @@ struct UserTests {
           backupCodes: nil
         )
       ],
-      externalAccounts: [],
-      enterpriseAccounts: [],
-      passwordEnabled: false,
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: "1",
+      publicMetadata: nil,
       totpEnabled: false,
       twoFactorEnabled: false,
-      backupCodeEnabled: false,
-      createOrganizationEnabled: false,
-      createOrganizationsLimit: nil,
-      deleteSelfEnabled: false,
-      publicMetadata: nil,
+      updatedAt: .distantPast,
       unsafeMetadata: nil,
-      legalAcceptedAt: nil,
-      lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      username: nil
     )
     
     #expect(user.primaryPhoneNumber?.phoneNumber == "5555550100")
@@ -220,32 +225,33 @@ struct UserTests {
   
   @Test func testUserDoesNotHavePrimaryPhoneNumber() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
-      emailAddresses: [],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
-      enterpriseAccounts: [],
-      passwordEnabled: false,
-      totpEnabled: false,
-      twoFactorEnabled: false,
       backupCodeEnabled: false,
+      createdAt: .distantPast,
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      publicMetadata: nil,
-      unsafeMetadata: nil,
-      legalAcceptedAt: nil,
+      emailAddresses: [],
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
       lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: false,
+      phoneNumbers: [],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: nil,
+      publicMetadata: nil,
+      totpEnabled: false,
+      twoFactorEnabled: false,
+      updatedAt: .distantPast,
+      unsafeMetadata: nil,
+      username: nil
     )
     
     #expect(user.primaryPhoneNumber == nil)
@@ -253,32 +259,33 @@ struct UserTests {
   
   @Test func testUserHasVerifiedPhoneNumber() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
-      emailAddresses: [],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [.mock],
-      externalAccounts: [],
-      enterpriseAccounts: [],
-      passwordEnabled: false,
-      totpEnabled: false,
-      twoFactorEnabled: false,
       backupCodeEnabled: false,
+      createdAt: .distantPast,
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      publicMetadata: nil,
-      unsafeMetadata: nil,
-      legalAcceptedAt: nil,
+      emailAddresses: [],
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
       lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: false,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: "1",
+      publicMetadata: nil,
+      totpEnabled: false,
+      twoFactorEnabled: false,
+      updatedAt: .distantPast,
+      unsafeMetadata: nil,
+      username: nil
     )
     
     #expect(user.hasVerifiedPhoneNumber)
@@ -286,37 +293,33 @@ struct UserTests {
   
   @Test func testUserDoesNotHaveVerifiedPhoneNumber() {
     let user = User(
-      id: "1",
-      firstName: nil,
-      lastName: nil,
-      username: nil,
-      hasImage: false,
-      imageUrl: "",
-      passkeys: [],
-      primaryEmailAddressId: nil,
-      emailAddresses: [.init(
-        id: "1",
-        emailAddress: "user@email.com",
-        verification: .mockPhoneCodeUnverifiedVerification,
-        linkedTo: nil
-      )],
-      primaryPhoneNumberId: nil,
-      phoneNumbers: [],
-      externalAccounts: [],
-      enterpriseAccounts: [],
-      passwordEnabled: false,
-      totpEnabled: false,
-      twoFactorEnabled: false,
       backupCodeEnabled: false,
+      createdAt: .distantPast,
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      publicMetadata: nil,
-      unsafeMetadata: nil,
-      legalAcceptedAt: nil,
+      emailAddresses: [],
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "1",
+      imageUrl: "",
       lastSignInAt: nil,
-      createdAt: .distantPast,
-      updatedAt: .distantPast
+      lastName: nil,
+      legalAcceptedAt: nil,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [],
+      passwordEnabled: false,
+      phoneNumbers: [],
+      primaryEmailAddressId: nil,
+      primaryPhoneNumberId: nil,
+      publicMetadata: nil,
+      totpEnabled: false,
+      twoFactorEnabled: false,
+      updatedAt: .distantPast,
+      unsafeMetadata: nil,
+      username: nil
     )
     
     #expect(!user.hasVerifiedPhoneNumber)
@@ -332,9 +335,17 @@ struct UserTests {
   
 }
 
-@Suite(.serialized) struct UserSeralizedTests {
+@Suite(.serialized) final class UserSerializedTests {
   
   init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
     Container.shared.reset()
   }
   
@@ -350,7 +361,7 @@ struct UserTests {
       unsafeMetadata: "new_metadata"
     )
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>.init(response: .mock, client: .mock))
+      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
       #expect(request.httpMethod == "PATCH")
@@ -373,7 +384,7 @@ struct UserTests {
     let emailAddress = "user@email.com"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -391,7 +402,7 @@ struct UserTests {
     let phoneNumber = "5555550100"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -409,7 +420,7 @@ struct UserTests {
     let provider = OAuthProvider.google
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>.init(response: .mockUnverified, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -427,7 +438,7 @@ struct UserTests {
     let token = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>.init(response: .mockUnverified, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -445,7 +456,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -465,7 +476,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -482,7 +493,7 @@ struct UserTests {
     let code = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -499,7 +510,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -508,6 +519,72 @@ struct UserTests {
     }
     mock.register()
     try await User.mock.disableTOTP()
+    #expect(requestHandled.value)
+  }
+  
+  @Test func testGetOrganizationInvitations() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_invitations")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationInvitations()
+    #expect(requestHandled.value)
+  }
+  
+  @Test func testGetOrganizationMemberships() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_memberships")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(response: .init(data: [.mockWithUserData], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      #expect(request.url!.query()!.contains("paginated=true"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationMemberships()
+    #expect(requestHandled.value)
+  }
+  
+  @Test("Test get organization suggestions", arguments: [
+    "pending",
+    nil
+  ])
+  func testGetOrganizationSuggestions(status: String?) async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_suggestions")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      
+      if let status {
+        #expect(request.url!.query()!.contains("status=\(status)"))
+      } else {
+        #expect(!request.url!.query()!.contains("status"))
+      }
+      
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationSuggestions(status: status)
     #expect(requestHandled.value)
   }
   
@@ -536,7 +613,7 @@ struct UserTests {
     )
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/change_password")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -555,7 +632,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -564,7 +641,7 @@ struct UserTests {
       requestHandled.setValue(true)
     }
     mock.register()
-    try await User.mock.setProfileImage(Data())
+    try await User.mock.setProfileImage(imageData: Data())
     #expect(requestHandled.value)
   }
   
@@ -572,7 +649,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -588,7 +665,7 @@ struct UserTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
