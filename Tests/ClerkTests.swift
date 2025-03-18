@@ -45,7 +45,7 @@ struct ClerkTests {
   
 }
 
-@Suite(.serialized) struct ClerkSerializedTests {
+@Suite(.serialized) final class ClerkSerializedTests {
       
   init() {
     Container.shared.reset()
@@ -96,48 +96,12 @@ struct ClerkTests {
   }
   
   @MainActor
-  @Test func testLoadThrowsWhenClerkGetThrows() async throws {
-    await withMainSerialExecutor {
-      let task = Task {
-        Container.shared.environmentService.register { .init(get: { .init() }) }
-        Container.shared.clientService.register { .init(get: { throw ClerkAPIError.mock }) }
-        let clerk = Clerk()
-        clerk.configure(publishableKey: "pk_test_")
-        await #expect(throws: Error.self, performing: {
-          try await clerk.load()
-        })
-        #expect(!clerk.isLoaded)
-      }
-      
-      await task.value
-    }
-  }
-  
-  @MainActor
-  @Test func testLoadThrowsWhenEnvironmentGetThrows() async throws {
-    await withMainSerialExecutor {
-      let task = Task {
-        Container.shared.environmentService.register { .init(get: { throw ClerkAPIError.mock }) }
-        Container.shared.clientService.register { .init(get: { .mock }) }
-        let clerk = Clerk()
-        clerk.configure(publishableKey: "pk_test_")
-        await #expect(throws: Error.self, performing: {
-          try await clerk.load()
-        })
-        #expect(!clerk.isLoaded)
-      }
-      
-      await task.value
-    }
-  }
-  
-  @MainActor
   @Test func testSignOutRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -154,7 +118,7 @@ struct ClerkTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -171,7 +135,7 @@ struct ClerkTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")

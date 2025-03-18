@@ -25,7 +25,7 @@ import Testing
     let passkey = Passkey.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys/\(passkey.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>.init(response: .mock, client: .mock))
+      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -43,7 +43,7 @@ import Testing
     let passkey = Passkey.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys/\(passkey.id)/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -62,7 +62,7 @@ import Testing
     let passkey = Passkey.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys/\(passkey.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")

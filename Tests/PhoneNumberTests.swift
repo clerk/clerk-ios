@@ -25,7 +25,7 @@ import Testing
     let phoneNumber = PhoneNumber.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers/\(phoneNumber.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -42,7 +42,7 @@ import Testing
     let phoneNumber = PhoneNumber.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers/\(phoneNumber.id)/prepare_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -60,7 +60,7 @@ import Testing
     let code = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers/\(phoneNumber.id)/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -78,7 +78,7 @@ import Testing
     let phoneNumber = PhoneNumber.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers/\(phoneNumber.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
+      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -96,7 +96,7 @@ import Testing
     let phoneNumber = PhoneNumber.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers/\(phoneNumber.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>.init(response: .mock, client: .mock))
+      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")

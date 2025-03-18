@@ -28,7 +28,7 @@ import Testing
     let emailAddress = EmailAddress.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -47,7 +47,7 @@ import Testing
     let code = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses/\(emailAddress.id)/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -65,7 +65,7 @@ import Testing
     let emailAddress = EmailAddress.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses/\(emailAddress.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")

@@ -36,7 +36,7 @@ struct ClientTests {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>.init(response: .mock, client: .mock))
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")

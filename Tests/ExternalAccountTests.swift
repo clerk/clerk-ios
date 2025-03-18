@@ -28,7 +28,7 @@ import Testing
     let externalAccount = ExternalAccount.mockUnverified
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts/\(externalAccount.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>.init(response: .mock, client: .mock))
+      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")

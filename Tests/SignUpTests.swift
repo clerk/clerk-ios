@@ -41,7 +41,7 @@ struct SignUpTests {
     let legalAccepted: Bool? = true
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -94,7 +94,7 @@ struct SignUpTests {
     ]
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -144,7 +144,7 @@ struct SignUpTests {
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -184,7 +184,7 @@ struct SignUpTests {
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)/prepare_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -205,7 +205,7 @@ struct SignUpTests {
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)/attempt_verification")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -224,7 +224,7 @@ struct SignUpTests {
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>.init(response: .mock, client: .mock))
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
