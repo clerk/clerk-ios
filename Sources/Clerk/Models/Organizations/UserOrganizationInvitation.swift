@@ -61,10 +61,10 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 extension UserOrganizationInvitation {
   
   /// Accepts the organization invitation.
-  /// - Returns: The accepted ``OrganizationInvitation``.
+  /// - Returns: The accepted ``UserOrganizationInvitation``.
   @discardableResult @MainActor
-  public func accept() async throws -> OrganizationInvitation {
-    let request = Request<ClientResponse<OrganizationInvitation>>(
+  public func accept() async throws -> UserOrganizationInvitation {
+    let request = Request<ClientResponse<UserOrganizationInvitation>>(
       path: "/v1/me/organization_invitations/\(id)/accept",
       method: .post,
       query: [
@@ -72,6 +72,29 @@ extension UserOrganizationInvitation {
       ].filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
+  }
+  
+}
+
+extension UserOrganizationInvitation {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      emailAddress: "user@email.com",
+      publicOrganizationData: .init(
+        hasImage: true,
+        imageUrl: "",
+        name: "name",
+        id: "1",
+        slug: "slug"
+      ),
+      publicMetadata: "{}",
+      role: "org:member",
+      status: "pending",
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
   }
   
 }

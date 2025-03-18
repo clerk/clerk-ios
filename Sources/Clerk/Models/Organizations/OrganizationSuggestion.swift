@@ -62,3 +62,23 @@ extension OrganizationSuggestion {
   }
   
 }
+
+extension OrganizationSuggestion {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      publicOrganizationData: .init(
+        hasImage: false,
+        imageUrl: "",
+        name: "name",
+        id: "1",
+        slug: "slug"
+      ),
+      status: "pending",
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
+  }
+  
+}

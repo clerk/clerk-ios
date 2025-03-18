@@ -337,7 +337,7 @@ extension User {
       lastSignInAt: .now,
       lastName: "Last",
       legalAcceptedAt: .now,
-      organizationMemberships: [.mock],
+      organizationMemberships: [.mockWithUserData],
       passkeys: [.mock],
       passwordEnabled: true,
       phoneNumbers: [.mock],

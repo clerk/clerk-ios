@@ -77,7 +77,26 @@ extension OrganizationMembership {
 
 extension OrganizationMembership {
   
-  static var mock: Self {
+  static var mockWithUserData: Self {
+    .init(
+      id: "1",
+      publicMetadata: "{}",
+      role: "org:role",
+      publicUserData: .init(
+        firstName: "First",
+        lastName: "Last",
+        imageUrl: "",
+        hasImage: false,
+        identifier: "identifier",
+        userId: "1"
+      ),
+      organization: .mock,
+      createdAt: Date.distantPast,
+      updatedAt: .now
+    )
+  }
+  
+  static var mockWithoutUserData: Self {
     .init(
       id: "1",
       publicMetadata: "{}",
