@@ -178,8 +178,9 @@ extension User {
   ///
   /// This method is useful if you want to allow an already signed-in user to connect their account with an external OAuth provider, such as Facebook, GitHub, etc., so that they can sign in with that provider in the future.
   /// - Parameters:
-  ///     - provider: The OAuth provider. For example: `.facebook`, `.github`, etc.
-  ///     - additionalScopes: Additional scopes for your user to be prompted to approve.
+  ///    - provider: The OAuth provider. For example: `.facebook`, `.github`, etc.
+  ///    - redirectUrl: The full URL or path that the OAuth provider should redirect to, on successful authorization on their part.
+  ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
   public func createExternalAccount(_ provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
     try await Container.shared.userService().createExternalAccountOAuth(provider, redirectUrl, additionalScopes)

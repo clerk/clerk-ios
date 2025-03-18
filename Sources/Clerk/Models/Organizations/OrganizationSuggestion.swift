@@ -9,6 +9,7 @@ import Factory
 import Foundation
 import Get
 
+/// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
   /// An interface representing an organization suggestion.
   /// The ID of the organization suggestion.

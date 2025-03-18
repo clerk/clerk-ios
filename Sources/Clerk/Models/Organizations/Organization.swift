@@ -331,10 +331,10 @@ extension Organization {
   /// Returns a `ClerkPaginatedResponse` of `OrganizationDomain` objects.
   ///
   /// - Parameters:
-  ///   - initialPage: A number that can be used to skip the first n-1 pages.
-  ///                  For example, if `initialPage` is set to 10, it will skip the first 9 pages and fetch the 10th page.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///
+  ///  - initialPage: A number that can be used to skip the first n-1 pages.
+  ///                 For example, if `initialPage` is set to 10, it will skip the first 9 pages and fetch the 10th page.
+  ///  - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
   @MainActor
   public func getDomains(
