@@ -6,7 +6,19 @@ import Testing
 
 @testable import Clerk
 
-@Suite(.serialized) struct SerializedPhoneNumberTests {
+@Suite(.serialized) final class SerializedPhoneNumberTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
   
   @Test func testDelete() async throws {
     let requestHandled = LockIsolated(false)

@@ -45,9 +45,17 @@ import Testing
   }
 }
 
-@Suite(.serialized) struct SessionSerializedTests {
+@Suite(.serialized) final class SessionSerializedTests {
   
   init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
     Container.shared.reset()
   }
   

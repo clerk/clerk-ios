@@ -6,7 +6,19 @@ import Testing
 
 @testable import Clerk
 
-@Suite(.serialized) struct SerializedOrganizationTests {
+@Suite(.serialized) final class SerializedOrganizationTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
 
   @Test func testUpdate() async throws {
     let requestHandled = LockIsolated(false)
@@ -317,7 +329,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedOrganizationDomainTests {
+@Suite(.serialized) final class SerializedOrganizationDomainTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
   
   @Test func testDelete() async throws {
     let requestHandled = LockIsolated(false)
@@ -375,7 +399,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedOrganizationInvitationTests {
+@Suite(.serialized) final class SerializedOrganizationInvitationTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
 
   @Test func testRevoke() async throws {
     let requestHandled = LockIsolated(false)
@@ -396,7 +432,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedOrganizationMembershipTests {
+@Suite(.serialized) final class SerializedOrganizationMembershipTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
 
   @Test func testDestroyWhenUserDataIsPresent() async throws {
     let requestHandled = LockIsolated(false)
@@ -450,7 +498,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedOrganizationMembershipRequestTests {
+@Suite(.serialized) final class SerializedOrganizationMembershipRequestTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
   
   @Test func testAccept() async throws {
     let requestHandled = LockIsolated(false)
@@ -488,7 +548,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedOrganizationSuggestionTests {
+@Suite(.serialized) final class SerializedOrganizationSuggestionTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
 
   @Test func testAccept() async throws {
     let requestHandled = LockIsolated(false)
@@ -509,7 +581,19 @@ import Testing
   
 }
 
-@Suite(.serialized) struct SerializedUserOrganizationInvitationTests {
+@Suite(.serialized) final class SerializedUserOrganizationInvitationTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
   
   @Test func testAccept() async throws {
     let requestHandled = LockIsolated(false)
@@ -524,6 +608,7 @@ import Testing
       requestHandled.setValue(true)
     }
     mock.register()
+    
     try await userOrgInvitation.accept()
     #expect(requestHandled.value)
   }

@@ -9,7 +9,19 @@ import Testing
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
 
-@Suite(.serialized) struct ExternalAccountSerializedTests {
+@Suite(.serialized) final class ExternalAccountSerializedTests {
+  
+  init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
+    Container.shared.reset()
+  }
   
   @Test func testDestroyRequest() async throws {
     let requestHandled = LockIsolated(false)

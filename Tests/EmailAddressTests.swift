@@ -9,9 +9,17 @@ import Testing
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
 
-@Suite(.serialized) struct EmailAddressSerializedTests {
+@Suite(.serialized) final class EmailAddressSerializedTests {
   
   init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
     Container.shared.reset()
   }
   

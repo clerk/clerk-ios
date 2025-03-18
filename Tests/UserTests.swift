@@ -335,9 +335,17 @@ struct UserTests {
   
 }
 
-@Suite(.serialized) struct UserSeralizedTests {
+@Suite(.serialized) final class UserSeralizedTests {
   
   init() {
+    Container.shared.clerk.register { @MainActor in
+      let clerk = Clerk()
+      clerk.client = .mock
+      return clerk
+    }
+  }
+  
+  deinit {
     Container.shared.reset()
   }
   
