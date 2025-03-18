@@ -514,6 +514,72 @@ struct UserTests {
     #expect(requestHandled.value)
   }
   
+  @Test func testGetOrganizationInvitations() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_invitations")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>.init(response: .init(data: [.mock], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationInvitations()
+    #expect(requestHandled.value)
+  }
+  
+  @Test func testGetOrganizationMemberships() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_memberships")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.init(response: .init(data: [.mockWithUserData], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      #expect(request.url!.query()!.contains("paginated=true"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationMemberships()
+    #expect(requestHandled.value)
+  }
+  
+  @Test("Test get organization suggestions", arguments: [
+    "pending",
+    nil
+  ])
+  func testGetOrganizationSuggestions(status: String?) async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_suggestions")
+    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
+      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>.init(response: .init(data: [.mock], totalCount: 1), client: .mock))
+    ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      #expect(request.url!.query()!.contains("limit"))
+      #expect(request.url!.query()!.contains("offset"))
+      
+      if let status {
+        #expect(request.url!.query()!.contains("status=\(status)"))
+      } else {
+        #expect(!request.url!.query()!.contains("status"))
+      }
+      
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.getOrganizationSuggestions(status: status)
+    #expect(requestHandled.value)
+  }
+  
   @Test func testUserGetSessionsRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/sessions/active")
