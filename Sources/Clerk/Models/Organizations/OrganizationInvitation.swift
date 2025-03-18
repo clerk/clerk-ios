@@ -30,38 +30,13 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
   public let role: String
   
   /// The status of the invitation.
-  public let status: Status
+  public let status: String
   
   /// The date when the invitation was created.
   public let createdAt: Date
   
   /// The date when the invitation was last updated.
   public let updatedAt: Date
-  
-  /// Represents the possible statuses of an organization invitation.
-  public enum Status: String, Codable, CodingKeyRepresentable, Sendable {
-    /// The invitation has been sent but not yet responded to.
-    case pending
-    
-    /// The invitation has been accepted by the recipient.
-    case accepted
-    
-    /// The invitation has been revoked by the organization.
-    case revoked
-    
-    /// A fallback value used when the status received from the backend is unrecognized.
-    case unknown
-    
-    /// Initializes an `InvitationStatus` from a decoder.
-    ///
-    /// If the raw value from the decoder does not match any of the known cases, the `unknown` case will be used as a fallback.
-    ///
-    /// - Parameter decoder: The decoder to decode the raw value from.
-    /// - Throws: An error if the decoding process fails.
-    public init(from decoder: Decoder) throws {
-      self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-    }
-  }
 }
 
 extension OrganizationInvitation {
@@ -74,6 +49,23 @@ extension OrganizationInvitation {
       method: .post
     )
     return try await Container.shared.apiClient().send(request).value.response
+  }
+  
+}
+
+extension OrganizationInvitation {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      emailAddress: EmailAddress.mock.emailAddress,
+      organizationId: "1",
+      publicMetadata: "{}",
+      role: "org:member",
+      status: "pending",
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
   }
   
 }

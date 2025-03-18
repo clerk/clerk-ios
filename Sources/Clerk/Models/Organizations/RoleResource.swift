@@ -31,3 +31,19 @@ public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
   /// The date when the role was last updated.
   public let updatedAt: Date
 }
+
+extension RoleResource {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      key: "key",
+      name: "name",
+      description: "description",
+      permissions: [.mock],
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
+  }
+  
+}

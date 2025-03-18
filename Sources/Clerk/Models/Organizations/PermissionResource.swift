@@ -31,3 +31,19 @@ public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
   /// The date when the permission was last updated.
   public let updatedAt: Date
 }
+
+extension PermissionResource {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      key: "key",
+      name: "name",
+      type: "type",
+      description: "description",
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
+  }
+  
+}

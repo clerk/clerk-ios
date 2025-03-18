@@ -37,25 +37,25 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
   
   /// The date when the invitation was last updated.
   public let updatedAt: Date
-}
-
-/// The public data of the organization.
-public struct PublicOrganizationData: Codable, Sendable {
   
-  /// Whether the organization has an image.
-  public let hasImage: Bool
-  
-  /// Holds the organization logo. Compatible with Clerk's Image Optimization.
-  public let imageUrl: String
-  
-  /// The name of the organization.
-  public let name: String
-  
-  /// The ID of the organization.
-  public let id: String
-  
-  /// The slug of the organization.
-  public let slug: String?
+  /// The public data of the organization.
+  public struct PublicOrganizationData: Codable, Sendable {
+    
+    /// Whether the organization has an image.
+    public let hasImage: Bool
+    
+    /// Holds the organization logo. Compatible with Clerk's Image Optimization.
+    public let imageUrl: String
+    
+    /// The name of the organization.
+    public let name: String
+    
+    /// The ID of the organization.
+    public let id: String
+    
+    /// The slug of the organization.
+    public let slug: String?
+  }
 }
 
 extension UserOrganizationInvitation {

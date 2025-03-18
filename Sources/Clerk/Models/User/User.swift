@@ -289,7 +289,7 @@ extension User {
   /// - Parameters:
   ///     - imageData: The image, in data format, to set as the user's profile image.
   @discardableResult @MainActor
-  public func setProfileImage(_ imageData: Data) async throws -> ImageResource {
+  public func setProfileImage(imageData: Data) async throws -> ImageResource {
     try await Container.shared.userService().setProfileImage(imageData)
   }
   

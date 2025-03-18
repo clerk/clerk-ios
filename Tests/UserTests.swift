@@ -567,7 +567,7 @@ struct UserTests {
       requestHandled.setValue(true)
     }
     mock.register()
-    try await User.mock.setProfileImage(Data())
+    try await User.mock.setProfileImage(imageData: Data())
     #expect(requestHandled.value)
   }
   

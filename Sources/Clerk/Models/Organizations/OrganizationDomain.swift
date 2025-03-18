@@ -22,7 +22,7 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   public let organizationId: String
   
   /// The enrollment mode for new users joining the organization.
-  public let enrollmentMode: EnrollmentMode
+  public let enrollmentMode: String
   
   /// The object that describes the status of the verification process of the domain.
   public let verification: Verification
@@ -42,37 +42,14 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   /// The date when the organization domain was last updated.
   public let updatedAt: Date
   
-  /// The possible enrollment modes for an organization domain.
-  public enum EnrollmentMode: String, Codable, CodingKeyRepresentable, Sendable {
-    
-    /// Users must be manually invited to join the organization.
-    case manualInvitation
-    
-    /// During sign-up, a user will receive an invitation for the organization if their email's domain matches the verified domain.
-    /// The user will join the organization if they accept the automatic invitation.
-    case automaticInvitation
-    
-    /// During sign-up, a user will receive a suggestion for the organization if their email's domain matches the verified domain.
-    /// The user can request to join, and an administrator must accept this request before the user can join the organization.
-    case automaticSuggestion
-    
-    /// An unknown enrollment mode that acts as a fallback for unsupported or future cases.
-    case unknown
-    
-    /// Initializes an `EnrollmentMode` from a decoder, defaulting to `.unknown` if the raw value is not recognized.
-    public init(from decoder: Decoder) throws {
-      self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-    }
-  }
-  
   /// The model representing the verification details of an organization domain.
   public struct Verification: Codable, Sendable, Hashable {
     
     /// The status of the verification process.
-    public let status: Status
+    public let status: String
     
     /// The strategy used for the verification process.
-    public let strategy: Strategy
+    public let strategy: String
     
     /// The number of attempts that have occurred to verify the domain.
     ///
@@ -83,39 +60,6 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
     ///
     /// Once the expiration date has passed, the verification process may need to be restarted.
     public let expireAt: Date?
-    
-    /// The possible statuses of the verification process.
-    public enum Status: String, Codable, CodingKeyRepresentable, Sendable {
-      
-      /// The domain has not been verified.
-      case unverified
-      
-      /// The domain has been successfully verified.
-      case verified
-      
-      /// An unknown verification status, used as a fallback for unsupported or future statuses.
-      case unknown
-      
-      /// Initializes a `VerificationStatus` from a decoder, defaulting to `.unknown` if the raw value is not recognized.
-      public init(from decoder: Decoder) throws {
-        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-      }
-    }
-    
-    /// The strategy used for the domain verification process.
-    public enum Strategy: String, Codable, CodingKeyRepresentable, Sendable {
-      
-      /// Verification was conducted via email code.
-      case emailCode
-      
-      /// An unknown verification strategy, used as a fallback for unsupported or future strategies.
-      case unknown
-      
-      /// Initializes a `VerificationStrategy` from a decoder, defaulting to `.unknown` if the raw value is not recognized.
-      public init(from decoder: Decoder) throws {
-        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-      }
-    }
   }
 }
 
@@ -165,6 +109,30 @@ extension OrganizationDomain {
       body: ["code": code]
     )
     return try await Container.shared.apiClient().send(request).value.response
+  }
+  
+}
+
+extension OrganizationDomain {
+  
+  static var mock: Self {
+    .init(
+      id: "1",
+      name: "name",
+      organizationId: "1",
+      enrollmentMode: "enrollment_mode",
+      verification: .init(
+        status: "status",
+        strategy: "strategy",
+        attempts: 1,
+        expireAt: .distantFuture
+      ),
+      affiliationEmailAddress: nil,
+      totalPendingInvitations: 3,
+      totalPendingSuggestions: 3,
+      createdAt: .distantPast,
+      updatedAt: .now
+    )
   }
   
 }

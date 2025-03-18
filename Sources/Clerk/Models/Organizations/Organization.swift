@@ -94,7 +94,7 @@ extension Organization {
   /// The logo must be an image and its size cannot exceed 10MB.
   /// - Returns: ``Organization``
   @discardableResult @MainActor
-  public func setLogo(_ imageData: Data) async throws -> Organization {
+  public func setLogo(imageData: Data) async throws -> Organization {
     let boundary = UUID().uuidString
     var data = Data()
     data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)

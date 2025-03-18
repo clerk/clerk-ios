@@ -18,7 +18,7 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
   public let publicOrganizationData: PublicOrganizationData
   
   /// The status of the organization suggestion.
-  public let status: Status
+  public let status: String
   
   /// The date and time when the organization suggestion was created.
   public let createdAt: Date
@@ -42,29 +42,6 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
     
     /// The slug of the organization.
     public let slug: String?
-  }
-  
-  /// Represents the possible statuses of an organization suggestion.
-  public enum Status: String, Codable, CodingKeyRepresentable, Sendable {
-    
-    /// The organization suggestion is pending review.
-    case pending
-    
-    /// The organization suggestion has been accepted.
-    case accepted
-    
-    /// A fallback value used when the status received from the backend is unrecognized.
-    case unknown
-    
-    /// Initializes an `InvitationStatus` from a decoder.
-    ///
-    /// If the raw value from the decoder does not match any of the known cases, the `unknown` case will be used as a fallback.
-    ///
-    /// - Parameter decoder: The decoder to decode the raw value from.
-    /// - Throws: An error if the decoding process fails.
-    public init(from decoder: Decoder) throws {
-      self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-    }
   }
 }
 
