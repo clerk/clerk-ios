@@ -103,9 +103,9 @@ User Management | ✅
 Passkeys | ✅
 Enterprise SSO (SAML) | ✅ 
 Device Attestation | ✅
+Organizations | ✅
 Prebuilt UI Components | ❌ 
 Magic Links | ❌ 
-Organizations | ❌ 
 Sign Up via Invitation | ❌
 Web3 Wallet | ❌
 
