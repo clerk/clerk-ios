@@ -177,7 +177,7 @@ extension SignUp {
   ///
   /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
   @discardableResult @MainActor
-  public func attemptVerification(_ strategy: AttemptStrategy) async throws -> SignUp {
+  public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
     try await Container.shared.signUpService().attemptVerification(self, strategy)
   }
   
