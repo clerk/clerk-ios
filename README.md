@@ -170,7 +170,7 @@ try await clerk.signOut()
 
 #### Update User Profile
 ```swift
-try await user.update(firstName: "John", lastName: "Appleseed")
+try await user.update(.init(firstName: "John", lastName: "Appleseed"))
 ```
 
 #### Update User Profile Image
