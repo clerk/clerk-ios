@@ -305,17 +305,6 @@ extension User {
   public func delete() async throws -> DeletedObject {
     try await Container.shared.userService().delete()
   }
-
-  /// Retrieves a list of organization invitations for the user.
-  ///
-  /// - Parameters:
-  ///   - initialPage: A number to skip the first n-1 pages. For example, if `initialPage` is set to `10`, it will skip the first 9 pages and fetch the 10th page.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The status an invitation can have. Valid values are `pending`, `accepted`, or `revoked`.
-  /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
-//  @MainActor
-//  public func getOrganizationInvitations() async throws -> ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>> {
-//  }
   
 }
 
