@@ -182,7 +182,7 @@ extension User {
   ///    - redirectUrl: The full URL or path that the OAuth provider should redirect to, on successful authorization on their part.
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
-  public func createExternalAccount(_ provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
+  public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
     try await Container.shared.userService().createExternalAccountOAuth(provider, redirectUrl, additionalScopes)
   }
   
@@ -193,7 +193,7 @@ extension User {
   ///     - provider: The IDTokenProvider. For example: `.apple`.
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
-  public func createExternalAccount(_ provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
+  public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
     try await Container.shared.userService().createExternalAccountIDToken(provider, idToken)
   }
   

@@ -429,7 +429,7 @@ struct UserTests {
       requestHandled.setValue(true)
     }
     mock.register()
-    try await User.mock.createExternalAccount(provider)
+    try await User.mock.createExternalAccount(provider: provider)
     #expect(requestHandled.value)
   }
   
@@ -448,7 +448,7 @@ struct UserTests {
       requestHandled.setValue(true)
     }
     mock.register()
-    try await User.mock.createExternalAccount(.apple, idToken: token)
+    try await User.mock.createExternalAccount(provider: .apple, idToken: token)
     #expect(requestHandled.value)
   }
   
