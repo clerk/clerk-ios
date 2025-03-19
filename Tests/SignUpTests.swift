@@ -214,7 +214,7 @@ struct SignUpTests {
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signUp.attemptVerification(strategy)
+    _ = try await signUp.attemptVerification(strategy: strategy)
     #expect(requestHandled.value)
   }
   
