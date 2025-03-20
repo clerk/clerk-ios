@@ -179,6 +179,18 @@ let imageData = try await photosPickerItem.loadTransferable(type: Data.self)
 try await user.setProfileImage(imageData: imageData)
 ```
 
+#### Add Phone Number
+```swift
+// Create a new phone number on the user's account
+var newPhoneNumber = try await user.createPhoneNumber("5555550100")
+
+// Send an OTP verification code via SMS to the phone number
+newPhoneNumber = try await newPhoneNumber.prepareVerification()
+
+// After collecting the OTP code from the user, attempt verification.
+newPhoneNumber = try await newPhoneNumber.attemptVerification(code: "12345")
+```
+
 #### Link an External Account
 ```swift
 let externalAccount = try await user.createExternalAccount(provider: .github)

@@ -6,9 +6,8 @@
 //
 
 import Factory
-import Get
-import Factory
 import Foundation
+import Get
 import RegexBuilder
 
 #if canImport(UIKit)
