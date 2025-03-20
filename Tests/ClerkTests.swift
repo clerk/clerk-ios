@@ -128,9 +128,11 @@ struct ClerkTests {
     try await clerk.signOut(sessionId: Session.mock.id)
     #expect(requestHandled.value)
   }
-  
+    
   @MainActor
-  @Test func testSetActiveRequest() async throws {
+  @Test("Set Active Tests", arguments: [
+    "1", nil
+  ]) func testSetActiveRequest(organizationId: String?) async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
@@ -139,10 +141,11 @@ struct ClerkTests {
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["active_organization_id"] == organizationId)
       requestHandled.setValue(true)
     }
     mock.register()
-    try await clerk.setActive(sessionId: Session.mock.id)
+    try await clerk.setActive(sessionId: Session.mock.id, organizationId: organizationId)
     #expect(requestHandled.value)
   }
   

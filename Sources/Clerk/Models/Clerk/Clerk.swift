@@ -196,8 +196,9 @@ extension Clerk {
   /// Useful for multi-session applications.
   ///
   /// - Parameter sessionId: The session ID to be set as active.
-  public func setActive(sessionId: String) async throws {
-    try await Container.shared.clerkService().setActive(sessionId)
+  /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
+  public func setActive(sessionId: String, organizationId: String? = nil) async throws {
+    try await Container.shared.clerkService().setActive(sessionId, organizationId)
   }
 }
 

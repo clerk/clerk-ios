@@ -7,12 +7,13 @@
 
 import Factory
 import Foundation
+import Get
 import SimpleKeychain
 
 struct ClerkService {
   var saveClientIdToKeychain: (_ clientId: String) throws -> Void
   var signOut: (_ sessionId: String?) async throws -> Void
-  var setActive: (_ sessionId: String) async throws -> Void
+  var setActive: (_ sessionId: String, _ organizationId: String?) async throws -> Void
 }
 
 extension ClerkService {
@@ -31,8 +32,12 @@ extension ClerkService {
           try await Container.shared.apiClient().send(request)
         }
       },
-      setActive: { sessionId in
-        let request = ClerkFAPI.v1.client.sessions.id(sessionId).touch.post
+      setActive: { sessionId, organizationId in
+        let request = Request<ClientResponse<Session>>(
+          path: "v1/client/sessions/\(sessionId)/touch",
+          method: .post,
+          body: ["active_organization_id": organizationId ?? ""] // nil key/values get dropped, use an empty string to set no active org
+        )
         try await Container.shared.apiClient().send(request)
       }
     )
