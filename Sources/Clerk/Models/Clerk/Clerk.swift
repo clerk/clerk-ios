@@ -9,6 +9,7 @@ import Factory
 import Foundation
 import Get
 import RegexBuilder
+import SimpleKeychain
 
 #if canImport(UIKit)
 import UIKit
@@ -82,6 +83,19 @@ final public class Clerk {
     }
   }
   
+  /// The event emitter for auth events.
+  public let authEventEmitter = EventEmitter<AuthEvent>()
+  
+  /// Enable for additional debugging signals.
+  private(set) public var debugMode: Bool = false
+  
+  /// The Clerk environment for the instance.
+  var environment = Environment()
+  
+  // MARK: - Private Properties
+  
+  nonisolated init() {}
+  
   /// Frontend API URL.
   private(set) var frontendApiUrl: String = "" {
     didSet {
@@ -101,18 +115,17 @@ final public class Clerk {
     }
   }
   
-  /// The event emitter for auth events.
-  public let authEventEmitter = EventEmitter<AuthEvent>()
-  
-  /// Enable for additional debugging signals.
-  private(set) public var debugMode: Bool = false
-  
-  /// The Clerk environment for the instance.
-  var environment = Environment()
-  
-  // MARK: - Private Properties
-  
-  nonisolated init() {}
+  private var keychainConfig = KeychainConfig() {
+    didSet {
+      Container.shared.keychain.register { [keychainConfig] in
+        SimpleKeychain(
+          service: keychainConfig.service,
+          accessGroup: keychainConfig.accessGroup,
+          accessibility: .afterFirstUnlockThisDeviceOnly
+        )
+      }
+    }
+  }
     
   /// Holds a reference to the task performed when the app will enter the foreground.
   private var willEnterForegroundTask: Task<Void, Error>?
@@ -130,17 +143,15 @@ extension Clerk {
   /// - Parameters:
   ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
   ///     - debugMode: Enable for additional debugging signals.
-  public func configure(publishableKey: String, debugMode: Bool = false) {
-    if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      dump("""
-        Clerk configured without a publishable key. 
-        Please include a valid publishable key.
-        """)
-      return
-    }
-    
+  ///     - keychainConfig: Options that Clerk will use when accessing the keychain.
+  public func configure(
+    publishableKey: String,
+    debugMode: Bool = false,
+    keychainConfig: KeychainConfig = KeychainConfig()
+  ) {
     self.publishableKey = publishableKey
     self.debugMode = debugMode
+    self.keychainConfig = keychainConfig
   }
   
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
@@ -278,7 +289,13 @@ extension Clerk {
 extension Container {
   
   var clerk: Factory<Clerk> {
-    self { Clerk() }.singleton
+    self { Clerk() }
+      .singleton
+  }
+
+  var keychain: Factory<SimpleKeychain> {
+    self { SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly) }
+      .cached
   }
   
 }

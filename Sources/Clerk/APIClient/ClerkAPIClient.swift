@@ -45,7 +45,8 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
 extension Container {
   
   var apiClient: Factory< APIClient> {
-    self { APIClient(baseURL: URL(string: "")) }.cached
+    self { APIClient(baseURL: URL(string: "")) }
+      .cached
   }
   
 }

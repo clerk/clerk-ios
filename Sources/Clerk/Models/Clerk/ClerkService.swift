@@ -8,7 +8,6 @@
 import Factory
 import Foundation
 import Get
-import SimpleKeychain
 
 struct ClerkService {
   var saveClientIdToKeychain: (_ clientId: String) throws -> Void
@@ -21,7 +20,7 @@ extension ClerkService {
   static var liveValue: Self {
     .init(
       saveClientIdToKeychain: { clientId in
-        try SimpleKeychain().set(clientId, forKey: "clientId")
+        try Container.shared.keychain().set(clientId, forKey: "clientId")
       },
       signOut: { sessionId in
         if let sessionId {
