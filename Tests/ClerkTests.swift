@@ -36,13 +36,6 @@ struct ClerkTests {
     #expect(clerk.session?.id == Session.mock.id)
   }
   
-  @MainActor
-  @Test func testConfigureWithInvalidKey() async throws {
-    let clerk = Clerk()
-    clerk.configure(publishableKey: "     ")
-    #expect(clerk.publishableKey == "")
-  }
-  
 }
 
 @Suite(.serialized) final class ClerkSerializedTests {

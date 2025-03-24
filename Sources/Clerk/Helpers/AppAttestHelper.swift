@@ -9,7 +9,6 @@ import CryptoKit
 import DeviceCheck
 import Factory
 import Foundation
-import SimpleKeychain
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
 struct AppAttestHelper {
@@ -55,7 +54,7 @@ struct AppAttestHelper {
         let attestation = try await DCAppAttestService.shared.attestKey(keyId, clientDataHash: clientDataHash)
         try await verify(keyId: keyId, challenge: challenge, attestation: attestation)
         
-        try SimpleKeychain().set(keyId, forKey: keychainKey)
+        try Container.shared.keychain().set(keyId, forKey: keychainKey)
         return keyId
     }
     
@@ -121,7 +120,7 @@ struct AppAttestHelper {
     /// Checks whether a key ID is stored in the keychain.
     static var hasKeyId: Bool {
         do {
-            return try SimpleKeychain().hasItem(forKey: keychainKey)
+            return try Container.shared.keychain().hasItem(forKey: keychainKey)
         } catch {
             return false
         }
@@ -129,13 +128,13 @@ struct AppAttestHelper {
     
     /// Retrieves the stored attestation key ID from the keychain.
     private static var keyId: String? {
-        try? SimpleKeychain().string(forKey: keychainKey)
+        try? Container.shared.keychain().string(forKey: keychainKey)
     }
     
     /// Removes the stored attestation key ID from the keychain.
     /// - Throws: An error if key deletion fails.
     static func removeKeyId() throws {
-        try SimpleKeychain().deleteItem(forKey: keychainKey)
+        try Container.shared.keychain().deleteItem(forKey: keychainKey)
     }
     
     /// Retrieves the stored attestation client ID from the keychain.
@@ -144,7 +143,7 @@ struct AppAttestHelper {
     /// the app wont have a client yet
     static var clientId: String {
         get throws {
-            try SimpleKeychain().string(forKey: "clientId")
+            try Container.shared.keychain().string(forKey: "clientId")
         }
     }
 }

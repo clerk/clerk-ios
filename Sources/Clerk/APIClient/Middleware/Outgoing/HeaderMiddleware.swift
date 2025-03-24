@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 1/8/25.
 //
 
+import Factory
 import Foundation
-import SimpleKeychain
 
 struct HeaderMiddleware {
   
@@ -14,7 +14,7 @@ struct HeaderMiddleware {
   static func process(_ request: inout URLRequest) async {
     
     // Set the device token on every request
-    if let deviceToken = try? SimpleKeychain().string(forKey: "clerkDeviceToken") {
+    if let deviceToken = try? Container.shared.keychain().string(forKey: "clerkDeviceToken") {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
     

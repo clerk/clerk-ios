@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 1/8/25.
 //
 
+import Factory
 import Foundation
-import SimpleKeychain
 
 struct DeviceTokenSavingMiddleware {
     
@@ -14,8 +14,7 @@ struct DeviceTokenSavingMiddleware {
         
         // Set the device token from the response headers whenever received
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            try? SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly)
-                .set(deviceToken, forKey: "clerkDeviceToken")
+          try? Container.shared.keychain().set(deviceToken, forKey: "clerkDeviceToken")
         }
         
     }
