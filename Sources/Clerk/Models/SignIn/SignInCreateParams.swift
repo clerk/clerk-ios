@@ -12,7 +12,7 @@ extension SignIn {
   /// Represents the parameters required to initiate a sign-in flow.
   ///
   /// This structure encapsulates the various options for initiating a sign-in, including the authentication strategy, user identifier, optional passwords, and additional settings for redirect URLs or OAuth-specific parameters.
-  struct SignInCreateParams: Encodable {
+  public struct SignInCreateParams: Encodable {
     
     /// The first factor verification strategy to use in the sign-in flow.
     ///
@@ -83,7 +83,12 @@ extension SignIn {
     /// - Parameters:
     ///   - identifier: The authentication identifier for the sign-in. This can be the user's email address, phone number, username, or Web3 wallet address.
     ///   - password: The user's password.
-    case identifier(_ identifier: String, password: String? = nil, strategy: String? = nil)
+    ///   - strategy: The ``SignIn/PrepareFirstFactorStrategy`` to use when creating the ``SignIn``. This parameter can be used to create the sign in and prepare the first factor in one step.
+    case identifier(
+      _ identifier: String,
+      password: String? = nil,
+      strategy: SignIn.PrepareFirstFactorStrategy? = nil
+    )
     
     /// The user will be authenticated with their social connection account.
     ///
@@ -111,22 +116,39 @@ extension SignIn {
     var params: SignInCreateParams {
       switch self {
       case .identifier(let identifier, let password, let strategy):
-          .init(strategy: strategy, identifier: identifier, password: password)
+          .init(
+            strategy: strategy?.strategy,
+            identifier: identifier,
+            password: password
+          )
         
       case .oauth(let oauthProvider, let redirectUrl):
-          .init(strategy: oauthProvider.strategy, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
+          .init(
+            strategy: oauthProvider.strategy,
+            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          )
         
       case .enterpriseSSO(let emailAddress, let redirectUrl):
-          .init(strategy: "enterprise_sso", identifier: emailAddress, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
+          .init(
+            strategy: "enterprise_sso",
+            identifier: emailAddress,
+            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          )
         
       case .idToken(let provider, let idToken):
-          .init(strategy: provider.strategy, token: idToken)
+          .init(
+            strategy: provider.strategy,
+            token: idToken
+          )
         
       case .passkey:
           .init(strategy: "passkey")
         
       case .ticket(let ticket):
-          .init(strategy: "ticket", ticket: ticket)
+          .init(
+            strategy: "ticket",
+            ticket: ticket
+          )
         
       case .transfer:
           .init(transfer: true)

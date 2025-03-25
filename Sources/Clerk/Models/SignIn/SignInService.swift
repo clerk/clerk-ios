@@ -42,7 +42,7 @@ extension SignInService {
         return try await Container.shared.apiClient().send(request).value.response
       },
       prepareFirstFactor: { signIn, strategy in
-        let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareFirstFactor.post(strategy.params)
+        let request = ClerkFAPI.v1.client.signIns.id(signIn.id).prepareFirstFactor.post(strategy.params(signIn: signIn))
         return try await Container.shared.apiClient().send(request).value.response
       },
       attemptFirstFactor: { signIn, strategy in

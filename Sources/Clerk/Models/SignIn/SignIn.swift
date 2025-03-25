@@ -155,8 +155,8 @@ extension SignIn {
   /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
   /// - Throws: An error if the first factor preparation fails.
   @discardableResult @MainActor
-  public func prepareFirstFactor(for prepareFirstFactorStrategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareFirstFactor(self, prepareFirstFactorStrategy)
+  public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
+    try await Container.shared.signInService().prepareFirstFactor(self, strategy)
   }
   
   /// Attempts to complete the first factor verification process.
@@ -171,8 +171,8 @@ extension SignIn {
   /// - Important: Call this method after preparing the verification process using one of the available strategies.
   /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
   @discardableResult @MainActor
-  public func attemptFirstFactor(for attemptFirstFactorStrategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().attemptFirstFactor(self, attemptFirstFactorStrategy)
+  public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
+    try await Container.shared.signInService().attemptFirstFactor(self, strategy)
   }
   
   /// Begins the second factor verification process.
@@ -188,8 +188,8 @@ extension SignIn {
   ///
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
-  public func prepareSecondFactor(for prepareSecondFactorStrategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareSecondFactor(self, prepareSecondFactorStrategy)
+  public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
+    try await Container.shared.signInService().prepareSecondFactor(self, strategy)
   }
   
   /// Attempts to complete the second factor verification process (2FA).
@@ -207,7 +207,7 @@ extension SignIn {
   ///
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
-  public func attemptSecondFactor(for strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
+  public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
     try await Container.shared.signInService().attemptSecondFactor(self, strategy)
   }
   
@@ -383,6 +383,13 @@ extension SignIn {
   /// Helper to determine if the SignIn needs to be transferred to a SignUp
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+  }
+  
+  /// The first factor for the identifier that was used to initiate the SignIn
+  func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
+    supportedFirstFactors?.first(where: { factor in
+      factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
+    })
   }
   
 }
