@@ -9,7 +9,7 @@ import Testing
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
 
-struct SignInTest {
+struct SignInTests {
   
   @Test func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignIn.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
@@ -79,7 +79,8 @@ struct SignInTest {
   @Test("All create strategies", arguments: [
     SignIn.CreateStrategy.enterpriseSSO(identifier: "user@email.com"),
     .idToken(provider: .apple, idToken: "token"),
-    .identifier("user@email.com", password: "password", strategy: "email_code"),
+    .identifier("user@email.com", password: "password"),
+    .identifier("user@email.com", password: "password", strategy: .emailCode()),
     .oauth(provider: .google),
     .passkey,
     .ticket("ticket"),
@@ -169,9 +170,11 @@ struct SignInTest {
   }
   
   @Test("All prepare first factor strategies", arguments: [
-    SignIn.PrepareFirstFactorStrategy.emailCode(emailAddressId: "1"),
+    SignIn.PrepareFirstFactorStrategy.emailCode(),
+    .emailCode(emailAddressId: "1"),
     .enterpriseSSO(),
     .passkey,
+    .phoneCode(),
     .phoneCode(phoneNumberId: "1"),
     .resetPasswordEmailCode(emailAddressId: "1"),
     .resetPasswordPhoneCode(phoneNumberId: "1")
@@ -179,20 +182,21 @@ struct SignInTest {
   func testPrepareFirstFactorRequest(strategy: SignIn.PrepareFirstFactorStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let signIn = SignIn.mock
+    let params = strategy.params(signIn: signIn)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")
     var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
       .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
     ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody["strategy"] == strategy.params.strategy)
-      #expect(request.urlEncodedFormBody["email_address_id"] == strategy.params.emailAddressId)
-      #expect(request.urlEncodedFormBody["phone_number_id"] == strategy.params.phoneNumberId)
-      #expect(request.urlEncodedFormBody["redirect_url"] == strategy.params.redirectUrl)
+      #expect(request.urlEncodedFormBody["strategy"] == params.strategy)
+      #expect(request.urlEncodedFormBody["email_address_id"] == params.emailAddressId)
+      #expect(request.urlEncodedFormBody["phone_number_id"] == params.phoneNumberId)
+      #expect(request.urlEncodedFormBody["redirect_url"] == params.redirectUrl)
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signIn.prepareFirstFactor(for: strategy)
+    _ = try await signIn.prepareFirstFactor(strategy: strategy)
     #expect(requestHandled.value)
   }
   
@@ -220,7 +224,7 @@ struct SignInTest {
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signIn.attemptFirstFactor(for: strategy)
+    _ = try await signIn.attemptFirstFactor(strategy: strategy)
     #expect(requestHandled.value)
   }
   
@@ -240,7 +244,7 @@ struct SignInTest {
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signIn.prepareSecondFactor(for: strategy)
+    _ = try await signIn.prepareSecondFactor(strategy: strategy)
     #expect(requestHandled.value)
   }
   
@@ -263,7 +267,7 @@ struct SignInTest {
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await signIn.attemptSecondFactor(for: strategy)
+    _ = try await signIn.attemptSecondFactor(strategy: strategy)
     #expect(requestHandled.value)
   }
   

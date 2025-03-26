@@ -123,11 +123,11 @@ signUp = try await signUp.attemptVerification(strategy: .emailCode(code: "12345"
 ```swift
 // Create the sign in
 var signIn = try await SignIn.create(
-  strategy: .identifier("user@example.com", strategy: "email_code")
+  strategy: .identifier("user@example.com", strategy: .emailCode())
 )
       
 // After collecting the OTP code from the user, attempt verification
-signIn = try await signIn.attemptFirstFactor(for: .emailCode(code: "12345"))
+signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: "12345"))
 ```
 
 #### Sign In with OAuth (e.g. Google, Github, etc.)
@@ -151,11 +151,11 @@ try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
 ```swift
 // Create a sign in and send an OTP code to verify the user owns the email.
 var signIn = try await SignIn.create(
-  strategy: .identifier("user@example.com", strategy: "reset_password_email_code")
+  strategy: .identifier("user@example.com", strategy: .resetPasswordEmailCode())
 )
 
 // After collecting the OTP code from the user, attempt verification.
-signIn = try await signIn.attemptFirstFactor(for: .resetPasswordEmailCode(code: "12345"))
+signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: "12345"))
 
 // Set a new password to complete the process.
 signIn = try await signIn.resetPassword(.init(password: "••••••••••••", signOutOfOtherSessions: true))
