@@ -197,6 +197,13 @@ let externalAccount = try await user.createExternalAccount(provider: .github)
 try await externalAccount.reauthorize()
 ```
 
+### Session Tokens
+```swift
+if let token = try await Clerk.shared.session?.getToken()?.jwt {
+  headers["Authorization"] = "Bearer \(token)"
+}
+```
+
 For a full set of features and functionality, please see our docs!
 ## 🎓 Docs
 
