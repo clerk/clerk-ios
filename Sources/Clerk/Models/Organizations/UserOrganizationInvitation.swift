@@ -38,6 +38,26 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
   /// The date when the invitation was last updated.
   public let updatedAt: Date
   
+  public init(
+    id: String,
+    emailAddress: String,
+    publicOrganizationData: UserOrganizationInvitation.PublicOrganizationData,
+    publicMetadata: JSON,
+    role: String,
+    status: String,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.emailAddress = emailAddress
+    self.publicOrganizationData = publicOrganizationData
+    self.publicMetadata = publicMetadata
+    self.role = role
+    self.status = status
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
+  
   /// The public data of the organization.
   public struct PublicOrganizationData: Codable, Sendable {
     
@@ -55,6 +75,20 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
     
     /// The slug of the organization.
     public let slug: String?
+    
+    public init(
+      hasImage: Bool,
+      imageUrl: String,
+      name: String,
+      id: String,
+      slug: String? = nil
+    ) {
+      self.hasImage = hasImage
+      self.imageUrl = imageUrl
+      self.name = name
+      self.id = id
+      self.slug = slug
+    }
   }
 }
 

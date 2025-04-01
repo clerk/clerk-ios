@@ -29,6 +29,22 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
   
   /// The date when the membership request was last updated.
   public let updatedAt: Date
+  
+  public init(
+    id: String,
+    organizationId: String,
+    status: String,
+    publicUserData: PublicUserData? = nil,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.organizationId = organizationId
+    self.status = status
+    self.publicUserData = publicUserData
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
 }
 
 extension OrganizationMembershipRequest {

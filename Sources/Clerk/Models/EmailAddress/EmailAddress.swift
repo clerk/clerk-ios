@@ -35,6 +35,17 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
   /// that might be linked to this email address.
   public let linkedTo: [JSON]?
   
+  public init(
+    id: String,
+    emailAddress: String,
+    verification: Verification? = nil,
+    linkedTo: [JSON]? = nil
+  ) {
+    self.id = id
+    self.emailAddress = emailAddress
+    self.verification = verification
+    self.linkedTo = linkedTo
+  }
 }
 
 extension EmailAddress {

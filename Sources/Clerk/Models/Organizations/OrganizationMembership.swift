@@ -35,6 +35,23 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
   /// The date when the membership was last updated.
   public let updatedAt: Date
   
+  public init(
+    id: String,
+    publicMetadata: JSON,
+    role: String,
+    publicUserData: PublicUserData? = nil,
+    organization: Organization,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.publicMetadata = publicMetadata
+    self.role = role
+    self.publicUserData = publicUserData
+    self.organization = organization
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
 }
 
 extension OrganizationMembership {

@@ -11,6 +11,7 @@ import Get
 
 /// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
+  
   /// An interface representing an organization suggestion.
   /// The ID of the organization suggestion.
   public let id: String
@@ -27,8 +28,23 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
   /// The date and time when the organization suggestion was last updated.
   public let updatedAt: Date
   
+  public init(
+    id: String,
+    publicOrganizationData: OrganizationSuggestion.PublicOrganizationData,
+    status: String,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.publicOrganizationData = publicOrganizationData
+    self.status = status
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
+  
   /// The public data of the organization.
   public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
+    
     /// Whether the organization has an image.
     public let hasImage: Bool
     
@@ -43,6 +59,20 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
     
     /// The slug of the organization.
     public let slug: String?
+    
+    public init(
+      hasImage: Bool,
+      imageUrl: String,
+      name: String,
+      id: String,
+      slug: String? = nil
+    ) {
+      self.hasImage = hasImage
+      self.imageUrl = imageUrl
+      self.name = name
+      self.id = id
+      self.slug = slug
+    }
   }
 }
 

@@ -28,6 +28,22 @@ public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
   
   /// The date when the passkey was last used.
   public let lastUsedAt: Date?
+  
+  public init(
+    id: String,
+    name: String,
+    verification: Verification? = nil,
+    createdAt: Date,
+    updatedAt: Date,
+    lastUsedAt: Date? = nil
+  ) {
+    self.id = id
+    self.name = name
+    self.verification = verification
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+    self.lastUsedAt = lastUsedAt
+  }
 }
 
 extension Passkey {

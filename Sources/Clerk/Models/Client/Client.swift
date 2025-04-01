@@ -36,6 +36,21 @@ public struct Client: Codable, Sendable, Equatable {
   /// Timestamp of last update for the client.
   public let updatedAt: Date
     
+  public init(
+    id: String,
+    signIn: SignIn? = nil,
+    signUp: SignUp? = nil,
+    sessions: [Session],
+    lastActiveSessionId: String? = nil,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.signIn = signIn
+    self.signUp = signUp
+    self.sessions = sessions
+    self.lastActiveSessionId = lastActiveSessionId
+    self.updatedAt = updatedAt
+  }
 }
 
 extension Client {
