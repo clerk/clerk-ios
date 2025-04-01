@@ -8,7 +8,7 @@
   <br />
 </p>
 <h1 align="center">
-  Official Clerk iOS SDK (Beta)
+  Official Clerk iOS SDK
 </h1>
 <p align="center">
   <strong>
@@ -21,11 +21,6 @@
 [![chat on Discord](https://img.shields.io/discord/856971667393609759.svg?logo=discord)](https://clerk.com/discord)
 [![documentation](https://img.shields.io/badge/documentation-clerk-green.svg)](https://clerk.com/docs)
 [![twitter](https://img.shields.io/twitter/follow/ClerkDev?style=social)](https://twitter.com/intent/follow?screen_name=ClerkDev)
-
-
-<p align="center">
-  ℹ️ While minor breaking changes (method names, parameter names, etc.) can be expected until version 1.0.0, the iOS SDK is considered stable.
-</p>
 
 ---
 
