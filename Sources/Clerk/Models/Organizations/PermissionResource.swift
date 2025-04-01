@@ -30,6 +30,24 @@ public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
   
   /// The date when the permission was last updated.
   public let updatedAt: Date
+  
+  public init(
+    id: String,
+    key: String,
+    name: String,
+    type: String,
+    description: String,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.key = key
+    self.name = name
+    self.type = type
+    self.description = description
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
 }
 
 extension PermissionResource {

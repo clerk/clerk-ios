@@ -83,6 +83,46 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
   
   /// The date when the sign-up was abandoned by the user.
   public let abandonAt: Date
+  
+  public init(
+    id: String,
+    status: SignUp.Status,
+    requiredFields: [String],
+    optionalFields: [String],
+    missingFields: [String],
+    unverifiedFields: [String],
+    verifications: [String : Verification?],
+    username: String? = nil,
+    emailAddress: String? = nil,
+    phoneNumber: String? = nil,
+    web3Wallet: String? = nil,
+    passwordEnabled: Bool,
+    firstName: String? = nil,
+    lastName: String? = nil,
+    unsafeMetadata: JSON? = nil,
+    createdSessionId: String? = nil,
+    createdUserId: String? = nil,
+    abandonAt: Date
+  ) {
+    self.id = id
+    self.status = status
+    self.requiredFields = requiredFields
+    self.optionalFields = optionalFields
+    self.missingFields = missingFields
+    self.unverifiedFields = unverifiedFields
+    self.verifications = verifications
+    self.username = username
+    self.emailAddress = emailAddress
+    self.phoneNumber = phoneNumber
+    self.web3Wallet = web3Wallet
+    self.passwordEnabled = passwordEnabled
+    self.firstName = firstName
+    self.lastName = lastName
+    self.unsafeMetadata = unsafeMetadata
+    self.createdSessionId = createdSessionId
+    self.createdUserId = createdUserId
+    self.abandonAt = abandonAt
+  }
 }
 
 extension SignUp {

@@ -30,6 +30,24 @@ public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
   
   /// The date when the role was last updated.
   public let updatedAt: Date
+  
+  public init(
+    id: String,
+    key: String,
+    name: String,
+    description: String,
+    permissions: [PermissionResource],
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.key = key
+    self.name = name
+    self.description = description
+    self.permissions = permissions
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
 }
 
 extension RoleResource {

@@ -51,6 +51,36 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
   
   /// An object holding information on the verification of this external account.
   public let verification: Verification?
+  
+  public init(
+    id: String,
+    identificationId: String,
+    provider: String,
+    providerUserId: String,
+    emailAddress: String,
+    approvedScopes: String,
+    firstName: String? = nil,
+    lastName: String? = nil,
+    imageUrl: String? = nil,
+    username: String? = nil,
+    publicMetadata: JSON,
+    label: String? = nil,
+    verification: Verification? = nil
+  ) {
+    self.id = id
+    self.identificationId = identificationId
+    self.provider = provider
+    self.providerUserId = providerUserId
+    self.emailAddress = emailAddress
+    self.approvedScopes = approvedScopes
+    self.firstName = firstName
+    self.lastName = lastName
+    self.imageUrl = imageUrl
+    self.username = username
+    self.publicMetadata = publicMetadata
+    self.label = label
+    self.verification = verification
+  }
 }
 
 extension ExternalAccount {

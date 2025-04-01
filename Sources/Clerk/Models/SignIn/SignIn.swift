@@ -85,6 +85,30 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
   ///
   /// The value of this property is `nil` if the sign-in status is not `complete`.
   public let createdSessionId: String?
+  
+  public init(
+    id: String,
+    status: SignIn.Status,
+    supportedIdentifiers: [SignIn.Identifier]? = nil,
+    identifier: String? = nil,
+    supportedFirstFactors: [Factor]? = nil,
+    supportedSecondFactors: [Factor]? = nil,
+    firstFactorVerification: Verification? = nil,
+    secondFactorVerification: Verification? = nil,
+    userData: SignIn.UserData? = nil,
+    createdSessionId: String? = nil
+  ) {
+    self.id = id
+    self.status = status
+    self.supportedIdentifiers = supportedIdentifiers
+    self.identifier = identifier
+    self.supportedFirstFactors = supportedFirstFactors
+    self.supportedSecondFactors = supportedSecondFactors
+    self.firstFactorVerification = firstFactorVerification
+    self.secondFactorVerification = secondFactorVerification
+    self.userData = userData
+    self.createdSessionId = createdSessionId
+  }
 }
 
 extension SignIn {

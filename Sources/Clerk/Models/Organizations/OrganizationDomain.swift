@@ -42,6 +42,30 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   /// The date when the organization domain was last updated.
   public let updatedAt: Date
   
+  public init(
+    id: String,
+    name: String,
+    organizationId: String,
+    enrollmentMode: String,
+    verification: OrganizationDomain.Verification,
+    affiliationEmailAddress: String? = nil,
+    totalPendingInvitations: Int,
+    totalPendingSuggestions: Int,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.name = name
+    self.organizationId = organizationId
+    self.enrollmentMode = enrollmentMode
+    self.verification = verification
+    self.affiliationEmailAddress = affiliationEmailAddress
+    self.totalPendingInvitations = totalPendingInvitations
+    self.totalPendingSuggestions = totalPendingSuggestions
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
+  
   /// The model representing the verification details of an organization domain.
   public struct Verification: Codable, Sendable, Hashable {
     
@@ -60,6 +84,18 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
     ///
     /// Once the expiration date has passed, the verification process may need to be restarted.
     public let expireAt: Date?
+    
+    public init(
+      status: String,
+      strategy: String,
+      attempts: Int,
+      expireAt: Date? = nil
+    ) {
+      self.status = status
+      self.strategy = strategy
+      self.attempts = attempts
+      self.expireAt = expireAt
+    }
   }
 }
 

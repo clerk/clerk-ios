@@ -145,6 +145,64 @@ public struct User: Codable, Equatable, Sendable, Hashable {
       externalAccount.verification?.status == .verified
     }
   }
+  
+  public init(
+    backupCodeEnabled: Bool,
+    createdAt: Date,
+    createOrganizationEnabled: Bool,
+    createOrganizationsLimit: Int? = nil,
+    deleteSelfEnabled: Bool,
+    emailAddresses: [EmailAddress],
+    enterpriseAccounts: [EnterpriseAccount]? = nil,
+    externalAccounts: [ExternalAccount],
+    firstName: String? = nil,
+    hasImage: Bool,
+    id: String,
+    imageUrl: String,
+    lastSignInAt: Date? = nil,
+    lastName: String? = nil,
+    legalAcceptedAt: Date? = nil,
+    organizationMemberships: [OrganizationMembership],
+    passkeys: [Passkey],
+    passwordEnabled: Bool,
+    phoneNumbers: [PhoneNumber],
+    primaryEmailAddressId: String? = nil,
+    primaryPhoneNumberId: String? = nil,
+    publicMetadata: JSON? = nil,
+    totpEnabled: Bool,
+    twoFactorEnabled: Bool,
+    updatedAt: Date,
+    unsafeMetadata: JSON? = nil,
+    username: String? = nil
+  ) {
+    self.backupCodeEnabled = backupCodeEnabled
+    self.createdAt = createdAt
+    self.createOrganizationEnabled = createOrganizationEnabled
+    self.createOrganizationsLimit = createOrganizationsLimit
+    self.deleteSelfEnabled = deleteSelfEnabled
+    self.emailAddresses = emailAddresses
+    self.enterpriseAccounts = enterpriseAccounts
+    self.externalAccounts = externalAccounts
+    self.firstName = firstName
+    self.hasImage = hasImage
+    self.id = id
+    self.imageUrl = imageUrl
+    self.lastSignInAt = lastSignInAt
+    self.lastName = lastName
+    self.legalAcceptedAt = legalAcceptedAt
+    self.organizationMemberships = organizationMemberships
+    self.passkeys = passkeys
+    self.passwordEnabled = passwordEnabled
+    self.phoneNumbers = phoneNumbers
+    self.primaryEmailAddressId = primaryEmailAddressId
+    self.primaryPhoneNumberId = primaryPhoneNumberId
+    self.publicMetadata = publicMetadata
+    self.totpEnabled = totpEnabled
+    self.twoFactorEnabled = twoFactorEnabled
+    self.updatedAt = updatedAt
+    self.unsafeMetadata = unsafeMetadata
+    self.username = username
+  }
 }
 
 extension User {

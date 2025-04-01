@@ -50,6 +50,34 @@ public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable
   /// Metadata that can be read from the Frontend API and Backend API
   /// and can be set only from the Backend API.
   public let publicMetadata: JSON?
+  
+  public init(
+    id: String,
+    name: String,
+    slug: String? = nil,
+    imageUrl: String,
+    hasImage: Bool,
+    membersCount: Int? = nil,
+    pendingInvitationsCount: Int? = nil,
+    maxAllowedMemberships: Int,
+    adminDeleteEnabled: Bool,
+    createdAt: Date,
+    updatedAt: Date,
+    publicMetadata: JSON? = nil
+  ) {
+    self.id = id
+    self.name = name
+    self.slug = slug
+    self.imageUrl = imageUrl
+    self.hasImage = hasImage
+    self.membersCount = membersCount
+    self.pendingInvitationsCount = pendingInvitationsCount
+    self.maxAllowedMemberships = maxAllowedMemberships
+    self.adminDeleteEnabled = adminDeleteEnabled
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+    self.publicMetadata = publicMetadata
+  }
 }
 
 extension Organization {

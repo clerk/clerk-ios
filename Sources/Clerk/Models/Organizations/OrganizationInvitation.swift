@@ -37,6 +37,26 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
   
   /// The date when the invitation was last updated.
   public let updatedAt: Date
+  
+  public init(
+    id: String,
+    emailAddress: String,
+    organizationId: String,
+    publicMetadata: JSON,
+    role: String,
+    status: String,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.id = id
+    self.emailAddress = emailAddress
+    self.organizationId = organizationId
+    self.publicMetadata = publicMetadata
+    self.role = role
+    self.status = status
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+  }
 }
 
 extension OrganizationInvitation {
