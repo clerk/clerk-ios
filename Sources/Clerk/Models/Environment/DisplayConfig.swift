@@ -8,26 +8,26 @@
 import Foundation
 
 extension Clerk.Environment {
-    
-    struct DisplayConfig: Codable, Sendable {
-        let instanceEnvironmentType: InstanceEnvironmentType
-        let applicationName: String
-        let preferredSignInStrategy: PreferredSignInStrategy
-        let branded: Bool
-        let logoImageUrl: String
-        let homeUrl: String
-        let privacyPolicyUrl: String?
-        let termsUrl: String?
-        
-        enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
-            case password
-            case otp
-            case unknown
-            
-            init(from decoder: Decoder) throws {
-                self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-            }
-        }
+
+  struct DisplayConfig: Codable, Sendable {
+    let instanceEnvironmentType: InstanceEnvironmentType
+    let applicationName: String
+    let preferredSignInStrategy: PreferredSignInStrategy
+    let branded: Bool
+    let logoImageUrl: String
+    let homeUrl: String
+    let privacyPolicyUrl: String?
+    let termsUrl: String?
+
+    enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
+      case password
+      case otp
+      case unknown
+
+      init(from decoder: Decoder) throws {
+        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+      }
     }
-    
+  }
+
 }

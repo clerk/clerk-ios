@@ -9,13 +9,13 @@ import Foundation
 
 /// A configuration object that can be passed to `Clerk.configure()` to customize keychain behavior.
 public struct KeychainConfig: Sendable {
-  
+
   /// Name of the service under which to save items. Defaults to the bundle identifier.
   public let service: String
-  
+
   /// Access group for sharing Keychain items.
   public let accessGroup: String?
-  
+
   /// Initializes a ``KeychainConfig`` instance.
   /// - Parameters:
   ///   - service: Name of the service under which to save items. Defaults to the bundle identifier.

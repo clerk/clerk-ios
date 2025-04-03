@@ -9,21 +9,21 @@ import Factory
 import Foundation
 
 extension Clerk {
-  
+
   struct Environment: Codable, Sendable {
     var authConfig: AuthConfig?
     var userSettings: UserSettings?
     var displayConfig: DisplayConfig?
     var fraudSettings: FraudSettings?
   }
-  
+
 }
 
 extension Clerk.Environment {
-  
+
   @MainActor
   static func get() async throws -> Clerk.Environment {
     return try await Container.shared.environmentService().get()
   }
-  
+
 }

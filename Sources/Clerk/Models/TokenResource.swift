@@ -11,10 +11,10 @@ import Foundation
 ///
 /// The `TokenResource` structure encapsulates a token, such as a JWT.
 public struct TokenResource: Codable, Equatable, Sendable {
-  
+
   /// The jwt represented as a `String`.
   public let jwt: String
-  
+
   public init(jwt: String) {
     self.jwt = jwt
   }
@@ -35,10 +35,9 @@ extension TokenResource {
 }
 
 extension TokenResource {
-  
+
   static var mock: TokenResource {
     .init(jwt: "jwt")
   }
-  
-}
 
+}

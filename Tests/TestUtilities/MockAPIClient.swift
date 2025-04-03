@@ -26,7 +26,7 @@ extension APIClient {
         "x-mobile": "1",
         "Content-Type": "application/x-www-form-urlencoded",
         "clerk-api-version": "2024-10-01",
-        "x-ios-sdk-version": Clerk.version
+        "x-ios-sdk-version": Clerk.version,
       ]
     }
   )
@@ -34,9 +34,9 @@ extension APIClient {
 }
 
 extension Container: @retroactive AutoRegistering {
-  
+
   public func autoRegister() {
     apiClient.context(.test) { _ in .mock }
   }
-  
+
 }

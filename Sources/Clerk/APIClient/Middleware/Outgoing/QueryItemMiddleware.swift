@@ -8,9 +8,9 @@
 import Foundation
 
 struct QueryItemMiddleware {
-    
-    static func process(_ request: inout URLRequest) {
-        request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
-    }
-    
+
+  static func process(_ request: inout URLRequest) {
+    request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
+  }
+
 }

@@ -9,26 +9,26 @@ import Foundation
 import Get
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.EmailAddressesEndpoint {
-    
-    func id(_ id: String) -> WithIdEndpoint {
-        WithIdEndpoint(path: path + "/\(id)")
+
+  func id(_ id: String) -> WithIdEndpoint {
+    WithIdEndpoint(path: path + "/\(id)")
+  }
+
+  struct WithIdEndpoint {
+    /// Path: `/v1/client/email_addresses/{id}`
+    let path: String
+
+    var get: Request<ClientResponse<EmailAddress>> {
+      .init(path: path)
     }
 
-    struct WithIdEndpoint {
-        /// Path: `/v1/client/email_addresses/{id}`
-        let path: String
-        
-        var get: Request<ClientResponse<EmailAddress>> {
-            .init(path: path)
-        }
-        
-        func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<DeletedObject>> {
-            .init(
-                path: path,
-                method: .delete,
-                query: queryItems.asTuples
-            )
-        }
+    func delete(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<DeletedObject>> {
+      .init(
+        path: path,
+        method: .delete,
+        query: queryItems.asTuples
+      )
     }
-    
+  }
+
 }

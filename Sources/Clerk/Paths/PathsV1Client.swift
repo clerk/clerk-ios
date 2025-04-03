@@ -9,17 +9,17 @@ import Foundation
 import Get
 
 extension ClerkFAPI.V1Endpoint {
-    
-    var client: ClientEndpoint {
-        ClientEndpoint(path: path + "/client")
+
+  var client: ClientEndpoint {
+    ClientEndpoint(path: path + "/client")
+  }
+
+  struct ClientEndpoint {
+    /// Path: `/v1/client`
+    let path: String
+
+    var get: Request<ClientResponse<Client?>> {
+      .init(path: path)
     }
-    
-    struct ClientEndpoint {
-        /// Path: `/v1/client`
-        let path: String
-        
-        var get: Request<ClientResponse<Client?>> {
-            .init(path: path)
-        }
-    }
+  }
 }

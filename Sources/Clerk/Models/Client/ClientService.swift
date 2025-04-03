@@ -5,15 +5,15 @@
 //  Created by Mike Pitre on 2/26/25.
 //
 
-import Foundation
 import Factory
+import Foundation
 
 struct ClientService {
   var get: () async throws -> Client?
 }
 
 extension ClientService {
-  
+
   static var liveValue: Self {
     .init(
       get: {
@@ -22,13 +22,13 @@ extension ClientService {
       }
     )
   }
-  
+
 }
 
 extension Container {
-  
+
   var clientService: Factory<ClientService> {
     self { .liveValue }
   }
-  
+
 }

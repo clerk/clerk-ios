@@ -10,7 +10,7 @@ import Testing
 // should be placed in the serialized tests below
 
 struct UserTests {
-  
+
   @Test func testUserPrimaryEmailAddress() {
     let user = User(
       backupCodeEnabled: true,
@@ -30,7 +30,7 @@ struct UserTests {
           emailAddress: "secondary@email.com",
           verification: nil,
           linkedTo: nil
-        )
+        ),
       ],
       enterpriseAccounts: [],
       externalAccounts: [.mockVerified, .mockUnverified],
@@ -54,10 +54,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: "username"
     )
-    
+
     #expect(user.primaryEmailAddress?.emailAddress == "primary@email.com")
   }
-  
+
   @Test func testUserHasNoPrimaryEmailAddress() {
     let user = User(
       backupCodeEnabled: false,
@@ -88,10 +88,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(user.primaryEmailAddress == nil)
   }
-  
+
   @Test func testUserHasVerifiedEmailAddress() {
     let user = User(
       backupCodeEnabled: false,
@@ -99,12 +99,14 @@ struct UserTests {
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      emailAddresses: [.init(
-        id: "1",
-        emailAddress: "user@email.com",
-        verification: .mockEmailCodeVerifiedVerification,
-        linkedTo: nil
-      )],
+      emailAddresses: [
+        .init(
+          id: "1",
+          emailAddress: "user@email.com",
+          verification: .mockEmailCodeVerifiedVerification,
+          linkedTo: nil
+        )
+      ],
       enterpriseAccounts: [],
       externalAccounts: [.mockVerified, .mockUnverified],
       firstName: nil,
@@ -127,10 +129,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(user.hasVerifiedEmailAddress)
   }
-  
+
   @Test func testUserDoesNotHaveVerifiedEmailAddress() {
     let user = User(
       backupCodeEnabled: false,
@@ -138,12 +140,14 @@ struct UserTests {
       createOrganizationEnabled: false,
       createOrganizationsLimit: nil,
       deleteSelfEnabled: false,
-      emailAddresses: [.init(
-        id: "1",
-        emailAddress: "user@email.com",
-        verification: .mockEmailCodeUnverifiedVerification,
-        linkedTo: nil
-      )],
+      emailAddresses: [
+        .init(
+          id: "1",
+          emailAddress: "user@email.com",
+          verification: .mockEmailCodeUnverifiedVerification,
+          linkedTo: nil
+        )
+      ],
       enterpriseAccounts: [],
       externalAccounts: [.mockVerified, .mockUnverified],
       firstName: nil,
@@ -166,10 +170,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(!user.hasVerifiedEmailAddress)
   }
-  
+
   @Test func testUserHasPrimaryPhoneNumber() {
     let user = User(
       backupCodeEnabled: false,
@@ -208,7 +212,7 @@ struct UserTests {
           verification: nil,
           linkedTo: nil,
           backupCodes: nil
-        )
+        ),
       ],
       primaryEmailAddressId: nil,
       primaryPhoneNumberId: "1",
@@ -219,10 +223,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(user.primaryPhoneNumber?.phoneNumber == "5555550100")
   }
-  
+
   @Test func testUserDoesNotHavePrimaryPhoneNumber() {
     let user = User(
       backupCodeEnabled: false,
@@ -253,10 +257,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(user.primaryPhoneNumber == nil)
   }
-  
+
   @Test func testUserHasVerifiedPhoneNumber() {
     let user = User(
       backupCodeEnabled: false,
@@ -287,10 +291,10 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(user.hasVerifiedPhoneNumber)
   }
-  
+
   @Test func testUserDoesNotHaveVerifiedPhoneNumber() {
     let user = User(
       backupCodeEnabled: false,
@@ -321,22 +325,22 @@ struct UserTests {
       unsafeMetadata: nil,
       username: nil
     )
-    
+
     #expect(!user.hasVerifiedPhoneNumber)
   }
-  
+
   @Test func testUserVerifiedExternalAccounts() {
     #expect(User.mock.verifiedExternalAccounts.count == 2)
   }
-  
+
   @Test func testUserUnverifiedExternalAccounts() {
     #expect(User.mock.unverifiedExternalAccounts.count == 1)
   }
-  
+
 }
 
 @Suite(.serialized) final class UserSerializedTests {
-  
+
   init() {
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
@@ -344,11 +348,11 @@ struct UserTests {
       return clerk
     }
   }
-  
+
   deinit {
     Container.shared.reset()
   }
-  
+
   @Test func testUserUpdateRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me")
@@ -360,9 +364,11 @@ struct UserTests {
       primaryPhoneNumberId: "1",
       unsafeMetadata: "new_metadata"
     )
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -378,14 +384,16 @@ struct UserTests {
     try await User.mock.update(updatePasswordParams)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreateEmailAddressRequest() async throws {
     let requestHandled = LockIsolated(false)
     let emailAddress = "user@email.com"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/email_addresses")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -396,14 +404,16 @@ struct UserTests {
     try await User.mock.createEmailAddress(emailAddress)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreatePhoneNumberRequest() async throws {
     let requestHandled = LockIsolated(false)
     let phoneNumber = "5555550100"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/phone_numbers")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -414,14 +424,16 @@ struct UserTests {
     try await User.mock.createPhoneNumber(phoneNumber)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreateExternalAccountOAuthRequest() async throws {
     let requestHandled = LockIsolated(false)
     let provider = OAuthProvider.google
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -432,14 +444,16 @@ struct UserTests {
     try await User.mock.createExternalAccount(provider: provider)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreateExternalAccountIdTokenRequest() async throws {
     let requestHandled = LockIsolated(false)
     let token = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/external_accounts")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockUnverified, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -451,33 +465,39 @@ struct UserTests {
     try await User.mock.createExternalAccount(provider: .apple, idToken: token)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreatePasskeyRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/passkeys")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       requestHandled.setValue(true)
     }
     mock.register()
-    
+
     // we don't have a real nonce/challenge, so this will throw
-    await #expect(throws: Error.self, performing: {
-      try await User.mock.createPasskey()
-    })
+    await #expect(
+      throws: Error.self,
+      performing: {
+        try await User.mock.createPasskey()
+      })
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreateTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -487,14 +507,16 @@ struct UserTests {
     try await User.mock.createTOTP()
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserVerifyTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
     let code = "12345"
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp/attempt_verification")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -505,13 +527,15 @@ struct UserTests {
     try await User.mock.verifyTOTP(code: code)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserDisableTOTPRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/totp")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -521,13 +545,15 @@ struct UserTests {
     try await User.mock.disableTOTP()
     #expect(requestHandled.value)
   }
-  
+
   @Test func testGetOrganizationInvitations() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_invitations")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -539,13 +565,15 @@ struct UserTests {
     try await User.mock.getOrganizationInvitations()
     #expect(requestHandled.value)
   }
-  
+
   @Test func testGetOrganizationMemberships() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_memberships")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(response: .init(data: [.mockWithUserData], totalCount: 1), client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(response: .init(data: [.mockWithUserData], totalCount: 1), client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -558,42 +586,48 @@ struct UserTests {
     try await User.mock.getOrganizationMemberships()
     #expect(requestHandled.value)
   }
-  
-  @Test("Test get organization suggestions", arguments: [
-    "pending",
-    nil
-  ])
+
+  @Test(
+    "Test get organization suggestions",
+    arguments: [
+      "pending",
+      nil,
+    ])
   func testGetOrganizationSuggestions(status: String?) async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/organization_suggestions")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(response: .init(data: [.mock], totalCount: 1), client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
       #expect(request.url!.query()!.contains("limit"))
       #expect(request.url!.query()!.contains("offset"))
-      
+
       if let status {
         #expect(request.url!.query()!.contains("status=\(status)"))
       } else {
         #expect(!request.url!.query()!.contains("status"))
       }
-      
+
       requestHandled.setValue(true)
     }
     mock.register()
     try await User.mock.getOrganizationSuggestions(status: status)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserGetSessionsRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/sessions/active")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode([Session.mock, Session.mock])
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode([Session.mock, Session.mock])
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -603,7 +637,7 @@ struct UserTests {
     try await User.mock.getSessions()
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserUpdatePasswordRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = User.UpdatePasswordParams(
@@ -612,9 +646,11 @@ struct UserTests {
       signOutOfOtherSessions: true
     )
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/change_password")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -627,13 +663,15 @@ struct UserTests {
     try await User.mock.updatePassword(params)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserSetProfileImageRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -644,13 +682,15 @@ struct UserTests {
     try await User.mock.setProfileImage(imageData: Data())
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserDeleteProfileImageRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/profile_image")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -660,13 +700,15 @@ struct UserTests {
     try await User.mock.deleteProfileImage()
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserDeleteRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
@@ -676,6 +718,5 @@ struct UserTests {
     try await User.mock.delete()
     #expect(requestHandled.value)
   }
-  
-}
 
+}

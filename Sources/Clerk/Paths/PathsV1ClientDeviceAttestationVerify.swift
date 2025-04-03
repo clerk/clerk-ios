@@ -9,18 +9,18 @@ import Foundation
 import Get
 
 extension ClerkFAPI.V1Endpoint.ClientEndpoint.DeviceAttestationEndpoint {
-    
-    var verify: VerifyEndpoint {
-        VerifyEndpoint(path: path + "/verify")
-    }
 
-    struct VerifyEndpoint {
-        /// Path: `v1/client/device_attestation/verify`
-        let path: String
-        
-        func post(_ body: any Encodable) -> Request<Void> {
-            .init(path: path, method: .post, body: body)
-        }
+  var verify: VerifyEndpoint {
+    VerifyEndpoint(path: path + "/verify")
+  }
+
+  struct VerifyEndpoint {
+    /// Path: `v1/client/device_attestation/verify`
+    let path: String
+
+    func post(_ body: any Encodable) -> Request<Void> {
+      .init(path: path, method: .post, body: body)
     }
-    
+  }
+
 }

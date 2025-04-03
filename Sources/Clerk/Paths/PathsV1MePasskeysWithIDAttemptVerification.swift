@@ -9,18 +9,18 @@ import Foundation
 import Get
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.PasskeysEndpoint.WithIdEndpoint {
-    
-    var attemptVerification: AttemptVerificationEndpoint {
-        AttemptVerificationEndpoint(path: path + "/attempt_verification")
+
+  var attemptVerification: AttemptVerificationEndpoint {
+    AttemptVerificationEndpoint(path: path + "/attempt_verification")
+  }
+
+  struct AttemptVerificationEndpoint {
+    /// Path: `/v1/me/passkeys/{id}`
+    let path: String
+
+    func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<Passkey>> {
+      .init(path: path, method: .post, query: queryItems.asTuples, body: body)
     }
-    
-    struct AttemptVerificationEndpoint {
-        /// Path: `/v1/me/passkeys/{id}`
-        let path: String
-        
-        func post(queryItems: [URLQueryItem] = [], body: any Encodable) -> Request<ClientResponse<Passkey>> {
-            .init(path: path, method: .post, query: queryItems.asTuples, body: body)
-        }
-    }
-    
+  }
+
 }

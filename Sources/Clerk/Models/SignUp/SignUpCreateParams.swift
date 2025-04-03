@@ -8,68 +8,68 @@
 import Foundation
 
 extension SignUp {
-  
+
   /// Parameters used to create and configure a new sign-up process.
   ///
   /// The `CreateParams` struct defines all the parameters that can be passed when initiating a sign-up process.
   /// These parameters provide flexibility to support various authentication strategies, user details, and custom configurations.
   public struct CreateParams: Encodable, Sendable {
-    
+
     /// The strategy to use for the sign-up flow.
     public var strategy: String?
-    
+
     /// The user's first name. Only supported if name is enabled.
     public var firstName: String?
-    
+
     /// The user's last name. Only supported if name is enabled.
     public var lastName: String?
-    
+
     /// The user's password. Only supported if password is enabled.
     public var password: String?
-    
+
     /// The user's email address. Only supported if email address is enabled. Keep in mind that the email address requires an extra verification process.
     public var emailAddress: String?
-    
+
     /// The user's phone number in E.164 format. Only supported if phone number is enabled. Keep in mind that the phone number requires an extra verification process.
     public var phoneNumber: String?
-    
+
     /// Required if Web3 authentication is enabled. The Web3 wallet address, made up of 0x + 40 hexadecimal characters.
     public var web3Wallet: String?
-    
+
     /// The user's username. Only supported if usernames are enabled.
     public var username: String?
-    
+
     /// Metadata that can be read and set from the frontend.
     ///
     /// Once the sign-up is complete, the value of this field will be automatically copied to the newly created user's unsafe metadata.
     /// One common use case for this attribute is to use it to implement custom fields that can be collected during sign-up and will automatically be attached to the created User object.
     public var unsafeMetadata: JSON?
-    
+
     /// If strategy is set to 'oauth_{provider}' or 'enterprise_sso', this specifies full URL or path that the OAuth provider should redirect to after successful authorization on their part.
     ///
     /// If strategy is set to 'email_link', this specifies The full URL that the user will be redirected to when they visit the email link. See the custom flow for implementation details.
     public var redirectUrl: String?
-    
+
     /// Required if strategy is set to 'ticket'. The ticket or token generated from the Backend API.
     public var ticket: String?
-    
+
     /// When set to true, the SignUp will attempt to retrieve information from the active SignIn instance and use it to complete the sign-up process.
     ///
     /// This is useful when you want to seamlessly transition a user from a sign-in attempt to a sign-up attempt.
     public var transfer: Bool?
-    
+
     /// A boolean indicating whether the user has agreed to the legal compliance documents.
     public var legalAccepted: Bool?
-    
+
     /// Optional if strategy is set to 'oauth_{provider}' or 'enterprise_sso'. The value to pass to the OIDC prompt parameter in the generated OAuth redirect URL.
     public var oidcPrompt: String?
-    
+
     /// Optional if strategy is set to 'oauth_<provider>' or 'enterprise_sso'. The value to pass to the OIDC login_hint parameter in the generated OAuth redirect URL.
     public var oidcLoginHint: String?
-    
+
     /// The ID token from a provider used for authentication (e.g., SignInWithApple).
     public var token: String?
-    
+
     public init(
       strategy: String? = nil,
       firstName: String? = nil,
@@ -106,10 +106,10 @@ extension SignUp {
       self.token = token
     }
   }
-  
+
   /// Represents the various strategies for initiating a `SignUp` request.
   public enum CreateStrategy: Sendable {
-    
+
     /// Standard sign-up strategy, allowing the user to provide common details such as email, password, and personal information.
     ///
     /// - Parameters:
@@ -127,20 +127,20 @@ extension SignUp {
       username: String? = nil,
       phoneNumber: String? = nil
     )
-    
+
     /// OAuth-based sign-up strategy, using an external provider for authentication.
     ///
     /// - Parameter provider: The OAuth provider used for authentication.
     case oauth(provider: OAuthProvider, redirectUrl: String? = nil)
-    
+
     /// Enterprise single sign-on (SSO) sign-up strategy, allowing authentication through an enterprise identity provider.
     ///
     /// - Parameter identifier: The unique identifier for the enterprise SSO user.
     case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
-    
+
     /// The user will be authenticated via the ticket or token generated from the Backend API.
     case ticket(String)
-    
+
     /// Sign-up strategy using an ID Token, typically obtained from third-party identity providers like Apple.
     ///
     /// - Parameters:
@@ -154,15 +154,15 @@ extension SignUp {
       firstName: String? = nil,
       lastName: String? = nil
     )
-    
+
     /// Transfers an active sign-in instance to a new sign-up process.
     case transfer
-    
+
     /// The `SignUp` will be created without any parameters.
     ///
     /// This is useful for inspecting a newly created `SignUp` object before deciding on a strategy.
     case none
-    
+
     /// Converts the strategy into the appropriate `CreateParams` object for a `SignUp` request.
     ///
     /// This computed property maps each strategy case to its corresponding `CreateParams` object.
@@ -171,46 +171,46 @@ extension SignUp {
     var params: CreateParams {
       switch self {
       case .standard(let emailAddress, let password, let firstName, let lastName, let username, let phoneNumber):
-          .init(
-            firstName: firstName,
-            lastName: lastName,
-            password: password,
-            emailAddress: emailAddress,
-            phoneNumber: phoneNumber,
-            username: username
-          )
+        .init(
+          firstName: firstName,
+          lastName: lastName,
+          password: password,
+          emailAddress: emailAddress,
+          phoneNumber: phoneNumber,
+          username: username
+        )
       case .oauth(let provider, let redirectUrl):
-          .init(
-            strategy: provider.strategy,
-            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
-          )
+        .init(
+          strategy: provider.strategy,
+          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+        )
       case .enterpriseSSO(let identifier, let redirectUrl):
-          .init(
-            strategy: "enterprise_sso",
-            emailAddress: identifier,
-            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
-          )
+        .init(
+          strategy: "enterprise_sso",
+          emailAddress: identifier,
+          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+        )
       case .ticket(let ticket):
-          .init(
-            strategy: "ticket",
-            ticket: ticket
-          )
+        .init(
+          strategy: "ticket",
+          ticket: ticket
+        )
       case .idToken(let provider, let idToken, let firstName, let lastName):
-          .init(
-            strategy: provider.strategy,
-            firstName: firstName,
-            lastName: lastName,
-            token: idToken
-          )
+        .init(
+          strategy: provider.strategy,
+          firstName: firstName,
+          lastName: lastName,
+          token: idToken
+        )
       case .transfer:
-          .init(transfer: true)
+        .init(transfer: true)
       case .none:
-          .init()
+        .init()
       }
     }
   }
-  
+
   /// UpdateParams is a mirror of CreateParams with the same fields and types.
   public typealias UpdateParams = CreateParams
-  
+
 }

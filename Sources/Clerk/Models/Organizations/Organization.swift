@@ -11,46 +11,46 @@ import Get
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
 public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable {
-  
+
   /// The unique identifier of the related organization.
   public let id: String
-  
+
   /// The name of the related organization.
   public let name: String
-  
+
   /// The organization slug. If supplied, it must be unique for the instance.
   public let slug: String?
-  
+
   /// Holds the organization logo or default logo. Compatible with Clerk's Image Optimization.
   public let imageUrl: String
-  
+
   /// A getter boolean to check if the organization has an uploaded image.
   ///
   /// Returns false if Clerk is displaying an avatar for the organization.
   public let hasImage: Bool
-  
+
   /// The number of members the associated organization contains.
   public let membersCount: Int?
-  
+
   /// The number of pending invitations to users to join the organization.
   public let pendingInvitationsCount: Int?
-  
+
   /// The maximum number of memberships allowed for the organization.
   public let maxAllowedMemberships: Int
-  
+
   /// A getter boolean to check if the admin of the organization can delete it.
   public let adminDeleteEnabled: Bool
-  
+
   /// The date when the organization was created.
   public let createdAt: Date
-  
+
   /// The date when the organization was last updated.
   public let updatedAt: Date
-  
+
   /// Metadata that can be read from the Frontend API and Backend API
   /// and can be set only from the Backend API.
   public let publicMetadata: JSON?
-  
+
   public init(
     id: String,
     name: String,
@@ -81,7 +81,7 @@ public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable
 }
 
 extension Organization {
-  
+
   /// Updates an organization's attributes. Returns an Organization object.
   ///
   /// - Parameters:
@@ -98,12 +98,12 @@ extension Organization {
       query: [("_clerk_session_id", Clerk.shared.session?.id)],
       body: [
         "name": name,
-        "slug": slug
+        "slug": slug,
       ]
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Deletes the organization. Only administrators can delete an organization.
   ///
   /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
@@ -116,7 +116,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Sets or replaces an organization's logo.
   ///
   /// The logo must be an image and its size cannot exceed 10MB.
@@ -130,7 +130,7 @@ extension Organization {
     data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
     data.append(imageData)
     data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-    
+
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations/\(id)/logo",
       method: .put,
@@ -139,7 +139,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Returns a ClerkPaginatedResponse of RoleResource objects.
   ///
   /// - Parameters:
@@ -157,12 +157,12 @@ extension Organization {
       query: [
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
-        ("_clerk_session_id", Clerk.shared.session?.id)
+        ("_clerk_session_id", Clerk.shared.session?.id),
       ]
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Retrieves the list of memberships for the currently active organization.
   ///
   /// - Parameters:
@@ -188,14 +188,13 @@ extension Organization {
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
         ("paginated", String(true)),
-        ("_clerk_session_id", Clerk.shared.session?.id)
+        ("_clerk_session_id", Clerk.shared.session?.id),
       ] + roleQueries)
       .filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  
   /// Adds a user as a member to an organization.
   ///
   /// A user can only be added to an organization if they are not already a member of it
@@ -220,12 +219,12 @@ extension Organization {
       query: [("_clerk_session_id", Clerk.shared.session?.id)],
       body: [
         "user_id": userId,
-        "role": role
+        "role": role,
       ]
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Updates a member of an organization.
   ///
   /// Currently, only a user's role can be updated.
@@ -249,7 +248,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Removes a member from the organization based on the user ID.
   ///
   /// - Parameter userId:
@@ -266,7 +265,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Retrieves the list of invitations for the currently active organization.
   ///
   /// - Parameters:
@@ -289,12 +288,12 @@ extension Organization {
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
         ("status", status),
-        ("_clerk_session_id", Clerk.shared.session?.id)
+        ("_clerk_session_id", Clerk.shared.session?.id),
       ].filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Creates and sends an invitation to the target email address to become a member with the specified role.
   ///
   /// - Parameters:
@@ -314,12 +313,12 @@ extension Organization {
       query: [("_clerk_session_id", Clerk.shared.session?.id)],
       body: [
         "email_address": emailAddress,
-        "role": role
+        "role": role,
       ]
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   //    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
   //    ///
   //    /// - Parameters:
@@ -337,7 +336,7 @@ extension Organization {
   //        )
   //        return try await Container.shared.apiClient().send(request).value.response
   //    }
-  
+
   /// Creates a new domain for the currently active organization.
   ///
   /// - Parameters:
@@ -353,7 +352,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Retrieves the list of domains for the currently active organization.
   ///
   /// Returns a `ClerkPaginatedResponse` of `OrganizationDomain` objects.
@@ -376,12 +375,12 @@ extension Organization {
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
         ("enrollment_mode", enrollmentMode),
-        ("_clerk_session_id", Clerk.shared.session?.id)
+        ("_clerk_session_id", Clerk.shared.session?.id),
       ].filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Retrieves a domain for an organization based on the given domain ID.
   ///
   /// - Parameters:
@@ -395,7 +394,7 @@ extension Organization {
     )
     return try await Container.shared.apiClient().send(request).value.response
   }
-  
+
   /// Retrieves the list of membership requests for the currently active organization.
   ///
   /// - Parameters:
@@ -416,7 +415,7 @@ extension Organization {
         ("offset", String(initialPage)),
         ("limit", String(pageSize)),
         ("status", status),
-        ("_clerk_session_id", Clerk.shared.session?.id)
+        ("_clerk_session_id", Clerk.shared.session?.id),
       ].filter { $1 != nil }
     )
     return try await Container.shared.apiClient().send(request).value.response
@@ -424,7 +423,7 @@ extension Organization {
 }
 
 extension Organization {
-  
+
   static var mock: Self {
     .init(
       id: "1",
@@ -441,6 +440,5 @@ extension Organization {
       publicMetadata: nil
     )
   }
-  
-}
 
+}

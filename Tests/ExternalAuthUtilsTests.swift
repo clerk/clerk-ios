@@ -5,7 +5,7 @@ import Testing
 
 @Suite("ExternalAuthUtilsTests")
 struct ExternalAuthUtilsTests {
-  
+
   @Test func testExtractRotatingTokenNonceFromUrl() {
     let nonce = UUID().uuidString
     var components = URLComponents(url: mockBaseUrl, resolvingAgainstBaseURL: false)!
@@ -15,7 +15,7 @@ struct ExternalAuthUtilsTests {
     let extractedNonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
     #expect(extractedNonce == nonce)
   }
-  
+
   @Test func testExtractRotatingTokenNonceFromUrlShouldReturnNil() {
     // Missing Query Item
     var components = URLComponents(url: mockBaseUrl, resolvingAgainstBaseURL: false)!
@@ -25,5 +25,5 @@ struct ExternalAuthUtilsTests {
     let extractedNonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
     #expect(extractedNonce == nil)
   }
-  
+
 }
