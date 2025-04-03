@@ -38,6 +38,11 @@ Would you like to work on Open Source software and help maintain this repository
 
 ## 🧑‍💻 Installation
 
+### Requirements
+- iOS 17+ / Mac Catalyst 17+ / macOS 14+ / tvOS 17+ / watchOS 10+ / visionOS 1+
+- Xcode 16+
+- Swift 5.10+
+
 ### Swift Package Manager
 
 To integrate using Apple's [Swift Package Manager](https://swift.org/package-manager/), navigate to your Xcode project, select `Package Dependencies` and click the `+` icon to search for `https://github.com/clerk/clerk-ios`.
