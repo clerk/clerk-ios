@@ -8,9 +8,9 @@
 import Foundation
 
 extension Clerk.Environment {
-    
-    struct AuthConfig: Codable, Sendable {
-        let singleSessionMode: Bool
-    }
-    
+
+  struct AuthConfig: Codable, Sendable {
+    let singleSessionMode: Bool
+  }
+
 }

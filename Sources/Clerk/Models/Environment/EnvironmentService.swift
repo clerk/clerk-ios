@@ -13,7 +13,7 @@ struct EnvironmentService {
 }
 
 extension EnvironmentService {
-  
+
   static var liveValue: Self {
     .init(
       get: {
@@ -22,13 +22,13 @@ extension EnvironmentService {
       }
     )
   }
-  
+
 }
 
 extension Container {
-  
+
   var environmentService: Factory<EnvironmentService> {
     self { .liveValue }
   }
-  
+
 }

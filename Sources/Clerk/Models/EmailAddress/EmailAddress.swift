@@ -21,20 +21,20 @@ import Foundation
 /// The second and final step involves an attempt to complete the verification by calling the ``EmailAddress/attemptVerification(strategy:)`` method,
 /// passing the one-time code as a parameter.
 public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
-  
+
   /// The unique identifier for this email address.
   public let id: String
-  
+
   /// The value of this email address.
   public let emailAddress: String
-  
+
   /// An object holding information on the verification of this email address.
   public let verification: Verification?
-  
+
   /// An array of objects containing information about any identifications
   /// that might be linked to this email address.
   public let linkedTo: [JSON]?
-  
+
   public init(
     id: String,
     emailAddress: String,
@@ -49,7 +49,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 }
 
 extension EmailAddress {
-  
+
   /// Creates a new email address for the current user.
   /// - Parameters:
   ///     - email: The email address to add to the current user.
@@ -57,7 +57,7 @@ extension EmailAddress {
   public static func create(_ email: String) async throws -> EmailAddress {
     try await Container.shared.userService().createEmailAddress(email)
   }
-  
+
   /// Prepares the verification process for this email address.
   ///
   /// An email message with a one-time code or an email link will be sent to the email address box.
@@ -75,7 +75,7 @@ extension EmailAddress {
   public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
     try await Container.shared.emailAddressService().prepareVerification(id, strategy)
   }
-  
+
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
   /// The code will be sent when calling the ``EmailAddress/prepareVerification(strategy:)`` method.
   ///
@@ -92,18 +92,17 @@ extension EmailAddress {
   public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
     try await Container.shared.emailAddressService().attemptVerification(id, strategy)
   }
-  
-  
+
   /// Deletes this email address.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
     try await Container.shared.emailAddressService().destroy(id)
   }
-  
+
 }
 
 extension EmailAddress {
-  
+
   static var mock: EmailAddress {
     EmailAddress(
       id: "1",
@@ -112,5 +111,5 @@ extension EmailAddress {
       linkedTo: nil
     )
   }
-  
+
 }

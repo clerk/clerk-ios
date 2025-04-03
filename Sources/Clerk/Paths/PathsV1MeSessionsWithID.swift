@@ -8,14 +8,14 @@
 import Foundation
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint.SessionsEndpoint {
-    
-    func withId(_ id: String) -> WithIdEndpoint {
-        WithIdEndpoint(path: path + "/\(id)")
-    }
-    
-    struct WithIdEndpoint {
-        /// Path: `v1/me/sessions/{id}`
-        let path: String
-    }
-    
+
+  func withId(_ id: String) -> WithIdEndpoint {
+    WithIdEndpoint(path: path + "/\(id)")
+  }
+
+  struct WithIdEndpoint {
+    /// Path: `v1/me/sessions/{id}`
+    let path: String
+  }
+
 }

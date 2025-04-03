@@ -10,39 +10,43 @@ import Testing
 // should be placed in the serialized tests below
 
 struct SignUpTests {
-  
+
   @Test func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignUp.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
     #expect(enterpriseSSO.params.strategy == "enterprise_sso")
     #expect(enterpriseSSO.params.identifier == "user@email.com")
-    
+
     let oauth = SignUp.AuthenticateWithRedirectStrategy.oauth(provider: .google)
     #expect(oauth.params.strategy == "oauth_google")
   }
-  
+
 }
 
 @Suite(.serialized) struct SignUpSerializedTests {
-  
+
   init() {
     Container.shared.reset()
   }
-  
-  @Test("All create strategies", arguments: [
-    SignUp.CreateStrategy.enterpriseSSO(identifier: "user@email.com", redirectUrl: "createRedirectUrl"),
-    .ticket("ticket"),
-    .idToken(provider: .apple, idToken: "token", firstName: "First", lastName: "Last"),
-    .oauth(provider: .google, redirectUrl: "oauthRedirectUrl"),
-    .standard(emailAddress: "user@email.com", password: "password", firstName: "First", lastName: "Last", username: "username", phoneNumber: "phoneNumber"),
-    .transfer
-  ])
+
+  @Test(
+    "All create strategies",
+    arguments: [
+      SignUp.CreateStrategy.enterpriseSSO(identifier: "user@email.com", redirectUrl: "createRedirectUrl"),
+      .ticket("ticket"),
+      .idToken(provider: .apple, idToken: "token", firstName: "First", lastName: "Last"),
+      .oauth(provider: .google, redirectUrl: "oauthRedirectUrl"),
+      .standard(emailAddress: "user@email.com", password: "password", firstName: "First", lastName: "Last", username: "username", phoneNumber: "phoneNumber"),
+      .transfer,
+    ])
   func testCreateRequest(strategy: SignUp.CreateStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let legalAccepted: Bool? = true
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["email_address"] == strategy.params.emailAddress)
@@ -71,7 +75,7 @@ struct SignUpTests {
     _ = try await SignUp.create(strategy: strategy, legalAccepted: legalAccepted)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testCreateRawRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = [
@@ -90,12 +94,14 @@ struct SignUpTests {
       "legal_accepted": "1",
       "oidc_prompt": "oidcPrompt",
       "oidc_login_hint": "oidcHint",
-      "token": "token"
+      "token": "token",
     ]
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["email_address"] == params["email_address"])
@@ -120,7 +126,7 @@ struct SignUpTests {
     _ = try await SignUp.create(params)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUpdateRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = SignUp.UpdateParams(
@@ -143,9 +149,11 @@ struct SignUpTests {
     )
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody["email_address"] == params.emailAddress)
@@ -174,18 +182,22 @@ struct SignUpTests {
     _ = try await signUp.update(params: params)
     #expect(requestHandled.value)
   }
-  
-  @Test("All prepare strategies", arguments: [
-    SignUp.PrepareStrategy.emailCode,
-    .phoneCode
-  ])
+
+  @Test(
+    "All prepare strategies",
+    arguments: [
+      SignUp.PrepareStrategy.emailCode,
+      .phoneCode,
+    ])
   func testPrepareVerificationRequest(strategy: SignUp.PrepareStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)/prepare_verification")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["strategy"] == strategy.params.strategy)
@@ -195,18 +207,22 @@ struct SignUpTests {
     _ = try await signUp.prepareVerification(strategy: strategy)
     #expect(requestHandled.value)
   }
-  
-  @Test("All attempt strategies", arguments: [
-    SignUp.AttemptStrategy.emailCode(code: "12345"),
-    .phoneCode(code: "67890")
-  ])
+
+  @Test(
+    "All attempt strategies",
+    arguments: [
+      SignUp.AttemptStrategy.emailCode(code: "12345"),
+      .phoneCode(code: "67890"),
+    ])
   func testPrepareVerificationRequest(strategy: SignUp.AttemptStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)/attempt_verification")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["strategy"] == strategy.params.strategy)
@@ -217,15 +233,17 @@ struct SignUpTests {
     _ = try await signUp.attemptVerification(strategy: strategy)
     #expect(requestHandled.value)
   }
-  
+
   @Test(arguments: [nil, UUID().uuidString])
   func testGetRequest(rotatingTokenNonce: String?) async throws {
     let requestHandled = LockIsolated(false)
     let signUp = SignUp.mock
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups/\(signUp.id)")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       if let rotatingTokenNonce {

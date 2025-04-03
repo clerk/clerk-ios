@@ -31,7 +31,7 @@ struct UserService {
 }
 
 extension UserService {
-  
+
   static var liveValue: UserService {
     .init(
       update: { params in
@@ -61,7 +61,7 @@ extension UserService {
           body: [
             "strategy": provider.strategy,
             "redirect_url": redirectUrl ?? RedirectConfigDefaults.redirectUrl,
-            "additional_scopes": additionalScopes?.joined(separator: ",")
+            "additional_scopes": additionalScopes?.joined(separator: ","),
           ]
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -71,56 +71,56 @@ extension UserService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": provider.strategy,
-            "token": idToken
+            "token": idToken,
           ]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
       createPasskey: {
         #if canImport(AuthenticationServices) && !os(watchOS)
-        let passkey = try await Passkey.create()
-        
-        guard let challenge = passkey.challenge else {
-          throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-        }
-        
-        guard let name = passkey.username else {
-          throw ClerkClientError(message: "Unable to get the username for the passkey.")
-        }
-        
-        guard let userId = passkey.userId else {
-          throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
-        }
-        
-        let manager = PasskeyHelper()
-        let authorization = try await manager.createPasskey(
-          challenge: challenge,
-          name: name,
-          userId: userId
-        )
-        
-        guard
-          let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
-          let rawAttestationObject = credentialRegistration.rawAttestationObject
-        else {
-          throw ClerkClientError(message: "Invalid credential type.")
-        }
-        
-        let publicKeyCredential: [String: any Encodable] = [
-          "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-          "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-          "type": "public-key",
-          "response": [
-            "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
-            "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
+          let passkey = try await Passkey.create()
+
+          guard let challenge = passkey.challenge else {
+            throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+          }
+
+          guard let name = passkey.username else {
+            throw ClerkClientError(message: "Unable to get the username for the passkey.")
+          }
+
+          guard let userId = passkey.userId else {
+            throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+          }
+
+          let manager = PasskeyHelper()
+          let authorization = try await manager.createPasskey(
+            challenge: challenge,
+            name: name,
+            userId: userId
+          )
+
+          guard
+            let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+            let rawAttestationObject = credentialRegistration.rawAttestationObject
+          else {
+            throw ClerkClientError(message: "Invalid credential type.")
+          }
+
+          let publicKeyCredential: [String: any Encodable] = [
+            "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+            "type": "public-key",
+            "response": [
+              "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+              "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+            ],
           ]
-        ]
-        
-        let publicKeyCredentialJSON = try JSON(publicKeyCredential)
-        
-        return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
+
+          let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+
+          return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
         #else
-        throw ClerkClientError(message: "Passkey authentication is not supported on this platform.")
+          throw ClerkClientError(message: "Passkey authentication is not supported on this platform.")
         #endif
       },
       createTOTP: {
@@ -148,7 +148,7 @@ extension UserService {
           query: [
             ("offset", String(initialPage)),
             ("limit", String(pageSize)),
-            ("_clerk_session_id", Clerk.shared.session?.id)
+            ("_clerk_session_id", Clerk.shared.session?.id),
           ]
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -160,7 +160,7 @@ extension UserService {
             ("offset", String(initialPage)),
             ("limit", String(pageSize)),
             ("paginated", "true"),
-            ("_clerk_session_id", Clerk.shared.session?.id)
+            ("_clerk_session_id", Clerk.shared.session?.id),
           ]
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -172,7 +172,7 @@ extension UserService {
             ("offset", String(initialPage)),
             ("limit", String(pageSize)),
             ("status", status),
-            ("_clerk_session_id", Clerk.shared.session?.id)
+            ("_clerk_session_id", Clerk.shared.session?.id),
           ].filter({ $1 != nil })
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -181,7 +181,7 @@ extension UserService {
         let request = ClerkFAPI.v1.me.sessions.active.get(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        
+
         let sessions = try await Container.shared.apiClient().send(request).value
         Clerk.shared.sessionsByUserId[user.id] = sessions
         return sessions
@@ -201,7 +201,7 @@ extension UserService {
         data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-        
+
         let request = ClerkFAPI.v1.me.profileImage.post(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
@@ -225,9 +225,9 @@ extension UserService {
 }
 
 extension Container {
-  
+
   var userService: Factory<UserService> {
     self { .liveValue }
   }
-  
+
 }

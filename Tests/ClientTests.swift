@@ -10,7 +10,7 @@ import Testing
 // should be placed in the serialized tests below
 
 struct ClientTests {
-  
+
   @Test func testActiveSessions() {
     let client = Client(
       id: "1",
@@ -20,24 +20,26 @@ struct ClientTests {
       lastActiveSessionId: "1",
       updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
     )
-    
+
     #expect(client.activeSessions.count == 2)
   }
-  
+
 }
 
 @Suite(.serialized) struct ClientSerializedTests {
-  
+
   init() {
     Container.shared.reset()
   }
-  
+
   @Test func testGet() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)

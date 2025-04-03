@@ -16,7 +16,7 @@ struct ClerkService {
 }
 
 extension ClerkService {
-  
+
   static var liveValue: Self {
     .init(
       saveClientIdToKeychain: { clientId in
@@ -35,19 +35,19 @@ extension ClerkService {
         let request = Request<ClientResponse<Session>>(
           path: "v1/client/sessions/\(sessionId)/touch",
           method: .post,
-          body: ["active_organization_id": organizationId ?? ""] // nil key/values get dropped, use an empty string to set no active org
+          body: ["active_organization_id": organizationId ?? ""]  // nil key/values get dropped, use an empty string to set no active org
         )
         try await Container.shared.apiClient().send(request)
       }
     )
   }
-  
+
 }
 
 extension Container {
-  
+
   var clerkService: Factory<ClerkService> {
     self { .liveValue }
   }
-  
+
 }

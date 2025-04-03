@@ -22,7 +22,7 @@ struct SignUpService {
 }
 
 extension SignUpService {
-  
+
   static var liveValue: Self {
     .init(
       create: { strategy, legalAccepted in
@@ -49,7 +49,7 @@ extension SignUpService {
       },
       authenticateWithRedirectCombined: { strategy, prefersEphemeralWebBrowserSession in
         let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
-        
+
         guard
           let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
           let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -57,12 +57,12 @@ extension SignUpService {
         else {
           throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
-        
+
         let authSession = await WebAuthentication(
           url: url,
           prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
-        
+
         let callbackUrl = try await authSession.start()
         let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
@@ -75,12 +75,12 @@ extension SignUpService {
         else {
           throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
-        
+
         let authSession = await WebAuthentication(
           url: url,
           prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
         )
-        
+
         let callbackUrl = try await authSession.start()
         let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
         return transferFlowResult
@@ -98,13 +98,13 @@ extension SignUpService {
       }
     )
   }
-  
+
 }
 
 extension Container {
-  
+
   var signUpService: Factory<SignUpService> {
     self { .liveValue }
   }
-  
+
 }

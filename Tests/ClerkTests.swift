@@ -10,7 +10,7 @@ import Testing
 // should be placed in the serialized tests below
 
 struct ClerkTests {
-  
+
   @MainActor
   @Test func testInstanceType() async throws {
     let clerk = Clerk()
@@ -19,7 +19,7 @@ struct ClerkTests {
     clerk.configure(publishableKey: "pk_live_123456789")
     #expect(clerk.instanceType == .production)
   }
-  
+
   @MainActor
   @Test func testUserShortcut() async throws {
     let clerk = Clerk()
@@ -27,7 +27,7 @@ struct ClerkTests {
     clerk.client = Client.mock
     #expect(clerk.user?.id == User.mock.id)
   }
-  
+
   @MainActor
   @Test func testSessionShortcut() async throws {
     let clerk = Clerk()
@@ -35,15 +35,15 @@ struct ClerkTests {
     clerk.client = Client.mock
     #expect(clerk.session?.id == Session.mock.id)
   }
-  
+
 }
 
 @Suite(.serialized) final class ClerkSerializedTests {
-      
+
   init() {
     Container.shared.reset()
   }
-  
+
   @MainActor
   @Test func testClientIdSavedToKeychainOnClientDidSet() async throws {
     await withMainSerialExecutor {
@@ -58,11 +58,11 @@ struct ClerkTests {
         clerk.client = .mock
         #expect(clientIdInKeychain.value == Client.mock.id)
       }
-      
+
       await task.value
     }
   }
-  
+
   @MainActor
   @Test func testLoadWithInvalidKey() async throws {
     let clerk = Clerk()
@@ -71,7 +71,7 @@ struct ClerkTests {
       try await clerk.load()
     }
   }
-  
+
   @MainActor
   @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
     try await withMainSerialExecutor {
@@ -83,19 +83,21 @@ struct ClerkTests {
         try await clerk.load()
         #expect(clerk.isLoaded)
       }
-      
+
       try await task.value
     }
   }
-  
+
   @MainActor
   @Test func testSignOutRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
@@ -104,15 +106,17 @@ struct ClerkTests {
     try await clerk.signOut()
     #expect(requestHandled.value)
   }
-  
+
   @MainActor
   @Test func testSignOutWithSessionIdRequest() async throws {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
@@ -121,17 +125,22 @@ struct ClerkTests {
     try await clerk.signOut(sessionId: Session.mock.id)
     #expect(requestHandled.value)
   }
-    
+
   @MainActor
-  @Test("Set Active Tests", arguments: [
-    "1", nil
-  ]) func testSetActiveRequest(organizationId: String?) async throws {
+  @Test(
+    "Set Active Tests",
+    arguments: [
+      "1", nil,
+    ]) func testSetActiveRequest(organizationId: String?) async throws
+  {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/touch")
-    var mock = Mock(url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [
-      .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
-    ])
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
+      ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["active_organization_id"] == organizationId)
@@ -141,6 +150,5 @@ struct ClerkTests {
     try await clerk.setActive(sessionId: Session.mock.id, organizationId: organizationId)
     #expect(requestHandled.value)
   }
-  
-  
+
 }

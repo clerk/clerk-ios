@@ -8,14 +8,14 @@
 import Foundation
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint {
-    
-    var sessions: SessionsEndpoint {
-        SessionsEndpoint(path: path + "/sessions")
-    }
-    
-    struct SessionsEndpoint {
-        /// Path: `/v1/me/sessions`
-        let path: String
-    }
-    
+
+  var sessions: SessionsEndpoint {
+    SessionsEndpoint(path: path + "/sessions")
+  }
+
+  struct SessionsEndpoint {
+    /// Path: `/v1/me/sessions`
+    let path: String
+  }
+
 }

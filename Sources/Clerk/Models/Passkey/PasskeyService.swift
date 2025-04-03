@@ -16,12 +16,12 @@ struct PasskeyService {
 }
 
 extension PasskeyService {
-  
+
   static var liveValue: Self {
     .init(
       create: {
         let request = ClerkFAPI.v1.me.passkeys.post(
-            queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },
@@ -37,7 +37,7 @@ extension PasskeyService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": "passkey",
-            "public_key_credential": credential
+            "public_key_credential": credential,
           ]
         )
         return try await Container.shared.apiClient().send(request).value.response
@@ -50,13 +50,13 @@ extension PasskeyService {
       }
     )
   }
-  
+
 }
 
 extension Container {
-  
+
   var passkeyService: Factory<PasskeyService> {
     self { .liveValue }
   }
-  
+
 }

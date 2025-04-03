@@ -5,9 +5,9 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
+import AuthenticationServices
 import Factory
 import Foundation
-import AuthenticationServices
 
 /// The `SignUp` object holds the state of the current sign-up and provides helper methods to navigate and complete the sign-up process.
 /// Once a sign-up is complete, a new user is created.
@@ -25,65 +25,65 @@ import AuthenticationServices
 /// 4. **Sign Up Complete**:
 ///    If the verification is successful, the newly created session is set as the active session.
 public struct SignUp: Codable, Sendable, Equatable, Hashable {
-  
+
   /// The unique identifier of the current sign-up.
   public let id: String
-  
+
   /// The status of the current sign-up.
   ///
   /// See ``SignUp/Status-swift.enum`` for supported values.
   public let status: Status
-  
+
   /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
   public let requiredFields: [String]
-  
+
   /// An array of all the fields that can be supplied to the sign-up, but their absence does not prevent the sign-up from being marked as complete.
   public let optionalFields: [String]
-  
+
   /// An array of all the fields whose values are not supplied yet but they are mandatory in order for a sign-up to be marked as complete.
   public let missingFields: [String]
-  
+
   /// An array of all the fields whose values have been supplied, but they need additional verification in order for them to be accepted.
   ///
   /// Examples of such fields are `email_address` and `phone_number`.
   public let unverifiedFields: [String]
-  
+
   /// An object that contains information about all the verifications that are in-flight.
   public let verifications: [String: Verification?]
-  
+
   /// The username supplied to the current sign-up. Only supported if username is enabled in the instance settings.
   public let username: String?
-  
+
   /// The email address supplied to the current sign-up. Only supported if email address is enabled in the instance settings.
   public let emailAddress: String?
-  
+
   /// The user's phone number in E.164 format. Only supported if phone number is enabled in the instance settings.
   public let phoneNumber: String?
-  
+
   /// The Web3 wallet address, made up of 0x + 40 hexadecimal characters. Only supported if Web3 authentication is enabled in the instance settings.
   public let web3Wallet: String?
-  
+
   /// The value of this attribute is true if a password was supplied to the current sign-up. Only supported if password is enabled in the instance settings.
   public let passwordEnabled: Bool
-  
+
   /// The first name supplied to the current sign-up. Only supported if name is enabled in the instance settings.
   public let firstName: String?
-  
+
   /// The last name supplied to the current sign-up. Only supported if name is enabled in the instance settings.
   public let lastName: String?
-  
+
   /// Metadata that can be read and set from the frontend. Once the sign-up is complete, the value of this field will be automatically copied to the newly created user's unsafe metadata. One common use case for this attribute is to use it to implement custom fields that can be collected during sign-up and will automatically be attached to the created User object.
   public let unsafeMetadata: JSON?
-  
+
   /// The identifier of the newly-created session. This attribute is populated only when the sign-up is complete.
   public let createdSessionId: String?
-  
+
   /// The identifier of the newly-created user. This attribute is populated only when the sign-up is complete.
-  public  let createdUserId: String?
-  
+  public let createdUserId: String?
+
   /// The date when the sign-up was abandoned by the user.
   public let abandonAt: Date
-  
+
   public init(
     id: String,
     status: SignUp.Status,
@@ -91,7 +91,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
     optionalFields: [String],
     missingFields: [String],
     unverifiedFields: [String],
-    verifications: [String : Verification?],
+    verifications: [String: Verification?],
     username: String? = nil,
     emailAddress: String? = nil,
     phoneNumber: String? = nil,
@@ -126,7 +126,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
 }
 
 extension SignUp {
-  
+
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
   ///
   /// This method initiates a new sign-up process by sending the appropriate parameters to Clerk's API.
@@ -149,7 +149,7 @@ extension SignUp {
   public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
     try await Container.shared.signUpService().create(strategy, legalAccepted)
   }
-  
+
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
   ///
   /// This method initiates a new sign-up process by sending the appropriate parameters to Clerk's API.
@@ -171,7 +171,7 @@ extension SignUp {
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
     try await Container.shared.signUpService().createRaw(AnyEncodable(params))
   }
-  
+
   /// This method is used to update the current sign-up.
   ///
   /// This method is used to modify the details of an ongoing sign-up process.
@@ -188,7 +188,7 @@ extension SignUp {
   public func update(params: UpdateParams) async throws -> SignUp {
     try await Container.shared.signUpService().update(self, params)
   }
-  
+
   /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
   ///
   /// As mentioned, there are two fields that need to be verified:
@@ -205,7 +205,7 @@ extension SignUp {
   public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
     try await Container.shared.signUpService().prepareVerification(self, strategy)
   }
-  
+
   /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
   ///
   /// Depending on the strategy, the method parameters could differ.
@@ -220,66 +220,66 @@ extension SignUp {
   public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
     try await Container.shared.signUpService().attemptVerification(self, strategy)
   }
-  
+
   #if !os(tvOS) && !os(watchOS)
-  /// Creates a new ``SignUp`` and initiates an external authentication flow using a redirect-based strategy.
-  ///
-  /// This function handles the process of creating a ``SignUp`` instance,
-  /// starting an external web authentication session, and processing the callback URL upon successful
-  /// authentication.
-  ///
-  /// - Parameters:
-  ///   - strategy: The authentication strategy to use for the external authentication flow.
-  ///               See ``SignUp/AuthenticateWithRedirectStrategy`` for available options.
-  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-  ///                                         browser session (default is `false`). When `true`, the session
-  ///                                         does not persist cookies or other data between sessions, ensuring
-  ///                                         a private browsing experience.
-  ///
-  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-  ///           encountered during the sign-up or authentication processes.
-  ///
-  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignUp`` or ``SignIn``.
-  ///
-  /// Example:
-  /// ```swift
-  /// let result = try await SignUp.authenticateWithRedirect(strategy: .oauth(provider: .google))
-  /// ```
-  @discardableResult @MainActor
-  public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    try await Container.shared.signUpService().authenticateWithRedirectCombined(strategy, prefersEphemeralWebBrowserSession)
-  }
+    /// Creates a new ``SignUp`` and initiates an external authentication flow using a redirect-based strategy.
+    ///
+    /// This function handles the process of creating a ``SignUp`` instance,
+    /// starting an external web authentication session, and processing the callback URL upon successful
+    /// authentication.
+    ///
+    /// - Parameters:
+    ///   - strategy: The authentication strategy to use for the external authentication flow.
+    ///               See ``SignUp/AuthenticateWithRedirectStrategy`` for available options.
+    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+    ///                                         browser session (default is `false`). When `true`, the session
+    ///                                         does not persist cookies or other data between sessions, ensuring
+    ///                                         a private browsing experience.
+    ///
+    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+    ///           encountered during the sign-up or authentication processes.
+    ///
+    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignUp`` or ``SignIn``.
+    ///
+    /// Example:
+    /// ```swift
+    /// let result = try await SignUp.authenticateWithRedirect(strategy: .oauth(provider: .google))
+    /// ```
+    @discardableResult @MainActor
+    public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+      try await Container.shared.signUpService().authenticateWithRedirectCombined(strategy, prefersEphemeralWebBrowserSession)
+    }
   #endif
-  
+
   #if !os(tvOS) && !os(watchOS)
-  /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignUp`` instance.
-  ///
-  /// This function starts an external web authentication session,
-  /// and processes the callback URL upon successful authentication.
-  ///
-  /// - Parameters:
-  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-  ///                                         browser session (default is `false`). When `true`, the session
-  ///                                         does not persist cookies or other data between sessions,
-  ///                                         ensuring a private browsing experience.
-  ///
-  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-  ///           encountered during the authentication process.
-  ///
-  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
-  ///            which can be either a ``SignUp`` or ``SignIn``.
-  ///
-  /// Example:
-  /// ```swift
-  /// let signUp = try await SignUp.create(strategy: .oauth(provider: .google))
-  /// let result = try await signUp.authenticateWithRedirect()
-  /// ```
-  @discardableResult @MainActor
-  public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    try await Container.shared.signUpService().authenticateWithRedirectTwoStep(self, prefersEphemeralWebBrowserSession)
-  }
+    /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignUp`` instance.
+    ///
+    /// This function starts an external web authentication session,
+    /// and processes the callback URL upon successful authentication.
+    ///
+    /// - Parameters:
+    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+    ///                                         browser session (default is `false`). When `true`, the session
+    ///                                         does not persist cookies or other data between sessions,
+    ///                                         ensuring a private browsing experience.
+    ///
+    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+    ///           encountered during the authentication process.
+    ///
+    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
+    ///            which can be either a ``SignUp`` or ``SignIn``.
+    ///
+    /// Example:
+    /// ```swift
+    /// let signUp = try await SignUp.create(strategy: .oauth(provider: .google))
+    /// let result = try await signUp.authenticateWithRedirect()
+    /// ```
+    @discardableResult @MainActor
+    public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+      try await Container.shared.signUpService().authenticateWithRedirectTwoStep(self, prefersEphemeralWebBrowserSession)
+    }
   #endif
-  
+
   /// Authenticates the user using an ID Token and a specified provider.
   ///
   /// This method facilitates authentication using an ID token provided by a specific authentication provider.
@@ -304,7 +304,7 @@ extension SignUp {
   public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
     try await Container.shared.signUpService().authenticateWithIdTokenCombined(provider, idToken)
   }
-  
+
   /// Authenticates the user using an ID Token and a specified provider.
   ///
   /// This method completes authentication using an ID token provided by a specific authentication provider.
@@ -326,13 +326,13 @@ extension SignUp {
 }
 
 extension SignUp {
-  
+
   // MARK: - Internal Helpers
-  
+
   private var needsTransferToSignIn: Bool {
     verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
   }
-  
+
   /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   func handleTransferFlow() async throws -> TransferFlowResult {
     if needsTransferToSignIn == true {
@@ -342,7 +342,7 @@ extension SignUp {
       return .signUp(self)
     }
   }
-  
+
   @discardableResult @MainActor
   func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
@@ -355,17 +355,17 @@ extension SignUp {
       return result
     }
   }
-  
+
   /// Returns the current sign up.
   @discardableResult @MainActor
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
     try await Container.shared.signUpService().get(self, rotatingTokenNonce)
   }
-  
+
 }
 
 extension SignUp {
-  
+
   static var mock: SignUp {
     SignUp(
       id: "1",
@@ -388,5 +388,5 @@ extension SignUp {
       abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890)
     )
   }
-  
+
 }

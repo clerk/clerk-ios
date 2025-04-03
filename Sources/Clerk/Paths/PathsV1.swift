@@ -8,12 +8,12 @@
 import Foundation
 
 extension ClerkFAPI {
-    static var v1: V1Endpoint {
-        V1Endpoint(path: "/v1")
-    }
-    
-    struct V1Endpoint {
-        /// Path: `/v1`
-        let path: String
-    }
+  static var v1: V1Endpoint {
+    V1Endpoint(path: "/v1")
+  }
+
+  struct V1Endpoint {
+    /// Path: `/v1`
+    let path: String
+  }
 }

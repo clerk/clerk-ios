@@ -9,18 +9,18 @@ import Foundation
 import Get
 
 extension ClerkFAPI.V1Endpoint.MeEndpoint {
-    
-    var passkeys: PasskeysEndpoint {
-        PasskeysEndpoint(path: path + "/passkeys")
+
+  var passkeys: PasskeysEndpoint {
+    PasskeysEndpoint(path: path + "/passkeys")
+  }
+
+  struct PasskeysEndpoint {
+    /// Path: `/v1/me/passkeys`
+    let path: String
+
+    func post(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Passkey>> {
+      .init(path: path, method: .post, query: queryItems.asTuples)
     }
-    
-    struct PasskeysEndpoint {
-        /// Path: `/v1/me/passkeys`
-        let path: String
-        
-        func post(queryItems: [URLQueryItem] = []) -> Request<ClientResponse<Passkey>> {
-            .init(path: path, method: .post, query: queryItems.asTuples)
-        }
-    }
-    
+  }
+
 }

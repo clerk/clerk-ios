@@ -12,30 +12,30 @@ import Foundation
 ///
 /// The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
 public struct Client: Codable, Sendable, Equatable {
-  
+
   /// Unique identifier for this client.
   public let id: String
-  
+
   /// The current sign in attempt, or nil if there is none.
   public let signIn: SignIn?
-  
+
   /// The current sign up attempt, or nil if there is none.
   public let signUp: SignUp?
-  
+
   /// A list of sessions that have been created on this client.
   public let sessions: [Session]
-  
+
   /// A list of active sessions on this client.
   public var activeSessions: [Session] {
     sessions.filter { $0.status == .active }
   }
-  
+
   /// The ID of the last active Session on this client.
   public let lastActiveSessionId: String?
-  
+
   /// Timestamp of last update for the client.
   public let updatedAt: Date
-    
+
   public init(
     id: String,
     signIn: SignIn? = nil,
@@ -54,17 +54,17 @@ public struct Client: Codable, Sendable, Equatable {
 }
 
 extension Client {
-  
+
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
     try await Container.shared.clientService().get()
   }
-  
+
 }
 
 extension Client {
-  
+
   static var mock: Client {
     return Client(
       id: "sess_1",
@@ -75,5 +75,5 @@ extension Client {
       updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
     )
   }
-  
+
 }
