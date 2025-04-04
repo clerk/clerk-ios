@@ -231,7 +231,6 @@ Device Attestation | ✅
 Organizations | ✅
 Prebuilt UI Components | ❌ 
 Magic Links | ❌ 
-Sign Up via Invitation | ❌
 Web3 Wallet | ❌
 
 ## 🚢 Release Notes
