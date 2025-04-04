@@ -23,6 +23,9 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
   /// The role of the current user in the organization.
   public let role: String
 
+  /// The permissions associated with the role.
+  public let permissions: [String]?
+
   /// Public information about the user that this membership belongs to.
   public let publicUserData: PublicUserData?
 
@@ -39,6 +42,7 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
     id: String,
     publicMetadata: JSON,
     role: String,
+    permissions: [String]?,
     publicUserData: PublicUserData? = nil,
     organization: Organization,
     createdAt: Date,
@@ -47,6 +51,7 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
     self.id = id
     self.publicMetadata = publicMetadata
     self.role = role
+    self.permissions = permissions
     self.publicUserData = publicUserData
     self.organization = organization
     self.createdAt = createdAt
@@ -99,6 +104,7 @@ extension OrganizationMembership {
       id: "1",
       publicMetadata: "{}",
       role: "org:role",
+      permissions: ["org:sys_memberships:read"],
       publicUserData: .init(
         firstName: "First",
         lastName: "Last",
@@ -118,6 +124,7 @@ extension OrganizationMembership {
       id: "1",
       publicMetadata: "{}",
       role: "org:role",
+      permissions: ["org:sys_memberships:read"],
       publicUserData: nil,
       organization: .mock,
       createdAt: Date.distantPast,
