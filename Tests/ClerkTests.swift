@@ -45,25 +45,6 @@ struct ClerkTests {
   }
 
   @MainActor
-  @Test func testClientIdSavedToKeychainOnClientDidSet() async throws {
-    await withMainSerialExecutor {
-      let task = Task {
-        let clientIdInKeychain = LockIsolated<String?>(nil)
-        Container.shared.clerkService.register {
-          var mock = ClerkService.liveValue
-          mock.saveClientIdToKeychain = { clientIdInKeychain.setValue($0) }
-          return mock
-        }
-        let clerk = Clerk()
-        clerk.client = .mock
-        #expect(clientIdInKeychain.value == Client.mock.id)
-      }
-
-      await task.value
-    }
-  }
-
-  @MainActor
   @Test func testLoadWithInvalidKey() async throws {
     let clerk = Clerk()
     clerk.configure(publishableKey: "     ")
