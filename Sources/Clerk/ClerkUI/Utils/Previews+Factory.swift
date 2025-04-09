@@ -1,0 +1,32 @@
+//
+//  Previews+Factory.swift
+//  Clerk
+//
+//  Created by Mike Pitre on 4/9/25.
+//
+
+import Factory
+import Foundation
+
+extension Container {
+  
+  func setupMocks() {
+    clerk.register { @MainActor in
+      var clerk = Clerk()
+      clerk.environment = .init(
+        displayConfig: .init(
+          instanceEnvironmentType: .development,
+          applicationName: "Acme Co",
+          preferredSignInStrategy: .otp,
+          branded: true,
+          logoImageUrl: "",
+          homeUrl: "",
+          privacyPolicyUrl: "privacy",
+          termsUrl: "terms"
+        )
+      )
+      return clerk
+    }
+  }
+  
+}
