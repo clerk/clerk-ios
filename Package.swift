@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "Clerk",
+  defaultLocalization: "en",
   platforms: [
     .iOS(.v17),
     .macCatalyst(.v17),
