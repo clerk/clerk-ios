@@ -11,6 +11,8 @@ import SwiftUI
 public struct SignInView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  
+  @State private var email: String = ""
 
   public init() {}
 
@@ -45,11 +47,15 @@ public struct SignInView: View {
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
           .foregroundStyle(theme.colors.textSecondary)
+          .padding(.bottom, 24)
+        
+        ClerkTextField("Enter your email", text: $email)
       }
       .padding(.horizontal, 24)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .containerRelativeFrame([.vertical])
     }
+    .background(theme.colors.background)
   }
 }
 
