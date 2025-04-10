@@ -60,8 +60,16 @@ extension ClerkTheme {
       Color(.neutral).opacity(0.11)
     }
     
+    var inputBorderHover: Color {
+      Color(.neutral).opacity(0.28)
+    }
+    
     var dangerInputBorder: Color {
       Color(.danger).opacity(0.53)
+    }
+    
+    var dangerInputBorderFocus: Color {
+      Color(.danger).opacity(0.15)
     }
     
     var backgroundTransparent: Color {
