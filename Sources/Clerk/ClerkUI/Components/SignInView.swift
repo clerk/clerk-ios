@@ -11,7 +11,7 @@ import SwiftUI
 public struct SignInView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  
+
   @State private var email: String = ""
 
   public init() {}
@@ -30,10 +30,10 @@ public struct SignInView: View {
         Image(systemName: "star.square.fill")
           .resizable()
           .scaledToFit()
-          .frame(width: 36, height: 36)
+          .frame(maxWidth: .infinity, maxHeight: 36)
           .padding(.bottom, 24)
           .foregroundStyle(theme.colors.primary)
-        
+
         signInText
           .font(theme.fonts.title)
           .fontWeight(.bold)
@@ -41,19 +41,18 @@ public struct SignInView: View {
           .frame(minHeight: 32)
           .padding(.bottom, 8)
           .foregroundStyle(theme.colors.text)
-        
+
         Text("Welcome back! Please sign in to continue", bundle: .module)
           .font(theme.fonts.subheadline)
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
           .foregroundStyle(theme.colors.textSecondary)
           .padding(.bottom, 24)
-        
+
         ClerkTextField("Enter your email", text: $email)
       }
       .padding(.horizontal, 24)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .containerRelativeFrame([.vertical])
+      .padding(.vertical, 60)
     }
     .background(theme.colors.background)
   }
@@ -63,27 +62,18 @@ public struct SignInView: View {
   let _ = Container.shared.setupMocks()
   SignInView()
     .environment(Clerk.shared)
-    .environment(ClerkTheme.default)
 }
 
-#Preview("Custom Theme") {
+#Preview("Clerk Theme") {
   let _ = Container.shared.setupMocks()
   SignInView()
     .environment(Clerk.shared)
-    .environment(
-      \.clerkTheme,
-       ClerkTheme(
-        colors: .init(
-          primary: Color(hex: "#6C47FFFF")!
-        )
-      )
-    )
+    .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Spanish") {
   let _ = Container.shared.setupMocks()
   SignInView()
     .environment(Clerk.shared)
-    .environment(ClerkTheme.default)
     .environment(\.locale, .init(identifier: "es"))
 }

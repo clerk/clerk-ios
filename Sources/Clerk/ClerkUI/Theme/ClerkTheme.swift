@@ -23,14 +23,6 @@ public class ClerkTheme {
     self.fonts = fonts
     self.design = design
   }
-  
-  public static var `default`: ClerkTheme {
-    .init(
-      colors: .default,
-      fonts: .default,
-      design: .default
-    )
-  }
 }
 
 extension EnvironmentValues {
