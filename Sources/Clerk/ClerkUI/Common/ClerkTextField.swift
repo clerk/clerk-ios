@@ -13,12 +13,12 @@ struct ClerkTextField: View {
 
   let titleKey: LocalizedStringKey
   @Binding var text: String
-  
+
   init(_ titleKey: LocalizedStringKey, text: Binding<String>) {
     self.titleKey = titleKey
     self._text = text
   }
-  
+
   var body: some View {
     TextField(
       "",
@@ -30,7 +30,7 @@ struct ClerkTextField: View {
     )
     .focused($isFocused)
     .font(theme.fonts.body)
-    .foregroundStyle(theme.colors.text)
+    .foregroundStyle(theme.colors.inputText)
     .tint(theme.colors.neutral)
     .padding(.horizontal, 12)
     .frame(minHeight: 56)
