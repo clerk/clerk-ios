@@ -1,5 +1,5 @@
 //
-//  Theme.swift
+//  ClerkTheme.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/9/25.
@@ -12,19 +12,23 @@ import SwiftUI
 public class ClerkTheme {
   public var colors: Colors
   public var fonts: Fonts
+  public var design: Design
   
   public init(
     colors: Colors = .default,
-    fonts: Fonts = .default
+    fonts: Fonts = .default,
+    design: Design = .default
   ) {
     self.colors = colors
     self.fonts = fonts
+    self.design = design
   }
   
   public static var `default`: ClerkTheme {
     .init(
       colors: .default,
-      fonts: .default
+      fonts: .default,
+      design: .default
     )
   }
 }
