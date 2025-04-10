@@ -20,7 +20,7 @@ extension ClerkTheme {
     public var body: Font
     public var callout: Font
     public var footnote: Font
-    public var caption1: Font
+    public var caption: Font
     public var caption2: Font
 
     // Default initializer with individual fonts
@@ -34,7 +34,7 @@ extension ClerkTheme {
       body: Font = Self.default.body,
       callout: Font = Self.default.callout,
       footnote: Font = Self.default.footnote,
-      caption1: Font = Self.default.caption1,
+      caption: Font = Self.default.caption,
       caption2: Font = Self.default.caption2
     ) {
       self.largeTitle = largeTitle
@@ -46,7 +46,7 @@ extension ClerkTheme {
       self.body = body
       self.callout = callout
       self.footnote = footnote
-      self.caption1 = caption1
+      self.caption = caption
       self.caption2 = caption2
     }
 
@@ -61,7 +61,7 @@ extension ClerkTheme {
       self.body = .custom(fontFamily, size: 17, relativeTo: .body)
       self.callout = .custom(fontFamily, size: 16, relativeTo: .callout)
       self.footnote = .custom(fontFamily, size: 13, relativeTo: .footnote)
-      self.caption1 = .custom(fontFamily, size: 12, relativeTo: .caption)
+      self.caption = .custom(fontFamily, size: 12, relativeTo: .caption)
       self.caption2 = .custom(fontFamily, size: 11, relativeTo: .caption2)
     }
 
@@ -80,7 +80,7 @@ extension ClerkTheme.Fonts {
       body: .system(.body),
       callout: .system(.callout),
       footnote: .system(.footnote),
-      caption1: .system(.caption),
+      caption: .system(.caption),
       caption2: .system(.caption2)
     )
   }
