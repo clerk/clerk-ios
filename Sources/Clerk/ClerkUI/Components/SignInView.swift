@@ -38,7 +38,7 @@ public struct SignInView: View {
           .multilineTextAlignment(.center)
           .frame(minHeight: 32)
           .padding(.bottom, 8)
-          .foregroundStyle(theme.colors.textPrimary)
+          .foregroundStyle(theme.colors.text)
         
         Text("Welcome back! Please sign in to continue", bundle: .module)
           .font(theme.fonts.subheadline)
@@ -68,7 +68,9 @@ public struct SignInView: View {
       \.clerkTheme,
        ClerkTheme(
         colors: .init(
-          primary: Color(.clerkPrimary)
+          primary: Color(.red),
+          text: .red,
+          textSecondary: .black
         )
       )
     )

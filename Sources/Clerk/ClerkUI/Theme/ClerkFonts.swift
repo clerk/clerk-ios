@@ -23,7 +23,7 @@ extension ClerkTheme {
     public var caption: Font
     public var caption2: Font
 
-    // Default initializer with individual fonts
+    // Initializer with individual fonts
     public init(
       largeTitle: Font = Self.default.largeTitle,
       title: Font = Self.default.title,
