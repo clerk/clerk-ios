@@ -22,6 +22,7 @@ extension ClerkTheme {
     public var footnote: Font
     public var caption: Font
     public var caption2: Font
+    public var buttonLarge: Font
 
     // Initializer with individual fonts
     public init(
@@ -35,7 +36,8 @@ extension ClerkTheme {
       callout: Font = Self.default.callout,
       footnote: Font = Self.default.footnote,
       caption: Font = Self.default.caption,
-      caption2: Font = Self.default.caption2
+      caption2: Font = Self.default.caption2,
+      buttonLarge: Font = Self.default.buttonLarge
     ) {
       self.largeTitle = largeTitle
       self.title = title
@@ -48,6 +50,7 @@ extension ClerkTheme {
       self.footnote = footnote
       self.caption = caption
       self.caption2 = caption2
+      self.buttonLarge = buttonLarge
     }
 
     // Convenience initializer with just a font family
@@ -63,6 +66,7 @@ extension ClerkTheme {
       self.footnote = .custom(fontFamily, size: 13, relativeTo: .footnote)
       self.caption = .custom(fontFamily, size: 12, relativeTo: .caption)
       self.caption2 = .custom(fontFamily, size: 11, relativeTo: .caption2)
+      self.buttonLarge = .custom(fontFamily, size: 16, relativeTo: .body)
     }
 
   }
@@ -81,7 +85,8 @@ extension ClerkTheme.Fonts {
       callout: .system(.callout),
       footnote: .system(.footnote),
       caption: .system(.caption),
-      caption2: .system(.caption2)
+      caption2: .system(.caption2),
+      buttonLarge: .system(size: 16, weight: .medium)
     )
   }
 }
