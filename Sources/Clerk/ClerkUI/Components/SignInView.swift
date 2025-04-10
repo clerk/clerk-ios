@@ -68,11 +68,7 @@ public struct SignInView: View {
       \.clerkTheme,
        ClerkTheme(
         colors: .init(
-          primary: Color(.clerkPrimary),
-          textSecondary: .red
-        ),
-        fonts: .init(
-          subheadline: .system(size: 30)
+          primary: Color(.clerkPrimary)
         )
       )
     )
