@@ -33,7 +33,7 @@ public struct SignInView: View {
           .foregroundStyle(theme.colors.primary)
         
         signInText
-          .font(.title)
+          .font(theme.fonts.title)
           .fontWeight(.bold)
           .multilineTextAlignment(.center)
           .frame(minHeight: 32)
@@ -41,7 +41,7 @@ public struct SignInView: View {
           .foregroundStyle(theme.colors.textPrimary)
         
         Text("Welcome back! Please sign in to continue", bundle: .module)
-          .font(.subheadline)
+          .font(theme.fonts.subheadline)
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
           .foregroundStyle(theme.colors.textSecondary)
@@ -60,14 +60,19 @@ public struct SignInView: View {
     .environment(ClerkTheme.default)
 }
 
-#Preview("Custom Colors") {
+#Preview("Custom Theme") {
   let _ = Container.shared.setupMocks()
   SignInView()
     .environment(Clerk.shared)
-    .environment(\.clerkTheme,
-      ClerkTheme(
+    .environment(
+      \.clerkTheme,
+       ClerkTheme(
         colors: .init(
-          primary: Color(.clerkPrimary)
+          primary: Color(.clerkPrimary),
+          textSecondary: .red
+        ),
+        fonts: .init(
+          subheadline: .system(size: 30)
         )
       )
     )
