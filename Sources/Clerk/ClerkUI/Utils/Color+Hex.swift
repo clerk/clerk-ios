@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 extension Color {
-  public init?(hex: String) {
+  public init(hex: String) {
     let r, g, b, a: CGFloat
 
     if hex.hasPrefix("#") {
@@ -33,6 +33,6 @@ extension Color {
       }
     }
 
-    return nil
+    fatalError("Invalid hex color: \(hex)")
   }
 }

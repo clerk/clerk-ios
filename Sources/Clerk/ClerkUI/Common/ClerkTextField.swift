@@ -11,10 +11,10 @@ struct ClerkTextField: View {
   @Environment(\.clerkTheme) private var theme
   @FocusState private var isFocused: Bool
 
-  let titleKey: String
+  let titleKey: LocalizedStringKey
   @Binding var text: String
   
-  init(_ titleKey: String, text: Binding<String>) {
+  init(_ titleKey: LocalizedStringKey, text: Binding<String>) {
     self.titleKey = titleKey
     self._text = text
   }
@@ -23,7 +23,10 @@ struct ClerkTextField: View {
     TextField(
       "",
       text: $text,
-      prompt: Text(titleKey).foregroundStyle(theme.colors.textSecondary)
+      prompt: Text(
+        titleKey,
+        bundle: .module
+      ).foregroundStyle(theme.colors.textSecondary)
     )
     .focused($isFocused)
     .font(theme.fonts.body)
