@@ -27,7 +27,7 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Colors {
-  
+
   public static var `default`: Self {
     .init(
       primary: Color(.defaultPrimary),
@@ -35,5 +35,5 @@ extension ClerkTheme.Colors {
       textSecondary: Color(.defaultTextSecondary)
     )
   }
-  
+
 }
