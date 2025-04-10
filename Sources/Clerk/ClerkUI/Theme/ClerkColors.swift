@@ -18,6 +18,8 @@ extension ClerkTheme {
     public var warning: Color
     public var text: Color
     public var textSecondary: Color
+    public var textOnPrimaryBackground: Color
+    public var inputText: Color
     public var neutral: Color
     
     public init(
@@ -29,6 +31,8 @@ extension ClerkTheme {
       warning: Color = Self.default.warning,
       text: Color = Self.default.text,
       textSecondary: Color = Self.default.textSecondary,
+      textOnPrimaryBackground: Color = Self.default.textOnPrimaryBackground,
+      inputText: Color = Self.default.inputText,
       neutral: Color = Self.default.neutral
     ) {
       self.primary = primary
@@ -39,6 +43,8 @@ extension ClerkTheme {
       self.warning = warning
       self.text = text
       self.textSecondary = textSecondary
+      self.textOnPrimaryBackground = textOnPrimaryBackground
+      self.inputText = inputText
       self.neutral = neutral
     }
     
@@ -115,6 +121,8 @@ extension ClerkTheme.Colors {
       warning: Color(.warning),
       text: Color(.text),
       textSecondary: Color(.textSecondary),
+      textOnPrimaryBackground: Color(.textOnPrimaryBackground),
+      inputText: Color(.inputText),
       neutral: Color(.neutral)
     )
   }
