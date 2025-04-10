@@ -9,6 +9,7 @@ import SwiftUI
 
 extension ClerkTheme {
   public struct Fonts {
+
     // Text styles matching iOS system font styles
     public var largeTitle: Font
     public var title: Font
@@ -55,8 +56,7 @@ extension ClerkTheme {
       self.title = .custom(fontFamily, size: 28, relativeTo: .title)
       self.title2 = .custom(fontFamily, size: 22, relativeTo: .title2)
       self.title3 = .custom(fontFamily, size: 20, relativeTo: .title3)
-      self.headline = .custom(fontFamily, size: 17, relativeTo: .headline)
-        .weight(.semibold)
+      self.headline = .custom(fontFamily, size: 17, relativeTo: .headline).weight(.semibold)
       self.subheadline = .custom(fontFamily, size: 15, relativeTo: .subheadline)
       self.body = .custom(fontFamily, size: 17, relativeTo: .body)
       self.callout = .custom(fontFamily, size: 16, relativeTo: .callout)
