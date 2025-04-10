@@ -50,9 +50,27 @@ public struct SignInView: View {
           .padding(.bottom, 24)
 
         ClerkTextField("Enter your email", text: $email)
+          .padding(.bottom, 16)
+
+        Button(
+          action: {
+            //
+          },
+          label: {
+            HStack(spacing: 4) {
+              Text("Continue", bundle: .module)
+              Image("triangle-right", bundle: .module)
+            }
+          }
+        )
+        .buttonStyle(.primary)
+        .padding(.bottom, 24)
+        
+        TextDivider(string: "or")
+        
       }
-      .padding(.horizontal, 24)
-      .padding(.vertical, 60)
+      .padding([.horizontal, .bottom], 24)
+      .padding(.top, 64)
     }
     .background(theme.colors.background)
   }

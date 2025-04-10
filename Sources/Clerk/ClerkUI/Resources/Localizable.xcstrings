@@ -4,12 +4,32 @@
     "" : {
       "shouldTranslate" : false
     },
+    "Continue" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
     "Enter your email" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingresa tu correo electrónico"
+          }
+        }
+      }
+    },
+    "or" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "o"
           }
         }
       }
