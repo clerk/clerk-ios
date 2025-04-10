@@ -11,18 +11,87 @@ extension ClerkTheme {
   public struct Colors {
 
     public var primary: Color
-    public var textPrimary: Color
+    public var background: Color
+    public var inputBackground: Color
+    public var danger: Color
+    public var success: Color
+    public var warning: Color
+    public var text: Color
     public var textSecondary: Color
-
+    public var neutral: Color
+    
     public init(
       primary: Color = Self.default.primary,
-      textPrimary: Color = Self.default.textPrimary,
-      textSecondary: Color = Self.default.textSecondary
+      background: Color = Self.default.background,
+      inputBackground: Color = Self.default.inputBackground,
+      danger: Color = Self.default.danger,
+      success: Color = Self.default.success,
+      warning: Color = Self.default.warning,
+      text: Color = Self.default.text,
+      textSecondary: Color = Self.default.textSecondary,
+      neutral: Color = Self.default.neutral
     ) {
       self.primary = primary
-      self.textPrimary = textPrimary
+      self.background = background
+      self.inputBackground = inputBackground
+      self.danger = danger
+      self.success = success
+      self.warning = warning
+      self.text = text
       self.textSecondary = textSecondary
+      self.neutral = neutral
     }
+    
+    // MARK: - Generated Colors
+    
+    var border: Color {
+      Color(.neutral).opacity(0.06)
+    }
+    
+    var buttonBorder: Color {
+      Color(.neutral).opacity(0.08)
+    }
+    
+    var backgroundSecondary: Color {
+      Color(.neutral).opacity(0.03)
+    }
+    
+    var inputBorder: Color {
+      Color(.neutral).opacity(0.11)
+    }
+    
+    var dangerInputBorder: Color {
+      Color(.danger).opacity(0.53)
+    }
+    
+    var backgroundTransparent: Color {
+      Color(.background).opacity(0)
+    }
+    
+    var backgroundSuccess: Color {
+      Color(.success).opacity(0.12)
+    }
+    
+    var borderSuccess: Color {
+      Color(.success).opacity(0.77)
+    }
+    
+    var backgroundDanger: Color {
+      Color(.danger).opacity(0.12)
+    }
+    
+    var borderDanger: Color {
+      Color(.danger).opacity(0.77)
+    }
+    
+    var backgroundWarning: Color {
+      Color(.warning).opacity(0.12)
+    }
+    
+    var borderWarning: Color {
+      Color(.warning).opacity(0.77)
+    }
+    
   }
 }
 
@@ -30,9 +99,15 @@ extension ClerkTheme.Colors {
 
   public static var `default`: Self {
     .init(
-      primary: Color(.defaultPrimary),
-      textPrimary: Color(.defaultTextPrimary),
-      textSecondary: Color(.defaultTextSecondary)
+      primary: Color(.primary),
+      background: Color(.background),
+      inputBackground: Color(.inputBackground),
+      danger: Color(.danger),
+      success: Color(.success),
+      warning: Color(.warning),
+      text: Color(.text),
+      textSecondary: Color(.textSecondary),
+      neutral: Color(.neutral)
     )
   }
 
