@@ -54,12 +54,12 @@
         }
       }
     },
-    "Welcome back! Please sign in to continue" : {
+    "Welcome! Please sign in to continue" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¡Bienvenido de nuevo! Por favor, inicia sesión para continuar"
+            "value" : "¡Bienvenido! Por favor, inicia sesión para continuar"
           }
         }
       }
