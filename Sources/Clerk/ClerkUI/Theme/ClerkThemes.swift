@@ -18,9 +18,10 @@ extension ClerkTheme {
 
   public static let clerk: ClerkTheme = .init(
     colors: .init(
-      primary: Color(hex: "#5760FAFF"),
-      danger: Color(hex: "#DC2626FF"),
-      neutral: Color(hex: "#2B2B34FF")
+      primary: Color(.clerkPrimary),
+      danger: Color(.clerkDanger),
+      textOnPrimaryBackground: Color(.clerkTextOnPrimaryBackground),
+      neutral: Color(.clerkNeutral)
     ),
     design: .init(
       borderRadius: 8.0
