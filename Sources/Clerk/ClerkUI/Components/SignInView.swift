@@ -42,7 +42,7 @@ public struct SignInView: View {
           .padding(.bottom, 8)
           .foregroundStyle(theme.colors.text)
 
-        Text("Welcome back! Please sign in to continue", bundle: .module)
+        Text("Welcome! Please sign in to continue", bundle: .module)
           .font(theme.fonts.subheadline)
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
@@ -60,13 +60,17 @@ public struct SignInView: View {
             HStack(spacing: 4) {
               Text("Continue", bundle: .module)
               Image("triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                .opacity(0.6)
             }
           }
         )
         .buttonStyle(.primary)
-        .padding(.bottom, 24)
         
         TextDivider(string: "or")
+          .padding(.vertical, 24)
+        
+        SocialButtonGrid(providers: [.google, .apple, .slack])
         
       }
       .padding([.horizontal, .bottom], 24)
