@@ -50,6 +50,8 @@ public struct SignInView: View {
           .padding(.bottom, 24)
 
         ClerkTextField("Enter your email", text: $email)
+          .textContentType(.emailAddress)
+          .textInputAutocapitalization(.never)
           .padding(.bottom, 16)
 
         Button(
@@ -70,7 +72,13 @@ public struct SignInView: View {
         TextDivider(string: "or")
           .padding(.vertical, 24)
         
-        SocialButtonGrid(providers: [.google, .apple, .slack])
+        SocialButtonGrid(
+          providers: [
+            .google,
+            .apple,
+            .slack
+          ]
+        )
         
       }
       .padding([.horizontal, .bottom], 24)

@@ -11,22 +11,45 @@ import SwiftUI
 struct SocialButtonGrid: View {
   let providers: [OAuthProvider]
 
-  let columns = [
-    GridItem(.flexible()),
-    GridItem(.flexible()),
-    GridItem(.flexible())
-  ]
+  func maxFittingItemCount(
+    containerWidth: CGFloat,
+    itemWidth: CGFloat = 112,
+    spacing: CGFloat = 8
+  ) -> Int {
+    guard containerWidth >= itemWidth else { return 0 }
+    let count = (containerWidth + spacing) / (itemWidth + spacing)
+    return Int(floor(count)) 
+  }
+
+  private func columns(containerWidth: CGFloat) -> [GridItem] {
+    let maxFittingItems = maxFittingItemCount(containerWidth: containerWidth)
+    
+    return Array(
+      repeating: GridItem(.flexible()),
+      count: maxFittingItems >= providers.count ? providers.count : maxFittingItems
+    )
+  }
 
   var body: some View {
-    LazyVGrid(columns: columns, spacing: 8) {
-      ForEach(providers) { provider in
-        SocialButton(provider: provider)
+    GeometryReader { geometry in
+      LazyVGrid(
+        columns: columns(containerWidth: geometry.size.width),
+        spacing: 8
+      ) {
+        ForEach(providers) { provider in
+          SocialButton(provider: provider)
+        }
       }
     }
   }
 }
 
 #Preview {
-  SocialButtonGrid(providers: [.google, .apple, .slack])
-    .padding()
+  VStack {
+    SocialButtonGrid(providers: [.google])
+    SocialButtonGrid(providers: [.google, .apple])
+    SocialButtonGrid(providers: [.google, .apple, .facebook, .github])
+  }
+  .frame(maxWidth: .infinity)
+  .padding()
 }
