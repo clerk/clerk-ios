@@ -14,6 +14,19 @@ struct SocialButton: View {
 
   let provider: OAuthProvider
   var action: (() -> Void)?
+  
+  private var iconImage: some View {
+    KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
+      .resizable()
+      .placeholder {
+        Image(systemName: "globe")
+          .resizable()
+          .scaledToFit()
+          .frame(width: 21, height: 21)
+      }
+      .scaledToFit()
+      .frame(width: 21, height: 21)
+  }
 
   var body: some View {
     Button {
@@ -23,26 +36,26 @@ struct SocialButton: View {
         defaultAction()
       }
     } label: {
-      KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
-        .resizable()
-        .placeholder {
-          Image(systemName: "globe")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 21, height: 21)
+      ViewThatFits(in: .horizontal) {
+        HStack {
+          iconImage
+          Text("Continue with \(provider.name)", bundle: .module)
+            .font(theme.fonts.callout.weight(.medium))
+            .foregroundStyle(theme.colors.text)
         }
-        .scaledToFit()
-        .frame(width: 21, height: 21)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, minHeight: 40)
-        .background(theme.colors.background)
-        .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-        .overlay {
-          RoundedRectangle(cornerRadius: theme.design.borderRadius)
-            .stroke(theme.colors.buttonBorder, lineWidth: 1)
-        }
-        .tint(theme.colors.neutral)
+        
+        iconImage
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .frame(maxWidth: .infinity, minHeight: 40)
+      .background(theme.colors.background)
+      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.design.borderRadius)
+          .stroke(theme.colors.buttonBorder, lineWidth: 1)
+      }
+      .tint(theme.colors.neutral)
     }
     .buttonStyle(.scale)
   }
@@ -75,6 +88,15 @@ extension SocialButton {
 }
 
 #Preview {
-  SocialButton(provider: .google)
-    .padding()
+  
+  VStack {
+    SocialButton(provider: .google)
+
+    HStack {
+      SocialButton(provider: .apple)
+      SocialButton(provider: .google)
+      SocialButton(provider: .slack)
+    }
+  }
+  .padding()
 }

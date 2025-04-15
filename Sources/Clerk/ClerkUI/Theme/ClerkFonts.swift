@@ -66,7 +66,7 @@ extension ClerkTheme {
       self.footnote = .custom(fontFamily, size: 13, relativeTo: .footnote)
       self.caption = .custom(fontFamily, size: 12, relativeTo: .caption)
       self.caption2 = .custom(fontFamily, size: 11, relativeTo: .caption2)
-      self.buttonLarge = .custom(fontFamily, size: 16, relativeTo: .body)
+      self.buttonLarge = .custom(fontFamily, size: 16, relativeTo: .body).weight(.medium)
     }
 
   }
