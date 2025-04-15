@@ -9,16 +9,19 @@ import Factory
 import SwiftUI
 
 public struct SignInView: View {
-  
+  @State var state = SignInViewState()
+
   public init() {}
-  
+
   public var body: some View {
-    SignInStartView()
+    Group {
+      state.flowStep.view
+        .transition(.blurReplace.animation(.snappy))
+    }
+    .environment(\.signInViewState, state)
   }
 }
 
 #Preview {
-  let _ = Container.shared.setupMocks()
   SignInView()
-    .environment(Clerk.shared)
 }

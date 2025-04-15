@@ -9,8 +9,9 @@ import Factory
 import SwiftUI
 
 struct SignInStartView: View {
-  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.signInViewState) private var state
 
   @State private var email: String = ""
 
@@ -23,6 +24,8 @@ struct SignInStartView: View {
   }
 
   var body: some View {
+    @Bindable var state = state
+    
     ScrollView {
       VStack(spacing: 0) {
         Image(systemName: "star.square.fill")
@@ -47,14 +50,15 @@ struct SignInStartView: View {
           .foregroundStyle(theme.colors.textSecondary)
           .padding(.bottom, 24)
 
-        ClerkTextField("Enter your email", text: $email)
+        ClerkTextField("Enter your email", text: $state.identifier)
           .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
           .padding(.bottom, 16)
 
         AsyncButton(
           action: {
-            try! await Task.sleep(for: .seconds(3))
+            try! await Task.sleep(for: .seconds(1))
+            state.flowStep = .firstFactor
           },
           label: { isRunning in
             HStack(spacing: 4) {
@@ -94,21 +98,18 @@ struct SignInStartView: View {
 }
 
 #Preview {
-  let _ = Container.shared.setupMocks()
   SignInStartView()
-    .environment(Clerk.shared)
+    .environment(\.clerk, .mock)
 }
 
 #Preview("Clerk Theme") {
-  let _ = Container.shared.setupMocks()
   SignInStartView()
-    .environment(Clerk.shared)
+    .environment(\.clerk, .mock)
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Spanish") {
-  let _ = Container.shared.setupMocks()
   SignInStartView()
-    .environment(Clerk.shared)
+    .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
 }

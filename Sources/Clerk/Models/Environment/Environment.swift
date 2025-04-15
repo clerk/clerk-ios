@@ -27,3 +27,16 @@ extension Clerk.Environment {
   }
 
 }
+
+extension Clerk.Environment {
+
+  static var mock: Self {
+    .init(
+      authConfig: nil,
+      userSettings: .mock,
+      displayConfig: .mock,
+      fraudSettings: nil
+    )
+  }
+
+}

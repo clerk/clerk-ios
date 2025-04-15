@@ -300,3 +300,13 @@ extension Container {
   }
 
 }
+
+extension Clerk {
+  
+  static var mock: Clerk {
+    var clerk = Clerk()
+    clerk.environment = .mock
+    return clerk
+  }
+  
+}

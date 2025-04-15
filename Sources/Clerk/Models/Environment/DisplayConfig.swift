@@ -31,3 +31,20 @@ extension Clerk.Environment {
   }
 
 }
+
+extension Clerk.Environment.DisplayConfig {
+  
+  static var mock: Self {
+    .init(
+      instanceEnvironmentType: .development,
+      applicationName: "Acme Co",
+      preferredSignInStrategy: .otp,
+      branded: true,
+      logoImageUrl: "",
+      homeUrl: "",
+      privacyPolicyUrl: "privacy",
+      termsUrl: "terms"
+    )
+  }
+  
+}
