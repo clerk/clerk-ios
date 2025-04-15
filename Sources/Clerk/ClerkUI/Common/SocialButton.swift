@@ -35,7 +35,7 @@ struct SocialButton: View {
       } else {
         await defaultAction()
       }
-    } label: {
+    } label: { isRunning in
       ViewThatFits(in: .horizontal) {
         HStack {
           iconImage
@@ -52,10 +52,11 @@ struct SocialButton: View {
       .background(theme.colors.background)
       .clipShape(.rect(cornerRadius: theme.design.borderRadius))
       .tint(theme.colors.neutral)
-    }
-    .overlay {
-      RoundedRectangle(cornerRadius: theme.design.borderRadius)
-        .stroke(theme.colors.buttonBorder, lineWidth: 1)
+      .overlayProgressView(isActive: isRunning)
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.design.borderRadius)
+          .stroke(theme.colors.buttonBorder, lineWidth: 1)
+      }
     }
     .buttonStyle(.scale)
   }

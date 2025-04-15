@@ -15,7 +15,14 @@
       }
     },
     "Continue with %@" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar con %@"
+          }
+        }
+      }
     },
     "Enter your email" : {
       "localizations" : {
@@ -27,34 +34,12 @@
         }
       }
     },
-    "Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ayuda"
-          }
-        }
-      }
-    },
     "or" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "o"
-          }
-        }
-      }
-    },
-    "Privacy" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Privacidad"
           }
         }
       }
@@ -85,17 +70,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Iniciar sesión en %@"
-          }
-        }
-      }
-    },
-    "Terms" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Términos"
           }
         }
       }
