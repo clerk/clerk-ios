@@ -14,7 +14,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     configuration.label
       .font(theme.fonts.buttonLarge)
       .foregroundStyle(theme.colors.textOnPrimaryBackground)
-      .frame(height: 40)
+      .frame(minHeight: 48)
       .frame(maxWidth: .infinity)
       .background {
         RoundedRectangle(cornerRadius: theme.design.borderRadius)

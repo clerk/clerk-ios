@@ -8,15 +8,13 @@
 import Factory
 import SwiftUI
 
-public struct SignInView: View {
+struct SignInStartView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   @State private var email: String = ""
 
-  public init() {}
-
-  private var signInText: Text {
+  var signInText: Text {
     if let appName = clerk.environment.displayConfig?.applicationName {
       return Text("Sign in to \(appName)", bundle: .module)
     } else {
@@ -24,7 +22,7 @@ public struct SignInView: View {
     }
   }
 
-  public var body: some View {
+  var body: some View {
     ScrollView {
       VStack(spacing: 0) {
         Image(systemName: "star.square.fill")
@@ -68,42 +66,46 @@ public struct SignInView: View {
           }
         )
         .buttonStyle(.primary)
-        
+
         TextDivider(string: "or")
           .padding(.vertical, 24)
-        
+
         SocialButtonGrid(
-          providers: [
-            .google,
-            .apple,
-            .slack
-          ]
+          providers: clerk.environment.authenticatableSocialProviders
         )
+        .padding(.bottom, 24)
         
+        Rectangle()
+          .foregroundStyle(theme.colors.border)
+          .frame(height: 1)
+
+        SecuredByClerkView()
+          .padding(.top, 16)
       }
       .padding([.horizontal, .bottom], 24)
       .padding(.top, 64)
     }
     .background(theme.colors.background)
+    .scrollBounceBehavior(.basedOnSize)
   }
 }
 
 #Preview {
   let _ = Container.shared.setupMocks()
-  SignInView()
+  SignInStartView()
     .environment(Clerk.shared)
 }
 
 #Preview("Clerk Theme") {
   let _ = Container.shared.setupMocks()
-  SignInView()
+  SignInStartView()
     .environment(Clerk.shared)
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Spanish") {
   let _ = Container.shared.setupMocks()
-  SignInView()
+  SignInStartView()
     .environment(Clerk.shared)
     .environment(\.locale, .init(identifier: "es"))
 }
