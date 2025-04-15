@@ -7,13 +7,19 @@
 
 import SwiftUI
 
-struct AsyncButton<ProgressView: View, Label: View>: View {
-  @Environment(\.clerkTheme) private var theme
+struct AsyncButton<Label: View>: View {
   @State private var isRunning = false
 
   let action: () async -> Void
-  @ViewBuilder let progressView: ProgressView
-  @ViewBuilder let label: Label
+  let label: (_ isRunning: Bool) -> Label
+
+  init(
+    action: @escaping () async -> Void,
+    @ViewBuilder label: @escaping (_ isRunning: Bool) -> Label
+  ) {
+    self.action = action
+    self.label = label
+  }
 
   var body: some View {
     Button {
@@ -23,59 +29,44 @@ struct AsyncButton<ProgressView: View, Label: View>: View {
         await action()
       }
     } label: {
-      label
-        .opacity(isRunning ? 0 : 1)
-        .overlay {
-          if isRunning {
-            progressView
-          }
-        }
+      label(isRunning)
     }
     .disabled(isRunning)
     .animation(.default, value: isRunning)
   }
 }
 
-extension AsyncButton where ProgressView == SpinnerView {
-  init(
-    action: @escaping () async -> Void,
-    @ViewBuilder label: @escaping () -> Label
-  ) {
-    self.init(
-      action: action,
-      progressView: {
-        SpinnerView()
-      },
-      label: label
-    )
-  }
-}
-
 #Preview {
-  AsyncButton {
-    do {
-      try await Task.sleep(for: .seconds(2))
-    } catch {
-      dump(error)
+  VStack(spacing: 20) {
+    AsyncButton {
+      do {
+        try await Task.sleep(for: .seconds(2))
+      } catch {
+        dump(error)
+      }
+    } label: { isRunning in
+      Text("Button")
+        .overlayProgressView(isActive: isRunning)
     }
-  } label: {
-    Text("Button")
-  }
-  .buttonStyle(.primary)
-  .padding()
-  
-  AsyncButton {
-    do {
-      try await Task.sleep(for: .seconds(2))
-    } catch {
-      dump(error)
+    .buttonStyle(.primary)
+
+    AsyncButton {
+      do {
+        try await Task.sleep(for: .seconds(2))
+      } catch {
+        dump(error)
+      }
+    } label: { isRunning in
+      Text("Button")
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .overlayProgressView(isActive: isRunning)
+        .overlay {
+          RoundedRectangle(cornerRadius: 6)
+            .stroke(.secondary, lineWidth: 1)
+        }
     }
-  }
-  progressView: {
-    SpinnerView(color: .secondary)
-  }
-  label: {
-    Text("Button")
+    .buttonStyle(.scale)
   }
   .padding()
 }
