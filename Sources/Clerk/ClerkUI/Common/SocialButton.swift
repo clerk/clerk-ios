@@ -13,7 +13,7 @@ struct SocialButton: View {
   @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
-  var action: (() -> Void)?
+  var action: (() async -> Void)?
   
   private var iconImage: some View {
     KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
@@ -29,11 +29,11 @@ struct SocialButton: View {
   }
 
   var body: some View {
-    Button {
+    AsyncButton {
       if let action {
-        action()
+        await action()
       } else {
-        defaultAction()
+        await defaultAction()
       }
     } label: {
       ViewThatFits(in: .horizontal) {
@@ -51,11 +51,11 @@ struct SocialButton: View {
       .frame(maxWidth: .infinity, minHeight: 40)
       .background(theme.colors.background)
       .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .stroke(theme.colors.buttonBorder, lineWidth: 1)
-      }
       .tint(theme.colors.neutral)
+    }
+    .overlay {
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
+        .stroke(theme.colors.buttonBorder, lineWidth: 1)
     }
     .buttonStyle(.scale)
   }
@@ -63,19 +63,17 @@ struct SocialButton: View {
 
 extension SocialButton {
   
-  func defaultAction() {
-    Task {
-      do {
-        if provider == .apple {
-          try await SignInWithAppleUtils.signIn()
-        } else {
-          try await SignIn.authenticateWithRedirect(
-            strategy: .oauth(provider: provider)
-          )
-        }
-      } catch {
-        dump(error)
+  func defaultAction() async {
+    do {
+      if provider == .apple {
+        try await SignInWithAppleUtils.signIn()
+      } else {
+        try await SignIn.authenticateWithRedirect(
+          strategy: .oauth(provider: provider)
+        )
       }
+    } catch {
+      dump(error)
     }
   }
 
