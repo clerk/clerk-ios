@@ -52,9 +52,12 @@ struct SignInStartView: View {
           .textInputAutocapitalization(.never)
           .padding(.bottom, 16)
 
-        Button(
+        AsyncButton(
           action: {
-            //
+            try! await Task.sleep(for: .seconds(3))
+          },
+          progressView: {
+            SpinnerView(color: theme.colors.textOnPrimaryBackground)
           },
           label: {
             HStack(spacing: 4) {
