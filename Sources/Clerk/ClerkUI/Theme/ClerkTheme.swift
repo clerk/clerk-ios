@@ -24,7 +24,3 @@ public class ClerkTheme {
     self.design = design
   }
 }
-
-extension EnvironmentValues {
-  @Entry public var clerkTheme = ClerkTheme.default
-}
