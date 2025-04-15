@@ -56,15 +56,15 @@ struct SignInStartView: View {
           action: {
             try! await Task.sleep(for: .seconds(3))
           },
-          progressView: {
-            SpinnerView(color: theme.colors.textOnPrimaryBackground)
-          },
-          label: {
+          label: { isRunning in
             HStack(spacing: 4) {
               Text("Continue", bundle: .module)
               Image("triangle-right", bundle: .module)
                 .foregroundStyle(theme.colors.textOnPrimaryBackground)
                 .opacity(0.6)
+            }
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.textOnPrimaryBackground)
             }
           }
         )
