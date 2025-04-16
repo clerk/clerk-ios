@@ -28,18 +28,15 @@ struct SignInStartView: View {
     
     ScrollView {
       VStack(spacing: 0) {
-        Image(systemName: "star.square.fill")
-          .resizable()
-          .scaledToFit()
-          .frame(maxWidth: .infinity, maxHeight: 36)
+        AppLogoView()
+          .frame(maxHeight: 44)
           .padding(.bottom, 24)
-          .foregroundStyle(theme.colors.primary)
 
         signInText
           .font(theme.fonts.title)
           .fontWeight(.bold)
           .multilineTextAlignment(.center)
-          .frame(minHeight: 32)
+          .frame(minHeight: 28)
           .padding(.bottom, 8)
           .foregroundStyle(theme.colors.text)
 
@@ -48,12 +45,12 @@ struct SignInStartView: View {
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
           .foregroundStyle(theme.colors.textSecondary)
-          .padding(.bottom, 24)
+          .padding(.bottom, 32)
 
         ClerkTextField("Enter your email", text: $state.identifier)
           .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
-          .padding(.bottom, 16)
+          .padding(.bottom, 24)
 
         AsyncButton(
           action: {
@@ -80,17 +77,12 @@ struct SignInStartView: View {
         SocialButtonGrid(
           providers: clerk.environment.authenticatableSocialProviders
         )
-        .padding(.bottom, 24)
-        
-        Rectangle()
-          .foregroundStyle(theme.colors.border)
-          .frame(height: 1)
+        .padding(.bottom, 32)
 
         SecuredByClerkView()
-          .padding(.top, 16)
       }
-      .padding([.horizontal, .bottom], 24)
-      .padding(.top, 64)
+      .padding([.horizontal, .bottom], 16)
+      .padding(.top, 32)
     }
     .background(theme.colors.background)
     .scrollBounceBehavior(.basedOnSize)
