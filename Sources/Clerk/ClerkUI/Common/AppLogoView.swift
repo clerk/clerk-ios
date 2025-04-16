@@ -10,7 +10,6 @@ import SwiftUI
 
 struct AppLogoView: View {
   @Environment(\.clerk) private var clerk
-  @Environment(\.clerkTheme) private var theme
 
   var body: some View {
     KFImage(URL(string: clerk.environment.displayConfig?.logoImageUrl ?? ""))
