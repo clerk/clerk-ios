@@ -24,12 +24,12 @@
         }
       }
     },
-    "Enter your email" : {
+    "Email, username or mobile number" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingresa tu correo electrónico"
+            "value" : "Correo electrónico, nombre de usuario o número de móvil"
           }
         }
       }
