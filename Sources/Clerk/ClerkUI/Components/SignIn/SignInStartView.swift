@@ -25,7 +25,7 @@ struct SignInStartView: View {
 
   var body: some View {
     @Bindable var state = state
-    
+
     ScrollView {
       VStack(spacing: 0) {
         AppLogoView()
@@ -47,7 +47,7 @@ struct SignInStartView: View {
           .foregroundStyle(theme.colors.textSecondary)
           .padding(.bottom, 32)
 
-        ClerkTextField("Enter your email", text: $state.identifier)
+        ClerkTextField("Email, username or mobile number", text: $state.identifier)
           .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
           .padding(.bottom, 24)
