@@ -9,9 +9,13 @@ import SwiftUI
 
 struct ClerkTextField: View {
   @Environment(\.clerkTheme) private var theme
-  @FocusState private var isFocused: Bool
   @State private var reservedHeight: CGFloat?
   @State private var revealText = false
+  @FocusState private var focused: Field?
+  
+  enum Field {
+    case regular, secure
+  }
 
   let titleKey: LocalizedStringKey
   @Binding var text: String
@@ -28,9 +32,9 @@ struct ClerkTextField: View {
   }
 
   var isFocusedOrFilled: Bool {
-    isFocused || !text.isEmpty
+    focused != nil || !text.isEmpty
   }
-  
+
   var offsetAmount: CGFloat {
     guard let reservedHeight else { return 0 }
     return reservedHeight * 0.333
@@ -46,20 +50,20 @@ struct ClerkTextField: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(0)
 
-          Group {
-            if isSecure && !revealText {
-              SecureField("", text: $text)
-            } else {
-              TextField("", text: $text)
-            }
+          ZStack {
+            SecureField("", text: $text)
+              .focused($focused, equals: .secure)
+              .opacity(isSecure && !revealText ? 1 : 0)
+            TextField("", text: $text)
+              .focused($focused, equals: .regular)
+              .opacity(!isSecure || revealText ? 1 : 0)
           }
-          .focused($isFocused)
           .lineLimit(1)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.inputText)
           .frame(minHeight: 22)
           .tint(theme.colors.primary)
-          .transition(.opacity.animation(.default))
+          .animation(.default, value: revealText)
         }
         .onGeometryChange(for: CGFloat.self) { geometry in
           geometry.size.height
@@ -74,12 +78,17 @@ struct ClerkTextField: View {
           .foregroundStyle(theme.colors.textSecondary)
           .allowsHitTesting(false)
           .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
-          .scaleEffect(isFocusedOrFilled ? (12/17) : 1, anchor: .topLeading)
+          .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
       }
-      
+
       if isSecure {
         Button {
           revealText.toggle()
+          if focused == .regular {
+            focused = .secure
+          } else if focused == .secure {
+            focused = .regular
+          }
         } label: {
           Image(systemName: revealText ? "eye.slash.fill" : "eye.fill")
             .contentTransition(.symbolEffect(.replace))
@@ -92,7 +101,11 @@ struct ClerkTextField: View {
     .frame(minHeight: 56)
     .contentShape(.rect)
     .onTapGesture {
-      isFocused = true
+      if isSecure {
+        focused =  revealText ? .regular : .secure
+      } else {
+        focused = .regular
+      }
     }
     .background(
       theme.colors.inputBackground,
@@ -101,7 +114,7 @@ struct ClerkTextField: View {
     .overlay {
       RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .strokeBorder(
-          isFocused ? theme.colors.inputBorderFocused : theme.colors.inputBorder,
+          focused != nil ? theme.colors.inputBorderFocused : theme.colors.inputBorder,
           lineWidth: 1
         )
     }
@@ -109,10 +122,10 @@ struct ClerkTextField: View {
       RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .stroke(
           theme.colors.inputBorder,
-          lineWidth: isFocused ? 4 : 0
+          lineWidth: focused != nil ? 4 : 0
         )
     }
-    .animation(.default, value: isFocused)
+    .animation(.default, value: focused)
   }
 }
 
