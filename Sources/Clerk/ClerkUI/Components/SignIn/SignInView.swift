@@ -16,7 +16,7 @@ public struct SignInView: View {
   public var body: some View {
     Group {
       state.flowStep.view
-        .transition(.blurReplace.animation(.snappy))
+        .transition(.blurReplace.animation(.bouncy))
     }
     .environment(\.signInViewState, state)
   }
