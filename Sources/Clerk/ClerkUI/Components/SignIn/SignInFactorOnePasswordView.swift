@@ -1,27 +1,16 @@
 //
-//  SignInView.swift
+//  SignInFactorOnePasswordView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/9/25.
+//  Created by Mike Pitre on 4/17/25.
 //
 
-import Factory
 import SwiftUI
 
-struct SignInStartView: View {
+struct SignInFactorOnePasswordView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.signInViewState) private var state
-
-  @State private var email: String = ""
-
-  var signInText: Text {
-    if let appName = clerk.environment.displayConfig?.applicationName {
-      return Text("Continue to \(appName)", bundle: .module)
-    } else {
-      return Text("Continue", bundle: .module)
-    }
-  }
 
   var body: some View {
     @Bindable var state = state
@@ -32,7 +21,7 @@ struct SignInStartView: View {
           .frame(maxHeight: 44)
           .padding(.bottom, 24)
 
-        signInText
+        Text("Enter password", bundle: .module)
           .font(theme.fonts.title)
           .fontWeight(.bold)
           .multilineTextAlignment(.center)
@@ -40,7 +29,7 @@ struct SignInStartView: View {
           .padding(.bottom, 8)
           .foregroundStyle(theme.colors.text)
 
-        Text("Welcome! Sign in to continue", bundle: .module)
+        Text("Enter the password associated with your account", bundle: .module)
           .font(theme.fonts.subheadline)
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
@@ -48,8 +37,9 @@ struct SignInStartView: View {
           .padding(.bottom, 32)
 
         ClerkTextField(
-          "Email, username or mobile number",
-          text: $state.identifier
+          "Enter your password",
+          text: $state.identifier,
+          isSecure: true
         )
         .textContentType(.emailAddress)
         .textInputAutocapitalization(.never)
@@ -57,8 +47,7 @@ struct SignInStartView: View {
 
         AsyncButton(
           action: {
-            try! await Task.sleep(for: .seconds(1))
-            state.flowStep = .firstFactor
+            // sign in with password
           },
           label: { isRunning in
             HStack(spacing: 4) {
@@ -73,19 +62,22 @@ struct SignInStartView: View {
           }
         )
         .buttonStyle(.primary())
-
-        TextDivider(string: "or")
-          .padding(.vertical, 24)
-
-        SocialButtonGrid(
-          providers: clerk.environment.authenticatableSocialProviders
-        )
+        .padding(.bottom, 16)
+        
+        Button {
+          // use another method
+        } label: {
+          Text("Use another method", bundle: .module)
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.primary)
+            .frame(minHeight: 22)
+        }
         .padding(.bottom, 32)
 
         SecuredByClerkView()
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 32)
+      .padding([.horizontal, .bottom], 16)
+      .padding(.top, 32)
     }
     .background(theme.colors.background)
     .scrollBounceBehavior(.basedOnSize)
@@ -93,18 +85,10 @@ struct SignInStartView: View {
 }
 
 #Preview {
-  SignInStartView()
-    .environment(\.clerk, .mock)
-}
-
-#Preview("Clerk Theme") {
-  SignInStartView()
-    .environment(\.clerk, .mock)
-    .environment(\.clerkTheme, .clerk)
+  SignInFactorOnePasswordView()
 }
 
 #Preview("Spanish") {
-  SignInStartView()
-    .environment(\.clerk, .mock)
+  SignInFactorOnePasswordView()
     .environment(\.locale, .init(identifier: "es"))
 }

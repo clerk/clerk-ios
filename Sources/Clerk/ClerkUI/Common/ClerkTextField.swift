@@ -109,6 +109,7 @@ struct ClerkTextField: View {
   VStack(spacing: 20) {
     ClerkTextField("Enter your email", text: $emptyEmail)
     ClerkTextField("Enter your email", text: $filledEmail)
+    ClerkTextField("Enter your password", text: $filledEmail, isSecure: true)
   }
   .padding()
 }

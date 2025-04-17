@@ -46,18 +46,9 @@ struct SocialButton: View {
         
         iconImage
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 6)
-      .frame(maxWidth: .infinity, minHeight: 40)
-      .background(theme.colors.background)
-      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-      .tint(theme.colors.neutral)
       .overlayProgressView(isActive: isRunning)
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .stroke(theme.colors.buttonBorder, lineWidth: 1)
-      }
     }
+    .buttonStyle(.secondary())
   }
 }
 
