@@ -44,8 +44,35 @@
         }
       }
     },
-    "Hello World" : {
-      "shouldTranslate" : false
+    "Enter password" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresa tu contraseña"
+          }
+        }
+      }
+    },
+    "Enter the password associated with your account" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraseña de tu cuenta"
+          }
+        }
+      }
+    },
+    "Enter your password" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresa tu contraseña"
+          }
+        }
+      }
     },
     "or" : {
       "localizations" : {
@@ -63,6 +90,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Protegido por"
+          }
+        }
+      }
+    },
+    "Use another method" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar otro método"
           }
         }
       }
