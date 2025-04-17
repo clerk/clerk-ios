@@ -50,6 +50,10 @@ extension ClerkTheme {
     
     // MARK: - Generated Colors
     
+    var primaryPressed: Color {
+      primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
+    }
+    
     var border: Color {
       Color(.neutral).opacity(0.06)
     }
@@ -66,7 +70,7 @@ extension ClerkTheme {
       Color(.neutral).opacity(0.11)
     }
     
-    var inputBorderHover: Color {
+    var inputBorderFocused: Color {
       Color(.neutral).opacity(0.28)
     }
     
@@ -74,7 +78,7 @@ extension ClerkTheme {
       Color(.danger).opacity(0.53)
     }
     
-    var dangerInputBorderFocus: Color {
+    var dangerInputBorderFocused: Color {
       Color(.danger).opacity(0.15)
     }
     
