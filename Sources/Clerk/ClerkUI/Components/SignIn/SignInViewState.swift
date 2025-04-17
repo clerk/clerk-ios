@@ -27,4 +27,5 @@ final class SignInViewState {
   
   var flowStep = FlowStep.start
   var identifier: String = ""
+  var password: String = ""
 }
