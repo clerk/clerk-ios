@@ -11,6 +11,7 @@ struct ClerkTextField: View {
   @Environment(\.clerkTheme) private var theme
   @FocusState private var isFocused: Bool
   @State private var reservedHeight: CGFloat?
+  @State private var revealText = false
 
   let titleKey: LocalizedStringKey
   @Binding var text: String
@@ -36,42 +37,55 @@ struct ClerkTextField: View {
   }
 
   var body: some View {
-    ZStack(alignment: .leading) {
-      VStack(alignment: .leading, spacing: 2) {
+    HStack(spacing: 8) {
+      ZStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(titleKey, bundle: .module)
+            .lineLimit(1)
+            .font(theme.fonts.caption)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(0)
+
+          Group {
+            if isSecure && !revealText {
+              SecureField("", text: $text)
+            } else {
+              TextField("", text: $text)
+            }
+          }
+          .focused($isFocused)
+          .lineLimit(1)
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.inputText)
+          .frame(minHeight: 22)
+          .tint(theme.colors.primary)
+          .transition(.opacity.animation(.default))
+        }
+        .onGeometryChange(for: CGFloat.self) { geometry in
+          geometry.size.height
+        } action: { newValue in
+          reservedHeight = newValue
+        }
+
         Text(titleKey, bundle: .module)
           .lineLimit(1)
-          .font(theme.fonts.caption)
+          .font(theme.fonts.body)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .opacity(0)
-
-        Group {
-          if isSecure {
-            SecureField("", text: $text)
-          } else {
-            TextField("", text: $text)
-          }
+          .foregroundStyle(theme.colors.textSecondary)
+          .allowsHitTesting(false)
+          .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
+          .scaleEffect(isFocusedOrFilled ? (12/17) : 1, anchor: .topLeading)
+      }
+      
+      if isSecure {
+        Button {
+          revealText.toggle()
+        } label: {
+          Image(systemName: revealText ? "eye.slash.fill" : "eye.fill")
+            .contentTransition(.symbolEffect(.replace))
+            .foregroundStyle(theme.colors.textSecondary)
         }
-        .focused($isFocused)
-        .lineLimit(1)
-        .font(theme.fonts.body)
-        .foregroundStyle(theme.colors.inputText)
-        .frame(minHeight: 22)
-        .tint(theme.colors.primary)
       }
-      .onGeometryChange(for: CGFloat.self) { geometry in
-        geometry.size.height
-      } action: { newValue in
-        reservedHeight = newValue
-      }
-
-      Text(titleKey, bundle: .module)
-        .lineLimit(1)
-        .font(theme.fonts.body)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .foregroundStyle(theme.colors.textSecondary)
-        .allowsHitTesting(false)
-        .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
-        .scaleEffect(isFocusedOrFilled ? (12/17) : 1, anchor: .topLeading)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 6)
