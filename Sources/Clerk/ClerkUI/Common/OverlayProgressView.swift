@@ -30,6 +30,6 @@ extension View {
     Text("Button")
       .overlayProgressView(isActive: isRunning)
   }
-  .buttonStyle(.primary)
+  .buttonStyle(.primary())
   .padding()
 }

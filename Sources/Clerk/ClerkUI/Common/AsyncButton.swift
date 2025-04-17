@@ -48,7 +48,7 @@ struct AsyncButton<Label: View>: View {
       Text("Button")
         .overlayProgressView(isActive: isRunning)
     }
-    .buttonStyle(.primary)
+    .buttonStyle(.primary())
 
     AsyncButton {
       do {
