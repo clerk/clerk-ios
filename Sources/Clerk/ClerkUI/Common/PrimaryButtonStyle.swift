@@ -38,8 +38,6 @@ struct PrimaryButtonStyle: ButtonStyle {
               .strokeBorder(.black.opacity(0.2), lineWidth: 1)
           }
       }
-      .scaleEffect(configuration.isPressed ? 0.95 : 1)
-      .animation(.default, value: configuration.isPressed)
   }
 }
 
