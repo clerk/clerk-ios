@@ -24,4 +24,5 @@ public struct SignInView: View {
 
 #Preview {
   SignInView()
+    .environment(\.clerk, .mock)
 }

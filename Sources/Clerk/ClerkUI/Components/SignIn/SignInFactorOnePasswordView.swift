@@ -54,10 +54,10 @@ struct SignInFactorOnePasswordView: View {
           
           ClerkTextField(
             "Enter your password",
-            text: $state.identifier,
+            text: $state.password,
             isSecure: true
           )
-          .textContentType(.emailAddress)
+          .textContentType(.password)
           .textInputAutocapitalization(.never)
 
           AsyncButton(
