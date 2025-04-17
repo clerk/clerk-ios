@@ -11,20 +11,20 @@ struct SecondaryButtonStyle: ButtonStyle {
   @Environment(\.clerkTheme) private var theme
 
   let config: ClerkButtonConfig
-  
+
   func foregroundStyle(configuration: Configuration) -> Color {
     switch config.emphasis {
     case .none:
       configuration.isPressed
-      ? theme.colors.text
-      : theme.colors.textSecondary
+        ? theme.colors.text
+        : theme.colors.textSecondary
     case .low:
       theme.colors.text
     case .high:
       theme.colors.text
     }
   }
-  
+
   var height: CGFloat {
     switch config.size {
     case .small:
@@ -40,19 +40,19 @@ struct SecondaryButtonStyle: ButtonStyle {
     switch config.emphasis {
     case .none:
       configuration.isPressed
-      ? theme.colors.backgroundSecondary
-      : theme.colors.background
+        ? theme.colors.backgroundSecondary
+        : theme.colors.background
     case .low:
       configuration.isPressed
-      ? theme.colors.backgroundSecondary
-      : theme.colors.background
+        ? theme.colors.backgroundSecondary
+        : theme.colors.background
     case .high:
       configuration.isPressed
-      ? theme.colors.backgroundSecondary
-      : theme.colors.background
+        ? theme.colors.backgroundSecondary
+        : theme.colors.background
     }
   }
-  
+
   var borderWidth: CGFloat {
     switch config.emphasis {
     case .none:
@@ -63,7 +63,7 @@ struct SecondaryButtonStyle: ButtonStyle {
       1
     }
   }
-  
+
   var borderColor: Color {
     switch config.emphasis {
     case .none:
@@ -74,7 +74,7 @@ struct SecondaryButtonStyle: ButtonStyle {
       theme.colors.buttonBorder
     }
   }
-  
+
   var hasShadow: Bool {
     switch config.emphasis {
     case .none:
@@ -90,10 +90,8 @@ struct SecondaryButtonStyle: ButtonStyle {
     configuration.label
       .font(theme.fonts.body)
       .foregroundStyle(foregroundStyle(configuration: configuration))
-      .padding(.horizontal, 16)
-      .padding(.vertical, 8)
+      .padding(8)
       .frame(minHeight: height)
-      .frame(maxWidth: .infinity)
       .background {
         RoundedRectangle(cornerRadius: theme.design.borderRadius)
           .fill(backgroundColor(configuration: configuration))
@@ -122,15 +120,22 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
 
 #Preview {
   @Previewable @Environment(\.clerkTheme) var theme
-  
-  VStack(spacing: 20) {
-      
-    Button {} label: {
-      HStack {
+
+  struct Content: View {
+    var body: some View {
+      HStack(spacing: 4) {
         Text("Continue", bundle: .module)
         Image("triangle-right", bundle: .module)
           .opacity(0.6)
       }
+    }
+  }
+
+  return VStack(spacing: 20) {
+
+    Button {
+    } label: {
+      Content()
     }
     .buttonStyle(
       .secondary(
@@ -140,13 +145,10 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
         )
       )
     )
-    
-    Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+
+    Button {
+    } label: {
+      Content()
     }
     .buttonStyle(
       .secondary(
@@ -156,13 +158,10 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
         )
       )
     )
-    
-    Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+
+    Button {
+    } label: {
+      Content()
     }
     .buttonStyle(
       .secondary(
@@ -172,13 +171,10 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
         )
       )
     )
-    
-    Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+
+    Button {
+    } label: {
+      Content()
     }
     .buttonStyle(
       .secondary(
@@ -191,6 +187,4 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
   }
   .padding()
   .environment(\.clerkTheme, .clerk)
-
 }
-

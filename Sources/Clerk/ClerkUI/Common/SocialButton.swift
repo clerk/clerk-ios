@@ -46,6 +46,7 @@ struct SocialButton: View {
         
         iconImage
       }
+      .frame(maxWidth: .infinity)
       .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())

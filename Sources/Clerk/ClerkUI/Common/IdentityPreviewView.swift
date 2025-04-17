@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  IdentityPreviewView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/17/25.
@@ -7,12 +7,25 @@
 
 import SwiftUI
 
-struct SwiftUIView: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+struct IdentityPreviewView: View {
+  @Environment(\.clerkTheme) private var theme
+  
+  let label: String
+  
+  var body: some View {
+    HStack(spacing: 4) {
+      Text(label)
+        .font(theme.fonts.subheadline)
+        .frame(minHeight: 20)
+      Image("edit", bundle: .module)
+        .resizable()
+        .frame(width: 16, height: 16)
+        .scaledToFit()
+        .foregroundStyle(theme.colors.textSecondary)
     }
+  }
 }
 
 #Preview {
-    SwiftUIView()
+  IdentityPreviewView(label: "example@email.com")
 }
