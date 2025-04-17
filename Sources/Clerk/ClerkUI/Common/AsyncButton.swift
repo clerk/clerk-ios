@@ -66,7 +66,6 @@ struct AsyncButton<Label: View>: View {
             .stroke(.secondary, lineWidth: 1)
         }
     }
-    .buttonStyle(.scale)
   }
   .padding()
 }
