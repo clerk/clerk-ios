@@ -17,9 +17,9 @@ struct SignInStartView: View {
 
   var signInText: Text {
     if let appName = clerk.environment.displayConfig?.applicationName {
-      return Text("Sign in to \(appName)", bundle: .module)
+      return Text("Continue to \(appName)", bundle: .module)
     } else {
-      return Text("Sign in", bundle: .module)
+      return Text("Continue", bundle: .module)
     }
   }
 
@@ -40,7 +40,7 @@ struct SignInStartView: View {
           .padding(.bottom, 8)
           .foregroundStyle(theme.colors.text)
 
-        Text("Welcome! Please sign in to continue", bundle: .module)
+        Text("Welcome! Sign in to continue", bundle: .module)
           .font(theme.fonts.subheadline)
           .multilineTextAlignment(.center)
           .frame(minHeight: 18)
