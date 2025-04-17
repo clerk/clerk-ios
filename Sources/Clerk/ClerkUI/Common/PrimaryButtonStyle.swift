@@ -10,6 +10,10 @@ import SwiftUI
 struct PrimaryButtonStyle: ButtonStyle {
   @Environment(\.clerkTheme) private var theme
 
+  private func background(configuration: Configuration) -> Color {
+    configuration.isPressed ? theme.colors.primaryPressed : theme.colors.primary
+  }
+
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .font(theme.fonts.buttonLarge)
@@ -19,8 +23,13 @@ struct PrimaryButtonStyle: ButtonStyle {
       .background {
         RoundedRectangle(cornerRadius: theme.design.borderRadius)
           .fill(
-            theme.colors.primary
-              .shadow(.drop(color: theme.colors.inputBorderHover, radius: 1, y: 1))
+            background(configuration: configuration)
+              .shadow(
+                .drop(
+                  color: background(configuration: configuration),
+                  radius: 1, y: 1
+                )
+              )
               .shadow(.inner(color: .white, radius: 1))
           )
           .overlay {
@@ -55,7 +64,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
       }
     )
     .buttonStyle(.primary)
-    
+
     Button(
       action: {
         //
@@ -72,7 +81,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     .buttonStyle(.primary)
     .environment(\.clerkTheme, .clerk)
-    
+
     Button(
       action: {
         //
