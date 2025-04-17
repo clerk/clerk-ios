@@ -37,10 +37,10 @@ struct SocialButton: View {
       }
     } label: { isRunning in
       ViewThatFits(in: .horizontal) {
-        HStack {
+        HStack(spacing: 12) {
           iconImage
           Text("Continue with \(provider.name)", bundle: .module)
-            .font(theme.fonts.callout.weight(.medium))
+            .font(theme.fonts.body)
             .foregroundStyle(theme.colors.text)
         }
         
@@ -58,7 +58,6 @@ struct SocialButton: View {
           .stroke(theme.colors.buttonBorder, lineWidth: 1)
       }
     }
-    .buttonStyle(.scale)
   }
 }
 
