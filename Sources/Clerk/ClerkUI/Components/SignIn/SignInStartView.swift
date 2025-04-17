@@ -32,54 +32,56 @@ struct SignInStartView: View {
           .frame(maxHeight: 44)
           .padding(.bottom, 24)
 
-        signInText
-          .font(theme.fonts.title)
-          .fontWeight(.bold)
-          .multilineTextAlignment(.center)
-          .frame(minHeight: 28)
-          .padding(.bottom, 8)
-          .foregroundStyle(theme.colors.text)
+        VStack(spacing: 8) {
+          signInText
+            .font(theme.fonts.title)
+            .fontWeight(.bold)
+            .multilineTextAlignment(.center)
+            .frame(minHeight: 28)
+            .foregroundStyle(theme.colors.text)
 
-        Text("Welcome! Sign in to continue", bundle: .module)
-          .font(theme.fonts.subheadline)
-          .multilineTextAlignment(.center)
-          .frame(minHeight: 18)
-          .foregroundStyle(theme.colors.textSecondary)
-          .padding(.bottom, 32)
+          Text("Welcome! Sign in to continue", bundle: .module)
+            .font(theme.fonts.subheadline)
+            .multilineTextAlignment(.center)
+            .frame(minHeight: 18)
+            .foregroundStyle(theme.colors.textSecondary)
+        }
+        .padding(.bottom, 32)
 
-        ClerkTextField(
-          "Email, username or mobile number",
-          text: $state.identifier
-        )
-        .textContentType(.emailAddress)
-        .textInputAutocapitalization(.never)
-        .padding(.bottom, 24)
+        VStack(spacing: 24) {
+          ClerkTextField(
+            "Email, username or mobile number",
+            text: $state.identifier
+          )
+          .textContentType(.emailAddress)
+          .textInputAutocapitalization(.never)
 
-        AsyncButton(
-          action: {
-            try! await Task.sleep(for: .seconds(1))
-            state.flowStep = .firstFactor
-          },
-          label: { isRunning in
-            HStack(spacing: 4) {
-              Text("Continue", bundle: .module)
-              Image("triangle-right", bundle: .module)
-                .foregroundStyle(theme.colors.textOnPrimaryBackground)
-                .opacity(0.6)
+          AsyncButton(
+            action: {
+              try! await Task.sleep(for: .seconds(1))
+              state.flowStep = .firstFactor
+            },
+            label: { isRunning in
+              HStack(spacing: 4) {
+                Text("Continue", bundle: .module)
+                Image("triangle-right", bundle: .module)
+                  .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                  .opacity(0.6)
+              }
+              .frame(maxWidth: .infinity)
+              .overlayProgressView(isActive: isRunning) {
+                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+              }
             }
-            .overlayProgressView(isActive: isRunning) {
-              SpinnerView(color: theme.colors.textOnPrimaryBackground)
-            }
-          }
-        )
-        .buttonStyle(.primary())
+          )
+          .buttonStyle(.primary())
 
-        TextDivider(string: "or")
-          .padding(.vertical, 24)
+          TextDivider(string: "or")
 
-        SocialButtonGrid(
-          providers: clerk.environment.authenticatableSocialProviders
-        )
+          SocialButtonGrid(
+            providers: clerk.environment.authenticatableSocialProviders
+          )
+        }
         .padding(.bottom, 32)
 
         SecuredByClerkView()
