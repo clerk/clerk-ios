@@ -14,10 +14,16 @@ struct ClerkTextField: View {
 
   let titleKey: LocalizedStringKey
   @Binding var text: String
+  let isSecure: Bool
 
-  init(_ titleKey: LocalizedStringKey, text: Binding<String>) {
+  init(
+    _ titleKey: LocalizedStringKey,
+    text: Binding<String>,
+    isSecure: Bool = false
+  ) {
     self.titleKey = titleKey
     self._text = text
+    self.isSecure = isSecure
   }
 
   var isFocusedOrFilled: Bool {
@@ -38,13 +44,19 @@ struct ClerkTextField: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .opacity(0)
 
-        TextField("", text: $text)
-          .focused($isFocused)
-          .lineLimit(1)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.inputText)
-          .frame(minHeight: 22)
-          .tint(theme.colors.primary)
+        Group {
+          if isSecure {
+            SecureField("", text: $text)
+          } else {
+            TextField("", text: $text)
+          }
+        }
+        .focused($isFocused)
+        .lineLimit(1)
+        .font(theme.fonts.body)
+        .foregroundStyle(theme.colors.inputText)
+        .frame(minHeight: 22)
+        .tint(theme.colors.primary)
       }
       .onGeometryChange(for: CGFloat.self) { geometry in
         geometry.size.height
@@ -64,6 +76,10 @@ struct ClerkTextField: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 6)
     .frame(minHeight: 56)
+    .contentShape(.rect)
+    .onTapGesture {
+      isFocused = true
+    }
     .background(
       theme.colors.inputBackground,
       in: .rect(cornerRadius: theme.design.borderRadius)
