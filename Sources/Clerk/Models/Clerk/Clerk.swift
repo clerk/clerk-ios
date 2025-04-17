@@ -305,6 +305,7 @@ extension Clerk {
   
   static var mock: Clerk {
     var clerk = Clerk()
+    clerk.client = .mock
     clerk.environment = .mock
     return clerk
   }
