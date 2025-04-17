@@ -88,8 +88,8 @@ struct PrimaryButtonStyle: ButtonStyle {
     configuration.label
       .font(theme.fonts.body)
       .foregroundStyle(foregroundStyle)
+      .padding(8)
       .frame(minHeight: height)
-      .frame(maxWidth: .infinity)
       .background {
         RoundedRectangle(cornerRadius: theme.design.borderRadius)
           .fill(backgroundColor(configuration: configuration))
@@ -119,14 +119,20 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
 #Preview {
   @Previewable @Environment(\.clerkTheme) var theme
   
-  VStack(spacing: 20) {
+  struct Content: View {
+    var body: some View {
+      HStack(spacing: 4) {
+        Text("Continue", bundle: .module)
+        Image("triangle-right", bundle: .module)
+          .opacity(0.6)
+      }
+    }
+  }
+  
+  return VStack(spacing: 20) {
       
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -138,11 +144,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -154,11 +156,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -170,11 +168,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -186,11 +180,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -202,11 +192,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     )
     
     Button {} label: {
-      HStack {
-        Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
-          .opacity(0.6)
-      }
+      Content()
     }
     .buttonStyle(
       .primary(
@@ -219,6 +205,5 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
   }
   .padding()
   .environment(\.clerkTheme, .clerk)
-
 }
 
