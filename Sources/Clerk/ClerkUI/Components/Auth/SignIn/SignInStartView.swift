@@ -15,10 +15,6 @@ struct SignInStartView: View {
 
   @State private var email: String = ""
   @State private var error: Error?
-  
-  var signIn: SignIn? {
-    clerk.client?.signIn
-  }
 
   var signInText: Text {
     if let appName = clerk.environment.displayConfig?.applicationName {
@@ -63,10 +59,7 @@ struct SignInStartView: View {
 
           AsyncButton(
             action: {
-              await startSignIn()
-              if let signIn = self.signIn {
-                authState.setToStepForStatus(signIn: signIn)
-              }
+              await createSignIn()
             },
             label: { isRunning in
               HStack(spacing: 4) {
@@ -82,6 +75,7 @@ struct SignInStartView: View {
             }
           )
           .buttonStyle(.primary())
+          .disabled(authState.identifier.isEmpty)
 
           TextDivider(string: "or")
 
@@ -103,11 +97,12 @@ struct SignInStartView: View {
 
 extension SignInStartView {
   
-  func startSignIn() async {
+  func createSignIn() async {
     do {
-      try await SignIn.create(
+      let signIn = try await SignIn.create(
         strategy: .identifier(authState.identifier)
       )
+      authState.setToStepForStatus(signIn: signIn)
     } catch {
       self.error = error
     }
