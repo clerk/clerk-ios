@@ -90,7 +90,7 @@ struct ClerkTextField: View {
             focused = .regular
           }
         } label: {
-          Image(systemName: revealText ? "eye.slash.fill" : "eye.fill")
+          Image(systemName: revealText ? "eye.fill" : "eye.slash.fill")
             .contentTransition(.symbolEffect(.replace))
             .foregroundStyle(theme.colors.textSecondary)
         }
