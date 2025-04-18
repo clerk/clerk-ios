@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SecondaryButtonStyle: ButtonStyle {
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.isEnabled) private var isEnabled
 
   let config: ClerkButtonConfig
 
@@ -107,6 +108,8 @@ struct SecondaryButtonStyle: ButtonStyle {
             .shadow(color: theme.colors.buttonBorder, radius: 0.5, x: 0, y: 0.5)
         }
       }
+      .opacity(isEnabled ? 1 : 0.5)
+      .animation(.default, value: isEnabled)
   }
 }
 
