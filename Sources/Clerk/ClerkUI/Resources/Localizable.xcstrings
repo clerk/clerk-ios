@@ -84,6 +84,12 @@
         }
       }
     },
+    "Password Reset" : {
+
+    },
+    "Second Factor" : {
+
+    },
     "Secured by" : {
       "localizations" : {
         "es" : {

@@ -8,21 +8,23 @@
 import Factory
 import SwiftUI
 
-public struct SignInView: View {
-  @State var state = SignInViewState()
+public struct AuthView: View {
+  @Environment(\.clerkTheme) private var theme
+  @State var authState = AuthState()
 
   public init() {}
 
   public var body: some View {
     Group {
-      state.flowStep.view
+      authState.flowStep.view
         .transition(.blurReplace.animation(.default))
     }
-    .environment(\.signInViewState, state)
+    .background(theme.colors.background)
+    .environment(\.authState, authState)
   }
 }
 
 #Preview {
-  SignInView()
+  AuthView()
     .environment(\.clerk, .mock)
 }
