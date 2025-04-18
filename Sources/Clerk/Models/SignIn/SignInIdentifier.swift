@@ -23,7 +23,10 @@ extension SignIn {
 
     /// Represents a username identifier.
     case username
-
+    
+    /// Represents a passkey identifier.
+    case passkey
+    
     /// Represents an unsupported or unknown identifier.
     case unknown
 
