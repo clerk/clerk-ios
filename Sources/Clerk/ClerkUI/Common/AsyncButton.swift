@@ -24,6 +24,7 @@ struct AsyncButton<Label: View>: View {
   var body: some View {
     Button {
       Task {
+        if isRunning { return }
         isRunning = true
         defer { isRunning = false }
         await action()
@@ -31,7 +32,6 @@ struct AsyncButton<Label: View>: View {
     } label: {
       label(isRunning)
     }
-    .disabled(isRunning)
     .animation(.default, value: isRunning)
   }
 }
