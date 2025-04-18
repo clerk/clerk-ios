@@ -111,21 +111,7 @@ struct ClerkTextField: View {
       theme.colors.inputBackground,
       in: .rect(cornerRadius: theme.design.borderRadius)
     )
-    .overlay {
-      RoundedRectangle(cornerRadius: theme.design.borderRadius)
-        .strokeBorder(
-          focused != nil ? theme.colors.inputBorderFocused : theme.colors.inputBorder,
-          lineWidth: 1
-        )
-    }
-    .background {
-      RoundedRectangle(cornerRadius: theme.design.borderRadius)
-        .stroke(
-          theme.colors.inputBorder,
-          lineWidth: focused != nil ? 4 : 0
-        )
-    }
-    .animation(.default, value: focused)
+    .clerkFocusedBorder(isFocused: focused != nil)
   }
 }
 
