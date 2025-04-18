@@ -83,52 +83,51 @@ extension SignInService {
       },
       getCredentialForPasskey: { signIn, autofill, preferImmediatelyAvailableCredentials in
         #if canImport(AuthenticationServices) && !os(watchOS)
-          guard
-            let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
-            let challengeString = nonceJSON["challenge"]?.stringValue,
-            let challenge = challengeString.dataFromBase64URL()
-          else {
-            throw ClerkClientError(message: "Unable to locate the challenge for the passkey.")
-          }
-
-          let manager = PasskeyHelper()
-          var authorization: ASAuthorization
-
-          #if os(iOS) && !targetEnvironment(macCatalyst)
-            if autofill {
-              authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
-                challenge: challenge
-              )
-            } else {
-              authorization = try await manager.signIn(
-                challenge: challenge,
-                preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-              )
-            }
-          #else
-            authorization = try await manager.signIn(
-              challenge: challenge,
-              preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-            )
-          #endif
-
-          guard
-            let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-            let authenticatorData = credentialAssertion.rawAuthenticatorData
-          else {
-            throw ClerkClientError(message: "Invalid credential type.")
-          }
-
-          let publicKeyCredential: [String: any Encodable] = [
-            "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-            "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-            "type": "public-key",
-            "response": [
-              "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
-              "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-              "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-              "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
-            ],
+        guard
+          let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
+          let challengeString = nonceJSON["challenge"]?.stringValue,
+          let challenge = challengeString.dataFromBase64URL()
+        else {
+          throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+        }
+        
+        let manager = PasskeyHelper()
+        var authorization: ASAuthorization
+        
+        #if os(iOS) && !targetEnvironment(macCatalyst)
+        if autofill {
+          authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
+            challenge: challenge
+          )
+        } else {
+          authorization = try await manager.signIn(
+            challenge: challenge,
+            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+          )
+        }
+        #else
+        authorization = try await manager.signIn(
+          challenge: challenge,
+          preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+        )
+        #endif
+        
+        guard
+          let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
+          let authenticatorData = credentialAssertion.rawAuthenticatorData
+        else {
+          throw ClerkClientError(message: "Invalid credential type.")
+        }
+        
+        let publicKeyCredential: [String: any Encodable] = [
+          "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
+          "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
+          "type": "public-key",
+          "response": [
+            "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
+            "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+            "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
+            "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String()
           ]
 
           return try JSON(publicKeyCredential).debugDescription

@@ -159,12 +159,8 @@ extension Clerk {
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   public func load() async throws {
     if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      throw ClerkClientError(
-        message: """
-            Clerk loaded without a publishable key. 
-            Please call configure() with a valid publishable key first.
-          """
-      )
+      dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+      return
     }
 
     do {
