@@ -12,7 +12,8 @@ struct SignInFactorOnePasswordView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
   @FocusState private var isFocused: Bool
-  
+  @State private var error: Error?
+
   var signIn: SignIn? {
     clerk.client?.signIn
   }
@@ -25,7 +26,7 @@ struct SignInFactorOnePasswordView: View {
         AppLogoView()
           .frame(maxHeight: 44)
           .padding(.bottom, 24)
-        
+
         VStack(spacing: 8) {
           Text("Enter password", bundle: .module)
             .font(theme.fonts.title)
@@ -39,20 +40,23 @@ struct SignInFactorOnePasswordView: View {
             .multilineTextAlignment(.center)
             .frame(minHeight: 18)
             .foregroundStyle(theme.colors.textSecondary)
-          
+
           if let identifier = signIn?.identifier {
-            Button(action: {
-              authState.step = .signInStart
-            }, label: {
-              IdentityPreviewView(label: identifier)
-            })
+            Button(
+              action: {
+                authState.step = .signInStart
+              },
+              label: {
+                IdentityPreviewView(label: identifier)
+              }
+            )
             .buttonStyle(.secondary(config: .init(size: .small)))
           }
         }
         .padding(.bottom, 32)
-        
+
         VStack(spacing: 24) {
-          
+
           ClerkTextField(
             "Enter your password",
             text: $authState.password,
@@ -67,7 +71,7 @@ struct SignInFactorOnePasswordView: View {
 
           AsyncButton(
             action: {
-              // sign in with password
+              await submitPassword()
             },
             label: { isRunning in
               HStack(spacing: 4) {
@@ -86,7 +90,7 @@ struct SignInFactorOnePasswordView: View {
           .disabled(authState.password.isEmpty)
         }
         .padding(.bottom, 16)
-        
+
         Button {
           authState.step = .signInStart
         } label: {
@@ -113,6 +117,27 @@ struct SignInFactorOnePasswordView: View {
     .background(theme.colors.background)
     .scrollBounceBehavior(.basedOnSize)
   }
+}
+
+extension SignInFactorOnePasswordView {
+
+  func submitPassword() async {
+    do {
+      guard let signIn else {
+        authState.step = .signInStart
+        return
+      }
+      
+      try await signIn.attemptFirstFactor(
+        strategy: .password(password: authState.password)
+      )
+      
+      authState.setToStepForStatus(signIn: signIn)
+    } catch {
+      self.error = error
+    }
+  }
+
 }
 
 #Preview {
