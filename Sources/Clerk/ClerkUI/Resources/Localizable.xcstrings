@@ -54,7 +54,7 @@
         }
       }
     },
-    "Enter the password associated with your account" : {
+    "Enter the password for your account" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -85,10 +85,10 @@
       }
     },
     "Password Reset" : {
-
+      "shouldTranslate" : false
     },
     "Second Factor" : {
-
+      "shouldTranslate" : false
     },
     "Secured by" : {
       "localizations" : {

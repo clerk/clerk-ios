@@ -11,6 +11,7 @@ struct SignInFactorOnePasswordView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
+  @FocusState private var isFocused: Bool
   
   var signIn: SignIn? {
     clerk.client?.signIn
@@ -33,7 +34,7 @@ struct SignInFactorOnePasswordView: View {
             .frame(minHeight: 28)
             .foregroundStyle(theme.colors.text)
 
-          Text("Enter the password associated with your account", bundle: .module)
+          Text("Enter the password for your account", bundle: .module)
             .font(theme.fonts.subheadline)
             .multilineTextAlignment(.center)
             .frame(minHeight: 18)
@@ -59,6 +60,10 @@ struct SignInFactorOnePasswordView: View {
           )
           .textContentType(.password)
           .textInputAutocapitalization(.never)
+          .focused($isFocused)
+          .onFirstAppear {
+            isFocused = true
+          }
 
           AsyncButton(
             action: {
@@ -78,6 +83,7 @@ struct SignInFactorOnePasswordView: View {
             }
           )
           .buttonStyle(.primary())
+          .disabled(authState.password.isEmpty)
         }
         .padding(.bottom, 16)
         
