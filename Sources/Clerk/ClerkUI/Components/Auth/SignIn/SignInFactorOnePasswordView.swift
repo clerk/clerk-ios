@@ -28,28 +28,15 @@ struct SignInFactorOnePasswordView: View {
           .padding(.bottom, 24)
 
         VStack(spacing: 8) {
-          Text("Enter password", bundle: .module)
-            .font(theme.fonts.title)
-            .fontWeight(.bold)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: 28)
-            .foregroundStyle(theme.colors.text)
-
-          Text("Enter the password for your account", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: 18)
-            .foregroundStyle(theme.colors.textSecondary)
+          HeaderView(style: .title, text: "Enter password")
+          HeaderView(style: .subtitle, text: "Enter the password for your account")
 
           if let identifier = signIn?.identifier {
-            Button(
-              action: {
-                authState.step = .signInStart
-              },
-              label: {
-                IdentityPreviewView(label: identifier)
-              }
-            )
+            Button {
+              authState.step = .signInStart
+            } label: {
+              IdentityPreviewView(label: identifier)
+            }
             .buttonStyle(.secondary(config: .init(size: .small)))
           }
         }
@@ -69,23 +56,20 @@ struct SignInFactorOnePasswordView: View {
             isFocused = true
           }
 
-          AsyncButton(
-            action: {
-              await submitPassword()
-            },
-            label: { isRunning in
-              HStack(spacing: 4) {
-                Text("Continue", bundle: .module)
-                Image("triangle-right", bundle: .module)
-                  .foregroundStyle(theme.colors.textOnPrimaryBackground)
-                  .opacity(0.6)
-              }
-              .frame(maxWidth: .infinity)
-              .overlayProgressView(isActive: isRunning) {
-                SpinnerView(color: theme.colors.textOnPrimaryBackground)
-              }
+          AsyncButton {
+            await submitPassword()
+          } label: { isRunning in
+            HStack(spacing: 4) {
+              Text("Continue", bundle: .module)
+              Image("triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                .opacity(0.6)
             }
-          )
+            .frame(maxWidth: .infinity)
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.textOnPrimaryBackground)
+            }
+          }
           .buttonStyle(.primary())
           .disabled(authState.password.isEmpty)
         }
@@ -127,11 +111,11 @@ extension SignInFactorOnePasswordView {
         authState.step = .signInStart
         return
       }
-      
+
       try await signIn.attemptFirstFactor(
         strategy: .password(password: authState.password)
       )
-      
+
       authState.setToStepForStatus(signIn: signIn)
     } catch {
       self.error = error
@@ -145,8 +129,8 @@ extension SignInFactorOnePasswordView {
     .environment(\.clerk, .mock)
 }
 
-#Preview("Spanish") {
+#Preview("Localized") {
   SignInFactorOnePasswordView()
     .environment(\.clerk, .mock)
-    .environment(\.locale, .init(identifier: "es"))
+    .environment(\.locale, .init(identifier: "en"))
 }
