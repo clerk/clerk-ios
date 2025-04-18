@@ -1,68 +1,72 @@
 //
-//  SignInFactorOnePasswordView.swift
+//  SignInView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/17/25.
+//  Created by Mike Pitre on 4/9/25.
 //
 
+import Factory
 import SwiftUI
 
-struct SignInFactorOnePasswordView: View {
+struct SignInStartView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.signInViewState) private var state
+  @Environment(\.authState) private var authState
+
+  @State private var email: String = ""
+  @State private var error: Error?
   
   var signIn: SignIn? {
     clerk.client?.signIn
   }
 
+  var signInText: Text {
+    if let appName = clerk.environment.displayConfig?.applicationName {
+      return Text("Continue to \(appName)", bundle: .module)
+    } else {
+      return Text("Continue", bundle: .module)
+    }
+  }
+
   var body: some View {
-    @Bindable var state = state
+    @Bindable var authState = authState
 
     ScrollView {
       VStack(spacing: 0) {
         AppLogoView()
           .frame(maxHeight: 44)
           .padding(.bottom, 24)
-        
+
         VStack(spacing: 8) {
-          Text("Enter password", bundle: .module)
+          signInText
             .font(theme.fonts.title)
             .fontWeight(.bold)
             .multilineTextAlignment(.center)
             .frame(minHeight: 28)
             .foregroundStyle(theme.colors.text)
 
-          Text("Enter the password associated with your account", bundle: .module)
+          Text("Welcome! Sign in to continue", bundle: .module)
             .font(theme.fonts.subheadline)
             .multilineTextAlignment(.center)
             .frame(minHeight: 18)
             .foregroundStyle(theme.colors.textSecondary)
-          
-          if let identifier = signIn?.identifier {
-            Button(action: {
-              state.flowStep = .start
-            }, label: {
-              IdentityPreviewView(label: identifier)
-            })
-            .buttonStyle(.secondary(config: .init(size: .small)))
-          }
         }
         .padding(.bottom, 32)
-        
+
         VStack(spacing: 24) {
-          
           ClerkTextField(
-            "Enter your password",
-            text: $state.password,
-            isSecure: true
+            "Email, username or mobile number",
+            text: $authState.identifier
           )
-          .textContentType(.password)
+          .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
 
           AsyncButton(
             action: {
-              // sign in with password
+              await startSignIn()
+              if let signIn = self.signIn {
+                authState.setToStepForStatus(signIn: signIn)
+              }
             },
             label: { isRunning in
               HStack(spacing: 4) {
@@ -78,25 +82,13 @@ struct SignInFactorOnePasswordView: View {
             }
           )
           .buttonStyle(.primary())
-        }
-        .padding(.bottom, 16)
-        
-        Button {
-          state.flowStep = .start
-        } label: {
-          Text("Use another method", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.primary)
-            .frame(minHeight: 20)
-        }
-        .buttonStyle(
-          .primary(
-            config: .init(
-              emphasis: .none,
-              size: .small
-            )
+
+          TextDivider(string: "or")
+
+          SocialButtonGrid(
+            providers: clerk.environment.authenticatableSocialProviders
           )
-        )
+        }
         .padding(.bottom, 32)
 
         SecuredByClerkView()
@@ -104,18 +96,38 @@ struct SignInFactorOnePasswordView: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 32)
     }
-    .background(theme.colors.background)
+    .presentationBackground(theme.colors.background)
     .scrollBounceBehavior(.basedOnSize)
   }
 }
 
+extension SignInStartView {
+  
+  func startSignIn() async {
+    do {
+      try await SignIn.create(
+        strategy: .identifier(authState.identifier)
+      )
+    } catch {
+      self.error = error
+    }
+  }
+  
+}
+
 #Preview {
-  SignInFactorOnePasswordView()
+  SignInStartView()
     .environment(\.clerk, .mock)
 }
 
+#Preview("Clerk Theme") {
+  SignInStartView()
+    .environment(\.clerk, .mock)
+    .environment(\.clerkTheme, .clerk)
+}
+
 #Preview("Spanish") {
-  SignInFactorOnePasswordView()
+  SignInStartView()
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
 }
