@@ -14,5 +14,5 @@ extension EnvironmentValues {
   @Entry public var clerkTheme = ClerkTheme.default
   
   // MARK: - Internal
-  @Entry var signInViewState = SignInViewState()
+  @Entry var authState = AuthState()
 }
