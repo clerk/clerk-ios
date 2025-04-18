@@ -132,5 +132,5 @@ extension SignInFactorOnePasswordView {
 #Preview("Localized") {
   SignInFactorOnePasswordView()
     .environment(\.clerk, .mock)
-    .environment(\.locale, .init(identifier: "en"))
+    .environment(\.locale, .init(identifier: "es"))
 }
