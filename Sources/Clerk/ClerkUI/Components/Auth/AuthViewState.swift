@@ -10,7 +10,7 @@ import SwiftUI
 
 @Observable
 final class AuthState {
-  enum FlowStep {
+  enum Step {
     case signInStart
     case signInFirstFactor
     case signInSecondFactor
@@ -31,7 +31,7 @@ final class AuthState {
     }
   }
   
-  var flowStep = FlowStep.signInStart
+  var step = Step.signInStart
   var identifier: String = ""
   var password: String = ""
   
@@ -40,13 +40,13 @@ final class AuthState {
     case .complete:
       return
     case .needsIdentifier:
-      flowStep = .signInStart
+      step = .signInStart
     case .needsFirstFactor:
-      flowStep = .signInFirstFactor
+      step = .signInFirstFactor
     case .needsSecondFactor:
-      flowStep = .signInSecondFactor
+      step = .signInSecondFactor
     case .needsNewPassword:
-      flowStep = .passwordReset
+      step = .passwordReset
     case .unknown:
       return
     }
