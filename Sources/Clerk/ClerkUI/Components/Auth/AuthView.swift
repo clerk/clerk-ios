@@ -16,7 +16,7 @@ public struct AuthView: View {
 
   public var body: some View {
     Group {
-      authState.flowStep.view
+      authState.step.view
         .transition(.blurReplace.animation(.default))
     }
     .background(theme.colors.background)

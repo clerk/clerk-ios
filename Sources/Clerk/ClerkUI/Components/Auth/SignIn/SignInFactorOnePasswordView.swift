@@ -41,7 +41,7 @@ struct SignInFactorOnePasswordView: View {
           
           if let identifier = signIn?.identifier {
             Button(action: {
-              authState.flowStep = .signInStart
+              authState.step = .signInStart
             }, label: {
               IdentityPreviewView(label: identifier)
             })
@@ -82,7 +82,7 @@ struct SignInFactorOnePasswordView: View {
         .padding(.bottom, 16)
         
         Button {
-          authState.flowStep = .signInStart
+          authState.step = .signInStart
         } label: {
           Text("Use another method", bundle: .module)
             .font(theme.fonts.subheadline)
