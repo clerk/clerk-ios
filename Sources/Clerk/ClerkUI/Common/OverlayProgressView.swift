@@ -7,19 +7,27 @@
 
 import SwiftUI
 
-extension View {
-  @ViewBuilder
-  func overlayProgressView<ProgressView: View>(
-    isActive: Bool,
-    progressView: @escaping () -> ProgressView = { SpinnerView() }
-  ) -> some View {
-    self
+struct OverlayProgressModifier<ProgressView: View>: ViewModifier {
+  let isActive: Bool
+  let progressView: () -> ProgressView
+
+  func body(content: Content) -> some View {
+    content
       .opacity(isActive ? 0 : 1)
       .overlay {
         if isActive {
           progressView()
         }
       }
+  }
+}
+
+extension View {
+  func overlayProgressView<ProgressView: View>(
+    isActive: Bool,
+    progressView: @escaping () -> ProgressView = { SpinnerView() }
+  ) -> some View {
+    modifier(OverlayProgressModifier(isActive: isActive, progressView: progressView))
   }
 }
 
