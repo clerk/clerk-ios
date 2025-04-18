@@ -16,11 +16,11 @@ struct SignInStartView: View {
   @State private var email: String = ""
   @State private var error: Error?
 
-  var signInText: Text {
+  var signInString: LocalizedStringKey {
     if let appName = clerk.environment.displayConfig?.applicationName {
-      return Text("Continue to \(appName)", bundle: .module)
+      return "Continue to \(appName)"
     } else {
-      return Text("Continue", bundle: .module)
+      return "Continue"
     }
   }
 
@@ -34,18 +34,8 @@ struct SignInStartView: View {
           .padding(.bottom, 24)
 
         VStack(spacing: 8) {
-          signInText
-            .font(theme.fonts.title)
-            .fontWeight(.bold)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: 28)
-            .foregroundStyle(theme.colors.text)
-
-          Text("Welcome! Sign in to continue", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: 18)
-            .foregroundStyle(theme.colors.textSecondary)
+          HeaderView(style: .title, text: signInString)
+          HeaderView(style: .subtitle, text: "Welcome! Sign in to continue")
         }
         .padding(.bottom, 32)
 
@@ -57,23 +47,20 @@ struct SignInStartView: View {
           .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
 
-          AsyncButton(
-            action: {
-              await createSignIn()
-            },
-            label: { isRunning in
-              HStack(spacing: 4) {
-                Text("Continue", bundle: .module)
-                Image("triangle-right", bundle: .module)
-                  .foregroundStyle(theme.colors.textOnPrimaryBackground)
-                  .opacity(0.6)
-              }
-              .frame(maxWidth: .infinity)
-              .overlayProgressView(isActive: isRunning) {
-                SpinnerView(color: theme.colors.textOnPrimaryBackground)
-              }
+          AsyncButton {
+            await createSignIn()
+          } label: { isRunning in
+            HStack(spacing: 4) {
+              Text("Continue", bundle: .module)
+              Image("triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                .opacity(0.6)
             }
-          )
+            .frame(maxWidth: .infinity)
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.textOnPrimaryBackground)
+            }
+          }
           .buttonStyle(.primary())
           .disabled(authState.identifier.isEmpty)
 
@@ -96,7 +83,7 @@ struct SignInStartView: View {
 }
 
 extension SignInStartView {
-  
+
   func createSignIn() async {
     do {
       let signIn = try await SignIn.create(
@@ -107,7 +94,7 @@ extension SignInStartView {
       self.error = error
     }
   }
-  
+
 }
 
 #Preview {
