@@ -51,7 +51,7 @@ struct SignInStartView: View {
 
         VStack(spacing: 24) {
           ClerkTextField(
-            "Email, username or mobile number",
+            "email, username or mobile number",
             text: $authState.identifier
           )
           .textContentType(.emailAddress)
@@ -121,7 +121,7 @@ extension SignInStartView {
     .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("Spanish") {
+#Preview("Localized") {
   SignInStartView()
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
