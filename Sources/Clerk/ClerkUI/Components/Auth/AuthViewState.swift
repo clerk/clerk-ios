@@ -24,9 +24,9 @@ final class AuthState {
       case .signInFirstFactor:
         SignInFactorOneView()
       case .signInSecondFactor:
-        Text("Second Factor")
+        Text("Second Factor", bundle: .module)
       case .passwordReset:
-        Text("Password Reset")
+        Text("Password Reset", bundle: .module)
       }
     }
   }
