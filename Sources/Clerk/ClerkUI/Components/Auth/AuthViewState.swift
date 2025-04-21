@@ -12,7 +12,7 @@ import SwiftUI
 final class AuthState {
   enum Step {
     case signInStart
-    case signInFirstFactor
+    case signInFirstFactor(Factor)
     case signInSecondFactor
     case passwordReset
     
@@ -21,8 +21,8 @@ final class AuthState {
       switch self {
       case .signInStart:
         SignInStartView()
-      case .signInFirstFactor:
-        SignInFactorOneView()
+      case .signInFirstFactor(let factor):
+        SignInFactorOneView(factor: factor)
       case .signInSecondFactor:
         Text("Second Factor", bundle: .module)
       case .passwordReset:
@@ -35,6 +35,7 @@ final class AuthState {
   var identifier: String = ""
   var password: String = ""
   
+  @MainActor
   func setToStepForStatus(signIn: SignIn) {
     switch signIn.status {
     case .complete:
@@ -42,7 +43,11 @@ final class AuthState {
     case .needsIdentifier:
       step = .signInStart
     case .needsFirstFactor:
-      step = .signInFirstFactor
+      guard let factor = signIn.startingSignInFactor else {
+        step = .signInStart
+        return
+      }
+      step = .signInFirstFactor(factor)
     case .needsSecondFactor:
       step = .signInSecondFactor
     case .needsNewPassword:
