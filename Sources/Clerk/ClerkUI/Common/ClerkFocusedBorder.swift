@@ -14,21 +14,23 @@ struct ClerkFocusedBorder: ViewModifier {
   
   func body(content: Content) -> some View {
     content
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(
-            isFocused ? theme.colors.inputBorderFocused : theme.colors.inputBorder,
-            lineWidth: 1
-          )
-      }
-      .background {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .stroke(
-            theme.colors.inputBorder,
-            lineWidth: isFocused ? 4 : 0
-          )
-      }
-      .animation(.default, value: isFocused)
+      .animation(.default, body: { content in
+        content
+          .overlay {
+            RoundedRectangle(cornerRadius: theme.design.borderRadius)
+              .strokeBorder(
+                isFocused ? theme.colors.inputBorderFocused : theme.colors.inputBorder,
+                lineWidth: 1
+              )
+          }
+          .background {
+            RoundedRectangle(cornerRadius: theme.design.borderRadius)
+              .stroke(
+                theme.colors.inputBorder,
+                lineWidth: isFocused ? 4 : 0
+              )
+          }
+      })
   }
 }
 
