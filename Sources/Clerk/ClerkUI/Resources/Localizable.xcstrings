@@ -27,10 +27,22 @@
             "value" : "Ocurrió un error desconocido."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une erreur inconnue s'est produite."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "एक अज्ञात त्रुटि हुई।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si è verificato un errore sconosciuto."
           }
         },
         "zh-Hans" : {
@@ -61,10 +73,22 @@
             "value" : "Revisa tu correo electrónico"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez votre e-mail"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "अपना ईमेल जांचें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla la tua email"
           }
         },
         "zh-Hans" : {
@@ -95,10 +119,22 @@
             "value" : "Continuar"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "जारी रखें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua"
           }
         },
         "zh-Hans" : {
@@ -129,10 +165,22 @@
             "value" : "Continuar a %@"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer vers %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ पर जारी रखें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua a %@"
           }
         },
         "zh-Hans" : {
@@ -163,10 +211,22 @@
             "value" : "Continuar con %@"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer avec %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ के साथ जारी रखें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua con %@"
           }
         },
         "zh-Hans" : {
@@ -197,10 +257,22 @@
             "value" : "¿No recibiste el código? Reenviar (%lld)"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n'avez pas reçu le code ? Renvoyer (%lld)"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "कोड नहीं मिला? पुनः भेजें (%lld)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non hai ricevuto il codice? Reinvia (%lld)"
           }
         },
         "zh-Hans" : {
@@ -231,10 +303,22 @@
             "value" : "email, nombre de usuario o móvil"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "email, nom d'utilisateur ou numéro de mobile"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ईमेल, यूजरनेम या मोबाइल नंबर"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "email, nome utente o numero di cellulare"
           }
         },
         "zh-Hans" : {
@@ -265,10 +349,22 @@
             "value" : "Introducir contraseña"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrez le mot de passe"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "पासवर्ड दर्ज करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci password"
           }
         },
         "zh-Hans" : {
@@ -299,10 +395,22 @@
             "value" : "Introduce la contraseña de tu cuenta"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrez le mot de passe de votre compte"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "अपने खाते का पासवर्ड दर्ज करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci la password del tuo account"
           }
         },
         "zh-Hans" : {
@@ -333,10 +441,22 @@
             "value" : "Introduce tu contraseña"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrez votre mot de passe"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "अपना पासवर्ड दर्ज करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci la tua password"
           }
         },
         "zh-Hans" : {
@@ -367,10 +487,22 @@
             "value" : "Tipo de credencial no válido."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type d'identifiant invalide."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "अमान्य प्रमाण-पत्र प्रकार।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo di credenziali non valido."
           }
         },
         "zh-Hans" : {
@@ -401,10 +533,22 @@
             "value" : "Falta URL de retorno"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de rappel manquant"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "कॉलबैक URL अनुपलब्ध"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL di callback mancante"
           }
         },
         "zh-Hans" : {
@@ -435,10 +579,22 @@
             "value" : "o"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ou"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "या"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "o"
           }
         },
         "zh-Hans" : {
@@ -472,10 +628,22 @@
             "value" : "URL de redirección falta o no es válida. No se puede iniciar la autenticación externa."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL de redirection est manquant ou invalide. Impossible de démarrer le flux d'authentification externe."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "रीडायरेक्ट URL अनुपलब्ध या अमान्य है। बाहरी प्रमाणीकरण प्रक्रिया शुरू करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL di reindirizzamento è mancante o non valido. Impossibile avviare il flusso di autenticazione esterno."
           }
         },
         "zh-Hans" : {
@@ -509,10 +677,22 @@
             "value" : "Protegido por"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sécurisé par"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "द्वारा सुरक्षित"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protetto da"
           }
         },
         "zh-Hans" : {
@@ -543,10 +723,22 @@
             "value" : "Algo salió mal. Por favor, inténtalo de nuevo."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une erreur s'est produite. Veuillez réessayer."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa è andato storto. Per favore riprova."
           }
         },
         "zh-Hans" : {
@@ -577,10 +769,22 @@
             "value" : "para continuar"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pour continuer"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "जारी रखने के लिए"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per continuare"
           }
         },
         "zh-Hans" : {
@@ -611,10 +815,22 @@
             "value" : "para continuar a %@"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pour continuer vers %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ पर जारी रखने के लिए"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per continuare a %@"
           }
         },
         "zh-Hans" : {
@@ -645,10 +861,22 @@
             "value" : "No se puede eliminar la membresía: falta el ID de usuario"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de supprimer l'adhésion : ID utilisateur manquant"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "सदस्यता हटाने में असमर्थ: उपयोगकर्ता आईडी अनुपलब्ध"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare l'iscrizione: ID utente mancante"
           }
         },
         "zh-Hans" : {
@@ -679,10 +907,22 @@
             "value" : "No se puede evaluar la política."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'évaluer la politique."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "नीति का मूल्यांकन करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile valutare la policy."
           }
         },
         "zh-Hans" : {
@@ -713,10 +953,22 @@
             "value" : "No se puede obtener el desafío para la clave de acceso."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'obtenir le défi pour la clé d'accès."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "पासकी के लिए चुनौती प्राप्त करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere la sfida per la passkey."
           }
         },
         "zh-Hans" : {
@@ -747,10 +999,22 @@
             "value" : "No se puede obtener el ID de usuario para la clave de acceso."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'obtenir l'ID utilisateur pour la clé d'accès."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "पासकी के लिए उपयोगकर्ता आईडी प्राप्त करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere l'ID utente per la passkey."
           }
         },
         "zh-Hans" : {
@@ -781,10 +1045,22 @@
             "value" : "No se puede obtener el nombre de usuario para la clave de acceso."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'obtenir le nom d'utilisateur pour la clé d'accès."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "पासकी के लिए उपयोगकर्ता नाम प्राप्त करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere il nome utente per la passkey."
           }
         },
         "zh-Hans" : {
@@ -815,10 +1091,22 @@
             "value" : "No se puede obtener tu credencial de Apple ID."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'obtenir vos identifiants Apple ID."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "आपका Apple ID प्रमाण-पत्र प्राप्त करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere le tue credenziali Apple ID."
           }
         },
         "zh-Hans" : {
@@ -849,10 +1137,22 @@
             "value" : "No se puede recuperar el token de identidad de Apple."
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de récupérer le jeton d'identité Apple."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple पहचान टोकन प्राप्त करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile recuperare il token di identità Apple."
           }
         },
         "zh-Hans" : {
@@ -883,10 +1183,22 @@
             "value" : "No se puede actualizar la membresía: falta el ID de usuario"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de mettre à jour l'adhésion : ID utilisateur manquant"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "सदस्यता अपडेट करने में असमर्थ: उपयोगकर्ता आईडी अनुपलब्ध"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare l'iscrizione: ID utente mancante"
           }
         },
         "zh-Hans" : {
@@ -917,10 +1229,22 @@
             "value" : "Usar otro método"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser une autre méthode"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "अन्य विधि का उपयोग करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un altro metodo"
           }
         },
         "zh-Hans" : {
@@ -951,10 +1275,22 @@
             "value" : "¡Bienvenido! Inicia sesión para continuar"
           }
         },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bienvenue ! Connectez-vous pour continuer"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "आपका स्वागत है! जारी रखने के लिए साइन इन करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benvenuto! Accedi per continuare"
           }
         },
         "zh-Hans" : {
