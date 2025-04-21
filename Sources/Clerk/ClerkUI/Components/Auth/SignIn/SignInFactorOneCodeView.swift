@@ -54,7 +54,7 @@ struct SignInFactorOneCodeView: View {
           AsyncButton {
             // resend
           } label: { isRunning in
-            Text("Didn't recieve a code? Resend (\(resendSeconds))")
+            Text("Didn't recieve a code? Resend (\(resendSeconds))", bundle: .module)
               .font(theme.fonts.subheadline)
           }
           .buttonStyle(.secondary(config: .init(emphasis: .none, size: .small)))
@@ -62,7 +62,7 @@ struct SignInFactorOneCodeView: View {
           Button {
             authState.step = .signInStart
           } label: {
-            Text("Use another method")
+            Text("Use another method", bundle: .module)
               .font(theme.fonts.subheadline)
           }
           .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
