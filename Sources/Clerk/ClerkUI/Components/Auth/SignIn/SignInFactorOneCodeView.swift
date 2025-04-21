@@ -13,11 +13,26 @@ struct SignInFactorOneCodeView: View {
   @Environment(\.authState) private var authState
   @State private var code = ""
   @State private var resendSeconds = 1
-  
+
   var signIn: SignIn? {
     clerk.client?.signIn
   }
-  
+
+  let strategy: Strategy
+
+  enum Strategy {
+    case emailCode, phoneCode
+
+    var title: LocalizedStringKey {
+      switch self {
+      case .emailCode:
+        return "Check your email"
+      case .phoneCode:
+        return "Check your phone"
+      }
+    }
+  }
+
   var subtitleString: LocalizedStringKey {
     if let appName = clerk.environment.displayConfig?.applicationName {
       return "to continue to \(appName)"
@@ -25,7 +40,7 @@ struct SignInFactorOneCodeView: View {
       return "to continue"
     }
   }
-  
+
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
@@ -34,7 +49,7 @@ struct SignInFactorOneCodeView: View {
           .padding(.bottom, 24)
 
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Check your email")
+          HeaderView(style: .title, text: strategy.title)
           HeaderView(style: .subtitle, text: subtitleString)
 
           if let identifier = signIn?.identifier {
@@ -47,10 +62,10 @@ struct SignInFactorOneCodeView: View {
           }
         }
         .padding(.bottom, 32)
-        
+
         VStack(spacing: 24) {
           OTPField(code: $code)
-          
+
           AsyncButton {
             // resend
           } label: { isRunning in
@@ -58,7 +73,7 @@ struct SignInFactorOneCodeView: View {
               .font(theme.fonts.subheadline)
           }
           .buttonStyle(.secondary(config: .init(emphasis: .none, size: .small)))
-          
+
           Button {
             authState.step = .signInStart
           } label: {
@@ -68,7 +83,7 @@ struct SignInFactorOneCodeView: View {
           .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
         }
         .padding(.bottom, 32)
-        
+
         SecuredByClerkView()
       }
       .padding(.vertical, 32)
@@ -77,7 +92,12 @@ struct SignInFactorOneCodeView: View {
   }
 }
 
-#Preview {
-  SignInFactorOneCodeView()
+#Preview("Email Code") {
+  SignInFactorOneCodeView(strategy: .emailCode)
+    .environment(\.clerk, .mock)
+}
+
+#Preview("Phone Code") {
+  SignInFactorOneCodeView(strategy: .phoneCode)
     .environment(\.clerk, .mock)
 }
