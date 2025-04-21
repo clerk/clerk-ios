@@ -73,12 +73,14 @@ struct ClerkTextField: View {
 
         Text(titleKey, bundle: .module)
           .lineLimit(1)
+          .minimumScaleFactor(0.75)
           .font(theme.fonts.body)
           .frame(maxWidth: .infinity, alignment: .leading)
           .foregroundStyle(theme.colors.textSecondary)
           .allowsHitTesting(false)
           .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
           .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
+          .animation(.default, value: isFocusedOrFilled)
       }
 
       if isSecure {
