@@ -11,8 +11,11 @@ struct SignInFactorOneCodeView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
+  
   @State private var code = ""
   @State private var resendSeconds = 1
+  @State private var error: Error?
+  @FocusState private var isFocused: Bool
 
   var signIn: SignIn? {
     clerk.client?.signIn
@@ -40,6 +43,15 @@ struct SignInFactorOneCodeView: View {
       return "to continue"
     }
   }
+  
+  var hasBeenPrepared: Bool {
+    switch strategy {
+    case .emailCode:
+      signIn?.firstFactorVerification?.strategy == "email_code"
+    case .phoneCode:
+      signIn?.firstFactorVerification?.strategy == "phone_code"
+    }
+  }
 
   var body: some View {
     ScrollView {
@@ -65,6 +77,11 @@ struct SignInFactorOneCodeView: View {
 
         VStack(spacing: 24) {
           OTPField(code: $code)
+            .onCodeEntry {
+              Task {
+                await attempt()
+              }
+            }
 
           AsyncButton {
             // resend
@@ -89,7 +106,54 @@ struct SignInFactorOneCodeView: View {
       .padding(.vertical, 32)
       .padding(.horizontal, 16)
     }
+    .task {
+      if !hasBeenPrepared {
+        await prepare()
+      }
+    }
   }
+}
+
+extension SignInFactorOneCodeView {
+  
+  func prepare() async {
+    isFocused = false
+    
+    guard let signIn else {
+      authState.step = .signInStart
+      return
+    }
+    
+    do {
+      switch strategy {
+      case .emailCode:
+        try await signIn.prepareFirstFactor(strategy: .emailCode())
+      case .phoneCode:
+        try await signIn.prepareFirstFactor(strategy: .phoneCode())
+      }
+    } catch {
+      self.error = error
+    }
+  }
+  
+  func attempt() async {
+    guard let signIn else {
+      authState.step = .signInStart
+      return
+    }
+    
+    do {
+      switch strategy {
+      case .emailCode:
+        try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+      case .phoneCode:
+        try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+      }
+    } catch {
+      self.error = error
+    }
+  }
+  
 }
 
 #Preview("Email Code") {

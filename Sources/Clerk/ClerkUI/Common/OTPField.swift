@@ -11,11 +11,20 @@ struct OTPField: View {
   @Environment(\.clerkTheme) private var theme
 
   @Binding var code: String
-  let numberOfInputs: Int = 6
+  let numberOfInputs: Int
+  var onCodeEntry: (() -> Void)?
 
   @FocusState private var isFocused: Bool
   @State private var cursorAnimating = false
   @State private var inputSize = CGSize.zero
+  
+  init(
+    code: Binding<String>,
+    numberOfInputs: Int = 6
+  ) {
+    self._code = code
+    self.numberOfInputs = numberOfInputs
+  }
 
   var body: some View {
     HStack(spacing: 12) {
@@ -35,6 +44,11 @@ struct OTPField: View {
     .contentShape(.rect)
     .onFirstAppear {
       isFocused = true
+    }
+    .onChange(of: code) { _, newValue in
+      if newValue.count == numberOfInputs {
+        onCodeEntry?()
+      }
     }
   }
 
@@ -57,20 +71,27 @@ struct OTPField: View {
     .monospacedDigit()
     .padding(.vertical)
     .frame(maxWidth: .infinity, minHeight: 56)
-    .onGeometryChange(for: CGSize.self, of: { geometry in
-      geometry.size
-    }, action: { newValue in
-      inputSize = newValue
-    })
+    .onGeometryChange(
+      for: CGSize.self,
+      of: { geometry in
+        geometry.size
+      },
+      action: { newValue in
+        inputSize = newValue
+      }
+    )
     .overlay {
       if isSelected {
         Rectangle()
           .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
           .foregroundStyle(theme.colors.primary)
-          .animation(.easeInOut.speed(0.75).repeatForever(), body: { content in
-            content
-              .opacity(cursorAnimating ? 1 : 0)
-          })
+          .animation(
+            .easeInOut.speed(0.75).repeatForever(),
+            body: { content in
+              content
+                .opacity(cursorAnimating ? 1 : 0)
+            }
+          )
           .onAppear {
             cursorAnimating.toggle()
           }
@@ -86,6 +107,12 @@ struct OTPField: View {
         .strokeBorder(theme.colors.inputBackground)
     }
     .clerkFocusedBorder(isFocused: isSelected)
+  }
+
+  func onCodeEntry(perform action: @escaping () -> Void) -> Self {
+    var copy = self
+    copy.onCodeEntry = action
+    return copy
   }
 }
 
@@ -104,5 +131,5 @@ private extension Binding where Value == String {
   @Previewable @State var code = ""
   OTPField(code: $code)
     .padding()
-//    .environment(\.dynamicTypeSize, .accessibility5)
+  //    .environment(\.dynamicTypeSize, .accessibility5)
 }
