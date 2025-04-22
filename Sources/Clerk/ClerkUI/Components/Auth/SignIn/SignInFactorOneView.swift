@@ -20,6 +20,8 @@ struct SignInFactorOneView: View {
   @ViewBuilder
   var viewForFactor: some View {
     switch factor.strategy {
+    case "passkey":
+      SignInFactorOnePasskeyView()
     case "password":
       SignInFactorOnePasswordView()
     case "email_code":
@@ -37,6 +39,10 @@ struct SignInFactorOneView: View {
 }
 
 #Preview {
-  SignInFactorOneView(factor: .init(strategy: "email_code"))
-    .environment(\.clerk, .mock)
+  SignInFactorOneView(
+    factor: .init(
+      strategy: "passkey"
+    )
+  )
+  .environment(\.clerk, .mock)
 }

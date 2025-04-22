@@ -1485,6 +1485,98 @@
         }
       }
     },
+    "Use your passkey" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم مفتاح المرور الخاص بك"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Χρησιμοποιήστε το passkey σας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa tu clave de acceso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utilisez votre clé d'accès"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपना पासकी उपयोग करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa la tua passkey"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥"
+          }
+        }
+      }
+    },
+    "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدام مفتاح المرور الخاص بك يؤكد هويتك. قد يطلب جهازك بصمة إصبعك أو وجهك أو قفل الشاشة."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η χρήση του passkey σας επιβεβαιώνει ότι είστε εσείς. Η συσκευή σας μπορεί να ζητήσει το δακτυλικό σας αποτύπωμα, το πρόσωπό σας ή τον κωδικό κλειδώματος οθόνης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El uso de tu clave de acceso confirma que eres tú. Tu dispositivo puede solicitar tu huella digital, rostro o bloqueo de pantalla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'utilisation de votre clé d'accès confirme votre identité. Votre appareil peut vous demander votre empreinte digitale, votre visage ou votre code de verrouillage."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपना पासकी उपयोग करने से पुष्टि होती है कि यह आप ही हैं। आपका डिवाइस आपका फिंगरप्रिंट, फेस या स्क्रीन लॉक मांग सकता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'uso della tua passkey conferma che sei tu. Il tuo dispositivo potrebbe richiedere l'impronta digitale, il riconoscimento facciale o il blocco schermo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥可确认您的身份。您的设备可能会要求您提供指纹、面容或屏幕锁定。"
+          }
+        }
+      }
+    },
     "Welcome! Sign in to continue" : {
       "localizations" : {
         "ar" : {

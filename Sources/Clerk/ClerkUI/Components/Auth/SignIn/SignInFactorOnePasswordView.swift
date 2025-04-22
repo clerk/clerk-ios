@@ -106,6 +106,8 @@ struct SignInFactorOnePasswordView: View {
 extension SignInFactorOnePasswordView {
 
   func submitPassword() async {
+    isFocused = false
+    
     do {
       guard let signIn else {
         authState.step = .signInStart
