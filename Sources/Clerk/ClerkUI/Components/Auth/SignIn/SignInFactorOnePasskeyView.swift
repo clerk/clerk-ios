@@ -86,6 +86,10 @@ struct SignInFactorOnePasskeyView: View {
       .padding(.vertical, 32)
       .padding(.horizontal, 16)
     }
+    .taskOnce {
+      try? await Task.sleep(for: .seconds(0.5))
+      await authWithPasskey()
+    }
   }
 }
 
@@ -114,4 +118,10 @@ extension SignInFactorOnePasskeyView {
 #Preview {
   SignInFactorOnePasskeyView()
     .environment(\.clerk, .mock)
+}
+
+#Preview("Localized") {
+  SignInFactorOnePasskeyView()
+    .environment(\.clerk, .mock)
+    .environment(\.locale, .init(identifier: "fr"))
 }
