@@ -15,6 +15,7 @@ struct SignInStartView: View {
 
   @State private var email: String = ""
   @State private var error: Error?
+  @FocusState private var isFocused: Bool
 
   var signInString: LocalizedStringKey {
     if let appName = clerk.environment.displayConfig?.applicationName {
@@ -44,6 +45,7 @@ struct SignInStartView: View {
             "email, username or mobile number",
             text: $authState.identifier
           )
+          .focused($isFocused)
           .textContentType(.emailAddress)
           .textInputAutocapitalization(.never)
 
@@ -85,6 +87,8 @@ struct SignInStartView: View {
 extension SignInStartView {
 
   func createSignIn() async {
+    isFocused = false
+    
     do {
       let signIn = try await SignIn.create(
         strategy: .identifier(authState.identifier)
