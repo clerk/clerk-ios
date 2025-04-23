@@ -10,7 +10,7 @@ import SwiftUI
 
 @Observable
 final class AuthState {
-  enum Step {
+  enum Destination: Hashable {
     case signInStart
     case signInFactorOne(factor: Factor)
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
@@ -34,7 +34,7 @@ final class AuthState {
     }
   }
   
-  var step = Step.signInStart
+  var path = NavigationPath()
   var identifier: String = ""
   var password: String = ""
   
@@ -44,17 +44,17 @@ final class AuthState {
     case .complete:
       return
     case .needsIdentifier:
-      step = .signInStart
+      path = NavigationPath()
     case .needsFirstFactor:
       guard let factor = signIn.startingSignInFactor else {
-        step = .signInStart
+        path = NavigationPath()
         return
       }
-      step = .signInFactorOne(factor: factor)
+      path.append(Destination.signInFactorOne(factor: factor))
     case .needsSecondFactor:
-      step = .signInFactorTwo
+      path.append(Destination.signInFactorTwo)
     case .needsNewPassword:
-      step = .passwordReset
+      path.append(Destination.passwordReset)
     case .unknown:
       return
     }
