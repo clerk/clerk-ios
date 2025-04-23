@@ -21,13 +21,13 @@ struct SignInFactorOneView: View {
   var viewForFactor: some View {
     switch factor.strategy {
     case "passkey":
-      SignInFactorOnePasskeyView()
+      SignInFactorOnePasskeyView(factor: factor)
     case "password":
-      SignInFactorOnePasswordView()
+      SignInFactorOnePasswordView(factor: factor)
     case "email_code":
-      SignInFactorOneCodeView(strategy: .emailCode)
+      SignInFactorOneCodeView(factor: factor)
     case "phone_code":
-      SignInFactorOneCodeView(strategy: .phoneCode)
+      SignInFactorOneCodeView(factor: factor)
     default:
       SignInGetHelpView()
     }

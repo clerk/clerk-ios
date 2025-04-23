@@ -242,7 +242,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "متابعة إلى %@"
+            "value" : "للمتابعة إلى %@"
           }
         },
         "el" : {
@@ -371,6 +371,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有收到验证码？重新发送 (%lld)"
+          }
+        }
+      }
+    },
+    "Email code to %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إرسال رمز إلى %@"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αποστολή κωδικού στο %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar código a %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyer le code à %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ पर कोड भेजें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia codice a %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送验证码至%@"
           }
         }
       }
@@ -601,6 +647,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请输入您的密码"
+          }
+        }
+      }
+    },
+    "Facing issues? You can use any of these methods to sign in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تواجه مشاكل؟ يمكنك استخدام أي من هذه الطرق لتسجيل الدخول."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αντιμετωπίζετε προβλήματα; Μπορείτε να χρησιμοποιήσετε οποιαδήποτε από αυτές τις μεθόδους για να συνδεθείτε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Tienes problemas? Puedes usar cualquiera de estos métodos para iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous rencontrez des problèmes ? Vous pouvez utiliser l'une de ces méthodes pour vous connecter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "समस्याओं का सामना कर रहे हैं? आप साइन इन करने के लिए इनमें से किसी भी विधि का उपयोग कर सकते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai problemi? Puoi utilizzare uno di questi metodi per accedere."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遇到问题？您可以使用以下任一方式登录。"
           }
         }
       }
@@ -929,6 +1021,144 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安全由以下提供"
+          }
+        }
+      }
+    },
+    "Send SMS code to %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إرسال رمز SMS إلى %@"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αποστολή κωδικού SMS στο %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar código SMS a %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyer le code SMS à %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ पर SMS कोड भेजें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia codice SMS a %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送短信验证码至%@"
+          }
+        }
+      }
+    },
+    "Sign in with your passkey" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الدخول باستخدام مفتاح المرور الخاص بك"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύνδεση με το passkey σας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión con tu clave de acceso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecter avec votre clé d'accès"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने पासकी से साइन इन करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi con la tua passkey"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥登录"
+          }
+        }
+      }
+    },
+    "Sign in with your password" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الدخول باستخدام كلمة المرور الخاصة بك"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύνδεση με τον κωδικό σας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión con tu contraseña"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecter avec votre mot de passe"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने पासवर्ड से साइन इन करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi con la tua password"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的密码登录"
           }
         }
       }
@@ -1439,6 +1669,52 @@
         }
       }
     },
+    "Use a backup code" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدام رمز احتياطي"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Χρήση εφεδρικού κωδικού"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar un código de respaldo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser un code de secours"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बैकअप कोड का उपयोग करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un codice di backup"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用备用代码"
+          }
+        }
+      }
+    },
     "Use another method" : {
       "localizations" : {
         "ar" : {
@@ -1485,97 +1761,57 @@
         }
       }
     },
-    "Use your passkey" : {
+    "Use your authenticator app" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم مفتاح المرور الخاص بك"
+            "value" : "استخدام تطبيق المصادقة الخاص بك"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε το passkey σας"
+            "value" : "Χρήση της εφαρμογής ταυτοποίησης σας"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa tu clave de acceso"
+            "value" : "Usar tu aplicación de autenticación"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilisez votre clé d'accès"
+            "value" : "Utiliser votre application d'authentification"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपना पासकी उपयोग करें"
+            "value" : "अपने प्रमाणीकरण ऐप का उपयोग करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa la tua passkey"
+            "value" : "Usa la tua app di autenticazione"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的通行密钥"
+            "value" : "使用您的验证器应用"
           }
         }
       }
     },
+    "Use your passkey" : {
+
+    },
     "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استخدام مفتاح المرور الخاص بك يؤكد هويتك. قد يطلب جهازك بصمة إصبعك أو وجهك أو قفل الشاشة."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Η χρήση του passkey σας επιβεβαιώνει ότι είστε εσείς. Η συσκευή σας μπορεί να ζητήσει το δακτυλικό σας αποτύπωμα, το πρόσωπό σας ή τον κωδικό κλειδώματος οθόνης."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El uso de tu clave de acceso confirma que eres tú. Tu dispositivo puede solicitar tu huella digital, rostro o bloqueo de pantalla."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'utilisation de votre clé d'accès confirme votre identité. Votre appareil peut vous demander votre empreinte digitale, votre visage ou votre code de verrouillage."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "अपना पासकी उपयोग करने से पुष्टि होती है कि यह आप ही हैं। आपका डिवाइस आपका फिंगरप्रिंट, फेस या स्क्रीन लॉक मांग सकता है।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'uso della tua passkey conferma che sei tu. Il tuo dispositivo potrebbe richiedere l'impronta digitale, il riconoscimento facciale o il blocco schermo."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的通行密钥可确认您的身份。您的设备可能会要求您提供指纹、面容或屏幕锁定。"
-          }
-        }
-      }
+
     },
     "Welcome! Sign in to continue" : {
       "localizations" : {
