@@ -68,9 +68,11 @@ struct SignInStartView: View {
 
           TextDivider(string: "or")
 
-          SocialButtonStack(
-            providers: clerk.environment.authenticatableSocialProviders
-          )
+          SocialButtonLayout {
+            ForEach(clerk.environment.authenticatableSocialProviders) { provider in
+              SocialButton(provider: provider)
+            }
+          }
         }
         .padding(.bottom, 32)
 

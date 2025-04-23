@@ -7,19 +7,6 @@
 
 import SwiftUI
 
-struct SocialButtonStack: View {
-
-  let providers: [OAuthProvider]
-
-  var body: some View {
-    SocialButtonLayout {
-      ForEach(providers) { provider in
-        SocialButton(provider: provider)
-      }
-    }
-  }
-}
-
 struct SocialButtonLayout: Layout {
   enum Alignment {
     case leading, center, trailing
@@ -85,16 +72,38 @@ struct SocialButtonLayout: Layout {
   }
 }
 
-
-
 #Preview {
   ScrollView {
     VStack(spacing: 50) {
-      SocialButtonStack(providers: [.google])
-      SocialButtonStack(providers: [.google, .apple])
-      SocialButtonStack(providers: [.google, .apple, .facebook])
-      SocialButtonStack(providers: [.google, .apple, .facebook, .github])
-      SocialButtonStack(providers: [.google, .apple, .facebook, .github, .slack])
+      SocialButtonLayout {
+        SocialButton(provider: .google)
+      }
+      
+      SocialButtonLayout {
+        SocialButton(provider: .google)
+        SocialButton(provider: .apple)
+      }
+      
+      SocialButtonLayout {
+        SocialButton(provider: .google)
+        SocialButton(provider: .apple)
+        SocialButton(provider: .github)
+      }
+      
+      SocialButtonLayout {
+        SocialButton(provider: .google)
+        SocialButton(provider: .apple)
+        SocialButton(provider: .github)
+        SocialButton(provider: .slack)
+      }
+      
+      SocialButtonLayout {
+        SocialButton(provider: .google)
+        SocialButton(provider: .apple)
+        SocialButton(provider: .github)
+        SocialButton(provider: .slack)
+        SocialButton(provider: .facebook)
+      }
     }
     .frame(maxWidth: .infinity)
     .padding()
