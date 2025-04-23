@@ -66,7 +66,7 @@ struct SignInFactorOneCodeView: View {
 
           if let identifier = signIn?.identifier {
             Button {
-              authState.step = .signInStart
+              authState.path = NavigationPath()
             } label: {
               IdentityPreviewView(label: identifier)
             }
@@ -92,7 +92,11 @@ struct SignInFactorOneCodeView: View {
           .buttonStyle(.secondary(config: .init(emphasis: .none, size: .small)))
 
           Button {
-            authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
+            authState.path.append(
+              AuthState.Destination.signInFactorOneUseAnotherMethod(
+                currentFactor: factor
+              )
+            )
           } label: {
             Text("Use another method", bundle: .module)
               .font(theme.fonts.subheadline)
@@ -103,9 +107,9 @@ struct SignInFactorOneCodeView: View {
 
         SecuredByClerkView()
       }
-      .padding(.vertical, 32)
-      .padding(.horizontal, 16)
+      .padding(16)
     }
+    .background(theme.colors.background)
     .task {
       if !hasBeenPrepared {
         await prepare()
@@ -120,7 +124,7 @@ extension SignInFactorOneCodeView {
     isFocused = false
 
     guard let signIn else {
-      authState.step = .signInStart
+      authState.path = NavigationPath()
       return
     }
 
@@ -144,7 +148,7 @@ extension SignInFactorOneCodeView {
 
   func attempt() async {
     guard let signIn else {
-      authState.step = .signInStart
+      authState.path = NavigationPath()
       return
     }
 

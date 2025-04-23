@@ -35,7 +35,7 @@ struct SignInFactorOnePasswordView: View {
 
           if let identifier = signIn?.identifier {
             Button {
-              authState.step = .signInStart
+              authState.path = NavigationPath()
             } label: {
               IdentityPreviewView(label: identifier)
             }
@@ -78,7 +78,11 @@ struct SignInFactorOnePasswordView: View {
         .padding(.bottom, 16)
 
         Button {
-          authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
+          authState.path.append(
+            AuthState.Destination.signInFactorOneUseAnotherMethod(
+              currentFactor: factor
+            )
+          )
         } label: {
           Text("Use another method", bundle: .module)
             .font(theme.fonts.subheadline)
@@ -97,11 +101,9 @@ struct SignInFactorOnePasswordView: View {
 
         SecuredByClerkView()
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 32)
+      .padding(16)
     }
     .background(theme.colors.background)
-    .scrollBounceBehavior(.basedOnSize)
   }
 }
 
@@ -111,12 +113,12 @@ extension SignInFactorOnePasswordView {
     isFocused = false
     
     do {
-      guard let signIn else {
-        authState.step = .signInStart
+      guard var signIn else {
+        authState.path = NavigationPath()
         return
       }
 
-      try await signIn.attemptFirstFactor(
+      signIn = try await signIn.attemptFirstFactor(
         strategy: .password(password: authState.password)
       )
 
