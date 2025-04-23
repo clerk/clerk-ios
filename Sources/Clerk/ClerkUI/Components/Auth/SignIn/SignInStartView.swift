@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/9/25.
 //
 
+#if canImport(SwiftUI)
+
 import Factory
 import SwiftUI
 
@@ -117,3 +119,5 @@ extension SignInStartView {
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
 }
+
+#endif

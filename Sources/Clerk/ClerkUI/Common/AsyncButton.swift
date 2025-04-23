@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/15/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct AsyncButton<Label: View>: View {
@@ -69,3 +71,5 @@ struct AsyncButton<Label: View>: View {
   }
   .padding()
 }
+
+#endif

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/17/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 import SwiftUI
 
@@ -60,3 +62,5 @@ private extension CGFloat {
     return self <= 0.03928 ? self / 12.92 : pow((self + 0.055) / 1.055, 2.4)
   }
 }
+
+#endif

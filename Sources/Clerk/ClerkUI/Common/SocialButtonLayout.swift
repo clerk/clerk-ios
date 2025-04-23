@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/23/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct SocialButtonLayout: Layout {
@@ -109,3 +111,5 @@ struct SocialButtonLayout: Layout {
     .padding()
   }
 }
+
+#endif

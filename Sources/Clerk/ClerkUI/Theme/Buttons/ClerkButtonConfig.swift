@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/17/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 
 struct ClerkButtonConfig {
@@ -23,3 +25,5 @@ struct ClerkButtonConfig {
   }
   
 }
+
+#endif
