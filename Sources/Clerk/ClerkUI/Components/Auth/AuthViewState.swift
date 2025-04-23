@@ -12,8 +12,9 @@ import SwiftUI
 final class AuthState {
   enum Step {
     case signInStart
-    case signInFirstFactor(Factor)
-    case signInSecondFactor
+    case signInFactorOne(factor: Factor)
+    case signInFactorOneUseAnotherMethod(currentFactor: Factor)
+    case signInFactorTwo
     case passwordReset
     
     @ViewBuilder
@@ -21,9 +22,11 @@ final class AuthState {
       switch self {
       case .signInStart:
         SignInStartView()
-      case .signInFirstFactor(let factor):
+      case .signInFactorOne(let factor):
         SignInFactorOneView(factor: factor)
-      case .signInSecondFactor:
+      case .signInFactorOneUseAnotherMethod(let currentFactor):
+        SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
+      case .signInFactorTwo:
         Text("Second Factor", bundle: .module)
       case .passwordReset:
         Text("Password Reset", bundle: .module)
@@ -47,9 +50,9 @@ final class AuthState {
         step = .signInStart
         return
       }
-      step = .signInFirstFactor(factor)
+      step = .signInFactorOne(factor: factor)
     case .needsSecondFactor:
-      step = .signInSecondFactor
+      step = .signInFactorTwo
     case .needsNewPassword:
       step = .passwordReset
     case .unknown:
