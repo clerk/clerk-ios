@@ -68,7 +68,7 @@ struct SignInStartView: View {
 
           TextDivider(string: "or")
 
-          SocialButtonGrid(
+          SocialButtonStack(
             providers: clerk.environment.authenticatableSocialProviders
           )
         }
