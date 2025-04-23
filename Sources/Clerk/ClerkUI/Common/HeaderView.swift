@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/18/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct HeaderView: View {
@@ -68,3 +70,5 @@ struct HeaderView: View {
   HeaderView(style: .title, text: "Hello, World!")
   HeaderView(style: .subtitle, text: "Hello, World!")
 }
+
+#endif

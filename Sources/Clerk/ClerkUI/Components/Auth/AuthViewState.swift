@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/15/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 import SwiftUI
 
@@ -60,3 +62,5 @@ final class AuthState {
     }
   }
 }
+
+#endif

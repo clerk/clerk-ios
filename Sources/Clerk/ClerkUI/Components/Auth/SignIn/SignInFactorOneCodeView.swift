@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/21/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct SignInFactorOneCodeView: View {
@@ -177,3 +179,5 @@ extension SignInFactorOneCodeView {
   SignInFactorOneCodeView(factor: .mockEmailCode)
     .environment(\.clerk, .mock)
 }
+
+#endif

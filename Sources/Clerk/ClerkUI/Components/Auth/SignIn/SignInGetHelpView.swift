@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/21/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct SignInGetHelpView: View {
@@ -46,3 +48,5 @@ struct SignInGetHelpView: View {
 #Preview {
   SignInGetHelpView()
 }
+
+#endif

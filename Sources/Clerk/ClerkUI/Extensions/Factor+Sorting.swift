@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/21/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 
 extension Factor {
@@ -97,3 +99,5 @@ extension Factor {
   public static let backupCodePrefComparator = BackupCodePrefComparator()
   public static let allStrategiesButtonsComparator = AllStrategiesButtonsComparator()
 }
+
+#endif

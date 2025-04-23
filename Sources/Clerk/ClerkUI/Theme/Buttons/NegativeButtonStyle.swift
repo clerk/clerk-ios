@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/10/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct NegativeButtonStyle: ButtonStyle {
@@ -185,4 +187,6 @@ extension ButtonStyle where Self == NegativeButtonStyle {
   .padding()
   .environment(\.clerkTheme, .clerk)
 }
+
+#endif
 

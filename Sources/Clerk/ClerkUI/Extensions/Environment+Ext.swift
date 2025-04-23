@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/14/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 
 extension Clerk.Environment {
@@ -24,3 +26,5 @@ extension Clerk.Environment {
   }
   
 }
+
+#endif

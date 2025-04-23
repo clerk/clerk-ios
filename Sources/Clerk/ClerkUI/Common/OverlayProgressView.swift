@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/15/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct OverlayProgressModifier<ProgressView: View>: ViewModifier {
@@ -41,3 +43,5 @@ extension View {
   .buttonStyle(.primary())
   .padding()
 }
+
+#endif

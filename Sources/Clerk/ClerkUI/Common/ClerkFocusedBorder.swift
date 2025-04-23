@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/18/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct ClerkFocusedBorder: ViewModifier {
@@ -49,3 +51,5 @@ extension View {
     .clerkFocusedBorder()
     .padding()
 }
+
+#endif

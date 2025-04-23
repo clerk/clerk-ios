@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/17/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct IdentityPreviewView: View {
@@ -29,3 +31,5 @@ struct IdentityPreviewView: View {
 #Preview {
   IdentityPreviewView(label: "example@email.com")
 }
+
+#endif

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/11/25.
 //
 
+#if canImport(SwiftUI)
+
 import Kingfisher
 import SwiftUI
 
@@ -106,3 +108,5 @@ extension SocialButton {
   }
   .padding()
 }
+
+#endif

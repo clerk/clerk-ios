@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/17/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
@@ -140,3 +142,5 @@ extension SignInFactorOnePasswordView {
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
 }
+
+#endif

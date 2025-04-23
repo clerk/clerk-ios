@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/16/25.
 //
 
+#if canImport(SwiftUI)
+
 import Kingfisher
 import SwiftUI
 
@@ -29,3 +31,5 @@ struct AppLogoView: View {
   AppLogoView()
     .padding()
 }
+
+#endif

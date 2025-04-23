@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/10/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 extension ClerkTheme {
@@ -85,3 +87,5 @@ extension ClerkTheme.Fonts {
     )
   }
 }
+
+#endif
