@@ -101,9 +101,6 @@ struct SignInFactorOnePasskeyView: View {
       .padding(16)
     }
     .background(theme.colors.background)
-    .taskOnce {
-      await authWithPasskey()
-    }
     .onFirstAppear {
       animateSymbol.toggle()
     }
