@@ -23,7 +23,7 @@ extension Factor {
     "password",
   ]
 
-  private static let strategySortOrderAllStrategiesButtons = [
+  private static let strategySortOrderAllStrategies = [
     "email_code",
     "phone_code",
     "passkey",
@@ -83,8 +83,8 @@ extension Factor {
     public var order: SortOrder = .forward
     
     public func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
-      guard let order1 = strategySortOrderAllStrategiesButtons.firstIndex(of: lhs.strategy),
-            let order2 = strategySortOrderAllStrategiesButtons.firstIndex(of: rhs.strategy)
+      guard let order1 = strategySortOrderAllStrategies.firstIndex(of: lhs.strategy),
+            let order2 = strategySortOrderAllStrategies.firstIndex(of: rhs.strategy)
       else {
         return .orderedSame
       }

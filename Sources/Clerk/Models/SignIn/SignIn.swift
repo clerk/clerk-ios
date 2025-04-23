@@ -426,7 +426,14 @@ extension SignIn {
       status: .needsIdentifier,
       supportedIdentifiers: [.emailAddress, .phoneNumber],
       identifier: User.mock.emailAddresses.first?.emailAddress,
-      supportedFirstFactors: [.mock],
+      supportedFirstFactors: [
+        .mockEmailCode,
+        .mockPhoneCode,
+        .mockGoogle,
+        .mockApple,
+        .mockPasskey,
+        .mockPassword
+      ],
       supportedSecondFactors: nil,
       firstFactorVerification: .mockEmailCodeUnverifiedVerification,
       secondFactorVerification: nil,

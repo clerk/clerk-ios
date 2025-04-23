@@ -13,8 +13,9 @@ struct SocialButton: View {
   @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
-  var action: (() async -> Void)?
-  
+  var action: (() async -> Void)? = nil
+  var onError: ((Error) -> Void)? = nil
+
   private var iconImage: some View {
     KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
       .resizable()
@@ -27,13 +28,39 @@ struct SocialButton: View {
       .scaledToFit()
       .frame(width: 21, height: 21)
   }
+  
+  init(
+    provider: OAuthProvider
+  ) {
+    self.provider = provider
+  }
+
+  init(
+    provider: OAuthProvider,
+    action: (() async -> Void)? = nil,
+  ) {
+    self.provider = provider
+    self.action = action
+  }
+
+  init(
+    provider: OAuthProvider,
+    onError: ((Error) -> Void)? = nil
+  ) {
+    self.provider = provider
+    self.onError = onError
+  }
 
   var body: some View {
     AsyncButton {
-      if let action {
-        await action()
-      } else {
-        await defaultAction()
+      do {
+        if let action = action {
+          try await action()
+        } else {
+          try await defaultAction()
+        }
+      } catch {
+        onError?(error)
       }
     } label: { isRunning in
       ViewThatFits(in: .horizontal) {
@@ -43,7 +70,7 @@ struct SocialButton: View {
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.text)
         }
-        
+
         iconImage
       }
       .frame(maxWidth: .infinity)
@@ -54,31 +81,20 @@ struct SocialButton: View {
 }
 
 extension SocialButton {
-  
-  func defaultAction() async {
-    do {
-      if provider == .apple {
-        try await SignInWithAppleUtils.signIn()
-      } else {
-        try await SignIn.authenticateWithRedirect(
-          strategy: .oauth(provider: provider)
-        )
-      }
-    } catch {
-      dump(error)
+
+  func defaultAction() async throws {
+    if provider == .apple {
+      try await SignInWithAppleUtils.signIn()
+    } else {
+      try await SignIn.authenticateWithRedirect(
+        strategy: .oauth(provider: provider)
+      )
     }
   }
-
-  func onAction(perform action: @escaping () -> Void) -> Self {
-    var copy = self
-    copy.action = action
-    return copy
-  }
-
 }
 
 #Preview {
-  
+
   VStack {
     SocialButton(provider: .google)
 

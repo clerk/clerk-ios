@@ -17,6 +17,8 @@ struct SignInFactorOnePasskeyView: View {
     clerk.client?.signIn
   }
 
+  let factor: Factor
+
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
@@ -45,7 +47,7 @@ struct SignInFactorOnePasskeyView: View {
             .scaledToFit()
             .frame(width: 56, height: 56)
             .foregroundStyle(theme.colors.textSecondary)
-          
+
           AsyncButton {
             await authWithPasskey()
           } label: { isRunning in
@@ -61,9 +63,9 @@ struct SignInFactorOnePasskeyView: View {
             }
           }
           .buttonStyle(.primary())
-          
+
           Button {
-            authState.step = .signInStart
+            authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
           } label: {
             Text("Use another method", bundle: .module)
               .font(theme.fonts.subheadline)
@@ -80,7 +82,7 @@ struct SignInFactorOnePasskeyView: View {
           )
         }
         .padding(.bottom, 32)
-        
+
         SecuredByClerkView()
       }
       .padding(.vertical, 32)
@@ -94,13 +96,13 @@ struct SignInFactorOnePasskeyView: View {
 }
 
 extension SignInFactorOnePasskeyView {
-  
+
   func authWithPasskey() async {
     guard let signIn else {
       authState.step = .signInStart
       return
     }
-    
+
     do {
       let signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
       let credential = try await signIn.getCredentialForPasskey()
@@ -112,16 +114,16 @@ extension SignInFactorOnePasskeyView {
       dump(error)
     }
   }
-  
+
 }
 
 #Preview {
-  SignInFactorOnePasskeyView()
+  SignInFactorOnePasskeyView(factor: .mockPasskey)
     .environment(\.clerk, .mock)
 }
 
 #Preview("Localized") {
-  SignInFactorOnePasskeyView()
+  SignInFactorOnePasskeyView(factor: .mockPasskey)
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "fr"))
 }

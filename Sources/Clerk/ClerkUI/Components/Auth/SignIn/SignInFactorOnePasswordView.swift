@@ -17,6 +17,8 @@ struct SignInFactorOnePasswordView: View {
   var signIn: SignIn? {
     clerk.client?.signIn
   }
+  
+  let factor: Factor
 
   var body: some View {
     @Bindable var authState = authState
@@ -76,7 +78,7 @@ struct SignInFactorOnePasswordView: View {
         .padding(.bottom, 16)
 
         Button {
-          authState.step = .signInStart
+          authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
         } label: {
           Text("Use another method", bundle: .module)
             .font(theme.fonts.subheadline)
@@ -127,12 +129,12 @@ extension SignInFactorOnePasswordView {
 }
 
 #Preview {
-  SignInFactorOnePasswordView()
+  SignInFactorOnePasswordView(factor: .mockPassword)
     .environment(\.clerk, .mock)
 }
 
 #Preview("Localized") {
-  SignInFactorOnePasswordView()
+  SignInFactorOnePasswordView(factor: .mockPassword)
     .environment(\.clerk, .mock)
     .environment(\.locale, .init(identifier: "es"))
 }

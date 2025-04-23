@@ -46,16 +46,28 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
 }
 
 extension Factor {
-
-  static var mock: Factor {
-    Factor(
-      strategy: "email_code",
-      emailAddressId: "1",
-      phoneNumberId: "1",
-      web3WalletId: nil,
-      safeIdentifier: User.mock.emailAddresses.first?.emailAddress,
-      primary: true
-    )
+  
+  static var mockEmailCode: Factor {
+    Factor(strategy: "email_code")
+  }
+  
+  static var mockPhoneCode: Factor {
+    Factor(strategy: "phone_code")
+  }
+  
+  static var mockGoogle: Factor {
+    Factor(strategy: "oauth_google")
+  }
+  
+  static var mockApple: Factor {
+    Factor(strategy: "oauth_apple")
+  }
+  
+  static var mockPassword: Factor {
+    Factor(strategy: "password")
+  }
+  static var mockPasskey: Factor {
+    Factor(strategy: "passkey")
   }
 
 }
