@@ -11,7 +11,7 @@ struct SignInFactorOneCodeView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
-  
+
   @State private var code = ""
   @State private var resendSeconds = 1
   @State private var error: Error?
@@ -21,18 +21,16 @@ struct SignInFactorOneCodeView: View {
     clerk.client?.signIn
   }
 
-  let strategy: Strategy
+  let factor: Factor
 
-  enum Strategy {
-    case emailCode, phoneCode
-
-    var title: LocalizedStringKey {
-      switch self {
-      case .emailCode:
-        return "Check your email"
-      case .phoneCode:
-        return "Check your phone"
-      }
+  var title: LocalizedStringKey {
+    switch factor.strategy {
+    case "email_code":
+      "Check your email"
+    case "phone_code":
+      "Check your phone"
+    default:
+      ""
     }
   }
 
@@ -43,13 +41,15 @@ struct SignInFactorOneCodeView: View {
       return "to continue"
     }
   }
-  
+
   var hasBeenPrepared: Bool {
-    switch strategy {
-    case .emailCode:
+    switch factor.strategy {
+    case "email_code":
       signIn?.firstFactorVerification?.strategy == "email_code"
-    case .phoneCode:
+    case "phone_code":
       signIn?.firstFactorVerification?.strategy == "phone_code"
+    default:
+      false
     }
   }
 
@@ -61,7 +61,7 @@ struct SignInFactorOneCodeView: View {
           .padding(.bottom, 24)
 
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: strategy.title)
+          HeaderView(style: .title, text: title)
           HeaderView(style: .subtitle, text: subtitleString)
 
           if let identifier = signIn?.identifier {
@@ -92,7 +92,7 @@ struct SignInFactorOneCodeView: View {
           .buttonStyle(.secondary(config: .init(emphasis: .none, size: .small)))
 
           Button {
-            authState.step = .signInStart
+            authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
           } label: {
             Text("Use another method", bundle: .module)
               .font(theme.fonts.subheadline)
@@ -115,53 +115,61 @@ struct SignInFactorOneCodeView: View {
 }
 
 extension SignInFactorOneCodeView {
-  
+
   func prepare() async {
     isFocused = false
-    
+
     guard let signIn else {
       authState.step = .signInStart
       return
     }
-    
+
     do {
-      switch strategy {
-      case .emailCode:
-        try await signIn.prepareFirstFactor(strategy: .emailCode())
-      case .phoneCode:
-        try await signIn.prepareFirstFactor(strategy: .phoneCode())
+      switch factor.strategy {
+      case "email_code":
+        try await signIn.prepareFirstFactor(
+          strategy: .emailCode(emailAddressId: factor.emailAddressId)
+        )
+      case "phone_code":
+        try await signIn.prepareFirstFactor(
+          strategy: .phoneCode(phoneNumberId: factor.phoneNumberId)
+        )
+      default:
+        return
       }
     } catch {
       self.error = error
     }
   }
-  
+
   func attempt() async {
     guard let signIn else {
       authState.step = .signInStart
       return
     }
-    
+
     do {
-      switch strategy {
-      case .emailCode:
+      switch factor.strategy {
+      case "email_code":
         try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
-      case .phoneCode:
+      case "phone_code":
         try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+      default:
+        return
       }
     } catch {
       self.error = error
     }
   }
-  
+
 }
 
 #Preview("Email Code") {
-  SignInFactorOneCodeView(strategy: .emailCode)
+  SignInFactorOneCodeView(factor: .mockEmailCode)
     .environment(\.clerk, .mock)
 }
 
 #Preview("Phone Code") {
-  SignInFactorOneCodeView(strategy: .phoneCode)
+  SignInFactorOneCodeView(factor: .mockEmailCode)
     .environment(\.clerk, .mock)
 }
