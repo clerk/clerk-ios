@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/14/25.
 //
 
+#if canImport(SwiftUI)
+
 import Factory
 import SwiftUI
 
@@ -72,3 +74,5 @@ public struct AuthView: View {
   AuthView(showDismissButton: false)
     .environment(\.clerk, .mock)
 }
+
+#endif

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/11/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct TextDivider: View {
@@ -33,3 +35,5 @@ struct TextDivider: View {
   TextDivider(string: "or")
     .padding()
 }
+
+#endif

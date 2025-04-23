@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/9/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 import SwiftUI
 
@@ -24,3 +26,5 @@ public class ClerkTheme {
     self.design = design
   }
 }
+
+#endif
