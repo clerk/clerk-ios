@@ -78,30 +78,36 @@ struct SignInFactorOneAlternativeMethodsView: View {
         }
         .padding(.bottom, 32)
 
-        VStack(spacing: 16) {
-          SocialButtonLayout {
-            ForEach(socialProviders) { provider in              
-              SocialButton(provider: provider) {
-                await signInWithProvider(provider)
+        VStack(spacing: 24) {
+          VStack(spacing: 16) {
+            SocialButtonLayout {
+              ForEach(socialProviders) { provider in
+                SocialButton(provider: provider) {
+                  await signInWithProvider(provider)
+                }
               }
             }
           }
+            
+          TextDivider(string: "or")
 
-          ForEach(alternativeFactors, id: \.self) { factor in
-            if let actionText = actionText(factor: factor) {
-              Button {
-                authState.path.append(AuthState.Destination.signInFactorOne(factor: factor))
-              } label: {
-                HStack(spacing: 6) {
-                  if let iconName = iconName(factor: factor) {
-                    Image(systemName: iconName)
-                      .foregroundStyle(theme.colors.textSecondary)
+          VStack(spacing: 16) {
+            ForEach(alternativeFactors, id: \.self) { factor in
+              if let actionText = actionText(factor: factor) {
+                Button {
+                  authState.path.append(AuthState.Destination.signInFactorOne(factor: factor))
+                } label: {
+                  HStack(spacing: 6) {
+                    if let iconName = iconName(factor: factor) {
+                      Image(systemName: iconName)
+                        .foregroundStyle(theme.colors.textSecondary)
+                    }
+                    Text(actionText, bundle: .module)
                   }
-                  Text(actionText)
+                  .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.secondary())
               }
-              .buttonStyle(.secondary())
             }
           }
         }
@@ -138,6 +144,7 @@ extension SignInFactorOneAlternativeMethodsView {
     currentFactor: .mockEmailCode
   )
   .environment(\.clerk, .mock)
+  .environment(\.locale, .init(identifier: "hi"))
 }
 
 #endif
