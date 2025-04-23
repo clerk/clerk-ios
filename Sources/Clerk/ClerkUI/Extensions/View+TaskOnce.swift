@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/18/25.
 //
 
+#if canImport(SwiftUI)
+
 import Foundation
 import SwiftUI
 
@@ -27,3 +29,5 @@ private struct TaskOnce: ViewModifier {
     }
   }
 }
+
+#endif

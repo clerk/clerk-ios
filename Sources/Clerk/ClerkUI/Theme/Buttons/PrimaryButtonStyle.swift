@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/10/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct PrimaryButtonStyle: ButtonStyle {
@@ -209,4 +211,6 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
   .padding()
   .environment(\.clerkTheme, .clerk)
 }
+
+#endif
 

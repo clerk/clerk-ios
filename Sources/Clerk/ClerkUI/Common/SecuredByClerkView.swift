@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/15/25.
 //
 
+#if canImport(SwiftUI)
+
 import SwiftUI
 
 struct SecuredByClerkView: View {
@@ -23,3 +25,5 @@ struct SecuredByClerkView: View {
 #Preview {
   SecuredByClerkView()
 }
+
+#endif
