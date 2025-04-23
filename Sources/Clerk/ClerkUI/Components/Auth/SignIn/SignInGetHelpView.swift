@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SignInGetHelpView: View {
   @Environment(\.authState) private var authState
+  @Environment(\.clerkTheme) private var theme
 
   var body: some View {
     ScrollView {
@@ -31,21 +32,14 @@ struct SignInGetHelpView: View {
               .frame(maxWidth: .infinity)
           }
           .buttonStyle(.primary())
-
-          Button {
-            authState.step = .signInStart
-          } label: {
-            Text("Back", bundle: .module)
-          }
-          .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
         }
         .padding(.bottom, 32)
 
         SecuredByClerkView()
       }
-      .padding(.vertical, 32)
-      .padding(.horizontal, 16)
+      .padding(16)
     }
+    .background(theme.colors.background)
   }
 }
 

@@ -11,7 +11,9 @@ struct SignInFactorOnePasskeyView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
+  
   @State var error: Error?
+  @State private var animateSymbol = false
 
   var signIn: SignIn? {
     clerk.client?.signIn
@@ -32,7 +34,7 @@ struct SignInFactorOnePasskeyView: View {
 
           if let identifier = signIn?.identifier {
             Button {
-              authState.step = .signInStart
+              authState.path = NavigationPath()
             } label: {
               IdentityPreviewView(label: identifier)
             }
@@ -42,10 +44,17 @@ struct SignInFactorOnePasskeyView: View {
         .padding(.bottom, 32)
 
         VStack(spacing: 24) {
-          Image(systemName: "person.badge.key.fill")
+          Image(systemName: "faceid")
             .resizable()
+            .symbolRenderingMode(.palette)
+            .symbolEffect(
+              .bounce.down,
+              options: .nonRepeating,
+              value: animateSymbol
+            )
+            .foregroundStyle(theme.colors.text, theme.colors.primary)
             .scaledToFit()
-            .frame(width: 56, height: 56)
+            .frame(width: 64, height: 64)
             .foregroundStyle(theme.colors.textSecondary)
 
           AsyncButton {
@@ -65,7 +74,11 @@ struct SignInFactorOnePasskeyView: View {
           .buttonStyle(.primary())
 
           Button {
-            authState.step = .signInFactorOneUseAnotherMethod(currentFactor: factor)
+            authState.path.append(
+              AuthState.Destination.signInFactorOneUseAnotherMethod(
+                currentFactor: factor
+              )
+            )
           } label: {
             Text("Use another method", bundle: .module)
               .font(theme.fonts.subheadline)
@@ -85,12 +98,14 @@ struct SignInFactorOnePasskeyView: View {
 
         SecuredByClerkView()
       }
-      .padding(.vertical, 32)
-      .padding(.horizontal, 16)
+      .padding(16)
     }
+    .background(theme.colors.background)
     .taskOnce {
-      try? await Task.sleep(for: .seconds(0.5))
       await authWithPasskey()
+    }
+    .onFirstAppear {
+      animateSymbol.toggle()
     }
   }
 }
@@ -99,7 +114,7 @@ extension SignInFactorOnePasskeyView {
 
   func authWithPasskey() async {
     guard let signIn else {
-      authState.step = .signInStart
+      authState.path = NavigationPath()
       return
     }
 
@@ -120,6 +135,7 @@ extension SignInFactorOnePasskeyView {
 #Preview {
   SignInFactorOnePasskeyView(factor: .mockPasskey)
     .environment(\.clerk, .mock)
+    .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {

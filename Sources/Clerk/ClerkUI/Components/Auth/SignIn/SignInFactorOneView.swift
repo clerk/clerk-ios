@@ -35,6 +35,7 @@ struct SignInFactorOneView: View {
   
   var body: some View {
     viewForFactor
+      .background(theme.colors.background)
   }
 }
 

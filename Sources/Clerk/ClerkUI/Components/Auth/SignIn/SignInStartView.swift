@@ -78,11 +78,9 @@ struct SignInStartView: View {
 
         SecuredByClerkView()
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 32)
+      .padding(16)
     }
-    .presentationBackground(theme.colors.background)
-    .scrollBounceBehavior(.basedOnSize)
+    .background(theme.colors.background)
   }
 }
 
