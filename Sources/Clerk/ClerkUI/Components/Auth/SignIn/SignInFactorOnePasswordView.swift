@@ -35,7 +35,7 @@ struct SignInFactorOnePasswordView: View {
           HeaderView(style: .title, text: "Enter password")
           HeaderView(style: .subtitle, text: "Enter the password for your account")
 
-          if let identifier = signIn?.identifier {
+          if let identifier = factor.safeIdentifier {
             Button {
               authState.path = NavigationPath()
             } label: {

@@ -34,7 +34,7 @@ struct SignInFactorOnePasskeyView: View {
           HeaderView(style: .title, text: "Use your passkey")
           HeaderView(style: .subtitle, text: "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock.")
 
-          if let identifier = signIn?.identifier {
+          if let identifier = factor.safeIdentifier {
             Button {
               authState.path = NavigationPath()
             } label: {
