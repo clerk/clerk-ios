@@ -30,9 +30,6 @@ struct SpinnerView: View {
           rotation = 360
         }
       }
-      .onDisappear {
-        rotation = 0
-      }
   }
 }
 

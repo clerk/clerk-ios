@@ -40,7 +40,20 @@ extension View {
     Text("Button")
       .overlayProgressView(isActive: isRunning)
   }
-  .buttonStyle(.primary())
+  .buttonStyle(.secondary())
+  .padding()
+}
+
+#Preview("Custom Progress View") {
+  AsyncButton {
+    try! await Task.sleep(for: .seconds(3))
+  } label: { isRunning in
+    Text("Button")
+      .overlayProgressView(isActive: isRunning) {
+        ProgressView()
+      }
+  }
+  .buttonStyle(.secondary())
   .padding()
 }
 
