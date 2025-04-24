@@ -16,7 +16,7 @@ struct SpinnerView: View {
   var color: Color?
   
   var body: some View {
-    Image("spinner", bundle: .module)
+    Image("icon-spinner", bundle: .module)
       .resizable()
       .foregroundStyle(color ?? theme.colors.textSecondary)
       .frame(width: 24, height: 24)
@@ -38,7 +38,6 @@ struct SpinnerView: View {
 
 #Preview {
   SpinnerView()
-  SpinnerView(color: .secondary)
 }
 
 #endif
