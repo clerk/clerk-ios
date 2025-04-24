@@ -39,6 +39,7 @@ final class AuthState {
   var path = NavigationPath()
   var identifier: String = ""
   var password: String = ""
+  var lastCodeSentAt: [Factor: Date] = [:]
   
   @MainActor
   func setToStepForStatus(signIn: SignIn) {

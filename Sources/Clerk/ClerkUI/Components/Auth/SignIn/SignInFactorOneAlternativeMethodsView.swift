@@ -103,6 +103,10 @@
                         .foregroundStyle(theme.colors.textSecondary)
                     }
                     Text(actionText, bundle: .module)
+                      .font(theme.fonts.body)
+                      .foregroundStyle(theme.colors.text)
+                      .lineLimit(1)
+                      .truncationMode(.middle)
                   }
                   .frame(maxWidth: .infinity)
                 }
