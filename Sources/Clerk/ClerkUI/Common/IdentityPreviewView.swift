@@ -19,7 +19,7 @@ struct IdentityPreviewView: View {
       Text(label)
         .font(theme.fonts.subheadline)
         .frame(minHeight: 20)
-      Image("edit", bundle: .module)
+      Image("icon-edit", bundle: .module)
         .resizable()
         .frame(width: 16, height: 16)
         .scaledToFit()

@@ -7,6 +7,9 @@
     " " : {
       "shouldTranslate" : false
     },
+    " (%lld)" : {
+
+    },
     "An unknown error occurred." : {
       "localizations" : {
         "ar" : {
@@ -283,7 +286,11 @@
         }
       }
     },
+    "Didn't recieve a code? Resend" : {
+
+    },
     "Didn't recieve a code? Resend (%lld)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
