@@ -1,5 +1,5 @@
 //
-//  View+HideKeyboard.swift
+//  View+DismissKeyboard.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/28/25.
@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 extension EnvironmentValues {
-  @Entry var dismissKeyboard: () -> Void = {
+  @Entry var dismissKeyboard = {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
   }
 }
