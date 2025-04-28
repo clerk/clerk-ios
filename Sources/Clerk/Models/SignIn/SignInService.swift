@@ -17,7 +17,7 @@ struct SignInService {
   var attemptFirstFactor: (_ signIn: SignIn, _ attemptFirstFactorStrategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
   var prepareSecondFactor: (_ signIn: SignIn, _ prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
   var attemptSecondFactor: (_ signIn: SignIn, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
-  var authenticateWithRedirectCombined: @MainActor (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+  var authenticateWithRedirectCombined: (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   var authenticateWithRedirectTwoStep: (_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   var getCredentialForPasskey: (_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String
   var authenticateWithIdTokenCombined: (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
@@ -58,12 +58,7 @@ extension SignInService {
         return try await Container.shared.apiClient().send(request).value.response
       },
       authenticateWithRedirectCombined: { strategy, prefersEphemeralWebBrowserSession in
-        var signIn: SignIn
-        if let existingSignIn = Clerk.shared.client?.signIn {
-          signIn = try await existingSignIn.prepareFirstFactor(strategy: strategy.prepareFirstFactorStrategy)
-        } else {
-          signIn = try await SignIn.create(strategy: strategy.createStrategy)
-        }
+        let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
         
         guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
           throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
