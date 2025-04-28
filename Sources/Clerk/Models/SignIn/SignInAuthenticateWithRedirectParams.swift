@@ -40,7 +40,7 @@ extension SignIn {
     /// The user will be authenticated with their enterprise SSO account.
     case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
 
-    var signInStrategy: SignIn.CreateStrategy {
+    var createStrategy: SignIn.CreateStrategy {
       switch self {
       case .oauth(let provider, let redirectUrl):
         return .oauth(provider: provider, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
@@ -49,19 +49,12 @@ extension SignIn {
       }
     }
 
-    var params: AuthenticateWithRedirectParams {
+    var prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy {
       switch self {
       case .oauth(let provider, let redirectUrl):
-        .init(
-          strategy: provider.strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
-        )
+        return .oauth(provider: provider, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
       case .enterpriseSSO(let identifier, let redirectUrl):
-        .init(
-          strategy: "enterprise_sso",
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl,
-          identifier: identifier
-        )
+        return .enterpriseSSO(redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
       }
     }
   }
