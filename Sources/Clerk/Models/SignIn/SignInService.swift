@@ -129,6 +129,7 @@ extension SignInService {
             "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
             "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String()
           ]
+        ]
 
           return try JSON(publicKeyCredential).debugDescription
         #else
