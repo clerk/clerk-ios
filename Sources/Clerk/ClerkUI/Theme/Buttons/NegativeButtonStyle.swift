@@ -128,7 +128,7 @@ extension ButtonStyle where Self == NegativeButtonStyle {
     var body: some View {
       HStack(spacing: 4) {
         Text("Continue", bundle: .module)
-        Image("triangle-right", bundle: .module)
+        Image("icon-triangle-right", bundle: .module)
           .opacity(0.6)
       }
     }
