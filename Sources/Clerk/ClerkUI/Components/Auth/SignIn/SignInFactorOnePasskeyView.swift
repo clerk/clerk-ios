@@ -64,7 +64,7 @@ struct SignInFactorOnePasskeyView: View {
           } label: { isRunning in
             HStack(spacing: 4) {
               Text("Continue", bundle: .module)
-              Image("triangle-right", bundle: .module)
+              Image("icon-triangle-right", bundle: .module)
                 .foregroundStyle(theme.colors.textOnPrimaryBackground)
                 .opacity(0.6)
             }
