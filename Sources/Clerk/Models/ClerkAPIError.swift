@@ -40,7 +40,7 @@ public struct ClerkErrorResponse: Codable, Equatable {
   public let errors: [ClerkAPIError]
 
   /// A unique identifier for tracing the specific request, useful for debugging.
-  public let clerkTraceId: String
+  public let clerkTraceId: String?
 }
 
 extension ClerkAPIError {
