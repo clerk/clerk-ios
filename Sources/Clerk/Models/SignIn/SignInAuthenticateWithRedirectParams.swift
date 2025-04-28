@@ -48,22 +48,6 @@ extension SignIn {
         return .enterpriseSSO(identifier: identifier, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
       }
     }
-    
-    var params: AuthenticateWithRedirectParams {
-      switch self {
-      case .oauth(let provider, let redirectUrl):
-          .init(
-            strategy: provider.strategy,
-            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
-          )
-      case .enterpriseSSO(let identifier, let redirectUrl):
-          .init(
-            strategy: "enterprise_sso",
-            redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl,
-            identifier: identifier
-          )
-      }
-    }
   }
   
 }
