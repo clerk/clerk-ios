@@ -13,20 +13,19 @@ struct OTPField: View {
   @Environment(\.clerkTheme) private var theme
 
   @Binding var code: String
-  let numberOfInputs: Int
-  var onCodeEntry: (() -> Void)?
+  var numberOfInputs: Int = 6
+  var onCodeEntry: ((String) async -> FieldState)
+  
+  enum FieldState {
+    case `default`
+    case error
+  }
 
-  @FocusState private var isFocused: Bool
+  @State private var fieldState = FieldState.default
   @State private var cursorAnimating = false
   @State private var inputSize = CGSize.zero
-  
-  init(
-    code: Binding<String>,
-    numberOfInputs: Int = 6
-  ) {
-    self._code = code
-    self.numberOfInputs = numberOfInputs
-  }
+  @State private var errorTrigger = false
+  @FocusState private var isFocused: Bool
 
   var body: some View {
     HStack(spacing: 12) {
@@ -34,23 +33,39 @@ struct OTPField: View {
         otpFieldInput(index: index)
       }
     }
+    .phaseAnimator([0, 10, -10, 10, -5, 5, 0], trigger: errorTrigger, content: { content, offset in
+      content
+        .offset(x: offset)
+    }, animation: { _ in
+        .linear(duration: 0.06)
+    })
+    .sensoryFeedback(.error, trigger: errorTrigger)
     .overlay {
-      TextField("", text: $code.maxLength(numberOfInputs))
+      TextField("", text: $code)
+        .focused($isFocused)
         .textContentType(.oneTimeCode)
         .keyboardType(.numberPad)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(.clear)
         .tint(.clear)
-        .focused($isFocused)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .contentShape(.rect)
+    .onChange(of: code) { newValue in
+      code = String(newValue.prefix(numberOfInputs))
+      if code.count == numberOfInputs {
+        Task {
+          fieldState = await onCodeEntry(code)
+          if fieldState == .error {
+            DispatchQueue.main.async {
+              errorTrigger.toggle()
+            }
+          }
+        }
+      } else if code.isEmpty {
+        fieldState = .default
+      }
+    }
     .onFirstAppear {
       isFocused = true
-    }
-    .onChange(of: code) { _, newValue in
-      if newValue.count == numberOfInputs {
-        onCodeEntry?()
-      }
     }
   }
 
@@ -101,38 +116,32 @@ struct OTPField: View {
     }
     .font(theme.fonts.body)
     .foregroundStyle(theme.colors.text)
-    .allowsHitTesting(false)
     .background(theme.colors.inputBackground)
     .clipShape(.rect(cornerRadius: theme.design.borderRadius))
     .overlay {
       RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .strokeBorder(theme.colors.inputBackground)
     }
-    .clerkFocusedBorder(isFocused: isSelected)
-  }
-
-  func onCodeEntry(perform action: @escaping () -> Void) -> Self {
-    var copy = self
-    copy.onCodeEntry = action
-    return copy
-  }
-}
-
-private extension Binding where Value == String {
-  func maxLength(_ length: Int) -> Self {
-    if wrappedValue.count > length {
-      DispatchQueue.main.async {
-        self.wrappedValue = String(wrappedValue.prefix(6))
-      }
-    }
-    return self
+    .clerkFocusedBorder(
+      isFocused: fieldState == .error || isSelected,
+      state: fieldState == .error ? .error : .default
+    )
   }
 }
 
 #Preview {
   @Previewable @State var code = ""
-  OTPField(code: $code)
-    .padding()
+  
+  VStack(spacing: 20) {
+    OTPField(code: $code) { code in
+      return .default
+    }
+    
+    OTPField(code: $code) { code in
+      return .error
+    }
+  }
+  .padding()
   //    .environment(\.dynamicTypeSize, .accessibility5)
 }
 

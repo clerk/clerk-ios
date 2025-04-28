@@ -307,3 +307,11 @@ extension Clerk {
   }
   
 }
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+extension EnvironmentValues {
+  @Entry public var clerk = Clerk.shared
+}
+#endif
