@@ -7,6 +7,7 @@
 
 #if canImport(SwiftUI)
 
+  import Factory
   import SwiftUI
 
   struct SignInFactorOneCodeView: View {
@@ -17,15 +18,31 @@
 
     @State private var code = ""
     @State private var error: Error?
-    @State private var isLoading = false
     @State private var remainingSeconds: Int = 30
     @State private var timer: Timer?
+    @State private var verificationState = VerificationState.default
+
+    let factor: Factor
+
+    enum VerificationState {
+      case `default`
+      case verifying
+      case success
+      case error(Error)
+
+      var showResend: Bool {
+        switch self {
+        case .default, .error:
+          true
+        case .verifying, .success:
+          false
+        }
+      }
+    }
 
     var signIn: SignIn? {
       clerk.client?.signIn
     }
-
-    let factor: Factor
 
     var title: LocalizedStringKey {
       switch factor.strategy {
@@ -82,6 +99,7 @@
                 try await attempt()
                 return .default
               } catch {
+                verificationState = .error(error)
                 return .error
               }
             }
@@ -95,34 +113,64 @@
               }
             }
 
-            AsyncButton {
-              await prepare()
-            } label: { isRunning in
-              HStack(spacing: 0) {
-                Text("Didn't recieve a code? ", bundle: .module)
-                Text(resendString, bundle: .module)
-                  .foregroundStyle(
-                    remainingSeconds > 0
-                      ? theme.colors.textSecondary
-                      : theme.colors.primary
-                  )
-                  .monospacedDigit()
-                  .contentTransition(.numericText(countsDown: true))
-                  .animation(.default, value: remainingSeconds)
+            Group {
+              switch verificationState {
+              case .verifying:
+                HStack(spacing: 6) {
+                  SpinnerView()
+                    .frame(width: 16, height: 16)
+                  Text("Verifying...", bundle: .module)
+                }
+                .foregroundStyle(theme.colors.textSecondary)
+              case .success:
+                HStack(spacing: 6) {
+                  Image("icon-check-circle", bundle: .module)
+                    .foregroundStyle(theme.colors.success)
+                  Text("Success", bundle: .module)
+                    .foregroundStyle(theme.colors.textSecondary)
+                }
+              case .error(let error):
+                HStack(spacing: 6) {
+                  Image("icon-warning", bundle: .module)
+                  Text(error.localizedDescription)
+                }
+                .foregroundStyle(theme.colors.danger)
+              default:
+                EmptyView()
               }
-              .font(theme.fonts.subheadline)
-              .overlayProgressView(isActive: isRunning)
-              .frame(maxWidth: .infinity)
             }
-            .buttonStyle(
-              .secondary(
-                config: .init(
-                  emphasis: .none,
-                  size: .small
+            .font(theme.fonts.subheadline)
+
+            if verificationState.showResend {
+              AsyncButton {
+                await prepare()
+              } label: { isRunning in
+                HStack(spacing: 0) {
+                  Text("Didn't recieve a code? ", bundle: .module)
+                  Text(resendString, bundle: .module)
+                    .foregroundStyle(
+                      remainingSeconds > 0
+                        ? theme.colors.textSecondary
+                        : theme.colors.primary
+                    )
+                    .monospacedDigit()
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.default, value: remainingSeconds)
+                }
+                .font(theme.fonts.subheadline)
+                .overlayProgressView(isActive: isRunning)
+                .frame(maxWidth: .infinity)
+              }
+              .buttonStyle(
+                .secondary(
+                  config: .init(
+                    emphasis: .none,
+                    size: .small
+                  )
                 )
               )
-            )
-            .disabled(remainingSeconds > 0)
+              .disabled(remainingSeconds > 0)
+            }
 
             Button {
               authState.path.append(
@@ -180,8 +228,6 @@
 
     func prepare() async {
       code = ""
-      isLoading = true
-      defer { isLoading = false }
 
       guard let signIn else {
         authState.path = NavigationPath()
@@ -205,7 +251,7 @@
         authState.lastCodeSentAt[factor] = .now
         updateRemainingSeconds()
       } catch {
-        self.error = error
+        verificationState = .error(error)
       }
     }
 
@@ -214,6 +260,8 @@
         authState.path = NavigationPath()
         return
       }
+      
+      verificationState = .verifying
 
       switch factor.strategy {
       case "email_code":
@@ -223,19 +271,50 @@
       default:
         return
       }
-      
+
       dismissKeyboard()
+      verificationState = .success
     }
 
   }
 
   #Preview("Email Code") {
+    let _ = Container.shared.signInService.register {
+      var service = SignInService.liveValue
+      service.prepareFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+      
+      service.attemptFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+      
+      return service
+    }
+
     SignInFactorOneCodeView(factor: .mockEmailCode)
       .environment(\.clerk, .mock)
   }
 
   #Preview("Phone Code") {
-    SignInFactorOneCodeView(factor: .mockEmailCode)
+    let _ = Container.shared.signInService.register {
+      var service = SignInService.liveValue
+      service.prepareFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+      
+      service.attemptFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+      
+      return service
+    }
+    
+    SignInFactorOneCodeView(factor: .mockPhoneCode)
       .environment(\.clerk, .mock)
   }
 

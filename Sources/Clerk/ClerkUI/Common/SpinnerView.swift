@@ -19,7 +19,6 @@ struct SpinnerView: View {
     Image("icon-spinner", bundle: .module)
       .resizable()
       .foregroundStyle(color ?? theme.colors.textSecondary)
-      .frame(width: 24, height: 24)
       .scaledToFit()
       .rotationEffect(.degrees(rotation))
       .onAppear {
@@ -35,6 +34,10 @@ struct SpinnerView: View {
 
 #Preview {
   SpinnerView()
+    .frame(width: 24, height: 24)
+  
+  SpinnerView()
+    .frame(width: 16, height: 16)
 }
 
 #endif
