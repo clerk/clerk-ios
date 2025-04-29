@@ -62,7 +62,38 @@ extension Clerk.Environment.UserSettings {
 
   static var mock: Self {
     .init(
-      attributes: [:],
+      attributes: [
+        "email_address": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
+        ),
+        "phone_number": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
+        ),
+        "username": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        )
+      ],
       signUp: .init(
         customActionRequired: false,
         progressive: false,

@@ -82,7 +82,7 @@ struct OTPField: View {
         let charToString = String(code[charIndex])
         Text(charToString)
       } else {
-        Text(" ", bundle: .module)
+        Text(verbatim: " ")
       }
     }
     .monospacedDigit()
