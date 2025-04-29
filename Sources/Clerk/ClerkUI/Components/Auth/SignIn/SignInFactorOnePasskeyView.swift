@@ -106,6 +106,10 @@ struct SignInFactorOnePasskeyView: View {
     .onFirstAppear {
       animateSymbol.toggle()
     }
+    .taskOnce {
+      try? await Task.sleep(for: .seconds(0.5))
+      await authWithPasskey()
+    }
   }
 }
 
