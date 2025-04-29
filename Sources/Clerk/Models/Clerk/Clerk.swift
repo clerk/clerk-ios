@@ -298,20 +298,20 @@ extension Container {
 }
 
 extension Clerk {
-  
+
   static var mock: Clerk {
     var clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
     return clerk
   }
-  
+
 }
 
 #if canImport(SwiftUI)
-import SwiftUI
+  import SwiftUI
 
-extension EnvironmentValues {
-  @Entry public var clerk = Clerk.shared
-}
+  extension EnvironmentValues {
+    @Entry public var clerk = Clerk.shared
+  }
 #endif

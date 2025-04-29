@@ -41,7 +41,7 @@ extension Color {
     return mix(with: .black, amount: amount)
   }
 
-  fileprivate var rgbComponents: (red: CGFloat, green: CGFloat, blue: CGFloat) {
+  private var rgbComponents: (red: CGFloat, green: CGFloat, blue: CGFloat) {
     #if os(iOS) || os(tvOS) || os(watchOS)
       let uiColor = UIColor(self)
       var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
