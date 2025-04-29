@@ -39,7 +39,7 @@ struct SignInFactorOnePasswordView: View {
             Button {
               authState.path = NavigationPath()
             } label: {
-              IdentityPreviewView(label: identifier)
+              IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
             .buttonStyle(.secondary(config: .init(size: .small)))
           }
