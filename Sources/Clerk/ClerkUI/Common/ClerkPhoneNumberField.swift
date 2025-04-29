@@ -104,8 +104,6 @@
       phoneNumberModel.textField.text = text
       self.displayText = phoneNumberModel.phoneNumberFormattedForDisplay()
       self.text = phoneNumberModel.phoneNumberFormattedForData()
-
-      dump("Formatted: \(self.displayText) | E164: \(self.text)")
     }
 
     @ViewBuilder
