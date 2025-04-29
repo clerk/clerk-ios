@@ -55,17 +55,23 @@ struct ClerkTextField: View {
           ZStack {
             SecureField("", text: $text)
               .focused($focused, equals: .secure)
-              .opacity(isSecure && !revealText ? 1 : 0)
+              .animation(.default) {
+                $0.opacity(isSecure && !revealText ? 1 : 0)
+              }
             TextField("", text: $text)
               .focused($focused, equals: .regular)
-              .opacity(!isSecure || revealText ? 1 : 0)
+              .animation(.default) {
+                $0.opacity(!isSecure || revealText ? 1 : 0)
+              }
           }
           .lineLimit(1)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.inputText)
           .frame(minHeight: 22)
           .tint(theme.colors.primary)
-          .animation(.default, value: revealText)
+          .animation(.default.delay(0.2)) {
+            $0.opacity(isFocusedOrFilled ? 1 : 0)
+          }
         }
         .onGeometryChange(for: CGFloat.self) { geometry in
           geometry.size.height
