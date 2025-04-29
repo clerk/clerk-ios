@@ -7,6 +7,7 @@
 
 #if canImport(SwiftUI)
 
+  import Factory
   import SwiftUI
 
   struct SignInFactorOneAlternativeMethodsView: View {
@@ -32,8 +33,8 @@
     func actionText(factor: Factor) -> LocalizedStringKey? {
       switch factor.strategy {
       case "phone_code":
-        guard let safeIdentifier = factor.safeIdentifier else { return nil }
-        return "Send SMS code to \(safeIdentifier)"
+        guard var safeIdentifier = factor.safeIdentifier else { return nil }
+        return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
       case "email_code":
         guard let safeIdentifier = factor.safeIdentifier else { return nil }
         return "Email code to \(safeIdentifier)"
