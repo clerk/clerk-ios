@@ -53,7 +53,15 @@
     
     var identifierSwitcherString: LocalizedStringKey {
       if phoneNumberFieldIsActive {
-        "Use email address or username"
+        if emailIsEnabled && usernameIsEnabled {
+          "Use email address or username"
+        } else if emailIsEnabled {
+          "Use email address"
+        } else if usernameIsEnabled {
+          "Use username"
+        } else {
+          ""
+        }
       } else {
         "Use phone number"
       }
