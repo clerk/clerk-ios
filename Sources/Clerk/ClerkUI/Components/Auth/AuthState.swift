@@ -38,6 +38,7 @@ final class AuthState {
   
   var path = NavigationPath()
   var identifier: String = ""
+  var phoneNumber: String = ""
   var password: String = ""
   var lastCodeSentAt: [Factor: Date] = [:]
   
