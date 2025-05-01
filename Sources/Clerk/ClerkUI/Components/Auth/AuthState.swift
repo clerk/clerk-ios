@@ -37,8 +37,19 @@ final class AuthState {
   }
   
   var path = NavigationPath()
-  var identifier: String = ""
-  var phoneNumber: String = ""
+  
+  var identifier: String = UserDefaults.standard.string(forKey: "identifier") ?? "" {
+    didSet {
+      UserDefaults.standard.set(identifier, forKey: "identifier")
+    }
+  }
+  
+  var phoneNumber: String = UserDefaults.standard.string(forKey: "phoneNumber") ?? "" {
+    didSet {
+      UserDefaults.standard.set(phoneNumber, forKey: "phoneNumber")
+    }
+  }
+  
   var password: String = ""
   var lastCodeSentAt: [Factor: Date] = [:]
   
