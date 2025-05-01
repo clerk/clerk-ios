@@ -308,7 +308,7 @@ extension Clerk {
 
 }
 
-#if canImport(SwiftUI)
+#if os(iOS)
   import SwiftUI
 
   extension EnvironmentValues {

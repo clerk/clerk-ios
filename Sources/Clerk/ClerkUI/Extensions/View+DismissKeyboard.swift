@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 4/28/25.
 //
 
-#if canImport(SwiftUI)
+#if os(iOS)
 
 import Foundation
 import SwiftUI
