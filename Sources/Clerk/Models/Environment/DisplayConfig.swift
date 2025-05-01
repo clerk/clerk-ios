@@ -13,6 +13,7 @@ extension Clerk.Environment {
     let instanceEnvironmentType: InstanceEnvironmentType
     let applicationName: String
     let preferredSignInStrategy: PreferredSignInStrategy
+    let supportEmail: String?
     let branded: Bool
     let logoImageUrl: String
     let homeUrl: String
@@ -39,6 +40,7 @@ extension Clerk.Environment.DisplayConfig {
       instanceEnvironmentType: .development,
       applicationName: "Acme Co",
       preferredSignInStrategy: .otp,
+      supportEmail: "support@example.com",
       branded: true,
       logoImageUrl: "",
       homeUrl: "",
