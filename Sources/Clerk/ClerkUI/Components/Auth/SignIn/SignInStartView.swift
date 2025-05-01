@@ -162,7 +162,6 @@
                 phoneNumberFieldIsActive.toggle()
               } label: {
                 Text(identifierSwitcherString, bundle: .module)
-                  .font(theme.fonts.subheadline)
                   .frame(maxWidth: .infinity)
               }
               .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))

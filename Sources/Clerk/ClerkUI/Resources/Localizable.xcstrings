@@ -7,6 +7,9 @@
     " " : {
       "shouldTranslate" : false
     },
+    "Account" : {
+
+    },
     "An unknown error occurred." : {
       "localizations" : {
         "ar" : {
@@ -1065,6 +1068,9 @@
         }
       }
     },
+    "Manage account" : {
+
+    },
     "Missing callback URL" : {
       "localizations" : {
         "ar" : {
@@ -1484,6 +1490,9 @@
           }
         }
       }
+    },
+    "Sign out" : {
+
     },
     "Something went wrong. Please try again." : {
       "localizations" : {

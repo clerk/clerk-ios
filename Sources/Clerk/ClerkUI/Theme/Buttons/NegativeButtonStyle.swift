@@ -15,6 +15,15 @@ struct NegativeButtonStyle: ButtonStyle {
 
   let config: ClerkButtonConfig
   
+  var font: Font {
+    switch config.size {
+    case .small:
+      theme.fonts.subheadline
+    case .large:
+      theme.fonts.body
+    }
+  }
+  
   func backgroundColor(
     configuration: Configuration
   ) -> Color {
@@ -89,7 +98,7 @@ struct NegativeButtonStyle: ButtonStyle {
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .font(theme.fonts.body)
+      .font(font)
       .foregroundStyle(foregroundStyle)
       .padding(8)
       .frame(minHeight: height)
