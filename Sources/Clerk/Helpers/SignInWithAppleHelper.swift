@@ -105,7 +105,7 @@
     /// Provides the window in which the authorization controller should present its UI.
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-      ASPresentationAnchor()
+      UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     }
   }
 

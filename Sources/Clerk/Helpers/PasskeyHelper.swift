@@ -160,7 +160,7 @@
 
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-      ASPresentationAnchor()
+      UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     }
 
   }
