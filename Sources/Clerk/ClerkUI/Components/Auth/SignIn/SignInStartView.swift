@@ -117,7 +117,7 @@
                     "Enter your phone number",
                     text: $authState.phoneNumber
                   )
-                  .transition(.blurReplace.animation(.default))
+                  .transition(.blurReplace.animation(.default.speed(2)))
                 } else {
                   ClerkTextField(
                     emailOrUsernamePlaceholder,
@@ -126,7 +126,7 @@
                   .textContentType(.emailAddress)
                   .keyboardType(.emailAddress)
                   .textInputAutocapitalization(.never)
-                  .transition(.blurReplace.animation(.default))
+                  .transition(.blurReplace.animation(.default.speed(2)))
                 }
               }
               .toolbar {
