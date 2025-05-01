@@ -27,11 +27,24 @@ struct OverlayProgressModifier<ProgressView: View>: ViewModifier {
 extension View {
   func overlayProgressView<ProgressView: View>(
     isActive: Bool,
-    progressView: @escaping () -> ProgressView = { SpinnerView() }
+    progressView: @escaping () -> ProgressView
   ) -> some View {
     modifier(OverlayProgressModifier(isActive: isActive, progressView: progressView))
   }
+
+  func overlayProgressView(isActive: Bool) -> some View {
+    modifier(
+      OverlayProgressModifier(
+        isActive: isActive,
+        progressView: {
+          SpinnerView()
+            .frame(width: 24, height: 24)
+        }
+      )
+    )
+  }
 }
+
 
 #Preview {
   AsyncButton {

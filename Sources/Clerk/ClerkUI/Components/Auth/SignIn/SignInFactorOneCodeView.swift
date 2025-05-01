@@ -157,7 +157,6 @@
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.default, value: remainingSeconds)
                 }
-                .font(theme.fonts.subheadline)
                 .overlayProgressView(isActive: isRunning)
                 .frame(maxWidth: .infinity)
               }
@@ -180,7 +179,6 @@
               )
             } label: {
               Text("Use another method", bundle: .module)
-                .font(theme.fonts.subheadline)
             }
             .buttonStyle(
               .primary(

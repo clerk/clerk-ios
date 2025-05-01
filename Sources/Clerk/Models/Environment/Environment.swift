@@ -32,7 +32,7 @@ extension Clerk.Environment {
 
   static var mock: Self {
     .init(
-      authConfig: nil,
+      authConfig: .mock,
       userSettings: .mock,
       displayConfig: .mock,
       fraudSettings: nil

@@ -10,12 +10,6 @@
 import Foundation
 import SwiftUI
 
-public extension View {
-  func taskOnce(_ task: @escaping () async -> ()) -> some View {
-    modifier(TaskOnce(task: task))
-  }
-}
-
 private struct TaskOnce: ViewModifier {
   let task: () async -> Void
 
@@ -27,6 +21,12 @@ private struct TaskOnce: ViewModifier {
       hasAppeared = true
       Task { await task() }
     }
+  }
+}
+
+extension View {
+  func taskOnce(_ task: @escaping () async -> ()) -> some View {
+    modifier(TaskOnce(task: task))
   }
 }
 

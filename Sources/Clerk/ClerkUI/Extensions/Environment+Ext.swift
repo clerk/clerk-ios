@@ -34,6 +34,11 @@
         }
         .map(\.key)
     }
+    
+    var mutliSessionModeIsEnabled: Bool {
+      guard let authConfig else { return false }
+      return authConfig.singleSessionMode == false
+    }
 
   }
 

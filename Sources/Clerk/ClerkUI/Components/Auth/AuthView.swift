@@ -21,27 +21,15 @@ public struct AuthView: View {
     self.showDismissButton = showDismissButton
   }
 
-  @ViewBuilder
-  var dismissButton: some View {
-    Button {
-      dismiss()
-    } label: {
-      Image(systemName: "xmark.circle.fill")
-        .resizable()
-        .scaledToFit()
-        .symbolRenderingMode(.palette)
-        .foregroundStyle(theme.colors.textSecondary, .ultraThinMaterial)
-        .frame(minWidth: 26, minHeight: 26)
-    }
-  }
-
   public var body: some View {
     NavigationStack(path: $authState.path) {
       SignInStartView()
         .toolbar {
           if showDismissButton {
             ToolbarItem(placement: .topBarTrailing) {
-              dismissButton
+              DismissButton {
+                dismiss()
+              }
             }
           }
         }
@@ -50,7 +38,9 @@ public struct AuthView: View {
             .toolbar {
               if showDismissButton {
                 ToolbarItem(placement: .topBarTrailing) {
-                  dismissButton
+                  DismissButton {
+                    dismiss()
+                  }
                 }
               }
             }
