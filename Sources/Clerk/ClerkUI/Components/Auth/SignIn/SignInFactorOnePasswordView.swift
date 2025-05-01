@@ -87,9 +87,6 @@ struct SignInFactorOnePasswordView: View {
           )
         } label: {
           Text("Use another method", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.primary)
-            .frame(minHeight: 20)
         }
         .buttonStyle(
           .primary(

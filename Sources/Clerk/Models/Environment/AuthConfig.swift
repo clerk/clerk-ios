@@ -14,3 +14,13 @@ extension Clerk.Environment {
   }
 
 }
+
+extension Clerk.Environment.AuthConfig {
+
+  static var mock: Self {
+    .init(
+      singleSessionMode: false
+    )
+  }
+
+}

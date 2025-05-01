@@ -10,12 +10,6 @@
 import Foundation
 import SwiftUI
 
-public extension View {
-  func onFirstAppear(_ action: @escaping () -> ()) -> some View {
-    modifier(FirstAppear(action: action))
-  }
-}
-
 private struct FirstAppear: ViewModifier {
   let action: () -> Void
 
@@ -27,6 +21,12 @@ private struct FirstAppear: ViewModifier {
       hasAppeared = true
       action()
     }
+  }
+}
+
+extension View {
+  func onFirstAppear(_ action: @escaping () -> ()) -> some View {
+    modifier(FirstAppear(action: action))
   }
 }
 
