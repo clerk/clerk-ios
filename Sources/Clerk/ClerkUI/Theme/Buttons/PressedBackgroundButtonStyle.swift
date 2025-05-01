@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/1/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct PressedBackgroundButtonStyle: ButtonStyle {
@@ -31,3 +33,5 @@ extension ButtonStyle where Self == PressedBackgroundButtonStyle {
   }
   .buttonStyle(.pressedBackground)
 }
+
+#endif
