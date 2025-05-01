@@ -95,7 +95,7 @@ final class WebAuthentication: NSObject {
   extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
     @MainActor
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-      ASPresentationAnchor()
+      UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     }
   }
 #endif
