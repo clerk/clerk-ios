@@ -14,6 +14,15 @@ struct SecondaryButtonStyle: ButtonStyle {
   @Environment(\.isEnabled) private var isEnabled
 
   let config: ClerkButtonConfig
+  
+  var font: Font {
+    switch config.size {
+    case .small:
+      theme.fonts.subheadline
+    case .large:
+      theme.fonts.body
+    }
+  }
 
   func foregroundStyle(configuration: Configuration) -> Color {
     switch config.emphasis {
@@ -91,7 +100,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .font(theme.fonts.body)
+      .font(font)
       .foregroundStyle(foregroundStyle(configuration: configuration))
       .padding(8)
       .frame(minHeight: height)

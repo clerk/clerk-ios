@@ -60,9 +60,9 @@ struct HeaderView: View {
     Text(text, bundle: .module)
       .font(font)
       .fontWeight(fontWeight)
+      .foregroundStyle(foregroundStyle)
       .multilineTextAlignment(.center)
       .frame(minHeight: minHeight)
-      .foregroundStyle(foregroundStyle)
   }
 }
 
