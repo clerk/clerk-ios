@@ -16,28 +16,31 @@
     @MainActor
     final class PhoneNumberModel {
 
-      let textField: PhoneNumberTextField
       private let utility = Container.shared.phoneNumberUtility()
+      let textField: PhoneNumberTextField
+      let partialFormatter: PartialFormatter
+
+      let defaultCountry: CountryCodePickerViewController.Country
+      var currentCountry: CountryCodePickerViewController.Country {
+        didSet {
+          partialFormatter.defaultRegion = currentCountry.code
+        }
+      }
 
       init() {
         self.textField = .init(utility: utility)
-      }
-
-      var defaultCountry: CountryCodePickerViewController.Country? {
-        .init(for: textField.defaultRegion, with: utility)
-      }
-
-      var currentCountry: CountryCodePickerViewController.Country? {
-        .init(for: textField.currentRegion, with: utility)
-      }
-
-      func setCountry(_ country: CountryCodePickerViewController.Country) {
-        textField.partialFormatter.defaultRegion = country.code
+        self.defaultCountry = .init(for: textField.defaultRegion, with: utility)!
+        self.currentCountry = .init(for: textField.defaultRegion, with: utility)!
+        self.partialFormatter = .init(
+          utility: utility,
+          defaultRegion: defaultCountry.code,
+          withPrefix: false,
+        )
       }
 
       var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
         utility.allCountries.filter { country in
-          country.code != defaultCountry?.code
+          country.code != defaultCountry.code
         }
       }
 
@@ -53,21 +56,19 @@
         ) ?? ""
       }
 
-      func phoneNumberFormattedForDisplay() -> String {
-        if let phoneNumber = textField.phoneNumber {
-          return utility.format(phoneNumber, toType: .national, withPrefix: false)
+      func phoneNumberFormattedForDisplay(text: String) -> String {
+        if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
+          return utility.format(phoneNumber, toType: .national)
         } else {
-          return textField.partialFormatter.formatPartial(textField.text ?? "")
+          return partialFormatter.formatPartial(text)
         }
       }
 
-      func phoneNumberFormattedForData() -> String {
-        if let phoneNumber = textField.phoneNumber {
+      func phoneNumberFormattedForData(text: String) -> String {
+        if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
           return utility.format(phoneNumber, toType: .e164)
-        } else if let text = textField.text, !text.isEmpty {
-          return text.filter(\.isWholeNumber)
         } else {
-          return ""
+          return text
         }
       }
     }
@@ -101,31 +102,31 @@
     }
 
     private func textDidUpdate(text: String) {
-      phoneNumberModel.textField.text = text
-      self.displayText = phoneNumberModel.phoneNumberFormattedForDisplay()
-      self.text = phoneNumberModel.phoneNumberFormattedForData()
+      let rawText = text.filter(\.isWholeNumber)
+      self.displayText = phoneNumberModel.phoneNumberFormattedForDisplay(text: rawText)
+      self.text = phoneNumberModel.phoneNumberFormattedForData(text: rawText)
+      
+      dump("Display Text: \(displayText) | Data Text: \(self.text) | Raw: \(rawText)")
     }
 
     @ViewBuilder
     var countrySelector: some View {
       Menu {
         Section("Default") {
-          if let defaultCountry = phoneNumberModel.defaultCountry {
-            Button {
-              phoneNumberModel.setCountry(defaultCountry)
-              textDidUpdate(text: text)
-            } label: {
-              Text(phoneNumberModel.stringForCountry(defaultCountry))
-                .lineLimit(1)
-            }
+          Button {
+            phoneNumberModel.currentCountry = phoneNumberModel.defaultCountry
+            textDidUpdate(text: displayText)
+          } label: {
+            Text(phoneNumberModel.stringForCountry(phoneNumberModel.defaultCountry))
+              .lineLimit(1)
           }
         }
 
         Section("International") {
           ForEach(phoneNumberModel.allCountriesExceptDefault, id: \.code) { country in
             Button {
-              phoneNumberModel.setCountry(country)
-              textDidUpdate(text: text)
+              phoneNumberModel.currentCountry = country
+              textDidUpdate(text: displayText)
             } label: {
               Text(phoneNumberModel.stringForCountry(country))
                 .lineLimit(1)
@@ -134,12 +135,10 @@
         }
       } label: {
         HStack(spacing: 4) {
-          if let currentCountry = phoneNumberModel.currentCountry {
-            Text(verbatim: "\(currentCountry.flag) \(currentCountry.code)")
-              .font(theme.fonts.footnote)
-              .foregroundStyle(theme.colors.text)
-              .monospaced()
-          }
+          Text(verbatim: "\(phoneNumberModel.currentCountry.flag) \(phoneNumberModel.currentCountry.code)")
+            .font(theme.fonts.footnote)
+            .foregroundStyle(theme.colors.text)
+            .monospaced()
 
           Image("icon-up-down", bundle: .module)
             .foregroundStyle(theme.colors.textSecondary)
@@ -165,8 +164,8 @@
               .opacity(0)
 
             HStack(spacing: 4) {
-              if let prefix = phoneNumberModel.currentCountry?.prefix, isFocusedOrFilled {
-                Text(prefix)
+              if isFocusedOrFilled {
+                Text(phoneNumberModel.currentCountry.prefix)
                   .transition(
                     .asymmetric(
                       insertion: .opacity.animation(.default.delay(0.1)),
@@ -183,8 +182,8 @@
                 .animation(.default.delay(0.2)) {
                   $0.opacity(isFocusedOrFilled ? 1 : 0)
                 }
-                .onChange(of: displayText) { oldValue, newValue in
-                  textDidUpdate(text: newValue)
+                .onChange(of: displayText) {
+                  textDidUpdate(text: $0)
                 }
             }
             .lineLimit(1)
