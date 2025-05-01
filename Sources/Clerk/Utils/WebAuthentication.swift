@@ -92,10 +92,14 @@ final class WebAuthentication: NSObject {
 }
 
 #if !os(watchOS) && !os(tvOS)
-  extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
-    @MainActor
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
+  @MainActor
+  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    #if os(iOS)
       UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
-    }
+    #else
+      ASPresentationAnchor()
+    #endif
   }
+}
 #endif
