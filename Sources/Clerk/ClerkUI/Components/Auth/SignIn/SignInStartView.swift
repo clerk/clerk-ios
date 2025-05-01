@@ -15,10 +15,10 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
     @Environment(\.dismissKeyboard) private var dismissKeyboard
+    
+    @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
 
-    @State private var email: String = ""
     @State private var error: Error?
-    @State private var phoneNumberFieldIsActive = false
 
     var signInString: LocalizedStringKey {
       if let appName = clerk.environment.displayConfig?.applicationName {
@@ -112,7 +112,7 @@
           VStack(spacing: 24) {
             if showIdentifierField {
               Group {
-                if phoneNumberFieldIsActive {
+                if phoneNumberFieldIsActive && phoneNumberIsEnabled {
                   ClerkPhoneNumberField(
                     "Enter your phone number",
                     text: $authState.phoneNumber
@@ -162,7 +162,6 @@
                 phoneNumberFieldIsActive.toggle()
               } label: {
                 Text(identifierSwitcherString, bundle: .module)
-                  .frame(maxWidth: .infinity)
               }
               .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
             }
