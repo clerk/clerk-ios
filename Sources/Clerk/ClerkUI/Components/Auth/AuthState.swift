@@ -39,15 +39,15 @@ final class AuthState {
   
   var path = NavigationPath()
   
-  var identifier: String = UserDefaults.standard.string(forKey: "identifier") ?? "" {
+  var identifier: String = UserDefaults.standard.string(forKey: "signInIdentifier") ?? "" {
     didSet {
-      UserDefaults.standard.set(identifier, forKey: "identifier")
+      UserDefaults.standard.set(identifier, forKey: "signInIdentifier")
     }
   }
   
-  var phoneNumber: String = UserDefaults.standard.string(forKey: "phoneNumber") ?? "" {
+  var phoneNumber: String = UserDefaults.standard.string(forKey: "signInPhoneNumber") ?? "" {
     didSet {
-      UserDefaults.standard.set(phoneNumber, forKey: "phoneNumber")
+      UserDefaults.standard.set(phoneNumber, forKey: "signInPhoneNumber")
     }
   }
   
