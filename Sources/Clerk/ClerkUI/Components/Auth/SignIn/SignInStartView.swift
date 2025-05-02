@@ -127,7 +127,7 @@
                     "Enter your phone number",
                     text: $authState.phoneNumber
                   )
-                  .transition(.blurReplace.animation(.default.speed(2)))
+                  .transition(.blurReplace)
                 } else {
                   ClerkTextField(
                     emailOrUsernamePlaceholder,
@@ -136,7 +136,7 @@
                   .textContentType(.emailAddress)
                   .keyboardType(.emailAddress)
                   .textInputAutocapitalization(.never)
-                  .transition(.blurReplace.animation(.default.speed(2)))
+                  .transition(.blurReplace)
                 }
               }
               .toolbar {
@@ -169,9 +169,12 @@
 
             if showIdentifierSwitcher {
               Button {
-                phoneNumberFieldIsActive.toggle()
+                withAnimation(.default.speed(2)) {
+                  phoneNumberFieldIsActive.toggle()
+                }
               } label: {
                 Text(identifierSwitcherString, bundle: .module)
+                  .id(phoneNumberFieldIsActive)
               }
               .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
             }
