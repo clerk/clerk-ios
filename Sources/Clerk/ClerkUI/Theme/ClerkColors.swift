@@ -117,7 +117,7 @@ extension ClerkTheme {
 
 extension ClerkTheme.Colors {
 
-  public static var `default`: Self {
+  public nonisolated static var `default`: Self {
     .init(
       primary: Color(.primary),
       background: Color(.background),
