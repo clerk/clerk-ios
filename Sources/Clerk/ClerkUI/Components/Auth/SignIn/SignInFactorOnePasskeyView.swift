@@ -14,8 +14,9 @@ struct SignInFactorOnePasskeyView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
   
-  @State var error: Error?
+  @State private var passkeyInProgress = true
   @State private var animateSymbol = false
+  @State var error: Error?
 
   var signIn: SignIn? {
     clerk.client?.signIn
@@ -69,11 +70,12 @@ struct SignInFactorOnePasskeyView: View {
                 .opacity(0.6)
             }
             .frame(maxWidth: .infinity)
-            .overlayProgressView(isActive: isRunning) {
+            .overlayProgressView(isActive: passkeyInProgress) {
               SpinnerView(color: theme.colors.textOnPrimaryBackground)
             }
           }
           .buttonStyle(.primary())
+          .disabled(passkeyInProgress)
 
           Button {
             authState.path.append(
@@ -117,6 +119,9 @@ extension SignInFactorOnePasskeyView {
       authState.path = NavigationPath()
       return
     }
+    
+    passkeyInProgress = true
+    defer { passkeyInProgress = false }
 
     do {
       let signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
