@@ -92,6 +92,7 @@
           .frame(maxWidth: .infinity)
           .background(theme.colors.backgroundSecondary)
       }
+      .background(theme.colors.background)
     }
   }
 
