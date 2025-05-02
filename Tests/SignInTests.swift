@@ -182,6 +182,7 @@ struct SignInTests {
     arguments: [
       SignIn.PrepareFirstFactorStrategy.emailCode(),
       .emailCode(emailAddressId: "1"),
+      .oauth(provider: .google),
       .enterpriseSSO(),
       .passkey,
       .phoneCode(),

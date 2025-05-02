@@ -39,6 +39,9 @@ extension SignIn {
     ///   - phoneNumberId: ID to specify a particular phone number.
     case phoneCode(phoneNumberId: String? = nil)
 
+    /// The user will be authenticated with their social connection account.
+    case oauth(provider: OAuthProvider, redirectUrl: String? = nil)
+
     /// The user will be authenticated either through SAML or OIDC, depending on the configuration of their enterprise SSO account.
     case enterpriseSSO(redirectUrl: String? = nil)
 
@@ -61,6 +64,8 @@ extension SignIn {
         "email_code"
       case .phoneCode:
         "phone_code"
+      case .oauth(let provider, _):
+        provider.strategy
       case .enterpriseSSO:
         "enterprise_sso"
       case .passkey:
@@ -85,6 +90,12 @@ extension SignIn {
         return .init(
           strategy: strategy,
           phoneNumberId: phoneNumberId ?? signIn.identifyingFirstFactor(strategy: self)?.phoneNumberId
+        )
+
+      case .oauth(let provider, let redirectUrl):
+        return .init(
+          strategy: provider.strategy,
+          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
         )
 
       case .passkey:
