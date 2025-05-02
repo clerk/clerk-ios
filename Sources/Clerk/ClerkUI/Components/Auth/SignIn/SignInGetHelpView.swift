@@ -10,9 +10,9 @@
   import SwiftUI
 
   struct SignInGetHelpView: View {
+    @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
-    @Environment(\.supportEmail) private var supportEmail
 
     var body: some View {
       ScrollView {
@@ -29,7 +29,7 @@
 
           VStack(spacing: 16) {
             Button {
-              openEmail(to: supportEmail)
+              openEmail(to: clerk.environment.displayConfig?.supportEmail ?? "")
             } label: {
               Text("Email support", bundle: .module)
                 .frame(maxWidth: .infinity)

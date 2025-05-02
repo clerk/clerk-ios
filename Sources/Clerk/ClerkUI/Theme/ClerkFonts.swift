@@ -71,7 +71,7 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Fonts {
-  public static var `default`: Self {
+  public nonisolated static var `default`: Self {
     .init(
       largeTitle: .system(.largeTitle),
       title: .system(.title),
