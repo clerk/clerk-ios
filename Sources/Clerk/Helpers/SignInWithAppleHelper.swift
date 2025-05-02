@@ -105,16 +105,9 @@
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
       #if os(iOS)
-        let window = UIApplication.shared
-          .connectedScenes
-          .filter { $0.activationState == .foregroundActive }
-          .compactMap { $0 as? UIWindowScene }
-          .flatMap { $0.windows }
-          .first(where: \.isKeyWindow)
-
-        return window ?? ASPresentationAnchor()
+        UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
       #else
-        return ASPresentationAnchor()
+        ASPresentationAnchor()
       #endif
     }
   }
