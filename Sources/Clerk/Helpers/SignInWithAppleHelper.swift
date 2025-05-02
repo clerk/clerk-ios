@@ -102,13 +102,19 @@
 
   extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
 
-    /// Provides the window in which the authorization controller should present its UI.
     @MainActor
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
       #if os(iOS)
-        UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
+        let window = UIApplication.shared
+          .connectedScenes
+          .filter { $0.activationState == .foregroundActive }
+          .compactMap { $0 as? UIWindowScene }
+          .flatMap { $0.windows }
+          .first(where: \.isKeyWindow)
+
+        return window ?? ASPresentationAnchor()
       #else
-        ASPresentationAnchor()
+        return ASPresentationAnchor()
       #endif
     }
   }
