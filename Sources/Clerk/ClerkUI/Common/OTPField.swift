@@ -49,7 +49,7 @@ struct OTPField: View {
         .tint(.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .onChange(of: code) { newValue in
+    .onChange(of: code) { _, newValue in
       code = String(newValue.prefix(numberOfInputs))
       if code.count == numberOfInputs {
         fieldState = .default

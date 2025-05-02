@@ -210,7 +210,9 @@
     func startTimer() {
       updateRemainingSeconds()
       self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-        updateRemainingSeconds()
+        Task { @MainActor in
+          updateRemainingSeconds()
+        }
       }
       RunLoop.current.add(timer!, forMode: .common)
     }

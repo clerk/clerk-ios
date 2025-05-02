@@ -19,6 +19,7 @@ final class AuthState {
     case signInFactorTwo
     case passwordReset
     
+    @MainActor
     @ViewBuilder
     var view: some View {
       switch self {
