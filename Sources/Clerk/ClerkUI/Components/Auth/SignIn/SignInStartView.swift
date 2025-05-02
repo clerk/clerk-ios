@@ -15,7 +15,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
     @Environment(\.dismissKeyboard) private var dismissKeyboard
-    
+
     @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
 
     @State private var error: Error?
@@ -42,15 +42,15 @@
       clerk.environment.enabledFirstFactorAttributes
         .contains("phone_number")
     }
-    
+
     var showIdentifierField: Bool {
       emailIsEnabled || usernameIsEnabled || phoneNumberIsEnabled
     }
-    
+
     var showIdentifierSwitcher: Bool {
       (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled
     }
-    
+
     var identifierSwitcherString: LocalizedStringKey {
       if phoneNumberFieldIsActive {
         if emailIsEnabled && usernameIsEnabled {
@@ -68,7 +68,17 @@
     }
 
     var shouldStartOnPhoneNumber: Bool {
-      phoneNumberIsEnabled && !(emailIsEnabled || usernameIsEnabled)
+      guard phoneNumberIsEnabled else { return false }
+
+      if !(emailIsEnabled || usernameIsEnabled) {
+        return true
+      }
+
+      if !authState.phoneNumber.isEmpty && authState.identifier.isEmpty {
+        return true
+      }
+
+      return false
     }
 
     var emailOrUsernamePlaceholder: LocalizedStringKey {
@@ -81,11 +91,11 @@
         "Enter your email or username"
       }
     }
-    
+
     var showOrDivider: Bool {
       !clerk.environment.authenticatableSocialProviders.isEmpty && showIdentifierField
     }
-    
+
     var continueIsDisabled: Bool {
       if phoneNumberFieldIsActive {
         authState.phoneNumber.isEmpty
@@ -139,7 +149,7 @@
                 }
               }
             }
-            
+
             AsyncButton {
               await createSignIn()
             } label: { isRunning in
@@ -156,7 +166,7 @@
             }
             .buttonStyle(.primary())
             .disabled(continueIsDisabled)
-            
+
             if showIdentifierSwitcher {
               Button {
                 phoneNumberFieldIsActive.toggle()
