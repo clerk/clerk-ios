@@ -23,7 +23,7 @@ import SimpleKeychain
 final public class Clerk {
 
   /// The shared Clerk instance.
-  public static let shared = Container.shared.clerk()
+  public nonisolated static let shared = Container.shared.clerk()
 
   /// A getter to see if the Clerk object is ready for use or not.
   private(set) public var isLoaded: Bool = false
@@ -300,7 +300,7 @@ extension Container {
 extension Clerk {
 
   static var mock: Clerk {
-    var clerk = Clerk()
+    let clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
     return clerk
@@ -308,7 +308,7 @@ extension Clerk {
 
 }
 
-#if os(iOS)
+#if canImport(SwiftUI)
   import SwiftUI
 
   extension EnvironmentValues {
