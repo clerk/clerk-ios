@@ -181,8 +181,8 @@
                 .animation(.default.delay(0.2)) {
                   $0.opacity(isFocusedOrFilled ? 1 : 0)
                 }
-                .onChange(of: displayText) {
-                  textDidUpdate(text: $0)
+                .onChange(of: displayText) { _, newValue in
+                  textDidUpdate(text: newValue)
                 }
             }
             .lineLimit(1)

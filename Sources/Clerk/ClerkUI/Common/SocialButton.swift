@@ -57,7 +57,7 @@ struct SocialButton: View {
     AsyncButton {
       do {
         if let action = action {
-          try await action()
+          await action()
         } else {
           try await defaultAction()
         }

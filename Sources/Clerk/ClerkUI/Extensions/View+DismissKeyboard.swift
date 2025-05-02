@@ -5,15 +5,20 @@
 //  Created by Mike Pitre on 4/28/25.
 //
 
-#if os(iOS)
+#if canImport(SwiftUI) && canImport(UIKit)
+  import SwiftUI
 
-import Foundation
-import SwiftUI
-
-extension EnvironmentValues {
-  @Entry var dismissKeyboard = {
-    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  extension EnvironmentValues {
+    var dismissKeyboard: @MainActor () -> Void {
+      get { self[DismissKeyboardKey.self] }
+      set { self[DismissKeyboardKey.self] = newValue }
+    }
   }
-}
 
+  // Create a custom environment key
+  private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
+    @MainActor static let defaultValue: @MainActor () -> Void = {
+      _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+  }
 #endif

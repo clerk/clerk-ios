@@ -33,7 +33,7 @@
     func actionText(factor: Factor) -> LocalizedStringKey? {
       switch factor.strategy {
       case "phone_code":
-        guard var safeIdentifier = factor.safeIdentifier else { return nil }
+        guard let safeIdentifier = factor.safeIdentifier else { return nil }
         return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
       case "email_code":
         guard let safeIdentifier = factor.safeIdentifier else { return nil }

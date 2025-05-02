@@ -24,7 +24,7 @@ extension ClerkTheme {
 
 extension ClerkTheme.Design {
   
-  public static var `default`: Self {
+  public nonisolated static var `default`: Self {
     .init(
       borderRadius: 6.0
     )
