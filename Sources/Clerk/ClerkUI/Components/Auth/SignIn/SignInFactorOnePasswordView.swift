@@ -79,14 +79,30 @@ struct SignInFactorOnePasswordView: View {
         }
         .padding(.bottom, 16)
 
-        Button {
-          authState.path.append(
-            AuthState.Destination.signInFactorOneUseAnotherMethod(
-              currentFactor: factor
+        HStack(spacing: 16) {
+          Button {
+            authState.path.append(
+              AuthState.Destination.signInFactorOneUseAnotherMethod(
+                currentFactor: factor
+              )
             )
-          )
-        } label: {
-          Text("Use another method", bundle: .module)
+          } label: {
+            Text("Use another method", bundle: .module)
+              .frame(maxWidth: .infinity)
+          }
+                    
+          Rectangle()
+            .foregroundStyle(theme.colors.border)
+            .frame(width: 1, height: 16)
+                    
+          Button {
+            authState.path.append(
+              AuthState.Destination.passwordReset
+            )
+          } label: {
+            Text("Forgot password?", bundle: .module)
+              .frame(maxWidth: .infinity)
+          }
         }
         .buttonStyle(
           .primary(
