@@ -58,43 +58,43 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "حدث خطأ غير معروف."
+            "value" : "حدث خطأ ما. يرجى المحاولة مرة أخرى."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Παρουσιάστηκε άγνωστο σφάλμα."
+            "value" : "Κάτι πήγε στραβά. Παρακαλώ δοκιμάστε ξανά."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ocurrió un error desconocido."
+            "value" : "Algo salió mal. Por favor, inténtalo de nuevo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une erreur inconnue s'est produite."
+            "value" : "Une erreur s'est produite. Veuillez réessayer."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "एक अज्ञात त्रुटि हुई।"
+            "value" : "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si è verificato un errore sconosciuto."
+            "value" : "Qualcosa è andato storto. Per favore riprova."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发生未知错误。"
+            "value" : "出现错误。请重试。"
           }
         }
       }
@@ -923,6 +923,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "遇到问题？您可以使用以下任一方式登录。"
+          }
+        }
+      }
+    },
+    "Forgot password?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسيت كلمة المرور؟"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ξεχάσατε τον κωδικό;"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Olvidaste tu contraseña?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mot de passe oublié ?"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासवर्ड भूल गए?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password dimenticata?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘记密码？"
           }
         }
       }
