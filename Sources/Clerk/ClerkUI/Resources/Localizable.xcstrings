@@ -45,6 +45,18 @@
             "value" : "Account"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -89,6 +101,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qualcosa è andato storto. Per favore riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なエラーが発生しました。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알 수 없는 오류가 발생했습니다. 다시 시도해 주세요."
           }
         },
         "zh-Hans" : {
@@ -137,6 +161,18 @@
             "value" : "Controlla la tua email"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールを確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일을 확인하세요"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -181,6 +217,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla il tuo telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話を確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "휴대폰을 확인하세요"
           }
         },
         "zh-Hans" : {
@@ -229,6 +277,18 @@
             "value" : "Continua"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계속"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -254,13 +314,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "para continuar a %@"
+            "value" : "Para continuar a %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "pour continuer vers %@"
+            "value" : "Pour continuer vers %@"
           }
         },
         "hi" : {
@@ -273,6 +333,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per continuare a %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@に続けるには"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 계속하려면"
           }
         },
         "zh-Hans" : {
@@ -321,6 +393,18 @@
             "value" : "Continua con %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@で続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 계속하기"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -365,6 +449,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Predefinito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デフォルト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본값"
           }
         },
         "zh-Hans" : {
@@ -413,6 +509,18 @@
             "value" : "Non hai ricevuto il codice? "
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードが届きませんでしたか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증코드를 받지 못하셨나요?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -457,6 +565,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fatto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료"
           }
         },
         "zh-Hans" : {
@@ -505,6 +625,18 @@
             "value" : "Invia codice a %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@にコードを送信"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@에 코드 전송"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -551,6 +683,18 @@
             "value" : "Supporto via email"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールサポート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 지원"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -564,19 +708,19 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أدخل كلمة المرور"
+            "value" : "أدخل كلمة المرور الخاصة بك"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Εισάγετε κωδικό"
+            "value" : "Εισάγετε τον κωδικό σας"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Introducir contraseña"
+            "value" : "Introduce tu contraseña"
           }
         },
         "fr" : {
@@ -588,19 +732,31 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "पासवर्ड दर्ज करें"
+            "value" : "अपने पासवर्ड से साइन इन करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inserisci password"
+            "value" : "Accedi con la tua password"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードを入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호 입력"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "输入密码"
+            "value" : "使用您的密码登录"
           }
         }
       }
@@ -641,6 +797,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci la password del tuo account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントのパスワードを入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 비밀번호 입력"
           }
         },
         "zh-Hans" : {
@@ -689,6 +857,18 @@
             "value" : "Inserisci la tua email"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスを入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 입력"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -733,6 +913,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci la tua email o nome utente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスまたはユーザー名を入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 또는 사용자 이름 입력"
           }
         },
         "zh-Hans" : {
@@ -781,10 +973,22 @@
             "value" : "Accedi con la tua password"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードでサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호로 로그인"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的密码登录"
+            "value" : "使用密码登录"
           }
         }
       }
@@ -825,6 +1029,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci il tuo numero di telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호 입력"
           }
         },
         "zh-Hans" : {
@@ -873,6 +1089,18 @@
             "value" : "Inserisci il tuo nome utente"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザー名を入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 이름 입력"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -910,7 +1138,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "समस्याओं का सामना कर रहे हैं? आप साइन इन करने के लिए इनमें से किसी भी विधि का उपयोग कर सकते हैं।"
+            "value" : "समस्याएं आ रही हैं? आप साइन इन करने के लिए इनमें से किसी भी विधि का उपयोग कर सकते हैं।"
           }
         },
         "it" : {
@@ -919,10 +1147,22 @@
             "value" : "Hai problemi? Puoi utilizzare uno di questi metodi per accedere."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題が発生していますか？これらの方法のいずれかを使用してサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문제가 발생했나요? 다음 방법 중 하나를 사용하여 로그인할 수 있습니다."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "遇到问题？您可以使用以下任一方式登录。"
+            "value" : "遇到问题？您可以使用以下任一方法登录。"
           }
         }
       }
@@ -963,6 +1203,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Password dimenticata?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードをお忘れですか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호를 잊으셨나요?"
           }
         },
         "zh-Hans" : {
@@ -1011,6 +1263,18 @@
             "value" : "Ottieni aiuto"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプを取得"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도움말 보기"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1055,6 +1319,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se hai problemi ad accedere al tuo account, inviaci una email e lavoreremo con te per ripristinare l'accesso il prima possibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントへのサインインで問題が発生した場合は、メールでご連絡ください。できるだけ早くアクセスを復元できるよう対応いたします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 로그인에 문제가 있으시면 이메일로 문의해 주세요. 최대한 빨리 접근 권한을 복구하도록 도와드리겠습니다."
           }
         },
         "zh-Hans" : {
@@ -1103,6 +1379,18 @@
             "value" : "Internazionale"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "国際"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "국제"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1147,6 +1435,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tipo di credenziali non valido."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無効な認証情報の種類です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "유효하지 않은 인증 정보 유형입니다."
           }
         },
         "zh-Hans" : {
@@ -1195,6 +1495,18 @@
             "value" : "Gestisci account"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウント管理"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 관리"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1239,6 +1551,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "URL di callback mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コールバックURLがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "콜백 URL이 없습니다"
           }
         },
         "zh-Hans" : {
@@ -1287,6 +1611,18 @@
             "value" : "o"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "または"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "또는"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1299,47 +1635,60 @@
       "shouldTranslate" : false
     },
     "Redirect URL is missing or invalid. Unable to start external authentication flow." : {
+      "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "رابط إعادة التوجيه مفقود أو غير صالح. تعذر بدء عملية المصادقة الخارجية."
+            "value" : "عنوان URL لإعادة التوجيه مفقود أو غير صالح. لا يمكن بدء تدفق المصادقة الخارجية."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Το URL ανακατεύθυνσης λείπει ή δεν είναι έγκυρο. Αδύνατη η έναρξη εξωτερικής διαδικασίας ταυτοποίησης."
+            "value" : "Η διεύθυνση URL ανακατεύθυνσης λείπει ή είναι άκυρη. Αδυναμία εκκίνησης της εξωτερικής ροής πιστοποίησης."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "URL de redirección falta o no es válida. No se puede iniciar la autenticación externa."
+            "value" : "Falta la URL de redirección o no es válida. No se puede iniciar el flujo de autenticación externa."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'URL de redirection est manquant ou invalide. Impossible de démarrer le flux d'authentification externe."
+            "value" : "L'URL de redirection est manquante ou invalide. Impossible de démarrer le flux d'authentification externe."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "रीडायरेक्ट URL अनुपलब्ध या अमान्य है। बाहरी प्रमाणीकरण प्रक्रिया शुरू करने में असमर्थ।"
+            "value" : "रिडायरेक्ट URL गायब है या अमान्य है। बाहरी प्रमाणीकरण प्रवाह शुरू करने में असमर्थ।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'URL di reindirizzamento è mancante o non valido. Impossibile avviare il flusso di autenticazione esterno."
+            "value" : "L'URL di reindirizzamento è mancante o non valida. Impossibile avviare il flusso di autenticazione esterna."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リダイレクトURLが不足しているか無効です。外部認証フローを開始できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리디렉션 URL이 없거나 유효하지 않습니다. 외부 인증 흐름을 시작할 수 없습니다。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "重定向URL缺失或无效。无法启动外部认证流程。"
+            "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
           }
         }
       }
@@ -1382,6 +1731,18 @@
             "value" : "Reinvia"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再送信"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재전송"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1401,7 +1762,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Επαναποστολή (%lld)"
+            "value" : "Επανάληψη αποστολής (%lld)"
           }
         },
         "es" : {
@@ -1425,7 +1786,19 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reinvia (%lld)"
+            "value" : "Rinvia (%lld)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再送信 (%lld)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재전송 (%lld)"
           }
         },
         "zh-Hans" : {
@@ -1437,20 +1810,75 @@
       }
     },
     "Second Factor" : {
-      "shouldTranslate" : false
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العامل الثاني"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεύτερος Παράγοντας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segundo Factor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Second Facteur"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "दूसरा कारक"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secondo Fattore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2段階認証"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2단계 인증"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "双重认证"
+          }
+        }
+      }
     },
     "Secured by" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مؤمّن بواسطة"
+            "value" : "مؤمن بواسطة"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ασφαλίζεται από"
+            "value" : "Ασφαλισμένο από"
           }
         },
         "es" : {
@@ -1477,10 +1905,22 @@
             "value" : "Protetto da"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セキュリティ提供"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보안 제공"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "安全由以下提供"
+            "value" : "安全提供"
           }
         }
       }
@@ -1523,10 +1963,22 @@
             "value" : "Invia codice SMS a %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@にSMSコードを送信"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@에 SMS 코드 전송"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发送短信验证码至%@"
+            "value" : "发送验证码至%@"
           }
         }
       }
@@ -1542,19 +1994,19 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Σύνδεση με το passkey σας"
+            "value" : "Σύνδεση με το κλειδί πρόσβασης σας"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Iniciar sesión con tu clave de acceso"
+            "value" : "Inicia sesión con tu clave de acceso"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se connecter avec votre clé d'accès"
+            "value" : "Connectez-vous avec votre clé d'accès"
           }
         },
         "hi" : {
@@ -1567,6 +2019,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accedi con la tua passkey"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーでサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키로 로그인"
           }
         },
         "zh-Hans" : {
@@ -1582,25 +2046,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تسجيل الدخول باستخدام كلمة المرور الخاصة بك"
+            "value" : "تسجيل الدخول باستخدام كلمة المرور"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Σύνδεση με τον κωδικό σας"
+            "value" : "Συνδεθείτε με τον κωδικό πρόσβασής σας"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Iniciar sesión con tu contraseña"
+            "value" : "Inicia sesión con tu contraseña"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se connecter avec votre mot de passe"
+            "value" : "Connectez-vous avec votre mot de passe"
           }
         },
         "hi" : {
@@ -1615,10 +2079,22 @@
             "value" : "Accedi con la tua password"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードでサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호로 로그인"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的密码登录"
+            "value" : "使用密码登录"
           }
         }
       }
@@ -1659,6 +2135,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esci"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインアウト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그아웃"
           }
         },
         "zh-Hans" : {
@@ -1707,6 +2195,18 @@
             "value" : "Qualcosa è andato storto. Per favore riprova."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エラーが発生しました。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문제가 발생했습니다. 다시 시도해 주세요."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1744,13 +2244,25 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सफल"
+            "value" : "सफलता"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Successo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成功"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "성공"
           }
         },
         "zh-Hans" : {
@@ -1778,13 +2290,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "para continuar"
+            "value" : "Para continuar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "pour continuer"
+            "value" : "Pour continuer"
           }
         },
         "hi" : {
@@ -1797,6 +2309,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per continuare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続けるには"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계속하려면"
           }
         },
         "zh-Hans" : {
@@ -1824,13 +2348,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "para continuar a %@"
+            "value" : "Para continuar a %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "pour continuer vers %@"
+            "value" : "Pour continuer vers %@"
           }
         },
         "hi" : {
@@ -1843,6 +2367,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per continuare a %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@に続けるには"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 계속하려면"
           }
         },
         "zh-Hans" : {
@@ -1858,43 +2394,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تعذر حذف العضوية: معرّف المستخدم مفقود"
+            "value" : "تعذر حذف العضوية: معرف المستخدم مفقود"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αδυναμία διαγραφής συνδρομής: λείπει το αναγνωριστικό χρήστη"
+            "value" : "Αδυναμία διαγραφής συμμετοχής: λείπει το userId"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede eliminar la membresía: falta el ID de usuario"
+            "value" : "No se puede eliminar la membresía: falta el userId"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de supprimer l'adhésion : ID utilisateur manquant"
+            "value" : "Impossible de supprimer l'adhésion : userId manquant"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सदस्यता हटाने में असमर्थ: उपयोगकर्ता आईडी अनुपलब्ध"
+            "value" : "सदस्यता हटाने में असमर्थ: userId अनुपलब्ध"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile eliminare l'iscrizione: ID utente mancante"
+            "value" : "Impossibile eliminare l'appartenenza: userId mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メンバーシップを削除できません：userIdがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "멤버십을 삭제할 수 없습니다: userId가 없습니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法删除会员资格：缺少用户ID"
+            "value" : "无法删除成员资格：缺少userId"
           }
         }
       }
@@ -1937,10 +2485,22 @@
             "value" : "Impossibile valutare la policy."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポリシーを評価できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정책을 평가할 수 없습니다."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法评估政策。"
+            "value" : "无法评估策略。"
           }
         }
       }
@@ -1974,7 +2534,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "पासकी के लिए चुनौती प्राप्त करने में असमर्थ।"
+            "value" : "पासकी के लिए चैलेंज प्राप्त करने में असमर्थ।"
           }
         },
         "it" : {
@@ -1983,10 +2543,22 @@
             "value" : "Impossibile ottenere la sfida per la passkey."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのチャレンジを取得できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키의 챌린지를 가져올 수 없습니다."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法获取通行密钥的验证请求。"
+            "value" : "无法获取通行密钥的质询。"
           }
         }
       }
@@ -1996,7 +2568,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تعذر الحصول على معرّف المستخدم لمفتاح المرور."
+            "value" : "تعذر الحصول على معرف المستخدم لمفتاح المرور."
           }
         },
         "el" : {
@@ -2020,13 +2592,25 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "पासकी के लिए उपयोगकर्ता आईडी प्राप्त करने में असमर्थ।"
+            "value" : "पासकी के लिए उपयोगकर्ता ID प्राप्त करने में असमर्थ।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile ottenere l'ID utente per la passkey."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのユーザーIDを取得できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키의 사용자 ID를 가져올 수 없습니다."
           }
         },
         "zh-Hans" : {
@@ -2075,6 +2659,18 @@
             "value" : "Impossibile ottenere il nome utente per la passkey."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのユーザー名を取得できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키의 사용자 이름을 가져올 수 없습니다."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2094,13 +2690,13 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αδυναμία λήψης των διαπιστευτηρίων Apple ID."
+            "value" : "Αδυναμία λήψης των διαπιστευτηρίων Apple ID σας."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede obtener tu credencial de Apple ID."
+            "value" : "No se puede obtener la credencial de Apple ID."
           }
         },
         "fr" : {
@@ -2112,13 +2708,25 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "आपका Apple ID प्रमाण-पत्र प्राप्त करने में असमर्थ।"
+            "value" : "आपका Apple ID क्रेडेंशियल प्राप्त करने में असमर्थ।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile ottenere le tue credenziali Apple ID."
+            "value" : "Impossibile ottenere le credenziali del tuo Apple ID."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple IDの認証情報を取得できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ID 인증 정보를 가져올 수 없습니다."
           }
         },
         "zh-Hans" : {
@@ -2158,7 +2766,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple पहचान टोकन प्राप्त करने में असमर्थ।"
+            "value" : "Apple पहचान टोकन पुनर्प्राप्त करने में असमर्थ।"
           }
         },
         "it" : {
@@ -2167,10 +2775,22 @@
             "value" : "Impossibile recuperare il token di identità Apple."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AppleのIDトークンを取得できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ID 토큰을 검색할 수 없습니다."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法获取Apple身份令牌。"
+            "value" : "无法检索Apple身份令牌。"
           }
         }
       }
@@ -2180,43 +2800,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تعذر تحديث العضوية: معرّف المستخدم مفقود"
+            "value" : "تعذر تحديث العضوية: معرف المستخدم مفقود"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αδυναμία ενημέρωσης συνδρομής: λείπει το αναγνωριστικό χρήστη"
+            "value" : "Αδυναμία ενημέρωσης συμμετοχής: λείπει το userId"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede actualizar la membresía: falta el ID de usuario"
+            "value" : "No se puede actualizar la membresía: falta el userId"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de mettre à jour l'adhésion : ID utilisateur manquant"
+            "value" : "Impossible de mettre à jour l'adhésion : userId manquant"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सदस्यता अपडेट करने में असमर्थ: उपयोगकर्ता आईडी अनुपलब्ध"
+            "value" : "सदस्यता अपडेट करने में असमर्थ: userId अनुपलब्ध"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile aggiornare l'iscrizione: ID utente mancante"
+            "value" : "Impossibile aggiornare l'appartenenza: userId mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メンバーシップを更新できません：userIdがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "멤버십을 업데이트할 수 없습니다: userId가 없습니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法更新会员资格：缺少用户ID"
+            "value" : "无法更新成员资格：缺少userId"
           }
         }
       }
@@ -2226,7 +2858,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدام رمز احتياطي"
+            "value" : "استخدام رمز النسخ الاحتياطي"
           }
         },
         "el" : {
@@ -2259,10 +2891,22 @@
             "value" : "Usa un codice di backup"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップコードを使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백업 코드 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用备用代码"
+            "value" : "使用备用码"
           }
         }
       }
@@ -2272,13 +2916,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم طريقة أخرى"
+            "value" : "استخدام طريقة أخرى"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε άλλη μέθοδο"
+            "value" : "Χρήση άλλης μεθόδου"
           }
         },
         "es" : {
@@ -2296,7 +2940,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अन्य विधि का उपयोग करें"
+            "value" : "दूसरी विधि का उपयोग करें"
           }
         },
         "it" : {
@@ -2305,10 +2949,22 @@
             "value" : "Usa un altro metodo"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他の方法を使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 방법 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用其他方式"
+            "value" : "使用其他方法"
           }
         }
       }
@@ -2318,13 +2974,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم عنوان البريد الإلكتروني"
+            "value" : "استخدام عنوان البريد الإلكتروني"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε τη διεύθυνση email"
+            "value" : "Χρήση διεύθυνσης email"
           }
         },
         "es" : {
@@ -2342,13 +2998,25 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ईमेल पते का उपयोग करें"
+            "value" : "ईमेल पता का उपयोग करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usa indirizzo email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスを使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 주소 사용"
           }
         },
         "zh-Hans" : {
@@ -2359,64 +3027,18 @@
         }
       }
     },
-    "Use email address or username" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استخدم عنوان البريد الإلكتروني أو اسم المستخدم"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Χρησιμοποιήστε τη διεύθυνση email ή το όνομα χρήστη"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar dirección de correo electrónico o nombre de usuario"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utiliser l'adresse e-mail ou le nom d'utilisateur"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ईमेल पता या यूजरनेम का उपयोग करें"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa indirizzo email o nome utente"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用电子邮箱或用户名"
-          }
-        }
-      }
-    },
     "Use phone number" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم رقم الهاتف"
+            "value" : "استخدام رقم الهاتف"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε τον αριθμό τηλεφώνου"
+            "value" : "Χρήση αριθμού τηλεφώνου"
           }
         },
         "es" : {
@@ -2443,6 +3065,18 @@
             "value" : "Usa numero di telefono"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2456,13 +3090,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم اسم المستخدم"
+            "value" : "استخدام اسم المستخدم"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε το όνομα χρήστη"
+            "value" : "Χρήση ονόματος χρήστη"
           }
         },
         "es" : {
@@ -2489,6 +3123,18 @@
             "value" : "Usa nome utente"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザー名を使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 이름 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2508,7 +3154,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρήση της εφαρμογής ταυτοποίησης σας"
+            "value" : "Χρήση της εφαρμογής ελέγχου ταυτότητας"
           }
         },
         "es" : {
@@ -2535,10 +3181,22 @@
             "value" : "Usa la tua app di autenticazione"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリを使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 앱 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的验证器应用"
+            "value" : "使用您的身份验证器应用"
           }
         }
       }
@@ -2548,31 +3206,31 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم مفتاح المرور الخاص بك"
+            "value" : "استخدام مفتاح المرور الخاص بك"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε το passkey σας"
+            "value" : "Χρήση του passkey σας"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa tu clave de acceso"
+            "value" : "Usar tu clave de acceso"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilisez votre clé d'accès"
+            "value" : "Utiliser votre clé d'accès"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपना पासकी उपयोग करें"
+            "value" : "अपनी पासकी का उपयोग करें"
           }
         },
         "it" : {
@@ -2581,56 +3239,22 @@
             "value" : "Usa la tua passkey"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーを使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키 사용"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用您的通行密钥"
-          }
-        }
-      }
-    },
-    "username" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اسم المستخدم"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "όνομα χρήστη"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nombre de usuario"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nom d'utilisateur"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "यूजरनेम"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nome utente"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户名"
           }
         }
       }
@@ -2671,6 +3295,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'uso della tua passkey conferma che sei tu. Il tuo dispositivo potrebbe richiedere l'impronta digitale, il riconoscimento facciale o il blocco schermo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーを使用することで本人確認ができます。デバイスが指紋、顔認証、画面ロックを要求する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키를 사용하면 본인임을 확인할 수 있습니다. 기기에서 지문, 얼굴 또는 화면 잠금을 요구할 수 있습니다."
           }
         },
         "zh-Hans" : {
@@ -2719,6 +3355,18 @@
             "value" : "Verifica in corso..."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認中..."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인 중..."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2732,7 +3380,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مرحباً! سجل الدخول للمتابعة"
+            "value" : "مرحباً! سجل دخولك للمتابعة"
           }
         },
         "el" : {
@@ -2756,7 +3404,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "आपका स्वागत है! जारी रखने के लिए साइन इन करें"
+            "value" : "स्वागत है! जारी रखने के लिए साइन इन करें"
           }
         },
         "it" : {
@@ -2765,10 +3413,22 @@
             "value" : "Benvenuto! Accedi per continuare"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ようこそ！続けるにはサインインしてください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "환영합니다! 계속하려면 로그인하세요"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "欢迎！请登录以继续"
+            "value" : "欢迎！登录以继续"
           }
         }
       }
