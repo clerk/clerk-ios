@@ -121,32 +121,30 @@
 
           VStack(spacing: 24) {
             if showIdentifierField {
-              Group {
-                if phoneNumberFieldIsActive && phoneNumberIsEnabled {
-                  ClerkPhoneNumberField(
-                    "Enter your phone number",
-                    text: $authState.phoneNumber
-                  )
-                  .transition(.blurReplace)
-                } else {
-                  ClerkTextField(
-                    emailOrUsernamePlaceholder,
-                    text: $authState.identifier
-                  )
-                  .textContentType(.emailAddress)
-                  .keyboardType(.emailAddress)
-                  .textInputAutocapitalization(.never)
-                  .transition(.blurReplace)
-                }
-              }
-              .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                  Spacer()
-                  Button("Done") {
-                    dismissKeyboard()
+              if phoneNumberFieldIsActive && phoneNumberIsEnabled {
+                ClerkPhoneNumberField(
+                  "Enter your phone number",
+                  text: $authState.phoneNumber
+                )
+                .transition(.blurReplace)
+                .toolbar {
+                  ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                      dismissKeyboard()
+                    }
+                    .tint(theme.colors.text)
                   }
-                  .tint(theme.colors.text)
                 }
+              } else {
+                ClerkTextField(
+                  emailOrUsernamePlaceholder,
+                  text: $authState.identifier
+                )
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .transition(.blurReplace)
               }
             }
 
