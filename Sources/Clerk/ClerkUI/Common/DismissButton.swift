@@ -28,7 +28,7 @@ struct DismissButton: View {
         .scaledToFit()
         .symbolRenderingMode(.palette)
         .foregroundStyle(theme.colors.textSecondary, .ultraThinMaterial)
-        .frame(width: 26, height: 26)
+        .frame(width: 30, height: 30)
     }
   }
 }
