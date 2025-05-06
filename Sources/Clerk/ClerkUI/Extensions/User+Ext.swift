@@ -12,17 +12,21 @@ import Foundation
 extension User {
   
   var fullName: String? {
-    [firstName, lastName]
+    let fullName = [firstName, lastName]
       .compactMap(\.self)
       .joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    return fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : fullName
   }
   
   var intials: String? {
-    [firstName ?? "", lastName ?? ""]
+    let initials = [firstName ?? "", lastName ?? ""]
       .compactMap(\.self)
       .joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    return initials.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : initials
   }
   
   var identifier: String {
