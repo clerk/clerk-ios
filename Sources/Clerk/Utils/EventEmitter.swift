@@ -7,34 +7,42 @@
 
 import Foundation
 
-/// A generic class for broadcasting events using an async sequence.
+/// A generic class for broadcasting strongly typed events to multiple asynchronous consumers.
 ///
-/// `EventEmitter` allows you to emit strongly typed events and provides an `AsyncStream`
-/// to listen for those events asynchronously.
+/// `EventEmitter` allows you to emit events of a specific type and provides
+/// individual `AsyncStream`s to multiple listeners. Each call to `events`
+/// returns a new stream that will receive all future events emitted by the emitter.
 ///
-/// You can use the `events` stream to listen for events emitted by the `EventEmitter`.
-/// For example, you can iterate over the stream using `for await` to handle each event as it occurs.
+/// This implementation supports multiple concurrent consumers,
+/// making it suitable for event broadcasting scenarios.
 ///
 /// ### Example:
 /// ```swift
+/// let emitter = EventEmitter<AuthEvent>()
+///
 /// Task {
 ///     for await event in emitter.events {
 ///         // Handle the event
 ///     }
 /// }
 /// ```
+///
+/// You can emit events using `send(_:)`:
+/// ```swift
+/// emitter.send(.signInCompleted(signIn: signIn))
+/// ```
 @MainActor
 final public class EventEmitter<Event: Sendable> {
 
-  /// The continuation for managing the flow of events in the `AsyncStream`.
-  private var continuation: AsyncStream<Event>.Continuation?
+  /// A dictionary of active AsyncStream continuations keyed by UUID.
+  private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
 
-  /// An asynchronous stream of events.
+  /// Returns a new `AsyncStream` that receives all future events.
   ///
-  /// You can use this stream to listen for events emitted by the `EventEmitter`.
-  /// For example, you can iterate over the stream using `for await` to handle each event as it occurs.
+  /// Each consumer that calls this method will receive its own stream of events.
+  /// When a consumer finishes or cancels the stream, its continuation is removed.
   ///
-  ///### Example:
+  /// ### Example:
   /// ```swift
   /// Task {
   ///     for await event in emitter.events {
@@ -43,24 +51,40 @@ final public class EventEmitter<Event: Sendable> {
   /// }
   /// ```
   public var events: AsyncStream<Event> {
-    AsyncStream { continuation in
-      self.continuation = continuation
+    let id = UUID()
+    return AsyncStream { continuation in
+      // Store the continuation for broadcasting
+      continuations[id] = continuation
+
+      // Clean up when the stream is terminated
+      continuation.onTermination = { @MainActor _ in
+        self.continuations.removeValue(forKey: id)
+      }
     }
   }
 
-  /// Sends an event to all active listeners of the `events` stream.
+  /// Sends an event to all active listeners.
   ///
-  /// - Parameter event: The event to emit to the stream.
+  /// - Parameter event: The event to emit to all active streams.
   ///
-  /// Use this method to broadcast events to listeners. Any listeners that are iterating over
-  /// the `events` stream will receive the emitted event.
-  ///
-  ///### Example:
+  /// ### Example:
   /// ```swift
-  /// emitter.send(.someEvent)
+  /// emitter.send(.signUpCompleted(signUp: signUp))
   /// ```
-  func send(_ event: Event) {
-    continuation?.yield(event)
+  public func send(_ event: Event) {
+    for continuation in continuations.values {
+      continuation.yield(event)
+    }
+  }
+
+  /// Finishes all active event streams and removes all consumers.
+  ///
+  /// Use this to cleanly shut down the event emitter.
+  public func finish() {
+    for continuation in continuations.values {
+      continuation.finish()
+    }
+    continuations.removeAll()
   }
 }
 
