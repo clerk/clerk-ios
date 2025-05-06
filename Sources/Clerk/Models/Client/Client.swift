@@ -70,7 +70,7 @@ extension Client {
       id: "sess_1",
       signIn: .mock,
       signUp: .mock,
-      sessions: [.mock],
+      sessions: [.mock, .mock2],
       lastActiveSessionId: "1",
       updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
     )

@@ -14,7 +14,8 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-    
+
+    @State private var accountSwitcherIsPresented = false
     @State private var error: Error?
 
     var sessions: [Session] {
@@ -27,7 +28,7 @@
           Text("Account", bundle: .module)
             .font(theme.fonts.title3)
             .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.primary)
+            .foregroundStyle(theme.colors.text)
             .frame(minHeight: 25)
           Spacer()
           DismissButton()
@@ -41,24 +42,16 @@
 
         ScrollView {
           VStack(spacing: 0) {
-            ForEach(sessions) { session in
-              if let user = session.user {
-                AsyncButton {
-                  //
-                } label: { isRunning in
-                  UserPreviewView(user: user)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 16)
-                    .padding(.horizontal, 24)
-
-                }
+            if let user = clerk.user {
+              UserPreviewView(user: user)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 16)
+                .padding(.horizontal, 24)
                 .overlay(alignment: .bottom) {
                   Rectangle()
                     .frame(height: 1)
                     .foregroundStyle(theme.colors.border)
                 }
-                .disabled(true)
-              }
             }
 
             Button {
@@ -73,8 +66,23 @@
             }
             .buttonStyle(.pressedBackground)
 
+            if clerk.environment.mutliSessionModeIsEnabled {
+              Button {
+                accountSwitcherIsPresented = true
+              } label: {
+                UserButtonPopoverRow(icon: "icon-switch", text: "Switch account")
+              }
+              .overlay(alignment: .bottom) {
+                Rectangle()
+                  .frame(height: 1)
+                  .foregroundStyle(theme.colors.border)
+              }
+              .buttonStyle(.pressedBackground)
+            }
+
             AsyncButton {
-              await signOut(sessionId: clerk.session?.id)
+              guard let sessionId = clerk.session?.id else { return }
+              await signOut(sessionId: sessionId)
             } label: { isRunning in
               UserButtonPopoverRow(icon: "icon-sign-out", text: "Sign out")
                 .overlayProgressView(isActive: isRunning)
@@ -94,46 +102,27 @@
           .background(theme.colors.backgroundSecondary)
       }
       .background(theme.colors.background)
+      .sheet(isPresented: $accountSwitcherIsPresented) {
+        UserButtonAccountSwitcher()
+          .presentationDetents([.medium, .large])
+          .presentationDragIndicator(.hidden)
+      }
     }
   }
 
-extension UserButtonPopover {
-  
-  func signOut(sessionId: String?) async {
-    do {
-      try await clerk.signOut(sessionId: sessionId)
-      if clerk.session == nil {
-        dismiss()
+  extension UserButtonPopover {
+
+    func signOut(sessionId: String) async {
+      do {
+        try await clerk.signOut(sessionId: sessionId)
+        if clerk.session == nil {
+          dismiss()
+        }
+      } catch {
+        self.error = error
       }
-    } catch {
-      self.error = error
     }
-  }
-  
-}
 
-  struct UserButtonPopoverRow: View {
-    @Environment(\.clerkTheme) private var theme
-
-    let icon: String
-    let text: LocalizedStringKey
-
-    var body: some View {
-      HStack(spacing: 16) {
-        Image(icon, bundle: .module)
-          .frame(width: 48, height: 24)
-          .scaledToFit()
-          .foregroundStyle(theme.colors.textSecondary)
-        Text(text, bundle: .module)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.text)
-          .frame(minHeight: 22)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.vertical, 16)
-      .padding(.horizontal, 24)
-      .contentShape(.rect)
-    }
   }
 
   #Preview {

@@ -22,7 +22,7 @@ import Foundation
 /// Backend API, but public metadata can also be accessed from the Frontend API.
 ///
 /// The Clerk iOS SDK provides some helper methods on the User object to help retrieve and update user information and authentication status.
-public struct User: Codable, Equatable, Sendable, Hashable {
+public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 
   /// A boolean indicating whether the user has enabled Backup codes.
   public let backupCodeEnabled: Bool
@@ -399,5 +399,38 @@ extension User {
       username: "username"
     )
   }
+  
+  static var mock2: Self {
+    .init(
+      backupCodeEnabled: true,
+      createdAt: .distantPast,
+      createOrganizationEnabled: true,
+      createOrganizationsLimit: 0,
+      deleteSelfEnabled: true,
+      emailAddresses: [.mock],
+      enterpriseAccounts: [],
+      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
+      firstName: nil,
+      hasImage: false,
+      id: "2",
+      imageUrl: "",
+      lastSignInAt: .now,
+      lastName: nil,
+      legalAcceptedAt: .now,
+      organizationMemberships: [.mockWithUserData],
+      passkeys: [.mock],
+      passwordEnabled: true,
+      phoneNumbers: [.mock],
+      primaryEmailAddressId: "1",
+      primaryPhoneNumberId: "1",
+      publicMetadata: nil,
+      totpEnabled: true,
+      twoFactorEnabled: true,
+      updatedAt: .now,
+      unsafeMetadata: nil,
+      username: "username2"
+    )
+  }
+
 
 }

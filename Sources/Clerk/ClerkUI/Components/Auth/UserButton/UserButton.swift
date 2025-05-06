@@ -39,6 +39,11 @@
           .presentationDetents([.medium, .large])
           .presentationDragIndicator(.visible)
       }
+      .onChange(of: clerk.user) { _, newValue in
+        if newValue == nil {
+          userButtonPopoverIsPresented = false
+        }
+      }
     }
   }
 

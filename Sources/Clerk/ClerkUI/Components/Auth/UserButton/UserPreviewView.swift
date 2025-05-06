@@ -29,13 +29,27 @@
           if let fullName = user.fullName {
             Text(fullName)
               .font(theme.fonts.body)
+              .fontWeight(.semibold)
               .foregroundStyle(theme.colors.text)
               .frame(minHeight: 22)
           }
 
           Text(user.identifier)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.textSecondary)
+            .font(
+              user.fullName == nil
+                ? theme.fonts.body
+                : theme.fonts.subheadline
+            )
+            .fontWeight(
+              user.fullName == nil
+                ? .semibold
+                : .regular
+            )
+            .foregroundStyle(
+              user.fullName == nil
+                ? theme.colors.text
+                : theme.colors.textSecondary
+            )
         }
       }
     }

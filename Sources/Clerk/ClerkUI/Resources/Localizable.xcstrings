@@ -65,6 +65,9 @@
         }
       }
     },
+    "Add account" : {
+
+    },
     "An unknown error occurred." : {
       "localizations" : {
         "ar" : {
@@ -2157,6 +2160,9 @@
         }
       }
     },
+    "Sign out of all accounts" : {
+
+    },
     "Something went wrong. Please try again." : {
       "localizations" : {
         "ar" : {
@@ -2272,6 +2278,9 @@
           }
         }
       }
+    },
+    "Switch account" : {
+
     },
     "to continue" : {
       "localizations" : {
