@@ -18,7 +18,16 @@
     @State private var error: Error?
 
     var sessions: [Session] {
-      clerk.client?.activeSessions ?? []
+      (clerk.client?.sessions ?? [])
+        .sorted { lhs, rhs in
+          if lhs.id == clerk.session?.id {
+            return true
+          } else if rhs.id == clerk.session?.id {
+            return false
+          } else {
+            return false
+          }
+        }
     }
 
     func setActiveSession(_ session: Session) async {
