@@ -87,7 +87,7 @@
           .frame(height: 1)
           .foregroundStyle(theme.colors.border)
 
-        List {
+        ScrollView {
           VStack(spacing: 0) {
             ForEach(sessions) { session in
               if let user = session.user {
@@ -147,10 +147,7 @@
             }
             .buttonStyle(.pressedBackground)
           }
-          .listRowSeparator(.hidden)
-          .listRowInsets(EdgeInsets())
         }
-        .listStyle(.plain)
 
         SecuredByClerkView()
           .padding(16)
