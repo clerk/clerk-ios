@@ -85,6 +85,7 @@
                 SocialButton(provider: provider) {
                   await signInWithProvider(provider)
                 }
+                .simultaneousGesture(TapGesture())
               }
             }
 
@@ -112,6 +113,7 @@
                   .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.secondary())
+                .simultaneousGesture(TapGesture())
               }
             }
           }
