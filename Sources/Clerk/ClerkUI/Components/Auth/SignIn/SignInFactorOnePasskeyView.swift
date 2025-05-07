@@ -118,7 +118,7 @@ struct SignInFactorOnePasskeyView: View {
 extension SignInFactorOnePasskeyView {
 
   func authWithPasskey() async {
-    guard let signIn else {
+    guard var signIn else {
       authState.path = NavigationPath()
       return
     }
@@ -127,14 +127,16 @@ extension SignInFactorOnePasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      let signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
+      signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
       let credential = try await signIn.getCredentialForPasskey()
-      try await signIn.attemptFirstFactor(
+      signIn = try await signIn.attemptFirstFactor(
         strategy: .passkey(publicKeyCredential: credential)
       )
+      
+      self.error = nil
+      authState.setToStepForStatus(signIn: signIn)
     } catch {
       self.error = error
-      dump(error)
     }
   }
 

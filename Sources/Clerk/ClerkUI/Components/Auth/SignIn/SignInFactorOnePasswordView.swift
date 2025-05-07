@@ -14,7 +14,7 @@ struct SignInFactorOnePasswordView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
   @FocusState private var isFocused: Bool
-  @State private var error: Error?
+  @State private var fieldError: Error?
 
   var signIn: SignIn? {
     clerk.client?.signIn
@@ -49,16 +49,26 @@ struct SignInFactorOnePasswordView: View {
 
         VStack(spacing: 24) {
 
-          ClerkTextField(
-            "Enter your password",
-            text: $authState.password,
-            isSecure: true
-          )
-          .textContentType(.password)
-          .textInputAutocapitalization(.never)
-          .focused($isFocused)
-          .onFirstAppear {
-            isFocused = true
+          VStack(spacing: 8) {
+            ClerkTextField(
+              "Enter your password",
+              text: $authState.password,
+              isSecure: true,
+              fieldState: fieldError != nil ? .error : .default
+            )
+            .textContentType(.password)
+            .textInputAutocapitalization(.never)
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
+            
+            if let fieldError {
+              ErrorText(error: fieldError, alignment: .leading)
+                .font(theme.fonts.subheadline)
+                .transition(.blurReplace.animation(.default.speed(2)))
+                .id(fieldError.localizedDescription)
+            }
           }
 
           AsyncButton {
@@ -99,7 +109,7 @@ struct SignInFactorOnePasswordView: View {
                     
           Button {
             authState.path.append(
-              AuthState.Destination.passwordReset
+              AuthState.Destination.forgotPassword
             )
           } label: {
             Text("Forgot password?", bundle: .module)
@@ -122,6 +132,7 @@ struct SignInFactorOnePasswordView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    .sensoryFeedback(.error, trigger: fieldError?.localizedDescription)
   }
 }
 
@@ -140,9 +151,10 @@ extension SignInFactorOnePasswordView {
         strategy: .password(password: authState.password)
       )
 
+      fieldError = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
-      self.error = error
+      self.fieldError = error
     }
   }
 

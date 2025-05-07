@@ -62,7 +62,11 @@ struct SocialButton: View {
           try await defaultAction()
         }
       } catch {
-        onError?(error)
+        if error.isCancelledError {
+          return
+        } else {
+          onError?(error)
+        }
       }
     } label: { isRunning in
       ViewThatFits(in: .horizontal) {
