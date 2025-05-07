@@ -49,8 +49,11 @@ struct OTPField: View {
         .tint(.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .onChange(of: code) { _, newValue in
-      code = String(newValue.prefix(numberOfInputs))
+    .onChange(of: code) { oldValue, newValue in
+      let previousCode = String(oldValue.prefix(numberOfInputs))
+      self.code = String(newValue.prefix(numberOfInputs))
+      if previousCode == code { return }
+      
       if code.count == numberOfInputs {
         fieldState = .default
 
