@@ -40,7 +40,7 @@
           .frame(height: 1)
           .foregroundStyle(theme.colors.border)
 
-        List {
+        ScrollView {
           VStack(spacing: 0) {
             if let user = clerk.user {
               UserPreviewView(user: user)
@@ -94,10 +94,7 @@
             }
             .buttonStyle(.pressedBackground)
           }
-          .listRowSeparator(.hidden)
-          .listRowInsets(EdgeInsets())
         }
-        .listStyle(.plain)
 
         SecuredByClerkView()
           .padding(16)
