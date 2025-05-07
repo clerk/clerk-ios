@@ -65,6 +65,7 @@
                 .foregroundStyle(theme.colors.border)
             }
             .buttonStyle(.pressedBackground)
+            .simultaneousGesture(TapGesture())
 
             if clerk.environment.mutliSessionModeIsEnabled {
               Button {
@@ -78,6 +79,7 @@
                   .foregroundStyle(theme.colors.border)
               }
               .buttonStyle(.pressedBackground)
+              .simultaneousGesture(TapGesture())
             }
 
             AsyncButton {
@@ -93,6 +95,7 @@
                 .foregroundStyle(theme.colors.border)
             }
             .buttonStyle(.pressedBackground)
+            .simultaneousGesture(TapGesture())
           }
         }
 
