@@ -80,16 +80,23 @@
     @State private var reservedHeight: CGFloat?
     @State var displayText = ""
     @FocusState private var isFocused: Bool
+    
+    enum FieldState {
+      case `default`, error
+    }
 
     let titleKey: LocalizedStringKey
     @Binding var text: String
+    let fieldState: FieldState
 
     init(
       _ titleKey: LocalizedStringKey,
-      text: Binding<String>
+      text: Binding<String>,
+      fieldState: FieldState = .default
     ) {
       self.titleKey = titleKey
       self._text = text
+      self.fieldState = fieldState
     }
 
     var isFocusedOrFilled: Bool {
@@ -219,7 +226,10 @@
         theme.colors.inputBackground,
         in: .rect(cornerRadius: theme.design.borderRadius)
       )
-      .clerkFocusedBorder(isFocused: isFocused)
+      .clerkFocusedBorder(
+        isFocused: isFocused,
+        state: fieldState == .error ? .error : .default
+      )
       .onAppear {
         textDidUpdate(text: text)
       }
