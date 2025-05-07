@@ -42,6 +42,7 @@ struct SignInFactorOnePasskeyView: View {
               IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
             .buttonStyle(.secondary(config: .init(size: .small)))
+            .simultaneousGesture(TapGesture())
           }
         }
         .padding(.bottom, 32)
@@ -76,6 +77,7 @@ struct SignInFactorOnePasskeyView: View {
           }
           .buttonStyle(.primary())
           .disabled(passkeyInProgress)
+          .simultaneousGesture(TapGesture())
 
           Button {
             authState.path.append(
@@ -94,6 +96,7 @@ struct SignInFactorOnePasskeyView: View {
               )
             )
           )
+          .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 32)
 

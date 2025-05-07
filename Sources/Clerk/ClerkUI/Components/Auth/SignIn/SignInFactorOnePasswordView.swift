@@ -42,6 +42,7 @@ struct SignInFactorOnePasswordView: View {
               IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
             .buttonStyle(.secondary(config: .init(size: .small)))
+            .simultaneousGesture(TapGesture())
           }
         }
         .padding(.bottom, 32)
@@ -76,6 +77,7 @@ struct SignInFactorOnePasswordView: View {
           }
           .buttonStyle(.primary())
           .disabled(authState.password.isEmpty)
+          .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 16)
 
@@ -112,6 +114,7 @@ struct SignInFactorOnePasswordView: View {
             )
           )
         )
+        .simultaneousGesture(TapGesture())
         .padding(.bottom, 32)
 
         SecuredByClerkView()

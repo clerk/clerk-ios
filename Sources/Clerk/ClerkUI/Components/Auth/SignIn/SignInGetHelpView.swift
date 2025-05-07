@@ -35,6 +35,7 @@
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.primary())
+            .simultaneousGesture(TapGesture())
           }
           .padding(.bottom, 32)
 

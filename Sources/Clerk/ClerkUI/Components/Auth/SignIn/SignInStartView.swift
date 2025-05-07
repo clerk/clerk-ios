@@ -164,6 +164,7 @@
             }
             .buttonStyle(.primary())
             .disabled(continueIsDisabled)
+            .simultaneousGesture(TapGesture())
 
             if showIdentifierSwitcher {
               Button {
@@ -175,6 +176,7 @@
                   .id(phoneNumberFieldIsActive)
               }
               .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
+              .simultaneousGesture(TapGesture())
             }
 
             if showOrDivider {
@@ -183,7 +185,10 @@
 
             SocialButtonLayout {
               ForEach(clerk.environment.authenticatableSocialProviders) { provider in
-                SocialButton(provider: provider)
+                SocialButton(provider: provider) { error in
+                  self.error = error
+                }
+                .simultaneousGesture(TapGesture())
               }
             }
           }
