@@ -13,6 +13,7 @@ struct SignInFactorOnePasswordView: View {
   @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.authState) private var authState
+  
   @FocusState private var isFocused: Bool
   @State private var fieldError: Error?
 
@@ -132,7 +133,9 @@ struct SignInFactorOnePasswordView: View {
       .padding(16)
     }
     .background(theme.colors.background)
-    .sensoryFeedback(.error, trigger: fieldError?.localizedDescription)
+    .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
+      $1 != nil
+    }
   }
 }
 
