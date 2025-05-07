@@ -167,6 +167,7 @@
           switch event {
           case .signInCompleted, .signUpCompleted:
             authViewIsPresented = false
+            dismiss()
           }
         }
       }
