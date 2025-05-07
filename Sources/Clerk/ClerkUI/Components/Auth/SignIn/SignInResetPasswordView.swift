@@ -91,7 +91,9 @@
         .padding(16)
       }
       .background(theme.colors.background)
-      .sensoryFeedback(.error, trigger: fieldError?.localizedDescription)
+      .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
+        $1 != nil
+      }
       .navigationBarBackButtonHidden()
     }
   }
