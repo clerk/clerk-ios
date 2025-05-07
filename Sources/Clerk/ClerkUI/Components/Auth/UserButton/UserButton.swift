@@ -25,7 +25,7 @@
             userButtonPopoverIsPresented = true
           } label: {
             KFImage(URL(string: user.imageUrl))
-              .placeholder { theme.colors.backgroundSecondary }
+              .placeholder { theme.colors.primary }
               .resizable()
               .fade(duration: 0.2)
               .scaledToFill()
