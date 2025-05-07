@@ -89,6 +89,7 @@
                 IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
               }
               .buttonStyle(.secondary(config: .init(size: .small)))
+              .simultaneousGesture(TapGesture())
             }
           }
           .padding(.bottom, 32)
@@ -169,6 +170,7 @@
                 )
               )
               .disabled(remainingSeconds > 0)
+              .simultaneousGesture(TapGesture())
             }
 
             Button {
@@ -188,6 +190,7 @@
                 )
               )
             )
+            .simultaneousGesture(TapGesture())
           }
           .padding(.bottom, 32)
 

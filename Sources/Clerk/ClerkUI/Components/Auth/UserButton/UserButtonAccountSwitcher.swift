@@ -78,7 +78,7 @@
               .fontWeight(.semibold)
               .foregroundStyle(theme.colors.primary)
           }
-
+          .simultaneousGesture(TapGesture())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -119,6 +119,7 @@
                 }
                 .buttonStyle(.pressedBackground)
                 .disabled(clerk.session?.id == session.id)
+                .simultaneousGesture(TapGesture())
               }
             }
 
@@ -133,6 +134,7 @@
                 .foregroundStyle(theme.colors.border)
             }
             .buttonStyle(.pressedBackground)
+            .simultaneousGesture(TapGesture())
 
             AsyncButton {
               await signOutOfAllAccounts()
@@ -146,6 +148,7 @@
                 .foregroundStyle(theme.colors.border)
             }
             .buttonStyle(.pressedBackground)
+            .simultaneousGesture(TapGesture())
           }
         }
 
@@ -157,6 +160,7 @@
       .background(theme.colors.background)
       .sheet(isPresented: $authViewIsPresented) {
         AuthView()
+          .interactiveDismissDisabled()
       }
       .task {
         for await event in clerk.authEventEmitter.events {
