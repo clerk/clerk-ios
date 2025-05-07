@@ -7,47 +7,48 @@
 
 #if os(iOS)
 
-import SwiftUI
+  import SwiftUI
 
-struct SignInFactorOneView: View {
-  @Environment(\.clerk) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  
-  let factor: Factor
+  struct SignInFactorOneView: View {
+    @Environment(\.clerk) private var clerk
+    @Environment(\.clerkTheme) private var theme
 
-  var signIn: SignIn? {
-    clerk.client?.signIn
-  }
-  
-  @ViewBuilder
-  var viewForFactor: some View {
-    switch factor.strategy {
-    case "passkey":
-      SignInFactorOnePasskeyView(factor: factor)
-    case "password":
-      SignInFactorOnePasswordView(factor: factor)
-    case "email_code":
-      SignInFactorOneCodeView(factor: factor)
-    case "phone_code":
-      SignInFactorOneCodeView(factor: factor)
-    default:
-      SignInGetHelpView()
+    let factor: Factor
+
+    var signIn: SignIn? {
+      clerk.client?.signIn
+    }
+
+    @ViewBuilder
+    var viewForFactor: some View {
+      switch factor.strategy {
+      case "passkey":
+        SignInFactorOnePasskeyView(factor: factor)
+      case "password":
+        SignInFactorOnePasswordView(factor: factor)
+      case "email_code",
+        "phone_code",
+        "reset_password_email_code",
+        "reset_password_phone_code":
+        SignInFactorOneCodeView(factor: factor)
+      default:
+        SignInGetHelpView()
+      }
+    }
+
+    var body: some View {
+      viewForFactor
+        .background(theme.colors.background)
     }
   }
-  
-  var body: some View {
-    viewForFactor
-      .background(theme.colors.background)
-  }
-}
 
-#Preview {
-  SignInFactorOneView(
-    factor: .init(
-      strategy: "passkey"
+  #Preview {
+    SignInFactorOneView(
+      factor: .init(
+        strategy: "passkey"
+      )
     )
-  )
-  .environment(\.clerk, .mock)
-}
+    .environment(\.clerk, .mock)
+  }
 
 #endif

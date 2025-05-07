@@ -18,19 +18,26 @@ struct ClerkTextField: View {
   enum Field {
     case regular, secure
   }
+  
+  enum FieldState {
+    case `default`, error
+  }
 
   let titleKey: LocalizedStringKey
   @Binding var text: String
   let isSecure: Bool
+  let fieldState: FieldState
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
-    isSecure: Bool = false
+    isSecure: Bool = false,
+    fieldState: FieldState = .default
   ) {
     self.titleKey = titleKey
     self._text = text
     self.isSecure = isSecure
+    self.fieldState = fieldState
   }
 
   var isFocusedOrFilled: Bool {
@@ -122,7 +129,10 @@ struct ClerkTextField: View {
       theme.colors.inputBackground,
       in: .rect(cornerRadius: theme.design.borderRadius)
     )
-    .clerkFocusedBorder(isFocused: focused != nil)
+    .clerkFocusedBorder(
+      isFocused: focused != nil,
+      state: fieldState == .error ? .error : .default
+    )
   }
 }
 

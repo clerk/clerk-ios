@@ -18,7 +18,8 @@
 
     @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
 
-    @State private var error: Error?
+    @State private var fieldError: Error?
+    @State private var generalError: Error?
 
     var signInString: LocalizedStringKey {
       if let appName = clerk.environment.displayConfig?.applicationName {
@@ -121,30 +122,41 @@
 
           VStack(spacing: 24) {
             if showIdentifierField {
-              if phoneNumberFieldIsActive && phoneNumberIsEnabled {
-                ClerkPhoneNumberField(
-                  "Enter your phone number",
-                  text: $authState.phoneNumber
-                )
-                .transition(.blurReplace)
-                .toolbar {
-                  ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                      dismissKeyboard()
+              VStack(spacing: 4) {
+                if phoneNumberFieldIsActive && phoneNumberIsEnabled {
+                  ClerkPhoneNumberField(
+                    "Enter your phone number",
+                    text: $authState.phoneNumber,
+                    fieldState: fieldError != nil ? .error : .default
+                  )
+                  .transition(.blurReplace)
+                  .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                      Spacer()
+                      Button("Done") {
+                        dismissKeyboard()
+                      }
+                      .tint(theme.colors.text)
                     }
-                    .tint(theme.colors.text)
                   }
+                } else {
+                  ClerkTextField(
+                    emailOrUsernamePlaceholder,
+                    text: $authState.identifier,
+                    fieldState: fieldError != nil ? .error : .default
+                  )
+                  .textContentType(.emailAddress)
+                  .keyboardType(.emailAddress)
+                  .textInputAutocapitalization(.never)
+                  .transition(.blurReplace)
                 }
-              } else {
-                ClerkTextField(
-                  emailOrUsernamePlaceholder,
-                  text: $authState.identifier
-                )
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .transition(.blurReplace)
+
+                if let fieldError {
+                  ErrorText(error: fieldError, alignment: .leading)
+                    .font(theme.fonts.subheadline)
+                    .transition(.blurReplace.animation(.default.speed(2)))
+                    .id(fieldError.localizedDescription)
+                }
               }
             }
 
@@ -186,7 +198,7 @@
             SocialButtonLayout {
               ForEach(clerk.environment.authenticatableSocialProviders) { provider in
                 SocialButton(provider: provider) { error in
-                  self.error = error
+                  self.generalError = error
                 }
                 .simultaneousGesture(TapGesture())
               }
@@ -199,6 +211,7 @@
         .padding(16)
       }
       .background(theme.colors.background)
+      .sensoryFeedback(.error, trigger: fieldError?.localizedDescription)
       .taskOnce {
         if shouldStartOnPhoneNumber {
           phoneNumberFieldIsActive = true
@@ -214,11 +227,17 @@
 
       do {
         let signIn = try await SignIn.create(
-          strategy: .identifier(phoneNumberFieldIsActive ? authState.phoneNumber : authState.identifier)
+          strategy: .identifier(
+            phoneNumberFieldIsActive
+              ? authState.phoneNumber
+              : authState.identifier
+          )
         )
+
+        fieldError = nil
         authState.setToStepForStatus(signIn: signIn)
       } catch {
-        self.error = error
+        self.fieldError = error
       }
     }
 

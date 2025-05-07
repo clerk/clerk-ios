@@ -1,29 +1,27 @@
 //
-//  SignInFactorOneAlternativeMethodsView.swift
+//  SignInFactorOneForgotPasswordView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/23/25.
+//  Created by Mike Pitre on 5/7/25.
 //
 
 #if os(iOS)
 
-  import Factory
   import SwiftUI
 
-  struct SignInFactorOneAlternativeMethodsView: View {
+  struct SignInFactorOneForgotPasswordView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
     @State private var error: Error?
-
-    let currentFactor: Factor
 
     var signIn: SignIn? {
       clerk.client?.signIn
     }
 
     var alternativeFactors: [Factor] {
-      signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
+      let factors = signIn?.alternativeFirstFactors(currentFactor: nil) ?? []
+      return factors.filter({ $0.strategy != "password" })
     }
 
     var socialProviders: [OAuthProvider] {
@@ -73,13 +71,24 @@
             .frame(maxHeight: 44)
             .padding(.bottom, 24)
 
-          VStack(spacing: 8) {
-            HeaderView(style: .title, text: "Use another method")
-            HeaderView(style: .subtitle, text: "Facing issues? You can use any of these methods to sign in.")
-          }
-          .padding(.bottom, 32)
+          HeaderView(style: .title, text: "Forgot password?")
+            .padding(.bottom, 32)
 
           VStack(spacing: 16) {
+            AsyncButton {
+              await resetPassword()
+            } label: { isRunning in
+              Text("Reset your password", bundle: .module)
+                .frame(maxWidth: .infinity)
+                .overlayProgressView(isActive: isRunning) {
+                  SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                }
+            }
+            .buttonStyle(.primary())
+            .simultaneousGesture(TapGesture())
+
+            TextDivider(string: "Or, sign in with another method")
+
             SocialButtonLayout {
               ForEach(socialProviders) { provider in
                 SocialButton(provider: provider) {
@@ -89,12 +98,12 @@
               }
             }
 
-            TextDivider(string: "or")
-
             ForEach(alternativeFactors, id: \.self) { factor in
               if let actionText = actionText(factor: factor) {
                 Button {
-                  authState.path.append(AuthState.Destination.signInFactorOne(factor: factor))
+                  authState.path.append(
+                    AuthState.Destination.signInFactorOne(factor: factor)
+                  )
                 } label: {
                   HStack(spacing: 6) {
                     if let iconName = iconName(factor: factor) {
@@ -127,7 +136,29 @@
     }
   }
 
-  extension SignInFactorOneAlternativeMethodsView {
+  extension SignInFactorOneForgotPasswordView {
+
+    func resetPassword() async {
+      do {
+        guard var signIn, let resetStrategy = signIn.resetPasswordStrategy else {
+          authState.path = NavigationPath()
+          return
+        }
+
+        signIn = try await signIn.prepareFirstFactor(strategy: resetStrategy)
+        
+        guard let resetFactor = signIn.currentFirstFactor else {
+          authState.path = NavigationPath()
+          return
+        }
+        
+        authState.path.append(
+          AuthState.Destination.signInFactorOne(factor: resetFactor)
+        )
+      } catch {
+        self.error = error
+      }
+    }
 
     func signInWithProvider(_ provider: OAuthProvider) async {
       do {
@@ -153,6 +184,7 @@
           // TODO: Set to sign up status
           return
         }
+        
       } catch {
         self.error = error
       }
@@ -161,10 +193,9 @@
   }
 
   #Preview {
-    SignInFactorOneAlternativeMethodsView(
-      currentFactor: .mockEmailCode
-    )
-    .environment(\.clerk, .mock)
+    SignInFactorOneForgotPasswordView()
+      .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
   }
 
 #endif

@@ -297,6 +297,9 @@
         }
       }
     },
+    "Confirm password" : {
+
+    },
     "Continue" : {
       "localizations" : {
         "ar" : {
@@ -1225,6 +1228,12 @@
         }
       }
     },
+    "First, enter the code sent to your email address" : {
+
+    },
+    "First, enter the code sent to your phone" : {
+
+    },
     "Forgot password?" : {
       "localizations" : {
         "ar" : {
@@ -1631,6 +1640,9 @@
         }
       }
     },
+    "New password" : {
+
+    },
     "or" : {
       "localizations" : {
         "ar" : {
@@ -1689,8 +1701,8 @@
         }
       }
     },
-    "Password Reset" : {
-      "shouldTranslate" : false
+    "Or, sign in with another method" : {
+
     },
     "Redirect URL is missing or invalid. Unable to start external authentication flow." : {
       "extractionState" : "manual",
@@ -1867,7 +1879,14 @@
         }
       }
     },
+    "Reset password" : {
+
+    },
+    "Reset your password" : {
+
+    },
     "Second Factor" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2040,6 +2059,9 @@
           }
         }
       }
+    },
+    "Set new password" : {
+
     },
     "Sign in with your passkey" : {
       "localizations" : {

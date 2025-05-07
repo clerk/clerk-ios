@@ -26,13 +26,19 @@ struct TextDivider: View {
       Text(string, bundle: .module)
         .font(theme.fonts.footnote)
         .foregroundStyle(theme.colors.textSecondary)
+        .multilineTextAlignment(.center)
+        .layoutPriority(1)
       divider
     }
   }
 }
 
 #Preview {
-  TextDivider(string: "or")
+  VStack {
+    TextDivider(string: "or")
+    TextDivider(string: "Or, sign in with another method")
+    TextDivider(string: "Or, sign in with another method. This is some really long text.")
+  }
     .padding()
 }
 

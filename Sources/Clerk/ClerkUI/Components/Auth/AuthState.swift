@@ -17,7 +17,8 @@ final class AuthState {
     case signInFactorOne(factor: Factor)
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
     case signInFactorTwo
-    case passwordReset
+    case forgotPassword
+    case setNewPassword
     
     @MainActor
     @ViewBuilder
@@ -30,9 +31,11 @@ final class AuthState {
       case .signInFactorOneUseAnotherMethod(let currentFactor):
         SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
       case .signInFactorTwo:
-        Text("Second Factor", bundle: .module)
-      case .passwordReset:
-        Text("Password Reset", bundle: .module)
+        Text(verbatim: "Second Factor")
+      case .forgotPassword:
+        SignInFactorOneForgotPasswordView()
+      case .setNewPassword:
+        SignInResetPasswordView()
       }
     }
   }
@@ -51,8 +54,10 @@ final class AuthState {
     }
   }
   
-  var password: String = ""
+  var password = ""
   var lastCodeSentAt: [Factor: Date] = [:]
+  var newPassword = ""
+  var confirmNewPassword = ""
   
   @MainActor
   func setToStepForStatus(signIn: SignIn) {
@@ -70,7 +75,7 @@ final class AuthState {
     case .needsSecondFactor:
       path.append(Destination.signInFactorTwo)
     case .needsNewPassword:
-      path.append(Destination.passwordReset)
+      path.append(Destination.setNewPassword)
     case .unknown:
       return
     }
