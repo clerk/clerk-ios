@@ -50,16 +50,25 @@
         "Check your email"
       case "phone_code":
         "Check your phone"
+      case "reset_password_email_code", "reset_password_phone_code":
+        "Reset password"
       default:
         ""
       }
     }
 
     var subtitleString: LocalizedStringKey {
-      if let appName = clerk.environment.displayConfig?.applicationName {
-        return "to continue to \(appName)"
-      } else {
-        return "to continue"
+      switch factor.strategy {
+      case "reset_password_email_code":
+        "First, enter the code sent to your email address"
+      case "reset_password_phone_code":
+        "First, enter the code sent to your phone"
+      default:
+        if let appName = clerk.environment.displayConfig?.applicationName {
+          "to continue to \(appName)"
+        } else {
+          "to continue"
+        }
       }
     }
 
@@ -117,25 +126,21 @@
             Group {
               switch verificationState {
               case .verifying:
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                   SpinnerView()
                     .frame(width: 16, height: 16)
                   Text("Verifying...", bundle: .module)
                 }
                 .foregroundStyle(theme.colors.textSecondary)
               case .success:
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                   Image("icon-check-circle", bundle: .module)
                     .foregroundStyle(theme.colors.success)
                   Text("Success", bundle: .module)
                     .foregroundStyle(theme.colors.textSecondary)
                 }
               case .error(let error):
-                HStack(spacing: 6) {
-                  Image("icon-warning", bundle: .module)
-                  Text(error.localizedDescription)
-                }
-                .foregroundStyle(theme.colors.danger)
+                ErrorText(error: error)
               default:
                 EmptyView()
               }
@@ -247,6 +252,16 @@
           try await signIn.prepareFirstFactor(
             strategy: .phoneCode(phoneNumberId: factor.phoneNumberId)
           )
+
+        case "reset_password_email_code":
+          try await signIn.prepareFirstFactor(
+            strategy: .resetPasswordEmailCode(emailAddressId: factor.emailAddressId)
+          )
+
+        case "reset_password_phone_code":
+          try await signIn.prepareFirstFactor(
+            strategy: .resetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
+          )
         default:
           return
         }
@@ -259,24 +274,29 @@
     }
 
     func attempt() async throws {
-      guard let signIn else {
+      guard var signIn else {
         authState.path = NavigationPath()
         return
       }
-      
+
       verificationState = .verifying
 
       switch factor.strategy {
       case "email_code":
-        try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+        signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
       case "phone_code":
-        try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+        signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+      case "reset_password_email_code":
+        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
+      case "reset_password_phone_code":
+        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
       default:
         return
       }
 
       dismissKeyboard()
       verificationState = .success
+      authState.setToStepForStatus(signIn: signIn)
     }
 
   }
@@ -288,12 +308,12 @@
         try! await Task.sleep(for: .seconds(1))
         return .mock
       }
-      
+
       service.attemptFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
         return .mock
       }
-      
+
       return service
     }
 
@@ -308,16 +328,56 @@
         try! await Task.sleep(for: .seconds(1))
         return .mock
       }
-      
+
       service.attemptFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
         return .mock
       }
-      
+
       return service
     }
-    
+
     SignInFactorOneCodeView(factor: .mockPhoneCode)
+      .environment(\.clerk, .mock)
+  }
+
+  #Preview("Reset Password Email Code") {
+    let _ = Container.shared.signInService.register {
+      var service = SignInService.liveValue
+      service.prepareFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+
+      service.attemptFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+
+      return service
+    }
+
+    SignInFactorOneCodeView(factor: .mockResetPasswordEmailCode)
+      .environment(\.clerk, .mock)
+  }
+
+  #Preview("Reset Password Phone Code") {
+    let _ = Container.shared.signInService.register {
+      var service = SignInService.liveValue
+      service.prepareFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+
+      service.attemptFirstFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+
+      return service
+    }
+
+    SignInFactorOneCodeView(factor: .mockResetPasswordPhoneCode)
       .environment(\.clerk, .mock)
   }
 
