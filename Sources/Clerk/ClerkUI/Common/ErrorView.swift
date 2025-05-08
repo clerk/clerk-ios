@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/8/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct ErrorView: View {
@@ -16,7 +18,7 @@ struct ErrorView: View {
     let action: () async -> Void
   }
 
-  let errorMessage: String
+  let error: Error
   var action: ActionConfig?
 
   var body: some View {
@@ -36,7 +38,7 @@ struct ErrorView: View {
           .foregroundStyle(theme.colors.text)
           .frame(minHeight: 28)
 
-        Text(errorMessage)
+        Text(error.localizedDescription)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.textSecondary)
       }
@@ -44,6 +46,7 @@ struct ErrorView: View {
       VStack(spacing: 12) {
         if let action {
           AsyncButton {
+            dismiss()
             await action.action()
           } label: { isRunning in
             Text(action.text, bundle: .module)
@@ -72,7 +75,7 @@ struct ErrorView: View {
 
 #Preview {
   ErrorView(
-    errorMessage: "Similique qui enim placeat tempore. Labore voluptates aliquam est quaerat aut perferendis similique.",
+    error: ClerkClientError(message: "Similique qui enim placeat tempore. Labore voluptates aliquam est quaerat aut perferendis similique."),
     action: .init(
       text: "Call to action",
       action: {
@@ -82,3 +85,5 @@ struct ErrorView: View {
   .padding()
   .environment(\.clerkTheme, .clerk)
 }
+
+#endif

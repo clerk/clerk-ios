@@ -211,6 +211,7 @@
         .padding(16)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($generalError)
       .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
         $1 != nil
       }
