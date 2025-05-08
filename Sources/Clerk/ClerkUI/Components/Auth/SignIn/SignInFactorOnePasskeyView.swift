@@ -105,6 +105,7 @@ struct SignInFactorOnePasskeyView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    .clerkErrorPresenting($error)
     .onFirstAppear {
       animateSymbol.toggle()
     }
@@ -136,6 +137,7 @@ extension SignInFactorOnePasskeyView {
       self.error = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
+      if error.isCancelledError { return }
       self.error = error
     }
   }
