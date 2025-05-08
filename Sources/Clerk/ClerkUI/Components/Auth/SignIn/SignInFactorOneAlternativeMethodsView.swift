@@ -124,6 +124,7 @@
         .padding(16)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
     }
   }
 
@@ -154,6 +155,7 @@
           return
         }
       } catch {
+        if error.isCancelledError { return }
         self.error = error
       }
     }

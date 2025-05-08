@@ -158,6 +158,7 @@
           .background(theme.colors.backgroundSecondary)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
       .sheet(isPresented: $authViewIsPresented) {
         AuthView()
           .interactiveDismissDisabled()

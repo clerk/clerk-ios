@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 4/28/25.
 //
 
-#if canImport(SwiftUI) && canImport(UIKit)
+#if os(iOS)
   import SwiftUI
 
   extension EnvironmentValues {
