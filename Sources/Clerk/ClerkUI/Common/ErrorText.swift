@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/7/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct ErrorText: View {
@@ -32,3 +34,5 @@ struct ErrorText: View {
   ErrorText(error: ClerkClientError(message: "Password is incorrect. Try again, or use another method."))
     .padding()
 }
+
+#endif

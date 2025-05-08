@@ -133,6 +133,7 @@
         .padding(16)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
     }
   }
 
@@ -179,6 +180,7 @@
         }
         
       } catch {
+        if error.isCancelledError { return }
         self.error = error
       }
     }
