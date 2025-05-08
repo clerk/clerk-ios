@@ -9,13 +9,14 @@
 
   import SwiftUI
 
-  struct SignInResetPasswordView: View {
+  struct SignInSetNewPasswordView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
 
     @FocusState private var focusedField: Field?
     @State private var fieldError: Error?
+    @State private var error: Error?
 
     enum Field {
       case new, confirm
@@ -99,7 +100,7 @@
   }
 
   #Preview {
-    SignInResetPasswordView()
+    SignInSetNewPasswordView()
       .environment(\.clerkTheme, .clerk)
   }
 

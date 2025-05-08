@@ -35,7 +35,7 @@ final class AuthState {
       case .forgotPassword:
         SignInFactorOneForgotPasswordView()
       case .setNewPassword:
-        SignInResetPasswordView()
+        SignInSetNewPasswordView()
       }
     }
   }

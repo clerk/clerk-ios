@@ -62,6 +62,7 @@
   #Preview {
     SignInGetHelpView()
       .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
   }
 
 #endif
