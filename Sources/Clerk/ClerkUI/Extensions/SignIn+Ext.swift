@@ -12,19 +12,6 @@
   extension SignIn {
 
     @MainActor
-    var currentFirstFactor: Factor? {
-      if let firstFactorVerification,
-        let currentFirstFactor = supportedFirstFactors?.first(where: {
-          $0.strategy == firstFactorVerification.strategy && $0.safeIdentifier == identifier
-        })
-      {
-        return currentFirstFactor
-      }
-
-      return startingSignInFactor
-    }
-
-    @MainActor
     var startingSignInFactor: Factor? {
       guard let supportedFirstFactors, !supportedFirstFactors.isEmpty else {
         return nil
@@ -95,22 +82,14 @@
       return (firstFactors ?? []).sorted(using: Factor.allStrategiesButtonsComparator)
     }
 
-    var resetPasswordStrategy: SignIn.PrepareFirstFactorStrategy? {
-      guard let supportedFirstFactors else { return nil }
-
-      if let resetPasswordEmailFactor = supportedFirstFactors.first(where: { factor in
-        factor.strategy == "reset_password_email_code" && factor.safeIdentifier == identifier
-      }), let emailAddressId = resetPasswordEmailFactor.emailAddressId {
-        return .resetPasswordEmailCode(emailAddressId: emailAddressId)
+    var resetPasswordFactor: Factor? {
+      if let resetPasswordEmailFactor = identifyingFirstFactor(strategy: .resetPasswordEmailCode()) {
+        return resetPasswordEmailFactor
+      } else if let resetPasswordPhoneFactor = identifyingFirstFactor(strategy: .resetPasswordPhoneCode()) {
+        return resetPasswordPhoneFactor
+      } else {
+        return nil
       }
-
-      if let resetPasswordPhoneFactor = supportedFirstFactors.first(where: { factor in
-        factor.strategy == "reset_password_phone_code" && factor.safeIdentifier == identifier
-      }), let phoneNumberId = resetPasswordPhoneFactor.phoneNumberId {
-        return .resetPasswordPhoneCode(phoneNumberId: phoneNumberId)
-      }
-
-      return nil
     }
 
   }

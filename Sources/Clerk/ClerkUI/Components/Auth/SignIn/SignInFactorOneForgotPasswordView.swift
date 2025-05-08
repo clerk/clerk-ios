@@ -140,14 +140,7 @@
 
     func resetPassword() async {
       do {
-        guard var signIn, let resetStrategy = signIn.resetPasswordStrategy else {
-          authState.path = NavigationPath()
-          return
-        }
-
-        signIn = try await signIn.prepareFirstFactor(strategy: resetStrategy)
-        
-        guard let resetFactor = signIn.currentFirstFactor else {
+        guard var signIn, let resetFactor = signIn.resetPasswordFactor else {
           authState.path = NavigationPath()
           return
         }
