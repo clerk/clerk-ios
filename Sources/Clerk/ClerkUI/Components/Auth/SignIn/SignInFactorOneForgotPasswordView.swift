@@ -13,6 +13,7 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
+    
     @State private var error: Error?
 
     var signIn: SignIn? {
