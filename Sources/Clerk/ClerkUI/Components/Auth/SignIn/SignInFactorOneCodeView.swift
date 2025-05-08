@@ -204,6 +204,7 @@
         .padding(16)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
       .taskOnce {
         startTimer()
         if authState.lastCodeSentAt[factor] == nil {
@@ -269,7 +270,7 @@
         authState.lastCodeSentAt[factor] = .now
         updateRemainingSeconds()
       } catch {
-        verificationState = .error(error)
+        self.error = error
       }
     }
 
