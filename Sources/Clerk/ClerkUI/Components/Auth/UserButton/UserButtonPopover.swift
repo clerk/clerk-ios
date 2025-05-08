@@ -105,6 +105,7 @@
           .background(theme.colors.backgroundSecondary)
       }
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
       .sheet(isPresented: $accountSwitcherIsPresented) {
         UserButtonAccountSwitcher()
           .presentationDetents([.medium, .large])
