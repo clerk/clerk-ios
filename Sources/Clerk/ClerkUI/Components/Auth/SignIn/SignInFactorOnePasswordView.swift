@@ -91,7 +91,7 @@ struct SignInFactorOnePasswordView: View {
         HStack(spacing: 16) {
           Button {
             authState.path.append(
-              AuthState.Destination.signInFactorOneUseAnotherMethod(
+              AuthView.Destination.signInFactorOneUseAnotherMethod(
                 currentFactor: factor
               )
             )
@@ -106,7 +106,7 @@ struct SignInFactorOnePasswordView: View {
                     
           Button {
             authState.path.append(
-              AuthState.Destination.forgotPassword
+              AuthView.Destination.forgotPassword
             )
           } label: {
             Text("Forgot password?", bundle: .module)

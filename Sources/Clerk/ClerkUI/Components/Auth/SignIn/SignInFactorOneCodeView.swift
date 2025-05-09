@@ -176,7 +176,7 @@
 
             Button {
               authState.path.append(
-                AuthState.Destination.signInFactorOneUseAnotherMethod(
+                AuthView.Destination.signInFactorOneUseAnotherMethod(
                   currentFactor: factor
                 )
               )
