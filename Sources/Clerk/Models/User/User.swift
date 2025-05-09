@@ -375,7 +375,7 @@ extension User {
       createOrganizationEnabled: true,
       createOrganizationsLimit: 0,
       deleteSelfEnabled: true,
-      emailAddresses: [.mock],
+      emailAddresses: [.mock, .mock2],
       enterpriseAccounts: [],
       externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
       firstName: "First",

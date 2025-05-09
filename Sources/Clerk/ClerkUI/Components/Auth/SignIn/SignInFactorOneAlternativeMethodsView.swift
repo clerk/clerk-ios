@@ -91,7 +91,7 @@
             ForEach(alternativeFactors, id: \.self) { factor in
               if let actionText = actionText(factor: factor) {
                 Button {
-                  authState.path.append(AuthState.Destination.signInFactorOne(factor: factor))
+                  authState.path.append(AuthView.Destination.signInFactorOne(factor: factor))
                 } label: {
                   HStack(spacing: 6) {
                     if let iconName = iconName(factor: factor) {
