@@ -12,6 +12,7 @@ import SwiftUI
 struct DismissButton: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.colorScheme) private var colorScheme
   
   var action: (() -> Void)?
   
@@ -29,6 +30,7 @@ struct DismissButton: View {
         .symbolRenderingMode(.palette)
         .foregroundStyle(theme.colors.textSecondary, .ultraThinMaterial)
         .frame(width: 30, height: 30)
+        .brightness(colorScheme == .light ? -0.05 : 0.05)
     }
   }
 }

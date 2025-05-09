@@ -14,7 +14,7 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     
-    @State private var userButtonPopoverIsPresented: Bool = false
+    @State private var userProfileIsPresented: Bool = false
     
     public init() {}
 
@@ -22,7 +22,7 @@
       ZStack {
         if let user = clerk.user {
           Button {
-            userButtonPopoverIsPresented = true
+            userProfileIsPresented = true
           } label: {
             KFImage(URL(string: user.imageUrl))
               .placeholder { theme.colors.primary }
@@ -34,14 +34,13 @@
         }
       }
       .frame(width: 36, height: 36)
-      .popover(isPresented: $userButtonPopoverIsPresented) {
-        UserButtonPopover()
-          .presentationDetents([.medium, .large])
+      .popover(isPresented: $userProfileIsPresented) {
+        UserProfileView(isInSheet: true)
           .presentationDragIndicator(.visible)
       }
       .onChange(of: clerk.user) { _, newValue in
         if newValue == nil {
-          userButtonPopoverIsPresented = false
+          userProfileIsPresented = false
         }
       }
     }
