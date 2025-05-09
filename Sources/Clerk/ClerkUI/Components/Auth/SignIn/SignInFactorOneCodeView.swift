@@ -83,10 +83,6 @@
     var body: some View {
       ScrollView {
         VStack(spacing: 0) {
-          AppLogoView()
-            .frame(maxHeight: 44)
-            .padding(.bottom, 24)
-
           VStack(spacing: 8) {
             HeaderView(style: .title, text: title)
             HeaderView(style: .subtitle, text: subtitleString)
@@ -237,6 +233,7 @@
 
     func prepare() async {
       code = ""
+      verificationState = .default
 
       guard let signIn else {
         authState.path = NavigationPath()
