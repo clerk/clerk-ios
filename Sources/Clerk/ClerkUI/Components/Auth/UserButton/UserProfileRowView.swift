@@ -1,13 +1,15 @@
 //
-//  UserButtonPopoverRow.swift
+//  UserProfileRowView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 5/6/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
-struct UserButtonPopoverRow: View {
+struct UserProfileRowView: View {
     @Environment(\.clerkTheme) private var theme
 
     let icon: String
@@ -33,5 +35,7 @@ struct UserButtonPopoverRow: View {
   }
 
 #Preview {
-  UserButtonPopoverRow(icon: "icon-switch", text: "Switch account")
+  UserProfileRowView(icon: "icon-switch", text: "Switch account")
 }
+
+#endif
