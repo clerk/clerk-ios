@@ -33,7 +33,7 @@ public struct AuthView: View {
             }
           }
         }
-        .navigationDestination(for: AuthState.Destination.self) {
+        .navigationDestination(for: Destination.self) {
           $0.view
             .toolbar {
               if showDismissButton {
@@ -51,6 +51,36 @@ public struct AuthView: View {
     .environment(\.authState, authState)
   }
 }
+
+extension AuthView {
+  enum Destination: Hashable {
+    case signInStart
+    case signInFactorOne(factor: Factor)
+    case signInFactorOneUseAnotherMethod(currentFactor: Factor)
+    case signInFactorTwo
+    case forgotPassword
+    case setNewPassword
+    
+    @ViewBuilder
+    var view: some View {
+      switch self {
+      case .signInStart:
+        SignInStartView()
+      case .signInFactorOne(let factor):
+        SignInFactorOneView(factor: factor)
+      case .signInFactorOneUseAnotherMethod(let currentFactor):
+        SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
+      case .signInFactorTwo:
+        Text(verbatim: "Second Factor")
+      case .forgotPassword:
+        SignInFactorOneForgotPasswordView()
+      case .setNewPassword:
+        SignInSetNewPasswordView()
+      }
+    }
+  }
+}
+
 
 #Preview("In sheet") {
   Color.clear

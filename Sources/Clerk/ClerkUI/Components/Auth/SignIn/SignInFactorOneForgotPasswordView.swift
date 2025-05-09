@@ -99,7 +99,7 @@
               if let actionText = actionText(factor: factor) {
                 Button {
                   authState.path.append(
-                    AuthState.Destination.signInFactorOne(factor: factor)
+                    AuthView.Destination.signInFactorOne(factor: factor)
                   )
                 } label: {
                   HStack(spacing: 6) {
@@ -144,7 +144,7 @@
         }
         
         authState.path.append(
-          AuthState.Destination.signInFactorOne(factor: resetFactor)
+          AuthView.Destination.signInFactorOne(factor: resetFactor)
         )
       } catch {
         self.error = error

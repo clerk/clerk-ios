@@ -111,5 +111,14 @@ extension EmailAddress {
       linkedTo: nil
     )
   }
+  
+  static var mock2: EmailAddress {
+    EmailAddress(
+      id: "12",
+      emailAddress: "user2@email.com",
+      verification: .mockEmailCodeVerifiedVerification,
+      linkedTo: nil
+    )
+  }
 
 }
