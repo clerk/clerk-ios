@@ -126,7 +126,7 @@
             Button {
               authViewIsPresented = true
             } label: {
-              UserButtonPopoverRow(icon: "icon-plus", text: "Add account")
+              UserProfileRowView(icon: "icon-plus", text: "Add account")
             }
             .overlay(alignment: .bottom) {
               Rectangle()
@@ -139,7 +139,7 @@
             AsyncButton {
               await signOutOfAllAccounts()
             } label: { isRunning in
-              UserButtonPopoverRow(icon: "icon-sign-out", text: "Sign out of all accounts")
+              UserProfileRowView(icon: "icon-sign-out", text: "Sign out of all accounts")
                 .overlayProgressView(isActive: isRunning)
             }
             .overlay(alignment: .bottom) {
