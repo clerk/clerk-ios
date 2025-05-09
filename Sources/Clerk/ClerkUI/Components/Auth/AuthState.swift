@@ -12,33 +12,6 @@ import SwiftUI
 
 @Observable
 final class AuthState {
-  enum Destination: Hashable {
-    case signInStart
-    case signInFactorOne(factor: Factor)
-    case signInFactorOneUseAnotherMethod(currentFactor: Factor)
-    case signInFactorTwo
-    case forgotPassword
-    case setNewPassword
-    
-    @MainActor
-    @ViewBuilder
-    var view: some View {
-      switch self {
-      case .signInStart:
-        SignInStartView()
-      case .signInFactorOne(let factor):
-        SignInFactorOneView(factor: factor)
-      case .signInFactorOneUseAnotherMethod(let currentFactor):
-        SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
-      case .signInFactorTwo:
-        Text(verbatim: "Second Factor")
-      case .forgotPassword:
-        SignInFactorOneForgotPasswordView()
-      case .setNewPassword:
-        SignInSetNewPasswordView()
-      }
-    }
-  }
   
   var path = NavigationPath()
   
@@ -71,11 +44,11 @@ final class AuthState {
         path = NavigationPath()
         return
       }
-      path.append(Destination.signInFactorOne(factor: factor))
+      path.append(AuthView.Destination.signInFactorOne(factor: factor))
     case .needsSecondFactor:
-      path.append(Destination.signInFactorTwo)
+      path.append(AuthView.Destination.signInFactorTwo)
     case .needsNewPassword:
-      path.append(Destination.setNewPassword)
+      path.append(AuthView.Destination.setNewPassword)
     case .unknown:
       return
     }

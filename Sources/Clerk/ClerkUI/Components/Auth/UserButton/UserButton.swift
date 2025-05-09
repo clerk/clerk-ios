@@ -34,7 +34,7 @@
         }
       }
       .frame(width: 36, height: 36)
-      .popover(isPresented: $userProfileIsPresented) {
+      .sheet(isPresented: $userProfileIsPresented) {
         UserProfileView(isInSheet: true)
           .presentationDragIndicator(.visible)
       }
