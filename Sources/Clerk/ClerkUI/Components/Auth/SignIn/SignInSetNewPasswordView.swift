@@ -27,10 +27,6 @@
 
       ScrollView {
         VStack(spacing: 0) {
-          AppLogoView()
-            .frame(maxHeight: 44)
-            .padding(.bottom, 24)
-
           HeaderView(style: .title, text: "Set new password")
             .padding(.bottom, 32)
 
