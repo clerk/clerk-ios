@@ -15,6 +15,12 @@
             "value" : "الحساب"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -71,6 +77,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إضافة حساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto hinzufügen"
           }
         },
         "el" : {
@@ -131,6 +143,12 @@
             "value" : "حدث خطأ ما. يرجى المحاولة مرة أخرى."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein unbekannter Fehler ist aufgetreten."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -187,6 +205,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحقق من بريدك الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfen Sie Ihre E-Mail"
           }
         },
         "el" : {
@@ -247,6 +271,12 @@
             "value" : "تحقق من هاتفك"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfen Sie Ihr Telefon"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -303,6 +333,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إغلاق"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
           }
         },
         "el" : {
@@ -363,6 +399,12 @@
             "value" : "تأكيد كلمة المرور"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort bestätigen"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -419,6 +461,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "متابعة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
           }
         },
         "el" : {
@@ -479,6 +527,12 @@
             "value" : "للمتابعة إلى %@"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter zu %@"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -535,6 +589,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "متابعة باستخدام %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter mit %@"
           }
         },
         "el" : {
@@ -595,6 +655,12 @@
             "value" : "افتراضي"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -651,6 +717,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لم تستلم رمزاً؟ "
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keinen Code erhalten? "
           }
         },
         "el" : {
@@ -711,6 +783,12 @@
             "value" : "تم"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -767,6 +845,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إرسال رمز إلى %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code per E-Mail an %@ senden"
           }
         },
         "el" : {
@@ -827,6 +911,12 @@
             "value" : "الدعم بالبريد الإلكتروني"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Support"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -883,6 +973,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أدخل كلمة المرور الخاصة بك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort eingeben"
           }
         },
         "el" : {
@@ -943,6 +1039,12 @@
             "value" : "أدخل كلمة المرور لحسابك"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie Ihr Passwort für Ihr Konto ein"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -999,6 +1101,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أدخل بريدك الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Adresse eingeben"
           }
         },
         "el" : {
@@ -1059,6 +1167,12 @@
             "value" : "أدخل بريدك الإلكتروني أو اسم المستخدم"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie Ihre E-Mail-Adresse oder Ihren Benutzernamen ein"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1080,7 +1194,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपना ईमेल या यूजरनेम दर्ज करें"
+            "value" : "ईमेल पता या यूजरनेम दर्ज करें"
           }
         },
         "it" : {
@@ -1115,6 +1229,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أدخل كلمة المرور الخاصة بك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort eingeben"
           }
         },
         "el" : {
@@ -1172,7 +1292,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أدخل رقم هاتفك"
+            "value" : "أدخل رقم الهاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonnummer eingeben"
           }
         },
         "el" : {
@@ -1233,6 +1359,12 @@
             "value" : "أدخل اسم المستخدم الخاص بك"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie Ihren Benutzernamen ein"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1289,6 +1421,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تواجه مشاكل؟ يمكنك استخدام أي من هذه الطرق لتسجيل الدخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sie haben Probleme? Sie können eine der folgenden Methoden verwenden, um sich anzumelden."
           }
         },
         "el" : {
@@ -1349,6 +1487,12 @@
             "value" : "أولاً، أدخل الرمز المرسل إلى عنوان بريدك الإلكتروني"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstens, geben Sie den Code ein, den Sie an Ihre E-Mail-Adresse gesendet haben"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1405,6 +1549,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أولاً، أدخل الرمز المرسل إلى هاتفك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstens, geben Sie die Nummer ein, die Sie an Ihr Telefon gesendet haben"
           }
         },
         "el" : {
@@ -1465,6 +1615,12 @@
             "value" : "نسيت كلمة المرور؟"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort vergessen?"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1521,6 +1677,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "احصل على المساعدة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilfe erhalten"
           }
         },
         "el" : {
@@ -1581,6 +1743,12 @@
             "value" : "إذا واجهت مشكلة في تسجيل الدخول إلى حسابك، أرسل لنا بريداً إلكترونياً وسنعمل معك لاستعادة الوصول في أقرب وقت ممكن."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn Sie Probleme beim Anmelden auf Ihrem Konto haben, senden Sie uns eine E-Mail und wir werden mit Ihnen zusammenarbeiten, um den Zugang so schnell wie möglich wiederherzustellen."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1637,6 +1805,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دولي"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "International"
           }
         },
         "el" : {
@@ -1697,6 +1871,12 @@
             "value" : "نوع بيانات الاعتماد غير صالح."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein ungültiger Anmeldetyp."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1753,6 +1933,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إدارة الحساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto verwalten"
           }
         },
         "el" : {
@@ -1813,6 +1999,12 @@
             "value" : "رابط الاستدعاء مفقود"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rückruf-URL fehlt"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1869,6 +2061,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلمة المرور الجديدة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Passwort"
           }
         },
         "el" : {
@@ -1929,6 +2127,12 @@
             "value" : "أو"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "oder"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1987,6 +2191,12 @@
             "value" : "أو، سجل الدخول بطريقة أخرى"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oder, melden Sie sich mit einer anderen Methode an"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2043,6 +2253,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الملف الشخصي"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil"
           }
         },
         "el" : {
@@ -2104,6 +2320,12 @@
             "value" : "عنوان URL لإعادة التوجيه مفقود أو غير صالح. لا يمكن بدء تدفق المصادقة الخارجية."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Rückruf-URL fehlt oder ist ungültig. Es ist nicht möglich, den externen Authentifizierungsfluss zu starten."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2160,6 +2382,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إعادة الإرسال"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code erneut senden"
           }
         },
         "el" : {
@@ -2220,6 +2448,12 @@
             "value" : "إعادة الإرسال (%lld)"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code erneut senden (%lld)"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2276,6 +2510,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إعادة تعيين كلمة المرور"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort zurücksetzen"
           }
         },
         "el" : {
@@ -2336,6 +2576,12 @@
             "value" : "إعادة تعيين كلمة المرور الخاصة بك"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Passwort zurücksetzen"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2392,6 +2638,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مؤمن بواسطة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichergestellt von"
           }
         },
         "el" : {
@@ -2452,6 +2704,12 @@
             "value" : "الأمان"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sicherheit"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2508,6 +2766,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إرسال رمز SMS إلى %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS-Code an %@"
           }
         },
         "el" : {
@@ -2568,6 +2832,12 @@
             "value" : "تعيين كلمة مرور جديدة"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Passwort setzen"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2624,6 +2894,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تسجيل الدخول باستخدام مفتاح المرور الخاص بك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit Passkey anmelden"
           }
         },
         "el" : {
@@ -2684,6 +2960,12 @@
             "value" : "تسجيل الدخول باستخدام كلمة المرور"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort verwenden"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2740,6 +3022,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تسجيل الخروج"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden"
           }
         },
         "el" : {
@@ -2800,6 +3088,12 @@
             "value" : "تسجيل الخروج من جميع الحسابات"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden von allen Konten"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2856,6 +3150,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein unbekannter Fehler ist aufgetreten."
           }
         },
         "el" : {
@@ -2916,6 +3216,12 @@
             "value" : "نجاح"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erfolg"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2972,6 +3278,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تبديل الحساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto wechseln"
           }
         },
         "el" : {
@@ -3032,6 +3344,12 @@
             "value" : "للمتابعة"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3088,6 +3406,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "للمتابعة إلى %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter zu %@"
           }
         },
         "el" : {
@@ -3148,6 +3472,12 @@
             "value" : "تعذر حذف العضوية: معرف المستخدم مفقود"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte keine Mitgliedschaft gelöscht werden: userId fehlt"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3204,6 +3534,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذر تقييم السياسة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte keine Richtlinie ausgewertet werden."
           }
         },
         "el" : {
@@ -3264,6 +3600,12 @@
             "value" : "تعذر الحصول على التحدي لمفتاح المرور."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte kein Challenge für die Passkey erhalten werden."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3320,6 +3662,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذر الحصول على معرف المستخدم لمفتاح المرور."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte keine userId für die Passkey erhalten werden."
           }
         },
         "el" : {
@@ -3380,6 +3728,12 @@
             "value" : "تعذر الحصول على اسم المستخدم لمفتاح المرور."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte kein Benutzername für die Passkey erhalten werden."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3436,6 +3790,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذر الحصول على بيانات اعتماد Apple ID الخاصة بك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte keine Apple ID-Anmeldedaten erhalten werden."
           }
         },
         "el" : {
@@ -3496,6 +3856,12 @@
             "value" : "تعذر استرداد رمز هوية Apple."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte kein Apple-Identitäts-Token erhalten werden."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3552,6 +3918,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذر تحديث العضوية: معرف المستخدم مفقود"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es konnte keine Mitgliedschaft aktualisiert werden: userId fehlt"
           }
         },
         "el" : {
@@ -3612,6 +3984,12 @@
             "value" : "تحديث الملف الشخصي"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil aktualisieren"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3668,6 +4046,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استخدام رمز النسخ الاحتياطي"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Sicherungscode verwenden"
           }
         },
         "el" : {
@@ -3728,6 +4112,12 @@
             "value" : "استخدام طريقة أخرى"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine andere Methode verwenden"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3784,6 +4174,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استخدام عنوان البريد الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Adresse verwenden"
           }
         },
         "el" : {
@@ -3844,6 +4240,12 @@
             "value" : "استخدام عنوان البريد الإلكتروني أو اسم المستخدم"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie Ihre E-Mail-Adresse oder Ihren Benutzernamen ein"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3900,6 +4302,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استخدام رقم الهاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonnummer eingeben"
           }
         },
         "el" : {
@@ -3960,6 +4368,12 @@
             "value" : "استخدام اسم المستخدم"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzernamen verwenden"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4016,6 +4430,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استخدام تطبيق المصادقة الخاص بك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Authentifizierungs-App verwenden"
           }
         },
         "el" : {
@@ -4076,6 +4496,12 @@
             "value" : "استخدام مفتاح المرور الخاص بك"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passkey verwenden"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4132,6 +4558,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استخدام مفتاح المرور الخاص بك يؤكد هويتك. قد يطلب جهازك بصمة إصبعك أو وجهك أو قفل الشاشة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Verwendung Ihrer Passkey bestätigt, dass Sie es sind. Ihr Gerät kann Sie nach Ihrer Fingerabdruck, Gesicht oder Bildschirmsperre fragen."
           }
         },
         "el" : {
@@ -4192,6 +4624,12 @@
             "value" : "جاري التحقق..."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird überprüft..."
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4250,6 +4688,12 @@
             "value" : "مرحباً! سجل دخولك للمتابعة"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen! Melden Sie sich an, um fortzufahren"
+          }
+        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4306,6 +4750,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "عذراً، هناك خطأ ما"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoppla, etwas ist schiefgelaufen"
           }
         },
         "el" : {
