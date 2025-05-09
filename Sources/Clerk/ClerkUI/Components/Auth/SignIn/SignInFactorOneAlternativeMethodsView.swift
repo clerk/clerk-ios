@@ -70,10 +70,6 @@
     var body: some View {
       ScrollView {
         VStack(spacing: 0) {
-          AppLogoView()
-            .frame(maxHeight: 44)
-            .padding(.bottom, 24)
-
           VStack(spacing: 8) {
             HeaderView(style: .title, text: "Use another method")
             HeaderView(style: .subtitle, text: "Facing issues? You can use any of these methods to sign in.")

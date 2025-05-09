@@ -27,10 +27,6 @@ struct SignInFactorOnePasskeyView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        AppLogoView()
-          .frame(maxHeight: 44)
-          .padding(.bottom, 24)
-
         VStack(spacing: 8) {
           HeaderView(style: .title, text: "Use your passkey")
           HeaderView(style: .subtitle, text: "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock.")
