@@ -39,6 +39,11 @@
       guard let authConfig else { return false }
       return authConfig.singleSessionMode == false
     }
+    
+    var billingIsEnabled: Bool {
+      guard let commerceSettings else { return false }
+      return commerceSettings.billing.enabled
+    }
 
   }
 

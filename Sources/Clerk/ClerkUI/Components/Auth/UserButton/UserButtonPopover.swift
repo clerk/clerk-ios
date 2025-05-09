@@ -57,7 +57,7 @@
             Button {
               //
             } label: {
-              UserButtonPopoverRow(icon: "icon-cog", text: "Manage account")
+              UserProfileRowView(icon: "icon-cog", text: "Manage account")
             }
             .overlay(alignment: .bottom) {
               Rectangle()
@@ -71,7 +71,7 @@
               Button {
                 accountSwitcherIsPresented = true
               } label: {
-                UserButtonPopoverRow(icon: "icon-switch", text: "Switch account")
+                UserProfileRowView(icon: "icon-switch", text: "Switch account")
               }
               .overlay(alignment: .bottom) {
                 Rectangle()
@@ -86,7 +86,7 @@
               guard let sessionId = clerk.session?.id else { return }
               await signOut(sessionId: sessionId)
             } label: { isRunning in
-              UserButtonPopoverRow(icon: "icon-sign-out", text: "Sign out")
+              UserProfileRowView(icon: "icon-sign-out", text: "Sign out")
                 .overlayProgressView(isActive: isRunning)
             }
             .overlay(alignment: .bottom) {
