@@ -28,10 +28,6 @@ struct SignInFactorOnePasswordView: View {
 
     ScrollView {
       VStack(spacing: 0) {
-        AppLogoView()
-          .frame(maxHeight: 44)
-          .padding(.bottom, 24)
-
         VStack(spacing: 8) {
           HeaderView(style: .title, text: "Enter password")
           HeaderView(style: .subtitle, text: "Enter the password for your account")

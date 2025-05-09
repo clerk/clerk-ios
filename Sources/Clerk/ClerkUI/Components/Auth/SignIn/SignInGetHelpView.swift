@@ -17,10 +17,6 @@
     var body: some View {
       ScrollView {
         VStack(spacing: 0) {
-          AppLogoView()
-            .frame(maxHeight: 44)
-            .padding(.bottom, 24)
-
           VStack(spacing: 8) {
             HeaderView(style: .title, text: "Get help")
             HeaderView(style: .subtitle, text: "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible.")
