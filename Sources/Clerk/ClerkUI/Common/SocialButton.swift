@@ -27,6 +27,7 @@ struct SocialButton: View {
           .scaledToFit()
           .frame(width: 21, height: 21)
       }
+      .fade(duration: 0.25)
       .scaledToFit()
       .frame(width: 21, height: 21)
   }

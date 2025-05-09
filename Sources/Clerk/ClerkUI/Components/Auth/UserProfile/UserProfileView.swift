@@ -15,6 +15,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
+    @State private var path = NavigationPath()
     @State private var authViewIsPresented = false
     @State private var accountSwitcherIsPresented = false
     @State private var error: Error?
@@ -87,7 +88,7 @@
     }
 
     public var body: some View {
-      NavigationStack {
+      NavigationStack(path: $path) {
         VStack(spacing: 0) {
           if isInSheet {
             HStack {
@@ -114,41 +115,32 @@
               }
 
               row(icon: "icon-profile", text: "Profile") {
-                //
+                path.append(Destination.profileDetail)
               }
 
               row(icon: "icon-security", text: "Security") {
                 //
               }
 
-            }
-          }
-          .scrollBounceBehavior(isInSheet ? .basedOnSize : .automatic)
+              if clerk.environment.mutliSessionModeIsEnabled {
+                if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
+                  row(icon: "icon-switch", text: "Switch account") {
+                    accountSwitcherIsPresented = true
+                  }
+                }
 
-          VStack(spacing: 0) {
-            if clerk.environment.mutliSessionModeIsEnabled {
-              if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
-                row(icon: "icon-switch", text: "Switch account") {
-                  accountSwitcherIsPresented = true
+                row(icon: "icon-plus", text: "Add account") {
+                  authViewIsPresented = true
                 }
               }
 
-              row(icon: "icon-plus", text: "Add account") {
-                authViewIsPresented = true
+              row(icon: "icon-sign-out", text: "Sign out") {
+                guard let sessionId = clerk.session?.id else { return }
+                await signOut(sessionId: sessionId)
               }
             }
-
-            row(icon: "icon-sign-out", text: "Sign out") {
-              guard let sessionId = clerk.session?.id else { return }
-              await signOut(sessionId: sessionId)
-            }
           }
-          .background(theme.colors.backgroundSecondary)
-          .overlay(alignment: .top) {
-            Rectangle()
-              .frame(height: 1)
-              .foregroundStyle(theme.colors.border)
-          }
+          .scrollBounceBehavior(isInSheet ? .basedOnSize : .automatic)
 
           SecuredByClerkView()
             .padding(16)
@@ -169,9 +161,15 @@
             }
           }
         }
+        .navigationDestination(for: Destination.self) {
+          $0.view
+        }
       }
+      .tint(theme.colors.primary)
       .animation(.default) {
-        $0.blur(radius: accountSwitcherIsPresented ? 12 : 0)
+        $0.blur(
+          radius: accountSwitcherIsPresented || authViewIsPresented ? 12 : 0
+        )
       }
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
@@ -208,6 +206,20 @@
       }
     }
 
+  }
+
+  extension UserProfileView {
+    enum Destination: Hashable {
+      case profileDetail
+      
+      @ViewBuilder
+      var view: some View {
+        switch self {
+        case .profileDetail:
+          UserProfileDetailView()
+        }
+      }
+    }
   }
 
   #Preview("In sheet") {
