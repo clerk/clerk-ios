@@ -137,6 +137,7 @@
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
       .padding(.vertical, 16)
+      .background(theme.colors.background)
       .overlay(alignment: .bottom) {
         Rectangle()
           .frame(height: 1)
@@ -151,31 +152,53 @@
             ScrollView {
               VStack(spacing: 0) {
                 Section {
-                  ForEach(sortedEmails) { emailAddress in
-                    emailRow(emailAddress)
+                  Group {
+                    ForEach(sortedEmails) { emailAddress in
+                      emailRow(emailAddress)
+                    }
+                    
+                    UserProfileButtonRow(text: "Add email address") {
+                      // present add email
+                    }
                   }
+                  .background(theme.colors.background)
+
                 } header: {
                   UserProfileSectionHeader(text: "EMAIL ADDRESSES")
                 }
 
                 Section {
-                  ForEach(sortedPhoneNumbers) { phoneNumber in
-                    phoneRow(phoneNumber)
+                  Group {
+                    ForEach(sortedPhoneNumbers) { phoneNumber in
+                      phoneRow(phoneNumber)
+                    }
+                    
+                    UserProfileButtonRow(text: "Add phone number") {
+                      // present add phone number
+                    }
                   }
+                  .background(theme.colors.background)
                 } header: {
                   UserProfileSectionHeader(text: "PHONE NUMBERS")
                 }
 
                 Section {
-                  ForEach(user.externalAccounts) { externalAccount in
-                    externalAccountRow(externalAccount)
+                  Group {
+                    ForEach(user.externalAccounts) { externalAccount in
+                      externalAccountRow(externalAccount)
+                    }
+                    
+                    UserProfileButtonRow(text: "Connect account") {
+                      // present connect account
+                    }
                   }
+                  .background(theme.colors.background)
                 } header: {
                   UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
                 }
               }
             }
-            .background(theme.colors.background)
+            .background(theme.colors.backgroundSecondary)
 
             SecuredByClerkView()
               .padding(16)
@@ -184,11 +207,9 @@
           }
         }
       }
-      .toolbarBackground(theme.colors.backgroundSecondary, for: .navigationBar)
-      .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .principal) {
-          Text("Account", bundle: .module)
+          Text("Profile", bundle: .module)
             .font(theme.fonts.headline)
             .fontWeight(.semibold)
             .foregroundStyle(theme.colors.text)

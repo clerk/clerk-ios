@@ -135,6 +135,34 @@
         }
       }
     },
+    "Add email address" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إضافة عنوان بريد إلكتروني" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "E-Mail-Adresse hinzufügen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Προσθήκη διεύθυνσης email" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agregar dirección de correo electrónico" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter une adresse e-mail" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ईमेल पता जोड़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi indirizzo email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを追加" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이메일 주소 추가" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加电子邮箱地址" } }
+      }
+    },
+    "Add phone number" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إضافة رقم هاتف" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Telefonnummer hinzufügen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Προσθήκη αριθμού τηλεφώνου" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agregar número de teléfono" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter un numéro de téléphone" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फ़ोन नंबर जोड़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi numero di telefono" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号を追加" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전화번호 추가" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加电话号码" } }
+      }
+    },
     "An unknown error occurred." : {
       "localizations" : {
         "ar" : {
@@ -453,6 +481,20 @@
             "value" : "确认密码"
           }
         }
+      }
+    },
+    "Connect account" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "ربط الحساب" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto verbinden" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Σύνδεση λογαριασμού" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conectar cuenta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connecter le compte" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "खाता कनेक्ट करें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを接続" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계정 연결" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接账户" } }
       }
     },
     "CONNECTED ACCOUNTS" : {
