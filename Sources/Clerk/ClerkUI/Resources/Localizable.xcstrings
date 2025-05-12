@@ -137,30 +137,144 @@
     },
     "Add email address" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إضافة عنوان بريد إلكتروني" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "E-Mail-Adresse hinzufügen" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Προσθήκη διεύθυνσης email" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agregar dirección de correo electrónico" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter une adresse e-mail" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ईमेल पता जोड़ें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi indirizzo email" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを追加" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이메일 주소 추가" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加电子邮箱地址" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة عنوان بريد إلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Adresse hinzufügen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Προσθήκη διεύθυνσης email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar dirección de correo electrónico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter une adresse e-mail"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ईमेल पता जोड़ें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi indirizzo email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスを追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 주소 추가"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加电子邮箱地址"
+          }
+        }
       }
     },
     "Add phone number" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إضافة رقم هاتف" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Telefonnummer hinzufügen" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Προσθήκη αριθμού τηλεφώνου" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agregar número de teléfono" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter un numéro de téléphone" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फ़ोन नंबर जोड़ें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi numero di telefono" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号を追加" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전화번호 추가" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加电话号码" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة رقم هاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonnummer hinzufügen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Προσθήκη αριθμού τηλεφώνου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar número de teléfono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter un numéro de téléphone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फ़ोन नंबर जोड़ें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi numero di telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호 추가"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加电话号码"
+          }
+        }
+      }
+    },
+    "Add two-step verification" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إضافة التحقق بخطوتين" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zwei-Faktor-Authentifizierung hinzufügen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Προσθήκη επαλήθευσης δύο βημάτων" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agregar verificación en dos pasos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter la vérification en deux étapes" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "दो-चरणीय सत्यापन जोड़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi verifica in due passaggi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2段階認証を追加" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "2단계 인증 추가" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加两步验证" } }
       }
     },
     "An unknown error occurred." : {
@@ -225,6 +339,48 @@
             "value" : "出现错误。请重试。"
           }
         }
+      }
+    },
+    "Authenticator app" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "تطبيق المصادقة" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Authentifizierungs-App" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Εφαρμογή ελέγχου ταυτότητας" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aplicación de autenticación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Application d'authentification" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "प्रमाणक ऐप" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "App di autenticazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "認証アプリ" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "인증 앱" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "身份验证器应用" } }
+      }
+    },
+    "Backup codes" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "رموز النسخ الاحتياطي" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Backup-Codes" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Εφεδρικοί κωδικοί" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Códigos de respaldo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Codes de secours" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "बैकअप कोड" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Codici di backup" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バックアップコード" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "백업 코드" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备用码" } }
+      }
+    },
+    "Change password" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "تغيير كلمة المرور" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Passwort ändern" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Αλλαγή κωδικού πρόσβασης" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cambiar la contraseña" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Changer le mot de passe" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पासवर्ड बदलें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Cambia password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードを変更" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "비밀번호 변경" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "更改密码" } }
       }
     },
     "Check your email" : {
@@ -485,16 +641,66 @@
     },
     "Connect account" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "ربط الحساب" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto verbinden" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Σύνδεση λογαριασμού" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conectar cuenta" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connecter le compte" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "खाता कनेक्ट करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega account" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを接続" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계정 연결" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接账户" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ربط الحساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto verbinden"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύνδεση λογαριασμού"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar cuenta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecter le compte"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "खाता कनेक्ट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを接続"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 연결"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接账户"
+          }
+        }
       }
     },
     "CONNECTED ACCOUNTS" : {
@@ -2417,6 +2623,20 @@
         }
       }
     },
+    "PASSWORD" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "كلمة المرور" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "PASSWORT" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "ΚΩΔΙΚΟΣ ΠΡΟΣΒΑΣΗΣ" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "CONTRASEÑA" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "MOT DE PASSE" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पासवर्ड" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "PASSWORD" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワード" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "비밀번호" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "密码" } }
+      }
+    },
     "PHONE NUMBERS" : {
       "localizations" : {
         "ar" : {
@@ -3442,6 +3662,20 @@
         }
       }
     },
+    "SMS code" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "رمز الرسائل القصيرة" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "SMS-Code" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Κωδικός SMS" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Código SMS" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Code SMS" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "एसएमएस कोड" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Codice SMS" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "SMSコード" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "SMS 코드" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "短信验证码" } }
+      }
+    },
     "Something went wrong. Please try again." : {
       "localizations" : {
         "ar" : {
@@ -3760,6 +3994,20 @@
             "value" : "继续前往%@"
           }
         }
+      }
+    },
+    "TWO-STEP VERIFICATION" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "التحقق بخطوتين" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ZWEI-FACH-VERIFIZIERUNG" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "ΕΠΑΛΗΘΕΥΣΗ ΔΥΟ ΒΗΜΑΤΩΝ" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "VERIFICACIÓN EN DOS PASOS" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "VÉRIFICATION EN DEUX ÉTAPES" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "दो-चरणीय सत्यापन" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "VERIFICA IN DUE PASSAGGI" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2段階認証" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "2단계 인증" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "两步验证" } }
       }
     },
     "Unable to delete membership: missing userId" : {
