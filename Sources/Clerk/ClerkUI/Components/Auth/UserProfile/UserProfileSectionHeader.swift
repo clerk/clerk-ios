@@ -24,7 +24,6 @@ struct UserProfileSectionHeader: View {
       .padding(.top, 32)
       .padding(.bottom, 16)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(theme.colors.backgroundSecondary)
       .overlay(alignment: .bottom) {
         Rectangle()
           .frame(height: 1)
@@ -34,7 +33,10 @@ struct UserProfileSectionHeader: View {
 }
 
 #Preview {
+  @Previewable @Environment(\.clerkTheme) var theme
+  
   UserProfileSectionHeader(text: "EMAIL ADDRESSES")
+    .background(theme.colors.backgroundSecondary)
 }
 
 #endif

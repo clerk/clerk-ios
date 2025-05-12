@@ -58,11 +58,6 @@
       }
       .padding(32)
       .frame(maxWidth: .infinity)
-      .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
-      }
     }
 
     @ViewBuilder
@@ -83,7 +78,6 @@
           .foregroundStyle(theme.colors.border)
       }
       .buttonStyle(.pressedBackground)
-      .background(theme.colors.background)
       .simultaneousGesture(TapGesture())
     }
 
@@ -96,33 +90,51 @@
                 userProfileHeader(user)
               }
 
-              row(icon: "icon-profile", text: "Profile") {
-                path.append(Destination.profileDetail)
-              }
+              VStack(spacing: 48) {
+                VStack(spacing: 0) {
+                  row(icon: "icon-profile", text: "Profile") {
+                    path.append(Destination.profileDetail)
+                  }
 
-              row(icon: "icon-security", text: "Security") {
-                //
-              }
-
-              if clerk.environment.mutliSessionModeIsEnabled {
-                if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
-                  row(icon: "icon-switch", text: "Switch account") {
-                    accountSwitcherIsPresented = true
+                  row(icon: "icon-security", text: "Security") {
+                    //
                   }
                 }
-
-                row(icon: "icon-plus", text: "Add account") {
-                  authViewIsPresented = true
+                .background(theme.colors.background)
+                .overlay(alignment: .top) {
+                  Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(theme.colors.border)
                 }
-              }
 
-              row(icon: "icon-sign-out", text: "Sign out") {
-                guard let sessionId = clerk.session?.id else { return }
-                await signOut(sessionId: sessionId)
+                VStack(spacing: 0) {
+                  if clerk.environment.mutliSessionModeIsEnabled {
+                    if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
+                      row(icon: "icon-switch", text: "Switch account") {
+                        accountSwitcherIsPresented = true
+                      }
+                    }
+
+                    row(icon: "icon-plus", text: "Add account") {
+                      authViewIsPresented = true
+                    }
+                  }
+
+                  row(icon: "icon-sign-out", text: "Sign out") {
+                    guard let sessionId = clerk.session?.id else { return }
+                    await signOut(sessionId: sessionId)
+                  }
+                }
+                .background(theme.colors.background)
+                .overlay(alignment: .top) {
+                  Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(theme.colors.border)
+                }
               }
             }
           }
-          .background(theme.colors.backgroundSecondary.ignoresSafeArea())
+          .background(theme.colors.backgroundSecondary)
 
           SecuredByClerkView()
             .padding(16)
