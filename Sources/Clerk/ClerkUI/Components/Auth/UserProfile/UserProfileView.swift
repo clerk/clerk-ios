@@ -58,7 +58,6 @@
       }
       .padding(32)
       .frame(maxWidth: .infinity)
-      .background(theme.colors.backgroundSecondary)
       .overlay(alignment: .bottom) {
         Rectangle()
           .frame(height: 1)
@@ -84,30 +83,13 @@
           .foregroundStyle(theme.colors.border)
       }
       .buttonStyle(.pressedBackground)
+      .background(theme.colors.background)
       .simultaneousGesture(TapGesture())
     }
 
     public var body: some View {
       NavigationStack(path: $path) {
         VStack(spacing: 0) {
-          if isInSheet {
-            HStack {
-              DismissButton()
-                .hidden()
-              Spacer()
-              Text("Account", bundle: .module)
-                .font(theme.fonts.headline)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.text)
-                .frame(minHeight: 22)
-              Spacer()
-              DismissButton()
-            }
-            .padding(.vertical, 11)
-            .padding(.horizontal, 16)
-            .background(theme.colors.backgroundSecondary)
-          }
-
           ScrollView {
             VStack(spacing: 0) {
               if let user {
@@ -140,7 +122,7 @@
               }
             }
           }
-          .scrollBounceBehavior(isInSheet ? .basedOnSize : .automatic)
+          .background(theme.colors.backgroundSecondary.ignoresSafeArea())
 
           SecuredByClerkView()
             .padding(16)
@@ -149,15 +131,17 @@
         }
         .animation(.default, value: user)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(isInSheet ? .hidden : .visible, for: .navigationBar)
-        .toolbarBackground(theme.colors.backgroundSecondary, for: .navigationBar)
         .toolbar {
-          if !isInSheet {
-            ToolbarItem(placement: .principal) {
-              Text("Account", bundle: .module)
-                .font(theme.fonts.headline)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.text)
+          ToolbarItem(placement: .principal) {
+            Text("Account", bundle: .module)
+              .font(theme.fonts.headline)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.text)
+          }
+
+          if isInSheet {
+            ToolbarItem(placement: .topBarTrailing) {
+              DismissButton()
             }
           }
         }
@@ -211,7 +195,7 @@
   extension UserProfileView {
     enum Destination: Hashable {
       case profileDetail
-      
+
       @ViewBuilder
       var view: some View {
         switch self {
