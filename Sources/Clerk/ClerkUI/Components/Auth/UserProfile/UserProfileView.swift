@@ -97,7 +97,7 @@
                   }
 
                   row(icon: "icon-security", text: "Security") {
-                    //
+                    path.append(Destination.security)
                   }
                 }
                 .background(theme.colors.background)
@@ -108,7 +108,7 @@
                 }
 
                 VStack(spacing: 0) {
-                  if clerk.environment.mutliSessionModeIsEnabled {
+                  if clerk.environment.isMutliSessionModeEnabled {
                     if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
                       row(icon: "icon-switch", text: "Switch account") {
                         accountSwitcherIsPresented = true
@@ -207,12 +207,15 @@
   extension UserProfileView {
     enum Destination: Hashable {
       case profileDetail
+      case security
 
       @ViewBuilder
       var view: some View {
         switch self {
         case .profileDetail:
           UserProfileDetailView()
+        case .security:
+          UserProfileSecurityView()
         }
       }
     }

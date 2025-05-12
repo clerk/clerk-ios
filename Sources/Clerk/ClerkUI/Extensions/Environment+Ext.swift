@@ -34,15 +34,50 @@
         }
         .map(\.key)
     }
-    
-    var mutliSessionModeIsEnabled: Bool {
+
+    var isMutliSessionModeEnabled: Bool {
       guard let authConfig else { return false }
       return authConfig.singleSessionMode == false
     }
-    
-    var billingIsEnabled: Bool {
+
+    var isBillingEnabled: Bool {
       guard let commerceSettings else { return false }
       return commerceSettings.billing.enabled
+    }
+
+    var isPasswordEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "password" && value.enabled
+      }
+    }
+    
+    var isMfaEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { _, value in
+        value.enabled && value.usedForSecondFactor
+      }
+    }
+    
+    var isMfaAuthenticatorAppEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "authenticator_app" && value.enabled && value.usedForSecondFactor
+      }
+    }
+    
+    var isMfaPhoneCodeEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "phone_number" && value.enabled && value.usedForSecondFactor
+      }
+    }
+    
+    var isMfaBackupCodeEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "backup_code" && value.enabled && value.usedForSecondFactor
+      }
     }
 
   }

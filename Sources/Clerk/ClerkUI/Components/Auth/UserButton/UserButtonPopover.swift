@@ -67,7 +67,7 @@
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
 
-            if clerk.environment.mutliSessionModeIsEnabled {
+            if clerk.environment.isMutliSessionModeEnabled {
               Button {
                 accountSwitcherIsPresented = true
               } label: {
