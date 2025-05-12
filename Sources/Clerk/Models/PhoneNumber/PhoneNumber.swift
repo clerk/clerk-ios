@@ -117,9 +117,21 @@ extension PhoneNumber {
   static var mock: PhoneNumber {
     PhoneNumber(
       id: "1",
-      phoneNumber: "15555550100",
+      phoneNumber: "+15555550100",
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
+      verification: .mockPhoneCodeVerifiedVerification,
+      linkedTo: nil,
+      backupCodes: nil
+    )
+  }
+  
+  static var mockMfa: PhoneNumber {
+    PhoneNumber(
+      id: "2",
+      phoneNumber: "+15555550101",
+      reservedForSecondFactor: true,
+      defaultSecondFactor: true,
       verification: .mockPhoneCodeVerifiedVerification,
       linkedTo: nil,
       backupCodes: nil
