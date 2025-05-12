@@ -78,7 +78,7 @@ extension Clerk.Environment.UserSettings {
           required: false,
           usedForFirstFactor: true,
           firstFactors: nil,
-          usedForSecondFactor: false,
+          usedForSecondFactor: true,
           secondFactors: nil,
           verifications: nil,
           verifyAtSignUp: true
@@ -92,6 +92,36 @@ extension Clerk.Environment.UserSettings {
           secondFactors: nil,
           verifications: nil,
           verifyAtSignUp: false
+        ),
+        "password": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
+        ),
+        "authenticator_app": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: true,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
+        ),
+        "backup_code": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: true,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
         )
       ],
       signUp: .init(

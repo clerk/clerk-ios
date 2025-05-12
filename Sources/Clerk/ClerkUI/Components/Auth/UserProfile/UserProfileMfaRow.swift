@@ -1,0 +1,103 @@
+//
+//  UserProfileMfaRow.swift
+//  Clerk
+//
+//  Created by Mike Pitre on 5/12/25.
+//
+
+import SwiftUI
+
+struct UserProfileMfaRow: View {
+  @Environment(\.clerkTheme) private var theme
+  
+  enum Style {
+    case authenticatorApp
+    case sms(phoneNumber: PhoneNumber)
+    case backupCodes
+  }
+  
+  @ViewBuilder
+  private var icon: Image {
+    return switch style {
+    case .authenticatorApp:
+      Image("icon-key", bundle: .module)
+    case .sms:
+      Image("icon-phone", bundle: .module)
+    case .backupCodes:
+      Image("icon-lock", bundle: .module)
+    }
+  }
+  
+  @ViewBuilder
+  private var text: Text {
+    return switch style {
+    case .authenticatorApp:
+      Text("Authenticator app", bundle: .module)
+    case .sms(let phoneNumber):
+      Text(verbatim: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
+    case .backupCodes:
+      Text("Backup codes", bundle: .module)
+    }
+  }
+  
+  let style: Style
+  var isPrimary: Bool = false
+  
+  var body: some View {
+    HStack(spacing: 0) {
+      HStack(alignment: .top, spacing: 16) {
+        icon
+          .resizable()
+          .renderingMode(.template)
+          .scaledToFit()
+          .frame(width: 24, height: 24)
+          .foregroundStyle(theme.colors.textSecondary)
+        VStack(alignment: .leading, spacing: 4) {
+          if isPrimary {
+            Text("primary", bundle: .module)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.textSecondary)
+              .frame(minHeight: 20)
+          }
+          
+          if case .sms = style {
+            Text("SMS code", bundle: .module)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.textSecondary)
+              .frame(minHeight: 20)
+          }
+          
+          text
+            .font(theme.fonts.body)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.text)
+            .frame(minHeight: 22)
+        }
+      }
+    }
+    .padding(.horizontal, 24)
+    .padding(.vertical, 16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .contentShape(.rect)
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .frame(height: 1)
+        .foregroundStyle(theme.colors.border)
+    }
+  }
+}
+
+#Preview {
+  UserProfileMfaRow(
+    style: .authenticatorApp,
+    isPrimary: true
+  )
+  
+  UserProfileMfaRow(
+    style: .sms(phoneNumber: .mock)
+  )
+  
+  UserProfileMfaRow(
+    style: .backupCodes
+  )
+}
