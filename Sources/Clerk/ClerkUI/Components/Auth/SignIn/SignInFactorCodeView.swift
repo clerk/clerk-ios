@@ -25,6 +25,10 @@
 
     let factor: Factor
     var isSecondFactor: Bool = false
+    
+    var signIn: SignIn? {
+      clerk.client?.signIn
+    }
 
     enum VerificationState {
       case `default`
@@ -49,10 +53,6 @@
       default:
         return verificationState.showResend
       }
-    }
-
-    var signIn: SignIn? {
-      clerk.client?.signIn
     }
 
     var title: LocalizedStringKey {
