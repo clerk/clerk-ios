@@ -1,15 +1,15 @@
 //
-//  SignInFactorOneView.swift
+//  SwiftUIView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/15/25.
+//  Created by Mike Pitre on 5/13/25.
 //
 
 #if os(iOS)
 
   import SwiftUI
 
-  struct SignInFactorOneView: View {
+  struct SignInFactorTwoView: View {
     @Environment(\.clerkTheme) private var theme
 
     let factor: Factor
@@ -17,15 +17,12 @@
     @ViewBuilder
     var viewForFactor: some View {
       switch factor.strategy {
-      case "passkey":
-        SignInFactorOnePasskeyView(factor: factor)
-      case "password":
-        SignInFactorOnePasswordView(factor: factor)
-      case "email_code",
-        "phone_code",
-        "reset_password_email_code",
-        "reset_password_phone_code":
-        SignInFactorOneCodeView(factor: factor)
+      case "totp":
+        Text(verbatim: "totp")
+      case "sms":
+        Text(verbatim: "sms")
+      case "backup_code":
+        Text(verbatim: "backup code")
       default:
         SignInGetHelpView()
       }
@@ -40,7 +37,7 @@
   #Preview {
     SignInFactorOneView(
       factor: .init(
-        strategy: "passkey"
+        strategy: "totp"
       )
     )
   }
