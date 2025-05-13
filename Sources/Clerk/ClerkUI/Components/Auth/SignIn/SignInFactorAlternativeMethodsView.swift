@@ -1,5 +1,5 @@
 //
-//  SignInFactorOneAlternativeMethodsView.swift
+//  SignInFactorAlternativeMethodsView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/23/25.
@@ -10,7 +10,7 @@
   import Factory
   import SwiftUI
 
-  struct SignInFactorOneAlternativeMethodsView: View {
+  struct SignInFactorAlternativeMethodsView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
@@ -18,17 +18,26 @@
     @State private var error: Error?
 
     let currentFactor: Factor
+    var isSecondFactor: Bool = false
 
     var signIn: SignIn? {
       clerk.client?.signIn
     }
 
     var alternativeFactors: [Factor] {
-      signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
+      if isSecondFactor {
+        signIn?.alternativeSecondFactors(currentFactor: currentFactor) ?? []
+      } else {
+        signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
+      }
     }
 
     var socialProviders: [OAuthProvider] {
-      clerk.environment.authenticatableSocialProviders
+      if isSecondFactor {
+        []
+      } else {
+        clerk.environment.authenticatableSocialProviders
+      }
     }
 
     func actionText(factor: Factor) -> LocalizedStringKey? {
@@ -62,6 +71,10 @@
         return "icon-email"
       case "passkey":
         return "icon-fingerprint"
+      case "totp":
+        return "icon-key"
+      case "backup_code":
+        return "icon-lock"
       default:
         return nil
       }
@@ -86,12 +99,22 @@
               }
             }
 
-            TextDivider(string: "or")
+            if !socialProviders.isEmpty && !alternativeFactors.isEmpty {
+              TextDivider(string: "or")
+            }
 
             ForEach(alternativeFactors, id: \.self) { factor in
               if let actionText = actionText(factor: factor) {
                 Button {
-                  authState.path.append(AuthView.Destination.signInFactorOne(factor: factor))
+                  if isSecondFactor {
+                    authState.path.append(
+                      AuthView.Destination.signInFactorTwo(factor: factor)
+                    )
+                  } else {
+                    authState.path.append(
+                      AuthView.Destination.signInFactorOne(factor: factor)
+                    )
+                  }
                 } label: {
                   HStack(spacing: 6) {
                     if let iconName = iconName(factor: factor) {
@@ -125,7 +148,7 @@
     }
   }
 
-  extension SignInFactorOneAlternativeMethodsView {
+  extension SignInFactorAlternativeMethodsView {
 
     func signInWithProvider(_ provider: OAuthProvider) async {
       do {
@@ -160,7 +183,7 @@
   }
 
   #Preview {
-    SignInFactorOneAlternativeMethodsView(
+    SignInFactorAlternativeMethodsView(
       currentFactor: .mockEmailCode
     )
     .environment(\.clerk, .mock)
