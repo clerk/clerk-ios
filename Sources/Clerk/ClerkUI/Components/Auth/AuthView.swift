@@ -57,7 +57,8 @@ extension AuthView {
     case signInStart
     case signInFactorOne(factor: Factor)
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
-    case signInFactorTwo
+    case signInFactorTwo(factor: Factor)
+    case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
     case forgotPassword
     case setNewPassword
     
@@ -70,8 +71,10 @@ extension AuthView {
         SignInFactorOneView(factor: factor)
       case .signInFactorOneUseAnotherMethod(let currentFactor):
         SignInFactorOneAlternativeMethodsView(currentFactor: currentFactor)
-      case .signInFactorTwo:
+      case .signInFactorTwo(let factor):
         Text(verbatim: "Second Factor")
+      case .signInFactorTwoUseAnotherMethod(let currentFactor):
+        Text(verbatim: "Second Factor Use Another Method")
       case .forgotPassword:
         SignInFactorOneForgotPasswordView()
       case .setNewPassword:
