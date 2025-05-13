@@ -91,7 +91,8 @@
     }
 
     func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
-      supportedSecondFactors?.filter { $0 != currentFactor } ?? []
+      (supportedSecondFactors?.filter { $0 != currentFactor } ?? [])
+        .sorted(using: Factor.backupCodePrefComparator)
     }
 
     var resetPasswordFactor: Factor? {
