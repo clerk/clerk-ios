@@ -41,7 +41,7 @@ struct UserProfileMfaRow: View {
   }
   
   let style: Style
-  var isPrimary: Bool = false
+  var isDefault: Bool = false
   
   var body: some View {
     HStack(spacing: 0) {
@@ -53,8 +53,8 @@ struct UserProfileMfaRow: View {
           .frame(width: 24, height: 24)
           .foregroundStyle(theme.colors.textSecondary)
         VStack(alignment: .leading, spacing: 4) {
-          if isPrimary {
-            Badge(key: "Primary", style: .secondary)
+          if isDefault {
+            Badge(key: "Default", style: .secondary)
           }
           
           HStack(spacing: 4) {
@@ -84,7 +84,7 @@ struct UserProfileMfaRow: View {
 #Preview {
   UserProfileMfaRow(
     style: .authenticatorApp,
-    isPrimary: true
+    isDefault: true
   )
   
   UserProfileMfaRow(
