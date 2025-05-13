@@ -46,7 +46,12 @@ final class AuthState {
       }
       path.append(AuthView.Destination.signInFactorOne(factor: factor))
     case .needsSecondFactor:
-      path.append(AuthView.Destination.signInFactorTwo)
+      guard let factor = signIn.startingSecondFactor else {
+        path = NavigationPath()
+        return
+      }
+      
+      path.append(AuthView.Destination.signInFactorTwo(factor: factor))
     case .needsNewPassword:
       path.append(AuthView.Destination.setNewPassword)
     case .unknown:
