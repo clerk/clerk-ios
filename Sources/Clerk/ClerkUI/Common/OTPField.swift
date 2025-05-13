@@ -14,6 +14,7 @@ struct OTPField: View {
 
   @Binding var code: String
   var numberOfInputs: Int = 6
+  @FocusState.Binding var isFocused: Bool
   var onCodeEntry: ((String) async -> FieldState)
   
   enum FieldState {
@@ -25,8 +26,7 @@ struct OTPField: View {
   @State private var cursorAnimating = false
   @State private var inputSize = CGSize.zero
   @State private var errorTrigger = false
-  @FocusState private var isFocused: Bool
-
+  
   var body: some View {
     HStack(spacing: 12) {
       ForEach(0..<numberOfInputs, id: \.self) { index in
@@ -68,9 +68,6 @@ struct OTPField: View {
       } else if code.isEmpty {
         fieldState = .default
       }
-    }
-    .onFirstAppear {
-      isFocused = true
     }
   }
 
@@ -136,13 +133,14 @@ struct OTPField: View {
 
 #Preview {
   @Previewable @State var code = ""
+  @Previewable @FocusState var isFocused: Bool
   
   VStack(spacing: 20) {
-    OTPField(code: $code) { code in
+    OTPField(code: $code, isFocused: $isFocused) { code in
       return .default
     }
     
-    OTPField(code: $code) { code in
+    OTPField(code: $code, isFocused: $isFocused) { code in
       return .error
     }
   }

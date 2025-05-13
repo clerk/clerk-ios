@@ -78,5 +78,13 @@ extension Factor {
   static var mockResetPasswordPhoneCode: Factor {
     Factor(strategy: "reset_password_phone_code")
   }
+  
+  static var mockTotp: Factor {
+    Factor(strategy: "totp")
+  }
+  
+  static var mockBackupCode: Factor {
+    Factor(strategy: "backup_code")
+  }
 
 }

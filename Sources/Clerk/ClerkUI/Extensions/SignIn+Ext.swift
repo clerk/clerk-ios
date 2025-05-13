@@ -12,11 +12,7 @@
   extension SignIn {
 
     @MainActor
-    var startingSignInFactor: Factor? {
-      guard let supportedFirstFactors, !supportedFirstFactors.isEmpty else {
-        return nil
-      }
-
+    var startingFirstFactor: Factor? {
       let preferredSignInStrategy = Clerk.shared.environment.displayConfig?.preferredSignInStrategy
 
       if preferredSignInStrategy == .password {
@@ -80,6 +76,22 @@
       }
 
       return (firstFactors ?? []).sorted(using: Factor.allStrategiesButtonsComparator)
+    }
+
+    var startingSecondFactor: Factor? {
+      if let totp = supportedSecondFactors?.first(where: { $0.strategy == "totp" }) {
+        return totp
+      }
+
+      if let phoneCode = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" }) {
+        return phoneCode
+      }
+
+      return supportedSecondFactors?.first
+    }
+
+    func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
+      supportedSecondFactors?.filter { $0 != currentFactor } ?? []
     }
 
     var resetPasswordFactor: Factor? {

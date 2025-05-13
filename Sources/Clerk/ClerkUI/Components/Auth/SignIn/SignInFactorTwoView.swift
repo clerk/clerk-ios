@@ -17,12 +17,8 @@
     @ViewBuilder
     var viewForFactor: some View {
       switch factor.strategy {
-      case "totp":
-        Text(verbatim: "totp")
-      case "sms":
-        Text(verbatim: "sms")
-      case "backup_code":
-        Text(verbatim: "backup code")
+      case "totp", "phone_code", "backup_code":
+        SignInFactorCodeView(factor: factor, isSecondFactor: true)
       default:
         SignInGetHelpView()
       }

@@ -73,16 +73,66 @@
     },
     "ACTIVE DEVICES" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "الأجهزة النشطة" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "AKTIVE GERÄTE" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "ΕΝΕΡΓΕΣ ΣΥΣΚΕΥΕΣ" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "DISPOSITIVOS ACTIVOS" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "APPAREILS ACTIFS" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सक्रिय डिवाइस" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "DISPOSITIVI ATTIVI" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティブなデバイス" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "활성 기기" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "活跃设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأجهزة النشطة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AKTIVE GERÄTE"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ΕΝΕΡΓΕΣ ΣΥΣΚΕΥΕΣ"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DISPOSITIVOS ACTIVOS"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "APPAREILS ACTIFS"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सक्रिय डिवाइस"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DISPOSITIVI ATTIVI"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクティブなデバイス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성 기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活跃设备"
+          }
+        }
       }
     },
     "Add account" : {
@@ -1239,44 +1289,194 @@
     },
     "Delete account" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "حذف الحساب" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Konto löschen" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Διαγραφή λογαριασμού" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar cuenta" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Supprimer le compte" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "खाता हटाएं" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Elimina account" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계정 삭제" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除账户" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف الحساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto löschen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Διαγραφή λογαριασμού"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar cuenta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le compte"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "खाता हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 삭제"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账户"
+          }
+        }
       }
     },
     "DELETE ACCOUNT" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "حذف الحساب" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "KONTO LÖSCHEN" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "ΔΙΑΓΡΑΦΗ ΛΟΓΑΡΙΑΣΜΟΥ" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "ELIMINAR CUENTA" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "SUPPRIMER LE COMPTE" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "खाता हटाएं" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "ELIMINA ACCOUNT" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계정 삭제" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除账户" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف الحساب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KONTO LÖSCHEN"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ΔΙΑΓΡΑΦΗ ΛΟΓΑΡΙΑΣΜΟΥ"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ELIMINAR CUENTA"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SUPPRIMER LE COMPTE"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "खाता हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ELIMINA ACCOUNT"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 삭제"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账户"
+          }
+        }
       }
     },
     "Desktop device" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "جهاز سطح المكتب" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Desktop-Gerät" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Συσκευή υπολογιστή" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo de escritorio" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Appareil de bureau" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "डेस्कटॉप डिवाइस" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo desktop" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "デスクトップデバイス" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "데스크톱 기기" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "桌面设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جهاز سطح المكتب"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desktop-Gerät"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συσκευή υπολογιστή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo de escritorio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appareil de bureau"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेस्कटॉप डिवाइस"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo desktop"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デスクトップデバイス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "데스크톱 기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "桌面设备"
+          }
+        }
       }
     },
     "Didn't recieve a code? " : {
@@ -2689,16 +2889,66 @@
     },
     "Mobile device" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "جهاز محمول" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mobiles Gerät" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Κινητή συσκευή" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo móvil" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Appareil mobile" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "मोबाइल डिवाइस" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo mobile" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "モバイルデバイス" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "모바일 기기" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "移动设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جهاز محمول"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobiles Gerät"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κινητή συσκευή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo móvil"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appareil mobile"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मोबाइल डिवाइस"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo mobile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "モバイルデバイス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모바일 기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动设备"
+          }
+        }
       }
     },
     "New password" : {
@@ -4240,16 +4490,66 @@
     },
     "This device" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "هذا الجهاز" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dieses Gerät" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Αυτή η συσκευή" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Este dispositivo" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Cet appareil" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "यह डिवाइस" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Questo dispositivo" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このデバイス" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이 기기" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الجهاز"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτή η συσκευή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cet appareil"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह डिवाइस"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo dispositivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备"
+          }
+        }
       }
     },
     "to continue" : {
@@ -4378,6 +4678,34 @@
             "value" : "继续前往%@"
           }
         }
+      }
+    },
+    "To continue, please enter the verification code generated by your authenticator app" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "للمتابعة، يرجى إدخال رمز التحقق الذي تم إنشاؤه بواسطة تطبيق المصادقة الخاص بك" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Um fortzufahren, geben Sie bitte den von Ihrer Authentifizierungs-App generierten Bestätigungscode ein" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Για να συνεχίσετε, εισαγάγετε τον κωδικό επαλήθευσης που δημιουργήθηκε από την εφαρμογή ελέγχου ταυτότητας σας" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Para continuar, ingrese el código de verificación generado por su aplicación de autenticación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pour continuer, veuillez saisir le code de vérification généré par votre application d'authentification" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "जारी रखने के लिए, कृपया अपने प्रमाणक ऐप द्वारा उत्पन्न सत्यापन कोड दर्ज करें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Per continuare, inserisci il codice di verifica generato dalla tua app di autenticazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続行するには、認証アプリで生成された認証コードを入力してください" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계속하려면 인증 앱에서 생성된 인증 코드를 입력하세요" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要继续，请输入您的身份验证器应用生成的验证码" } }
+      }
+    },
+    "Two-step verification" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "التحقق بخطوتين" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zwei-Faktor-Authentifizierung" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Επαλήθευση δύο βημάτων" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Verificación en dos pasos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vérification en deux étapes" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "दो-चरणीय सत्यापन" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Verifica in due passaggi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2段階認証" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "2단계 인증" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "两步验证" } }
       }
     },
     "TWO-STEP VERIFICATION" : {
@@ -4956,18 +5284,82 @@
         }
       }
     },
+    "Unknown code verification method. Please use another method." : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "طريقة تحقق غير معروفة. يرجى استخدام طريقة أخرى." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Unbekannte Code-Überprüfungsmethode. Bitte verwenden Sie eine andere Methode." } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Άγνωστη μέθοδος επαλήθευσης κωδικού. Παρακαλώ χρησιμοποιήστε άλλη μέθοδο." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Método de verificación de código desconocido. Por favor, use otro método." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Méthode de vérification de code inconnue. Veuillez utiliser une autre méthode." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "अज्ञात कोड सत्यापन विधि। कृपया कोई अन्य विधि उपयोग करें।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Metodo di verifica del codice sconosciuto. Si prega di utilizzare un altro metodo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明なコード認証方法です。別の方法を使用してください。" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "알 수 없는 코드 인증 방법입니다. 다른 방법을 사용하세요." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未知的验证码验证方式。请使用其他方式。" } }
+      }
+    },
     "Unknown device" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "جهاز غير معروف" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Unbekanntes Gerät" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Άγνωστη συσκευή" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo desconocido" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Appareil inconnu" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "अज्ञात डिवाइस" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo sconosciuto" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明なデバイス" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "알 수 없는 기기" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未知设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جهاز غير معروف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekanntes Gerät"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Άγνωστη συσκευή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo desconocido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appareil inconnu"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अज्ञात डिवाइस"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo sconosciuto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なデバイス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알 수 없는 기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知设备"
+          }
+        }
       }
     },
     "Update profile" : {
