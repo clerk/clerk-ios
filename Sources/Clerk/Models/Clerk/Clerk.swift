@@ -303,6 +303,7 @@ extension Clerk {
     let clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
+    clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
     return clerk
   }
 
