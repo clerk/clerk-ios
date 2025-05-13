@@ -40,7 +40,7 @@ final class AuthState {
     case .needsIdentifier:
       path = NavigationPath()
     case .needsFirstFactor:
-      guard let factor = signIn.startingSignInFactor else {
+      guard let factor = signIn.startingFirstFactor else {
         path = NavigationPath()
         return
       }
