@@ -56,7 +56,6 @@
         
         Text(emailAddress.emailAddress)
           .font(theme.fonts.body)
-          .fontWeight(.semibold)
           .foregroundStyle(theme.colors.text)
           .frame(minHeight: 22)
       }
@@ -80,7 +79,6 @@
         }
         Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
           .font(theme.fonts.body)
-          .fontWeight(.semibold)
           .foregroundStyle(theme.colors.text)
           .frame(minHeight: 22)
       }
@@ -106,7 +104,6 @@
             .frame(minHeight: 20)
           Text(externalAccount.emailAddress)
             .font(theme.fonts.body)
-            .fontWeight(.semibold)
             .foregroundStyle(theme.colors.text)
             .frame(minHeight: 22)
         }

@@ -26,7 +26,6 @@ struct UserProfilePasswordSection: View {
             VStack(alignment: .leading, spacing: 4) {
               Text("Change password", bundle: .module)
                 .font(theme.fonts.body)
-                .fontWeight(.semibold)
                 .foregroundStyle(theme.colors.text)
                 .frame(minHeight: 22)
               Text(verbatim: "•••••••••••••••••••••••••")

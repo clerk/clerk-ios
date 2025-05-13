@@ -57,20 +57,15 @@ struct UserProfileMfaRow: View {
             Badge(key: "Primary", style: .secondary)
           }
           
-          HStack {
+          HStack(spacing: 4) {
             text
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.text)
-              .frame(minHeight: 22)
-            
             if case .sms(let phoneNumber) = style {
               Text(verbatim: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
-                .font(theme.fonts.subheadline)
-                .foregroundStyle(theme.colors.textSecondary)
-                .frame(minHeight: 20)
             }
           }
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.text)
+          .frame(minHeight: 22)
         }
       }
     }
