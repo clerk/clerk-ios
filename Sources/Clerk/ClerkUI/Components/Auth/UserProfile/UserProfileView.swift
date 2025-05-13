@@ -186,6 +186,9 @@
           }
         }
       }
+      .task {
+        await getSessionsOnAllDevices()
+      }
     }
   }
 
@@ -197,6 +200,15 @@
         if clerk.session == nil {
           dismiss()
         }
+      } catch {
+        self.error = error
+      }
+    }
+
+    func getSessionsOnAllDevices() async {
+      guard let user else { return }
+      do {
+        try await user.getSessions()
       } catch {
         self.error = error
       }
@@ -225,8 +237,6 @@
     UserProfileView(isInSheet: true)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
-    //      .environment(\.locale, .init(identifier: "es"))
-    //      .environment(\.layoutDirection, .rightToLeft)
   }
 
   #Preview("Not in sheet") {

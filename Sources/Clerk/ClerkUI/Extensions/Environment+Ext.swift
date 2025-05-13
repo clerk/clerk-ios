@@ -79,6 +79,11 @@
         key == "backup_code" && value.enabled && value.usedForSecondFactor
       }
     }
+    
+    var isDeleteSelfEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.actions.deleteSelf
+    }
 
   }
 

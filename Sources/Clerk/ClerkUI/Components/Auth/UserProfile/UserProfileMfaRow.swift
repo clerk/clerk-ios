@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/12/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct UserProfileMfaRow: View {
@@ -95,3 +97,5 @@ struct UserProfileMfaRow: View {
     style: .backupCodes
   )
 }
+
+#endif
