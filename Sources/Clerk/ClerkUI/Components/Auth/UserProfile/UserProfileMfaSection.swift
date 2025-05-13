@@ -45,9 +45,11 @@ struct UserProfileMfaSection: View {
         }
 
         if environment.isMfaBackupCodeEnabled {
-          UserProfileMfaRow(
-            style: .backupCodes
-          )
+          if user?.backupCodeEnabled == true {
+            UserProfileMfaRow(
+              style: .backupCodes
+            )
+          }
         }
 
         UserProfileButtonRow(text: "Add two-step verification") {
