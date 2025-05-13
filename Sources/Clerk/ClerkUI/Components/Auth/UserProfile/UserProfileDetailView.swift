@@ -51,11 +51,9 @@
     ) -> some View {
       VStack(alignment: .leading, spacing: 4) {
         if user?.primaryEmailAddress == emailAddress {
-          Text("primary", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.textSecondary)
-            .frame(minHeight: 20)
+          Badge(key: "Primary", style: .secondary)
         }
+        
         Text(emailAddress.emailAddress)
           .font(theme.fonts.body)
           .fontWeight(.semibold)
@@ -78,10 +76,7 @@
     ) -> some View {
       VStack(alignment: .leading, spacing: 4) {
         if user?.primaryPhoneNumber == phoneNumber {
-          Text("primary", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.textSecondary)
-            .frame(minHeight: 20)
+          Badge(key: "Primary", style: .secondary)
         }
         Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
           .font(theme.fonts.body)

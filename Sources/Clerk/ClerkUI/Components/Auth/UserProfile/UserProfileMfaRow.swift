@@ -34,7 +34,7 @@ struct UserProfileMfaRow: View {
     case .authenticatorApp:
       Text("Authenticator app", bundle: .module)
     case .sms(let phoneNumber):
-      Text(verbatim: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
+      Text("SMS code", bundle: .module)
     case .backupCodes:
       Text("Backup codes", bundle: .module)
     }
@@ -54,24 +54,23 @@ struct UserProfileMfaRow: View {
           .foregroundStyle(theme.colors.textSecondary)
         VStack(alignment: .leading, spacing: 4) {
           if isPrimary {
-            Text("primary", bundle: .module)
-              .font(theme.fonts.subheadline)
-              .foregroundStyle(theme.colors.textSecondary)
-              .frame(minHeight: 20)
+            Badge(key: "Primary", style: .secondary)
           }
           
-          if case .sms = style {
-            Text("SMS code", bundle: .module)
-              .font(theme.fonts.subheadline)
-              .foregroundStyle(theme.colors.textSecondary)
-              .frame(minHeight: 20)
+          HStack {
+            text
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.text)
+              .frame(minHeight: 22)
+            
+            if case .sms(let phoneNumber) = style {
+              Text(verbatim: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
+                .font(theme.fonts.subheadline)
+                .foregroundStyle(theme.colors.textSecondary)
+                .frame(minHeight: 20)
+            }
           }
-          
-          text
-            .font(theme.fonts.body)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.text)
-            .frame(minHeight: 22)
         }
       }
     }

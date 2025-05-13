@@ -66,13 +66,13 @@ struct Badge: View {
   private let text: Text
   private let style: Style
 
-  init(text: LocalizedStringKey, style: Style = .primary) {
-    self.text = Text(text, bundle: .module)
+  init(key: LocalizedStringKey, style: Style = .primary) {
+    self.text = Text(key, bundle: .module)
     self.style = style
   }
 
-  init(text: String, style: Style = .primary) {
-    self.text = Text(text)
+  init(string: String, style: Style = .primary) {
+    self.text = Text(string)
     self.style = style
   }
 
@@ -107,6 +107,6 @@ struct Badge: View {
 
 #Preview {
   ForEach(Badge.Style.allCases, id: \.self) { style in
-    Badge(text: "Badge Label", style: style)
+    Badge(key: "Badge Label", style: style)
   }
 }
