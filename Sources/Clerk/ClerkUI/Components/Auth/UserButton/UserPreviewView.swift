@@ -29,7 +29,6 @@
           if let fullName = user.fullName {
             Text(fullName)
               .font(theme.fonts.body)
-              .fontWeight(.semibold)
               .foregroundStyle(theme.colors.text)
               .frame(minHeight: 22)
           }
@@ -39,11 +38,6 @@
               user.fullName == nil
                 ? theme.fonts.body
                 : theme.fonts.subheadline
-            )
-            .fontWeight(
-              user.fullName == nil
-                ? .semibold
-                : .regular
             )
             .foregroundStyle(
               user.fullName == nil

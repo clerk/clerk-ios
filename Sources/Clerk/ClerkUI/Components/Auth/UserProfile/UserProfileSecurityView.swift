@@ -31,7 +31,6 @@ struct UserProfileSecurityView: View {
             if environment.isMfaEnabled {
               UserProfileMfaSection()
             }
-            
           }
         }
         .background(theme.colors.backgroundSecondary)
