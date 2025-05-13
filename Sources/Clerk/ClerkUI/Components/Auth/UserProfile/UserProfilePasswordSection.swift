@@ -43,7 +43,7 @@
               .resizable()
               .scaledToFit()
               .frame(width: 20, height: 20)
-              .foregroundStyle(theme.colors.primary)
+              .foregroundStyle(theme.colors.textSecondary)
           }
           .padding(.horizontal, 24)
           .padding(.vertical, 16)
