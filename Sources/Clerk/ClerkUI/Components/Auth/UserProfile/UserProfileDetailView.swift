@@ -96,35 +96,33 @@
     private func externalAccountRow(
       _ externalAccount: ExternalAccount
     ) -> some View {
-      HStack(spacing: 0) {
-        VStack(alignment: .leading, spacing: 4) {
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 10) {
+          KFImage(
+            externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
+          )
+          .resizable()
+          .placeholder {
+            #if DEBUG
+              Image(systemName: "globe")
+                .resizable()
+                .scaledToFit()
+            #endif
+          }
+          .fade(duration: 0.25)
+          .scaledToFit()
+          .frame(width: 20, height: 20)
+          
           Text(externalAccount.oauthProvider.name)
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.textSecondary)
             .frame(minHeight: 20)
-          Text(externalAccount.emailAddress)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.text)
-            .frame(minHeight: 22)
         }
-
-        Spacer()
-
-        KFImage(
-          externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
-        )
-        .resizable()
-        .placeholder {
-          #if DEBUG
-            Image(systemName: "globe")
-              .resizable()
-              .scaledToFit()
-              .frame(width: 21, height: 21)
-          #endif
-        }
-        .fade(duration: 0.25)
-        .scaledToFit()
-        .frame(width: 18, height: 18)
+        
+        Text(externalAccount.emailAddress)
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.text)
+          .frame(minHeight: 22)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
