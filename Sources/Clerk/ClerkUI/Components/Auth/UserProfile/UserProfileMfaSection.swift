@@ -5,66 +5,70 @@
 //  Created by Mike Pitre on 5/12/25.
 //
 
-import SwiftUI
+#if os(iOS)
 
-struct UserProfileMfaSection: View {
-  @Environment(\.clerk) private var clerk
-  @Environment(\.clerkTheme) private var theme
+  import SwiftUI
 
-  var environment: Clerk.Environment {
-    clerk.environment
-  }
+  struct UserProfileMfaSection: View {
+    @Environment(\.clerk) private var clerk
+    @Environment(\.clerkTheme) private var theme
 
-  var user: User? {
-    clerk.user
-  }
+    var environment: Clerk.Environment {
+      clerk.environment
+    }
 
-  var mfaPhoneNumbers: [PhoneNumber] {
-    user?.phoneNumbers.filter { phoneNumber in
-      phoneNumber.reservedForSecondFactor
-    } ?? []
-  }
+    var user: User? {
+      clerk.user
+    }
 
-  var body: some View {
-    Section {
-      VStack(spacing: 0) {
-        if user?.totpEnabled == true {
-          UserProfileMfaRow(
-            style: .authenticatorApp,
-            isDefault: true
-          )
-        }
+    var mfaPhoneNumbers: [PhoneNumber] {
+      user?.phoneNumbers.filter { phoneNumber in
+        phoneNumber.reservedForSecondFactor
+      } ?? []
+    }
 
-        if environment.isMfaPhoneCodeEnabled {
-          ForEach(mfaPhoneNumbers) { phoneNumber in
+    var body: some View {
+      Section {
+        VStack(spacing: 0) {
+          if user?.totpEnabled == true {
             UserProfileMfaRow(
-              style: .sms(phoneNumber: phoneNumber),
-              isDefault: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
+              style: .authenticatorApp,
+              isDefault: true
             )
           }
-        }
 
-        if environment.isMfaBackupCodeEnabled {
-          if user?.backupCodeEnabled == true {
-            UserProfileMfaRow(
-              style: .backupCodes
-            )
+          if environment.isMfaPhoneCodeEnabled {
+            ForEach(mfaPhoneNumbers) { phoneNumber in
+              UserProfileMfaRow(
+                style: .sms(phoneNumber: phoneNumber),
+                isDefault: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
+              )
+            }
+          }
+
+          if environment.isMfaBackupCodeEnabled {
+            if user?.backupCodeEnabled == true {
+              UserProfileMfaRow(
+                style: .backupCodes
+              )
+            }
+          }
+
+          UserProfileButtonRow(text: "Add two-step verification") {
+            // add two factor
           }
         }
-
-        UserProfileButtonRow(text: "Add two-step verification") {
-          // add two factor
-        }
+        .background(theme.colors.background)
+      } header: {
+        UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
       }
-      .background(theme.colors.background)
-    } header: {
-      UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
     }
   }
-}
 
-#Preview {
-  UserProfileMfaSection()
-    .environment(\.clerk, .mock)
-    .environment(\.clerkTheme, .clerk)
-}
+  #Preview {
+    UserProfileMfaSection()
+      .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
+  }
+
+#endif
