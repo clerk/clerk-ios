@@ -31,7 +31,7 @@ struct UserProfileMfaSection: View {
         if user?.totpEnabled == true {
           UserProfileMfaRow(
             style: .authenticatorApp,
-            isPrimary: true
+            isDefault: true
           )
         }
 
@@ -39,7 +39,7 @@ struct UserProfileMfaSection: View {
           ForEach(mfaPhoneNumbers) { phoneNumber in
             UserProfileMfaRow(
               style: .sms(phoneNumber: phoneNumber),
-              isPrimary: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
+              isDefault: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
             )
           }
         }
