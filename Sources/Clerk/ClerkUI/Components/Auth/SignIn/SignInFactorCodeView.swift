@@ -24,7 +24,7 @@
 
     let factor: Factor
     var isSecondFactor: Bool = false
-    
+
     var signIn: SignIn? {
       clerk.client?.signIn
     }
@@ -44,13 +44,22 @@
         }
       }
     }
-    
+
     var showResend: Bool {
       switch factor.strategy {
       case "totp":
         return false
       default:
         return verificationState.showResend
+      }
+    }
+
+    var showUseAnotherMethod: Bool {
+      switch factor.strategy {
+      case "reset_password_email_code", "reset_password_phone_code":
+        false
+      default:
+        true
       }
     }
 
@@ -191,36 +200,38 @@
               .simultaneousGesture(TapGesture())
             }
 
-            Button {
-              if isSecondFactor {
-                authState.path.append(
-                  AuthView.Destination.signInFactorTwoUseAnotherMethod(
-                    currentFactor: factor
+            if showUseAnotherMethod {
+              Button {
+                if isSecondFactor {
+                  authState.path.append(
+                    AuthView.Destination.signInFactorTwoUseAnotherMethod(
+                      currentFactor: factor
+                    )
                   )
-                )
-              } else {
-                authState.path.append(
-                  AuthView.Destination.signInFactorOneUseAnotherMethod(
-                    currentFactor: factor
+                } else {
+                  authState.path.append(
+                    AuthView.Destination.signInFactorOneUseAnotherMethod(
+                      currentFactor: factor
+                    )
                   )
-                )
+                }
+              } label: {
+                Text("Use another method", bundle: .module)
               }
-            } label: {
-              Text("Use another method", bundle: .module)
-            }
-            .buttonStyle(
-              .primary(
-                config: .init(
-                  emphasis: .none,
-                  size: .small
+              .buttonStyle(
+                .primary(
+                  config: .init(
+                    emphasis: .none,
+                    size: .small
+                  )
                 )
               )
-            )
-            .simultaneousGesture(TapGesture())
+              .simultaneousGesture(TapGesture())
+            }
           }
-          .padding(.bottom, 32)
 
           SecuredByClerkView()
+            .padding(.top, 32)
         }
         .padding(16)
       }
@@ -369,7 +380,7 @@
         try! await Task.sleep(for: .seconds(1))
         return .mock
       }
-      
+
       service.attemptSecondFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
         return .mock
@@ -422,20 +433,20 @@
       .environment(\.clerk, .mock)
   }
 
-#Preview("TOTP Code") {
-  let _ = Container.shared.signInService.register {
-    var service = SignInService.liveValue
+  #Preview("TOTP Code") {
+    let _ = Container.shared.signInService.register {
+      var service = SignInService.liveValue
 
-    service.attemptSecondFactor = { _, _ in
-      try! await Task.sleep(for: .seconds(1))
-      return .mock
+      service.attemptSecondFactor = { _, _ in
+        try! await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+
+      return service
     }
 
-    return service
+    SignInFactorCodeView(factor: .mockTotp)
+      .environment(\.clerk, .mock)
   }
-
-  SignInFactorCodeView(factor: .mockTotp)
-    .environment(\.clerk, .mock)
-}
 
 #endif
