@@ -31,6 +31,7 @@ final class AuthState {
   var lastCodeSentAt: [Factor: Date] = [:]
   var newPassword = ""
   var confirmNewPassword = ""
+  var backupCode = ""
   
   @MainActor
   func setToStepForStatus(signIn: SignIn) {
