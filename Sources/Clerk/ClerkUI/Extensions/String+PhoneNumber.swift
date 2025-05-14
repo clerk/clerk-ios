@@ -14,13 +14,8 @@ import PhoneNumberKit
 extension String {
   public var formattedAsPhoneNumberIfPossible: String {
     let utility = Container.shared.phoneNumberUtility()
-    let partialFormatter = PartialFormatter(utility: utility, withPrefix: false)
-    
-    if let phoneNumber = try? utility.parse(self) {
-      return utility.format(phoneNumber, toType: .national)
-    } else {
-      return partialFormatter.formatPartial(self)
-    }
+    let partialFormatter = PartialFormatter(utility: utility, withPrefix: true)
+    return partialFormatter.formatPartial(self)
   }
 }
 
