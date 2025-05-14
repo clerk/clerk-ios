@@ -9,15 +9,17 @@
 
 import Factory
 import Foundation
+import PhoneNumberKit
 
 extension String {
   public var formattedAsPhoneNumberIfPossible: String {
     let utility = Container.shared.phoneNumberUtility()
-    do {
-      let number = try utility.parse(self)
-      return utility.format(number, toType: .national)
-    } catch {
-      return self
+    let partialFormatter = PartialFormatter(utility: utility, withPrefix: false)
+    
+    if let phoneNumber = try? utility.parse(self) {
+      return utility.format(phoneNumber, toType: .national)
+    } else {
+      return partialFormatter.formatPartial(self)
     }
   }
 }
