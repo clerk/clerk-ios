@@ -14,7 +14,6 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
-    @Environment(\.dismissKeyboard) private var dismissKeyboard
 
     @State private var code = ""
     @State private var error: Error?
@@ -124,11 +123,14 @@
                 return .error
               }
             }
+            .onFirstAppear {
+              otpFieldIsFocused = true
+            }
             .toolbar {
               ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
-                  dismissKeyboard()
+                  otpFieldIsFocused = false
                 }
                 .tint(theme.colors.text)
               }
@@ -295,9 +297,8 @@
 
         authState.lastCodeSentAt[factor] = .now
         updateRemainingSeconds()
-        otpFieldIsFocused = true
       } catch {
-        dismissKeyboard()
+        otpFieldIsFocused = false
         self.error = error
       }
     }
@@ -329,7 +330,7 @@
         throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
       }
 
-      dismissKeyboard()
+      otpFieldIsFocused = false
       verificationState = .success
       authState.setToStepForStatus(signIn: signIn)
     }
