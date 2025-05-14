@@ -18,7 +18,9 @@
   // Create a custom environment key
   private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
     @MainActor static let defaultValue: @MainActor () -> Void = {
-      _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+      DispatchQueue.main.async {
+        _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+      }
     }
   }
 #endif
