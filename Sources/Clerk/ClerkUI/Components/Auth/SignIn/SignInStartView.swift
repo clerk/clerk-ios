@@ -145,7 +145,7 @@
                     text: $authState.identifier,
                     fieldState: fieldError != nil ? .error : .default
                   )
-                  .textContentType(.emailAddress)
+                  .textContentType(.username)
                   .keyboardType(.emailAddress)
                   .textInputAutocapitalization(.never)
                   .transition(.blurReplace)
