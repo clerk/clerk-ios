@@ -101,7 +101,7 @@
       } else if let resetPasswordPhoneFactor = identifyingFirstFactor(strategy: .resetPasswordPhoneCode()) {
         return resetPasswordPhoneFactor
       } else {
-        return nil
+        return supportedFirstFactors?.first(where: \.isResetFactor)
       }
     }
 
