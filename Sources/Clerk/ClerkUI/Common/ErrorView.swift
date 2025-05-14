@@ -41,6 +41,7 @@ struct ErrorView: View {
         Text(error.localizedDescription)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
 
       VStack(spacing: 12) {
