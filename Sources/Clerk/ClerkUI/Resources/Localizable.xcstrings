@@ -904,6 +904,7 @@
       }
     },
     "Confirm password" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2695,6 +2696,9 @@
         }
       }
     },
+    "Hello, World!" : {
+
+    },
     "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible." : {
       "localizations" : {
         "ar" : {
@@ -3337,16 +3341,66 @@
     },
     "Passwords don't match." : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "كلمات المرور غير متطابقة." } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Passwörter stimmen nicht überein." } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Οι κωδικοί δεν ταιριάζουν." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Las contraseñas no coinciden." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Les mots de passe ne correspondent pas." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पासवर्ड मेल नहीं खाते।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Le password non corrispondono." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードが一致しません。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "비밀번호가 일치하지 않습니다." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "密码不匹配。" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كلمات المرور غير متطابقة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwörter stimmen nicht überein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι κωδικοί δεν ταιριάζουν."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las contraseñas no coinciden."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les mots de passe ne correspondent pas."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासवर्ड मेल नहीं खाते।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le password non corrispondono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードが一致しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호가 일치하지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码不匹配。"
+          }
+        }
       }
     },
     "PHONE NUMBERS" : {
@@ -4376,16 +4430,66 @@
     },
     "Sign out of all other devices" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "تسجيل الخروج من جميع الأجهزة الأخرى" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Von allen anderen Geräten abmelden" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Αποσύνδεση από όλες τις άλλες συσκευές" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cerrar sesión en todos los demás dispositivos" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Se déconnecter de tous les autres appareils" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सभी अन्य डिवाइस से साइन आउट करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Esci da tutti gli altri dispositivi" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "他のすべてのデバイスからサインアウト" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다른 모든 기기에서 로그아웃" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出所有其他设备" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الخروج من جميع الأجهزة الأخرى"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von allen anderen Geräten abmelden"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αποσύνδεση από όλες τις άλλες συσκευές"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión en todos los demás dispositivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter de tous les autres appareils"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सभी अन्य डिवाइस से साइन आउट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esci da tutti gli altri dispositivi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他のすべてのデバイスからサインアウト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 모든 기기에서 로그아웃"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出所有其他设备"
+          }
+        }
       }
     },
     "SMS code" : {
