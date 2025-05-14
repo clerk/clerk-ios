@@ -14,9 +14,21 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
 
-    @FocusState private var focusedField: Field?
+    @State private var signOutOfOtherDevices = false
     @State private var fieldError: Error?
-    @State private var error: Error?
+    @FocusState private var focusedField: Field?
+
+    var signIn: SignIn? {
+      clerk.client?.signIn
+    }
+
+    var resetButtonIsDisabled: Bool {
+      if authState.newPassword.isEmpty || authState.confirmNewPassword.isEmpty {
+        return true
+      }
+
+      return false
+    }
 
     enum Field {
       case new, confirm
@@ -39,6 +51,7 @@
             )
             .textContentType(.newPassword)
             .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
             .focused($focusedField, equals: .new)
             .onFirstAppear {
               focusedField = .new
@@ -53,6 +66,7 @@
               )
               .textContentType(.newPassword)
               .textInputAutocapitalization(.never)
+              .autocorrectionDisabled()
               .focused($focusedField, equals: .confirm)
 
               if let fieldError {
@@ -63,14 +77,20 @@
               }
             }
 
+            Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.text)
+              .tint(theme.colors.primary)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .background(theme.colors.backgroundSecondary)
+              .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+
             AsyncButton {
-              // reset password
+              await setNewPassword()
             } label: { isRunning in
               HStack(spacing: 4) {
                 Text("Reset password", bundle: .module)
-                Image("icon-triangle-right", bundle: .module)
-                  .foregroundStyle(theme.colors.textOnPrimaryBackground)
-                  .opacity(0.6)
               }
               .frame(maxWidth: .infinity)
               .overlayProgressView(isActive: isRunning) {
@@ -78,7 +98,7 @@
               }
             }
             .buttonStyle(.primary())
-            .disabled(authState.password.isEmpty)
+            .disabled(resetButtonIsDisabled)
             .simultaneousGesture(TapGesture())
           }
           .padding(.bottom, 32)
@@ -93,6 +113,36 @@
       }
       .navigationBarBackButtonHidden()
     }
+  }
+
+  extension SignInSetNewPasswordView {
+
+    func setNewPassword() async {
+      fieldError = nil
+      focusedField = nil
+
+      do {
+        guard authState.newPassword == authState.confirmNewPassword else {
+          throw ClerkClientError(message: "Passwords don't match.")
+        }
+
+        guard var signIn else {
+          authState.path = NavigationPath()
+          return
+        }
+
+        signIn = try await signIn.resetPassword(
+          .init(
+            password: authState.newPassword,
+            signOutOfOtherSessions: signOutOfOtherDevices
+          ))
+        
+        authState.setToStepForStatus(signIn: signIn)
+      } catch {
+        fieldError = error
+      }
+    }
+
   }
 
   #Preview {
