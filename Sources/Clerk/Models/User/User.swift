@@ -84,7 +84,7 @@ public struct User: Codable, Equatable, Sendable, Hashable {
   public let legalAcceptedAt: Date?
 
   /// A list of OrganizationMemberships representing the list of organizations the user is member with.
-  public let organizationMemberships: [OrganizationMembership]
+  public let organizationMemberships: [OrganizationMembership]?
 
   /// An array of all the Passkey objects associated with the user.
   public let passkeys: [Passkey]
@@ -162,7 +162,7 @@ public struct User: Codable, Equatable, Sendable, Hashable {
     lastSignInAt: Date? = nil,
     lastName: String? = nil,
     legalAcceptedAt: Date? = nil,
-    organizationMemberships: [OrganizationMembership],
+    organizationMemberships: [OrganizationMembership]?,
     passkeys: [Passkey],
     passwordEnabled: Bool,
     phoneNumbers: [PhoneNumber],
