@@ -25,7 +25,7 @@
             userProfileIsPresented = true
           } label: {
             KFImage(URL(string: user.imageUrl))
-              .placeholder { theme.colors.primary }
+              .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
               .resizable()
               .fade(duration: 0.2)
               .scaledToFill()
@@ -49,6 +49,7 @@
   #Preview {
     UserButton()
       .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
   }
 
 #endif

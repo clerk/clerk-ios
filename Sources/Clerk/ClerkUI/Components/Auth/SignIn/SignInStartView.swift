@@ -260,7 +260,8 @@
   #Preview("Localized") {
     SignInStartView()
       .environment(\.clerk, .mock)
-      .environment(\.locale, .init(identifier: "es"))
+      .environment(\.clerkTheme, .clerk)
+      .environment(\.locale, .init(identifier: "en"))
   }
 
 #endif

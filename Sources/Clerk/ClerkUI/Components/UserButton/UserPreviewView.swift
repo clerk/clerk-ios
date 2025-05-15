@@ -18,7 +18,7 @@
     var body: some View {
       HStack(spacing: 16) {
         KFImage(URL(string: user.imageUrl))
-          .placeholder { theme.colors.primary }
+          .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
           .resizable()
           .fade(duration: 0.2)
           .scaledToFill()
@@ -32,18 +32,20 @@
               .foregroundStyle(theme.colors.text)
               .frame(minHeight: 22)
           }
-
-          Text(user.identifier)
-            .font(
-              user.fullName == nil
-                ? theme.fonts.body
-                : theme.fonts.subheadline
-            )
-            .foregroundStyle(
-              user.fullName == nil
-                ? theme.colors.text
-                : theme.colors.textSecondary
-            )
+          
+          if let identifier = user.identifier {
+            Text(identifier)
+              .font(
+                user.fullName == nil
+                  ? theme.fonts.body
+                  : theme.fonts.subheadline
+              )
+              .foregroundStyle(
+                user.fullName == nil
+                  ? theme.colors.text
+                  : theme.colors.textSecondary
+              )
+          }
         }
       }
     }
@@ -51,6 +53,7 @@
 
   #Preview {
     UserPreviewView(user: .mock)
+      .environment(\.clerkTheme, .clerk)
   }
 
 #endif

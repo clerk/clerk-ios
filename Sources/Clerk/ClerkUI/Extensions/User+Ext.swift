@@ -29,20 +29,20 @@ extension User {
     return initials.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : initials
   }
   
-  var identifier: String {
-    if let username {
+  var identifier: String? {        
+    if let username, !username.isEmpty {
       return username
     }
     
-    if let primaryEmailAddress {
+    if let primaryEmailAddress, !primaryEmailAddress.emailAddress.isEmpty {
       return primaryEmailAddress.emailAddress
     }
     
-    if let primaryPhoneNumber {
+    if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.isEmpty {
       return primaryPhoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible
     }
     
-    return ""
+    return nil
   }
   
 }
