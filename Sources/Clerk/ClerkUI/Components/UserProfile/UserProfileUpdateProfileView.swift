@@ -220,24 +220,4 @@
       .environment(\.clerkTheme, .clerk)
   }
 
-  extension UIImage {
-    func resizedMaintainingAspectRatio(to targetSize: CGSize) -> UIImage {
-      let aspectRatio = size.width / size.height
-      let targetAspectRatio = targetSize.width / targetSize.height
-
-      let newSize: CGSize
-      if aspectRatio > targetAspectRatio {
-        newSize = CGSize(width: targetSize.width, height: targetSize.width / aspectRatio)
-      } else {
-        // Image is taller than target size
-        newSize = CGSize(width: targetSize.height * aspectRatio, height: targetSize.height)
-      }
-
-      let renderer = UIGraphicsImageRenderer(size: newSize)
-      return renderer.image { _ in
-        self.draw(in: CGRect(origin: .zero, size: newSize))
-      }
-    }
-  }
-
 #endif
