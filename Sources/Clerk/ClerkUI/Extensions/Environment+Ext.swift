@@ -84,6 +84,27 @@
       guard let userSettings else { return false }
       return userSettings.actions.deleteSelf
     }
+    
+    var isUsernameEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "username" && value.enabled
+      }
+    }
+    
+    var isFirstNameEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "first_name" && value.enabled
+      }
+    }
+    
+    var isLastNameEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "last_name" && value.enabled
+      }
+    }
 
   }
 
