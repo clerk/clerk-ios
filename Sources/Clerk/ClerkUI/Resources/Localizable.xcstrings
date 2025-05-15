@@ -647,12 +647,26 @@
         }
       }
     },
+    "Cancel" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إلغاء" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Ακύρωση" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cancelar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Annuler" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "रद्द करें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Annulla" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "취소" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+      }
+    },
     "Change password" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تغيير كلمة المرور"
+            "value" : "تغيير كلمة لمرور"
           }
         },
         "de" : {
@@ -839,6 +853,20 @@
         }
       }
     },
+    "Choose from photo library" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "اختر من مكتبة الصور" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus der Fotomediathek wählen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Επιλογή από τη βιβλιοθήκη φωτογραφιών" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elegir de la biblioteca de fotos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Choisir depuis la photothèque" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फोटो लाइब्रेरी से चुनें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Scegli dalla libreria foto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真ライブラリから選択" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사진 보관함에서 선택" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "从照片库中选择" } }
+      }
+    },
     "Close" : {
       "localizations" : {
         "ar" : {
@@ -904,7 +932,6 @@
       }
     },
     "Confirm password" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2440,6 +2467,20 @@
         }
       }
     },
+    "First name" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "الاسم الأول" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorname" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Όνομα" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nombre" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Prénom" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पहला नाम" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nome" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이름" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "名" } }
+      }
+    },
     "First, enter the code sent to your email address" : {
       "localizations" : {
         "ar" : {
@@ -2696,9 +2737,6 @@
         }
       }
     },
-    "Hello, World!" : {
-
-    },
     "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible." : {
       "localizations" : {
         "ar" : {
@@ -2889,6 +2927,20 @@
             "value" : "凭证类型无效。"
           }
         }
+      }
+    },
+    "Last name" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "اسم العائلة" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nachname" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Επώνυμο" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Apellido" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Nom de famille" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "अंतिम नाम" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Cognome" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "姓" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "성" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "姓" } }
       }
     },
     "Manage account" : {
@@ -3660,6 +3712,20 @@
         }
       }
     },
+    "Remove photo" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إزالة الصورة" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Foto entfernen" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Αφαίρεση φωτογραφίας" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar foto" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Supprimer la photo" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फोटो हटाएं" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Rimuovi foto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を削除" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사진 제거" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "移除照片" } }
+      }
+    },
     "Resend" : {
       "localizations" : {
         "ar" : {
@@ -3914,6 +3980,20 @@
             "value" : "重置您的密码"
           }
         }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "حفظ" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Speichern" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Αποθήκευση" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Enregistrer" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सहेजें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Salva" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "저장" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
       }
     },
     "Secured by" : {
@@ -4746,6 +4826,20 @@
             "value" : "切换账户"
           }
         }
+      }
+    },
+    "There was an error loading the image from the photos library." : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "حدث خطأ أثناء تحميل الصورة من مكتبة الصور." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beim Laden des Bildes aus der Fotomediathek ist ein Fehler aufgetreten." } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Παρουσιάστηκε σφάλμα κατά τη φόρτωση της εικόνας από τη βιβλιοθήκη φωτογραφιών." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hubo un error al cargar la imagen desde la biblioteca de fotos." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Une erreur s'est produite lors du chargement de l'image depuis la photothèque." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फोटो लाइब्रेरी से छवि लोड करने में त्रुटि हुई।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Si è verificato un errore durante il caricamento dell'immagine dalla libreria foto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真ライブラリから画像を読み込む際にエラーが発生しました。" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사진 보관함에서 이미지를 불러오는 중 오류가 발생했습니다." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "从照片库加载图片时出错。" } }
       }
     },
     "This device" : {
@@ -6346,6 +6440,20 @@
             "value" : "使用您的通行密钥"
           }
         }
+      }
+    },
+    "Username" : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "اسم المستخدم" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Benutzername" } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Όνομα χρήστη" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nombre de usuario" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Nom d'utilisateur" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "यूजरनेम" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nome utente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ユーザー名" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사용자 이름" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用户名" } }
       }
     },
     "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock." : {

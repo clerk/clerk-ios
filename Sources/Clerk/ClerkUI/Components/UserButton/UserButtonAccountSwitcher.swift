@@ -48,127 +48,111 @@
     }
 
     var body: some View {
-      VStack(spacing: 0) {
-        HStack {
-          Button {
-            //
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
-          }
-          .opacity(0)
-          .disabled(true)
-
-          Spacer()
-
-          Text("Switch account", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.text)
-            .frame(minHeight: 25)
-
-          Spacer()
-
-          Button {
-            dismiss()
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
-          }
-          .simultaneousGesture(TapGesture())
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
-
-        ScrollView {
-          VStack(spacing: 0) {
-            ForEach(sessions) { session in
-              if let user = session.user {
-                AsyncButton {
-                  await setActiveSession(session)
-                } label: { isRunning in
-                  HStack {
-                    UserPreviewView(user: user)
-                    Spacer()
-                    if clerk.session?.id == session.id {
-                      Image("icon-check", bundle: .module)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                        .foregroundStyle(theme.colors.primary)
+      NavigationStack {
+        VStack(spacing: 0) {
+          ScrollView {
+            VStack(spacing: 0) {
+              ForEach(sessions) { session in
+                if let user = session.user {
+                  AsyncButton {
+                    await setActiveSession(session)
+                  } label: { isRunning in
+                    HStack {
+                      UserPreviewView(user: user)
+                      Spacer()
+                      if clerk.session?.id == session.id {
+                        Image("icon-check", bundle: .module)
+                          .resizable()
+                          .scaledToFit()
+                          .frame(width: 20, height: 20)
+                          .foregroundStyle(theme.colors.primary)
+                      }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(.rect)
+                    .overlayProgressView(isActive: isRunning)
                   }
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                  .padding(.vertical, 16)
-                  .padding(.horizontal, 24)
-                  .frame(maxWidth: .infinity)
-                  .contentShape(.rect)
-                  .overlayProgressView(isActive: isRunning)
+                  .overlay(alignment: .bottom) {
+                    Rectangle()
+                      .frame(height: 1)
+                      .foregroundStyle(theme.colors.border)
+                  }
+                  .buttonStyle(.pressedBackground)
+                  .disabled(clerk.session?.id == session.id)
+                  .simultaneousGesture(TapGesture())
                 }
-                .overlay(alignment: .bottom) {
-                  Rectangle()
-                    .frame(height: 1)
-                    .foregroundStyle(theme.colors.border)
-                }
-                .buttonStyle(.pressedBackground)
-                .disabled(clerk.session?.id == session.id)
-                .simultaneousGesture(TapGesture())
               }
-            }
 
+              Button {
+                authViewIsPresented = true
+              } label: {
+                UserProfileRowView(icon: "icon-plus", text: "Add account")
+              }
+              .overlay(alignment: .bottom) {
+                Rectangle()
+                  .frame(height: 1)
+                  .foregroundStyle(theme.colors.border)
+              }
+              .buttonStyle(.pressedBackground)
+              .simultaneousGesture(TapGesture())
+
+              AsyncButton {
+                await signOutOfAllAccounts()
+              } label: { isRunning in
+                UserProfileRowView(icon: "icon-sign-out", text: "Sign out of all accounts")
+                  .overlayProgressView(isActive: isRunning)
+              }
+              .overlay(alignment: .bottom) {
+                Rectangle()
+                  .frame(height: 1)
+                  .foregroundStyle(theme.colors.border)
+              }
+              .buttonStyle(.pressedBackground)
+              .simultaneousGesture(TapGesture())
+            }
+          }
+
+          SecuredByClerkView()
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(theme.colors.backgroundSecondary)
+        }
+        .background(theme.colors.background)
+        .clerkErrorPresenting($error)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
             Button {
-              authViewIsPresented = true
+              dismiss()
             } label: {
-              UserProfileRowView(icon: "icon-plus", text: "Add account")
+              Text("Done", bundle: .module)
+                .font(theme.fonts.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.primary)
             }
-            .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
-            }
-            .buttonStyle(.pressedBackground)
-            .simultaneousGesture(TapGesture())
+          }
 
-            AsyncButton {
-              await signOutOfAllAccounts()
-            } label: { isRunning in
-              UserProfileRowView(icon: "icon-sign-out", text: "Sign out of all accounts")
-                .overlayProgressView(isActive: isRunning)
-            }
-            .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
-            }
-            .buttonStyle(.pressedBackground)
-            .simultaneousGesture(TapGesture())
+          ToolbarItem(placement: .principal) {
+            Text("Switch account", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.text)
           }
         }
-
-        SecuredByClerkView()
-          .padding(16)
-          .frame(maxWidth: .infinity)
-          .background(theme.colors.backgroundSecondary)
-      }
-      .background(theme.colors.background)
-      .clerkErrorPresenting($error)
-      .sheet(isPresented: $authViewIsPresented) {
-        AuthView()
-          .interactiveDismissDisabled()
-      }
-      .task {
-        for await event in clerk.authEventEmitter.events {
-          switch event {
-          case .signInCompleted, .signUpCompleted:
-            authViewIsPresented = false
-            dismiss()
+        .sheet(isPresented: $authViewIsPresented) {
+          AuthView()
+            .interactiveDismissDisabled()
+        }
+        .task {
+          for await event in clerk.authEventEmitter.events {
+            switch event {
+            case .signInCompleted, .signUpCompleted:
+              authViewIsPresented = false
+              dismiss()
+            }
           }
         }
       }

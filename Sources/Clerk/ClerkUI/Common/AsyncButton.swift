@@ -12,19 +12,22 @@ import SwiftUI
 struct AsyncButton<Label: View>: View {
   @State private var isRunning = false
 
+  let role: ButtonRole?
   let action: () async -> Void
   let label: (_ isRunning: Bool) -> Label
 
   init(
+    role: ButtonRole? = nil,
     action: @escaping () async -> Void,
     @ViewBuilder label: @escaping (_ isRunning: Bool) -> Label
   ) {
+    self.role = role
     self.action = action
     self.label = label
   }
 
   var body: some View {
-    Button {
+    Button(role: role) {
       Task {
         if isRunning { return }
         isRunning = true

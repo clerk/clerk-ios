@@ -93,6 +93,26 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: false
         ),
+        "first_name": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
+        "last_name": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
         "password": .init(
           enabled: true,
           required: false,
