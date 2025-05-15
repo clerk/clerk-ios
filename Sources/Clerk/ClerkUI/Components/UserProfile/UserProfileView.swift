@@ -16,6 +16,7 @@
     @Environment(\.dismiss) private var dismiss
 
     @State private var path = NavigationPath()
+    @State private var updateProfileIsPresented = false
     @State private var authViewIsPresented = false
     @State private var accountSwitcherIsPresented = false
     @State private var error: Error?
@@ -35,9 +36,9 @@
       VStack(spacing: 12) {
         KFImage(URL(string: user.imageUrl))
           .resizable()
-          .placeholder { theme.colors.primary }
+          .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
           .fade(duration: 0.25)
-          .scaledToFit()
+          .scaledToFill()
           .frame(width: 96, height: 96)
           .clipShape(.circle)
 
@@ -49,7 +50,7 @@
         }
 
         Button {
-          //
+          updateProfileIsPresented = true
         } label: {
           Text("Update profile", bundle: .module)
         }
@@ -177,6 +178,9 @@
       .sheet(isPresented: $authViewIsPresented) {
         AuthView()
           .interactiveDismissDisabled()
+      }
+      .sheet(isPresented: $updateProfileIsPresented) {
+        UserProfileUpdateProfileView()
       }
       .task {
         for await event in clerk.authEventEmitter.events {
