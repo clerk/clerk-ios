@@ -14,6 +14,9 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.userProfileSharedState) private var sharedState
+
+    @State private var addEmailAddressIsPresented = false
 
     private var user: User? {
       clerk.user
@@ -31,7 +34,7 @@
           }
         }
     }
-    
+
     var sortedPhoneNumbers: [PhoneNumber] {
       (user?.phoneNumbers ?? [])
         .sorted { lhs, rhs in
@@ -53,7 +56,7 @@
         if user?.primaryEmailAddress == emailAddress {
           Badge(key: "Primary", style: .secondary)
         }
-        
+
         Text(emailAddress.emailAddress)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.text)
@@ -112,13 +115,13 @@
           .fade(duration: 0.25)
           .scaledToFit()
           .frame(width: 20, height: 20)
-          
+
           Text(externalAccount.oauthProvider.name)
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.textSecondary)
             .frame(minHeight: 20)
         }
-        
+
         Text(externalAccount.emailAddress)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.text)
@@ -136,7 +139,7 @@
     }
 
     var body: some View {
-      ZStack {        
+      ZStack {
         if let user {
           VStack(spacing: 0) {
             ScrollView {
@@ -146,9 +149,9 @@
                     ForEach(sortedEmails) { emailAddress in
                       emailRow(emailAddress)
                     }
-                    
+
                     UserProfileButtonRow(text: "Add email address") {
-                      // present add email
+                      addEmailAddressIsPresented = true
                     }
                   }
                   .background(theme.colors.background)
@@ -162,7 +165,7 @@
                     ForEach(sortedPhoneNumbers) { phoneNumber in
                       phoneRow(phoneNumber)
                     }
-                    
+
                     UserProfileButtonRow(text: "Add phone number") {
                       // present add phone number
                     }
@@ -177,7 +180,7 @@
                     ForEach(user.externalAccounts) { externalAccount in
                       externalAccountRow(externalAccount)
                     }
-                    
+
                     UserProfileButtonRow(text: "Connect account") {
                       // present connect account
                     }
@@ -207,6 +210,12 @@
       }
       .navigationBarTitleDisplayMode(.inline)
       .background(theme.colors.background)
+      .sheet(isPresented: $addEmailAddressIsPresented) {
+        UserProfileAddEmailView()
+      }
+      .onChange(of: [addEmailAddressIsPresented]) { _, newValue in
+        sharedState.applyBlur = newValue.contains(true)
+      }
     }
   }
 

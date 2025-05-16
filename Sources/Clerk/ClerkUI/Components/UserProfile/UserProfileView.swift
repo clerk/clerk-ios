@@ -19,6 +19,7 @@
     @State private var updateProfileIsPresented = false
     @State private var authViewIsPresented = false
     @State private var accountSwitcherIsPresented = false
+    @State private var sharedState = SharedState()
     @State private var error: Error?
 
     let isInSheet: Bool
@@ -162,11 +163,17 @@
           $0.view
         }
       }
+      .environment(\.userProfileSharedState, sharedState)
       .tint(theme.colors.primary)
+      .onChange(of: [
+        authViewIsPresented,
+        updateProfileIsPresented,
+        accountSwitcherIsPresented
+      ], { _, newValue in
+        sharedState.applyBlur = newValue.contains(true)
+      })
       .animation(.default) {
-        $0.blur(
-          radius: accountSwitcherIsPresented || authViewIsPresented ? 12 : 0
-        )
+        $0.blur(radius: sharedState.applyBlur ? 12 : 0)
       }
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
@@ -192,6 +199,12 @@
       }
       .task {
         await getSessionsOnAllDevices()
+      }
+      .task {
+        try? await Clerk.Environment.get()
+      }
+      .task {
+        try? await Client.get()
       }
     }
   }
@@ -235,6 +248,18 @@
         }
       }
     }
+  }
+
+  extension UserProfileView {
+    @Observable
+    class SharedState {
+      var applyBlur: Bool = false
+      var lastCodeSentAt: [String: Date] = [:]
+    }
+  }
+
+  extension EnvironmentValues {
+    @Entry var userProfileSharedState = UserProfileView.SharedState()
   }
 
   #Preview("In sheet") {

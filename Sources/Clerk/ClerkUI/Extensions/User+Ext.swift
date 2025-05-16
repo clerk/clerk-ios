@@ -30,15 +30,15 @@ extension User {
   }
   
   var identifier: String? {        
-    if let username, !username.isEmpty {
+    if let username, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return username
     }
     
-    if let primaryEmailAddress, !primaryEmailAddress.emailAddress.isEmpty {
+    if let primaryEmailAddress, !primaryEmailAddress.emailAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return primaryEmailAddress.emailAddress
     }
     
-    if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.isEmpty {
+    if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return primaryPhoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible
     }
     

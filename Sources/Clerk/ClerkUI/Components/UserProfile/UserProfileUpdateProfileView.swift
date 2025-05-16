@@ -84,6 +84,8 @@
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(theme.colors.background, for: .navigationBar)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
             Button("Cancel") {
