@@ -114,7 +114,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         if hasShadow {
           RoundedRectangle(cornerRadius: theme.design.borderRadius)
             .fill(backgroundColor(configuration: configuration))
-            .shadow(color: theme.colors.buttonBorder, radius: 0.5, x: 0, y: 0.5)
+            .shadow(color: theme.colors.inputBorderFocused, radius: 0.5, x: 0, y: 1)
         }
       }
       .opacity(isEnabled ? 1 : 0.5)
