@@ -64,7 +64,6 @@
             .foregroundStyle(theme.colors.text)
         }
       }
-      .navigationBarTitleDisplayMode(.inline)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
     }
