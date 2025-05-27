@@ -17,6 +17,7 @@
     @Environment(\.userProfileSharedState) private var sharedState
 
     @State private var addEmailAddressIsPresented = false
+    @State private var addPhoneNumberIsPresented = false
 
     private var user: User? {
       clerk.user
@@ -167,7 +168,7 @@
                     }
 
                     UserProfileButtonRow(text: "Add phone number") {
-                      // present add phone number
+                      addPhoneNumberIsPresented = true
                     }
                   }
                   .background(theme.colors.background)
@@ -212,6 +213,9 @@
       .background(theme.colors.background)
       .sheet(isPresented: $addEmailAddressIsPresented) {
         UserProfileAddEmailView()
+      }
+      .sheet(isPresented: $addPhoneNumberIsPresented) {
+        UserProfileAddPhoneView()
       }
       .onChange(of: [addEmailAddressIsPresented]) { _, newValue in
         sharedState.applyBlur = newValue.contains(true)
