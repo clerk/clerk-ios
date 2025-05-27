@@ -2185,16 +2185,66 @@
     },
     "Enter the verification code sent to %@" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "أدخل رمز التحقق المرسل إلى %@" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geben Sie den an %@ gesendeten Bestätigungscode ein" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Εισαγάγετε τον κωδικό επαλήθευσης που στάλθηκε στο %@" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ingrese el código de verificación enviado a %@" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Entrez le code de vérification envoyé à %@" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "%@ पर भेजा गया सत्यापन कोड दर्ज करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inserisci il codice di verifica inviato a %@" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%@ に送信された認証コードを入力してください" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@로 전송된 인증 코드를 입력하세요" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入发送到%@的验证码" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل رمز التحقق المرسل إلى %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie den an %@ gesendeten Bestätigungscode ein"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εισαγάγετε τον κωδικό επαλήθευσης που στάλθηκε στο %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingrese el código de verificación enviado a %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrez le code de vérification envoyé à %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ पर भेजा गया सत्यापन कोड दर्ज करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci il codice di verifica inviato a %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ に送信された認証コードを入力してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@로 전송된 인증 코드를 입력하세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入发送到%@的验证码"
+          }
+        }
       }
     },
     "Enter your email" : {
@@ -2372,13 +2422,13 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "パスワードでサインイン"
+            "value" : "パスワードを入力"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "비밀번호로 로그인"
+            "value" : "비밀번호 입력"
           }
         },
         "zh-Hans" : {
@@ -6936,30 +6986,130 @@
     },
     "Verify email address" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "تحقق من عنوان البريد الإلكتروني" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "E-Mail-Adresse verifizieren" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Επαληθεύστε τη διεύθυνση email" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Verificar dirección de correo electrónico" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vérifier l'adresse e-mail" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ईमेल पता सत्यापित करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Verifica indirizzo email" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを確認" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이메일 주소 확인" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证电子邮箱地址" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق من عنوان البريد الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Adresse verifizieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επαληθεύστε τη διεύθυνση email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar dirección de correo electrónico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifier l'adresse e-mail"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ईमेल पता सत्यापित करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica indirizzo email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスを確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 주소 확인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证电子邮箱地址"
+          }
+        }
       }
     },
     "Verify phone number" : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "تحقق من رقم الهاتف" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Telefonnummer verifizieren" } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Επαληθεύστε τον αριθμό τηλεφώνου" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Verificar número de teléfono" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vérifier le numéro de téléphone" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फ़ोन नंबर सत्यापित करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Verifica numero di telefono" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号を確認" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전화번호 확인" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证电话号码" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق من رقم الهاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonnummer verifizieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επαληθεύστε τον αριθμό τηλεφώνου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar número de teléfono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifier le numéro de téléphone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फ़ोन नंबर सत्यापित करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica numero di telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호 확인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证电话号码"
+          }
+        }
       }
     },
     "Verifying..." : {
@@ -7156,16 +7306,80 @@
     },
     "You'll need to verify this email address before it can be added to your account." : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "ستحتاج إلى التحقق من عنوان البريد الإلكتروني هذا قبل أن تتمكن من إضافته إلى حسابك." } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sie müssen diese E-Mail-Adresse verifizieren, bevor sie zu Ihrem Konto hinzugefügt werden kann." } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Θα χρειαστεί να επαληθεύσετε αυτή τη διεύθυνση email πριν προστεθεί στον λογαριασμό σας." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Deberá verificar esta dirección de correo electrónico antes de que pueda agregarse a su cuenta." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vous devrez vérifier cette adresse e-mail avant qu'elle puisse être ajoutée à votre compte." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "इस ईमेल पते को अपने खाते में जोड़ने से पहले आपको इसे सत्यापित करना होगा।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dovrai verificare questo indirizzo email prima che possa essere aggiunto al tuo account." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このメールアドレスをアカウントに追加する前に、確認が必要です。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이 이메일 주소를 계정에 추가하기 전에 확인해야 합니다." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在将此电子邮箱地址添加到您的账户之前，您需要先进行验证。" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ستحتاج إلى التحقق من عنوان البريد الإلكتروني هذا قبل أن تتمكن من إضافته إلى حسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sie müssen diese E-Mail-Adresse verifizieren, bevor sie zu Ihrem Konto hinzugefügt werden kann."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Θα χρειαστεί να επαληθεύσετε αυτή τη διεύθυνση email πριν προστεθεί στον λογαριασμό σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deberá verificar esta dirección de correo electrónico antes de que pueda agregarse a su cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous devrez vérifier cette adresse e-mail avant qu'elle puisse être ajoutée à votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस ईमेल पते को अपने खाते में जोड़ने से पहले आपको इसे सत्यापित करना होगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dovrai verificare questo indirizzo email prima che possa essere aggiunto al tuo account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このメールアドレスをアカウントに追加する前に、確認が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 이메일 주소를 계정에 추가하기 전에 확인해야 합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在将此电子邮箱地址添加到您的账户之前，您需要先进行验证。"
+          }
+        }
+      }
+    },
+    "Your backup code is the one you got when setting up two-step authentication." : {
+      "localizations" : {
+        "ar" : { "stringUnit" : { "state" : "translated", "value" : "رمز النسخ الاحتياطي الخاص بك هو الرمز الذي حصلت عليه عند إعداد المصادقة بخطوتين." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ihr Backup-Code ist der, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben." } },
+        "el" : { "stringUnit" : { "state" : "translated", "value" : "Ο εφεδρικός σας κωδικός είναι αυτός που λάβατε κατά τη ρύθμιση του ελέγχου ταυτότητας δύο βημάτων." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu código de respaldo es el que recibiste al configurar la autenticación en dos pasos." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Votre code de secours est celui que vous avez reçu lors de la configuration de l'authentification à deux étapes." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "आपका बैकअप कोड वही है जो आपने दो-चरणीय प्रमाणीकरण सेट करते समय प्राप्त किया था।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il tuo codice di backup è quello che hai ricevuto durante la configurazione dell'autenticazione a due fattori." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バックアップコードは、2段階認証の設定時に取得したものです。" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "백업 코드는 2단계 인증을 설정할 때 받은 코드입니다." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "您的备用码是在设置两步验证时获得的。" } }
       }
     }
   },
