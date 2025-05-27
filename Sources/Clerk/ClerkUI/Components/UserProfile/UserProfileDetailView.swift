@@ -100,7 +100,7 @@
       _ externalAccount: ExternalAccount
     ) -> some View {
       VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
           KFImage(
             externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
           )
