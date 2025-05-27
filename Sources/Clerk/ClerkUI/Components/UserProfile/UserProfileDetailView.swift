@@ -18,6 +18,9 @@
 
     @State private var addEmailAddressIsPresented = false
     @State private var addPhoneNumberIsPresented = false
+    @State private var isConfirmingRemoval = false
+    @State private var removeResource: RemoveResource?
+    @State private var error: Error?
 
     private var user: User? {
       clerk.user
@@ -53,15 +56,42 @@
     private func emailRow(
       _ emailAddress: EmailAddress
     ) -> some View {
-      VStack(alignment: .leading, spacing: 4) {
-        if user?.primaryEmailAddress == emailAddress {
-          Badge(key: "Primary", style: .secondary)
+      HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
+          if user?.primaryEmailAddress == emailAddress {
+            Badge(key: "Primary", style: .secondary)
+          }
+
+          Text(emailAddress.emailAddress)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.text)
+            .frame(minHeight: 22)
         }
 
-        Text(emailAddress.emailAddress)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.text)
-          .frame(minHeight: 22)
+        Spacer(minLength: 0)
+
+        Menu {
+          if user?.primaryEmailAddress != emailAddress {
+            AsyncButton {
+              await setEmailAsPrimary(emailAddress)
+            } label: { isRunning in
+              Text("Set as primary", bundle: .module)
+            }
+          }
+
+          Button(role: .destructive) {
+            removeResource = .email(emailAddress)
+          } label: {
+            Text("Remove email", bundle: .module)
+          }
+
+        } label: {
+          Image("icon-three-dots-vertical", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(theme.colors.textSecondary)
+            .frame(width: 20, height: 20)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
@@ -77,14 +107,41 @@
     private func phoneRow(
       _ phoneNumber: PhoneNumber
     ) -> some View {
-      VStack(alignment: .leading, spacing: 4) {
-        if user?.primaryPhoneNumber == phoneNumber {
-          Badge(key: "Primary", style: .secondary)
+      HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
+          if user?.primaryPhoneNumber == phoneNumber {
+            Badge(key: "Primary", style: .secondary)
+          }
+          Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.text)
+            .frame(minHeight: 22)
         }
-        Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.text)
-          .frame(minHeight: 22)
+
+        Spacer()
+
+        Menu {
+          if user?.primaryPhoneNumber != phoneNumber {
+            AsyncButton {
+              await setPhoneAsPrimary(phoneNumber)
+            } label: { isRunning in
+              Text("Set as primary", bundle: .module)
+            }
+          }
+
+          Button(role: .destructive) {
+            removeResource = .phoneNumber(phoneNumber)
+          } label: {
+            Text("Remove phone", bundle: .module)
+          }
+
+        } label: {
+          Image("icon-three-dots-vertical", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(theme.colors.textSecondary)
+            .frame(width: 20, height: 20)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
@@ -100,33 +157,52 @@
     private func externalAccountRow(
       _ externalAccount: ExternalAccount
     ) -> some View {
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 8) {
-          KFImage(
-            externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
-          )
-          .resizable()
-          .placeholder {
-            #if DEBUG
-              Image(systemName: "globe")
-                .resizable()
-                .scaledToFit()
-            #endif
-          }
-          .fade(duration: 0.25)
-          .scaledToFit()
-          .frame(width: 20, height: 20)
+      HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
+          HStack(spacing: 8) {
+            KFImage(
+              externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
+            )
+            .resizable()
+            .placeholder {
+              #if DEBUG
+                Image(systemName: "globe")
+                  .resizable()
+                  .scaledToFit()
+              #endif
+            }
+            .fade(duration: 0.25)
+            .scaledToFit()
+            .frame(width: 20, height: 20)
 
-          Text(externalAccount.oauthProvider.name)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.textSecondary)
-            .frame(minHeight: 20)
+            Text(externalAccount.oauthProvider.name)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.textSecondary)
+              .frame(minHeight: 20)
+          }
+
+          Text(externalAccount.emailAddress)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.text)
+            .frame(minHeight: 22)
         }
 
-        Text(externalAccount.emailAddress)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.text)
-          .frame(minHeight: 22)
+        Spacer()
+
+        Menu {
+          Button(role: .destructive) {
+            removeResource = .externalAccount(externalAccount)
+          } label: {
+            Text("Remove connection", bundle: .module)
+          }
+
+        } label: {
+          Image("icon-three-dots-vertical", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(theme.colors.textSecondary)
+            .frame(width: 20, height: 20)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
@@ -191,6 +267,9 @@
                   UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
                 }
               }
+              .animation(.default, value: sortedEmails)
+              .animation(.default, value: sortedPhoneNumbers)
+              .animation(.default, value: user.externalAccounts)
             }
             .background(theme.colors.backgroundSecondary)
 
@@ -211,16 +290,62 @@
       }
       .navigationBarTitleDisplayMode(.inline)
       .background(theme.colors.background)
+      .clerkErrorPresenting($error)
       .sheet(isPresented: $addEmailAddressIsPresented) {
         UserProfileAddEmailView()
       }
       .sheet(isPresented: $addPhoneNumberIsPresented) {
         UserProfileAddPhoneView()
       }
+      .confirmationDialog(
+        removeResource?.messageLine1 ?? "",
+        isPresented: $isConfirmingRemoval,
+        titleVisibility: .visible,
+        actions: {
+          AsyncButton(role: .destructive) {
+            await removeResource(removeResource)
+          } label: { isRunning in
+            Text(removeResource?.title ?? "", bundle: .module)
+          }
+        }
+      )
       .onChange(of: [addEmailAddressIsPresented]) { _, newValue in
         sharedState.applyBlur = newValue.contains(true)
       }
+      .onChange(of: removeResource) {
+        if $0 != nil { isConfirmingRemoval = true }
+      }
     }
+  }
+
+  extension UserProfileDetailView {
+
+    private func setEmailAsPrimary(_ email: EmailAddress) async {
+      do {
+        try await user?.update(.init(primaryEmailAddressId: email.id))
+      } catch {
+        self.error = error
+      }
+    }
+
+    private func setPhoneAsPrimary(_ phone: PhoneNumber) async {
+      do {
+        try await user?.update(.init(primaryPhoneNumberId: phone.id))
+      } catch {
+        self.error = error
+      }
+    }
+
+    private func removeResource(_ resource: RemoveResource?) async {
+      defer { removeResource = nil }
+      
+      do {
+        try await resource?.deleteAction()
+      } catch {
+        self.error = error
+      }
+    }
+
   }
 
   #Preview {
