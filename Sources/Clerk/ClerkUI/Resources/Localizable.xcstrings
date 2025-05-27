@@ -7,6 +7,326 @@
     " " : {
       "shouldTranslate" : false
     },
+    "%@ will be removed from this account. You will no longer be able to sign in using this connected account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إزالة %@ من هذا الحساب. لن تتمكن بعد الآن من تسجيل الدخول باستخدام هذا الحساب المتصل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird von diesem Konto entfernt. Sie können sich mit diesem verbundenen Konto nicht mehr anmelden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το %@ θα αφαιρεθεί από αυτόν τον λογαριασμό. Δεν θα μπορείτε πλέον να συνδεθείτε χρησιμοποιώντας αυτόν τον συνδεδεμένο λογαριασμό."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ será eliminado de esta cuenta. Ya no podrá iniciar sesión usando esta cuenta conectada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sera supprimé de ce compte. Vous ne pourrez plus vous connecter en utilisant ce compte connecté."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ को इस खाते से हटा दिया जाएगा। आप इस जुड़े हुए खाते का उपयोग करके अब लॉग इन नहीं कर पाएंगे।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ verrà rimosso da questo account. Non potrai più accedere utilizzando questo account collegato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@はこのアカウントから削除されます。この接続されたアカウントを使用してサインインできなくなります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@이(가) 이 계정에서 제거됩니다. 이 연결된 계정을 사용하여 더 이상 로그인할 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此关联账户登录。"
+          }
+        }
+      }
+    },
+    "%@ will be removed from this account. You will no longer be able to sign in using this email address." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إزالة %@ من هذا الحساب. لن تتمكن بعد الآن من تسجيل الدخول باستخدام عنوان البريد الإلكتروني هذا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird von diesem Konto entfernt. Sie können sich mit dieser E-Mail-Adresse nicht mehr anmelden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το %@ θα αφαιρεθεί από αυτόν τον λογαριασμό. Δεν θα μπορείτε πλέον να συνδεθείτε χρησιμοποιώντας αυτή τη διεύθυνση email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ será eliminado de esta cuenta. Ya no podrá iniciar sesión usando esta dirección de correo electrónico."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sera supprimé de ce compte. Vous ne pourrez plus vous connecter en utilisant cette adresse e-mail."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ को इस खाते से हटा दिया जाएगा। आप इस ईमेल पते का उपयोग करके अब लॉग इन नहीं कर पाएंगे।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ verrà rimosso da questo account. Non potrai più accedere utilizzando questo indirizzo email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@はこのアカウントから削除されます。このメールアドレスを使用してサインインできなくなります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@이(가) 이 계정에서 제거됩니다. 이 이메일 주소를 사용하여 더 이상 로그인할 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此电子邮件地址登录。"
+          }
+        }
+      }
+    },
+    "%@ will be removed from this account. You will no longer be able to sign in using this passkey." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إزالة %@ من هذا الحساب. لن تتمكن بعد الآن من تسجيل الدخول باستخدام مفتاح المرور هذا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird von diesem Konto entfernt. Sie können sich mit diesem Passkey nicht mehr anmelden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το %@ θα αφαιρεθεί από αυτόν τον λογαριασμό. Δεν θα μπορείτε πλέον να συνδεθείτε χρησιμοποιώντας αυτό το κλειδί πρόσβασης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ será eliminado de esta cuenta. Ya no podrá iniciar sesión usando esta clave de acceso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sera supprimé de ce compte. Vous ne pourrez plus vous connecter en utilisant cette clé d'accès."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ को इस खाते से हटा दिया जाएगा। आप इस पासकी का उपयोग करके अब लॉग इन नहीं कर पाएंगे।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ verrà rimosso da questo account. Non potrai più accedere utilizzando questa chiave di accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@はこのアカウントから削除されます。このパスキーを使用してサインインできなくなります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@이(가) 이 계정에서 제거됩니다. 이 패스키를 사용하여 더 이상 로그인할 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此密码钥匙登录。"
+          }
+        }
+      }
+    },
+    "%@ will be removed from this account. You will no longer be able to sign in using this phone number." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إزالة %@ من هذا الحساب. لن تتمكن بعد الآن من تسجيل الدخول باستخدام رقم الهاتف هذا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird von diesem Konto entfernt. Sie können sich mit dieser Telefonnummer nicht mehr anmelden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το %@ θα αφαιρεθεί από αυτόν τον λογαριασμό. Δεν θα μπορείτε πλέον να συνδεθείτε χρησιμοποιώντας αυτόν τον αριθμό τηλεφώνου."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ será eliminado de esta cuenta. Ya no podrá iniciar sesión usando este número de teléfono."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sera supprimé de ce compte. Vous ne pourrez plus vous connecter en utilisant ce numéro de téléphone."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ को इस खाते से हटा दिया जाएगा। आप इस फोन नंबर का उपयोग करके अब लॉग इन नहीं कर पाएंगे।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ verrà rimosso da questo account. Non potrai più accedere utilizzando questo numero di telefono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@はこのアカウントから削除されます。この電話番号を使用してサインインできなくなります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@이(가) 이 계정에서 제거됩니다. 이 전화번호를 사용하여 더 이상 로그인할 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此电话号码登录。"
+          }
+        }
+      }
+    },
+    "A text message containing a verification code will be sent to this phone number. Message and data rates may apply." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إرسال رسالة نصية تحتوي على رمز التحقق إلى رقم الهاتف هذا. قد يتم تطبيق رسوم الرسائل والبيانات."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An diese Telefonnummer wird eine SMS mit einem Verifizierungscode gesendet. Es können Kosten für Nachrichten und Daten anfallen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Θα αποσταλεί ένα μήνυμα κειμένου που περιέχει κωδικό επαλήθευσης σε αυτόν τον αριθμό τηλεφώνου. Μπορεί να ισχύουν χρεώσεις για μηνύματα και δεδομένα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se enviará un mensaje de texto con un código de verificación a este número de teléfono. Pueden aplicarse tarifas de mensajes y datos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un message texte contenant un code de vérification sera envoyé à ce numéro de téléphone. Des frais de message et de données peuvent s'appliquer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस फोन नंबर पर एक पाठ संदेश भेजा जाएगा जिसमें सत्यापन कोड होगा। संदेश और डेटा दरें लागू हो सकती हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un messaggio di testo contenente un codice di verifica verrà inviato a questo numero di telefono. Potrebbero essere applicate tariffe per messaggi e dati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この電話番号に認証コードを含むテキストメッセージが送信されます。メッセージとデータの料金が適用される場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 전화번호로 인증 코드가 포함된 문자 메시지가 전송됩니다. 메시지 및 데이터 요금이 적용될 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将向此电话号码发送包含验证码的短信。可能会收取短信和数据费用。"
+          }
+        }
+      }
+    },
     "Account" : {
       "localizations" : {
         "ar" : {
@@ -3976,6 +4296,454 @@
         }
       }
     },
+    "Remove connected account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة الحساب المتصل"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbundenes Konto entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση συνδεδεμένου λογαριασμού"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar cuenta conectada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le compte connecté"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "जुड़ा हुआ खाता हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi account collegato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続されたアカウントを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결된 계정 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除已连接账户"
+          }
+        }
+      }
+    },
+    "Remove connection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة الاتصال"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbindung entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση σύνδεσης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar conexión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la connexion"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कनेक्शन हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi connessione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続を削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除连接"
+          }
+        }
+      }
+    },
+    "Remove email" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة البريد الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar correo electrónico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l'e-mail"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ईमेल हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除邮箱"
+          }
+        }
+      }
+    },
+    "Remove email address" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة عنوان البريد الإلكتروني"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail-Adresse entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση διεύθυνσης email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar dirección de correo electrónico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l'adresse e-mail"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ईमेल पता हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi indirizzo email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 주소 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除邮箱地址"
+          }
+        }
+      }
+    },
+    "Remove passkey" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة مفتاح المرور"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passkey entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση passkey"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar clave de acceso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la clé d'accès"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासकी हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi passkey"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除密码钥匙"
+          }
+        }
+      }
+    },
+    "Remove phone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة الهاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση τηλεφώνου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar teléfono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le téléphone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फोन हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話を削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除电话"
+          }
+        }
+      }
+    },
+    "Remove phone number" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة رقم الهاتف"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonnummer entfernen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αφαίρεση αριθμού τηλεφώνου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar número de teléfono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le numéro de téléphone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फोन नंबर हटाएं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi numero di telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除电话号码"
+          }
+        }
+      }
+    },
     "Remove photo" : {
       "localizations" : {
         "ar" : {
@@ -4499,7 +5267,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SMS-Code an %@"
+            "value" : "SMS-Code an %@ senden"
           }
         },
         "el" : {
@@ -4552,6 +5320,70 @@
         }
       }
     },
+    "Set as primary" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعيين كأساسي"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als primär festlegen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ορισμός ως κύριο"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Establecer como principal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Définir comme principal"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्राथमिक के रूप में सेट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imposta come principale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライマリに設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본으로 설정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设为主要"
+          }
+        }
+      }
+    },
     "Set new password" : {
       "localizations" : {
         "ar" : {
@@ -4563,13 +5395,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neues Passwort setzen"
+            "value" : "Neues Passwort festlegen"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ορισμός νέου κωδικού"
+            "value" : "Ορισμός νέου κωδικού πρόσβασης"
           }
         },
         "es" : {
@@ -7370,16 +8202,66 @@
     },
     "Your backup code is the one you got when setting up two-step authentication." : {
       "localizations" : {
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "رمز النسخ الاحتياطي الخاص بك هو الرمز الذي حصلت عليه عند إعداد المصادقة بخطوتين." } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ihr Backup-Code ist der, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben." } },
-        "el" : { "stringUnit" : { "state" : "translated", "value" : "Ο εφεδρικός σας κωδικός είναι αυτός που λάβατε κατά τη ρύθμιση του ελέγχου ταυτότητας δύο βημάτων." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu código de respaldo es el que recibiste al configurar la autenticación en dos pasos." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Votre code de secours est celui que vous avez reçu lors de la configuration de l'authentification à deux étapes." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "आपका बैकअप कोड वही है जो आपने दो-चरणीय प्रमाणीकरण सेट करते समय प्राप्त किया था।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il tuo codice di backup è quello che hai ricevuto durante la configurazione dell'autenticazione a due fattori." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バックアップコードは、2段階認証の設定時に取得したものです。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "백업 코드는 2단계 인증을 설정할 때 받은 코드입니다." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "您的备用码是在设置两步验证时获得的。" } }
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز النسخ الاحتياطي الخاص بك هو الرمز الذي حصلت عليه عند إعداد المصادقة بخطوتين."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Backup-Code ist der, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο εφεδρικός σας κωδικός είναι αυτός που λάβατε κατά τη ρύθμιση του ελέγχου ταυτότητας δύο βημάτων."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu código de respaldo es el que recibiste al configurar la autenticación en dos pasos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre code de secours est celui que vous avez reçu lors de la configuration de l'authentification à deux étapes."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका बैकअप कोड वही है जो आपने दो-चरणीय प्रमाणीकरण सेट करते समय प्राप्त किया था।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo codice di backup è quello che hai ricevuto durante la configurazione dell'autenticazione a due fattori."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップコードは、2段階認証の設定時に取得したものです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백업 코드는 2단계 인증을 설정할 때 받은 코드입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的备用码是在设置两步验证时获得的。"
+          }
+        }
       }
     }
   },
