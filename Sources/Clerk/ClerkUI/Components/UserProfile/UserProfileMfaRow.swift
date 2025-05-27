@@ -50,7 +50,6 @@ struct UserProfileMfaRow: View {
       HStack(alignment: .top, spacing: 16) {
         icon
           .resizable()
-          .renderingMode(.template)
           .scaledToFit()
           .frame(width: 24, height: 24)
           .foregroundStyle(theme.colors.textSecondary)
