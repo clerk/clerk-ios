@@ -238,8 +238,10 @@
       switch mode {
       case .email(let emailAddress):
         try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
+        sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
       case .phone(let phoneNumber):
         try await phoneNumber.attemptVerification(code: code)
+        sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
       }
 
       verificationState = .success
