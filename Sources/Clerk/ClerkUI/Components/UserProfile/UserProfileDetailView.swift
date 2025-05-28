@@ -7,6 +7,7 @@
 
 #if os(iOS)
 
+  import Factory
   import Kingfisher
   import SwiftUI
 
@@ -18,6 +19,8 @@
 
     @State private var addEmailAddressIsPresented = false
     @State private var addPhoneNumberIsPresented = false
+    @State private var addConnectedAccountIsPresented = false
+    @State private var connectAccountSheetHeight: CGFloat = 200
     @State private var isConfirmingRemoval = false
     @State private var removeResource: RemoveResource?
     @State private var error: Error?
@@ -181,10 +184,12 @@
               .frame(minHeight: 20)
           }
 
-          Text(externalAccount.emailAddress)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.text)
-            .frame(minHeight: 22)
+          if !externalAccount.emailAddress.isEmpty {
+            Text(externalAccount.emailAddress)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.text)
+              .frame(minHeight: 22)
+          }
         }
 
         Spacer()
@@ -259,7 +264,7 @@
                     }
 
                     UserProfileButtonRow(text: "Connect account") {
-                      // present connect account
+                      addConnectedAccountIsPresented = true
                     }
                   }
                   .background(theme.colors.background)
@@ -297,6 +302,10 @@
       .sheet(isPresented: $addPhoneNumberIsPresented) {
         UserProfileAddPhoneView()
       }
+      .sheet(isPresented: $addConnectedAccountIsPresented) {
+        UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
+          .presentationDetents([.height(connectAccountSheetHeight + UITabBarController().tabBar.frame.size.height)])
+      }
       .confirmationDialog(
         removeResource?.messageLine1 ?? "",
         isPresented: $isConfirmingRemoval,
@@ -309,8 +318,14 @@
           }
         }
       )
-      .onChange(of: [addEmailAddressIsPresented]) { _, newValue in
-        sharedState.applyBlur = newValue.contains(true)
+      .onChange(
+        of: [
+          addEmailAddressIsPresented,
+          addPhoneNumberIsPresented,
+          addConnectedAccountIsPresented
+        ]
+      ) {
+        sharedState.applyBlur = $0.contains(true)
       }
       .onChange(of: removeResource) {
         if $0 != nil { isConfirmingRemoval = true }
@@ -338,7 +353,7 @@
 
     private func removeResource(_ resource: RemoveResource?) async {
       defer { removeResource = nil }
-      
+
       do {
         try await resource?.deleteAction()
       } catch {
@@ -349,6 +364,10 @@
   }
 
   #Preview {
+    let _ = Container.shared.clerk.register(factory: { @MainActor in
+      .mock
+    })
+
     NavigationStack {
       UserProfileDetailView()
         .environment(\.clerk, .mock)

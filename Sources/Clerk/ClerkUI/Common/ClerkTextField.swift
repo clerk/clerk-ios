@@ -61,11 +61,14 @@ struct ClerkTextField: View {
             .opacity(0)
 
           ZStack {
-            SecureField("", text: $text)
-              .focused($focused, equals: .secure)
-              .animation(.default) {
-                $0.opacity(isSecure && !revealText ? 1 : 0)
-              }
+            if isSecure {
+              SecureField("", text: $text)
+                .focused($focused, equals: .secure)
+                .animation(.default) {
+                  $0.opacity(isSecure && !revealText ? 1 : 0)
+                }
+            }
+            
             TextField("", text: $text)
               .focused($focused, equals: .regular)
               .animation(.default) {
