@@ -20,6 +20,14 @@ enum SignInWithAppleUtils {
     }
     return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
   }
+    
+}
+
+extension ASAuthorizationAppleIDCredential {
+  
+  var tokenString: String {
+    identityToken.flatMap({ String(data: $0, encoding: .utf8) }) ?? ""
+  }
   
 }
 
