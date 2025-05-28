@@ -3527,7 +3527,7 @@
         }
       }
     },
-    "Link another login option to your account. You'll need to verify it before it can be used." : {
+    "Link another login option to your account. You’ll need to verify it before it can be used." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5383,6 +5383,9 @@
           }
         }
       }
+    },
+    "Set as primary" : {
+
     },
     "Set new password" : {
       "localizations" : {
