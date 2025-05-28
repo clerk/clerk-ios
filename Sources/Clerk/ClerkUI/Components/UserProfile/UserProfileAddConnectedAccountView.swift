@@ -15,7 +15,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
-    @Binding var contentHeight: CGFloat
+    @Binding private var contentHeight: CGFloat
     @State private var error: Error?
 
     private var user: User? {
@@ -26,48 +26,55 @@
       user?.unconnectedProviders ?? []
     }
 
+    init(contentHeight: Binding<CGFloat> = .constant(0)) {
+      self._contentHeight = contentHeight
+    }
+
     var body: some View {
       NavigationStack {
-        VStack(spacing: 24) {
-          Text("Link another login option to your account. You’ll need to verify it before it can be used.", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
+        ScrollView {
+          VStack(spacing: 24) {
+            Text("Link another login option to your account. You’ll need to verify it before it can be used.", bundle: .module)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.textSecondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .fixedSize(horizontal: false, vertical: true)
 
-          SocialButtonLayout {
-            ForEach(unconnectedProviders) { provider in
-              SocialButton(provider: provider) {
-                await connectExternalAccount(provider: provider)
+            SocialButtonLayout {
+              ForEach(unconnectedProviders) { provider in
+                SocialButton(provider: provider) {
+                  await connectExternalAccount(provider: provider)
+                }
               }
             }
           }
-        }
-        .padding(24)
-        .background(theme.colors.background)
-        .clerkErrorPresenting($error)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(theme.colors.background, for: .navigationBar)
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
+          .padding(24)
+          .background(theme.colors.background)
+          .clerkErrorPresenting($error)
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbarBackground(.visible, for: .navigationBar)
+          .toolbarBackground(theme.colors.background, for: .navigationBar)
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Cancel") {
+                dismiss()
+              }
+              .foregroundStyle(theme.colors.primary)
             }
-            .foregroundStyle(theme.colors.primary)
-          }
 
-          ToolbarItem(placement: .principal) {
-            Text("Connect account", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.text)
+            ToolbarItem(placement: .principal) {
+              Text("Connect account", bundle: .module)
+                .font(theme.fonts.headline)
+                .foregroundStyle(theme.colors.text)
+            }
+          }
+          .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+          } action: { newValue in
+            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + 20
           }
         }
-        .onGeometryChange(for: CGFloat.self) { proxy in
-          proxy.size.height
-        } action: { newValue in
-          contentHeight = newValue
-        }
+        .scrollBounceBehavior(.basedOnSize)
       }
       .presentationBackground(theme.colors.background)
     }
@@ -86,7 +93,7 @@
           let newExternalAccount = try await user.createExternalAccount(provider: provider)
           try await newExternalAccount.reauthorize()
         }
-        
+
         dismiss()
       } catch {
         if error.isCancelledError { return }

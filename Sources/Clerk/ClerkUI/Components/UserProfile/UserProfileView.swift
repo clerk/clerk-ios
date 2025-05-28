@@ -19,6 +19,7 @@
     @State private var updateProfileIsPresented = false
     @State private var authViewIsPresented = false
     @State private var accountSwitcherIsPresented = false
+    @State private var accountSwitcherHeight: CGFloat = 400
     @State private var sharedState = SharedState()
     @State private var error: Error?
 
@@ -178,9 +179,8 @@
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .sheet(isPresented: $accountSwitcherIsPresented) {
-        UserButtonAccountSwitcher()
-          .presentationDetents([.medium, .large])
-          .presentationDragIndicator(.hidden)
+        UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
+          .presentationDetents([.height(accountSwitcherHeight)])
       }
       .sheet(isPresented: $authViewIsPresented) {
         AuthView()
