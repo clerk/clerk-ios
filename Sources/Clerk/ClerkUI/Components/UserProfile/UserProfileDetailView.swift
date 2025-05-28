@@ -304,7 +304,7 @@
       }
       .sheet(isPresented: $addConnectedAccountIsPresented) {
         UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
-          .presentationDetents([.height(connectAccountSheetHeight + UITabBarController().tabBar.frame.size.height)])
+          .presentationDetents([.height(connectAccountSheetHeight)])
       }
       .confirmationDialog(
         removeResource?.messageLine1 ?? "",

@@ -13,7 +13,9 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-
+    
+    @Binding private var contentHeight: CGFloat
+    @State private var securedByClerkHeight: CGFloat = 0
     @State private var authViewIsPresented = false
     @State private var error: Error?
 
@@ -45,6 +47,10 @@
       } catch {
         self.error = error
       }
+    }
+    
+    init(contentHeight: Binding<CGFloat> = .constant(0)) {
+      self._contentHeight = contentHeight
     }
 
     var body: some View {
@@ -113,12 +119,23 @@
               .buttonStyle(.pressedBackground)
               .simultaneousGesture(TapGesture())
             }
+            .onGeometryChange(for: CGFloat.self, of: { proxy in
+              proxy.size.height
+            }, action: { newValue in
+              contentHeight = newValue + securedByClerkHeight + UITabBarController().tabBar.frame.size.height + 7
+            })
           }
 
           SecuredByClerkView()
             .padding(16)
             .frame(maxWidth: .infinity)
             .background(theme.colors.backgroundSecondary)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+              proxy.size.height
+            } action: { newValue in
+              securedByClerkHeight = newValue
+            }
+
         }
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
