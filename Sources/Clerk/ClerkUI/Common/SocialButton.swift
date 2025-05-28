@@ -16,6 +16,8 @@ struct SocialButton: View {
 
   let provider: OAuthProvider
   var action: (() async -> Void)? = nil
+  var result: Result<Void, Error>?
+  var onSuccess: ((TransferFlowResult) -> Void)? = nil
   var onError: ((Error) -> Void)? = nil
 
   private var iconImage: some View {
@@ -48,9 +50,11 @@ struct SocialButton: View {
 
   init(
     provider: OAuthProvider,
+    onSuccess: ((TransferFlowResult) -> Void)? = nil,
     onError: ((Error) -> Void)? = nil
   ) {
     self.provider = provider
+    self.onSuccess = onSuccess
     self.onError = onError
   }
 
@@ -90,13 +94,16 @@ struct SocialButton: View {
 extension SocialButton {
 
   func defaultAction() async throws {
+    let result: TransferFlowResult
+    
     if provider == .apple {
-      try await SignInWithAppleUtils.signIn()
+      result = try await SignInWithAppleUtils.signIn()
     } else {
-      try await SignIn.authenticateWithRedirect(
+      result = try await SignIn.authenticateWithRedirect(
         strategy: .oauth(provider: provider)
       )
     }
+    onSuccess?(result)
   }
 }
 

@@ -197,7 +197,14 @@
 
             SocialButtonLayout {
               ForEach(clerk.environment.authenticatableSocialProviders) { provider in
-                SocialButton(provider: provider) { error in
+                SocialButton(provider: provider) { result in
+                  switch result {
+                  case .signIn(let signIn):
+                    authState.setToStepForStatus(signIn: signIn)
+                  case .signUp(let signUp):
+                    dump("SIGN UP NOT IMPLEMENTED YET")
+                  }
+                } onError: { error in
                   self.generalError = error
                 }
                 .simultaneousGesture(TapGesture())
