@@ -3527,6 +3527,70 @@
         }
       }
     },
+    "Link another login option to your account. You'll need to verify it before it can be used." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ربط خيار تسجيل دخول آخر بحسابك. ستحتاج إلى التحقق منه قبل استخدامه."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpfen Sie eine weitere Anmeldemöglichkeit mit Ihrem Konto. Sie müssen sie verifizieren, bevor sie verwendet werden kann."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύνδεση μιας άλλης επιλογής σύνδεσης με τον λογαριασμό σας. Θα χρειαστεί να την επαληθεύσετε πριν μπορεί να χρησιμοποιηθεί."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincula otra opción de inicio de sesión a tu cuenta. Deberás verificarla antes de poder usarla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Associez une autre option de connexion à votre compte. Vous devrez la vérifier avant de pouvoir l'utiliser."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने खाते से दूसरा लॉगिन विकल्प जोड़ें। इसका उपयोग करने से पहले आपको इसे सत्यापित करना होगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega un'altra opzione di accesso al tuo account. Dovrai verificarla prima di poterla utilizzare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントに別のログイン方法をリンクします。使用する前に確認が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정에 다른 로그인 옵션을 연결하세요. 사용하기 전에 확인이 필요합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将其他登录选项链接到您的账户。使用前需要验证。"
+          }
+        }
+      }
+    },
     "Manage account" : {
       "localizations" : {
         "ar" : {
@@ -5320,70 +5384,6 @@
         }
       }
     },
-    "Set as primary" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعيين كأساسي"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Als primär festlegen"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ορισμός ως κύριο"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Establecer como principal"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Définir comme principal"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "प्राथमिक के रूप में सेट करें"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imposta come principale"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プライマリに設定"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "기본으로 설정"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设为主要"
-          }
-        }
-      }
-    },
     "Set new password" : {
       "localizations" : {
         "ar" : {
@@ -6035,19 +6035,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beim Laden des Bildes aus der Fotomediathek ist ein Fehler aufgetreten."
+            "value" : "Beim Laden des Bildes aus der Fotobibliothek ist ein Fehler aufgetreten."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Παρουσιάστηκε σφάλμα κατά τη φόρτωση της εικόνας από τη βιβλιοθήκη φωτογραφιών."
+            "value" : "Υπήρξε σφάλμα κατά τη φόρτωση της εικόνας από τη βιβλιοθήκη φωτογραφιών."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hubo un error al cargar la imagen desde la biblioteca de fotos."
+            "value" : "Hubo un error al cargar la imagen de la biblioteca de fotos."
           }
         },
         "fr" : {
@@ -6071,19 +6071,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "写真ライブラリから画像を読み込む際にエラーが発生しました。"
+            "value" : "フォトライブラリから画像を読み込む際にエラーが発生しました。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "사진 보관함에서 이미지를 불러오는 중 오류가 발생했습니다."
+            "value" : "사진 라이브러리에서 이미지를 로드하는 중 오류가 발생했습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从照片库加载图片时出错。"
+            "value" : "从照片库加载图像时出错。"
           }
         }
       }
@@ -6123,7 +6123,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "यह डिवाइस"
+            "value" : "इस डिवाइस"
           }
         },
         "it" : {
@@ -6147,7 +6147,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此设备"
+            "value" : "这个设备"
           }
         }
       }
