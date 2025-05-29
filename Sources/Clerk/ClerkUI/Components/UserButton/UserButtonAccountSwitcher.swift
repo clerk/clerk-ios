@@ -125,6 +125,7 @@
               contentHeight = newValue + securedByClerkHeight + UITabBarController().tabBar.frame.size.height + 7
             })
           }
+          .scrollBounceBehavior(.basedOnSize)
 
           SecuredByClerkView()
             .padding(16)
