@@ -46,6 +46,9 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
   /// A list of backup codes in case of lost phone number access.
   public let backupCodes: [String]?
 
+  /// The date when the phone number was created.
+  public let createdAt: Date
+
   public init(
     id: String,
     phoneNumber: String,
@@ -53,7 +56,8 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
     defaultSecondFactor: Bool,
     verification: Verification? = nil,
     linkedTo: JSON? = nil,
-    backupCodes: [String]? = nil
+    backupCodes: [String]? = nil,
+    createdAt: Date = .now,
   ) {
     self.id = id
     self.phoneNumber = phoneNumber
@@ -62,6 +66,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
     self.verification = verification
     self.linkedTo = linkedTo
     self.backupCodes = backupCodes
+    self.createdAt = createdAt
   }
 }
 

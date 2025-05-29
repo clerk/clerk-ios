@@ -17,8 +17,8 @@
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.userProfileSharedState) private var sharedState
 
-    @State private var addEmailAddressIsPresented = false
-    @State private var addPhoneNumberIsPresented = false
+    @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
+    @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
     @State private var addConnectedAccountIsPresented = false
     @State private var connectAccountSheetHeight: CGFloat = 200
     @State private var isConfirmingRemoval = false
@@ -37,7 +37,7 @@
           } else if rhs == user?.primaryEmailAddress {
             return false
           } else {
-            return false
+            return lhs.createdAt < rhs.createdAt
           }
         }
     }
@@ -50,8 +50,15 @@
           } else if rhs == user?.primaryPhoneNumber {
             return false
           } else {
-            return false
+            return lhs.createdAt < rhs.createdAt
           }
+        }
+    }
+    
+    var sortedExternalAccounts: [ExternalAccount] {
+      (user?.externalAccounts.filter({ $0.verification?.status == .verified }) ?? [])
+        .sorted { lhs, rhs in
+          lhs.createdAt < rhs.createdAt
         }
     }
 
@@ -61,8 +68,18 @@
     ) -> some View {
       HStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 4) {
-          if user?.primaryEmailAddress == emailAddress {
-            Badge(key: "Primary", style: .secondary)
+          WrappingHStack(alignment: .leading) {
+            if user?.primaryEmailAddress == emailAddress {
+              Badge(key: "Primary", style: .secondary)
+            }
+            
+            if emailAddress.verification?.status != .verified {
+              Badge(key: "Unverified", style: .warning)
+            }
+            
+            if emailAddress.linkedTo?.isEmpty == false {
+              Badge(key: "Linked", style: .secondary)
+            }
           }
 
           Text(emailAddress.emailAddress)
@@ -74,14 +91,22 @@
         Spacer(minLength: 0)
 
         Menu {
-          if user?.primaryEmailAddress != emailAddress {
+          if user?.primaryEmailAddress != emailAddress, emailAddress.verification?.status == .verified {
             AsyncButton {
               await setEmailAsPrimary(emailAddress)
             } label: { isRunning in
               Text("Set as primary", bundle: .module)
             }
           }
-
+          
+          if emailAddress.verification?.status != .verified {
+            Button {
+              addEmailAddressDestination = .verify(emailAddress)
+            } label: {
+              Text("Verify", bundle: .module)
+            }
+          }
+          
           Button(role: .destructive) {
             removeResource = .email(emailAddress)
           } label: {
@@ -112,9 +137,20 @@
     ) -> some View {
       HStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 4) {
-          if user?.primaryPhoneNumber == phoneNumber {
-            Badge(key: "Primary", style: .secondary)
+          WrappingHStack(alignment: .leading) {
+            if user?.primaryPhoneNumber == phoneNumber {
+              Badge(key: "Primary", style: .secondary)
+            }
+            
+            if phoneNumber.verification?.status != .verified {
+              Badge(key: "Unverified", style: .warning)
+            }
+            
+            if phoneNumber.reservedForSecondFactor {
+              Badge(key: "MFA reserved", style: .secondary)
+            }
           }
+          
           Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.text)
@@ -124,11 +160,19 @@
         Spacer()
 
         Menu {
-          if user?.primaryPhoneNumber != phoneNumber {
+          if user?.primaryPhoneNumber != phoneNumber, phoneNumber.verification?.status == .verified {
             AsyncButton {
               await setPhoneAsPrimary(phoneNumber)
             } label: { isRunning in
               Text("Set as primary", bundle: .module)
+            }
+          }
+          
+          if phoneNumber.verification?.status != .verified {
+            Button {
+              addPhoneNumberDestination = .verify(phoneNumber)
+            } label: {
+              Text("Verify", bundle: .module)
             }
           }
 
@@ -162,26 +206,32 @@
     ) -> some View {
       HStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: 8) {
-            KFImage(
-              externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
-            )
-            .resizable()
-            .placeholder {
-              #if DEBUG
-                Image(systemName: "globe")
-                  .resizable()
-                  .scaledToFit()
-              #endif
-            }
-            .fade(duration: 0.25)
-            .scaledToFit()
-            .frame(width: 20, height: 20)
+          WrappingHStack(alignment: .leading) {
+            HStack(spacing: 8) {
+              KFImage(
+                externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
+              )
+              .resizable()
+              .placeholder {
+                #if DEBUG
+                  Image(systemName: "globe")
+                    .resizable()
+                    .scaledToFit()
+                #endif
+              }
+              .fade(duration: 0.25)
+              .scaledToFit()
+              .frame(width: 20, height: 20)
 
-            Text(externalAccount.oauthProvider.name)
-              .font(theme.fonts.subheadline)
-              .foregroundStyle(theme.colors.textSecondary)
-              .frame(minHeight: 20)
+              Text(externalAccount.oauthProvider.name)
+                .font(theme.fonts.subheadline)
+                .foregroundStyle(theme.colors.textSecondary)
+                .frame(minHeight: 20)
+            }
+            
+            if externalAccount.verification?.status != .verified {
+              Badge(key: "Unverified", style: .warning)
+            }
           }
 
           if !externalAccount.emailAddress.isEmpty {
@@ -195,6 +245,14 @@
         Spacer()
 
         Menu {
+          if externalAccount.verification?.status != .verified {
+            Button {
+              
+            } label: {
+              Text("Verify", bundle: .module)
+            }
+          }
+          
           Button(role: .destructive) {
             removeResource = .externalAccount(externalAccount)
           } label: {
@@ -233,7 +291,7 @@
                     }
 
                     UserProfileButtonRow(text: "Add email address") {
-                      addEmailAddressIsPresented = true
+                      addEmailAddressDestination = .add
                     }
                   }
                   .background(theme.colors.background)
@@ -249,7 +307,7 @@
                     }
 
                     UserProfileButtonRow(text: "Add phone number") {
-                      addPhoneNumberIsPresented = true
+                      addPhoneNumberDestination = .add
                     }
                   }
                   .background(theme.colors.background)
@@ -259,7 +317,7 @@
 
                 Section {
                   Group {
-                    ForEach(user.externalAccounts) { externalAccount in
+                    ForEach(sortedExternalAccounts) { externalAccount in
                       externalAccountRow(externalAccount)
                     }
 
@@ -296,11 +354,11 @@
       .navigationBarTitleDisplayMode(.inline)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
-      .sheet(isPresented: $addEmailAddressIsPresented) {
-        UserProfileAddEmailView()
+      .sheet(item: $addEmailAddressDestination) {
+        UserProfileAddEmailView(desintation: $0)
       }
-      .sheet(isPresented: $addPhoneNumberIsPresented) {
-        UserProfileAddPhoneView()
+      .sheet(item: $addPhoneNumberDestination) {
+        UserProfileAddPhoneView(desintation: $0)
       }
       .sheet(isPresented: $addConnectedAccountIsPresented) {
         UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
@@ -320,8 +378,8 @@
       )
       .onChange(
         of: [
-          addEmailAddressIsPresented,
-          addPhoneNumberIsPresented,
+          addEmailAddressDestination != nil,
+          addPhoneNumberDestination != nil,
           addConnectedAccountIsPresented
         ]
       ) {

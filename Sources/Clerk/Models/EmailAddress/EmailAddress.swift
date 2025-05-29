@@ -34,17 +34,22 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
   /// An array of objects containing information about any identifications
   /// that might be linked to this email address.
   public let linkedTo: [JSON]?
+  
+  /// The date the email was created.
+  public let createdAt: Date
 
   public init(
     id: String,
     emailAddress: String,
     verification: Verification? = nil,
-    linkedTo: [JSON]? = nil
+    linkedTo: [JSON]? = nil,
+    createdAt: Date = .now
   ) {
     self.id = id
     self.emailAddress = emailAddress
     self.verification = verification
     self.linkedTo = linkedTo
+    self.createdAt = createdAt
   }
 }
 

@@ -19,12 +19,23 @@
     @State private var error: Error?
     @FocusState private var isFocused: Bool
 
-    enum Destination: Hashable {
+    enum Destination: Hashable, Identifiable {
+      case add // should never be added to the path
       case verify(EmailAddress)
+      
+      var id: Self { self }
     }
 
     var user: User? {
       clerk.user
+    }
+    
+    init(desintation: Destination? = nil) {
+      if case .verify(let email) = desintation {
+        var path = NavigationPath()
+        path.append(Destination.verify(email))
+        _path = State(initialValue: path)
+      }
     }
 
     var body: some View {
@@ -97,6 +108,9 @@
             UserProfileVerifyView(mode: .email(email)) {
               dismiss()
             }
+          case .add:
+            EmptyView() // should never be hit, .add should never be added to path
+              .task { dismiss() }
           }
         }
       }
