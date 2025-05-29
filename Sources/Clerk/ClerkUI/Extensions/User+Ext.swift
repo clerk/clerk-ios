@@ -47,7 +47,7 @@
 
     @MainActor
     var unconnectedProviders: [OAuthProvider] {
-      let socialProviders = Clerk.shared.environment.authenticatableSocialProviders
+      let socialProviders = Clerk.shared.environment.allSocialProviders
       let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
       return socialProviders.filter { !verifiedExternalProviders.contains($0) }
     }
