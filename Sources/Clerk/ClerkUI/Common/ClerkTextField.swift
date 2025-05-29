@@ -112,9 +112,13 @@ struct ClerkTextField: View {
           }
         } label: {
           Image(systemName: revealText ? "eye.fill" : "eye.slash.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 18)
             .contentTransition(.symbolEffect(.replace))
             .foregroundStyle(theme.colors.textSecondary)
         }
+        .frame(width: 24)
       }
     }
     .padding(.horizontal, 16)

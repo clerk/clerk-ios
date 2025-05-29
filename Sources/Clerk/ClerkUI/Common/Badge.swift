@@ -79,6 +79,7 @@ struct Badge: View {
   var body: some View {
     text
       .font(theme.fonts.footnote)
+      .fontWeight(.semibold)
       .frame(minHeight: 18)
       .multilineTextAlignment(.center)
       .padding(.horizontal, 6)
