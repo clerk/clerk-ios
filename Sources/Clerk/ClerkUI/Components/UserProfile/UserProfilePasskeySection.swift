@@ -22,7 +22,7 @@
     var sortedPasskeys: [Passkey] {
       guard let user else { return [] }
       return user.passkeys.sorted { lhs, rhs in
-        lhs.createdAt > rhs.createdAt
+        lhs.createdAt < rhs.createdAt
       }
     }
 
