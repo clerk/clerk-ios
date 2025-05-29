@@ -120,6 +120,7 @@
             .foregroundColor(theme.colors.textSecondary)
             .frame(width: 20, height: 20)
         }
+        .frame(width: 30, height: 30)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
@@ -189,6 +190,7 @@
             .foregroundColor(theme.colors.textSecondary)
             .frame(width: 20, height: 20)
         }
+        .frame(width: 30, height: 30)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
@@ -266,6 +268,7 @@
             .foregroundColor(theme.colors.textSecondary)
             .frame(width: 20, height: 20)
         }
+        .frame(width: 30, height: 30)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)

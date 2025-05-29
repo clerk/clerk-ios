@@ -50,6 +50,9 @@
                 UserProfileDeleteAccountSection()
               }
             }
+            .animation(.default, value: user)
+            .animation(.default, value: clerk.sessionsByUserId)
+            .animation(.default, value: environment)
           }
           .background(theme.colors.backgroundSecondary)
         }
