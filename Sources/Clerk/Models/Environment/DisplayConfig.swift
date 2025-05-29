@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk.Environment {
 
-  struct DisplayConfig: Codable, Sendable {
+  struct DisplayConfig: Codable, Sendable, Equatable {
     let instanceEnvironmentType: InstanceEnvironmentType
     let applicationName: String
     let preferredSignInStrategy: PreferredSignInStrategy
@@ -20,7 +20,7 @@ extension Clerk.Environment {
     let privacyPolicyUrl: String?
     let termsUrl: String?
 
-    enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable {
+    enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
       case password
       case otp
       case unknown
