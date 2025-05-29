@@ -123,6 +123,16 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: true
         ),
+        "passkey": .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: true
+        ),
         "authenticator_app": .init(
           enabled: true,
           required: false,

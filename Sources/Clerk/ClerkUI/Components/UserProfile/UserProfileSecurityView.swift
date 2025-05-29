@@ -29,11 +29,15 @@
         if let user {
           ScrollView {
             VStack(spacing: 0) {
-              if environment.isPasswordEnabled {
+              if environment.passwordIsEnabled {
                 UserProfilePasswordSection()
               }
-
-              if environment.isMfaEnabled {
+              
+              if environment.passkeyIsEnabled {
+                UserProfilePasskeySection()
+              }
+              
+              if environment.mfaIsEnabled {
                 UserProfileMfaSection()
               }
 
@@ -42,7 +46,7 @@
                   .transition(.opacity.animation(.default))
               }
               
-              if environment.isDeleteSelfEnabled {
+              if environment.deleteSelfIsEnabled {
                 UserProfileDeleteAccountSection()
               }
             }
