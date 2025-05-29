@@ -9,15 +9,15 @@ import Foundation
 
 extension Clerk.Environment {
 
-  struct FraudSettings: Codable, Sendable {
+  struct FraudSettings: Codable, Sendable, Equatable {
 
     let native: Native
 
-    struct Native: Codable, Sendable {
+    struct Native: Codable, Sendable, Equatable {
 
       let deviceAttestationMode: DeviceAttestationMode
 
-      enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable {
+      enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
         case disabled
         case onboarding
         case enforced

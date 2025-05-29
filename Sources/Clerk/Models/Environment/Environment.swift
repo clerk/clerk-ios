@@ -10,7 +10,7 @@ import Foundation
 
 extension Clerk {
 
-  struct Environment: Codable, Sendable {
+  struct Environment: Codable, Sendable, Equatable {
     var authConfig: AuthConfig?
     var userSettings: UserSettings?
     var displayConfig: DisplayConfig?
