@@ -12,7 +12,7 @@ struct InvalidAuthMiddleware {
 
   static func process(task: URLSessionTask, error: any Error) async throws -> Bool {
 
-    if let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "authentication_invalid" {
+    if let clerkAPIError = error as? ClerkAPIError, ["authentication_invalid", "resource_not_found"].contains(clerkAPIError.code) {
 
       // If the original request was also a GET client, return false so we don't end up in a loop of failed GET Clients.
       if task.originalRequest?.url?.lastPathComponent == "client", task.originalRequest?.httpMethod == "GET" {
