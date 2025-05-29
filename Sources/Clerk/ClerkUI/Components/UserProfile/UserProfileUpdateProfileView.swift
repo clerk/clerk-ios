@@ -30,7 +30,7 @@
     }
 
     var showSaveButton: Bool {
-      environment.isUsernameEnabled || environment.isFirstNameEnabled || environment.isLastNameEnabled
+      environment.usernameIsEnabled || environment.firstNameIsEnabled || environment.lastNameIsEnabled
     }
 
     var user: User? {
@@ -44,7 +44,7 @@
             VStack(spacing: 32) {
               menu
 
-              if environment.isUsernameEnabled {
+              if environment.usernameIsEnabled {
                 ClerkTextField("Username", text: $username)
                   .textContentType(.username)
                   .autocorrectionDisabled()
@@ -52,13 +52,13 @@
                   .task { username = user.username ?? "" }
               }
 
-              if environment.isFirstNameEnabled {
+              if environment.firstNameIsEnabled {
                 ClerkTextField("First name", text: $firstName)
                   .textContentType(.givenName)
                   .task { firstName = user.firstName ?? "" }
               }
 
-              if environment.isLastNameEnabled {
+              if environment.lastNameIsEnabled {
                 ClerkTextField("Last name", text: $lastName)
                   .textContentType(.familyName)
                   .task { lastName = user.lastName ?? "" }
@@ -202,9 +202,9 @@
       do {
         try await user?.update(
           .init(
-            username: environment.isUsernameEnabled ? username : nil,
-            firstName: environment.isFirstNameEnabled ? firstName : nil,
-            lastName: environment.isLastNameEnabled ? lastName : nil
+            username: environment.usernameIsEnabled ? username : nil,
+            firstName: environment.firstNameIsEnabled ? firstName : nil,
+            lastName: environment.lastNameIsEnabled ? lastName : nil
           ))
 
         dismiss()

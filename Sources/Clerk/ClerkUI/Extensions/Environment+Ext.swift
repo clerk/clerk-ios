@@ -47,71 +47,78 @@
         .map(\.key)
     }
 
-    var isMutliSessionModeEnabled: Bool {
+    var mutliSessionModeIsEnabled: Bool {
       guard let authConfig else { return false }
       return authConfig.singleSessionMode == false
     }
 
-    var isBillingEnabled: Bool {
+    var billingIsEnabled: Bool {
       guard let commerceSettings else { return false }
       return commerceSettings.billing.enabled
     }
 
-    var isPasswordEnabled: Bool {
+    var passwordIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "password" && value.enabled
       }
     }
     
-    var isMfaEnabled: Bool {
+    var passkeyIsEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "passkey" && value.enabled
+      }
+    }
+    
+    var mfaIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { _, value in
         value.enabled && value.usedForSecondFactor
       }
     }
     
-    var isMfaAuthenticatorAppEnabled: Bool {
+    var mfaAuthenticatorAppIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "authenticator_app" && value.enabled && value.usedForSecondFactor
       }
     }
     
-    var isMfaPhoneCodeEnabled: Bool {
+    var mfaPhoneCodeIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "phone_number" && value.enabled && value.usedForSecondFactor
       }
     }
     
-    var isMfaBackupCodeEnabled: Bool {
+    var mfaBackupCodeIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "backup_code" && value.enabled && value.usedForSecondFactor
       }
     }
     
-    var isDeleteSelfEnabled: Bool {
+    var deleteSelfIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.actions.deleteSelf
     }
     
-    var isUsernameEnabled: Bool {
+    var usernameIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "username" && value.enabled
       }
     }
     
-    var isFirstNameEnabled: Bool {
+    var firstNameIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "first_name" && value.enabled
       }
     }
     
-    var isLastNameEnabled: Bool {
+    var lastNameIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
         key == "last_name" && value.enabled

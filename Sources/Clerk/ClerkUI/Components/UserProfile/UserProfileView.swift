@@ -111,7 +111,7 @@
                 }
 
                 VStack(spacing: 0) {
-                  if clerk.environment.isMutliSessionModeEnabled {
+                  if clerk.environment.mutliSessionModeIsEnabled {
                     if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
                       row(icon: "icon-switch", text: "Switch account") {
                         accountSwitcherIsPresented = true
