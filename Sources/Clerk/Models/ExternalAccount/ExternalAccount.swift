@@ -52,6 +52,9 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
   /// An object holding information on the verification of this external account.
   public let verification: Verification?
 
+  /// The date when the external account was created.
+  public let createdAt: Date
+
   public init(
     id: String,
     identificationId: String,
@@ -65,7 +68,8 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
     username: String? = nil,
     publicMetadata: JSON,
     label: String? = nil,
-    verification: Verification? = nil
+    verification: Verification? = nil,
+    createdAt: Date = .now
   ) {
     self.id = id
     self.identificationId = identificationId
@@ -80,6 +84,7 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
     self.publicMetadata = publicMetadata
     self.label = label
     self.verification = verification
+    self.createdAt = createdAt
   }
 }
 

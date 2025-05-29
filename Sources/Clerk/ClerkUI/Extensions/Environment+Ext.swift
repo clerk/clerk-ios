@@ -24,6 +24,18 @@
         OAuthProvider(strategy: $0.value.strategy)
       }).sorted()
     }
+    
+    var allSocialProviders: [OAuthProvider] {
+      guard let social = userSettings?.social else {
+        return []
+      }
+
+      let enabledProvicers = social.filter(\.value.enabled)
+
+      return enabledProvicers.map({
+        OAuthProvider(strategy: $0.value.strategy)
+      }).sorted()
+    }
 
     var enabledFirstFactorAttributes: [String] {
       guard let userSettings else { return [] }
