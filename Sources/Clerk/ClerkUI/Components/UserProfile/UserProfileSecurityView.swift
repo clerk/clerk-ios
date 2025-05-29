@@ -66,6 +66,9 @@
       }
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
+      .task {
+        try? await user?.getSessions()
+      }
     }
   }
 
