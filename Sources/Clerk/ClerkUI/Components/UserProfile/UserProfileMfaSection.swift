@@ -37,7 +37,7 @@
             )
           }
 
-          if environment.isMfaPhoneCodeEnabled {
+          if environment.mfaPhoneCodeIsEnabled {
             ForEach(mfaPhoneNumbers) { phoneNumber in
               UserProfileMfaRow(
                 style: .sms(phoneNumber: phoneNumber),
@@ -46,7 +46,7 @@
             }
           }
 
-          if environment.isMfaBackupCodeEnabled {
+          if environment.mfaBackupCodeIsEnabled {
             if user?.backupCodeEnabled == true {
               UserProfileMfaRow(
                 style: .backupCodes
