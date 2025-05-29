@@ -24,10 +24,10 @@
 
         VStack(alignment: .leading, spacing: 0) {
           Group {
-            Text("Created: \(passkey.createdAt.formatted(Date.RelativeFormatStyle()))", bundle: .module)
+            Text("Created: \(passkey.createdAt.relativeNamedFormat)", bundle: .module)
             
             if let lastUsedAt = passkey.lastUsedAt {
-              Text("Last used: \(lastUsedAt.formatted(Date.RelativeFormatStyle()))", bundle: .module)
+              Text("Last used: \(lastUsedAt.relativeNamedFormat)", bundle: .module)
             }
           }
           .font(theme.fonts.subheadline)
