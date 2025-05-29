@@ -320,9 +320,11 @@
                     ForEach(sortedExternalAccounts) { externalAccount in
                       externalAccountRow(externalAccount)
                     }
-
-                    UserProfileButtonRow(text: "Connect account") {
-                      addConnectedAccountIsPresented = true
+                    
+                    if !user.unconnectedProviders.isEmpty {
+                      UserProfileButtonRow(text: "Connect account") {
+                        addConnectedAccountIsPresented = true
+                      }
                     }
                   }
                   .background(theme.colors.background)
