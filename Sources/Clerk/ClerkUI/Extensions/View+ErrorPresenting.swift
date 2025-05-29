@@ -10,6 +10,8 @@
   import SwiftUI
 
   struct ClerkErrorViewModifier: ViewModifier {
+    @Environment(\.clerkTheme) private var theme
+    
     @Binding var error: Error?
     var action: ErrorView.ActionConfig?
 
@@ -49,6 +51,7 @@
               )
               .presentationDetents(detents)
               .presentationDragIndicator(.visible)
+              .presentationBackground(theme.colors.background)
           }
         }
     }
