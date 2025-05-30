@@ -15,7 +15,6 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
-    @State private var path = NavigationPath()
     @State private var updateProfileIsPresented = false
     @State private var authViewIsPresented = false
     @State private var accountSwitcherIsPresented = false
@@ -85,126 +84,128 @@
     }
 
     public var body: some View {
-      NavigationStack(path: $path) {
-        VStack(spacing: 0) {
-          ScrollView {
-            VStack(spacing: 0) {
-              if let user {
+      if let user {
+        NavigationStack(path: $sharedState.path) {
+          VStack(spacing: 0) {
+            ScrollView {
+              VStack(spacing: 0) {
                 userProfileHeader(user)
-              }
 
-              VStack(spacing: 48) {
-                VStack(spacing: 0) {
-                  row(icon: "icon-profile", text: "Profile") {
-                    path.append(Destination.profileDetail)
+                VStack(spacing: 48) {
+                  VStack(spacing: 0) {
+                    row(icon: "icon-profile", text: "Profile") {
+                      sharedState.path.append(Destination.profileDetail)
+                    }
+
+                    row(icon: "icon-security", text: "Security") {
+                      sharedState.path.append(Destination.security)
+                    }
+                  }
+                  .background(theme.colors.background)
+                  .overlay(alignment: .top) {
+                    Rectangle()
+                      .frame(height: 1)
+                      .foregroundStyle(theme.colors.border)
                   }
 
-                  row(icon: "icon-security", text: "Security") {
-                    path.append(Destination.security)
-                  }
-                }
-                .background(theme.colors.background)
-                .overlay(alignment: .top) {
-                  Rectangle()
-                    .frame(height: 1)
-                    .foregroundStyle(theme.colors.border)
-                }
+                  VStack(spacing: 0) {
+                    if clerk.environment.mutliSessionModeIsEnabled {
+                      if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
+                        row(icon: "icon-switch", text: "Switch account") {
+                          accountSwitcherIsPresented = true
+                        }
+                      }
 
-                VStack(spacing: 0) {
-                  if clerk.environment.mutliSessionModeIsEnabled {
-                    if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
-                      row(icon: "icon-switch", text: "Switch account") {
-                        accountSwitcherIsPresented = true
+                      row(icon: "icon-plus", text: "Add account") {
+                        authViewIsPresented = true
                       }
                     }
 
-                    row(icon: "icon-plus", text: "Add account") {
-                      authViewIsPresented = true
+                    row(icon: "icon-sign-out", text: "Sign out") {
+                      guard let sessionId = clerk.session?.id else { return }
+                      await signOut(sessionId: sessionId)
                     }
                   }
-
-                  row(icon: "icon-sign-out", text: "Sign out") {
-                    guard let sessionId = clerk.session?.id else { return }
-                    await signOut(sessionId: sessionId)
+                  .background(theme.colors.background)
+                  .overlay(alignment: .top) {
+                    Rectangle()
+                      .frame(height: 1)
+                      .foregroundStyle(theme.colors.border)
                   }
-                }
-                .background(theme.colors.background)
-                .overlay(alignment: .top) {
-                  Rectangle()
-                    .frame(height: 1)
-                    .foregroundStyle(theme.colors.border)
                 }
               }
             }
-          }
-          .background(theme.colors.backgroundSecondary)
-
-          SecuredByClerkView()
-            .padding(16)
-            .frame(maxWidth: .infinity)
             .background(theme.colors.backgroundSecondary)
-        }
-        .animation(.default, value: user)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .principal) {
-            Text("Account", bundle: .module)
-              .font(theme.fonts.headline)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.text)
-          }
 
-          if isInSheet {
-            ToolbarItem(placement: .topBarTrailing) {
-              DismissButton()
+            SecuredByClerkView()
+              .padding(16)
+              .frame(maxWidth: .infinity)
+              .background(theme.colors.backgroundSecondary)
+          }
+          .animation(.default, value: user)
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar {
+            ToolbarItem(placement: .principal) {
+              Text("Account", bundle: .module)
+                .font(theme.fonts.headline)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.text)
+            }
+
+            if isInSheet {
+              ToolbarItem(placement: .topBarTrailing) {
+                DismissButton()
+              }
+            }
+          }
+          .navigationDestination(for: Destination.self) {
+            $0.view
+          }
+        }
+        .environment(\.userProfileSharedState, sharedState)
+        .tint(theme.colors.primary)
+        .onChange(of: [
+          authViewIsPresented,
+          updateProfileIsPresented,
+          accountSwitcherIsPresented
+        ], { _, newValue in
+          sharedState.applyBlur = newValue.contains(true)
+        })
+        .animation(.default) {
+          $0.blur(radius: sharedState.applyBlur ? 12 : 0)
+        }
+        .background(theme.colors.background)
+        .clerkErrorPresenting($error)
+        .sheet(isPresented: $accountSwitcherIsPresented) {
+          UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
+            .presentationDetents([.height(accountSwitcherHeight)])
+        }
+        .sheet(isPresented: $authViewIsPresented) {
+          AuthView()
+            .interactiveDismissDisabled()
+        }
+        .sheet(isPresented: $updateProfileIsPresented) {
+          UserProfileUpdateProfileView(user: user)
+        }
+        .task {
+          for await event in clerk.authEventEmitter.events {
+            switch event {
+            case .signInCompleted, .signUpCompleted:
+              authViewIsPresented = false
             }
           }
         }
-        .navigationDestination(for: Destination.self) {
-          $0.view
+        .task {
+          await getSessionsOnAllDevices()
         }
-      }
-      .environment(\.userProfileSharedState, sharedState)
-      .tint(theme.colors.primary)
-      .onChange(of: [
-        authViewIsPresented,
-        updateProfileIsPresented,
-        accountSwitcherIsPresented
-      ], { _, newValue in
-        sharedState.applyBlur = newValue.contains(true)
-      })
-      .animation(.default) {
-        $0.blur(radius: sharedState.applyBlur ? 12 : 0)
-      }
-      .background(theme.colors.background)
-      .clerkErrorPresenting($error)
-      .sheet(isPresented: $accountSwitcherIsPresented) {
-        UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
-          .presentationDetents([.height(accountSwitcherHeight)])
-      }
-      .sheet(isPresented: $authViewIsPresented) {
-        AuthView()
-          .interactiveDismissDisabled()
-      }
-      .sheet(isPresented: $updateProfileIsPresented) {
-        UserProfileUpdateProfileView()
-      }
-      .task {
-        for await event in clerk.authEventEmitter.events {
-          switch event {
-          case .signInCompleted, .signUpCompleted:
-            authViewIsPresented = false
-          }
+        .task {
+          try? await Clerk.Environment.get()
         }
-      }
-      .task {
-        await getSessionsOnAllDevices()
-      }
-      .task {
-        try? await Clerk.Environment.get()
-      }
-      .task {
-        try? await Client.get()
+        .task {
+          try? await Client.get()
+        }
+      } else {
+        SpinnerView()
       }
     }
   }
@@ -253,6 +254,7 @@
   extension UserProfileView {
     @Observable
     class SharedState {
+      var path = NavigationPath()
       var applyBlur: Bool = false
       var lastCodeSentAt: [String: Date] = [:]
     }
