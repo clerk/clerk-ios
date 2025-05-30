@@ -44,40 +44,41 @@
             VStack(spacing: 32) {
               menu
 
-              if environment.usernameIsEnabled {
-                ClerkTextField("Username", text: $username)
-                  .textContentType(.username)
-                  .autocorrectionDisabled()
-                  .textInputAutocapitalization(.never)
-                  .task { username = user.username ?? "" }
-              }
+              VStack(spacing: 24) {
+                if environment.usernameIsEnabled {
+                  ClerkTextField("Username", text: $username)
+                    .textContentType(.username)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .task { username = user.username ?? "" }
+                }
 
-              if environment.firstNameIsEnabled {
-                ClerkTextField("First name", text: $firstName)
-                  .textContentType(.givenName)
-                  .task { firstName = user.firstName ?? "" }
-              }
+                if environment.firstNameIsEnabled {
+                  ClerkTextField("First name", text: $firstName)
+                    .textContentType(.givenName)
+                    .task { firstName = user.firstName ?? "" }
+                }
 
-              if environment.lastNameIsEnabled {
-                ClerkTextField("Last name", text: $lastName)
-                  .textContentType(.familyName)
-                  .task { lastName = user.lastName ?? "" }
-              }
+                if environment.lastNameIsEnabled {
+                  ClerkTextField("Last name", text: $lastName)
+                    .textContentType(.familyName)
+                    .task { lastName = user.lastName ?? "" }
+                }
 
-              AsyncButton {
-                await save()
-              } label: { isRunning in
-                Text("Save")
-                  .frame(maxWidth: .infinity)
-                  .overlayProgressView(isActive: isRunning) {
-                    SpinnerView(color: theme.colors.textOnPrimaryBackground)
-                  }
+                AsyncButton {
+                  await save()
+                } label: { isRunning in
+                  Text("Save")
+                    .frame(maxWidth: .infinity)
+                    .overlayProgressView(isActive: isRunning) {
+                      SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                    }
+                }
+                .buttonStyle(.primary())
               }
-              .buttonStyle(.primary())
-
-              Spacer()
             }
             .padding(.horizontal, 24)
+            .padding(.bottom, 24)
             .padding(.top, 60)
           }
         }
