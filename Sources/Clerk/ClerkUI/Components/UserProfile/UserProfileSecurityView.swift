@@ -76,6 +76,9 @@
       .task {
         try? await user?.getSessions()
       }
+      .task {
+        try? await Client.get()
+      }
     }
   }
 
