@@ -67,7 +67,7 @@ struct SocialButton: View {
           try await defaultAction()
         }
       } catch {
-        if error.isCancelledError {
+        if error.isUserCancelledError {
           return
         } else {
           onError?(error)
