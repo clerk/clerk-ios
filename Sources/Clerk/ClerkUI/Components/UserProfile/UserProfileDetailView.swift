@@ -393,6 +393,9 @@
       .onChange(of: removeResource) {
         if $0 != nil { isConfirmingRemoval = true }
       }
+      .task {
+        try? await Client.get()
+      }
     }
   }
 
