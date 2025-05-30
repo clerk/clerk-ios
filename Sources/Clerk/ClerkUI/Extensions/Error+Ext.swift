@@ -12,9 +12,13 @@ import Foundation
 
 extension Error {
 
-  var isCancelledError: Bool {
+  var isUserCancelledError: Bool {
     if case ASWebAuthenticationSessionError.canceledLogin = self { return true }
-    if case ASAuthorizationError.canceled = self { return true }
+    
+    if let authError = self as? ASAuthorizationError, authError.errorUserInfo["NSLocalizedFailureReason"] == nil {
+      return true
+    }
+    
     return false
   }
 
