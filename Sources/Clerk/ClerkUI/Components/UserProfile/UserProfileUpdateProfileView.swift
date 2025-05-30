@@ -20,9 +20,9 @@
     @State private var photosPickerItem: PhotosPickerItem?
     @State private var imageIsLoading = false
 
-    @State private var firstName = ""
-    @State private var lastName = ""
-    @State private var username = ""
+    @State private var firstName: String
+    @State private var lastName: String
+    @State private var username: String
     @State private var error: Error?
 
     var environment: Clerk.Environment {
@@ -33,54 +33,54 @@
       environment.usernameIsEnabled || environment.firstNameIsEnabled || environment.lastNameIsEnabled
     }
 
-    var user: User? {
-      clerk.user
+    let user: User
+
+    init(user: User) {
+      self.user = user
+      _username = State(initialValue: user.username ?? "")
+      _firstName = State(initialValue: user.firstName ?? "")
+      _lastName = State(initialValue: user.lastName ?? "")
     }
 
     var body: some View {
       NavigationStack {
         ScrollView {
-          if let user {
-            VStack(spacing: 32) {
-              menu
+          VStack(spacing: 32) {
+            menu
 
-              VStack(spacing: 24) {
-                if environment.usernameIsEnabled {
-                  ClerkTextField("Username", text: $username)
-                    .textContentType(.username)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .task { username = user.username ?? "" }
-                }
-
-                if environment.firstNameIsEnabled {
-                  ClerkTextField("First name", text: $firstName)
-                    .textContentType(.givenName)
-                    .task { firstName = user.firstName ?? "" }
-                }
-
-                if environment.lastNameIsEnabled {
-                  ClerkTextField("Last name", text: $lastName)
-                    .textContentType(.familyName)
-                    .task { lastName = user.lastName ?? "" }
-                }
-
-                AsyncButton {
-                  await save()
-                } label: { isRunning in
-                  Text("Save")
-                    .frame(maxWidth: .infinity)
-                    .overlayProgressView(isActive: isRunning) {
-                      SpinnerView(color: theme.colors.textOnPrimaryBackground)
-                    }
-                }
-                .buttonStyle(.primary())
+            VStack(spacing: 24) {
+              if environment.usernameIsEnabled {
+                ClerkTextField("Username", text: $username)
+                  .textContentType(.username)
+                  .autocorrectionDisabled()
+                  .textInputAutocapitalization(.never)
               }
+
+              if environment.firstNameIsEnabled {
+                ClerkTextField("First name", text: $firstName)
+                  .textContentType(.givenName)
+              }
+
+              if environment.lastNameIsEnabled {
+                ClerkTextField("Last name", text: $lastName)
+                  .textContentType(.familyName)
+              }
+
+              AsyncButton {
+                await save()
+              } label: { isRunning in
+                Text("Save")
+                  .frame(maxWidth: .infinity)
+                  .overlayProgressView(isActive: isRunning) {
+                    SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                  }
+              }
+              .buttonStyle(.primary())
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
-            .padding(.top, 60)
           }
+          .padding(.horizontal, 24)
+          .padding(.bottom, 24)
+          .padding(.top, 60)
         }
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
@@ -116,14 +116,15 @@
               guard
                 let data = try await item.loadTransferable(type: Data.self),
                 let uiImage = UIImage(data: data),
-                let resizedData = uiImage
+                let resizedData =
+                  uiImage
                   .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
                   .jpegData(compressionQuality: 0.8)
               else {
                 throw ClerkClientError(message: "There was an error loading the image from the photos library.")
               }
 
-              try await user?.setProfileImage(imageData: resizedData)
+              try await user.setProfileImage(imageData: resizedData)
             } catch {
               self.error = error
               imageIsLoading = false
@@ -138,7 +139,7 @@
       Menu {
         menuContent
       } label: {
-        KFImage(URL(string: user?.imageUrl ?? ""))
+        KFImage(URL(string: user.imageUrl ?? ""))
           .resizable()
           .fade(duration: 0.25)
           .placeholder { progress in
@@ -179,14 +180,14 @@
       Button("Choose from photo library") {
         photosPickerIsPresented = true
       }
-      
-      if user?.hasImage == true {
+
+      if user.hasImage == true {
         AsyncButton(role: .destructive) {
           imageIsLoading = true
           defer { imageIsLoading = false }
 
           do {
-            try await user?.deleteProfileImage()
+            try await user.deleteProfileImage()
           } catch {
             self.error = error
           }
@@ -201,7 +202,7 @@
 
     func save() async {
       do {
-        try await user?.update(
+        try await user.update(
           .init(
             username: environment.usernameIsEnabled ? username : nil,
             firstName: environment.firstNameIsEnabled ? firstName : nil,
@@ -218,7 +219,7 @@
   }
 
   #Preview {
-    UserProfileUpdateProfileView()
+    UserProfileUpdateProfileView(user: .mock)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
