@@ -35,10 +35,6 @@
 
             VStack(spacing: 4) {
               ClerkTextField("Name of passkey", text: $passkeyName)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
                 .focused($isFocused)
                 .onFirstAppear {
                   isFocused = true
