@@ -54,12 +54,14 @@
           }
         }
     }
-    
+
     var sortedExternalAccounts: [ExternalAccount] {
-      (user?.externalAccounts.filter({ $0.verification?.status == .verified }) ?? [])
-        .sorted { lhs, rhs in
-          lhs.createdAt < rhs.createdAt
-        }
+      (user?.externalAccounts.filter({
+        $0.verification?.status == .verified || $0.verification?.error != nil
+      }) ?? [])
+      .sorted { lhs, rhs in
+        lhs.createdAt < rhs.createdAt
+      }
     }
 
     @ViewBuilder
@@ -72,11 +74,11 @@
             if user?.primaryEmailAddress == emailAddress {
               Badge(key: "Primary", style: .secondary)
             }
-            
+
             if emailAddress.verification?.status != .verified {
               Badge(key: "Unverified", style: .warning)
             }
-            
+
             if emailAddress.linkedTo?.isEmpty == false {
               Badge(key: "Linked", style: .secondary)
             }
@@ -98,7 +100,7 @@
               Text("Set as primary", bundle: .module)
             }
           }
-          
+
           if emailAddress.verification?.status != .verified {
             Button {
               addEmailAddressDestination = .verify(emailAddress)
@@ -106,7 +108,7 @@
               Text("Verify", bundle: .module)
             }
           }
-          
+
           Button(role: .destructive) {
             removeResource = .email(emailAddress)
           } label: {
@@ -142,16 +144,16 @@
             if user?.primaryPhoneNumber == phoneNumber {
               Badge(key: "Primary", style: .secondary)
             }
-            
+
             if phoneNumber.verification?.status != .verified {
               Badge(key: "Unverified", style: .warning)
             }
-            
+
             if phoneNumber.reservedForSecondFactor {
               Badge(key: "MFA reserved", style: .secondary)
             }
           }
-          
+
           Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.text)
@@ -168,7 +170,7 @@
               Text("Set as primary", bundle: .module)
             }
           }
-          
+
           if phoneNumber.verification?.status != .verified {
             Button {
               addPhoneNumberDestination = .verify(phoneNumber)
@@ -230,10 +232,6 @@
                 .foregroundStyle(theme.colors.textSecondary)
                 .frame(minHeight: 20)
             }
-            
-            if externalAccount.verification?.status != .verified {
-              Badge(key: "Unverified", style: .warning)
-            }
           }
 
           if !externalAccount.emailAddress.isEmpty {
@@ -242,19 +240,16 @@
               .foregroundStyle(theme.colors.text)
               .frame(minHeight: 22)
           }
+
+          if let error = externalAccount.verification?.error {
+            ErrorText(error: error)
+              .font(theme.fonts.subheadline)
+          }
         }
 
         Spacer()
 
         Menu {
-          if externalAccount.verification?.status != .verified {
-            Button {
-              
-            } label: {
-              Text("Verify", bundle: .module)
-            }
-          }
-          
           Button(role: .destructive) {
             removeResource = .externalAccount(externalAccount)
           } label: {
@@ -323,7 +318,7 @@
                     ForEach(sortedExternalAccounts) { externalAccount in
                       externalAccountRow(externalAccount)
                     }
-                    
+
                     if !user.unconnectedProviders.isEmpty {
                       UserProfileButtonRow(text: "Connect account") {
                         addConnectedAccountIsPresented = true
@@ -385,7 +380,7 @@
         of: [
           addEmailAddressDestination != nil,
           addPhoneNumberDestination != nil,
-          addConnectedAccountIsPresented
+          addConnectedAccountIsPresented,
         ]
       ) {
         sharedState.applyBlur = $0.contains(true)
