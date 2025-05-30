@@ -133,7 +133,7 @@ extension SignInFactorOnePasskeyView {
       self.error = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
-      if error.isCancelledError { return }
+      if error.isUserCancelledError { return }
       self.error = error
     }
   }

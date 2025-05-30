@@ -96,7 +96,7 @@
 
         dismiss()
       } catch {
-        if error.isCancelledError { return }
+        if error.isUserCancelledError { return }
         self.error = error
       }
     }

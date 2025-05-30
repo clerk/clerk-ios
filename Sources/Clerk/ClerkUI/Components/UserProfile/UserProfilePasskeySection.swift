@@ -52,7 +52,7 @@
       do {
         try await user.createPasskey()
       } catch {
-        if error.isCancelledError { return }
+        if error.isUserCancelledError { return }
         self.error = error
       }
     }
