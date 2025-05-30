@@ -195,7 +195,7 @@
             }
           }
         }
-        .task {
+        .task(id: user) {
           await getSessionsOnAllDevices()
         }
         .task {
