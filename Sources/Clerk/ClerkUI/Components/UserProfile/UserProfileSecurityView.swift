@@ -43,7 +43,6 @@
 
               if !clerk.sessionsByUserId.isEmpty {
                 UserProfileDevicesSection()
-                  .transition(.opacity.animation(.default))
               }
               
               if environment.deleteSelfIsEnabled {

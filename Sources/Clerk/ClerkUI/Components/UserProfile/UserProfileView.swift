@@ -17,7 +17,6 @@
 
     @State private var updateProfileIsPresented = false
     @State private var authViewIsPresented = false
-    @State private var accountSwitcherIsPresented = false
     @State private var accountSwitcherHeight: CGFloat = 400
     @State private var sharedState = SharedState()
     @State private var error: Error?
@@ -112,7 +111,7 @@
                     if clerk.environment.mutliSessionModeIsEnabled {
                       if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
                         row(icon: "icon-switch", text: "Switch account") {
-                          accountSwitcherIsPresented = true
+                          sharedState.accountSwitcherIsPresented = true
                         }
                       }
 
@@ -167,7 +166,7 @@
         .onChange(of: [
           authViewIsPresented,
           updateProfileIsPresented,
-          accountSwitcherIsPresented
+          sharedState.accountSwitcherIsPresented
         ], { _, newValue in
           sharedState.applyBlur = newValue.contains(true)
         })
@@ -176,7 +175,7 @@
         }
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
-        .sheet(isPresented: $accountSwitcherIsPresented) {
+        .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {
           UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
             .presentationDetents([.height(accountSwitcherHeight)])
         }
@@ -257,6 +256,7 @@
       var path = NavigationPath()
       var applyBlur: Bool = false
       var lastCodeSentAt: [String: Date] = [:]
+      var accountSwitcherIsPresented = false
     }
   }
 
