@@ -242,8 +242,8 @@
           }
 
           if let error = externalAccount.verification?.error {
-            ErrorText(error: error)
-              .font(theme.fonts.subheadline)
+            ErrorText(error: error, alignment: .leading)
+              .font(theme.fonts.footnote)
           }
         }
 
