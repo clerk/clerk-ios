@@ -166,7 +166,8 @@
         .onChange(of: [
           authViewIsPresented,
           updateProfileIsPresented,
-          sharedState.accountSwitcherIsPresented
+          sharedState.accountSwitcherIsPresented,
+          sharedState.addMfaIsPresented
         ], { _, newValue in
           sharedState.applyBlur = newValue.contains(true)
         })
@@ -257,6 +258,7 @@
       var applyBlur: Bool = false
       var lastCodeSentAt: [String: Date] = [:]
       var accountSwitcherIsPresented = false
+      var addMfaIsPresented = false
     }
   }
 
