@@ -12,10 +12,9 @@
   struct UserProfileMfaSection: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
-
-    var environment: Clerk.Environment {
-      clerk.environment
-    }
+    @Environment(\.userProfileSharedState) private var sharedState
+    
+    @State private var addMfaHeight: CGFloat = 300
 
     var user: User? {
       clerk.user
@@ -28,6 +27,8 @@
     }
 
     var body: some View {
+      @Bindable var sharedState = sharedState
+      
       Section {
         VStack(spacing: 0) {
           if user?.totpEnabled == true {
@@ -37,7 +38,7 @@
             )
           }
 
-          if environment.mfaPhoneCodeIsEnabled {
+          if clerk.environment.mfaPhoneCodeIsEnabled {
             ForEach(mfaPhoneNumbers) { phoneNumber in
               UserProfileMfaRow(
                 style: .sms(phoneNumber: phoneNumber),
@@ -46,7 +47,7 @@
             }
           }
 
-          if environment.mfaBackupCodeIsEnabled {
+          if clerk.environment.mfaBackupCodeIsEnabled {
             if user?.backupCodeEnabled == true {
               UserProfileMfaRow(
                 style: .backupCodes
@@ -55,12 +56,16 @@
           }
 
           UserProfileButtonRow(text: "Add two-step verification") {
-            // add two factor
+            sharedState.addMfaIsPresented = true
           }
         }
         .background(theme.colors.background)
       } header: {
         UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
+      }
+      .sheet(isPresented: $sharedState.addMfaIsPresented) {
+        UserProfileAddMfaView(contentHeight: $addMfaHeight)
+          .presentationDetents([.height(addMfaHeight)])
       }
     }
   }
@@ -69,6 +74,7 @@
     UserProfileMfaSection()
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
+      .environment(\.userProfileSharedState, .init())
   }
 
 #endif
