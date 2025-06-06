@@ -13,22 +13,32 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.userProfileSharedState) private var sharedState
-    
-    @State private var addMfaHeight: CGFloat = 300
+
+    @State private var addMfaHeight: CGFloat = 400
 
     var user: User? {
       clerk.user
     }
 
     var mfaPhoneNumbers: [PhoneNumber] {
-      user?.phoneNumbers.filter { phoneNumber in
-        phoneNumber.reservedForSecondFactor
-      } ?? []
+      (user?.phoneNumbers ?? [])
+        .filter { phoneNumber in
+          phoneNumber.reservedForSecondFactor
+        }
+        .sorted { lhs, rhs in
+          if lhs.defaultSecondFactor {
+            return true
+          } else if rhs.defaultSecondFactor {
+            return false
+          } else {
+            return lhs.createdAt < rhs.createdAt
+          }
+        }
     }
 
     var body: some View {
       @Bindable var sharedState = sharedState
-      
+
       Section {
         VStack(spacing: 0) {
           if user?.totpEnabled == true {
