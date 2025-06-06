@@ -396,7 +396,7 @@ extension User {
       organizationMemberships: [.mockWithUserData],
       passkeys: [.mock],
       passwordEnabled: true,
-      phoneNumbers: [.mock, .mockMfa],
+      phoneNumbers: [.mock, .mock2, .mockMfa],
       primaryEmailAddressId: "1",
       primaryPhoneNumberId: "1",
       publicMetadata: nil,

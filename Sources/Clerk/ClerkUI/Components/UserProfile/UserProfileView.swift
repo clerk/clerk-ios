@@ -206,6 +206,7 @@
         }
       } else {
         SpinnerView()
+          .frame(width: 24, height: 24)
       }
     }
   }
