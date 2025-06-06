@@ -52,6 +52,14 @@
       return socialProviders.filter { !verifiedExternalProviders.contains($0) }
     }
 
+    var phoneNumbersAvailableForMfa: [PhoneNumber] {
+      phoneNumbers.filter { !$0.reservedForSecondFactor }
+    }
+
+    var phoneNumbersReservedForMfa: [PhoneNumber] {
+      phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
+    }
+
   }
 
 #endif

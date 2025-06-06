@@ -14,10 +14,30 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
-    @Binding private var contentHeight: CGFloat
+    @State private var presentedView: PresentedView?
     @State private var error: Error?
+    
+    enum PresentedView: Identifiable {
+      case sms
+      case authApp
+      var id: Self { self }
+      
+      @ViewBuilder
+      var view: some View {
+        switch self {
+        case .sms:
+          UserProfileMfaAddSmsView()
+        case .authApp:
+          EmptyView()
+        }
+      }
+    }
+    
+    @Binding private var contentHeight: CGFloat
 
-    init(contentHeight: Binding<CGFloat> = .constant(0)) {
+    init(
+      contentHeight: Binding<CGFloat> = .constant(0)
+    ) {
       self._contentHeight = contentHeight
     }
 
@@ -29,7 +49,7 @@
       NavigationStack {
         ScrollView {
           VStack(spacing: 24) {
-            Text("Choose how you’d like to receive your two-step verification code.", bundle: .module)
+            Text("Choose how you'd like to receive your two-step verification code.", bundle: .module)
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.textSecondary)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -40,7 +60,7 @@
               Group {
                 if environment.mfaPhoneCodeIsEnabled {
                   Button {
-                    //
+                    presentedView = .sms
                   } label: {
                     UserProfileRowView(icon: "icon-phone", text: "SMS code")
                   }
@@ -48,7 +68,7 @@
 
                 if environment.mfaAuthenticatorAppIsEnabled {
                   Button {
-                    //
+                    presentedView = .authApp
                   } label: {
                     UserProfileRowView(icon: "icon-key", text: "Authenticator application")
                   }
@@ -97,6 +117,9 @@
         .scrollBounceBehavior(.basedOnSize)
       }
       .presentationBackground(theme.colors.background)
+      .sheet(item: $presentedView) {
+        $0.view
+      }
     }
   }
 
