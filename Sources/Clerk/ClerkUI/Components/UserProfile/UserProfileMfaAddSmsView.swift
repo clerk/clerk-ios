@@ -29,7 +29,7 @@
       var view: some View {
         switch self {
         case .backupCodes(let backupCodes):
-          Text(verbatim: "Backup codes")
+          BackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
         }
       }
     }
