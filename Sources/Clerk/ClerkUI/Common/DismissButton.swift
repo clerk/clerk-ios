@@ -16,6 +16,14 @@ struct DismissButton: View {
   
   var action: (() -> Void)?
   
+  var secondaryPaletteStyle: AnyShapeStyle {
+    if #available(iOS 26.0, *) {
+      AnyShapeStyle(Color.clear)
+    } else {
+      AnyShapeStyle(Material.ultraThinMaterial)
+    }
+  }
+  
   var body: some View {
     Button {
       if let action {
@@ -28,7 +36,7 @@ struct DismissButton: View {
         .resizable()
         .scaledToFit()
         .symbolRenderingMode(.palette)
-        .foregroundStyle(theme.colors.textSecondary, .ultraThinMaterial)
+        .foregroundStyle(theme.colors.textSecondary, secondaryPaletteStyle)
         .frame(width: 30, height: 30)
         .brightness(colorScheme == .light ? -0.05 : 0.05)
     }
