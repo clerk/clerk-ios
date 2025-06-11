@@ -33,7 +33,6 @@
           }
         }
       }
-      .frame(width: 36, height: 36)
       .sheet(isPresented: $userProfileIsPresented) {
         UserProfileView(isInSheet: true)
           .presentationDragIndicator(.visible)
