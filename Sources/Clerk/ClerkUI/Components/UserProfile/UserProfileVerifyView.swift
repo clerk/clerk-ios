@@ -165,8 +165,7 @@
       .clerkErrorPresenting($error)
       .background(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
-      .toolbarBackground(.visible, for: .navigationBar)
-      .toolbarBackground(theme.colors.background, for: .navigationBar)
+      .preGlassSolidNavBar()
       .navigationBarBackButtonHidden()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

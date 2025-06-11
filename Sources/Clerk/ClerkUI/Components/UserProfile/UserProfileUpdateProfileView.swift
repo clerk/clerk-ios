@@ -85,8 +85,7 @@
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(theme.colors.background, for: .navigationBar)
+        .preGlassSolidNavBar()
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
             Button("Cancel") {
@@ -136,28 +135,28 @@
 
     @ViewBuilder
     private var menu: some View {
-      Menu {
-        menuContent
-      } label: {
-        KFImage(URL(string: user.imageUrl ?? ""))
-          .resizable()
-          .fade(duration: 0.25)
-          .placeholder { progress in
-            Rectangle().fill(theme.colors.primary.gradient)
+      KFImage(URL(string: user.imageUrl ?? ""))
+        .resizable()
+        .fade(duration: 0.25)
+        .placeholder { progress in
+          Rectangle().fill(theme.colors.primary.gradient)
+        }
+        .onSuccess { _ in imageIsLoading = false }
+        .onFailure { _ in imageIsLoading = false }
+        .overlay {
+          if imageIsLoading {
+            theme.colors.inputBorderFocused
+            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+              .frame(width: 24, height: 24)
           }
-          .onSuccess { _ in imageIsLoading = false }
-          .onFailure { _ in imageIsLoading = false }
-          .overlay {
-            if imageIsLoading {
-              theme.colors.inputBorderFocused
-              SpinnerView(color: theme.colors.textOnPrimaryBackground)
-                .frame(width: 24, height: 24)
-            }
-          }
-          .scaledToFill()
-          .frame(width: 96, height: 96)
-          .clipShape(.circle)
-          .overlay(alignment: .bottomTrailing) {
+        }
+        .scaledToFill()
+        .frame(width: 96, height: 96)
+        .clipShape(.circle)
+        .overlay(alignment: .bottomTrailing) {
+          Menu {
+            menuContent
+          } label: {
             Image("icon-edit", bundle: .module)
               .resizable()
               .scaledToFit()
@@ -172,7 +171,7 @@
               }
               .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
           }
-      }
+        }
     }
 
     @ViewBuilder
