@@ -163,17 +163,6 @@
         }
         .environment(\.userProfileSharedState, sharedState)
         .tint(theme.colors.primary)
-        .onChange(of: [
-          authViewIsPresented,
-          updateProfileIsPresented,
-          sharedState.accountSwitcherIsPresented,
-          sharedState.addMfaIsPresented
-        ], { _, newValue in
-          sharedState.applyBlur = newValue.contains(true)
-        })
-        .animation(.default) {
-          $0.blur(radius: sharedState.applyBlur ? 12 : 0)
-        }
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {
@@ -256,7 +245,6 @@
     @Observable
     class SharedState {
       var path = NavigationPath()
-      var applyBlur: Bool = false
       var lastCodeSentAt: [String: Date] = [:]
       var accountSwitcherIsPresented = false
       var addMfaIsPresented = false

@@ -16,12 +16,14 @@
 
     @State private var presentedView: PresentedView?
     @State private var error: Error?
-    
+
+    @Binding private var contentHeight: CGFloat
+
     enum PresentedView: Identifiable {
       case sms
       case authApp
       var id: Self { self }
-      
+
       @ViewBuilder
       var view: some View {
         switch self {
@@ -32,17 +34,23 @@
         }
       }
     }
-    
-    @Binding private var contentHeight: CGFloat
+
+    var extraContentHeight: CGFloat {
+      if #available(iOS 26.0, *) {
+        return 0
+      } else {
+        return 7
+      }
+    }
+
+    var environment: Clerk.Environment {
+      clerk.environment
+    }
 
     init(
       contentHeight: Binding<CGFloat> = .constant(0)
     ) {
       self._contentHeight = contentHeight
-    }
-
-    var environment: Clerk.Environment {
-      clerk.environment
     }
 
     var body: some View {
@@ -88,12 +96,11 @@
                 .foregroundStyle(theme.colors.border)
             }
           }
-          .padding(.vertical, 24)
+          .padding(.top, 24)
           .background(theme.colors.background)
           .clerkErrorPresenting($error)
           .navigationBarTitleDisplayMode(.inline)
-          .toolbarBackground(.visible, for: .navigationBar)
-          .toolbarBackground(theme.colors.background, for: .navigationBar)
+          .preGlassSolidNavBar()
           .toolbar {
             ToolbarItem(placement: .cancellationAction) {
               Button("Cancel") {
@@ -111,7 +118,7 @@
           .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.height
           } action: { newValue in
-            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + 20
+            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
           }
         }
         .scrollBounceBehavior(.basedOnSize)
