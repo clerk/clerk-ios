@@ -147,15 +147,6 @@
         UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
           .presentationDetents([.height(connectAccountSheetHeight)])
       }
-      .onChange(
-        of: [
-          addEmailAddressDestination != nil,
-          addPhoneNumberDestination != nil,
-          addConnectedAccountIsPresented,
-        ]
-      ) {
-        sharedState.applyBlur = $0.contains(true)
-      }
       .task {
         try? await Client.get()
       }
