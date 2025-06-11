@@ -139,8 +139,7 @@
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(theme.colors.background, for: .navigationBar)
+        .preGlassSolidNavBar()
         .toolbar {
           ToolbarItem(placement: .topBarTrailing) {
             Button {
