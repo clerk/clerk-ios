@@ -176,7 +176,7 @@
     @ViewBuilder
     var countryIndicator: some View {
       if let country {
-        Text("\(country.flag) \(country.code)")
+        Text(verbatim: "\(country.flag) \(country.code)")
           .font(theme.fonts.footnote)
           .foregroundStyle(theme.colors.text)
           .monospaced()
