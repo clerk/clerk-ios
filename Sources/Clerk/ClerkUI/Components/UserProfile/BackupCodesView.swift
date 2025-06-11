@@ -74,7 +74,7 @@
         }
 
         ToolbarItem(placement: .principal) {
-          Text(mfaType.title, bundle: .module)
+          Text("Backup codes", bundle: .module)
             .font(theme.fonts.headline)
             .foregroundStyle(theme.colors.text)
         }
