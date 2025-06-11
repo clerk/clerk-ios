@@ -25,6 +25,14 @@
     private var unconnectedProviders: [OAuthProvider] {
       user?.unconnectedProviders ?? []
     }
+    
+    var extraContentHeight: CGFloat {
+      if #available(iOS 26.0, *) {
+        return 0
+      } else {
+        return 7
+      }
+    }
 
     init(contentHeight: Binding<CGFloat> = .constant(0)) {
       self._contentHeight = contentHeight
@@ -71,7 +79,7 @@
           .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.height
           } action: { newValue in
-            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + 20
+            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
           }
         }
         .scrollBounceBehavior(.basedOnSize)

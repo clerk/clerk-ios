@@ -49,6 +49,14 @@
       }
     }
     
+    var extraContentHeight: CGFloat {
+      if #available(iOS 26.0, *) {
+        return 0
+      } else {
+        return 7
+      }
+    }
+    
     init(contentHeight: Binding<CGFloat> = .constant(0)) {
       self._contentHeight = contentHeight
     }
@@ -122,21 +130,10 @@
             .onGeometryChange(for: CGFloat.self, of: { proxy in
               proxy.size.height
             }, action: { newValue in
-              contentHeight = newValue + securedByClerkHeight + UITabBarController().tabBar.frame.size.height + 7
+              contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
             })
           }
           .scrollBounceBehavior(.basedOnSize)
-
-          SecuredByClerkView()
-            .padding(16)
-            .frame(maxWidth: .infinity)
-            .background(theme.colors.backgroundSecondary)
-            .onGeometryChange(for: CGFloat.self) { proxy in
-              proxy.size.height
-            } action: { newValue in
-              securedByClerkHeight = newValue
-            }
-
         }
         .animation(.default, value: sessions)
         .background(theme.colors.background)
