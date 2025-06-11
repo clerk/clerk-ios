@@ -7,16 +7,6 @@
     " " : {
       "shouldTranslate" : false
     },
-    "%@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@"
-          }
-        }
-      }
-    },
     "%@ will be removed from this account. You will no longer be able to sign in using this connected account." : {
       "localizations" : {
         "ar" : {
@@ -2125,6 +2115,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用%@继续"
+          }
+        }
+      }
+    },
+    "Copy to clipboard" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ إلى الحافظة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Zwischenablage kopieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αντιγραφή στο πρόχειρο"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar al portapapeles"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier dans le presse-papiers"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "क्लिपबोर्ड पर कॉपी करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia negli appunti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリップボードにコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클립보드에 복사"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制到剪贴板"
           }
         }
       }
@@ -7890,6 +7944,70 @@
         }
       }
     },
+    "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تمكين التحقق بخطوتين الآن. عند تسجيل الدخول، ستحتاج إلى إدخال رمز التحقق من تطبيق المصادقة هذا كخطوة إضافية.\n\nاحفظ رموز النسخ الاحتياطي هذه واحتفظ بها في مكان آمن. إذا فقدت الوصول إلى جهاز المصادقة الخاص بك، يمكنك استخدام رموز النسخ الاحتياطي لتسجيل الدخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode aus dieser Authenticator-App eingeben.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επαλήθευση δύο βημάτων είναι πλέον ενεργοποιημένη. Κατά τη σύνδεση, θα χρειαστεί να εισαγάγετε έναν κωδικό επαλήθευσης από αυτήν την εφαρμογή επαλήθευσης ως επιπλέον βήμα.\n\nΑποθηκεύστε αυτούς τους κωδικούς αντιγράφων ασφαλείας και φυλάξτε τους σε ασφαλές μέρος. Εάν χάσετε την πρόσβαση στη συσκευή επαλήθευσής σας, μπορείτε να χρησιμοποιήσετε κωδικούς αντιγράφων ασφαλείας για σύνδεση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La verificación en dos pasos ya está habilitada. Al iniciar sesión, necesitarás ingresar un código de verificación de esta aplicación autenticadora como paso adicional.\n\nGuarda estos códigos de respaldo y almacénalos en un lugar seguro. Si pierdes acceso a tu dispositivo de autenticación, puedes usar códigos de respaldo para iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La vérification en deux étapes est maintenant activée. Lors de la connexion, vous devrez saisir un code de vérification de cette application d'authentification comme étape supplémentaire.\n\nEnregistrez ces codes de sauvegarde et stockez-les dans un endroit sûr. Si vous perdez l'accès à votre appareil d'authentification, vous pouvez utiliser les codes de sauvegarde pour vous connecter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "दो-चरणीय सत्यापन अब सक्षम है। साइन इन करते समय, आपको एक अतिरिक्त चरण के रूप में इस प्रमाणीकरण ऐप से एक सत्यापन कोड दर्ज करना होगा।\n\nइन बैकअप कोड को सहेजें और उन्हें किसी सुरक्षित स्थान पर संग्रहीत करें। यदि आप अपने प्रमाणीकरण डिवाइस तक पहुंच खो देते हैं, तो आप साइन इन करने के लिए बैकअप कोड का उपयोग कर सकते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La verifica in due passaggi è ora abilitata. Durante l'accesso, dovrai inserire un codice di verifica da questa app di autenticazione come passaggio aggiuntivo.\n\nSalva questi codici di backup e conservali in un posto sicuro. Se perdi l'accesso al tuo dispositivo di autenticazione, puoi utilizzare i codici di backup per accedere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2段階認証が有効になりました。サインイン時に、追加のステップとしてこの認証アプリから確認コードを入力する必要があります。\n\nこれらのバックアップコードを保存し、安全な場所に保管してください。認証デバイスへのアクセスを失った場合、バックアップコードを使用してサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2단계 인증이 이제 활성화되었습니다. 로그인할 때 추가 단계로 이 인증 앱에서 확인 코드를 입력해야 합니다.\n\n이 백업 코드를 저장하고 안전한 곳에 보관하세요. 인증 기기에 대한 액세스를 잃으면 백업 코드를 사용하여 로그인할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证现已启用。登录时，您需要输入来自此身份验证应用的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
+          }
+        }
+      }
+    },
     "Type \"DELETE\" to continue" : {
       "localizations" : {
         "ar" : {
@@ -9742,6 +9860,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "欢迎！登录以继续"
+          }
+        }
+      }
+    },
+    "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تسجيل الدخول، ستحتاج إلى إدخال رمز التحقق المرسل إلى رقم الهاتف هذا كخطوة إضافية.\n\nاحفظ رموز النسخ الاحتياطي هذه واحتفظ بها في مكان آمن. إذا فقدت الوصول إلى جهاز المصادقة الخاص بك، يمكنك استخدام رموز النسخ الاحتياطي لتسجيل الدخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode eingeben, der an diese Telefonnummer gesendet wird.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κατά τη σύνδεση, θα χρειαστεί να εισαγάγετε έναν κωδικό επαλήθευσης που αποστέλλεται σε αυτόν τον αριθμό τηλεφώνου ως επιπλέον βήμα.\n\nΑποθηκεύστε αυτούς τους κωδικούς αντιγράφων ασφαλείας και φυλάξτε τους σε ασφαλές μέρος. Εάν χάσετε την πρόσβαση στη συσκευή επαλήθευσής σας, μπορείτε να χρησιμοποιήσετε κωδικούς αντιγράφων ασφαλείας για σύνδεση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al iniciar sesión, necesitarás ingresar un código de verificación enviado a este número de teléfono como paso adicional.\n\nGuarda estos códigos de respaldo y almacénalos en un lugar seguro. Si pierdes acceso a tu dispositivo de autenticación, puedes usar códigos de respaldo para iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lors de la connexion, vous devrez saisir un code de vérification envoyé à ce numéro de téléphone comme étape supplémentaire.\n\nEnregistrez ces codes de sauvegarde et stockez-les dans un endroit sûr. Si vous perdez l'accès à votre appareil d'authentification, vous pouvez utiliser les codes de sauvegarde pour vous connecter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन इन करते समय, आपको एक अतिरिक्त चरण के रूप में इस फोन नंबर पर भेजा गया सत्यापन कोड दर्ज करना होगा।\n\nइन बैकअप कोड को सहेजें और उन्हें किसी सुरक्षित स्थान पर संग्रहीत करें। यदि आप अपने प्रमाणीकरण डिवाइस तक पहुंच खो देते हैं, तो आप साइन इन करने के लिए बैकअप कोड का उपयोग कर सकते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante l'accesso, dovrai inserire un codice di verifica inviato a questo numero di telefono come passaggio aggiuntivo.\n\nSalva questi codici di backup e conservali in un posto sicuro. Se perdi l'accesso al tuo dispositivo di autenticazione, puoi utilizzare i codici di backup per accedere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインイン時に、追加のステップとしてこの電話番号に送信される確認コードを入力する必要があります。\n\nこれらのバックアップコードを保存し、安全な場所に保管してください。認証デバイスへのアクセスを失った場合、バックアップコードを使用してサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인할 때 추가 단계로 이 전화번호로 전송된 확인 코드를 입력해야 합니다.\n\n이 백업 코드를 저장하고 안전한 곳에 보관하세요. 인증 기기에 대한 액세스를 잃으면 백업 코드를 사용하여 로그인할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，您需要输入发送到此电话号码的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
           }
         }
       }

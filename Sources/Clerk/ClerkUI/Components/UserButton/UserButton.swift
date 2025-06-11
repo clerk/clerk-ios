@@ -47,6 +47,7 @@
 
   #Preview {
     UserButton()
+      .frame(width: 36, height: 36)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }

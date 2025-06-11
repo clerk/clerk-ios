@@ -17,21 +17,12 @@
       case phoneCode
       case authenticatorApp
 
-      var title: LocalizedStringKey {
-        switch self {
-        case .phoneCode:
-          "SMS code verification enabled"
-        case .authenticatorApp:
-          "Authenticator application enabled"
-        }
-      }
-
       var instructions: LocalizedStringKey {
         switch self {
         case .phoneCode:
           return "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
         case .authenticatorApp:
-          return "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator as an additional step.\n\nYou can use one of these to sign in to your account, if you lose access to your authentication device."
+          return "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
         }
       }
     }
