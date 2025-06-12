@@ -647,6 +647,70 @@
         }
       }
     },
+    "Add authenticator application" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة تطبيق المصادقة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authenticator-Anwendung hinzufügen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Προσθήκη εφαρμογής επαλήθευσης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar aplicación autenticadora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter une application d'authentification"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रमाणीकरण एप्लिकेशन जोड़ें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi applicazione di autenticazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリを追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 애플리케이션 추가"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加身份验证应用"
+          }
+        }
+      }
+    },
     "Add email address" : {
       "localizations" : {
         "ar" : {
@@ -899,6 +963,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加两步验证"
+          }
+        }
+      }
+    },
+    "Alternatively, if your authenticator supports TOTP URIs, you can also copy the full URI." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدلاً من ذلك، إذا كان المصادق الخاص بك يدعم عناوين TOTP URI، يمكنك أيضاً نسخ العنوان الكامل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alternativ können Sie auch die vollständige URI kopieren, wenn Ihr Authenticator TOTP-URIs unterstützt."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εναλλακτικά, εάν ο επαληθευτής σας υποστηρίζει TOTP URIs, μπορείτε επίσης να αντιγράψετε το πλήρες URI."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alternativamente, si tu autenticador admite URIs TOTP, también puedes copiar la URI completa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alternativement, si votre authentificateur prend en charge les URI TOTP, vous pouvez également copier l'URI complète."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वैकल्पिक रूप से, यदि आपका प्रमाणीकरण TOTP URIs का समर्थन करता है, तो आप पूरा URI भी कॉपी कर सकते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In alternativa, se il tuo autenticatore supporta gli URI TOTP, puoi anche copiare l'URI completo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "または、認証アプリがTOTP URIをサポートしている場合は、完全なURIをコピーすることもできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "또는 인증기가 TOTP URI를 지원하는 경우 전체 URI를 복사할 수도 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或者，如果您的身份验证器支持TOTP URI，您也可以复制完整的URI。"
           }
         }
       }
@@ -3075,6 +3203,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您账户的密码"
+          }
+        }
+      }
+    },
+    "Enter the verification code from your authenticator application." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل رمز التحقق من تطبيق المصادقة الخاص بك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie den Bestätigungscode aus Ihrer Authenticator-Anwendung ein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εισαγάγετε τον κωδικό επαλήθευσης από την εφαρμογή επαλήθευσής σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresa el código de verificación de tu aplicación autenticadora."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez le code de vérification de votre application d'authentification."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने प्रमाणीकरण एप्लिकेशन से सत्यापन कोड दर्ज करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci il codice di verifica dalla tua applicazione di autenticazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリから確認コードを入力してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 애플리케이션에서 확인 코드를 입력하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入来自您的身份验证应用的验证码。"
           }
         }
       }
@@ -6856,6 +7048,70 @@
         }
       }
     },
+    "Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم بإعداد طريقة تسجيل دخول جديدة في المصادق الخاص بك وأدخل المفتاح المقدم أدناه.\n\nتأكد من تمكين كلمات المرور المستندة إلى الوقت أو لمرة واحدة، ثم أنهِ ربط حسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richten Sie eine neue Anmeldemethode in Ihrem Authenticator ein und geben Sie den unten bereitgestellten Schlüssel ein.\n\nStellen Sie sicher, dass zeitbasierte oder einmalige Passwörter aktiviert sind, und schließen Sie dann die Verknüpfung Ihres Kontos ab."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ρυθμίστε μια νέα μέθοδο σύνδεσης στον επαληθευτή σας και εισαγάγετε το Κλειδί που παρέχεται παρακάτω.\n\nΒεβαιωθείτε ότι οι κωδικοί πρόσβασης βασισμένοι στον χρόνο ή μίας χρήσης είναι ενεργοποιημένοι, στη συνέχεια ολοκληρώστε τη σύνδεση του λογαριασμού σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura un nuevo método de inicio de sesión en tu autenticador e ingresa la Clave proporcionada a continuación.\n\nAsegúrate de que las contraseñas basadas en tiempo o de un solo uso estén habilitadas, luego termina de vincular tu cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurez une nouvelle méthode de connexion dans votre authentificateur et saisissez la Clé fournie ci-dessous.\n\nAssurez-vous que les mots de passe basés sur le temps ou à usage unique sont activés, puis terminez la liaison de votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने प्रमाणीकरण में एक नई साइन-इन विधि सेट करें और नीचे दी गई कुंजी दर्ज करें।\n\nसुनिश्चित करें कि समय-आधारित या एक-बार पासवर्ड सक्षम है, फिर अपने खाते को लिंक करना समाप्त करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imposta un nuovo metodo di accesso nel tuo autenticatore e inserisci la Chiave fornita di seguito.\n\nAssicurati che le password basate sul tempo o monouso siano abilitate, quindi completa il collegamento del tuo account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリで新しいサインイン方法を設定し、以下に提供されているキーを入力してください。\n\n時間ベースまたはワンタイムパスワードが有効になっていることを確認してから、アカウントのリンクを完了してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증기에서 새로운 로그인 방법을 설정하고 아래 제공된 키를 입력하세요.\n\n시간 기반 또는 일회용 비밀번호가 활성화되어 있는지 확인한 다음 계정 연결을 완료하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的身份验证器中设置新的登录方法，并输入下面提供的密钥。\n\n确保启用基于时间或一次性密码，然后完成账户链接。"
+          }
+        }
+      }
+    },
     "Sign in with your passkey" : {
       "localizations" : {
         "ar" : {
@@ -9604,6 +9860,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证"
+          }
+        }
+      }
+    },
+    "Verify authenticator app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق من تطبيق المصادقة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authenticator-App verifizieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επαλήθευση εφαρμογής επαλήθευσης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar aplicación autenticadora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifier l'application d'authentification"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रमाणीकरण ऐप सत्यापित करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica app di autenticazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリを確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 앱 확인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证身份验证应用"
           }
         }
       }
