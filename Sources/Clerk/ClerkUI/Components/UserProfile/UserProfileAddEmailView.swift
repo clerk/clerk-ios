@@ -104,9 +104,12 @@
         .navigationDestination(for: Destination.self) {
           switch $0 {
           case .verify(let email):
-            UserProfileVerifyView(mode: .email(email)) {
-              dismiss()
-            }
+            UserProfileVerifyView(
+              mode: .email(email)) { _ in
+                dismiss()
+              } customDismiss: {
+                dismiss()
+              }
           case .add:
             EmptyView() // should never be hit, .add should never be added to path
               .task { dismiss() }

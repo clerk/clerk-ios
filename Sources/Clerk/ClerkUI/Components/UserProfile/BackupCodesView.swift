@@ -40,8 +40,12 @@
           Button {
             copyToClipboard(backupCodes.joined(separator: ", "))
           } label: {
-            Text("Copy to clipboard", bundle: .module)
-              .frame(maxWidth: .infinity)
+            HStack(spacing: 6) {
+              Image("icon-clipboard", bundle: .module)
+                .foregroundStyle(theme.colors.textSecondary)
+              Text("Copy to clipboard", bundle: .module)
+            }
+            .frame(maxWidth: .infinity)
           }
           .buttonStyle(.secondary())
         }
