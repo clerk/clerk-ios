@@ -10,10 +10,11 @@
   import SwiftUI
 
   struct UserProfileVerifyView: View {
+    @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(\.dismiss) private var environmentDismiss
 
-    @State var mode: Mode
     @State private var code = ""
     @State private var error: Error?
     @State private var fieldError: Error?
@@ -24,11 +25,16 @@
 
     @FocusState private var otpFieldIsFocused: Bool
     
-    let dismiss: () -> Void
+    var user: User? { clerk.user }
+    
+    @State var mode: Mode
+    let onCompletion: (_ backupCodes: [String]?) -> Void
+    let customDismiss: (() -> Void)?
 
     enum Mode {
       case email(EmailAddress)
       case phone(PhoneNumber)
+      case totp
     }
 
     private var titleKey: LocalizedStringKey {
@@ -37,6 +43,8 @@
         "Verify email address"
       case .phone:
         "Verify phone number"
+      case .totp:
+        "Verify authenticator app"
       }
     }
 
@@ -46,6 +54,16 @@
         Text("Enter the verification code sent to \(emailAddress.emailAddress)", bundle: .module)
       case .phone(let phoneNumber):
         Text("Enter the verification code sent to \(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)", bundle: .module)
+      case .totp:
+        Text("Enter the verification code from your authenticator application.", bundle: .module)
+      }
+    }
+    
+    private func dismiss() {
+      if let customDismiss {
+        customDismiss()
+      } else {
+        environmentDismiss()
       }
     }
 
@@ -55,6 +73,8 @@
         return emailAddress.emailAddress
       case .phone(let phoneNumber):
         return phoneNumber.phoneNumber
+      case .totp:
+        return ""
       }
     }
 
@@ -73,6 +93,15 @@
         }
       }
     }
+    
+    var showResend: Bool {
+      switch mode {
+      case .email, .phone:
+        true
+      case .totp:
+        false
+      }
+    }
 
     var resendString: LocalizedStringKey {
       if remainingSeconds > 0 {
@@ -80,6 +109,16 @@
       } else {
         "Resend"
       }
+    }
+    
+    init(
+      mode: Mode,
+      onCompletion: @escaping (_ backupCodes: [String]?) -> Void,
+      customDismiss: (() -> Void)? = nil
+    ) {
+      self._mode = .init(initialValue: mode)
+      self.onCompletion = onCompletion
+      self.customDismiss = customDismiss
     }
 
     var body: some View {
@@ -131,34 +170,36 @@
           }
           .font(theme.fonts.subheadline)
           
-          AsyncButton {
-            await prepare()
-          } label: { isRunning in
-            HStack(spacing: 0) {
-              Text("Didn't recieve a code? ", bundle: .module)
-              Text(resendString, bundle: .module)
-                .foregroundStyle(
-                  remainingSeconds > 0
-                  ? theme.colors.textSecondary
-                  : theme.colors.primary
-                )
-                .monospacedDigit()
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.default, value: remainingSeconds)
+          if showResend {
+            AsyncButton {
+              await prepare()
+            } label: { isRunning in
+              HStack(spacing: 0) {
+                Text("Didn't recieve a code? ", bundle: .module)
+                Text(resendString, bundle: .module)
+                  .foregroundStyle(
+                    remainingSeconds > 0
+                    ? theme.colors.textSecondary
+                    : theme.colors.primary
+                  )
+                  .monospacedDigit()
+                  .contentTransition(.numericText(countsDown: true))
+                  .animation(.default, value: remainingSeconds)
+              }
+              .overlayProgressView(isActive: isRunning)
+              .frame(maxWidth: .infinity)
             }
-            .overlayProgressView(isActive: isRunning)
-            .frame(maxWidth: .infinity)
-          }
-          .buttonStyle(
-            .secondary(
-              config: .init(
-                emphasis: .none,
-                size: .small
+            .buttonStyle(
+              .secondary(
+                config: .init(
+                  emphasis: .none,
+                  size: .small
+                )
               )
             )
-          )
-          .disabled(remainingSeconds > 0)
-          .simultaneousGesture(TapGesture())
+            .disabled(remainingSeconds > 0)
+            .simultaneousGesture(TapGesture())
+          }
         }
         .padding(24)
       }
@@ -221,6 +262,8 @@
           try await emailAddress.prepareVerification(strategy: .emailCode)
         case .phone(let phoneNumber):
           try await phoneNumber.prepareVerification()
+        case .totp:
+          return
         }
 
         sharedState.lastCodeSentAt[lastCodeSentAtKey] = .now
@@ -238,27 +281,33 @@
       case .email(let emailAddress):
         try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
         sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
+        verificationState = .success
+        onCompletion(nil)
       case .phone(let phoneNumber):
         try await phoneNumber.attemptVerification(code: code)
         sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
+        verificationState = .success
+        onCompletion(nil)
+      case .totp:
+        guard let user else { return }
+        let totp = try await user.verifyTOTP(code: code)
+        verificationState = .success
+        onCompletion(totp.backupCodes)
       }
-
-      verificationState = .success
-      dismiss()
     }
 
   }
 
   #Preview("Email") {
     NavigationStack {
-      UserProfileVerifyView(mode: .email(.mock)) {}
+      UserProfileVerifyView(mode: .email(.mock)) { _ in }
     }
     .environment(\.clerkTheme, .clerk)
   }
 
   #Preview("Phone") {
     NavigationStack {
-      UserProfileVerifyView(mode: .phone(.mock)) {}
+      UserProfileVerifyView(mode: .phone(.mock)) { _ in }
     }
     .environment(\.clerkTheme, .clerk)
   }

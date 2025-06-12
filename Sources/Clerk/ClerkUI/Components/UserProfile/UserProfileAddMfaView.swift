@@ -30,7 +30,7 @@
         case .sms:
           UserProfileMfaAddSmsView()
         case .authApp:
-          EmptyView()
+          UserProfileMfaAddTotpView()
         }
       }
     }
@@ -43,9 +43,8 @@
       }
     }
 
-    var environment: Clerk.Environment {
-      clerk.environment
-    }
+    var environment: Clerk.Environment { clerk.environment }
+    var user: User? { clerk.user }
 
     init(
       contentHeight: Binding<CGFloat> = .constant(0)
@@ -74,7 +73,7 @@
                   }
                 }
 
-                if environment.mfaAuthenticatorAppIsEnabled {
+                if environment.mfaAuthenticatorAppIsEnabled, user?.totpEnabled != true {
                   Button {
                     presentedView = .authApp
                   } label: {
