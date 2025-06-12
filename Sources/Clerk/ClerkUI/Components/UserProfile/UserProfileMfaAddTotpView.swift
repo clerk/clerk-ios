@@ -15,21 +15,17 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.userProfileSharedState) private var sharedState
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var viewState: ViewState = .loading
+
     @State private var path = NavigationPath()
     @State private var error: Error?
-    
-    enum ViewState: Equatable {
-      case loading
-      case loaded(TOTPResource)
-    }
+
+    let totp: TOTPResource
 
     enum Destination: Hashable {
       case verify
       case backupCodes([String])
     }
-    
+
     @ViewBuilder
     func viewForDestination(_ destination: Destination) -> some View {
       switch destination {
@@ -50,80 +46,67 @@
 
     var body: some View {
       NavigationStack(path: $path) {
-        ZStack {
-          switch viewState {
-          case .loading:
-            SpinnerView()
-              .frame(width: 24, height: 24)
-              .task {
-                await createTotp()
-              }
-          case .loaded(let totp):
-            ScrollView {
-              VStack(spacing: 24) {
-                if let secret = totp.secret {
-                  Text("Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account.", bundle: .module)
-                    .font(theme.fonts.subheadline)
-                    .foregroundStyle(theme.colors.textSecondary)
+        ScrollView {
+          VStack(spacing: 24) {
+            if let secret = totp.secret {
+              Text("Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account.", bundle: .module)
+                .font(theme.fonts.subheadline)
+                .foregroundStyle(theme.colors.textSecondary)
 
-                  VStack(spacing: 12) {
-                    copyableText(secret)
-                    
-                    Button {
-                      copyToClipboard(secret)
-                    } label: {
-                      HStack(spacing: 6) {
-                        Image("icon-clipboard", bundle: .module)
-                          .foregroundStyle(theme.colors.textSecondary)
-                        Text("Copy to clipboard", bundle: .module)
-                      }
-                      .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.secondary())
-                  }
-                }
+              VStack(spacing: 12) {
+                copyableText(secret)
 
-                if let uri = totp.uri {
-                  Text("Alternatively, if your authenticator supports TOTP URIs, you can also copy the full URI.", bundle: .module)
-                    .font(theme.fonts.subheadline)
-                    .foregroundStyle(theme.colors.textSecondary)
-
-                  VStack(spacing: 12) {
-                    copyableText(uri)
-                    
-                    Button {
-                      copyToClipboard(uri)
-                    } label: {
-                      HStack(spacing: 6) {
-                        Image("icon-clipboard", bundle: .module)
-                          .foregroundStyle(theme.colors.textSecondary)
-                        Text("Copy to clipboard", bundle: .module)
-                      }
-                      .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.secondary())
-                  }
-                }
-                
                 Button {
-                  path.append(Destination.verify)
+                  copyToClipboard(secret)
                 } label: {
-                  HStack(spacing: 4) {
-                    Text("Continue", bundle: .module)
-                    Image("icon-triangle-right", bundle: .module)
-                      .foregroundStyle(theme.colors.textOnPrimaryBackground)
-                      .opacity(0.6)
+                  HStack(spacing: 6) {
+                    Image("icon-clipboard", bundle: .module)
+                      .foregroundStyle(theme.colors.textSecondary)
+                    Text("Copy to clipboard", bundle: .module)
                   }
                   .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.primary())
+                .buttonStyle(.secondary())
               }
-              .padding(24)
             }
-            .transition(.blurReplace)
+
+            if let uri = totp.uri {
+              Text("Alternatively, if your authenticator supports TOTP URIs, you can also copy the full URI.", bundle: .module)
+                .font(theme.fonts.subheadline)
+                .foregroundStyle(theme.colors.textSecondary)
+
+              VStack(spacing: 12) {
+                copyableText(uri)
+
+                Button {
+                  copyToClipboard(uri)
+                } label: {
+                  HStack(spacing: 6) {
+                    Image("icon-clipboard", bundle: .module)
+                      .foregroundStyle(theme.colors.textSecondary)
+                    Text("Copy to clipboard", bundle: .module)
+                  }
+                  .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.secondary())
+              }
+            }
+
+            Button {
+              path.append(Destination.verify)
+            } label: {
+              HStack(spacing: 4) {
+                Text("Continue", bundle: .module)
+                Image("icon-triangle-right", bundle: .module)
+                  .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                  .opacity(0.6)
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.primary())
           }
+          .padding(24)
         }
-        .animation(.bouncy, value: viewState)
         .background(theme.colors.background)
         .presentationBackground(theme.colors.background)
         .clerkErrorPresenting($error)
@@ -148,7 +131,7 @@
         }
       }
     }
-    
+
     @ViewBuilder
     func copyableText(_ string: String) -> some View {
       Text(verbatim: string)
@@ -168,17 +151,6 @@
   }
 
   extension UserProfileMfaAddTotpView {
-    
-    private func createTotp() async {
-      guard let user else { return }
-      
-      do {
-        let totp = try await user.createTOTP()
-        self.viewState = .loaded(totp)
-      } catch {
-        self.error = error
-      }
-    }
 
     private func copyToClipboard(_ text: String) {
       #if os(iOS)
@@ -201,8 +173,8 @@
 
       return service
     }
-    
-    UserProfileMfaAddTotpView()
+
+    UserProfileMfaAddTotpView(totp: .mock)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
