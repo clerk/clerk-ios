@@ -384,6 +384,24 @@ struct UserTests {
     try await User.mock.update(updatePasswordParams)
     #expect(requestHandled.value)
   }
+  
+  @Test func testUserCreateBackupCodesRequest() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me/backup_codes")
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<BackupCodeResource>(response: .mock, client: .mock))
+      ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.createBackupCodes()
+    #expect(requestHandled.value)
+  }
 
   @Test func testUserCreateEmailAddressRequest() async throws {
     let requestHandled = LockIsolated(false)

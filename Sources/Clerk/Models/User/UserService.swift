@@ -12,6 +12,7 @@ import Get
 
 struct UserService {
   var update: @MainActor (_ params: User.UpdateParams) async throws -> User
+  var createBackupCodes: @MainActor () async throws -> BackupCodeResource
   var createEmailAddress: @MainActor (_ email: String) async throws -> EmailAddress
   var createPhoneNumber: @MainActor (_ phoneNumber: String) async throws -> PhoneNumber
   var createExternalAccountOAuth: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
@@ -38,6 +39,14 @@ extension UserService {
         let request = ClerkFAPI.v1.me.update(
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: params
+        )
+        return try await Container.shared.apiClient().send(request).value.response
+      },
+      createBackupCodes: {
+        let request = Request<ClientResponse<BackupCodeResource>>(
+          path: "/v1/me/backup_codes",
+          method: .post,
+          query: [("_clerk_session_id", Clerk.shared.session?.id)]
         )
         return try await Container.shared.apiClient().send(request).value.response
       },

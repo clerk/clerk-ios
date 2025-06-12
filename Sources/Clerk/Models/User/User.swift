@@ -217,6 +217,14 @@ extension User {
   public func update(_ params: User.UpdateParams) async throws -> User {
     try await Container.shared.userService().update(params)
   }
+  
+  /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
+  ///
+  /// - Returns: ``BackupCodeResource``
+  @discardableResult @MainActor
+  public func createBackupCodes() async throws -> BackupCodeResource {
+    try await Container.shared.userService().createBackupCodes()
+  }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
   /// - Parameter email: The value of the email address.
