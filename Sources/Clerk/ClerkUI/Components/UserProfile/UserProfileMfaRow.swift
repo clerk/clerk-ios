@@ -15,6 +15,7 @@
 
     @State private var isConfirmingRemoval = false
     @State private var removeResource: RemoveResource?
+    @State private var backupCodes: BackupCodeResource?
     @State private var isLoading = false
     @State private var error: Error?
     
@@ -79,8 +80,13 @@
           removeResource = .secondFactorPhoneNumber(phoneNumber)
         }
       case .backupCodes:
-        Button("Regenerate") {
-          //
+        AsyncButton {
+          await regenerateBackupCodes()
+        } label: { isRunning in
+          Text("Regenerate", bundle: .module)
+        }
+        .onIsRunningChanged { isRunning in
+          isLoading = isRunning
         }
       }
     }
@@ -161,6 +167,11 @@
           }
         }
       )
+      .sheet(item: $backupCodes) { backupCodes in
+        NavigationStack {
+          BackupCodesView(backupCodes: backupCodes.codes)
+        }
+      }
     }
   }
 
@@ -179,6 +190,16 @@
     private func makeDefaultSecondFactor(phoneNumber: PhoneNumber) async {
       do {
         try await phoneNumber.makeDefaultSecondFactor()
+      } catch {
+        self.error = error
+      }
+    }
+    
+    private func regenerateBackupCodes() async {
+      guard let user else { return }
+      
+      do {
+        self.backupCodes = try await user.createBackupCodes()
       } catch {
         self.error = error
       }

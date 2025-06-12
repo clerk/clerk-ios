@@ -12,10 +12,12 @@
   struct BackupCodesView: View {
     @Environment(\.clerkTheme) private var theme
     @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(\.dismiss) private var dismiss
 
     enum MfaType {
       case phoneCode
       case authenticatorApp
+      case backupCodes
 
       var instructions: LocalizedStringKey {
         switch self {
@@ -23,12 +25,14 @@
           return "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
         case .authenticatorApp:
           return "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
+        case .backupCodes:
+          return "Backup codes are now enabled. You can use one of these to sign in to your account, if you lose access to your authentication device. Each code can only be used once."
         }
       }
     }
 
     let backupCodes: [String]
-    let mfaType: MfaType
+    var mfaType: MfaType = .backupCodes
 
     var body: some View {
       ScrollView {
@@ -58,7 +62,11 @@
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            sharedState.addMfaIsPresented = false
+            if sharedState.addMfaIsPresented {
+              sharedState.addMfaIsPresented = false
+            } else {
+              dismiss()
+            }
           } label: {
             Text("Done", bundle: .module)
               .font(theme.fonts.body)
