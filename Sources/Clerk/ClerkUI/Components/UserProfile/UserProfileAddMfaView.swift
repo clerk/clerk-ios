@@ -19,9 +19,9 @@
 
     @Binding private var contentHeight: CGFloat
 
-    enum PresentedView: Identifiable {
+    enum PresentedView: Identifiable, Hashable {
       case sms
-      case authApp
+      case authApp(TOTPResource)
       var id: Self { self }
 
       @ViewBuilder
@@ -29,8 +29,8 @@
         switch self {
         case .sms:
           UserProfileMfaAddSmsView()
-        case .authApp:
-          UserProfileMfaAddTotpView()
+        case .authApp(let totp):
+          UserProfileMfaAddTotpView(totp: totp)
         }
       }
     }
@@ -74,10 +74,11 @@
                 }
 
                 if environment.mfaAuthenticatorAppIsEnabled, user?.totpEnabled != true {
-                  Button {
-                    presentedView = .authApp
-                  } label: {
+                  AsyncButton {
+                    await createTotp()
+                  } label: { isRunning in
                     UserProfileRowView(icon: "icon-key", text: "Authenticator application")
+                      .overlayProgressView(isActive: isRunning)
                   }
                 }
               }
@@ -127,6 +128,21 @@
         $0.view
       }
     }
+  }
+
+  extension UserProfileAddMfaView {
+    
+    private func createTotp() async {
+      guard let user else { return }
+      
+      do {
+        let totp = try await user.createTOTP()
+        presentedView = .authApp(totp)
+      } catch {
+        self.error = error
+      }
+    }
+    
   }
 
   #Preview {

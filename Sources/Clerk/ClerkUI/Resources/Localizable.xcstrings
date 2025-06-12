@@ -1415,6 +1415,70 @@
         }
       }
     },
+    "Backup codes are now enabled. You can use one of these to sign in to your account, if you lose access to your authentication device. Each code can only be used once." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تفعيل رموز النسخ الاحتياطي الآن. يمكنك استخدام أحدها لتسجيل الدخول إلى حسابك إذا فقدت الوصول إلى جهاز المصادقة الخاص بك. يمكن استخدام كل رمز مرة واحدة فقط."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup-Codes sind jetzt aktiviert. Sie können einen davon verwenden, um sich bei Ihrem Konto anzumelden, falls Sie den Zugriff auf Ihr Authentifizierungsgerät verlieren. Jeder Code kann nur einmal verwendet werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι εφεδρικοί κωδικοί είναι τώρα ενεργοποιημένοι. Μπορείτε να χρησιμοποιήσετε έναν από αυτούς για να συνδεθείτε στον λογαριασμό σας, αν χάσετε την πρόσβαση στη συσκευή ελέγχου ταυτότητας. Κάθε κωδικός μπορεί να χρησιμοποιηθεί μόνο μία φορά."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los códigos de respaldo ahora están habilitados. Puedes usar uno de ellos para iniciar sesión en tu cuenta si pierdes el acceso a tu dispositivo de autenticación. Cada código solo se puede usar una vez."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les codes de secours sont maintenant activés. Vous pouvez en utiliser un pour vous connecter à votre compte si vous perdez l'accès à votre appareil d'authentification. Chaque code ne peut être utilisé qu'une seule fois."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बैकअप कोड अब सक्षम हैं। यदि आप अपने प्रमाणीकरण डिवाइस तक पहुँच खो देते हैं, तो आप इनमें से किसी एक का उपयोग अपने खाते में साइन इन करने के लिए कर सकते हैं। प्रत्येक कोड का केवल एक बार उपयोग किया जा सकता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I codici di backup sono ora abilitati. Puoi usarne uno per accedere al tuo account se perdi l'accesso al tuo dispositivo di autenticazione. Ogni codice può essere utilizzato solo una volta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップコードが有効になりました。認証デバイスへのアクセスを失った場合、これらのうちの1つを使ってアカウントにサインインできます。各コードは1回しか使用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백업 코드가 이제 활성화되었습니다. 인증 장치에 접근할 수 없을 때 이 중 하나를 사용하여 계정에 로그인할 수 있습니다. 각 코드는 한 번만 사용할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份代码现已启用。如果您无法访问身份验证设备，可以使用其中一个代码登录您的帐户。每个代码只能使用一次。"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "localizations" : {
         "ar" : {
