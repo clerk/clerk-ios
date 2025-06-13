@@ -120,10 +120,7 @@
             }
             .background(theme.colors.backgroundSecondary)
 
-            SecuredByClerkView()
-              .padding(16)
-              .frame(maxWidth: .infinity)
-              .background(theme.colors.backgroundSecondary)
+            SecuredByClerkFooter()
           }
         }
       }
