@@ -12,12 +12,14 @@
 
   struct UserProfilePasswordSection: View {
     @Environment(\.clerkTheme) private var theme
+    
+    @State private var resetPasswordIsPresented = false
 
     var body: some View {
       Section {
-        AsyncButton {
-          // change password
-        } label: { isRunning in
+        Button {
+          resetPasswordIsPresented = true
+        } label: {
           HStack(spacing: 0) {
             HStack(alignment: .top, spacing: 16) {
               Image("icon-lock", bundle: .module)
@@ -49,7 +51,6 @@
           .padding(.vertical, 16)
           .frame(maxWidth: .infinity, alignment: .leading)
           .contentShape(.rect)
-          .overlayProgressView(isActive: isRunning)
         }
         .overlay(alignment: .bottom) {
           Rectangle()
@@ -61,6 +62,9 @@
         .simultaneousGesture(TapGesture())
       } header: {
         UserProfileSectionHeader(text: "PASSWORD")
+      }
+      .sheet(isPresented: $resetPasswordIsPresented) {
+        UserProfileChangePasswordView()
       }
     }
   }
