@@ -4295,6 +4295,9 @@
         }
       }
     },
+    "It is recommended to sign out of all other devices which may have used your old password." : {
+
+    },
     "Last name" : {
       "localizations" : {
         "ar" : {
@@ -9095,6 +9098,9 @@
           }
         }
       }
+    },
+    "Update password" : {
+
     },
     "Update profile" : {
       "localizations" : {
