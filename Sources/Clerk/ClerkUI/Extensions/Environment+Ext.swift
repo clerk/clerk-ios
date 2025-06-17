@@ -30,9 +30,9 @@
         return []
       }
 
-      let enabledProvicers = social.filter(\.value.enabled)
+      let enabledProviders = social.filter(\.value.enabled)
 
-      return enabledProvicers.map({
+      return enabledProviders.map({
         OAuthProvider(strategy: $0.value.strategy)
       }).sorted()
     }
