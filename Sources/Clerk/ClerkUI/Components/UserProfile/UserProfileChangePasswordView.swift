@@ -20,7 +20,7 @@
     @State private var confirmNewPassword = ""
     @State private var signOutOfOtherSessions = false
     @State private var error: Error?
-    
+
     @FocusState private var focusedField: Field?
 
     enum Field {
@@ -30,28 +30,32 @@
     enum Destination {
       case updatePassword
     }
-    
+
     var nextIsDisabled: Bool {
       currentPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-    
+
     var saveIsDisabled: Bool {
-      newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-      confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-      newPassword != confirmNewPassword
+      newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newPassword != confirmNewPassword
     }
 
     var user: User? { clerk.user }
 
+    var isAddingPassword: Bool = false
+
     var body: some View {
       NavigationStack(path: $path) {
-        currentPasswordView
-          .navigationDestination(for: Destination.self) {
-            switch $0 {
-            case .updatePassword:
-              updatePasswordView
+        if isAddingPassword {
+          updatePasswordView
+        } else {
+          currentPasswordView
+            .navigationDestination(for: Destination.self) {
+              switch $0 {
+              case .updatePassword:
+                updatePasswordView
+              }
             }
-          }
+        }
       }
     }
 
@@ -146,12 +150,21 @@
             path = NavigationPath()
           }
         }
-        
+
         return nil
       }
       .toolbar {
+        if isAddingPassword {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
+          }
+        }
+        
         ToolbarItem(placement: .principal) {
-          Text("Update password", bundle: .module)
+          Text(isAddingPassword ? "Add password" : "Update password", bundle: .module)
             .font(theme.fonts.headline)
             .foregroundStyle(theme.colors.text)
         }
@@ -191,7 +204,7 @@
       do {
         try await user.updatePassword(
           .init(
-            currentPassword: currentPassword,
+            currentPassword: isAddingPassword ? nil : currentPassword,
             newPassword: newPassword,
             signOutOfOtherSessions: signOutOfOtherSessions
           )
@@ -204,8 +217,14 @@
 
   }
 
-  #Preview {
+  #Preview("Reset") {
     UserProfileChangePasswordView()
+      .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
+  }
+
+  #Preview("Adding") {
+    UserProfileChangePasswordView(isAddingPassword: true)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
