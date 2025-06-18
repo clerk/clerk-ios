@@ -14,6 +14,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
+    @State private var path = NavigationPath()
     @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var confirmNewPassword = ""
@@ -25,67 +26,22 @@
     enum Field {
       case currentPassword, newPassword, confirmNewPassword
     }
+    
+    enum Destination {
+      case updatePassword
+    }
 
     var user: User? { clerk.user }
 
     var body: some View {
-      NavigationStack {
-        ScrollView {
-          VStack(spacing: 24) {
-            Group {
-              ClerkTextField("Current password", text: $currentPassword, isSecure: true)
-                .textContentType(.password)
-                .focused($focusedField, equals: .currentPassword)
-              
-              ClerkTextField("New password", text: $newPassword, isSecure: true)
-                .textContentType(.newPassword)
-                .focused($focusedField, equals: .newPassword)
-                .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
-              
-              ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
-                .textContentType(.newPassword)
-                .focused($focusedField, equals: .confirmNewPassword)
+      NavigationStack(path: $path) {
+        currentPasswordView
+          .navigationDestination(for: Destination.self) {
+            switch $0 {
+            case .updatePassword:
+              updatePasswordView
             }
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-
-            signOutOfOtherDevicesView
-
-            AsyncButton {
-              await resetPassword()
-            } label: { isRunning in
-              Text("Save")
-                .frame(maxWidth: .infinity)
-                .overlayProgressView(isActive: isRunning) {
-                  SpinnerView(color: theme.colors.textOnPrimaryBackground)
-                }
-            }
-            .buttonStyle(.primary())
           }
-          .padding(24)
-        }
-        .background(theme.colors.background)
-        .presentationBackground(theme.colors.background)
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .clerkErrorPresenting($error)
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
-          }
-          
-          ToolbarItem(placement: .principal) {
-            Text("Update password", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.text)
-          }
-        }
-        .onFirstAppear {
-          focusedField = .currentPassword
-        }
       }
     }
 
@@ -98,9 +54,13 @@
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
             .multilineTextAlignment(.leading)
+          
+          ClerkTextField("Current password", text: $currentPassword, isSecure: true)
+            .textContentType(.password)
+            .focused($focusedField, equals: .currentPassword)
 
           Button {
-//            path.append(Destination.updatePassword)
+            path.append(Destination.updatePassword)
           } label: {
             Text("Next")
               .frame(maxWidth: .infinity)
@@ -129,6 +89,57 @@
       }
       .onFirstAppear {
         focusedField = .currentPassword
+      }
+    }
+
+    @ViewBuilder
+    private var updatePasswordView: some View {
+      ScrollView {
+        VStack(spacing: 24) {
+          Group {
+            ClerkTextField("New password", text: $newPassword, isSecure: true)
+              .textContentType(.newPassword)
+              .focused($focusedField, equals: .newPassword)
+              .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+
+            ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
+              .textContentType(.newPassword)
+              .focused($focusedField, equals: .confirmNewPassword)
+          }
+          .autocorrectionDisabled()
+          .textInputAutocapitalization(.never)
+
+          signOutOfOtherDevicesView
+
+          AsyncButton {
+            await resetPassword()
+          } label: { isRunning in
+            Text("Save")
+              .frame(maxWidth: .infinity)
+              .overlayProgressView(isActive: isRunning) {
+                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+              }
+          }
+          .buttonStyle(.primary())
+        }
+        .padding(24)
+      }
+      .background(theme.colors.background)
+      .presentationBackground(theme.colors.background)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .clerkErrorPresenting($error)
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Update password", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.text)
+        }
+      }
+      .onFirstAppear {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+          focusedField = .newPassword
+        }
       }
     }
 
