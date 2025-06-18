@@ -53,6 +53,7 @@
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .focused($focusedField, equals: .new)
+            .hiddenTextField(text: .constant(signIn?.identifier ?? ""), textContentType: .username)
             .onFirstAppear {
               focusedField = .new
             }

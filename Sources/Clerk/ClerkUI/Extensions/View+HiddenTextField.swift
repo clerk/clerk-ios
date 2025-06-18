@@ -18,25 +18,35 @@
 
     @Binding var text: String
     let textContentType: UITextContentType
+    let isSecure: Bool
 
     func body(content: Content) -> some View {
       content
         .background {
-          SecureField("", text: $text)
+          field
             .textContentType(textContentType)
             .opacity(0.00001)
-            .offset(y: -50)
+            .offset(y: -100)
             .disabled(true)
             .accessibilityHidden(true)
             .allowsHitTesting(false)
         }
     }
+    
+    @ViewBuilder
+    var field: some View {
+      if isSecure {
+        SecureField("", text: $text)
+      } else {
+        TextField("", text: $text)
+      }
+    }
 
   }
 
   extension View {
-    public func hiddenTextField(text: Binding<String>, textContentType: UITextContentType) -> some View {
-      modifier(HiddenTextFieldModifier(text: text, textContentType: textContentType))
+    public func hiddenTextField(text: Binding<String>, textContentType: UITextContentType, isSecure: Bool = false) -> some View {
+      modifier(HiddenTextFieldModifier(text: text, textContentType: textContentType, isSecure: isSecure))
     }
   }
 

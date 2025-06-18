@@ -2439,6 +2439,9 @@
         }
       }
     },
+    "Current password" : {
+
+    },
     "Default" : {
       "localizations" : {
         "ar" : {
@@ -3398,6 +3401,9 @@
           }
         }
       }
+    },
+    "Enter your current password to set a new one." : {
+
     },
     "Enter your email" : {
       "localizations" : {
@@ -4937,6 +4943,9 @@
           }
         }
       }
+    },
+    "Next" : {
+
     },
     "or" : {
       "localizations" : {
