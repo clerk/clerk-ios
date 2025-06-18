@@ -26,7 +26,7 @@
     enum Field {
       case currentPassword, newPassword, confirmNewPassword
     }
-    
+
     enum Destination {
       case updatePassword
     }
@@ -54,7 +54,7 @@
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
             .multilineTextAlignment(.leading)
-          
+
           ClerkTextField("Current password", text: $currentPassword, isSecure: true)
             .textContentType(.password)
             .focused($focusedField, equals: .currentPassword)
@@ -87,7 +87,7 @@
             .foregroundStyle(theme.colors.text)
         }
       }
-      .onFirstAppear {
+      .onAppear {
         focusedField = .currentPassword
       }
     }
@@ -128,7 +128,15 @@
       .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
-      .clerkErrorPresenting($error)
+      .clerkErrorPresenting($error) { error in
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"]?.stringValue == "current_password" {
+          return .init(text: "Go back") {
+            path = NavigationPath()
+          }
+        }
+        
+        return nil
+      }
       .toolbar {
         ToolbarItem(placement: .principal) {
           Text("Update password", bundle: .module)
