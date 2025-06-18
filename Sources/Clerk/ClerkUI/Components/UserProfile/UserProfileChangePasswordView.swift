@@ -14,6 +14,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
+    @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var confirmNewPassword = ""
     @State private var signOutOfOtherSessions = false
@@ -22,7 +23,7 @@
     @FocusState private var focusedField: Field?
 
     enum Field {
-      case newPassword, confirmNewPassword
+      case currentPassword, newPassword, confirmNewPassword
     }
 
     var user: User? { clerk.user }
@@ -32,10 +33,15 @@
         ScrollView {
           VStack(spacing: 24) {
             Group {
+              ClerkTextField("Current password", text: $currentPassword, isSecure: true)
+                .textContentType(.password)
+                .focused($focusedField, equals: .currentPassword)
+              
               ClerkTextField("New password", text: $newPassword, isSecure: true)
                 .textContentType(.newPassword)
                 .focused($focusedField, equals: .newPassword)
-                .hiddenTextField(text: .constant(""), textContentType: .username)
+                .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+              
               ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
                 .textContentType(.newPassword)
                 .focused($focusedField, equals: .confirmNewPassword)
@@ -70,7 +76,7 @@
             }
             .foregroundStyle(theme.colors.primary)
           }
-
+          
           ToolbarItem(placement: .principal) {
             Text("Update password", bundle: .module)
               .font(theme.fonts.headline)
@@ -78,20 +84,63 @@
           }
         }
         .onFirstAppear {
-          focusedField = .newPassword
+          focusedField = .currentPassword
         }
       }
     }
 
     @ViewBuilder
-    var signOutOfOtherDevicesView: some View {
+    private var currentPasswordView: some View {
+      ScrollView {
+        VStack(spacing: 24) {
+          Text("Enter your current password to set a new one.", bundle: .module)
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.textSecondary)
+            .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+            .multilineTextAlignment(.leading)
+
+          Button {
+//            path.append(Destination.updatePassword)
+          } label: {
+            Text("Next")
+              .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.primary())
+        }
+        .padding(24)
+      }
+      .background(theme.colors.background)
+      .presentationBackground(theme.colors.background)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text("Update password", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.text)
+        }
+      }
+      .onFirstAppear {
+        focusedField = .currentPassword
+      }
+    }
+
+    @ViewBuilder
+    private var signOutOfOtherDevicesView: some View {
       VStack(spacing: 8) {
         Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.text)
           .tint(theme.colors.primary)
           .frame(minHeight: 22)
-        
+
         Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
           .font(theme.fonts.subheadline)
           .foregroundStyle(theme.colors.textSecondary)
@@ -111,11 +160,12 @@
       do {
         try await user.updatePassword(
           .init(
+            currentPassword: currentPassword,
             newPassword: newPassword,
             signOutOfOtherSessions: signOutOfOtherSessions
           )
         )
-        
+
         dismiss()
       } catch {
         self.error = error
