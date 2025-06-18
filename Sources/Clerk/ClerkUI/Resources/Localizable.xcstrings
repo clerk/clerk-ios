@@ -775,6 +775,9 @@
         }
       }
     },
+    "Add password" : {
+
+    },
     "Add phone number" : {
       "localizations" : {
         "ar" : {
