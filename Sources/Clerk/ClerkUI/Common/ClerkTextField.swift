@@ -83,7 +83,7 @@ struct ClerkTextField: View {
           .frame(minHeight: 22)
           .tint(theme.colors.primary)
           .animation(.default.delay(0.2)) {
-            $0.opacity(isFocusedOrFilled ? 1 : 0)
+            $0.opacity(isFocusedOrFilled ? 1 : 0.0001)
           }
           .onChange(of: focused) { oldValue, newValue in
             if newValue != nil {
