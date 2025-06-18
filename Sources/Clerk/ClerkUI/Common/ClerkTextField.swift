@@ -32,7 +32,7 @@ struct ClerkTextField: View {
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
     isSecure: Bool = false,
-    fieldState: FieldState = .default
+    fieldState: FieldState = .default,
   ) {
     self.titleKey = titleKey
     self._text = text
@@ -61,19 +61,21 @@ struct ClerkTextField: View {
             .opacity(0)
 
           ZStack {
+            TextField("", text: $text)
+              .zIndex(revealText ? 1 : 0)
+              .focused($focused, equals: .regular)
+              .animation(.default) {
+                $0.opacity(!isSecure || revealText ? 1 : 0)
+              }
+            
             if isSecure {
               SecureField("", text: $text)
+                .zIndex(revealText ? 0 : 1)
                 .focused($focused, equals: .secure)
                 .animation(.default) {
                   $0.opacity(isSecure && !revealText ? 1 : 0)
                 }
             }
-            
-            TextField("", text: $text)
-              .focused($focused, equals: .regular)
-              .animation(.default) {
-                $0.opacity(!isSecure || revealText ? 1 : 0)
-              }
           }
           .lineLimit(1)
           .font(theme.fonts.body)
@@ -82,6 +84,18 @@ struct ClerkTextField: View {
           .tint(theme.colors.primary)
           .animation(.default.delay(0.2)) {
             $0.opacity(isFocusedOrFilled ? 1 : 0)
+          }
+          .onChange(of: focused) { oldValue, newValue in
+            if newValue != nil {
+              focused = revealText ? .regular : .secure
+            }
+          }
+          .onChange(of: revealText) { oldValue, newValue in
+            if focused == .regular {
+              focused = .secure
+            } else if focused == .secure {
+              focused = .regular
+            }
           }
         }
         .onGeometryChange(for: CGFloat.self) { geometry in
@@ -105,11 +119,6 @@ struct ClerkTextField: View {
       if isSecure {
         Button {
           revealText.toggle()
-          if focused == .regular {
-            focused = .secure
-          } else if focused == .secure {
-            focused = .regular
-          }
         } label: {
           Image(systemName: revealText ? "eye.fill" : "eye.slash.fill")
             .resizable()
