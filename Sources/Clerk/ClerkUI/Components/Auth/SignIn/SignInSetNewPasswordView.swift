@@ -14,6 +14,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
 
+    @State private var identifier = ""
     @State private var signOutOfOtherDevices = false
     @State private var fieldError: Error?
     @FocusState private var focusedField: Field?
@@ -53,9 +54,13 @@
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .focused($focusedField, equals: .new)
-            .hiddenTextField(text: .constant(signIn?.identifier ?? ""), textContentType: .username)
+            .hiddenTextField(text: $identifier, textContentType: .username)
             .onFirstAppear {
               focusedField = .new
+              
+              // we need to create a local copy of this to keep around because
+              // once the reset flow is complete the sign in identifier gets cleared out
+              identifier = signIn?.identifier ?? ""
             }
 
             VStack(spacing: 8) {
