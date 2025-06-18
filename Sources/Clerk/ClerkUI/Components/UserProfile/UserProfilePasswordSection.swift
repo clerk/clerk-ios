@@ -11,46 +11,26 @@
   import SwiftUI
 
   struct UserProfilePasswordSection: View {
+    @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     
-    @State private var resetPasswordIsPresented = false
+    enum PasswordAction: Hashable, Identifiable {
+      case add, reset
+      var id: Self { self }
+    }
+
+    @State private var passwordAction: PasswordAction?
+
+    var user: User? { clerk.user }
 
     var body: some View {
       Section {
         Button {
-          resetPasswordIsPresented = true
+          passwordAction = .reset
         } label: {
-          HStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 16) {
-              Image("icon-lock", bundle: .module)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundStyle(theme.colors.textSecondary)
-              VStack(alignment: .leading, spacing: 4) {
-                Text("Change password", bundle: .module)
-                  .font(theme.fonts.body)
-                  .foregroundStyle(theme.colors.text)
-                  .frame(minHeight: 22)
-                Text(verbatim: "•••••••••••••••••••••••••")
-                  .font(theme.fonts.subheadline)
-                  .foregroundStyle(theme.colors.textSecondary)
-                  .frame(minHeight: 20)
-              }
-            }
-
-            Spacer()
-
-            Image("icon-chevron-right", bundle: .module)
-              .resizable()
-              .scaledToFit()
-              .frame(width: 20, height: 20)
-              .foregroundStyle(theme.colors.textSecondary)
-          }
-          .padding(.horizontal, 24)
-          .padding(.vertical, 16)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .contentShape(.rect)
+          buttonLabel
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
         }
         .overlay(alignment: .bottom) {
           Rectangle()
@@ -63,14 +43,49 @@
       } header: {
         UserProfileSectionHeader(text: "PASSWORD")
       }
-      .sheet(isPresented: $resetPasswordIsPresented) {
-        UserProfileChangePasswordView()
+      .sheet(item: $passwordAction) { action in
+        UserProfileChangePasswordView(isAddingPassword: action == .add)
       }
     }
+
+    @ViewBuilder
+    private var buttonLabel: some View {
+      if user?.passwordEnabled == true {
+        VStack(spacing: 0) {
+          HStack(alignment: .top, spacing: 16) {
+            Image("icon-lock", bundle: .module)
+              .resizable()
+              .scaledToFit()
+              .frame(width: 24, height: 24)
+              .foregroundStyle(theme.colors.textSecondary)
+            Text(verbatim: "•••••••••••••••••••••••••")
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.textSecondary)
+              .frame(minHeight: 20)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 24)
+          .padding(.vertical, 16)
+
+          Rectangle()
+            .frame(height: 1)
+            .foregroundStyle(theme.colors.border)
+
+          UserProfileButtonRow(text: "Change password") {}
+            .disabled(true)
+        }
+      } else {
+        UserProfileButtonRow(text: "Add password") {
+          passwordAction = .add
+        }
+      }
+    }
+
   }
 
   #Preview {
     UserProfilePasswordSection()
+      .environment(\.clerkTheme, .clerk)
   }
 
 #endif
