@@ -42,8 +42,7 @@
           },
         ) {
           if let error {
-            let action = actionProvider?(error)
-            ErrorView(error: error, action: action)
+            ErrorView(error: error, action: actionProvider?(error))
               .padding()
               .onGeometryChange(
                 for: CGFloat.self,

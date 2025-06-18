@@ -24,11 +24,9 @@
     }
 
     var resetButtonIsDisabled: Bool {
-      if authState.newPassword.isEmpty || authState.confirmNewPassword.isEmpty {
-        return true
-      }
-
-      return false
+      authState.newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+      authState.confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+      authState.newPassword != authState.confirmNewPassword
     }
 
     enum Field {

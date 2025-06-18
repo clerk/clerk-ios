@@ -20,7 +20,7 @@
     @State private var confirmNewPassword = ""
     @State private var signOutOfOtherSessions = false
     @State private var error: Error?
-
+    
     @FocusState private var focusedField: Field?
 
     enum Field {
@@ -29,6 +29,16 @@
 
     enum Destination {
       case updatePassword
+    }
+    
+    var nextIsDisabled: Bool {
+      currentPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    var saveIsDisabled: Bool {
+      newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+      confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+      newPassword != confirmNewPassword
     }
 
     var user: User? { clerk.user }
@@ -66,6 +76,7 @@
               .frame(maxWidth: .infinity)
           }
           .buttonStyle(.primary())
+          .disabled(nextIsDisabled)
         }
         .padding(24)
       }
@@ -121,6 +132,7 @@
               }
           }
           .buttonStyle(.primary())
+          .disabled(saveIsDisabled)
         }
         .padding(24)
       }
@@ -184,7 +196,6 @@
             signOutOfOtherSessions: signOutOfOtherSessions
           )
         )
-
         dismiss()
       } catch {
         self.error = error
