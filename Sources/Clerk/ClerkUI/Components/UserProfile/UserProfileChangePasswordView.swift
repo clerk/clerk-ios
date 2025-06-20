@@ -32,11 +32,11 @@
     }
 
     var nextIsDisabled: Bool {
-      currentPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      currentPassword.isEmptyTrimmed
     }
 
     var saveIsDisabled: Bool {
-      newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newPassword != confirmNewPassword
+      newPassword.isEmptyTrimmed || confirmNewPassword.isEmptyTrimmed || newPassword != confirmNewPassword
     }
 
     var user: User? { clerk.user }

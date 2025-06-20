@@ -121,7 +121,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     switch self {
     case .custom(let strategy):
       if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
-        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
       }) {
         return URL(string: socialConfig.value.logoUrl ?? "")
       }
@@ -131,7 +131,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     default:
 
       if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
-        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
       }) {
         if var logoUrl = socialConfig.value.logoUrl {
           if darkMode {
