@@ -17,7 +17,7 @@
         .joined(separator: " ")
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
-      return fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : fullName
+      return fullName.isEmptyTrimmed ? nil : fullName
     }
 
     var intials: String? {
@@ -26,19 +26,19 @@
         .joined(separator: " ")
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
-      return initials.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : initials
+      return initials.isEmptyTrimmed ? nil : initials
     }
 
     var identifier: String? {
-      if let username, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if let username, !username.isEmptyTrimmed {
         return username
       }
 
-      if let primaryEmailAddress, !primaryEmailAddress.emailAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if let primaryEmailAddress, !primaryEmailAddress.emailAddress.isEmptyTrimmed {
         return primaryEmailAddress.emailAddress
       }
 
-      if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.isEmptyTrimmed {
         return primaryPhoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible
       }
 

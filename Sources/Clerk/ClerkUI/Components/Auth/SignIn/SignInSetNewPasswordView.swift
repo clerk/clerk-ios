@@ -24,8 +24,8 @@
     }
 
     var resetButtonIsDisabled: Bool {
-      authState.newPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-      authState.confirmNewPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+      authState.newPassword.isEmptyTrimmed ||
+      authState.confirmNewPassword.isEmptyTrimmed ||
       authState.newPassword != authState.confirmNewPassword
     }
 

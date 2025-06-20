@@ -14,7 +14,7 @@ extension ExternalAccount {
   }
 
   var displayName: String {
-    if let username, !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    if let username, !username.isEmptyTrimmed {
       return username
     } else {
       return emailAddress
@@ -27,7 +27,7 @@ extension ExternalAccount {
       .joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
     
-    return fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : fullName
+    return fullName.isEmptyTrimmed ? nil : fullName
   }
 
 }

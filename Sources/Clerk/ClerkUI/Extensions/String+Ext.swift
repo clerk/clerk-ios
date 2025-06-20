@@ -29,6 +29,10 @@
       let remainingLetters = self.dropFirst().lowercased()
       return firstLetter + remainingLetters
     }
+    
+    var isEmptyTrimmed: Bool {
+      trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
   }
 
 #endif
