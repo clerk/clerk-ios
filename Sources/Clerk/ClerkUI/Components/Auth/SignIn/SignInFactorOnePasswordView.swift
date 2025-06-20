@@ -105,9 +105,17 @@ struct SignInFactorOnePasswordView: View {
             .frame(width: 1, height: 16)
                     
           Button {
-            authState.path.append(
-              AuthView.Destination.forgotPassword
-            )
+            if signIn?.resetPasswordFactor != nil {
+              authState.path.append(
+                AuthView.Destination.forgotPassword
+              )
+            } else {
+              authState.path.append(
+                AuthView.Destination.signInFactorOneUseAnotherMethod(
+                  currentFactor: factor
+                )
+              )
+            }
           } label: {
             Text("Forgot password?", bundle: .module)
               .frame(maxWidth: .infinity)
