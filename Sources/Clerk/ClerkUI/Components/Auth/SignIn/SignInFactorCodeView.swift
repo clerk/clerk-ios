@@ -112,7 +112,7 @@
 
             if let identifier = factor.safeIdentifier {
               Button {
-                authState.path = NavigationPath()
+                authState.path = []
               } label: {
                 IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
               }
@@ -239,7 +239,7 @@
       .clerkErrorPresenting($error)
       .taskOnce {
         startTimer()
-        if authState.lastCodeSentAt[factor] == nil {
+        if authState.lastCodeSentAt[factor.safeIdentifier ?? ""] == nil {
           await prepare()
         }
       }
@@ -259,7 +259,10 @@
     }
 
     func updateRemainingSeconds() {
-      guard let lastCodeSentAt = authState.lastCodeSentAt[factor] else {
+      guard
+        let identifier = factor.safeIdentifier,
+        let lastCodeSentAt = authState.lastCodeSentAt[identifier]
+      else {
         return
       }
 
@@ -272,7 +275,7 @@
       verificationState = .default
 
       guard let signIn else {
-        authState.path = NavigationPath()
+        authState.path = []
         return
       }
 
@@ -306,7 +309,7 @@
           break
         }
 
-        authState.lastCodeSentAt[factor] = .now
+        authState.lastCodeSentAt[factor.safeIdentifier ?? ""] = .now
         updateRemainingSeconds()
       } catch {
         otpFieldIsFocused = false
@@ -316,7 +319,7 @@
 
     func attempt() async throws {
       guard var signIn else {
-        authState.path = NavigationPath()
+        authState.path = []
         return
       }
 

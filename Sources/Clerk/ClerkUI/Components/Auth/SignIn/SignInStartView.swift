@@ -247,7 +247,35 @@
         fieldError = nil
         authState.setToStepForStatus(signIn: signIn)
       } catch {
+        if authState.mode == .signInOrUp,
+          let clerkApiError = error as? ClerkAPIError,
+          ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code)
+        {
+          await transferToSignUp()
+        } else {
+          self.fieldError = error
+        }
+      }
+    }
+
+    private func transferToSignUp() async {
+      do {
+        let signUp = try await SignUp.create(strategy: transferableSignUpParams)
+        authState.setToStepForStatus(signUp: signUp)
+      } catch {
         self.fieldError = error
+      }
+    }
+    
+    private var transferableSignUpParams: SignUp.CreateStrategy {
+      if phoneNumberFieldIsActive {
+        return .standard(phoneNumber: authState.phoneNumber)
+      } else {
+        if authState.identifier.isEmailAddress {
+          return .standard(emailAddress: authState.identifier)
+        } else {
+          return .standard(username: authState.identifier)
+        }
       }
     }
 

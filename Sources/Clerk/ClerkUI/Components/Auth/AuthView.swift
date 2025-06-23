@@ -13,11 +13,18 @@ import SwiftUI
 public struct AuthView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @State var authState = AuthState()
+  @State var authState: AuthState
+  
+  public enum Mode {
+    case signInOrUp
+    case signIn
+    case signUp
+  }
 
   let showDismissButton: Bool
 
-  public init(showDismissButton: Bool = true) {
+  public init(mode: Mode = .signInOrUp, showDismissButton: Bool = true) {
+    self._authState = State(initialValue: .init(mode: mode))
     self.showDismissButton = showDismissButton
   }
 
@@ -54,6 +61,8 @@ public struct AuthView: View {
 
 extension AuthView {
   enum Destination: Hashable {
+    
+    // Sign In
     case signInStart
     case signInFactorOne(factor: Factor)
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
@@ -61,6 +70,11 @@ extension AuthView {
     case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
     case forgotPassword
     case setNewPassword
+    
+    // Sign up
+    case signUpCollectField(SignUpCollectFieldView.Field)
+    case signUpCode(SignUpCodeView.Field)
+    case signUpCompleteProfile
     
     @ViewBuilder
     var view: some View {
@@ -82,6 +96,12 @@ extension AuthView {
         SignInFactorOneForgotPasswordView()
       case .setNewPassword:
         SignInSetNewPasswordView()
+      case .signUpCollectField(let field):
+        SignUpCollectFieldView(field: field)
+      case .signUpCode(let field):
+        SignUpCodeView(field: field)
+      case .signUpCompleteProfile:
+        SignUpCompleteProfileView()
       }
     }
   }
