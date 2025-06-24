@@ -112,19 +112,7 @@
     }
 
     func nextFieldToCollect(signUp: SignUp) -> String? {
-      for individuallyCollectableField in signUp.individuallyCollectableFields {
-        let alreadyTriedToCollect = path.contains { destination in
-          if case .signUpCollectField(let field) = destination {
-            return individuallyCollectableField == field.rawValue
-          }
-          return false
-        }
-
-        if !alreadyTriedToCollect && signUp.collectableFields.contains(individuallyCollectableField) && !signUp.fieldWasCollected(field: individuallyCollectableField) {
-          return individuallyCollectableField
-        }
-      }
-      return nil
+      signUp.firstFieldToCollect
     }
   }
 

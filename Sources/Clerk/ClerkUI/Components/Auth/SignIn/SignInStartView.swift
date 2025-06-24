@@ -202,7 +202,7 @@
                   case .signIn(let signIn):
                     authState.setToStepForStatus(signIn: signIn)
                   case .signUp(let signUp):
-                    dump("SIGN UP NOT IMPLEMENTED YET")
+                    authState.setToStepForStatus(signUp: signUp)
                   }
                 } onError: { error in
                   self.generalError = error

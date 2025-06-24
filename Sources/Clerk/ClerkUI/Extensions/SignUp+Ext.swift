@@ -11,10 +11,6 @@
 
   extension SignUp {
 
-    var collectableFields: [String] {
-      missingFields + optionalFields.filter({ !$0.starts(with: "oauth") })
-    }
-
     var individuallyCollectableFields: [String] {
       ["email_address", "phone_number", "username", "password"].sorted { lhs, rhs in
         let lhsRequired = fieldIsRequired(field: lhs)
@@ -33,7 +29,7 @@
     }
 
     var firstFieldToCollect: String? {
-      collectableFields.first
+      missingFields.first
     }
 
     var firstFieldToVerify: String? {
