@@ -12,11 +12,11 @@
   struct UserButtonAccountSwitcher: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
+    @Environment(\.userProfileSharedState) private var sharedState
     @Environment(\.dismiss) private var dismiss
     
     @Binding private var contentHeight: CGFloat
     @State private var securedByClerkHeight: CGFloat = 0
-    @State private var authViewIsPresented = false
     @State private var error: Error?
 
     var sessions: [Session] {
@@ -101,7 +101,8 @@
               }
 
               Button {
-                authViewIsPresented = true
+                sharedState.accountSwitcherIsPresented = false
+                sharedState.authViewIsPresented = true
               } label: {
                 UserProfileRowView(icon: "icon-plus", text: "Add account")
               }
@@ -156,19 +157,6 @@
             Text("Switch account", bundle: .module)
               .font(theme.fonts.headline)
               .foregroundStyle(theme.colors.text)
-          }
-        }
-        .sheet(isPresented: $authViewIsPresented) {
-          AuthView()
-            .interactiveDismissDisabled()
-        }
-        .task {
-          for await event in clerk.authEventEmitter.events {
-            switch event {
-            case .signInCompleted, .signUpCompleted:
-              authViewIsPresented = false
-              dismiss()
-            }
           }
         }
       }
