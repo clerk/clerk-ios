@@ -13,6 +13,7 @@
   struct UserProfileSecurityView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
+    @Environment(\.userProfileSharedState) private var sharedState
 
     @State private var error: Error?
 
@@ -25,6 +26,8 @@
     }
 
     var body: some View {
+      @Bindable var sharedState = sharedState
+      
       VStack(spacing: 0) {
         if let user {
           ScrollView {
@@ -74,6 +77,9 @@
       }
       .task {
         try? await Client.get()
+      }
+      .sheet(item: $sharedState.presentedMfaType) {
+        $0.view
       }
     }
   }

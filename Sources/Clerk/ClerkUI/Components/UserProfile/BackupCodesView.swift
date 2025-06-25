@@ -58,15 +58,12 @@
       .background(theme.colors.background)
       .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden()
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            if sharedState.addMfaIsPresented {
-              sharedState.addMfaIsPresented = false
-            } else {
-              dismiss()
-            }
+            dismiss()
           } label: {
             Text("Done", bundle: .module)
               .font(theme.fonts.body)

@@ -12,9 +12,9 @@
   struct UserProfileAddMfaView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
+    @Environment(\.userProfileSharedState) private var sharedState
     @Environment(\.dismiss) private var dismiss
 
-    @State private var presentedView: PresentedView?
     @State private var error: Error?
 
     @Binding private var contentHeight: CGFloat
@@ -67,7 +67,8 @@
               Group {
                 if environment.mfaPhoneCodeIsEnabled {
                   Button {
-                    presentedView = .sms
+                    sharedState.addMfaIsPresented = false
+                    sharedState.presentedMfaType = .sms
                   } label: {
                     UserProfileRowView(icon: "icon-phone", text: "SMS code")
                   }
@@ -124,9 +125,6 @@
         .scrollBounceBehavior(.basedOnSize)
       }
       .presentationBackground(theme.colors.background)
-      .sheet(item: $presentedView) {
-        $0.view
-      }
     }
   }
 
@@ -137,7 +135,8 @@
       
       do {
         let totp = try await user.createTOTP()
-        presentedView = .authApp(totp)
+        sharedState.addMfaIsPresented = false
+        sharedState.presentedMfaType = .authApp(totp)
       } catch {
         self.error = error
       }
