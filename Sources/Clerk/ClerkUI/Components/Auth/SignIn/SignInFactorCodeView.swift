@@ -20,6 +20,7 @@
     @State private var remainingSeconds: Int = 30
     @State private var timer: Timer?
     @State private var verificationState = VerificationState.default
+    @State private var otpFieldState: OTPField.FieldState = .default
     @FocusState private var otpFieldIsFocused: Bool
 
     let factor: Factor
@@ -102,6 +103,10 @@
         "Resend"
       }
     }
+    
+    private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
+      signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
+    }
 
     var body: some View {
       ScrollView {
@@ -123,16 +128,15 @@
           .padding(.bottom, 32)
 
           VStack(spacing: 24) {
-            OTPField(code: $code, isFocused: $otpFieldIsFocused) { code in
-              do {
-                try await attempt()
-                return .default
-              } catch {
-                verificationState = .error(error)
-                return .error
-              }
+            OTPField(
+              code: $code,
+              fieldState: $otpFieldState,
+              isFocused: $otpFieldIsFocused
+            ) { code in
+              await attempt()
             }
-            .onFirstAppear {
+            .onAppear {
+              verificationState = .default
               otpFieldIsFocused = true
             }
             .toolbar {
@@ -239,7 +243,7 @@
       .clerkErrorPresenting($error)
       .taskOnce {
         startTimer()
-        if authState.lastCodeSentAt[factor.safeIdentifier ?? ""] == nil {
+        if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {
           await prepare()
         }
       }
@@ -259,10 +263,7 @@
     }
 
     func updateRemainingSeconds() {
-      guard
-        let identifier = factor.safeIdentifier,
-        let lastCodeSentAt = authState.lastCodeSentAt[identifier]
-      else {
+      guard let signIn, let lastCodeSentAt = authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] else {
         return
       }
 
@@ -309,7 +310,7 @@
           break
         }
 
-        authState.lastCodeSentAt[factor.safeIdentifier ?? ""] = .now
+        authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] = .now
         updateRemainingSeconds()
       } catch {
         otpFieldIsFocused = false
@@ -317,36 +318,47 @@
       }
     }
 
-    func attempt() async throws {
+    func attempt() async {
       guard var signIn else {
         authState.path = []
         return
       }
 
+      otpFieldState = .default
       verificationState = .verifying
 
-      switch factor.strategy {
-      case "email_code":
-        signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
-      case "phone_code":
-        if isSecondFactor {
-          signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
-        } else {
-          signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+      do {
+        switch factor.strategy {
+        case "email_code":
+          signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+        case "phone_code":
+          if isSecondFactor {
+            signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
+          } else {
+            signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+          }
+        case "reset_password_email_code":
+          signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
+        case "reset_password_phone_code":
+          signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
+        case "totp":
+          signIn = try await signIn.attemptSecondFactor(strategy: .totp(code: code))
+        default:
+          throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
         }
-      case "reset_password_email_code":
-        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
-      case "reset_password_phone_code":
-        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
-      case "totp":
-        signIn = try await signIn.attemptSecondFactor(strategy: .totp(code: code))
-      default:
-        throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
-      }
 
-      otpFieldIsFocused = false
-      verificationState = .success
-      authState.setToStepForStatus(signIn: signIn)
+        otpFieldIsFocused = false
+        verificationState = .success
+        authState.setToStepForStatus(signIn: signIn)
+      } catch {
+        otpFieldState = .error
+        verificationState = .error(error)
+
+        if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
+          self.error = error
+          otpFieldIsFocused = false
+        }
+      }
     }
 
   }

@@ -18,6 +18,7 @@
     @State private var remainingSeconds: Int = 30
     @State private var timer: Timer?
     @State private var verificationState = VerificationState.default
+    @State private var otpFieldState = OTPField.FieldState.default
     @State private var error: Error?
 
     @FocusState private var otpFieldIsFocused: Bool
@@ -72,6 +73,10 @@
         "Resend"
       }
     }
+    
+    private func lastCodeSentAtKey(_ signUp: SignUp) -> String {
+      signUp.id + field.identityPreviewString
+    }
 
     let field: Field
 
@@ -90,16 +95,11 @@
           }
 
           VStack(spacing: 24) {
-            OTPField(code: $code, isFocused: $otpFieldIsFocused) { code in
-              do {
-                try await attempt()
-                return .default
-              } catch {
-                verificationState = .error(error)
-                return .error
-              }
+            OTPField(code: $code, fieldState: $otpFieldState, isFocused: $otpFieldIsFocused) { code in
+              await attempt()
             }
-            .onFirstAppear {
+            .onAppear {
+              verificationState = .default
               otpFieldIsFocused = true
             }
 
@@ -172,10 +172,17 @@
       }
       .navigationBarTitleDisplayMode(.inline)
       .background(theme.colors.background)
-      .clerkErrorPresenting($error)
+      .clerkErrorPresenting($error, action: { error in
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
+          return .init(text: "Continue") {
+            authState.setToStepForStatus(signUp: signUp)
+          }
+        }
+        return nil
+      })
       .taskOnce {
         startTimer()
-        if authState.lastCodeSentAt[field.identityPreviewString] == nil {
+        if let signUp, authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] == nil {
           await prepare()
         }
       }
@@ -195,7 +202,7 @@
     }
 
     func updateRemainingSeconds() {
-      guard let lastCodeSentAt = authState.lastCodeSentAt[field.identityPreviewString] else {
+      guard let signUp, let lastCodeSentAt = authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] else {
         return
       }
 
@@ -205,6 +212,7 @@
 
     func prepare() async {
       code = ""
+      otpFieldState = .default
       verificationState = .default
 
       guard var signUp else {
@@ -220,7 +228,7 @@
           signUp = try await signUp.prepareVerification(strategy: .phoneCode)
         }
 
-        authState.lastCodeSentAt[field.identityPreviewString] = .now
+        authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] = .now
         updateRemainingSeconds()
       } catch {
         otpFieldIsFocused = false
@@ -228,24 +236,35 @@
       }
     }
 
-    func attempt() async throws {
+    func attempt() async {
       guard var signUp else {
         authState.path = []
         return
       }
 
+      otpFieldState = .default
       verificationState = .verifying
 
-      switch field {
-      case .email:
-        signUp = try await signUp.attemptVerification(strategy: .emailCode(code: code))
-      case .phone:
-        signUp = try await signUp.attemptVerification(strategy: .phoneCode(code: code))
-      }
+      do {
+        switch field {
+        case .email:
+          signUp = try await signUp.attemptVerification(strategy: .emailCode(code: code))
+        case .phone:
+          signUp = try await signUp.attemptVerification(strategy: .phoneCode(code: code))
+        }
 
-      otpFieldIsFocused = false
-      verificationState = .success
-      authState.setToStepForStatus(signUp: signUp)
+        otpFieldIsFocused = false
+        verificationState = .success
+        authState.setToStepForStatus(signUp: signUp)
+      } catch {
+        otpFieldState = .error
+        verificationState = .error(error)
+        
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"] == nil {
+          self.error = clerkApiError
+          otpFieldIsFocused = false
+        }
+      }
     }
 
   }

@@ -14,15 +14,15 @@ struct OTPField: View {
 
   @Binding var code: String
   var numberOfInputs: Int = 6
+  @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
-  var onCodeEntry: ((String) async -> FieldState)
+  var onCodeEntry: ((String) async -> Void)
   
   enum FieldState {
     case `default`
     case error
   }
 
-  @State private var fieldState = FieldState.default
   @State private var cursorAnimating = false
   @State private var inputSize = CGSize.zero
   @State private var errorTrigger = false
@@ -56,18 +56,20 @@ struct OTPField: View {
       
       if code.count == numberOfInputs {
         fieldState = .default
-
-        Task {
-          fieldState = await onCodeEntry(code)
-          if fieldState == .error {
-            DispatchQueue.main.async {
-              errorTrigger.toggle()
-            }
-          }
-        }
+        Task { await onCodeEntry(code) }
       } else if code.isEmpty {
         fieldState = .default
       }
+    }
+    .onChange(of: fieldState, { oldValue, newValue in
+      if newValue == .error {
+        DispatchQueue.main.async {
+          errorTrigger.toggle()
+        }
+      }
+    })
+    .onAppear {
+      fieldState = .default
     }
   }
 
@@ -133,15 +135,17 @@ struct OTPField: View {
 
 #Preview {
   @Previewable @State var code = ""
+  @Previewable @State var fieldState1 = OTPField.FieldState.default
+  @Previewable @State var fieldState2 = OTPField.FieldState.default
   @Previewable @FocusState var isFocused: Bool
   
   VStack(spacing: 20) {
-    OTPField(code: $code, isFocused: $isFocused) { code in
-      return .default
+    OTPField(code: $code, fieldState: $fieldState1, isFocused: $isFocused) { code in
+      fieldState1 = .default
     }
     
-    OTPField(code: $code, isFocused: $isFocused) { code in
-      return .error
+    OTPField(code: $code, fieldState: $fieldState2, isFocused: $isFocused) { code in
+      fieldState2 = .error
     }
   }
   .padding()
