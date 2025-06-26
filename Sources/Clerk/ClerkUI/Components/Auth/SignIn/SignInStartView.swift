@@ -75,7 +75,7 @@
         return true
       }
 
-      if !authState.phoneNumber.isEmpty && authState.identifier.isEmpty {
+      if !authState.signInPhoneNumber.isEmpty && authState.signInIdentifier.isEmpty {
         return true
       }
 
@@ -99,9 +99,9 @@
 
     var continueIsDisabled: Bool {
       if phoneNumberFieldIsActive {
-        authState.phoneNumber.isEmpty
+        authState.signInPhoneNumber.isEmpty
       } else {
-        authState.identifier.isEmpty
+        authState.signInIdentifier.isEmpty
       }
     }
 
@@ -126,7 +126,7 @@
                 if phoneNumberFieldIsActive && phoneNumberIsEnabled {
                   ClerkPhoneNumberField(
                     "Enter your phone number",
-                    text: $authState.phoneNumber,
+                    text: $authState.signInPhoneNumber,
                     fieldState: fieldError != nil ? .error : .default
                   )
                   .transition(.blurReplace)
@@ -142,7 +142,7 @@
                 } else {
                   ClerkTextField(
                     emailOrUsernamePlaceholder,
-                    text: $authState.identifier,
+                    text: $authState.signInIdentifier,
                     fieldState: fieldError != nil ? .error : .default
                   )
                   .textContentType(.username)
@@ -239,8 +239,8 @@
         let signIn = try await SignIn.create(
           strategy: .identifier(
             phoneNumberFieldIsActive
-              ? authState.phoneNumber
-              : authState.identifier
+              ? authState.signInPhoneNumber
+              : authState.signInIdentifier
           )
         )
 
@@ -269,12 +269,12 @@
     
     private var transferableSignUpParams: SignUp.CreateStrategy {
       if phoneNumberFieldIsActive {
-        return .standard(phoneNumber: authState.phoneNumber)
+        return .standard(phoneNumber: authState.signInPhoneNumber)
       } else {
-        if authState.identifier.isEmailAddress {
-          return .standard(emailAddress: authState.identifier)
+        if authState.signInIdentifier.isEmailAddress {
+          return .standard(emailAddress: authState.signInIdentifier)
         } else {
-          return .standard(username: authState.identifier)
+          return .standard(username: authState.signInIdentifier)
         }
       }
     }

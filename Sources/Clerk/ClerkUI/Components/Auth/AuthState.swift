@@ -18,26 +18,35 @@
     }
 
     var path: [AuthView.Destination] = []
-
-    var identifier: String = UserDefaults.standard.string(forKey: "signInIdentifier") ?? "" {
-      didSet {
-        UserDefaults.standard.set(identifier, forKey: "signInIdentifier")
-      }
-    }
-
-    var phoneNumber: String = UserDefaults.standard.string(forKey: "signInPhoneNumber") ?? "" {
-      didSet {
-        UserDefaults.standard.set(phoneNumber, forKey: "signInPhoneNumber")
-      }
-    }
-
     let mode: AuthView.Mode
-    var password = ""
     var lastCodeSentAt: [String: Date] = [:]
-    var newPassword = ""
-    var confirmNewPassword = ""
-    var backupCode = ""
 
+    // Sign In Fields
+    var signInIdentifier: String = UserDefaults.standard.string(forKey: "signInIdentifier") ?? "" {
+      didSet {
+        UserDefaults.standard.set(signInIdentifier, forKey: "signInIdentifier")
+      }
+    }
+
+    var signInPhoneNumber: String = UserDefaults.standard.string(forKey: "signInPhoneNumber") ?? "" {
+      didSet {
+        UserDefaults.standard.set(signInPhoneNumber, forKey: "signInPhoneNumber")
+      }
+    }
+    
+    var signInPassword = ""
+    var signInNewPassword = ""
+    var signInConfirmNewPassword = ""
+    var signInBackupCode = ""
+    
+    // Sign Up Fields
+    var signUpFirstName = ""
+    var signUpLastName = ""
+    var signUpPassword = ""
+    var signUpUsername = ""
+    var signUpEmailAddress = ""
+    var signUpPhoneNumber = ""
+    
     @MainActor
     func setToStepForStatus(signIn: SignIn) {
       switch signIn.status {
@@ -90,7 +99,7 @@
           default:
             path = []
           }
-        } else if let nextFieldToCollect = nextFieldToCollect(signUp: signUp) {
+        } else if let nextFieldToCollect = signUp.firstFieldToCollect {
           switch nextFieldToCollect {
           case "password":
             path.append(AuthView.Destination.signUpCollectField(.password))
@@ -109,10 +118,6 @@
       case .unknown:
         return
       }
-    }
-
-    func nextFieldToCollect(signUp: SignUp) -> String? {
-      signUp.firstFieldToCollect
     }
   }
 

@@ -1939,6 +1939,9 @@
         }
       }
     },
+    "Complete your profile" : {
+
+    },
     "Confirm password" : {
       "localizations" : {
         "ar" : {
@@ -4136,9 +4139,6 @@
     "Go back" : {
 
     },
-    "Hello Complete Profile View" : {
-
-    },
     "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible." : {
       "localizations" : {
         "ar" : {
@@ -5494,6 +5494,12 @@
           }
         }
       }
+    },
+    "Profile Details" : {
+
+    },
+    "Reconnect" : {
+
     },
     "Redirect URL is missing or invalid. Unable to start external authentication flow." : {
       "extractionState" : "manual",
