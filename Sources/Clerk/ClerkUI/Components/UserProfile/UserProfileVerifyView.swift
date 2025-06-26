@@ -17,16 +17,15 @@
 
     @State private var code = ""
     @State private var error: Error?
-    @State private var fieldError: Error?
-
     @State private var remainingSeconds: Int = 30
     @State private var timer: Timer?
     @State private var verificationState = VerificationState.default
+    @State private var otpFieldState = OTPField.FieldState.default
 
     @FocusState private var otpFieldIsFocused: Bool
-    
+
     var user: User? { clerk.user }
-    
+
     @State var mode: Mode
     let onCompletion: (_ backupCodes: [String]?) -> Void
     let customDismiss: (() -> Void)?
@@ -58,7 +57,7 @@
         Text("Enter the verification code from your authenticator application.", bundle: .module)
       }
     }
-    
+
     private func dismiss() {
       if let customDismiss {
         customDismiss()
@@ -93,7 +92,7 @@
         }
       }
     }
-    
+
     var showResend: Bool {
       switch mode {
       case .email, .phone:
@@ -110,7 +109,7 @@
         "Resend"
       }
     }
-    
+
     init(
       mode: Mode,
       onCompletion: @escaping (_ backupCodes: [String]?) -> Void,
@@ -129,23 +128,19 @@
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
-          
+
           OTPField(
             code: $code,
+            fieldState: $otpFieldState,
             isFocused: $otpFieldIsFocused
           ) { code in
-            do {
-              try await attempt()
-              return .default
-            } catch {
-              verificationState = .error(error)
-              return .error
-            }
+            await attempt()
           }
-          .onFirstAppear {
+          .onAppear {
+            verificationState = .default
             otpFieldIsFocused = true
           }
-          
+
           Group {
             switch verificationState {
             case .verifying:
@@ -169,7 +164,7 @@
             }
           }
           .font(theme.fonts.subheadline)
-          
+
           if showResend {
             AsyncButton {
               await prepare()
@@ -179,8 +174,8 @@
                 Text(resendString, bundle: .module)
                   .foregroundStyle(
                     remainingSeconds > 0
-                    ? theme.colors.textSecondary
-                    : theme.colors.primary
+                      ? theme.colors.textSecondary
+                      : theme.colors.primary
                   )
                   .monospacedDigit()
                   .contentTransition(.numericText(countsDown: true))
@@ -215,7 +210,7 @@
           }
           .foregroundStyle(theme.colors.primary)
         }
-        
+
         ToolbarItem(placement: .principal) {
           Text(titleKey, bundle: .module)
             .font(theme.fonts.headline)
@@ -223,9 +218,11 @@
         }
       }
       .taskOnce {
-        startTimer()
-        if sharedState.lastCodeSentAt[lastCodeSentAtKey] == nil {
-          await prepare()
+        if showResend {
+          startTimer()
+          if sharedState.lastCodeSentAt[lastCodeSentAtKey] == nil {
+            await prepare()
+          }
         }
       }
     }
@@ -274,25 +271,35 @@
       }
     }
 
-    func attempt() async throws {
+    func attempt() async {
       verificationState = .verifying
-
-      switch mode {
-      case .email(let emailAddress):
-        try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
-        sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
-        verificationState = .success
-        onCompletion(nil)
-      case .phone(let phoneNumber):
-        try await phoneNumber.attemptVerification(code: code)
-        sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
-        verificationState = .success
-        onCompletion(nil)
-      case .totp:
-        guard let user else { return }
-        let totp = try await user.verifyTOTP(code: code)
-        verificationState = .success
-        onCompletion(totp.backupCodes)
+      
+      do {
+        switch mode {
+        case .email(let emailAddress):
+          try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
+          sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
+          verificationState = .success
+          onCompletion(nil)
+        case .phone(let phoneNumber):
+          try await phoneNumber.attemptVerification(code: code)
+          sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
+          verificationState = .success
+          onCompletion(nil)
+        case .totp:
+          guard let user else { return }
+          let totp = try await user.verifyTOTP(code: code)
+          verificationState = .success
+          onCompletion(totp.backupCodes)
+        }
+      } catch {
+        otpFieldState = .error
+        verificationState = .error(error)
+        
+        if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
+          self.error = clerkError
+          otpFieldIsFocused = false
+        }
       }
     }
 

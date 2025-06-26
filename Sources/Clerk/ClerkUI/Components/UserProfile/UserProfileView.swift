@@ -16,7 +16,6 @@
     @Environment(\.dismiss) private var dismiss
 
     @State private var updateProfileIsPresented = false
-    @State private var authViewIsPresented = false
     @State private var accountSwitcherHeight: CGFloat = 400
     @State private var sharedState = SharedState()
     @State private var error: Error?
@@ -116,7 +115,7 @@
                       }
 
                       row(icon: "icon-plus", text: "Add account") {
-                        authViewIsPresented = true
+                        sharedState.authViewIsPresented = true
                       }
                     }
 
@@ -158,7 +157,6 @@
             $0.view
           }
         }
-        .environment(\.userProfileSharedState, sharedState)
         .tint(theme.colors.primary)
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
@@ -166,18 +164,18 @@
           UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
             .presentationDetents([.height(accountSwitcherHeight)])
         }
-        .sheet(isPresented: $authViewIsPresented) {
-          AuthView()
-            .interactiveDismissDisabled()
-        }
         .sheet(isPresented: $updateProfileIsPresented) {
           UserProfileUpdateProfileView(user: user)
+        }
+        .sheet(isPresented: $sharedState.authViewIsPresented) {
+          AuthView()
+            .interactiveDismissDisabled()
         }
         .task {
           for await event in clerk.authEventEmitter.events {
             switch event {
             case .signInCompleted, .signUpCompleted:
-              authViewIsPresented = false
+              sharedState.authViewIsPresented = false
             }
           }
         }
@@ -190,6 +188,7 @@
         .task {
           try? await Client.get()
         }
+        .environment(\.userProfileSharedState, sharedState)
       } else {
         SpinnerView()
           .frame(width: 24, height: 24)
@@ -244,7 +243,9 @@
       var path = NavigationPath()
       var lastCodeSentAt: [String: Date] = [:]
       var accountSwitcherIsPresented = false
-      var addMfaIsPresented = false
+      var authViewIsPresented = false
+      var chooseMfaTypeIsPresented = false
+      var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
     }
   }
 

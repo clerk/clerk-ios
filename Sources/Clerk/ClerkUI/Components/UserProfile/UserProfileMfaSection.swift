@@ -66,14 +66,14 @@
           }
 
           UserProfileButtonRow(text: "Add two-step verification") {
-            sharedState.addMfaIsPresented = true
+            sharedState.chooseMfaTypeIsPresented = true
           }
         }
         .background(theme.colors.background)
       } header: {
         UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
       }
-      .sheet(isPresented: $sharedState.addMfaIsPresented) {
+      .sheet(isPresented: $sharedState.chooseMfaTypeIsPresented) {
         UserProfileAddMfaView(contentHeight: $addMfaHeight)
           .presentationDetents([.height(addMfaHeight)])
       }

@@ -139,7 +139,7 @@
     func resetPassword() async {
       do {
         guard var signIn, let resetFactor = signIn.resetPasswordFactor else {
-          authState.path = NavigationPath()
+          authState.path = []
           return
         }
         
@@ -154,7 +154,7 @@
     func signInWithProvider(_ provider: OAuthProvider) async {
       do {
         guard let signIn else {
-          authState.path = NavigationPath()
+          authState.path = []
           return
         }
         

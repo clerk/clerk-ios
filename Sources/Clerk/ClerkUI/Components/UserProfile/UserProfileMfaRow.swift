@@ -67,13 +67,8 @@
           } label: { _ in
             Text("Set as default")
           }
-          .onIsRunningChanged { isRunning in
-            isLoading = isRunning
-          }
-          .onDisappear {
-            // handles resetting the loading state when this button is removed
-            isLoading = false
-          }
+          .onIsRunningChanged { isLoading = $0 }
+          .onDisappear { isLoading = false }
         }
 
         Button("Remove", role: .destructive) {
@@ -85,9 +80,7 @@
         } label: { isRunning in
           Text("Regenerate", bundle: .module)
         }
-        .onIsRunningChanged { isRunning in
-          isLoading = isRunning
-        }
+        .onIsRunningChanged { isLoading = $0 }
       }
     }
 
@@ -155,9 +148,7 @@
           } label: { isRunning in
             Text(removeResource?.title ?? "", bundle: .module)
           }
-          .onIsRunningChanged { isRunning in
-            isLoading = isRunning
-          }
+          .onIsRunningChanged { isLoading = $0 }
           
           Button(role: .cancel) {
             isConfirmingRemoval = false

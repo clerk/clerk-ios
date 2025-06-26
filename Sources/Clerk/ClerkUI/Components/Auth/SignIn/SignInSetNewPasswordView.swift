@@ -131,7 +131,7 @@
         }
 
         guard var signIn else {
-          authState.path = NavigationPath()
+          authState.path = []
           return
         }
 

@@ -90,9 +90,7 @@
           } label: { isRunning in
             Text(removeResource?.title ?? "", bundle: .module)
           }
-          .onIsRunningChanged { isRunning in
-            isLoading = isRunning
-          }
+          .onIsRunningChanged { isLoading = $0 }
         }
       )
       .onChange(of: removeResource) {

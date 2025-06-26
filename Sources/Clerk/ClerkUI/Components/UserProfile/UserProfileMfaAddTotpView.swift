@@ -34,7 +34,7 @@
           if let backupCodes {
             path.append(Destination.backupCodes(backupCodes))
           } else {
-            sharedState.addMfaIsPresented = false
+            sharedState.presentedAddMfaType = nil
           }
         }
       case .backupCodes(let backupCodes):
