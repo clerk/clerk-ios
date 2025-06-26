@@ -153,7 +153,7 @@
     func signInWithProvider(_ provider: OAuthProvider) async {
       do {
         guard let signIn else {
-          authState.path = NavigationPath()
+          authState.path = []
           return
         }
         

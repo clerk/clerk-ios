@@ -67,9 +67,7 @@
             } label: { _ in
               Text("Sign out of device", bundle: .module)
             }
-            .onIsRunningChanged { isRunning in
-              isLoading = isRunning
-            }
+            .onIsRunningChanged { isLoading = $0 }
           } label: {
             Image("icon-three-dots-vertical", bundle: .module)
               .resizable()

@@ -1738,6 +1738,9 @@
         }
       }
     },
+    "Choose a username." : {
+
+    },
     "Choose from photo library" : {
       "localizations" : {
         "ar" : {
@@ -1865,6 +1868,12 @@
           }
         }
       }
+    },
+    "Choose your password" : {
+
+    },
+    "Choose your username" : {
+
     },
     "Close" : {
       "localizations" : {
@@ -2377,6 +2386,9 @@
           }
         }
       }
+    },
+    "Create a unique password." : {
+
     },
     "Created: %@" : {
       "localizations" : {
@@ -2893,6 +2905,9 @@
         }
       }
     },
+    "Email address" : {
+
+    },
     "EMAIL ADDRESSES" : {
       "localizations" : {
         "ar" : {
@@ -3213,6 +3228,9 @@
         }
       }
     },
+    "Enter the email address you'd like to use." : {
+
+    },
     "Enter the password for your account" : {
       "localizations" : {
         "ar" : {
@@ -3276,6 +3294,9 @@
           }
         }
       }
+    },
+    "Enter the phone number you'd like to use." : {
+
     },
     "Enter the verification code from your authenticator application." : {
       "localizations" : {
@@ -4113,6 +4134,9 @@
       }
     },
     "Go back" : {
+
+    },
+    "Hello Complete Profile View" : {
 
     },
     "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible." : {
@@ -5145,6 +5169,9 @@
         }
       }
     },
+    "Password" : {
+
+    },
     "PASSWORD" : {
       "localizations" : {
         "ar" : {
@@ -5272,6 +5299,9 @@
           }
         }
       }
+    },
+    "Phone number" : {
+
     },
     "PHONE NUMBERS" : {
       "localizations" : {
@@ -7577,6 +7607,12 @@
           }
         }
       }
+    },
+    "Sign up" : {
+
+    },
+    "Skip" : {
+
     },
     "SMS code" : {
       "localizations" : {

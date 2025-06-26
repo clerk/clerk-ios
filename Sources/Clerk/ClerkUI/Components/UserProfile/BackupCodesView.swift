@@ -58,13 +58,15 @@
       .background(theme.colors.background)
       .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden()
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            if sharedState.addMfaIsPresented {
-              sharedState.addMfaIsPresented = false
-            } else {
+            switch mfaType {
+            case .phoneCode, .authenticatorApp:
+              sharedState.presentedAddMfaType = nil
+            case .backupCodes:
               dismiss()
             }
           } label: {

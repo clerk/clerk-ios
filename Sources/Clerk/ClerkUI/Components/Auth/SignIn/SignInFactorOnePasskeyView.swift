@@ -33,7 +33,7 @@ struct SignInFactorOnePasskeyView: View {
 
           if let identifier = factor.safeIdentifier {
             Button {
-              authState.path = NavigationPath()
+              authState.path = []
             } label: {
               IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
@@ -116,7 +116,7 @@ extension SignInFactorOnePasskeyView {
 
   func authWithPasskey() async {
     guard var signIn else {
-      authState.path = NavigationPath()
+      authState.path = []
       return
     }
     

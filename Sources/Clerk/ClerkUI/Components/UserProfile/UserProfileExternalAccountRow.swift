@@ -17,6 +17,7 @@
 
     @State private var removeResource: RemoveResource?
     @State private var isConfirmingRemoval = false
+    @State private var isLoading = false
     @State private var error: Error?
 
     var user: User? {
@@ -68,6 +69,16 @@
         Spacer()
 
         Menu {
+          if externalAccount.verification?.error != nil {
+            AsyncButton {
+              await reconnect()
+            } label: { _ in
+              Text("Reconnect", bundle: .module)
+            }
+            .onIsRunningChanged { isLoading = $0 }
+            .onDisappear { isLoading = false }
+          }
+          
           Button(role: .destructive) {
             removeResource = .externalAccount(externalAccount)
           } label: {
@@ -87,6 +98,7 @@
       .padding(.horizontal, 24)
       .padding(.vertical, 16)
       .background(theme.colors.background)
+      .overlayProgressView(isActive: isLoading)
       .overlay(alignment: .bottom) {
         Rectangle()
           .frame(height: 1)
@@ -106,6 +118,7 @@
           } label: { isRunning in
             Text(removeResource?.title ?? "", bundle: .module)
           }
+          .onIsRunningChanged { isLoading = $0 }
 
           Button(role: .cancel) {
             isConfirmingRemoval = false
@@ -119,6 +132,18 @@
   }
 
   extension UserProfileExternalAccountRow {
+    
+    private func reconnect() async {
+      guard let user else { return }
+      
+      do {
+        try await externalAccount.destroy()
+        let account = try await user.createExternalAccount(provider: externalAccount.oauthProvider)
+        try await account.reauthorize()
+      } catch {
+        self.error = error
+      }
+    }
 
     private func removeResource(_ resource: RemoveResource?) async {
       defer { removeResource = nil }
