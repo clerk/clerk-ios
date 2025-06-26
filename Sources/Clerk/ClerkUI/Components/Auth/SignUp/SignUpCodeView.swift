@@ -163,6 +163,7 @@
         }
         .padding(16)
       }
+      .scrollDismissesKeyboard(.interactively)
       .toolbar {
         ToolbarItem(placement: .principal) {
           Text("Sign up", bundle: .module)

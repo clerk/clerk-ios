@@ -79,12 +79,7 @@
       if let nextField = nextEnabledField(after: currentField) {
         focused = nextField
       } else {
-        // When we reach the end, check if there are any empty fields to focus on
-        if let firstEmpty = firstEmptyEnabledField() {
-          focused = firstEmpty
-        } else {
-          focused = nil  // All fields are filled, dismiss keyboard
-        }
+        focused = nil
       }
     }
 
@@ -168,6 +163,7 @@
         }
         .padding(16)
       }
+      .scrollDismissesKeyboard(.interactively)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .toolbar {

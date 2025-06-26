@@ -130,15 +130,6 @@
                     fieldState: fieldError != nil ? .error : .default
                   )
                   .transition(.blurReplace)
-                  .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                      Spacer()
-                      Button("Done") {
-                        dismissKeyboard()
-                      }
-                      .tint(theme.colors.text)
-                    }
-                  }
                 } else {
                   ClerkTextField(
                     emailOrUsernamePlaceholder,
@@ -217,6 +208,7 @@
         }
         .padding(16)
       }
+      .scrollDismissesKeyboard(.interactively)
       .background(theme.colors.background)
       .clerkErrorPresenting($generalError)
       .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {

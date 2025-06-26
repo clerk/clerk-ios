@@ -139,15 +139,6 @@
               verificationState = .default
               otpFieldIsFocused = true
             }
-            .toolbar {
-              ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                  otpFieldIsFocused = false
-                }
-                .tint(theme.colors.text)
-              }
-            }
 
             Group {
               switch verificationState {
@@ -239,6 +230,7 @@
         }
         .padding(16)
       }
+      .scrollDismissesKeyboard(.interactively)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .taskOnce {
