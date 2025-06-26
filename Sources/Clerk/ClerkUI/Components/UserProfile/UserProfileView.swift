@@ -244,8 +244,8 @@
       var lastCodeSentAt: [String: Date] = [:]
       var accountSwitcherIsPresented = false
       var authViewIsPresented = false
-      var addMfaIsPresented = false
-      var presentedMfaType: UserProfileAddMfaView.PresentedView?
+      var chooseMfaTypeIsPresented = false
+      var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
     }
   }
 

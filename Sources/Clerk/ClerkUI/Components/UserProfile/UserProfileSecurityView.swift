@@ -78,7 +78,7 @@
       .task {
         try? await Client.get()
       }
-      .sheet(item: $sharedState.presentedMfaType) {
+      .sheet(item: $sharedState.presentedAddMfaType) {
         $0.view
       }
     }

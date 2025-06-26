@@ -141,7 +141,7 @@
         if let backupCodes = phoneNumber.backupCodes {
           path.append(Destination.backupCodes(backupCodes))
         } else {
-          sharedState.addMfaIsPresented = false
+          sharedState.presentedAddMfaType = nil
         }
       } catch {
         self.error = error

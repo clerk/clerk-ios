@@ -218,9 +218,11 @@
         }
       }
       .taskOnce {
-        startTimer()
-        if sharedState.lastCodeSentAt[lastCodeSentAtKey] == nil {
-          await prepare()
+        if showResend {
+          startTimer()
+          if sharedState.lastCodeSentAt[lastCodeSentAtKey] == nil {
+            await prepare()
+          }
         }
       }
     }

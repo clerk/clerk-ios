@@ -63,7 +63,12 @@
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            dismiss()
+            switch mfaType {
+            case .phoneCode, .authenticatorApp:
+              sharedState.presentedAddMfaType = nil
+            case .backupCodes:
+              dismiss()
+            }
           } label: {
             Text("Done", bundle: .module)
               .font(theme.fonts.body)

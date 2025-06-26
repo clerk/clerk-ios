@@ -67,8 +67,8 @@
               Group {
                 if environment.mfaPhoneCodeIsEnabled {
                   Button {
-                    sharedState.addMfaIsPresented = false
-                    sharedState.presentedMfaType = .sms
+                    sharedState.chooseMfaTypeIsPresented = false
+                    sharedState.presentedAddMfaType = .sms
                   } label: {
                     UserProfileRowView(icon: "icon-phone", text: "SMS code")
                   }
@@ -135,8 +135,8 @@
       
       do {
         let totp = try await user.createTOTP()
-        sharedState.addMfaIsPresented = false
-        sharedState.presentedMfaType = .authApp(totp)
+        sharedState.chooseMfaTypeIsPresented = false
+        sharedState.presentedAddMfaType = .authApp(totp)
       } catch {
         self.error = error
       }
