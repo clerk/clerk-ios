@@ -168,6 +168,7 @@
         }
         .padding(16)
       }
+      .scrollDismissesKeyboard(.interactively)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .toolbar {
