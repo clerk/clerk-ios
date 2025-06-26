@@ -56,13 +56,13 @@
         path = []
       case .needsFirstFactor:
         guard let factor = signIn.startingFirstFactor else {
-          path = []
+          path.append(AuthView.Destination.signInGetHelp)
           return
         }
         path.append(AuthView.Destination.signInFactorOne(factor: factor))
       case .needsSecondFactor:
         guard let factor = signIn.startingSecondFactor else {
-          path = []
+          path.append(AuthView.Destination.signInGetHelp)
           return
         }
 
