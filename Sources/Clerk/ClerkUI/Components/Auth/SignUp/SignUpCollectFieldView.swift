@@ -14,10 +14,6 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
 
-    @State private var email = ""
-    @State private var phone = ""
-    @State private var password = ""
-    @State private var username = ""
     @State private var error: Error?
     @State private var usernameForPasswordKeeper = ""
     
@@ -62,23 +58,25 @@
 
     @ViewBuilder
     var textField: some View {
+      @Bindable var authState = authState
+      
       switch field {
       case .emailAddress:
         ClerkTextField(
           "Enter your email",
-          text: $email
+          text: $authState.signUpEmailAddress
         )
         .textContentType(.emailAddress)
         .keyboardType(.emailAddress)
       case .phoneNumber:
         ClerkPhoneNumberField(
           "Enter your phone number",
-          text: $phone
+          text: $authState.signUpPhoneNumber
         )
       case .password:
         ClerkTextField(
           "Choose your password",
-          text: $password,
+          text: $authState.signUpPassword,
           isSecure: true
         )
         .textContentType(.newPassword)
@@ -92,7 +90,7 @@
       case .username:
         ClerkTextField(
           "Choose your username",
-          text: $username,
+          text: $authState.signUpUsername,
         )
         .textContentType(.username)
       }
@@ -101,13 +99,13 @@
     var continueIsDisabled: Bool {
       switch field {
       case .emailAddress:
-        email.isEmptyTrimmed
+        authState.signUpEmailAddress.isEmptyTrimmed
       case .phoneNumber:
-        phone.isEmptyTrimmed
+        authState.signUpPhoneNumber.isEmptyTrimmed
       case .password:
-        password.isEmptyTrimmed
+        authState.signUpPassword.isEmptyTrimmed
       case .username:
-        username.isEmptyTrimmed
+        authState.signUpUsername.isEmptyTrimmed
       }
     }
 
@@ -127,6 +125,8 @@
 
           VStack(spacing: 24) {
             textField
+              .autocorrectionDisabled()
+              .textInputAutocapitalization(.never)
               .focused($isFocused)
               .onAppear {
                 isFocused = true
@@ -170,7 +170,6 @@
       }
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
-      .navigationBarBackButtonHidden()
       .toolbar {
         ToolbarItem(placement: .principal) {
           Text("Sign up", bundle: .module)
@@ -190,13 +189,13 @@
       do {
         switch field {
         case .emailAddress:
-          signUp = try await signUp.update(params: .init(emailAddress: email))
+          signUp = try await signUp.update(params: .init(emailAddress: authState.signUpEmailAddress))
         case .phoneNumber:
-          signUp = try await signUp.update(params: .init(phoneNumber: email))
+          signUp = try await signUp.update(params: .init(phoneNumber: authState.signUpPhoneNumber))
         case .password:
-          signUp = try await signUp.update(params: .init(password: password))
+          signUp = try await signUp.update(params: .init(password: authState.signUpPassword))
         case .username:
-          signUp = try await signUp.update(params: .init(username: username))
+          signUp = try await signUp.update(params: .init(username: authState.signUpUsername))
         }
         
         authState.setToStepForStatus(signUp: signUp)

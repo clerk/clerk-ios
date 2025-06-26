@@ -49,7 +49,7 @@ struct SignInFactorOnePasswordView: View {
           VStack(spacing: 8) {
             ClerkTextField(
               "Enter your password",
-              text: $authState.password,
+              text: $authState.signInPassword,
               isSecure: true,
               fieldState: fieldError != nil ? .error : .default
             )
@@ -83,7 +83,7 @@ struct SignInFactorOnePasswordView: View {
             }
           }
           .buttonStyle(.primary())
-          .disabled(authState.password.isEmpty)
+          .disabled(authState.signInPassword.isEmpty)
           .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 16)
@@ -155,7 +155,7 @@ extension SignInFactorOnePasswordView {
       }
 
       signIn = try await signIn.attemptFirstFactor(
-        strategy: .password(password: authState.password)
+        strategy: .password(password: authState.signInPassword)
       )
 
       fieldError = nil

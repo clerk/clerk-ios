@@ -24,9 +24,9 @@
     }
 
     var resetButtonIsDisabled: Bool {
-      authState.newPassword.isEmptyTrimmed ||
-      authState.confirmNewPassword.isEmptyTrimmed ||
-      authState.newPassword != authState.confirmNewPassword
+      authState.signInNewPassword.isEmptyTrimmed ||
+      authState.signInConfirmNewPassword.isEmptyTrimmed ||
+      authState.signInNewPassword != authState.signInConfirmNewPassword
     }
 
     enum Field {
@@ -44,7 +44,7 @@
           VStack(spacing: 24) {
             ClerkTextField(
               "New password",
-              text: $authState.newPassword,
+              text: $authState.signInNewPassword,
               isSecure: true,
               fieldState: fieldError != nil ? .error : .default
             )
@@ -64,7 +64,7 @@
             VStack(spacing: 8) {
               ClerkTextField(
                 "Confirm password",
-                text: $authState.confirmNewPassword,
+                text: $authState.signInConfirmNewPassword,
                 isSecure: true,
                 fieldState: fieldError != nil ? .error : .default
               )
@@ -126,7 +126,7 @@
       focusedField = nil
 
       do {
-        guard authState.newPassword == authState.confirmNewPassword else {
+        guard authState.signInNewPassword == authState.signInConfirmNewPassword else {
           throw ClerkClientError(message: "Passwords don't match.")
         }
 
@@ -137,7 +137,7 @@
 
         signIn = try await signIn.resetPassword(
           .init(
-            password: authState.newPassword,
+            password: authState.signInNewPassword,
             signOutOfOtherSessions: signOutOfOtherDevices
           ))
         

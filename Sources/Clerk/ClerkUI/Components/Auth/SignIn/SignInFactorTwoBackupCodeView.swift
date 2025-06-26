@@ -39,7 +39,7 @@
             VStack(spacing: 8) {
               ClerkTextField(
                 "Backup code",
-                text: $authState.backupCode,
+                text: $authState.signInBackupCode,
                 fieldState: fieldError != nil ? .error : .default
               )
               .textInputAutocapitalization(.never)
@@ -71,7 +71,7 @@
               }
             }
             .buttonStyle(.primary())
-            .disabled(authState.backupCode.isEmpty)
+            .disabled(authState.signInBackupCode.isEmpty)
             .simultaneousGesture(TapGesture())
           }
           .padding(.bottom, 16)
@@ -111,7 +111,7 @@
         }
 
         signIn = try await signIn.attemptSecondFactor(
-          strategy: .backupCode(code: authState.backupCode)
+          strategy: .backupCode(code: authState.signInBackupCode)
         )
 
         fieldError = nil

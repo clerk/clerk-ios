@@ -10,30 +10,16 @@
   import Foundation
 
   extension SignUp {
-
-    var individuallyCollectableFields: [String] {
-      ["email_address", "phone_number", "username", "password"].sorted { lhs, rhs in
-        let lhsRequired = fieldIsRequired(field: lhs)
-        let rhsRequired = fieldIsRequired(field: rhs)
-
-        // Non-required fields come first
-        if !lhsRequired && rhsRequired {
-          return true
-        } else if lhsRequired && !rhsRequired {
-          return false
-        } else {
-          // If both are required or both are optional, maintain original order
-          return false
-        }
-      }
-    }
+    
+    static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
+    static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
 
     var firstFieldToCollect: String? {
-      missingFields.first
+      missingFields.sortedByPriority(SignUp.fieldPriority).first
     }
 
     var firstFieldToVerify: String? {
-      unverifiedFields.first
+      unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
     }
 
     func fieldIsRequired(field: String) -> Bool {
@@ -54,6 +40,10 @@
         return username != nil
       case "password":
         return passwordEnabled
+      case "first_name":
+        return firstName != nil
+      case "last_name":
+        return lastName != nil
       default:
         return false
       }
