@@ -22,8 +22,8 @@
         return ""
       }
 
-      let host = urlComponents.host
-      return host?.replacingOccurrences(of: "www.", with: "") ?? ""
+      let host = urlComponents.host ?? ""
+      return host.replacingOccurrences(of: "www.", with: "")
     }
 
     private var continuation: CheckedContinuation<ASAuthorization, Error>?
