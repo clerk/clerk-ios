@@ -14,6 +14,7 @@
     @Environment(\.clerkTheme) private var theme
 
     @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
+    @State private var isLoading = false
     @State private var removeResource: RemoveResource?
     @State private var isConfirmingRemoval = false
     @State private var error: Error?
@@ -56,6 +57,8 @@
             } label: { isRunning in
               Text("Set as primary", bundle: .module)
             }
+            .onIsRunningChanged { isLoading = $0 }
+            .onDisappear { isLoading = false }
           }
 
           if phoneNumber.verification?.status != .verified {
@@ -84,6 +87,7 @@
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 24)
       .padding(.vertical, 16)
+      .overlayProgressView(isActive: isLoading)
       .overlay(alignment: .bottom) {
         Rectangle()
           .frame(height: 1)
@@ -103,6 +107,7 @@
           } label: { isRunning in
             Text(removeResource?.title ?? "", bundle: .module)
           }
+          .onIsRunningChanged { isLoading = $0 }
 
           Button(role: .cancel) {
             isConfirmingRemoval = false
