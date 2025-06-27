@@ -170,9 +170,7 @@ extension Clerk {
       async let client = Client.get()
       async let environment = Environment.get()
       _ = try await client
-      self.environment = try await environment
-
-      attestDeviceIfNeeded(environment: self.environment)
+      attestDeviceIfNeeded(environment: try await environment)
 
       isLoaded = true
     } catch {
@@ -229,11 +227,11 @@ extension Clerk {
 
           // Start both functions concurrently without waiting for them
           Task {
-            _ = try? await Client.get()
+            try? await Client.get()
           }
 
           Task {
-            self.environment = try await Environment.get()
+            try? await Environment.get()
           }
         }
       }
