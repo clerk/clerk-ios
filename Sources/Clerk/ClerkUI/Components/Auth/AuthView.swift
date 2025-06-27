@@ -22,18 +22,18 @@ public struct AuthView: View {
     case signUp
   }
 
-  let showDismissButton: Bool
+  let isDismissable: Bool
 
-  public init(mode: Mode = .signInOrUp, showDismissButton: Bool = true) {
+  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
     self._authState = State(initialValue: .init(mode: mode))
-    self.showDismissButton = showDismissButton
+    self.isDismissable = isDismissable
   }
 
   public var body: some View {
     NavigationStack(path: $authState.path) {
       AuthStartView()
         .toolbar {
-          if showDismissButton {
+          if isDismissable {
             ToolbarItem(placement: .topBarTrailing) {
               DismissButton {
                 dismiss()
@@ -44,7 +44,7 @@ public struct AuthView: View {
         .navigationDestination(for: Destination.self) {
           $0.view
             .toolbar {
-              if showDismissButton {
+              if isDismissable {
                 ToolbarItem(placement: .topBarTrailing) {
                   DismissButton {
                     dismiss()
@@ -58,7 +58,7 @@ public struct AuthView: View {
     .tint(theme.colors.primary)
     .environment(\.authState, authState)
     .task {
-      if showDismissButton {
+      if isDismissable {
         for await event in clerk.authEventEmitter.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
@@ -133,7 +133,7 @@ extension AuthView {
 }
 
 #Preview("Not in sheet") {
-  AuthView(showDismissButton: false)
+  AuthView(isDismissable: false)
     .environment(\.clerk, .mock)
 }
 
