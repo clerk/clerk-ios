@@ -104,6 +104,20 @@
       return userSettings.actions.deleteSelf
     }
     
+    var emailIsEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "email_address" && value.enabled
+      }
+    }
+    
+    var phoneNumberIsEnabled: Bool {
+      guard let userSettings else { return false }
+      return userSettings.attributes.contains { key, value in
+        key == "phone_number" && value.enabled
+      }
+    }
+    
     var usernameIsEnabled: Bool {
       guard let userSettings else { return false }
       return userSettings.attributes.contains { key, value in
