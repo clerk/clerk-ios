@@ -242,15 +242,17 @@
       dismissKeyboard()
 
       switch authState.mode {
-      case .signInOrUp: await signInOrUp()
-      case .signIn: await signIn()
+      case .signInOrUp: await signIn(withSignUp: true)
+      case .signIn: await signIn(withSignUp: false)
       case .signUp: await signUp()
       }
     }
 
-    private func signIn() async {
+    private func signIn(withSignUp: Bool) async {
+      fieldError = nil
+
       do {
-        let signIn = try await SignIn.create(
+        var signIn = try await SignIn.create(
           strategy: .identifier(
             phoneNumberFieldIsActive
               ? authState.authStartPhoneNumber
@@ -258,44 +260,34 @@
           )
         )
 
-        fieldError = nil
+        if signIn.startingFirstFactor?.strategy == "enterprise_sso" {
+          signIn = try await signIn.prepareFirstFactor(strategy: .enterpriseSSO())
+
+          if signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
+            let result = try await signIn.authenticateWithRedirect()
+            handleTransferFlowResult(result)
+            return
+          }
+        }
+
         authState.setToStepForStatus(signIn: signIn)
       } catch {
-        self.fieldError = error
-      }
-    }
-
-    private func signUp() async {
-      do {
-        let signUp = try await SignUp.create(strategy: signUpParams)
-        fieldError = nil
-        authState.setToStepForStatus(signUp: signUp)
-      } catch {
-        self.fieldError = error
-      }
-    }
-
-    private func signInOrUp() async {
-      do {
-        let signIn = try await SignIn.create(
-          strategy: .identifier(
-            phoneNumberFieldIsActive
-              ? authState.authStartPhoneNumber
-              : authState.authStartIdentifier
-          )
-        )
-
-        fieldError = nil
-        authState.setToStepForStatus(signIn: signIn)
-      } catch {
-        if authState.mode == .signInOrUp,
-          let clerkApiError = error as? ClerkAPIError,
-          ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code)
-        {
+        if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
           await signUp()
         } else {
           self.fieldError = error
         }
+      }
+    }
+
+    private func signUp() async {
+      fieldError = nil
+
+      do {
+        let signUp = try await SignUp.create(strategy: signUpParams)
+        authState.setToStepForStatus(signUp: signUp)
+      } catch {
+        self.fieldError = error
       }
     }
 
@@ -308,6 +300,15 @@
         } else {
           return .standard(username: authState.authStartIdentifier)
         }
+      }
+    }
+
+    private func handleTransferFlowResult(_ result: TransferFlowResult) {
+      switch result {
+      case .signIn(let signIn):
+        authState.setToStepForStatus(signIn: signIn)
+      case .signUp(let signUp):
+        authState.setToStepForStatus(signUp: signUp)
       }
     }
 

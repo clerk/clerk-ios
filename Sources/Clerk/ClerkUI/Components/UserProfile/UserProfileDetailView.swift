@@ -66,52 +66,59 @@
           VStack(spacing: 0) {
             ScrollView {
               VStack(spacing: 0) {
-                Section {
-                  Group {
-                    ForEach(sortedEmails) { emailAddress in
-                      UserProfileEmailRow(emailAddress: emailAddress)
-                    }
+                
+                if clerk.environment.emailIsEnabled {
+                  Section {
+                    Group {
+                      ForEach(sortedEmails) { emailAddress in
+                        UserProfileEmailRow(emailAddress: emailAddress)
+                      }
 
-                    UserProfileButtonRow(text: "Add email address") {
-                      addEmailAddressDestination = .add
-                    }
-                  }
-                  .background(theme.colors.background)
-
-                } header: {
-                  UserProfileSectionHeader(text: "EMAIL ADDRESSES")
-                }
-
-                Section {
-                  Group {
-                    ForEach(sortedPhoneNumbers) { phoneNumber in
-                      UserProfilePhoneRow(phoneNumber: phoneNumber)
-                    }
-
-                    UserProfileButtonRow(text: "Add phone number") {
-                      addPhoneNumberDestination = .add
-                    }
-                  }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "PHONE NUMBERS")
-                }
-
-                Section {
-                  Group {
-                    ForEach(sortedExternalAccounts) { externalAccount in
-                      UserProfileExternalAccountRow(externalAccount: externalAccount)
-                    }
-
-                    if !user.unconnectedProviders.isEmpty {
-                      UserProfileButtonRow(text: "Connect account") {
-                        addConnectedAccountIsPresented = true
+                      UserProfileButtonRow(text: "Add email address") {
+                        addEmailAddressDestination = .add
                       }
                     }
+                    .background(theme.colors.background)
+
+                  } header: {
+                    UserProfileSectionHeader(text: "EMAIL ADDRESSES")
                   }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
+                }
+
+                if clerk.environment.phoneNumberIsEnabled {
+                  Section {
+                    Group {
+                      ForEach(sortedPhoneNumbers) { phoneNumber in
+                        UserProfilePhoneRow(phoneNumber: phoneNumber)
+                      }
+
+                      UserProfileButtonRow(text: "Add phone number") {
+                        addPhoneNumberDestination = .add
+                      }
+                    }
+                    .background(theme.colors.background)
+                  } header: {
+                    UserProfileSectionHeader(text: "PHONE NUMBERS")
+                  }
+                }
+
+                if !clerk.environment.allSocialProviders.isEmpty {
+                  Section {
+                    Group {
+                      ForEach(sortedExternalAccounts) { externalAccount in
+                        UserProfileExternalAccountRow(externalAccount: externalAccount)
+                      }
+
+                      if !user.unconnectedProviders.isEmpty {
+                        UserProfileButtonRow(text: "Connect account") {
+                          addConnectedAccountIsPresented = true
+                        }
+                      }
+                    }
+                    .background(theme.colors.background)
+                  } header: {
+                    UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
+                  }
                 }
               }
               .animation(.default, value: sortedEmails)
