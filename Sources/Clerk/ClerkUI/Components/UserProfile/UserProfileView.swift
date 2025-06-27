@@ -20,10 +20,10 @@
     @State private var sharedState = SharedState()
     @State private var error: Error?
 
-    let isInSheet: Bool
+    let isDismissable: Bool
 
-    public init(isInSheet: Bool = false) {
-      self.isInSheet = isInSheet
+    public init(isDismissable: Bool = false) {
+      self.isDismissable = isDismissable
     }
 
     var user: User? {
@@ -35,7 +35,12 @@
       VStack(spacing: 12) {
         KFImage(URL(string: user.imageUrl))
           .resizable()
-          .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
+          .placeholder {
+            Image("icon-profile", bundle: .module)
+              .resizable()
+              .scaledToFit()
+              .foregroundStyle(theme.colors.primary.gradient)
+          }
           .fade(duration: 0.25)
           .scaledToFill()
           .frame(width: 96, height: 96)
@@ -147,7 +152,7 @@
                 .foregroundStyle(theme.colors.text)
             }
 
-            if isInSheet {
+            if isDismissable {
               ToolbarItem(placement: .topBarTrailing) {
                 DismissButton()
               }
@@ -253,13 +258,13 @@
     @Entry var userProfileSharedState = UserProfileView.SharedState()
   }
 
-  #Preview("In sheet") {
-    UserProfileView(isInSheet: true)
+  #Preview("Dismissable") {
+    UserProfileView(isDismissable: true)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
 
-  #Preview("Not in sheet") {
+  #Preview("Not dismissable") {
     UserProfileView()
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)

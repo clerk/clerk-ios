@@ -39,7 +39,7 @@
         }
       }
       .sheet(isPresented: $userProfileIsPresented) {
-        UserProfileView(isInSheet: true)
+        UserProfileView(isDismissable: true)
           .presentationDragIndicator(.visible)
       }
       .onChange(of: clerk.user) { _, newValue in
