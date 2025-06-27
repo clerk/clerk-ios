@@ -139,7 +139,10 @@
         .resizable()
         .fade(duration: 0.25)
         .placeholder { progress in
-          Rectangle().fill(theme.colors.primary.gradient)
+          Image("icon-profile", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(theme.colors.primary.gradient)
         }
         .onSuccess { _ in imageIsLoading = false }
         .onFailure { _ in imageIsLoading = false }

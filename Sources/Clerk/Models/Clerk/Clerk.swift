@@ -299,11 +299,21 @@ extension Container {
 
 extension Clerk {
 
-  static var mock: Clerk {
+  @_spi(Internal)
+  public static var mock: Clerk {
     let clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
+    return clerk
+  }
+  
+  @_spi(Internal)
+  public static var mockSignedOut: Clerk {
+    let clerk = Clerk()
+    clerk.client = .mockSignedOut
+    clerk.environment = .mock
+    clerk.sessionsByUserId = [:]
     return clerk
   }
 

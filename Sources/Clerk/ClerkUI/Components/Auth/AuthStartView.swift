@@ -1,5 +1,5 @@
 //
-//  SignInView.swift
+//  AuthStartView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/9/25.
@@ -10,7 +10,7 @@
   import Factory
   import SwiftUI
 
-  struct SignInStartView: View {
+  struct AuthStartView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
@@ -21,11 +21,25 @@
     @State private var fieldError: Error?
     @State private var generalError: Error?
 
-    var signInString: LocalizedStringKey {
-      if let appName = clerk.environment.displayConfig?.applicationName {
-        return "Continue to \(appName)"
-      } else {
-        return "Continue"
+    var titleString: LocalizedStringKey {
+      switch authState.mode {
+      case .signIn, .signInOrUp:
+        if let appName = clerk.environment.displayConfig?.applicationName {
+          return "Continue to \(appName)"
+        } else {
+          return "Continue"
+        }
+      case .signUp:
+        return "Create your account"
+      }
+    }
+
+    var subtitleString: LocalizedStringKey {
+      switch authState.mode {
+      case .signIn, .signInOrUp:
+        "Welcome! Sign in to continue"
+      case .signUp:
+        "Welcome! Please fill in the details to get started."
       }
     }
 
@@ -75,7 +89,7 @@
         return true
       }
 
-      if !authState.signInPhoneNumber.isEmpty && authState.signInIdentifier.isEmpty {
+      if !authState.authStartPhoneNumber.isEmpty && authState.authStartIdentifier.isEmpty {
         return true
       }
 
@@ -99,9 +113,9 @@
 
     var continueIsDisabled: Bool {
       if phoneNumberFieldIsActive {
-        authState.signInPhoneNumber.isEmpty
+        authState.authStartPhoneNumber.isEmpty
       } else {
-        authState.signInIdentifier.isEmpty
+        authState.authStartIdentifier.isEmpty
       }
     }
 
@@ -115,8 +129,8 @@
             .padding(.bottom, 24)
 
           VStack(spacing: 8) {
-            HeaderView(style: .title, text: signInString)
-            HeaderView(style: .subtitle, text: "Welcome! Sign in to continue")
+            HeaderView(style: .title, text: titleString)
+            HeaderView(style: .subtitle, text: subtitleString)
           }
           .padding(.bottom, 32)
 
@@ -126,14 +140,14 @@
                 if phoneNumberFieldIsActive && phoneNumberIsEnabled {
                   ClerkPhoneNumberField(
                     "Enter your phone number",
-                    text: $authState.signInPhoneNumber,
+                    text: $authState.authStartPhoneNumber,
                     fieldState: fieldError != nil ? .error : .default
                   )
                   .transition(.blurReplace)
                 } else {
                   ClerkTextField(
                     emailOrUsernamePlaceholder,
-                    text: $authState.signInIdentifier,
+                    text: $authState.authStartIdentifier,
                     fieldState: fieldError != nil ? .error : .default
                   )
                   .textContentType(.username)
@@ -152,7 +166,7 @@
             }
 
             AsyncButton {
-              await createSignIn()
+              await startAuth()
             } label: { isRunning in
               HStack(spacing: 4) {
                 Text("Continue", bundle: .module)
@@ -222,17 +236,52 @@
     }
   }
 
-  extension SignInStartView {
+  extension AuthStartView {
 
-    func createSignIn() async {
+    func startAuth() async {
       dismissKeyboard()
 
+      switch authState.mode {
+      case .signInOrUp: await signInOrUp()
+      case .signIn: await signIn()
+      case .signUp: await signUp()
+      }
+    }
+
+    private func signIn() async {
       do {
         let signIn = try await SignIn.create(
           strategy: .identifier(
             phoneNumberFieldIsActive
-              ? authState.signInPhoneNumber
-              : authState.signInIdentifier
+              ? authState.authStartPhoneNumber
+              : authState.authStartIdentifier
+          )
+        )
+
+        fieldError = nil
+        authState.setToStepForStatus(signIn: signIn)
+      } catch {
+        self.fieldError = error
+      }
+    }
+
+    private func signUp() async {
+      do {
+        let signUp = try await SignUp.create(strategy: signUpParams)
+        fieldError = nil
+        authState.setToStepForStatus(signUp: signUp)
+      } catch {
+        self.fieldError = error
+      }
+    }
+
+    private func signInOrUp() async {
+      do {
+        let signIn = try await SignIn.create(
+          strategy: .identifier(
+            phoneNumberFieldIsActive
+              ? authState.authStartPhoneNumber
+              : authState.authStartIdentifier
           )
         )
 
@@ -243,30 +292,21 @@
           let clerkApiError = error as? ClerkAPIError,
           ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code)
         {
-          await transferToSignUp()
+          await signUp()
         } else {
           self.fieldError = error
         }
       }
     }
 
-    private func transferToSignUp() async {
-      do {
-        let signUp = try await SignUp.create(strategy: transferableSignUpParams)
-        authState.setToStepForStatus(signUp: signUp)
-      } catch {
-        self.fieldError = error
-      }
-    }
-    
-    private var transferableSignUpParams: SignUp.CreateStrategy {
+    private var signUpParams: SignUp.CreateStrategy {
       if phoneNumberFieldIsActive {
-        return .standard(phoneNumber: authState.signInPhoneNumber)
+        return .standard(phoneNumber: authState.authStartPhoneNumber)
       } else {
-        if authState.signInIdentifier.isEmailAddress {
-          return .standard(emailAddress: authState.signInIdentifier)
+        if authState.authStartIdentifier.isEmailAddress {
+          return .standard(emailAddress: authState.authStartIdentifier)
         } else {
-          return .standard(username: authState.signInIdentifier)
+          return .standard(username: authState.authStartIdentifier)
         }
       }
     }
@@ -274,18 +314,18 @@
   }
 
   #Preview {
-    SignInStartView()
+    AuthStartView()
       .environment(\.clerk, .mock)
   }
 
   #Preview("Clerk Theme") {
-    SignInStartView()
+    AuthStartView()
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
 
   #Preview("Localized") {
-    SignInStartView()
+    AuthStartView()
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
       .environment(\.locale, .init(identifier: "en"))

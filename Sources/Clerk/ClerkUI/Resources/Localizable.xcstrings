@@ -2393,6 +2393,9 @@
     "Create a unique password." : {
 
     },
+    "Create your account" : {
+
+    },
     "Created: %@" : {
       "localizations" : {
         "ar" : {
@@ -10246,6 +10249,9 @@
           }
         }
       }
+    },
+    "Welcome! Please fill in the details to get started." : {
+
     },
     "Welcome! Sign in to continue" : {
       "localizations" : {

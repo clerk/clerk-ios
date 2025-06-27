@@ -67,11 +67,22 @@ extension Client {
 
   static var mock: Client {
     return Client(
-      id: "sess_1",
+      id: "1",
       signIn: .mock,
       signUp: .mock,
       sessions: [.mock, .mock2],
       lastActiveSessionId: "1",
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+    )
+  }
+  
+  static var mockSignedOut: Client {
+    return Client(
+      id: "2",
+      signIn: .mock,
+      signUp: .mock,
+      sessions: [],
+      lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
     )
   }
