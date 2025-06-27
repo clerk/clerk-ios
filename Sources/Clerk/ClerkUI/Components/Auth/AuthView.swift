@@ -31,7 +31,7 @@ public struct AuthView: View {
 
   public var body: some View {
     NavigationStack(path: $authState.path) {
-      SignInStartView()
+      AuthStartView()
         .toolbar {
           if showDismissButton {
             ToolbarItem(placement: .topBarTrailing) {
@@ -73,14 +73,16 @@ public struct AuthView: View {
 extension AuthView {
   enum Destination: Hashable {
     
+    // Auth Start
+    case authStart
+    
     // Sign In
-    case signInStart
     case signInFactorOne(factor: Factor)
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
     case signInFactorTwo(factor: Factor)
     case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
-    case forgotPassword
-    case setNewPassword
+    case signInForgotPassword
+    case signInSetNewPassword
     case signInGetHelp
     
     // Sign up
@@ -91,8 +93,8 @@ extension AuthView {
     @ViewBuilder
     var view: some View {
       switch self {
-      case .signInStart:
-        SignInStartView()
+      case .authStart:
+        AuthStartView()
       case .signInFactorOne(let factor):
         SignInFactorOneView(factor: factor)
       case .signInFactorOneUseAnotherMethod(let currentFactor):
@@ -104,9 +106,9 @@ extension AuthView {
           currentFactor: currentFactor,
           isSecondFactor: true
         )
-      case .forgotPassword:
+      case .signInForgotPassword:
         SignInFactorOneForgotPasswordView()
-      case .setNewPassword:
+      case .signInSetNewPassword:
         SignInSetNewPasswordView()
       case .signInGetHelp:
         SignInGetHelpView()

@@ -145,8 +145,8 @@ extension PhoneNumber {
   
   static var mockMfa: PhoneNumber {
     PhoneNumber(
-      id: "2",
-      phoneNumber: "+15555550101",
+      id: "3",
+      phoneNumber: "+15555550102",
       reservedForSecondFactor: true,
       defaultSecondFactor: true,
       verification: .mockPhoneCodeVerifiedVerification,

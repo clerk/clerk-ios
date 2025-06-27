@@ -107,7 +107,7 @@ struct SignInFactorOnePasswordView: View {
           Button {
             if signIn?.resetPasswordFactor != nil {
               authState.path.append(
-                AuthView.Destination.forgotPassword
+                AuthView.Destination.signInForgotPassword
               )
             } else {
               authState.path.append(

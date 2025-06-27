@@ -13,9 +13,9 @@
   public struct UserButton: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
-    
+
     @State private var userProfileIsPresented: Bool = false
-    
+
     public init() {}
 
     public var body: some View {
@@ -25,7 +25,12 @@
             userProfileIsPresented = true
           } label: {
             KFImage(URL(string: user.imageUrl))
-              .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
+              .placeholder {
+                Image("icon-profile", bundle: .module)
+                  .resizable()
+                  .scaledToFit()
+                  .foregroundStyle(theme.colors.primary.gradient)
+              }
               .resizable()
               .fade(duration: 0.2)
               .scaledToFill()

@@ -21,19 +21,20 @@
     let mode: AuthView.Mode
     var lastCodeSentAt: [String: Date] = [:]
 
-    // Sign In Fields
-    var signInIdentifier: String = UserDefaults.standard.string(forKey: "signInIdentifier") ?? "" {
+    // Auth Start Fields
+    var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
       didSet {
-        UserDefaults.standard.set(signInIdentifier, forKey: "signInIdentifier")
+        UserDefaults.standard.set(authStartIdentifier, forKey: "authStartIdentifier")
       }
     }
 
-    var signInPhoneNumber: String = UserDefaults.standard.string(forKey: "signInPhoneNumber") ?? "" {
+    var authStartPhoneNumber: String = UserDefaults.standard.string(forKey: "authStartPhoneNumber") ?? "" {
       didSet {
-        UserDefaults.standard.set(signInPhoneNumber, forKey: "signInPhoneNumber")
+        UserDefaults.standard.set(authStartPhoneNumber, forKey: "authStartPhoneNumber")
       }
     }
     
+    // Sign In Fields
     var signInPassword = ""
     var signInNewPassword = ""
     var signInConfirmNewPassword = ""
@@ -68,7 +69,7 @@
 
         path.append(AuthView.Destination.signInFactorTwo(factor: factor))
       case .needsNewPassword:
-        path.append(AuthView.Destination.setNewPassword)
+        path.append(AuthView.Destination.signInSetNewPassword)
       case .unknown:
         return
       }
