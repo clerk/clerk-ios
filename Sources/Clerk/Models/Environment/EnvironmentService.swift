@@ -9,7 +9,7 @@ import Factory
 import Foundation
 
 struct EnvironmentService {
-  var get: () async throws -> Clerk.Environment
+  var get: @MainActor () async throws -> Clerk.Environment
 }
 
 extension EnvironmentService {
@@ -18,7 +18,9 @@ extension EnvironmentService {
     .init(
       get: {
         let request = ClerkFAPI.v1.environment.get
-        return try await Container.shared.apiClient().send(request).value
+        let environment = try await Container.shared.apiClient().send(request).value
+        Clerk.shared.environment = environment
+        return environment
       }
     )
   }
