@@ -10,31 +10,43 @@
   import SwiftUI
 
   struct SecuredByClerkView: View {
+    @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {
-      HStack(spacing: 6) {
-        Text("Secured by", bundle: .module)
-        Image("clerk-logo", bundle: .module)
+      if clerk.environment.displayConfig?.branded == true {
+        HStack(spacing: 6) {
+          Text("Secured by", bundle: .module)
+          Image("clerk-logo", bundle: .module)
+        }
+        .font(theme.fonts.footnote.weight(.medium))
+        .foregroundStyle(theme.colors.textSecondary)
+        .transition(.blurReplace.animation(.default))
+      } else {
+        EmptyView()
       }
-      .font(theme.fonts.footnote.weight(.medium))
-      .foregroundStyle(theme.colors.textSecondary)
     }
   }
 
   struct SecuredByClerkFooter: View {
+    @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {
-      SecuredByClerkView()
-        .padding(16)
-        .frame(maxWidth: .infinity)
-        .background(theme.colors.backgroundSecondary)
-        .overlay(alignment: .top, content: {
-          Rectangle()
-            .fill(theme.colors.border)
-            .frame(height: 1)
-        })
+      if clerk.environment.displayConfig?.branded == true {
+        SecuredByClerkView()
+          .padding(16)
+          .frame(maxWidth: .infinity)
+          .background(theme.colors.backgroundSecondary)
+          .overlay(alignment: .top, content: {
+            Rectangle()
+              .fill(theme.colors.border)
+              .frame(height: 1)
+          })
+          .transition(.blurReplace.animation(.default))
+      } else {
+        EmptyView()
+      }
     }
   }
 
