@@ -11,6 +11,7 @@ import Factory
 import SwiftUI
 
 public struct AuthView: View {
+  @Environment(\.clerk) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @State var authState: AuthState
@@ -56,6 +57,16 @@ public struct AuthView: View {
     .background(theme.colors.background)
     .tint(theme.colors.primary)
     .environment(\.authState, authState)
+    .task {
+      if showDismissButton {
+        for await event in clerk.authEventEmitter.events {
+          switch event {
+          case .signInCompleted, .signUpCompleted:
+            dismiss()
+          }
+        }
+      }
+    }
   }
 }
 
