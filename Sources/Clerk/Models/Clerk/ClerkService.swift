@@ -10,7 +10,8 @@ import Foundation
 import Get
 
 struct ClerkService {
-  var saveClientIdToKeychain: (_ clientId: String) throws -> Void
+  var saveClientToKeychain: (_ client: Client) throws -> Void
+  var loadClientFromKeychain: () throws -> Client?
   var signOut: (_ sessionId: String?) async throws -> Void
   var setActive: (_ sessionId: String, _ organizationId: String?) async throws -> Void
 }
@@ -19,8 +20,17 @@ extension ClerkService {
 
   static var liveValue: Self {
     .init(
-      saveClientIdToKeychain: { clientId in
-        try Container.shared.keychain().set(clientId, forKey: "clientId")
+      saveClientToKeychain: { client in
+        let encoder = JSONEncoder.clerkEncoder
+        let clientData = try encoder.encode(client)
+        try Container.shared.keychain().set(clientData, forKey: "cachedClient")
+      },
+      loadClientFromKeychain: {
+        guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
+          return nil
+        }
+        let decoder = JSONDecoder.clerkDecoder
+        return try decoder.decode(Client.self, from: clientData)
       },
       signOut: { sessionId in
         if let sessionId {
