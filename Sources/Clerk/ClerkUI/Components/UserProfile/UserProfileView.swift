@@ -40,6 +40,7 @@
               .resizable()
               .scaledToFit()
               .foregroundStyle(theme.colors.primary.gradient)
+              .opacity(0.5)
           }
           .fade(duration: 0.25)
           .scaledToFill()

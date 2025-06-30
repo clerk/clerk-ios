@@ -18,8 +18,9 @@ struct UserProfileRowView: View {
     var body: some View {
       HStack(spacing: 16) {
         Image(icon, bundle: .module)
-          .frame(width: 48, height: 24)
+          .resizable()
           .scaledToFit()
+          .frame(width: 48, height: 24)
           .foregroundStyle(theme.colors.textSecondary)
         Text(text, bundle: .module)
           .font(theme.fonts.body)
