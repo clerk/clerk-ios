@@ -115,10 +115,11 @@ final public class Clerk {
       }
     }
   }
-
-  private var keychainConfig = KeychainConfig() {
+  
+  /// The configuration settings for this Clerk instance.
+  var settings: Settings = .init() {
     didSet {
-      Container.shared.keychain.register { [keychainConfig] in
+      Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
         SimpleKeychain(
           service: keychainConfig.service,
           accessGroup: keychainConfig.accessGroup,
@@ -143,16 +144,12 @@ extension Clerk {
   /// Configures the shared clerk instance.
   /// - Parameters:
   ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-  ///     - debugMode: Enable for additional debugging signals.
-  ///     - keychainConfig: Options that Clerk will use when accessing the keychain.
   public func configure(
     publishableKey: String,
-    debugMode: Bool = false,
-    keychainConfig: KeychainConfig = KeychainConfig()
+    settings: Settings = .init()
   ) {
     self.publishableKey = publishableKey
-    self.debugMode = debugMode
-    self.keychainConfig = keychainConfig
+    self.settings = settings
   }
 
   /// Loads all necessary environment configuration and instance settings from the Frontend API.

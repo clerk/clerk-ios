@@ -111,6 +111,7 @@ extension SignIn {
     /// This is useful for inspecting a newly created `SignIn` object before deciding on a strategy.
     case none
 
+    @MainActor
     var params: SignInCreateParams {
       switch self {
       case .identifier(let identifier, let password, let strategy):
@@ -123,14 +124,14 @@ extension SignIn {
       case .oauth(let oauthProvider, let redirectUrl):
         .init(
           strategy: oauthProvider.strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case .enterpriseSSO(let emailAddress, let redirectUrl):
         .init(
           strategy: "enterprise_sso",
           identifier: emailAddress,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case .idToken(let provider, let idToken):

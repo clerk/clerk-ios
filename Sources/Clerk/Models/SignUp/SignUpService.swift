@@ -9,7 +9,7 @@ import Factory
 import Foundation
 
 struct SignUpService {
-  var create: (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp
+  var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp
   var createRaw: (_ params: AnyEncodable) async throws -> SignUp
   var update: (_ signUp: SignUp, _ params: SignUp.UpdateParams) async throws -> SignUp
   var prepareVerification: (_ signUp: SignUp, _ strategy: SignUp.PrepareStrategy) async throws -> SignUp

@@ -40,32 +40,34 @@ extension SignUp {
     /// The user will be authenticated with their enterprise SSO account.
     case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
 
+    @MainActor
     var signUpStrategy: SignUp.CreateStrategy {
       switch self {
       case .oauth(let provider, let redirectUrl):
         .oauth(
           provider: provider,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       case .enterpriseSSO(let identifier, let redirectUrl):
         .enterpriseSSO(
           identifier: identifier,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       }
     }
 
+    @MainActor
     var params: AuthenticateWithRedirectParams {
       switch self {
       case .oauth(let provider, let redirectUrl):
         .init(
           strategy: provider.strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       case .enterpriseSSO(let identifier, let redirectUrl):
         .init(
           strategy: "enterprise_sso",
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl,
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
           identifier: identifier
         )
       }
