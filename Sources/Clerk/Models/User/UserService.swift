@@ -69,7 +69,7 @@ extension UserService {
           queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
           body: [
             "strategy": provider.strategy,
-            "redirect_url": redirectUrl ?? RedirectConfigDefaults.redirectUrl,
+            "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
             "additional_scopes": additionalScopes?.joined(separator: ","),
           ]
         )

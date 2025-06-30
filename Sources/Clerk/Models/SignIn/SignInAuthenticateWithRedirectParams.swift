@@ -40,12 +40,19 @@ extension SignIn {
     /// The user will be authenticated with their enterprise SSO account.
     case enterpriseSSO(identifier: String, redirectUrl: String? = nil)
     
+    @MainActor
     var signInStrategy: SignIn.CreateStrategy {
       switch self {
       case .oauth(let provider, let redirectUrl):
-        return .oauth(provider: provider, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
+        return .oauth(
+          provider: provider,
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+        )
       case .enterpriseSSO(let identifier, let redirectUrl):
-        return .enterpriseSSO(identifier: identifier, redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl)
+        return .enterpriseSSO(
+          identifier: identifier,
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+        )
       }
     }
   }

@@ -168,6 +168,7 @@ extension SignUp {
     /// This computed property maps each strategy case to its corresponding `CreateParams` object.
     ///
     /// - Returns: A `CreateParams` object containing all the necessary data for the `SignUp` request.
+    @MainActor
     var params: CreateParams {
       switch self {
       case .standard(let emailAddress, let password, let firstName, let lastName, let username, let phoneNumber):
@@ -182,13 +183,13 @@ extension SignUp {
       case .oauth(let provider, let redirectUrl):
         .init(
           strategy: provider.strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       case .enterpriseSSO(let identifier, let redirectUrl):
         .init(
           strategy: "enterprise_sso",
           emailAddress: identifier,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       case .ticket(let ticket):
         .init(

@@ -77,6 +77,7 @@ extension SignIn {
       }
     }
 
+    @MainActor
     func params(signIn: SignIn) -> PrepareFirstFactorParams {
       switch self {
 
@@ -95,7 +96,7 @@ extension SignIn {
       case .oauth(let provider, let redirectUrl):
         return .init(
           strategy: provider.strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case .passkey:
@@ -104,7 +105,7 @@ extension SignIn {
       case .enterpriseSSO(let redirectUrl):
         return .init(
           strategy: strategy,
-          redirectUrl: redirectUrl ?? RedirectConfigDefaults.redirectUrl
+          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case .resetPasswordEmailCode(let emailAddressId):

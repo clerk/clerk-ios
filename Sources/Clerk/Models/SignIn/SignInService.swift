@@ -10,10 +10,10 @@ import Factory
 import Foundation
 
 struct SignInService {
-  var create: (_ strategy: SignIn.CreateStrategy) async throws -> SignIn
+  var create: @MainActor (_ strategy: SignIn.CreateStrategy) async throws -> SignIn
   var createRaw: (_ params: AnyEncodable) async throws -> SignIn
   var resetPassword: (_ signIn: SignIn, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
-  var prepareFirstFactor: (_ signIn: SignIn, _ prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy) async throws -> SignIn
+  var prepareFirstFactor: @MainActor (_ signIn: SignIn, _ prepareFirstFactorStrategy: SignIn.PrepareFirstFactorStrategy) async throws -> SignIn
   var attemptFirstFactor: (_ signIn: SignIn, _ attemptFirstFactorStrategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
   var prepareSecondFactor: (_ signIn: SignIn, _ prepareSecondFactorStrategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
   var attemptSecondFactor: (_ signIn: SignIn, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
