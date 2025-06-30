@@ -130,6 +130,7 @@ import SwiftUI
         try await user?.update(.init(primaryEmailAddressId: email.id))
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to set email as primary", error: error)
       }
     }
 
@@ -140,6 +141,7 @@ import SwiftUI
         try await resource?.deleteAction()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to remove email resource", error: error)
       }
     }
 

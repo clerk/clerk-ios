@@ -54,6 +54,7 @@
       } catch {
         if error.isUserCancelledError { return }
         self.error = error
+        ClerkLogger.error("Failed to create passkey", error: error)
       }
     }
   }

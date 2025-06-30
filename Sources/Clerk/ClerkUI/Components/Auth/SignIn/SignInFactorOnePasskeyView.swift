@@ -135,6 +135,7 @@ extension SignInFactorOnePasskeyView {
     } catch {
       if error.isUserCancelledError { return }
       self.error = error
+      ClerkLogger.error("Failed to authenticate with passkey", error: error)
     }
   }
 

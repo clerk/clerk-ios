@@ -109,6 +109,7 @@
         try await removeResource?.deleteAction()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to remove passkey resource", error: error)
       }
     }
 

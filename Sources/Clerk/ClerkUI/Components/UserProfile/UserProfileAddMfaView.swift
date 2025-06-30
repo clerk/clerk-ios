@@ -139,6 +139,7 @@
         sharedState.presentedAddMfaType = .authApp(totp)
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to create TOTP", error: error)
       }
     }
     

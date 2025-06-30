@@ -234,6 +234,7 @@
       } catch {
         otpFieldIsFocused = false
         self.error = error
+        ClerkLogger.error("Failed to prepare verification for sign up", error: error)
       }
     }
 

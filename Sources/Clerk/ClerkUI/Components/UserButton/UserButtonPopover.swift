@@ -124,6 +124,7 @@
         }
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to sign out from popover", error: error)
       }
     }
 

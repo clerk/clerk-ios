@@ -163,8 +163,8 @@ extension Clerk {
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   public func load() async throws {
-    if publishableKey.isEmptyTrimmed {
-      dump("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+    if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      ClerkLogger.error("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
       return
     }
 
@@ -280,7 +280,7 @@ extension Clerk {
         do {
           try await AppAttestHelper.performDeviceAttestation()
         } catch {
-          dump(error)
+          ClerkLogger.logError(error, message: "Device attestation failed")
         }
       }
     }
@@ -297,7 +297,7 @@ extension Clerk {
       }
     } catch {
       // If loading fails, continue without cached client
-      dump("Failed to load cached client: \(error)")
+      ClerkLogger.logError(error, message: "Failed to load cached client")
     }
   }
 
@@ -312,7 +312,7 @@ extension Clerk {
       }
     } catch {
       // If loading fails, continue without cached environment
-      dump("Failed to load cached environment: \(error)")
+      ClerkLogger.logError(error, message: "Failed to load cached environment")
     }
   }
 

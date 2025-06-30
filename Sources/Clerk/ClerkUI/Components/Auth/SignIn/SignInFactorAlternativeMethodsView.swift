@@ -177,6 +177,7 @@
       } catch {
         if error.isUserCancelledError { return }
         self.error = error
+        ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
       }
     }
 
