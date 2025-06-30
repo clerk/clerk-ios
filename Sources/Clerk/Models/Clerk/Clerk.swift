@@ -93,13 +93,18 @@ final public class Clerk {
   private(set) public var debugMode: Bool = false
 
   /// The Clerk environment for the instance.
-  var environment = Environment()
+  var environment = Environment() {
+    didSet {
+      try? Container.shared.clerkService().saveEnvironmentToKeychain(environment)
+    }
+  }
 
   // MARK: - Private Properties
 
   nonisolated init() {
     Task { @MainActor in
       loadCachedClient()
+      loadCachedEnvironment()
     }
   }
 
@@ -294,6 +299,21 @@ extension Clerk {
     } catch {
       // If loading fails, continue without cached client
       dump("Failed to load cached client: \(error)")
+    }
+  }
+
+  private func loadCachedEnvironment() {
+    do {
+      if let cachedEnvironment = try Container.shared.clerkService().loadEnvironmentFromKeychain() {
+        // Only set cached environment if we don't already have fresh data
+        // This prevents overwriting fresh data during load()
+        if self.environment.isEmpty {
+          self.environment = cachedEnvironment
+        }
+      }
+    } catch {
+      // If loading fails, continue without cached environment
+      dump("Failed to load cached environment: \(error)")
     }
   }
 

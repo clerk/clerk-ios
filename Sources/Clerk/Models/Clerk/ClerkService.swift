@@ -12,6 +12,8 @@ import Get
 struct ClerkService {
   var saveClientToKeychain: (_ client: Client) throws -> Void
   var loadClientFromKeychain: () throws -> Client?
+  var saveEnvironmentToKeychain: (_ environment: Clerk.Environment) throws -> Void
+  var loadEnvironmentFromKeychain: () throws -> Clerk.Environment?
   var signOut: (_ sessionId: String?) async throws -> Void
   var setActive: (_ sessionId: String, _ organizationId: String?) async throws -> Void
 }
@@ -31,6 +33,18 @@ extension ClerkService {
         }
         let decoder = JSONDecoder.clerkDecoder
         return try decoder.decode(Client.self, from: clientData)
+      },
+      saveEnvironmentToKeychain: { environment in
+        let encoder = JSONEncoder.clerkEncoder
+        let environmentData = try encoder.encode(environment)
+        try Container.shared.keychain().set(environmentData, forKey: "cachedEnvironment")
+      },
+      loadEnvironmentFromKeychain: {
+        guard let environmentData = try? Container.shared.keychain().data(forKey: "cachedEnvironment") else {
+          return nil
+        }
+        let decoder = JSONDecoder.clerkDecoder
+        return try decoder.decode(Clerk.Environment.self, from: environmentData)
       },
       signOut: { sessionId in
         if let sessionId {

@@ -16,6 +16,14 @@ extension Clerk {
     var displayConfig: DisplayConfig?
     var fraudSettings: FraudSettings?
     var commerceSettings: CommerceSettings?
+    
+    var isEmpty: Bool {
+      authConfig == nil &&
+      userSettings == nil &&
+      displayConfig == nil &&
+      fraudSettings == nil &&
+      commerceSettings == nil
+    }
   }
 
 }
