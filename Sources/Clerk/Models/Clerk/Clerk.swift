@@ -179,7 +179,9 @@ extension Clerk {
       async let client = Client.get() // via middleware
       async let environment = Environment.get() // via the function itself
       
+      _ = try await client
       attestDeviceIfNeeded(environment: try await environment)
+      
       isLoaded = true
     } catch {
       throw error
