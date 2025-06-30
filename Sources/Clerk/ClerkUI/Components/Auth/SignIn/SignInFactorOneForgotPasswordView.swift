@@ -148,6 +148,7 @@
         )
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to reset password", error: error)
       }
     }
 
@@ -179,6 +180,7 @@
       } catch {
         if error.isUserCancelledError { return }
         self.error = error
+        ClerkLogger.error("Failed to sign in with OAuth provider in forgot password flow", error: error)
       }
     }
 

@@ -100,6 +100,7 @@
         try await user?.getSessions()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to sign out of device", error: error)
       }
     }
 

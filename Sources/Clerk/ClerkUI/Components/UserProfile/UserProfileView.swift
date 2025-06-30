@@ -208,6 +208,7 @@
         }
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to sign out", error: error)
       }
     }
 
@@ -217,6 +218,7 @@
         try await user.getSessions()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to get sessions on all devices", error: error)
       }
     }
 

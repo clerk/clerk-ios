@@ -141,6 +141,7 @@
         try await account.reauthorize()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to reconnect external account", error: error)
       }
     }
 
@@ -151,6 +152,7 @@
         try await resource?.deleteAction()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to remove external account resource", error: error)
       }
     }
 

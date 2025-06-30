@@ -307,6 +307,7 @@
       } catch {
         otpFieldIsFocused = false
         self.error = error
+        ClerkLogger.error("Failed to prepare factor for sign in", error: error)
       }
     }
 
@@ -348,6 +349,7 @@
 
         if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
           self.error = error
+          ClerkLogger.error("Failed to attempt factor for sign in", error: error)
           otpFieldIsFocused = false
         }
       }

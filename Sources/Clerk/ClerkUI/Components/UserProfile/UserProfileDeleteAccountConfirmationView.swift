@@ -103,6 +103,7 @@
         }
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to delete account", error: error)
       }
     }
     

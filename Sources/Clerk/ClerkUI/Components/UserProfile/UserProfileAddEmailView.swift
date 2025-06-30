@@ -129,6 +129,7 @@
         path.append(Destination.verify(emailAddress))
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to add email address", error: error)
       }
     }
 

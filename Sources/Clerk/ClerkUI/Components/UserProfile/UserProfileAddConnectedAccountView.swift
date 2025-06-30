@@ -105,6 +105,7 @@
       } catch {
         if error.isUserCancelledError { return }
         self.error = error
+        ClerkLogger.error("Failed to connect external account", error: error)
       }
     }
 

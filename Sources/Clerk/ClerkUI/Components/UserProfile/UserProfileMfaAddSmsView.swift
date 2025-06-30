@@ -145,6 +145,7 @@
         }
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
       }
     }
 

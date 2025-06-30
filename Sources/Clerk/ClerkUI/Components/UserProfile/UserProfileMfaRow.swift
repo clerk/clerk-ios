@@ -175,6 +175,7 @@
         try await removeResource?.deleteAction()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to remove MFA resource", error: error)
       }
     }
 
@@ -183,6 +184,7 @@
         try await phoneNumber.makeDefaultSecondFactor()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to make phone number default second factor", error: error)
       }
     }
     
@@ -193,6 +195,7 @@
         self.backupCodes = try await user.createBackupCodes()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to regenerate backup codes", error: error)
       }
     }
   }

@@ -212,6 +212,7 @@
         dismiss()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to reset password", error: error)
       }
     }
 

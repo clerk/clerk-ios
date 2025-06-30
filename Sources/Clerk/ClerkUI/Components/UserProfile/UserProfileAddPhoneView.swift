@@ -127,6 +127,7 @@
         path.append(Destination.verify(phoneNumber))
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to add phone number", error: error)
       }
     }
 

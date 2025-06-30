@@ -91,6 +91,7 @@
         dismiss()
       } catch {
         self.error = error
+        ClerkLogger.error("Failed to rename passkey", error: error)
       }
     }
     
