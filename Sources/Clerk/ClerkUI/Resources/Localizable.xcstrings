@@ -1875,6 +1875,9 @@
     "Choose your username" : {
 
     },
+    "Client ID is unavailble." : {
+
+    },
     "Close" : {
       "localizations" : {
         "ar" : {

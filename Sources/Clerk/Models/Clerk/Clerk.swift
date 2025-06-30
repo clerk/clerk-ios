@@ -39,8 +39,10 @@ final public class Clerk {
   /// The Client object for the current device.
   internal(set) public var client: Client? {
     didSet {
-      if let clientId = client?.id {
-        try? Container.shared.clerkService().saveClientIdToKeychain(clientId)
+      if let client = client {
+        try? Container.shared.clerkService().saveClientToKeychain(client)
+      } else {
+        try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
       }
     }
   }
@@ -95,7 +97,11 @@ final public class Clerk {
 
   // MARK: - Private Properties
 
-  nonisolated init() {}
+  nonisolated init() {
+    Task { @MainActor in
+      loadCachedClient()
+    }
+  }
 
   /// Frontend API URL.
   private(set) var frontendApiUrl: String = "" {
@@ -164,11 +170,11 @@ extension Clerk {
       startSessionTokenPolling()
       setupNotificationObservers()
 
-      async let client = Client.get()
-      async let environment = Environment.get()
-      _ = try await client
+      // Both of these are automatically applied to the shared instance:
+      async let client = Client.get() // via middleware
+      async let environment = Environment.get() // via the function itself
+      
       attestDeviceIfNeeded(environment: try await environment)
-
       isLoaded = true
     } catch {
       throw error
@@ -273,6 +279,21 @@ extension Clerk {
           dump(error)
         }
       }
+    }
+  }
+
+  private func loadCachedClient() {
+    do {
+      if let cachedClient = try Container.shared.clerkService().loadClientFromKeychain() {
+        // Only set cached client if we don't already have one
+        // This prevents overwriting fresh data during load()
+        if self.client == nil {
+          self.client = cachedClient
+        }
+      }
+    } catch {
+      // If loading fails, continue without cached client
+      dump("Failed to load cached client: \(error)")
     }
   }
 

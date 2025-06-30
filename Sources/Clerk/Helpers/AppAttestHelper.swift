@@ -95,13 +95,16 @@ struct AppAttestHelper {
 
   /// Performs assertion verification with the server.
   /// - Throws: An error if the assertion verification fails.
+  @MainActor
   static func performAssertion() async throws {
     guard DCAppAttestService.shared.isSupported else {
       throw AttestationError.unsupportedDevice
     }
 
     let challenge = try await getChallenge()
-    let clientId = try clientId
+    guard let clientId = clientId else {
+      throw ClerkClientError(message: "Client ID is unavailble.")
+    }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
     let assertion = try await createAssertion(payload: payload)
 
@@ -141,9 +144,8 @@ struct AppAttestHelper {
   ///
   /// This needs to come from the keychain, because if the initial client request is blocked on app load,
   /// the app wont have a client yet
-  static var clientId: String {
-    get throws {
-      try Container.shared.keychain().string(forKey: "clientId")
-    }
+  @MainActor
+  static var clientId: String? {
+    Clerk.shared.client?.id
   }
 }
