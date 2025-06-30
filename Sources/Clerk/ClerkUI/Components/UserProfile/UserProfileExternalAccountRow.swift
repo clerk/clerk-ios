@@ -137,7 +137,6 @@
       guard let user else { return }
       
       do {
-        try await externalAccount.destroy()
         let account = try await user.createExternalAccount(provider: externalAccount.oauthProvider)
         try await account.reauthorize()
       } catch {
