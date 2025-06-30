@@ -89,9 +89,6 @@ final public class Clerk {
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
 
-  /// Enable for additional debugging signals.
-  private(set) public var debugMode: Bool = false
-
   /// The Clerk environment for the instance.
   var environment = Environment() {
     didSet {
