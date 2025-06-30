@@ -261,9 +261,9 @@ extension Clerk {
     sessionPollingTask = Task(priority: .background) {
       repeat {
         if let session = session {
-          _ = try? await session.getToken(.init(skipCache: true))
+          try? await session.getToken()
         }
-        try await Task.sleep(for: .seconds(50), tolerance: .seconds(0.1))
+        try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
       } while !Task.isCancelled
     }
   }
