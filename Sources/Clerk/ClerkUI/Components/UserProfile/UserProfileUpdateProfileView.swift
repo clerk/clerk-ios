@@ -144,6 +144,7 @@
             .resizable()
             .scaledToFit()
             .foregroundStyle(theme.colors.primary.gradient)
+            .opacity(0.5)
         }
         .onSuccess { _ in imageIsLoading = false }
         .onFailure { _ in imageIsLoading = false }
