@@ -9,10 +9,10 @@ import Foundation
 import os.log
 
 /// A unified logging system for the Clerk SDK that respects the debugMode setting.
-public struct ClerkLogger {
+struct ClerkLogger {
 
   /// Log levels for different types of messages
-  public enum LogLevel: String, CaseIterable {
+  enum LogLevel: String, CaseIterable {
     case error = "ERROR"
     case warning = "WARNING"
     case info = "INFO"
@@ -61,7 +61,7 @@ public struct ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func error(
+  static func error(
     _ message: String,
     error: Error? = nil,
     file: String = #file,
@@ -78,7 +78,7 @@ public struct ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func warning(
+  static func warning(
     _ message: String,
     debugMode: Bool? = nil,
     file: String = #file,
@@ -95,7 +95,7 @@ public struct ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func info(
+  static func info(
     _ message: String,
     debugMode: Bool? = nil,
     file: String = #file,
@@ -112,7 +112,7 @@ public struct ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func debug(
+  static func debug(
     _ message: String,
     debugMode: Bool? = nil,
     file: String = #file,
@@ -202,7 +202,7 @@ extension ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func logError(
+  static func logError(
     _ error: Error,
     message: String = "An error occurred",
     file: String = #file,
@@ -220,7 +220,7 @@ extension ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  public static func logNetworkError(
+  static func logNetworkError(
     _ error: Error,
     endpoint: String,
     statusCode: Int? = nil,
