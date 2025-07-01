@@ -20,11 +20,22 @@ struct ErrorThrowingMiddleware {
         var clerkAPIError = clerkErrorResponse.errors.first
       {
         clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
+        ClerkLogger.logNetworkError(
+          clerkAPIError,
+          endpoint: response.url?.absoluteString ?? "unknown",
+          statusCode: response.statusCode
+        )
         throw clerkAPIError
       }
 
       // ...else throw a generic api error
-      throw APIError.unacceptableStatusCode(response.statusCode)
+      let apiError = APIError.unacceptableStatusCode(response.statusCode)
+      ClerkLogger.logNetworkError(
+        apiError,
+        endpoint: response.url?.absoluteString ?? "unknown",
+        statusCode: response.statusCode
+      )
+      throw apiError
     }
 
   }
