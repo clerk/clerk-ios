@@ -16,13 +16,13 @@ struct AppLogoView: View {
   var body: some View {
     KFImage(URL(string: clerk.environment.displayConfig?.logoImageUrl ?? ""))
       .resizable()
-      .placeholder {
-        #if DEBUG
-        Image(systemName: "circle.square.fill")
-          .resizable()
-          .scaledToFit()
-        #endif
-      }
+//      .placeholder {
+//        #if DEBUG
+//        Image(systemName: "circle.square.fill")
+//          .resizable()
+//          .scaledToFit()
+//        #endif
+//      }
       .scaledToFit()
   }
 }
