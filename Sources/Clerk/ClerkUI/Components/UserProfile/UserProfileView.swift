@@ -10,6 +10,47 @@
   import Kingfisher
   import SwiftUI
 
+  /// A comprehensive user profile view that displays user information and account management options.
+  ///
+  /// ``UserProfileView`` provides an interface for users to view and manage their profile,
+  /// including personal information, security settings, account switching, and sign-out functionality.
+  ///
+  /// ## Usage
+  ///
+  /// As a full-screen profile view:
+  ///
+  /// ```swift
+  /// struct ProfileView: View {
+  ///   @Environment(\.clerk) private var clerk
+  ///
+  ///   var body: some View {
+  ///     Group {
+  ///       if clerk.user != nil {
+  ///         UserProfileView()
+  ///       } else {
+  ///         AuthView(isDismissable: false)
+  ///       }
+  ///     }
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// As a dismissable sheet:
+  ///
+  /// ```swift
+  /// struct MainView: View {
+  ///   @State private var profileIsPresented = false
+  ///
+  ///   var body: some View {
+  ///     Button("Show Profile") {
+  ///       profileIsPresented = true
+  ///     }
+  ///     .sheet(isPresented: $profileIsPresented) {
+  ///       UserProfileView(isDismissable: true)
+  ///     }
+  ///   }
+  /// }
+  /// ```
   public struct UserProfileView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
@@ -22,6 +63,13 @@
 
     let isDismissable: Bool
 
+    /// Creates a new user profile view.
+    ///
+    /// - Parameter isDismissable: Whether the view can be dismissed by the user.
+    ///   When `true`, a dismiss button appears in the navigation bar and the view
+    ///   can be used in sheets or other dismissable contexts. When `false`, no
+    ///   dismiss button is shown, making it suitable for full-screen usage.
+    ///   Defaults to `false`.
     public init(isDismissable: Bool = false) {
       self.isDismissable = isDismissable
     }
