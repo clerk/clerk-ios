@@ -70,7 +70,7 @@ struct ClerkQuickstartApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
-        .environment(clerk)
+        .environment(\.clerk, clerk)
         .task {
           clerk.configure(publishableKey: "your_publishable_key")
           try? await clerk.load()
@@ -87,7 +87,7 @@ import SwiftUI
 import Clerk
 
 struct ContentView: View {
-  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerk) private var clerk
 
   var body: some View {
     VStack {
@@ -101,7 +101,97 @@ struct ContentView: View {
 }
 ```
 
-### Authentication
+### 🧩 UI Components
+
+Clerk provides prebuilt SwiftUI components that handle authentication flows and user management.
+
+| AuthView |
+|----------|
+| <img src="https://github.com/user-attachments/assets/eeb712a3-8a84-4247-9aa9-ef53128c6121" width="200" alt="AuthView demo"> <img src="https://github.com/user-attachments/assets/7d572c63-1dfa-4b93-a8e0-cf9645d43796" width="200" alt="AuthView demo 2"> <img src="https://github.com/user-attachments/assets/252e4a66-8e53-40b3-99c1-16e6ac40fb93" width="200" alt="AuthView demo 3"> |
+
+| UserProfileView |
+|-----------------|
+| <img src="https://github.com/user-attachments/assets/a59c3b9e-d726-4939-8553-087178a28413" width="200" alt="UserProfileView demo"> <img src="https://github.com/user-attachments/assets/9b1e56d1-0f67-4db4-8c4f-bb49dacb27e2" width="200" alt="UserProfileView demo 2"> <img src="https://github.com/user-attachments/assets/56f4487c-07ad-4420-99a0-0f4aebd3523f" width="200" alt="UserProfileView demo 3"> |
+
+#### AuthView - Complete Authentication Experience
+
+```swift
+struct HomeView: View {
+  @Environment(\.clerk) private var clerk
+  @State private var authIsPresented = false
+
+  var body: some View {
+    ZStack {
+      if clerk.user != nil {
+        UserButton()
+          .frame(width: 36, height: 36)
+      } else {
+        Button("Sign in") {
+          authIsPresented = true
+        }
+      }
+    }
+    .sheet(isPresented: $authIsPresented) {
+      AuthView()
+    }
+  }
+}
+```
+
+#### UserButton - Profile Access Button
+```swift
+// In a navigation toolbar
+.toolbar {
+  ToolbarItem(placement: .navigationBarTrailing) {
+    if clerk.user != nil {
+      UserButton()
+        .frame(width: 36, height: 36)
+    }
+  }
+}
+```
+
+#### UserProfileView - Full Profile Management
+```swift
+struct ProfileView: View {
+  @Environment(\.clerk) private var clerk
+
+  var body: some View {
+    if clerk.user != nil {
+      UserProfileView()
+    } else {
+      AuthView(isDismissable: false)
+    }
+  }
+}
+```
+
+#### 🎨 Custom Theming
+
+Clerk UI components can be customized with a custom theme to match your app's design:
+
+```swift
+import SwiftUI
+import Clerk
+
+@main
+struct MyApp: App {
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .environment(\.clerkTheme, customTheme)
+    }
+  }
+}
+
+let customTheme = ClerkTheme(
+  colors: .init(primary: .blue),
+  fonts: .init(fontFamily: "Montserrat"),
+  design: .init(borderRadius: 10)
+)
+```
+
+### 🔐 Custom Authentication Flows
 
 #### Sign Up with Email and Perform Verification
 ```swift
@@ -229,7 +319,7 @@ Passkeys | ✅
 Enterprise SSO (SAML) | ✅ 
 Device Attestation | ✅
 Organizations | ✅
-Prebuilt UI Components | 🚧 
+Prebuilt UI Components | ✅ 
 Magic Links | ❌ 
 Web3 Wallet | ❌
 
