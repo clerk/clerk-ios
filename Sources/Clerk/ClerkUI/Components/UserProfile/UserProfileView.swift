@@ -219,11 +219,13 @@
       guard let user else { return }
       do {
         try await user.getSessions()
-      } catch is CancellationError {
-        ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
       } catch {
-        self.error = error
-        ClerkLogger.error("Failed to get sessions on all devices", error: error)
+        if error.isCancellationError {
+          ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
+        } else {
+          self.error = error
+          ClerkLogger.error("Failed to get sessions on all devices", error: error)
+        }
       }
     }
 
