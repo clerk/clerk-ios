@@ -143,8 +143,8 @@
         }
         .padding(16)
       }
-      .background(theme.colors.background)
       .clerkErrorPresenting($error)
+      .background(theme.colors.background)
     }
   }
 

@@ -140,6 +140,7 @@
         }
       }
       .navigationBarTitleDisplayMode(.inline)
+      .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .sheet(item: $addEmailAddressDestination) {
         UserProfileAddEmailView(desintation: $0)

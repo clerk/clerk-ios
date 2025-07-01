@@ -20,16 +20,16 @@
     @FocusState private var isFocused: Bool
 
     enum Destination: Hashable, Identifiable {
-      case add // should never be added to the path
+      case add  // should never be added to the path
       case verify(EmailAddress)
-      
+
       var id: Self { self }
     }
 
     var user: User? {
       clerk.user
     }
-    
+
     init(desintation: Destination? = nil) {
       if case .verify(let email) = desintation {
         var path = NavigationPath()
@@ -46,7 +46,7 @@
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.textSecondary)
               .fixedSize(horizontal: false, vertical: true)
-            
+
             VStack(spacing: 4) {
               ClerkTextField("Enter your email", text: $email)
                 .textContentType(.emailAddress)
@@ -84,7 +84,7 @@
           }
           .padding(24)
         }
-        .background(theme.colors.background)
+        .presentationBackground(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
         .toolbar {
@@ -94,7 +94,7 @@
             }
             .foregroundStyle(theme.colors.primary)
           }
-          
+
           ToolbarItem(placement: .principal) {
             Text("Add email address", bundle: .module)
               .font(theme.fonts.headline)

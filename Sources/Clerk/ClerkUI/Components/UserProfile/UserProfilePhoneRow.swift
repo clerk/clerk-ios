@@ -97,6 +97,9 @@
       .onChange(of: removeResource) {
         if $0 != nil { isConfirmingRemoval = true }
       }
+      .sheet(item: $addPhoneNumberDestination) {
+        UserProfileAddPhoneView(desintation: $0)
+      }
       .confirmationDialog(
         removeResource?.messageLine1 ?? "",
         isPresented: $isConfirmingRemoval,

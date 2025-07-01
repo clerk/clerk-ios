@@ -231,8 +231,8 @@
         .padding(16)
       }
       .scrollDismissesKeyboard(.interactively)
-      .background(theme.colors.background)
       .clerkErrorPresenting($error)
+      .background(theme.colors.background)
       .taskOnce {
         startTimer()
         if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {

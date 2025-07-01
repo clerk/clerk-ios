@@ -70,6 +70,7 @@
             .foregroundStyle(theme.colors.text)
         }
       }
+      .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .task {

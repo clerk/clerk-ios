@@ -55,6 +55,7 @@
         }
         .padding(24)
       }
+      .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden()

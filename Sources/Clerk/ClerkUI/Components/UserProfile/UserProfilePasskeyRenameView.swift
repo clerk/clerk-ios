@@ -61,7 +61,6 @@
           }
           .padding(24)
         }
-        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
         .toolbar {
@@ -79,6 +78,8 @@
           }
         }
       }
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
     }
   }
 

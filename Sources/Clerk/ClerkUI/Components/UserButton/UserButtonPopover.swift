@@ -104,6 +104,7 @@
           .frame(maxWidth: .infinity)
           .background(theme.colors.backgroundSecondary)
       }
+      .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .sheet(isPresented: $accountSwitcherIsPresented) {
