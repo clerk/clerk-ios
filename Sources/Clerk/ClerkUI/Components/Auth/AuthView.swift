@@ -55,6 +55,7 @@ public struct AuthView: View {
         }
     }
     .background(theme.colors.background)
+    .presentationBackground(theme.colors.background)
     .tint(theme.colors.primary)
     .environment(\.authState, authState)
     .task {

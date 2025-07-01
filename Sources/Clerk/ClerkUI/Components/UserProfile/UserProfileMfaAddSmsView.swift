@@ -102,7 +102,6 @@
             )
           }
           .padding(24)
-          .background(theme.colors.background)
           .clerkErrorPresenting($error)
           .navigationBarTitleDisplayMode(.inline)
           .preGlassSolidNavBar()
@@ -125,6 +124,8 @@
           $0.view
         }
       }
+      .background(theme.colors.background)
+      .presentationBackground(theme.colors.background)
       .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
       .sheet(isPresented: $addPhoneNumberIsPresented) {
         UserProfileAddPhoneView()

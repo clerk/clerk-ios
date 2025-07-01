@@ -139,7 +139,6 @@
           .scrollBounceBehavior(.basedOnSize)
         }
         .animation(.default, value: sessions)
-        .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()

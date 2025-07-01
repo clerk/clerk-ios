@@ -57,6 +57,8 @@
             }
         }
       }
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
     }
 
     @ViewBuilder
@@ -84,7 +86,6 @@
         }
         .padding(24)
       }
-      .background(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .toolbar {
@@ -139,7 +140,6 @@
         }
         .padding(24)
       }
-      .background(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .clerkErrorPresenting($error) { error in

@@ -71,7 +71,6 @@ struct ErrorView: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.colors.background)
   }
 }
 

@@ -82,7 +82,6 @@
           .padding(.bottom, 24)
           .padding(.top, 60)
         }
-        .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
@@ -132,6 +131,8 @@
           }
         }
       }
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
     }
 
     @ViewBuilder
@@ -193,8 +194,8 @@
           do {
             try await user.deleteProfileImage()
           } catch {
-                          self.error = error
-              ClerkLogger.error("Failed to delete profile image", error: error)
+            self.error = error
+            ClerkLogger.error("Failed to delete profile image", error: error)
           }
         } label: { _ in
           Text("Remove photo")

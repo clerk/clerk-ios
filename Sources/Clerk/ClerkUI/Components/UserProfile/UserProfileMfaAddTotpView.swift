@@ -107,7 +107,6 @@
           }
           .padding(24)
         }
-        .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
@@ -129,6 +128,8 @@
           viewForDestination($0)
         }
       }
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
     }
 
     @ViewBuilder

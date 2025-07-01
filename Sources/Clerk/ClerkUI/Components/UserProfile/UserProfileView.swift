@@ -165,6 +165,7 @@
           }
         }
         .tint(theme.colors.primary)
+        .presentationBackground(theme.colors.background)
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {

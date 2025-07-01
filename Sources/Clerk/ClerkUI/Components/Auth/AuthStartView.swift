@@ -223,8 +223,8 @@
         .padding(16)
       }
       .scrollDismissesKeyboard(.interactively)
-      .background(theme.colors.background)
       .clerkErrorPresenting($generalError)
+      .background(theme.colors.background)
       .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
         $1 != nil
       }

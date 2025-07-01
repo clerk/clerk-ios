@@ -169,8 +169,8 @@
         .padding(16)
       }
       .scrollDismissesKeyboard(.interactively)
-      .background(theme.colors.background)
       .clerkErrorPresenting($error)
+      .background(theme.colors.background)
       .toolbar {
         ToolbarItem(placement: .principal) {
           Text("Sign up", bundle: .module)
