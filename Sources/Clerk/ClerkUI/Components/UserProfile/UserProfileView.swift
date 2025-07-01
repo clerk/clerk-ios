@@ -218,7 +218,7 @@
       do {
         try await user.getSessions()
       } catch is CancellationError {
-        ClerkLogger.error("Failed to get sessions on all devices", error: error)
+        ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to get sessions on all devices", error: error)
