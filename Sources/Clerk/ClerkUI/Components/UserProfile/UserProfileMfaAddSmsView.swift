@@ -125,7 +125,6 @@
           $0.view
         }
       }
-      .presentationBackground(theme.colors.background)
       .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
       .sheet(isPresented: $addPhoneNumberIsPresented) {
         UserProfileAddPhoneView()

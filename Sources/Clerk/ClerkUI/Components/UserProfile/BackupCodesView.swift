@@ -56,7 +56,6 @@
         .padding(24)
       }
       .background(theme.colors.background)
-      .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden()
       .preGlassSolidNavBar()

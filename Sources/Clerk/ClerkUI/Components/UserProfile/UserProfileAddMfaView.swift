@@ -124,7 +124,6 @@
         }
         .scrollBounceBehavior(.basedOnSize)
       }
-      .presentationBackground(theme.colors.background)
     }
   }
 

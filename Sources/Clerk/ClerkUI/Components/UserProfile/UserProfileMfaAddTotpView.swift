@@ -108,7 +108,6 @@
           .padding(24)
         }
         .background(theme.colors.background)
-        .presentationBackground(theme.colors.background)
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
