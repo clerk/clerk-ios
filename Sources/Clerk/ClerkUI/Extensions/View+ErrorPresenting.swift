@@ -55,7 +55,6 @@
               )
               .presentationDetents(detents)
               .presentationDragIndicator(.visible)
-              .presentationBackground(theme.colors.background)
           }
         }
     }

@@ -85,7 +85,6 @@
         .padding(24)
       }
       .background(theme.colors.background)
-      .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .toolbar {
@@ -141,7 +140,6 @@
         .padding(24)
       }
       .background(theme.colors.background)
-      .presentationBackground(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .clerkErrorPresenting($error) { error in
