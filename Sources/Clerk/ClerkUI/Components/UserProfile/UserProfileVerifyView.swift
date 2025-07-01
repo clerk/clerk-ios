@@ -65,6 +65,15 @@
         environmentDismiss()
       }
     }
+    
+    private var hasCancelAction: Bool {
+      switch mode {
+      case .email, .phone:
+        true
+      case .totp:
+        false
+      }
+    }
 
     private var lastCodeSentAtKey: String {
       switch mode {
@@ -203,13 +212,15 @@
       .background(theme.colors.background)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
-      .navigationBarBackButtonHidden()
+      .navigationBarBackButtonHidden(hasCancelAction)
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+        if hasCancelAction {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
         }
 
         ToolbarItem(placement: .principal) {
