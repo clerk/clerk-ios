@@ -65,7 +65,7 @@
         if let user {
           VStack(spacing: 0) {
             ScrollView {
-              VStack(spacing: 0) {
+              LazyVStack(spacing: 0) {
                 
                 if clerk.environment.emailIsEnabled {
                   Section {

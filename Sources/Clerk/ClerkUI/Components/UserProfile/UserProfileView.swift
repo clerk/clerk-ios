@@ -93,7 +93,7 @@
         NavigationStack(path: $sharedState.path) {
           VStack(spacing: 0) {
             ScrollView {
-              VStack(spacing: 0) {
+              LazyVStack(spacing: 0) {
                 userProfileHeader(user)
 
                 VStack(spacing: 48) {
