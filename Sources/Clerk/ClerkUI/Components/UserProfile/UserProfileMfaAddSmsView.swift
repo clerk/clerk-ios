@@ -40,9 +40,8 @@
 
     private var availablePhoneNumbers: [PhoneNumber] {
       (user?.phoneNumbersAvailableForMfa ?? [])
-        .sorted { lhs, rhs in
-          lhs.createdAt < rhs.createdAt
-        }
+        .filter { $0.verification?.status == .verified }
+        .sorted { $0.createdAt < $1.createdAt }
     }
 
     var body: some View {
