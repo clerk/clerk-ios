@@ -205,10 +205,11 @@
 
     func signOut(sessionId: String) async {
       do {
-        try await clerk.signOut(sessionId: sessionId)
-        if clerk.session == nil {
+        if clerk.client?.activeSessions.count == 1 {
           dismiss()
         }
+        
+        try await clerk.signOut(sessionId: sessionId)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to sign out", error: error)
