@@ -52,6 +52,7 @@
             .font(theme.fonts.title2)
             .fontWeight(.bold)
             .frame(minHeight: 28)
+            .foregroundStyle(theme.colors.text)
         }
 
         Button {
