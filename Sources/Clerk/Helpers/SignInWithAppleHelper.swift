@@ -9,6 +9,7 @@
 
   import Foundation
   import AuthenticationServices
+  import CryptoKit
 
   /// A helper class for managing the Sign in with Apple process.
   ///
@@ -37,6 +38,27 @@
     /// A continuation to handle the result of the authorization process.
     private var continuation: CheckedContinuation<ASAuthorization, Error>?
 
+    /// Generates a cryptographically secure nonce for Sign in with Apple requests.
+    ///
+    /// This method creates a nonce using CryptoKit's SHA256 hash function with cryptographically
+    /// secure random data, following Apple's best practices for Sign in with Apple authentication.
+    ///
+    /// - Returns: A Base64 URL-safe encoded nonce string.
+    private func generateNonce() -> String {
+      // Generate 32 bytes (256 bits) of cryptographically secure random data
+      let data = Data((0..<32).map { _ in UInt8.random(in: UInt8.min...UInt8.max) })
+      
+      // Hash the random data using SHA256
+      let hashedData = SHA256.hash(data: data)
+      
+      // Convert to Base64 URL-safe encoding (replacing + with -, / with _, and removing padding)
+      let base64String = Data(hashedData).base64EncodedString()
+      return base64String
+        .replacingOccurrences(of: "+", with: "-")
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: "=", with: "")
+    }
+
     /// Starts the Sign in with Apple authorization flow with the requested scopes.
     ///
     /// This method presents the Sign in with Apple UI and waits for the user to complete the sign-in flow.
@@ -55,7 +77,7 @@
         let appleIDProvider = ASAuthorizationAppleIDProvider()
         let appleRequest = appleIDProvider.createRequest()
         appleRequest.requestedScopes = requestedScopes
-        appleRequest.nonce = UUID().uuidString
+        appleRequest.nonce = generateNonce()
 
         let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
         authorizationController.delegate = self
