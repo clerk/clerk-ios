@@ -55,7 +55,7 @@ import SwiftUI
 ///   var body: some View {
 ///     Group {
 ///       if clerk.user != nil {
-///         UserProfileView()
+///         UserProfileView(isDismissable: false)
 ///       } else {
 ///         AuthView(isDismissable: false)
 ///       }
