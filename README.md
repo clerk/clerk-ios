@@ -55,6 +55,32 @@ dependencies: [
 ]
 ```
 
+## ⚙️ Configuration
+
+### Add your Native Application
+
+Add your iOS application to the <a href="https://dashboard.clerk.com/last-active?path=/native-applications" target="_blank">**Native Applications**</a> page in the Clerk dashboard. You will need your iOS app's **App ID Prefix** and **Bundle ID**.
+
+### Add Associated Domain Capability
+
+To enable seamless authentication flows, you need to add an associated domain capability to your iOS app. This allows your app to work with Clerk's authentication services.
+
+1. In Xcode, select your project in the Project Navigator.
+2. Select your app target.
+3. Go to the **Signing & Capabilities** tab.
+4. Click the **+ Capability** button.
+5. Search for and add **Associated Domains**.
+6. Under **Associated Domains**, add a new entry with the value: `webcredentials:{FRONTEND_API_URL}`
+
+> Replace `{FRONTEND_API_URL}` with your Frontend API URL. You can find your Frontend API URL in the <a href="https://dashboard.clerk.com/last-active?path=native-applications" target="_blank">**Native Applications**</a> page in the Clerk Dashboard.
+
+### Allowlist for Mobile SSO Redirect
+
+1. In the Clerk Dashboard, navigate to the <a href="https://dashboard.clerk.com/last-active?path=/native-applications" target="_blank">**Native Applications**</a> page.
+2. In the **Allowlist for mobile SSO redirect** section, add your app's callback URL in the format: `{BUNDLE_ID}://callback`
+
+> Replace `{BUNDLE_ID}` with your app's actual Bundle Identifier (e.g., `com.yourcompany.yourapp://callback`).
+
 ## 🛠️ Usage
 
 First, configure Clerk in your app's entry point:
@@ -92,7 +118,7 @@ struct ContentView: View {
   var body: some View {
     VStack {
       if let user = clerk.user {
-        Text("Hello, \(user.id)")
+        Text("Hello, \(user.firstName) ?? User")
       } else {
         Text("You are signed out")
       }
