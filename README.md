@@ -118,7 +118,7 @@ struct ContentView: View {
   var body: some View {
     VStack {
       if let user = clerk.user {
-        Text("Hello, \(user.firstName) ?? User")
+        Text("Hello, \(user.firstName ?? "User")")
       } else {
         Text("You are signed out")
       }
