@@ -26,7 +26,7 @@
   ///   var body: some View {
   ///     Group {
   ///       if clerk.user != nil {
-  ///         UserProfileView()
+  ///         UserProfileView(isDismissable: false)
   ///       } else {
   ///         AuthView(isDismissable: false)
   ///       }
@@ -46,7 +46,7 @@
   ///       profileIsPresented = true
   ///     }
   ///     .sheet(isPresented: $profileIsPresented) {
-  ///       UserProfileView(isDismissable: true)
+  ///       UserProfileView()
   ///     }
   ///   }
   /// }
@@ -69,8 +69,8 @@
     ///   When `true`, a dismiss button appears in the navigation bar and the view
     ///   can be used in sheets or other dismissable contexts. When `false`, no
     ///   dismiss button is shown, making it suitable for full-screen usage.
-    ///   Defaults to `false`.
-    public init(isDismissable: Bool = false) {
+    ///   Defaults to `true`.
+    public init(isDismissable: Bool = true) {
       self.isDismissable = isDismissable
     }
 
@@ -314,13 +314,13 @@
   }
 
   #Preview("Dismissable") {
-    UserProfileView(isDismissable: true)
+    UserProfileView()
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
 
   #Preview("Not dismissable") {
-    UserProfileView()
+    UserProfileView(isDismissable: false)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)
   }
