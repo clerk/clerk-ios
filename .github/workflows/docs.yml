@@ -1,10 +1,14 @@
-name: Generate Documentation
+THIS SHOULD BE A LINTER ERRORname: Generate Documentation
 
 on:
+  # Trigger on new releases
+  release:
+    types: [published]
+  # Trigger on new tags (alternative to release)
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+      - '*.*.*'
   # Allow manual trigger
   workflow_dispatch:
 
