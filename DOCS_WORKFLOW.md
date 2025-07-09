@@ -7,8 +7,8 @@ This repository now includes a GitHub Action workflow that automatically generat
 The workflow (`.github/workflows/docs.yml`) performs the following steps:
 
 ### 1. **Triggers**
-- **Push to main**: Automatically generates and deploys documentation when code is pushed to the main branch
-- **Pull Requests**: Generates documentation for preview (but doesn't deploy)
+- **New Releases**: Automatically generates and deploys documentation when a new release is published
+- **New Tags**: Also triggers on new version tags (e.g., `v1.0.0` or `1.0.0`)
 - **Manual Trigger**: Can be manually triggered via GitHub Actions UI
 
 ### 2. **Documentation Generation**
@@ -25,7 +25,7 @@ The workflow (`.github/workflows/docs.yml`) performs the following steps:
 ### 4. **Features**
 - **Automatic indexing**: Creates a landing page with links to documentation
 - **Static hosting ready**: Documentation is optimized for static hosting (GitHub Pages, etc.)
-- **PR previews**: Comments on pull requests with documentation preview information
+- **Release-based deployment**: Only updates documentation on new releases for stability
 - **Caching**: Uses Swift package caching for faster builds
 
 ## Generated Documentation Structure
@@ -57,8 +57,14 @@ To make your documentation publicly accessible:
 
 Your documentation will be available at: `https://[username].github.io/[repository-name]/`
 
-## Manual Workflow Execution
+## Triggering Documentation Generation
 
+### Automatic (Recommended)
+1. **Create a release**: Go to your repository → **Releases** → **Create a new release**
+2. **Create a tag**: Tag format like `v1.0.0` or `1.0.0` will automatically trigger the workflow
+3. **Publish the release**: Documentation will be generated and deployed automatically
+
+### Manual Execution
 You can manually trigger the documentation generation:
 1. Go to **Actions** tab in your repository
 2. Select **Generate Documentation** workflow
@@ -71,7 +77,7 @@ The workflow is configured to:
 - Run on **macOS** (required for Swift-DocC)
 - Use **Swift 5.9** (matches your Package.swift)
 - Cache Swift packages for faster builds
-- Only deploy to `docs` branch from `main` branch pushes
+- Deploy to `docs` branch on releases and manual triggers only
 
 ## Troubleshooting
 

@@ -1,4 +1,4 @@
-THIS SHOULD BE A LINTER ERRORname: Generate Documentation
+name: Generate Documentation
 
 on:
   # Trigger on new releases
@@ -87,7 +87,6 @@ jobs:
         fi
         
     - name: Deploy to docs branch
-      if: github.ref == 'refs/heads/main'
       run: |
         # Configure git
         git config --global user.name 'github-actions[bot]'
@@ -115,28 +114,3 @@ jobs:
         
         # Push to docs branch
         git push origin docs --force
-        
-    - name: Comment on PR with docs link
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const { owner, repo } = context.repo;
-          const prNumber = context.payload.pull_request.number;
-          
-          const comment = `📚 **Documentation Preview**
-          
-          Documentation has been generated for this PR. Once merged to main, it will be available at:
-          https://${owner}.github.io/${repo}/
-          
-          The documentation includes:
-          - API reference for the Clerk Swift package
-          - Code examples and usage guides
-          - Generated from the latest code changes`;
-          
-          await github.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number: prNumber,
-            body: comment
-          });
