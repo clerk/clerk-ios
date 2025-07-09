@@ -1,0 +1,138 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: '5.9'
+        
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: .build
+        key: ${{ runner.os }}-swift-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-swift-
+          
+    - name: Build package
+      run: swift build
+      
+    - name: Generate documentation
+      run: |
+        # Generate documentation for the Clerk target
+        swift package generate-documentation \
+          --target Clerk \
+          --disable-indexing \
+          --transform-for-static-hosting \
+          --hosting-base-path Clerk \
+          --output-path ./docs
+          
+    - name: Setup docs directory structure
+      run: |
+        # Create a clean docs directory structure
+        mkdir -p ./docs-output
+        
+        # Copy the generated documentation
+        if [ -d "./docs" ]; then
+          cp -r ./docs/* ./docs-output/
+        fi
+        
+        # Create index.html if it doesn't exist
+        if [ ! -f "./docs-output/index.html" ]; then
+          cat > ./docs-output/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Clerk Documentation</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+                .link { padding: 10px 20px; background: #007AFF; color: white; text-decoration: none; border-radius: 8px; }
+                .link:hover { background: #0056CC; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Clerk Documentation</h1>
+                <p>Swift Package Documentation</p>
+            </div>
+            <div class="links">
+                <a href="./documentation/clerk/" class="link">Browse Documentation</a>
+            </div>
+        </body>
+        </html>
+        EOF
+        fi
+        
+    - name: Deploy to docs branch
+      if: github.ref == 'refs/heads/main'
+      run: |
+        # Configure git
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        
+        # Create/checkout docs branch
+        git checkout --orphan docs || git checkout docs
+        
+        # Remove all files except docs-output
+        git rm -rf . 2>/dev/null || true
+        
+        # Copy documentation files to root
+        cp -r ./docs-output/* . 2>/dev/null || true
+        
+        # Add and commit all documentation files
+        git add .
+        
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+        
+        git commit -m "📚 Update documentation ($(date '+%Y-%m-%d %H:%M:%S'))"
+        
+        # Push to docs branch
+        git push origin docs --force
+        
+    - name: Comment on PR with docs link
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const prNumber = context.payload.pull_request.number;
+          
+          const comment = `📚 **Documentation Preview**
+          
+          Documentation has been generated for this PR. Once merged to main, it will be available at:
+          https://${owner}.github.io/${repo}/
+          
+          The documentation includes:
+          - API reference for the Clerk Swift package
+          - Code examples and usage guides
+          - Generated from the latest code changes`;
+          
+          await github.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: prNumber,
+            body: comment
+          });
