@@ -60,6 +60,7 @@
           .clerkErrorPresenting($error)
           .navigationBarTitleDisplayMode(.inline)
           .preGlassSolidNavBar()
+          .preGlassDetentSheetBackground()
           .toolbar {
             ToolbarItem(placement: .cancellationAction) {
               Button("Cancel") {

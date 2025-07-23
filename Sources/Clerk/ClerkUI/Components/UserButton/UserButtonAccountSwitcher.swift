@@ -142,6 +142,7 @@
         .clerkErrorPresenting($error)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
+        .preGlassDetentSheetBackground()
         .toolbar {
           ToolbarItem(placement: .topBarTrailing) {
             Button {
