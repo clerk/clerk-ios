@@ -6,7 +6,7 @@
 //
 
 import AuthenticationServices
-import Factory
+import FactoryKit
 import Foundation
 
 /// The `SignUp` object holds the state of the current sign-up and provides helper methods to navigate and complete the sign-up process.

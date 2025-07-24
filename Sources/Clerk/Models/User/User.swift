@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/16/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.

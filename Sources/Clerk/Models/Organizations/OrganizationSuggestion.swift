@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 3/14/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 import Get
 

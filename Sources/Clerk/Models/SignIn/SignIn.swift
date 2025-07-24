@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 1/30/24.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /// The `SignIn` object holds the state of the current sign-in process and provides helper methods

@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 9/6/24.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /// An object that represents a passkey associated with a user.

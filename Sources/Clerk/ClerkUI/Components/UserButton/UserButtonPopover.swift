@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-  import Factory
+  import FactoryKit
   import SwiftUI
 
   struct UserButtonPopover: View {
@@ -104,8 +104,8 @@
           .frame(maxWidth: .infinity)
           .background(theme.colors.backgroundSecondary)
       }
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
       .clerkErrorPresenting($error)
       .sheet(isPresented: $accountSwitcherIsPresented) {
         UserButtonAccountSwitcher()
@@ -132,7 +132,7 @@
   }
 
   #Preview {
-    let _ = Container.shared.clerkService.register {
+    Container.shared.clerkService.preview {
       var service = ClerkService.liveValue
       service.signOut = { _ in
         try! await Task.sleep(for: .seconds(1))

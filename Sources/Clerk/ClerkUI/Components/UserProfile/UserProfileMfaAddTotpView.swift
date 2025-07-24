@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-  import Factory
+  import FactoryKit
   import SwiftUI
 
   struct UserProfileMfaAddTotpView: View {
@@ -163,7 +163,7 @@
   }
 
   #Preview {
-    let _ = Container.shared.userService.register {
+    Container.shared.userService.preview {
       var service = UserService.liveValue
 
       service.createTOTP = {

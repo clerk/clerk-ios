@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 3/10/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 struct PasskeyService {

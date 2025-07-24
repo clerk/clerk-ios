@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /// The `PhoneNumber` object describes a phone number.

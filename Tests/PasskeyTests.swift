@@ -1,5 +1,5 @@
 import ConcurrencyExtras
-import Factory
+import FactoryKit
 import Foundation
 import Mocker
 import Testing

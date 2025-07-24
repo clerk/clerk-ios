@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 import Get
 import RegexBuilder

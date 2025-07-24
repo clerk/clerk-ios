@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 ///The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
