@@ -7,7 +7,7 @@
 
 import CryptoKit
 import DeviceCheck
-import Factory
+import FactoryKit
 import Foundation
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.

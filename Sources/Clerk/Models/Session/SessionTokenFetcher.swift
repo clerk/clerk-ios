@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 1/19/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.

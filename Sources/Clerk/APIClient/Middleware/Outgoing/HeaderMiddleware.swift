@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 1/8/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 struct HeaderMiddleware {

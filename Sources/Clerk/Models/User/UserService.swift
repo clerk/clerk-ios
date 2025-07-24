@@ -6,7 +6,7 @@
 //
 
 import AuthenticationServices
-import Factory
+import FactoryKit
 import Foundation
 import Get
 

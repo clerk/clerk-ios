@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /// The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.

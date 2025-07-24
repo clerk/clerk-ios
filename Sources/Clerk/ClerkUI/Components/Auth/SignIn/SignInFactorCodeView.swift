@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-  import Factory
+  import FactoryKit
   import SwiftUI
 
   struct SignInFactorCodeView: View {
@@ -358,7 +358,7 @@
   }
 
   #Preview("Email Code") {
-    let _ = Container.shared.signInService.register {
+    Container.shared.signInService.preview {
       var service = SignInService.liveValue
       service.prepareFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
@@ -378,7 +378,7 @@
   }
 
   #Preview("Phone Code") {
-    let _ = Container.shared.signInService.register {
+    Container.shared.signInService.preview {
       var service = SignInService.liveValue
       service.prepareFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
@@ -403,7 +403,7 @@
   }
 
   #Preview("Reset Password Email Code") {
-    let _ = Container.shared.signInService.register {
+    Container.shared.signInService.preview {
       var service = SignInService.liveValue
       service.prepareFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
@@ -423,7 +423,7 @@
   }
 
   #Preview("Reset Password Phone Code") {
-    let _ = Container.shared.signInService.register {
+    Container.shared.signInService.preview {
       var service = SignInService.liveValue
       service.prepareFirstFactor = { _, _ in
         try! await Task.sleep(for: .seconds(1))
@@ -443,7 +443,7 @@
   }
 
   #Preview("TOTP Code") {
-    let _ = Container.shared.signInService.register {
+    Container.shared.signInService.preview {
       var service = SignInService.liveValue
 
       service.attemptSecondFactor = { _, _ in

@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-  import Factory
+  import FactoryKit
   import Kingfisher
   import SwiftUI
 
@@ -159,9 +159,9 @@
   }
 
   #Preview {
-    let _ = Container.shared.clerk.register(factory: { @MainActor in
+    Container.shared.clerk.preview { @MainActor in
       .mock
-    })
+    }
 
     NavigationStack {
       UserProfileDetailView()

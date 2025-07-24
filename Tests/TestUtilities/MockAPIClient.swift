@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 2/23/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 import Get
 import Mocker

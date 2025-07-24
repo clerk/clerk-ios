@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 10/5/23.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 /**

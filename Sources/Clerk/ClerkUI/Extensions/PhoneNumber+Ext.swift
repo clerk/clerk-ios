@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Factory
+import FactoryKit
 import Foundation
 import PhoneNumberKit
 

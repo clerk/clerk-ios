@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 2/27/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
 
 struct SignUpService {
