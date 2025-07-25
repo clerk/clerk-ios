@@ -149,8 +149,14 @@ extension SignUp {
   public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
     var params = strategy.params
     params.legalAccepted = legalAccepted
-    let request = ClerkFAPI.v1.client.signUps.post(params)
-    return try await Container.shared.apiClient().send(request).value.response
+    
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups")
+      .method(.post)
+      .body(formEncode: params)
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
@@ -172,8 +178,13 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-    let request = ClerkFAPI.v1.client.signUps.post(params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups")
+      .method(.post)
+      .body(formEncode: params)
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
   /// This method is used to update the current sign-up.
@@ -190,8 +201,13 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the changes.
   @discardableResult @MainActor
   public func update(params: UpdateParams) async throws -> SignUp {
-    let request = ClerkFAPI.v1.client.signUps.id(id).patch(params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups")
+      .method(.patch)
+      .body(formEncode: params)
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
   /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
@@ -208,8 +224,13 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification initiation.
   @discardableResult @MainActor
   public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-    let request = ClerkFAPI.v1.client.signUps.id(id).prepareVerification.post(strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups/\(id)/prepare_verification")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
   /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
@@ -224,8 +245,13 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
   @discardableResult @MainActor
   public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-    let request = ClerkFAPI.v1.client.signUps.id(id).attemptVerification.post(strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups/\(id)/attempt_verification")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -399,8 +425,18 @@ extension SignUp {
   /// Returns the current sign up.
   @discardableResult @MainActor
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    let request = ClerkFAPI.v1.client.signUps.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-    return try await Container.shared.apiClient().send(request).value.response
+    let request = Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups/\(id)")
+      
+    if let rotatingTokenNonce {
+      request
+        .add(queryItems: [.init(name: "rotating_token_nonce", value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))])
+    }
+    
+    return try await request
+      .data(type: ClientResponse<SignUp>.self)
+      .async()
+      .response
   }
 
 }
