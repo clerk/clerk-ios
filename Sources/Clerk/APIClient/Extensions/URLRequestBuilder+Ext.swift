@@ -10,6 +10,17 @@ import RequestBuilder
 
 extension URLRequestBuilder {
 
+  /// Adds the current Clerk session id to request URL.
+  @discardableResult @MainActor
+  func addClerkSessionId() -> Self {
+    map {
+      if let url = request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+        components.queryItems = (components.queryItems ?? []) + [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+        $0.request.url = components.url
+      }
+    }
+  }
+
   /// Given an encodable data type, sets the request body to x-www-form-urlencoded data .
   @discardableResult
   public func body<DataType: Encodable>(formEncode data: DataType, encoder: DataEncoder? = nil) -> Self {

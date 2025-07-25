@@ -60,11 +60,14 @@ extension EmailAddress {
   ///     - email: The email address to add to the current user.
   @discardableResult @MainActor
   public static func create(_ email: String) async throws -> EmailAddress {
-    let request = ClerkFAPI.v1.me.emailAddresses.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: ["email_address": email]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "v1/me/email_addresses")
+      .addClerkSessionId()
+      .method(.post)
+      .body(fields: ["email_address": email])
+      .data(type: ClientResponse<EmailAddress>.self)
+      .async()
+      .response
   }
 
   /// Prepares the verification process for this email address.
@@ -82,11 +85,14 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-    let request = ClerkFAPI.v1.me.emailAddresses.id(id).prepareVerification.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: strategy.requestBody
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "v1/me/email_addresses/\(id)/prepare_verification")
+      .addClerkSessionId()
+      .method(.post)
+      .body(formEncode: strategy.requestBody)
+      .data(type: ClientResponse<EmailAddress>.self)
+      .async()
+      .response
   }
 
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -103,20 +109,26 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-    let request = ClerkFAPI.v1.me.emailAddresses.id(id).attemptVerification.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: strategy.requestBody
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "v1/me/email_addresses/\(id)/attempt_verification")
+      .addClerkSessionId()
+      .method(.post)
+      .body(formEncode: strategy.requestBody)
+      .data(type: ClientResponse<EmailAddress>.self)
+      .async()
+      .response
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.emailAddresses.id(id).delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/email_addresses/\(id)")
+      .addClerkSessionId()
+      .method(.delete)
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
 }
