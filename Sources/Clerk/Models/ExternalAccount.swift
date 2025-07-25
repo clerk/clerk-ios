@@ -99,13 +99,31 @@ extension ExternalAccount {
   ///                                         a private browsing experience.
   @discardableResult @MainActor
   public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
-    try await Container.shared.externalAccountService().reauthorize(self, prefersEphemeralWebBrowserSession)
+    guard
+      let redirectUrl = verification?.externalVerificationRedirectUrl,
+      let url = URL(string: redirectUrl)
+    else {
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    }
+
+    let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+
+    _ = try await authSession.start()
+
+    try await Client.get()
+    guard let externalAccount = await Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
+      throw ClerkClientError(message: "Something went wrong. Please try again.")
+    }
+    return externalAccount
   }
 
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await Container.shared.externalAccountService().destroy(self)
+    let request = ClerkFAPI.v1.me.externalAccounts.id(id).delete(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 }
 

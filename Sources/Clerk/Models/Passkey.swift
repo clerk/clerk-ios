@@ -74,25 +74,42 @@ extension Passkey {
   /// Creates a new passkey
   @discardableResult @MainActor
   public static func create() async throws -> Passkey {
-    try await Container.shared.passkeyService().create()
+    let request = ClerkFAPI.v1.me.passkeys.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    try await Container.shared.passkeyService().update(self, name)
+    let request = ClerkFAPI.v1.me.passkeys.withId(id).patch(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: ["name": name]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Attempts to verify the passkey with a credential.
   @discardableResult @MainActor
   public func attemptVerification(credential: String) async throws -> Passkey {
-    try await Container.shared.passkeyService().attemptVerification(self, credential)
+    let request = ClerkFAPI.v1.me.passkeys.withId(id).attemptVerification.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: [
+        "strategy": "passkey",
+        "public_key_credential": credential,
+      ]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.passkeyService().delete(self)
+    let request = ClerkFAPI.v1.me.passkeys.withId(id).delete(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
 }

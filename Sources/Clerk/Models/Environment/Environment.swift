@@ -32,7 +32,10 @@ extension Clerk.Environment {
 
   @MainActor
   static func get() async throws -> Clerk.Environment {
-    return try await Container.shared.environmentService().get()
+    let request = ClerkFAPI.v1.environment.get
+    let environment = try await Container.shared.apiClient().send(request).value
+    Clerk.shared.environment = environment
+    return environment
   }
 
 }

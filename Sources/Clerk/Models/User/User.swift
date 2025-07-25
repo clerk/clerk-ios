@@ -5,8 +5,10 @@
 //  Created by Mike Pitre on 10/16/23.
 //
 
+import AuthenticationServices
 import FactoryKit
 import Foundation
+import Get
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
 ///
@@ -215,7 +217,11 @@ extension User {
   /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    try await Container.shared.userService().update(params)
+    let request = ClerkFAPI.v1.me.update(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: params
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
   
   /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
@@ -223,21 +229,26 @@ extension User {
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    try await Container.shared.userService().createBackupCodes()
+    let request = Request<ClientResponse<BackupCodeResource>>(
+      path: "/v1/me/backup_codes",
+      method: .post,
+      query: [("_clerk_session_id", Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
   /// - Parameter email: The value of the email address.
   @discardableResult @MainActor
   public func createEmailAddress(_ email: String) async throws -> EmailAddress {
-    try await Container.shared.userService().createEmailAddress(email)
+    try await EmailAddress.create(email)
   }
 
   /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
   /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
   @discardableResult @MainActor
   public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await Container.shared.userService().createPhoneNumber(phoneNumber)
+    try await PhoneNumber.create(phoneNumber)
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -249,7 +260,15 @@ extension User {
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
   public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-    try await Container.shared.userService().createExternalAccountOAuth(provider, redirectUrl, additionalScopes)
+    let request = ClerkFAPI.v1.me.externalAccounts.create(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: [
+        "strategy": provider.strategy,
+        "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
+        "additional_scopes": additionalScopes?.joined(separator: ","),
+      ]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -260,7 +279,14 @@ extension User {
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    try await Container.shared.userService().createExternalAccountIDToken(provider, idToken)
+    let request = ClerkFAPI.v1.me.externalAccounts.create(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: [
+        "strategy": provider.strategy,
+        "token": idToken,
+      ]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
@@ -269,7 +295,47 @@ extension User {
     /// - Returns: ``Passkey``
     @discardableResult @MainActor
     public func createPasskey() async throws -> Passkey {
-      try await Container.shared.userService().createPasskey()
+      let passkey = try await Passkey.create()
+
+      guard let challenge = passkey.challenge else {
+        throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+      }
+
+      guard let name = passkey.username else {
+        throw ClerkClientError(message: "Unable to get the username for the passkey.")
+      }
+
+      guard let userId = passkey.userId else {
+        throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+      }
+
+      let manager = PasskeyHelper()
+      let authorization = try await manager.createPasskey(
+        challenge: challenge,
+        name: name,
+        userId: userId
+      )
+
+      guard
+        let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+        let rawAttestationObject = credentialRegistration.rawAttestationObject
+      else {
+        throw ClerkClientError(message: "Invalid credential type.")
+      }
+
+      let publicKeyCredential: [String: any Encodable] = [
+        "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+        "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+        "type": "public-key",
+        "response": [
+          "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+          "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+        ],
+      ]
+
+      let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+
+      return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
     }
   #endif
 
@@ -278,7 +344,10 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    try await Container.shared.userService().createTOTP()
+    let request = ClerkFAPI.v1.me.totp.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -288,13 +357,20 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    try await Container.shared.userService().verifyTOTP(code)
+    let request = ClerkFAPI.v1.me.totp.attemptVerification.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: ["code": code]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    try await Container.shared.userService().disableTOTP()
+    let request = ClerkFAPI.v1.me.totp.delete(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -307,7 +383,15 @@ extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
+    let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
+      path: "/v1/me/organization_invitations",
+      query: [
+        ("offset", String(initialPage)),
+        ("limit", String(pageSize)),
+        ("_clerk_session_id", Clerk.shared.session?.id),
+      ]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -320,7 +404,16 @@ extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await Container.shared.userService().getOrganizationMemberships(initialPage, pageSize)
+    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
+      path: "/v1/me/organization_memberships",
+      query: [
+        ("offset", String(initialPage)),
+        ("limit", String(pageSize)),
+        ("paginated", "true"),
+        ("_clerk_session_id", Clerk.shared.session?.id),
+      ]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Retrieves a list of organization suggestions for the user.
@@ -335,7 +428,16 @@ extension User {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await Container.shared.userService().getOrganizationSuggestions(initialPage, pageSize, status)
+    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
+      path: "/v1/me/organization_suggestions",
+      query: [
+        ("offset", String(initialPage)),
+        ("limit", String(pageSize)),
+        ("status", status),
+        ("_clerk_session_id", Clerk.shared.session?.id),
+      ].filter({ $1 != nil })
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Retrieves all active sessions for this user.
@@ -343,13 +445,23 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    try await Container.shared.userService().getSessions(self)
+    let request = ClerkFAPI.v1.me.sessions.active.get(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+
+    let sessions = try await Container.shared.apiClient().send(request).value
+    Clerk.shared.sessionsByUserId[id] = sessions
+    return sessions
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.
   @discardableResult @MainActor
   public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-    try await Container.shared.userService().updatePassword(params)
+    let request = ClerkFAPI.v1.me.changePassword.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: params
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -357,19 +469,37 @@ extension User {
   ///     - imageData: The image, in data format, to set as the user's profile image.
   @discardableResult @MainActor
   public func setProfileImage(imageData: Data) async throws -> ImageResource {
-    try await Container.shared.userService().setProfileImage(imageData)
+    let boundary = UUID().uuidString
+    var data = Data()
+    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
+    data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+    data.append(imageData)
+    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+    let request = ClerkFAPI.v1.me.profileImage.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
+      headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+    )
+    return try await Container.shared.apiClient().upload(for: request, from: data).value.response
   }
 
   /// Deletes the user's profile image.
   @discardableResult @MainActor
   public func deleteProfileImage() async throws -> DeletedObject {
-    try await Container.shared.userService().deleteProfileImage()
+    let request = ClerkFAPI.v1.me.profileImage.delete(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.userService().delete()
+    let request = ClerkFAPI.v1.me.delete(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
 }

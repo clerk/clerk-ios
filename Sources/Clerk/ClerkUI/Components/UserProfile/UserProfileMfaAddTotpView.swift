@@ -163,17 +163,6 @@
   }
 
   #Preview {
-    Container.shared.userService.preview {
-      var service = UserService.liveValue
-
-      service.createTOTP = {
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
-    }
-
     UserProfileMfaAddTotpView(totp: .mock)
       .environment(\.clerk, .mock)
       .environment(\.clerkTheme, .clerk)

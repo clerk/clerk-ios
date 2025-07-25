@@ -195,7 +195,10 @@ extension Session {
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
   public func revoke() async throws -> Session {
-    try await Container.shared.sessionService().revoke(self)
+    let request = ClerkFAPI.v1.me.sessions.withId(id).revoke.post(
+      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
+    )
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
   /**

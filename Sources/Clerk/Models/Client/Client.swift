@@ -58,7 +58,8 @@ extension Client {
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
-    try await Container.shared.clientService().get()
+    let request = ClerkFAPI.v1.client.get
+    return try await Container.shared.apiClient().send(request).value.response
   }
 
 }

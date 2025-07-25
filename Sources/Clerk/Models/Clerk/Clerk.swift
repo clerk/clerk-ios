@@ -40,7 +40,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let client = client {
-        try? Container.shared.clerkService().saveClientToKeychain(client)
+        try? saveClientToKeychain(client: client)
       } else {
         try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
       }
@@ -92,7 +92,7 @@ final public class Clerk {
   /// The Clerk environment for the instance.
   var environment = Environment() {
     didSet {
-      try? Container.shared.clerkService().saveEnvironmentToKeychain(environment)
+      try? saveEnvironmentToKeychain(environment: environment)
     }
   }
 
@@ -123,7 +123,7 @@ final public class Clerk {
       }
     }
   }
-  
+
   /// The configuration settings for this Clerk instance.
   var settings: Settings = .init() {
     didSet {
@@ -173,12 +173,12 @@ extension Clerk {
       setupNotificationObservers()
 
       // Both of these are automatically applied to the shared instance:
-      async let client = Client.get() // via middleware
-      async let environment = Environment.get() // via the function itself
-      
+      async let client = Client.get()  // via middleware
+      async let environment = Environment.get()  // via the function itself
+
       _ = try await client
       attestDeviceIfNeeded(environment: try await environment)
-      
+
       isLoaded = true
     } catch {
       throw error
@@ -201,7 +201,13 @@ extension Clerk {
   /// try await clerk.signOut()
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
-    try await Container.shared.clerkService().signOut(sessionId)
+    if let sessionId {
+      let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
+      try await Container.shared.apiClient().send(request)
+    } else {
+      let request = ClerkFAPI.v1.client.sessions.delete
+      try await Container.shared.apiClient().send(request)
+    }
   }
 
   /// A method used to set the active session.
@@ -211,7 +217,12 @@ extension Clerk {
   /// - Parameter sessionId: The session ID to be set as active.
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await Container.shared.clerkService().setActive(sessionId, organizationId)
+    let request = Request<ClientResponse<Session>>(
+      path: "v1/client/sessions/\(sessionId)/touch",
+      method: .post,
+      body: ["active_organization_id": organizationId ?? ""]  // nil key/values get dropped, use an empty string to set no active org
+    )
+    try await Container.shared.apiClient().send(request)
   }
 }
 
@@ -288,7 +299,7 @@ extension Clerk {
 
   private func loadCachedClient() {
     do {
-      if let cachedClient = try Container.shared.clerkService().loadClientFromKeychain() {
+      if let cachedClient = try loadClientFromKeychain() {
         // Only set cached client if we don't already have one
         // This prevents overwriting fresh data during load()
         if self.client == nil {
@@ -303,7 +314,7 @@ extension Clerk {
 
   private func loadCachedEnvironment() {
     do {
-      if let cachedEnvironment = try Container.shared.clerkService().loadEnvironmentFromKeychain() {
+      if let cachedEnvironment = try loadEnvironmentFromKeychain() {
         // Only set cached environment if we don't already have fresh data
         // This prevents overwriting fresh data during load()
         if self.environment.isEmpty {
@@ -314,6 +325,34 @@ extension Clerk {
       // If loading fails, continue without cached environment
       ClerkLogger.logError(error, message: "Failed to load cached environment")
     }
+  }
+
+  private func saveClientToKeychain(client: Client) throws {
+    let encoder = JSONEncoder.clerkEncoder
+    let clientData = try encoder.encode(client)
+    try Container.shared.keychain().set(clientData, forKey: "cachedClient")
+  }
+
+  private func loadClientFromKeychain() throws -> Client? {
+    guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
+      return nil
+    }
+    let decoder = JSONDecoder.clerkDecoder
+    return try decoder.decode(Client.self, from: clientData)
+  }
+
+  private func saveEnvironmentToKeychain(environment: Clerk.Environment) throws {
+    let encoder = JSONEncoder.clerkEncoder
+    let environmentData = try encoder.encode(environment)
+    try Container.shared.keychain().set(environmentData, forKey: "cachedEnvironment")
+  }
+
+  private func loadEnvironmentFromKeychain() throws -> Environment? {
+    guard let environmentData = try? Container.shared.keychain().data(forKey: "cachedEnvironment") else {
+      return nil
+    }
+    let decoder = JSONDecoder.clerkDecoder
+    return try decoder.decode(Clerk.Environment.self, from: environmentData)
   }
 
 }
@@ -342,7 +381,7 @@ extension Clerk {
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
     return clerk
   }
-  
+
   @_spi(Internal)
   public static var mockSignedOut: Clerk {
     let clerk = Clerk()
