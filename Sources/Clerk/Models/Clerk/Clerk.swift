@@ -203,11 +203,17 @@ extension Clerk {
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
     if let sessionId {
-      let request = ClerkFAPI.v1.client.sessions.id(sessionId).remove.post
-      try await Container.shared.apiClient().send(request)
+      try await Container.shared.apiClient().request()
+        .add(path: "v1/client/sessions/\(sessionId)/remove")
+        .method(.post)
+        .data(type: ClientResponse<Session>.self)
+        .async()
     } else {
-      let request = ClerkFAPI.v1.client.sessions.delete
-      try await Container.shared.apiClient().send(request)
+      try await Container.shared.apiClient().request()
+        .add(path: "v1/client/sessions")
+        .method(.delete)
+        .data(type: ClientResponse<Client>.self)
+        .async()
     }
   }
 
@@ -218,12 +224,12 @@ extension Clerk {
   /// - Parameter sessionId: The session ID to be set as active.
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    let request = Request<ClientResponse<Session>>(
-      path: "v1/client/sessions/\(sessionId)/touch",
-      method: .post,
-      body: ["active_organization_id": organizationId ?? ""]  // nil key/values get dropped, use an empty string to set no active org
-    )
-    try await Container.shared.apiClient().send(request)
+    try await Container.shared.apiClient().request()
+      .add(path: "v1/client/sessions/\(sessionId)/touch")
+      .method(.post)
+      .body(fields: ["active_organization_id": organizationId])
+      .data(type: ClientResponse<Session>.self)
+      .async()
   }
 }
 
