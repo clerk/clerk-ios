@@ -24,6 +24,7 @@ let package = Package(
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
+    .package(url: "https://github.com/hmlongco/RequestBuilder", branch: "main"),
     .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
     .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1")),
   ],
@@ -36,6 +37,7 @@ let package = Package(
         .product(name: "Get", package: "Get"),
         .product(name: "Kingfisher", package: "Kingfisher"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
+        .product(name: "RequestBuilder", package: "RequestBuilder"),
         .product(name: "SimpleKeychain", package: "SimpleKeychain")
       ],
       swiftSettings: [

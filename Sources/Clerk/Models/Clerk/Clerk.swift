@@ -9,6 +9,7 @@ import FactoryKit
 import Foundation
 import Get
 import RegexBuilder
+import RequestBuilder
 import SimpleKeychain
 
 #if canImport(UIKit)
@@ -109,23 +110,23 @@ final public class Clerk {
   private(set) var frontendApiUrl: String = "" {
     didSet {
       Container.shared.apiClient.register { [frontendApiUrl] in
-        APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
-          configuration.delegate = ClerkAPIClientDelegate()
-          configuration.decoder = .clerkDecoder
-          configuration.encoder = .clerkEncoder
-          configuration.sessionConfiguration.httpAdditionalHeaders = [
-            "Content-Type": "application/x-www-form-urlencoded",
-            "clerk-api-version": "2024-10-01",
-            "x-ios-sdk-version": Clerk.version,
-            "x-mobile": "1",
-          ]
-        }
+        BaseSessionManager(base: URL(string: frontendApiUrl), session: .ephemeral)
+          .set(encoder: .clerkEncoder)
+          .set(decoder: .clerkDecoder)
+          .interceptor(URLRequestInterceptorClerkHeaders())
+          .interceptor(URLRequestInterceptorQueryItems())
+          .interceptor(URLRequestInterceptorInvalidAuth())
+          .interceptor(URLRequestInterceptorDeviceAssertion())
+          .interceptor(URLRequestInterceptorDeviceTokenSaving())
+          .interceptor(URLRequestInterceptorClientSync())
+          .interceptor(URLRequestInterceptorEventEmitter())
+          .interceptor(URLRequestInterceptorClerkErrorThrowing())
       }
     }
   }
 
   /// The configuration settings for this Clerk instance.
-  var settings: Settings = .init() {
+  nonisolated var settings: Settings = .init() {
     didSet {
       Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
         SimpleKeychain(

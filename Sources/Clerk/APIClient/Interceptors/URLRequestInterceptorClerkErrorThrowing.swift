@@ -1,22 +1,25 @@
 //
-//  ErrorThrowingMiddleware.swift
+//  URLRequestInterceptorClerkErrorThrowing.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/8/25.
 //
 
 import Foundation
-import Get
+import RequestBuilder
 
-struct ErrorThrowingMiddleware {
+final class URLRequestInterceptorClerkErrorThrowing: URLRequestInterceptor, @unchecked Sendable {
 
-  static func process(_ response: HTTPURLResponse, data: Data) throws {
+  var parent: URLSessionManager!
 
-    // If our response is an error status code...
-    guard (200..<300).contains(response.statusCode) else {
+  func data(for request: URLRequest) async throws -> (Data?, HTTPURLResponse?) {
+    let (data, response) = try await parent.data(for: request)
+
+    if let response, response.isError {
 
       // ...and the response has a ClerkError body throw a custom clerk error
-      if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
+      if let data,
+        let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
         var clerkAPIError = clerkErrorResponse.errors.first
       {
         clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
@@ -29,15 +32,16 @@ struct ErrorThrowingMiddleware {
       }
 
       // ...else throw a generic api error
-      let apiError = APIError.unacceptableStatusCode(response.statusCode)
+      let error = URLError(.badServerResponse)
       ClerkLogger.logNetworkError(
-        apiError,
+        error,
         endpoint: response.url?.absoluteString ?? "unknown",
         statusCode: response.statusCode
       )
-      throw apiError
+      throw error
     }
 
+    // fallback
+    return (data, response)
   }
-
 }
