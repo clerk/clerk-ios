@@ -217,11 +217,13 @@ extension User {
   /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    let request = ClerkFAPI.v1.me.update(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: params
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me")
+      .method(.patch)
+      .addClerkSessionId()
+      .data(type: ClientResponse<User>.self)
+      .async()
+      .response
   }
   
   /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
@@ -229,12 +231,13 @@ extension User {
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    let request = Request<ClientResponse<BackupCodeResource>>(
-      path: "/v1/me/backup_codes",
-      method: .post,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/backup_codes")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<BackupCodeResource>.self)
+      .async()
+      .response
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
@@ -260,15 +263,18 @@ extension User {
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
   public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-    let request = ClerkFAPI.v1.me.externalAccounts.create(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/external_accounts")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
         "strategy": provider.strategy,
         "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
         "additional_scopes": additionalScopes?.joined(separator: ","),
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+      ])
+      .data(type: ClientResponse<ExternalAccount>.self)
+      .async()
+      .response
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -279,14 +285,17 @@ extension User {
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    let request = ClerkFAPI.v1.me.externalAccounts.create(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/external_accounts")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
         "strategy": provider.strategy,
         "token": idToken,
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+      ])
+      .data(type: ClientResponse<ExternalAccount>.self)
+      .async()
+      .response
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
@@ -344,10 +353,13 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    let request = ClerkFAPI.v1.me.totp.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<TOTPResource>.self)
+      .async()
+      .response
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -357,20 +369,26 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    let request = ClerkFAPI.v1.me.totp.attemptVerification.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: ["code": code]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp/attempt_verification")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: ["code": code])
+      .data(type: ClientResponse<TOTPResource>.self)
+      .async()
+      .response
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.totp.delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -383,15 +401,16 @@ extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
-      path: "/v1/me/organization_invitations",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_invitations")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize))
+      ])
+      .data(type: ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>.self)
+      .async()
+      .response
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -404,16 +423,17 @@ extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
-      path: "/v1/me/organization_memberships",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("paginated", "true"),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_memberships")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "paginated", value: "true")
+      ])
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.self)
+      .async()
+      .response
   }
 
   /// Retrieves a list of organization suggestions for the user.
@@ -428,16 +448,17 @@ extension User {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
-      path: "/v1/me/organization_suggestions",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("status", status),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ].filter({ $1 != nil })
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_suggestions")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "status", value: status)
+      ].filter({ $0.value != nil }))
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>.self)
+      .async()
+      .response
   }
 
   /// Retrieves all active sessions for this user.
@@ -445,11 +466,12 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    let request = ClerkFAPI.v1.me.sessions.active.get(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-
-    let sessions = try await Container.shared.apiClient().send(request).value
+    let sessions = try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/sessions/active")
+      .addClerkSessionId()
+      .data(type: [Session].self)
+      .async()
+    
     Clerk.shared.sessionsByUserId[id] = sessions
     return sessions
   }
@@ -457,11 +479,14 @@ extension User {
   /// Updates the user's password. Passwords must be at least 8 characters long.
   @discardableResult @MainActor
   public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-    let request = ClerkFAPI.v1.me.changePassword.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: params
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/change_password")
+      .method(.post)
+      .body(formEncode: params)
+      .addClerkSessionId()
+      .data(type: ClientResponse<User>.self)
+      .async()
+      .response
   }
 
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -476,30 +501,41 @@ extension User {
     data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
     data.append(imageData)
     data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-
-    let request = ClerkFAPI.v1.me.profileImage.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-    )
-    return try await Container.shared.apiClient().upload(for: request, from: data).value.response
+    
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/profile_image")
+      .method(.post)
+      .with(handler: {
+        $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      })
+      .addClerkSessionId()
+      .data(type: ClientResponse<ImageResource>.self)
+      .async()
+      .response
   }
 
   /// Deletes the user's profile image.
   @discardableResult @MainActor
   public func deleteProfileImage() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.profileImage.delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/profile_image")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
 }
