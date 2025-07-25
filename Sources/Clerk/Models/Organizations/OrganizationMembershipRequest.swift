@@ -52,21 +52,23 @@ extension OrganizationMembershipRequest {
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationMembershipRequest {
-    let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-      path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/accept",
-      method: .post
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/accept")
+      .method(.post)
+      .data(type: ClientResponse<OrganizationMembershipRequest>.self)
+      .async()
+      .response
   }
 
   /// Rejects the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func reject() async throws -> OrganizationMembershipRequest {
-    let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-      path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/reject",
-      method: .post
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/reject")
+      .method(.post)
+      .data(type: ClientResponse<OrganizationMembershipRequest>.self)
+      .async()
+      .response
   }
 }
 

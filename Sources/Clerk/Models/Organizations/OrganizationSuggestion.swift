@@ -82,14 +82,13 @@ extension OrganizationSuggestion {
   /// - Returns: The accepted ``OrganizationSuggestion``.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationSuggestion {
-    let request = Request<ClientResponse<OrganizationSuggestion>>(
-      path: "/v1/me/organization_suggestions/\(id)/accept",
-      method: .post,
-      query: [
-        ("_clerk_session_id", Clerk.shared.session?.id)
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_suggestions/\(id)/accept")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<OrganizationSuggestion>.self)
+      .async()
+      .response
   }
 
 }
