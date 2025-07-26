@@ -95,7 +95,7 @@
       }
       .clerkErrorPresenting($error)
       .onChange(of: removeResource) {
-        if $0 != nil { isConfirmingRemoval = true }
+        if $1 != nil { isConfirmingRemoval = true }
       }
       .sheet(item: $addPhoneNumberDestination) {
         UserProfileAddPhoneView(desintation: $0)

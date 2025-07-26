@@ -78,7 +78,7 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
     
-    try await Container.shared.apiClient().request()
+    _ = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/device_attestation/verify")
       .method(.post)
       .body(formEncode: body)
@@ -126,7 +126,7 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
     
-    try await Container.shared.apiClient().request()
+    _ = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/verify")
       .method(.post)
       .body(formEncode: body)

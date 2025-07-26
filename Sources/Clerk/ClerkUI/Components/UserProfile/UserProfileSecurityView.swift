@@ -76,10 +76,10 @@
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
       .task {
-        try? await user?.getSessions()
+        _ = try? await user?.getSessions()
       }
       .task {
-        try? await Client.get()
+        _ = try? await Client.get()
       }
       .sheet(item: $sharedState.presentedAddMfaType) {
         $0.view

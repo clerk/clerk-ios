@@ -41,7 +41,7 @@
       }
       .animation(.default, value: isRunning)
       .onChange(of: isRunning) {
-        onIsRunningChanged?($0)
+        onIsRunningChanged?($1)
       }
     }
   }

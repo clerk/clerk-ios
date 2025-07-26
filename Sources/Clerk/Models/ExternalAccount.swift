@@ -106,12 +106,12 @@ extension ExternalAccount {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
 
     _ = try await authSession.start()
 
     try await Client.get()
-    guard let externalAccount = await Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
+    guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
       throw ClerkClientError(message: "Something went wrong. Please try again.")
     }
     return externalAccount

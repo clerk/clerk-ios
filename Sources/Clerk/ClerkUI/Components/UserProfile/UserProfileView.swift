@@ -239,10 +239,10 @@
           await getSessionsOnAllDevices()
         }
         .task {
-          try? await Clerk.Environment.get()
+          _ = try? await Clerk.Environment.get()
         }
         .task {
-          try? await Client.get()
+          _ = try? await Client.get()
         }
         .environment(\.userProfileSharedState, sharedState)
       }
@@ -285,6 +285,7 @@
       case profileDetail
       case security
 
+      @MainActor
       @ViewBuilder
       var view: some View {
         switch self {

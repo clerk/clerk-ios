@@ -137,7 +137,7 @@
 
     @ViewBuilder
     private var menu: some View {
-      KFImage(URL(string: user.imageUrl ?? ""))
+      KFImage(URL(string: user.imageUrl))
         .resizable()
         .fade(duration: 0.25)
         .placeholder { progress in

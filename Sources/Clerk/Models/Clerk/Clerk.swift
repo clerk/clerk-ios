@@ -205,13 +205,13 @@ extension Clerk {
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
     if let sessionId {
-      try await Container.shared.apiClient().request()
+      _ = try await Container.shared.apiClient().request()
         .add(path: "/v1/client/sessions/\(sessionId)/remove")
         .method(.post)
         .data(type: ClientResponse<Session>.self)
         .async()
     } else {
-      try await Container.shared.apiClient().request()
+      _ = try await Container.shared.apiClient().request()
         .add(path: "/v1/client/sessions")
         .method(.delete)
         .data(type: ClientResponse<Client>.self)
@@ -226,7 +226,7 @@ extension Clerk {
   /// - Parameter sessionId: The session ID to be set as active.
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await Container.shared.apiClient().request()
+    _ = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/sessions/\(sessionId)/touch")
       .method(.post)
       .body(fields: ["active_organization_id": organizationId])
@@ -282,7 +282,7 @@ extension Clerk {
     sessionPollingTask = Task(priority: .background) {
       repeat {
         if let session = session {
-          try? await session.getToken()
+          _ = try? await session.getToken()
         }
         try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
       } while !Task.isCancelled

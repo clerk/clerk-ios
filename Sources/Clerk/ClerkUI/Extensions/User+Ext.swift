@@ -49,19 +49,19 @@
     var usernameForPasswordKeeper: String {
       guard let userSettings = Clerk.shared.environment.userSettings else { return "" }
 
-      if userSettings.attributes.contains { $0 == "username" && $1.enabled && $1.usedForFirstFactor },
+      if userSettings.attributes.contains(where: { $0 == "username" && $1.enabled && $1.usedForFirstFactor }),
         let username
       {
         return username
       }
 
-      if userSettings.attributes.contains { $0 == "email_address" && $1.enabled && $1.usedForFirstFactor },
+      if userSettings.attributes.contains(where: { $0 == "email_address" && $1.enabled && $1.usedForFirstFactor }),
         let email = primaryEmailAddress?.emailAddress
       {
         return email
       }
 
-      if userSettings.attributes.contains { $0 == "phone_number" && $1.enabled && $1.usedForFirstFactor },
+      if userSettings.attributes.contains(where: { $0 == "phone_number" && $1.enabled && $1.usedForFirstFactor }),
         let phone = primaryPhoneNumber?.phoneNumber
       {
         return phone

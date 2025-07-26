@@ -13,7 +13,7 @@
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
-    
+
     @State private var error: Error?
 
     var signIn: SignIn? {
@@ -137,19 +137,14 @@
   extension SignInFactorOneForgotPasswordView {
 
     func resetPassword() async {
-      do {
-        guard var signIn, let resetFactor = signIn.resetPasswordFactor else {
-          authState.path = []
-          return
-        }
-        
-        authState.path.append(
-          AuthView.Destination.signInFactorOne(factor: resetFactor)
-        )
-      } catch {
-        self.error = error
-        ClerkLogger.error("Failed to reset password", error: error)
+      guard let signIn, let resetFactor = signIn.resetPasswordFactor else {
+        authState.path = []
+        return
       }
+
+      authState.path.append(
+        AuthView.Destination.signInFactorOne(factor: resetFactor)
+      )
     }
 
     func signInWithProvider(_ provider: OAuthProvider) async {
@@ -158,24 +153,25 @@
           authState.path = []
           return
         }
-        
+
         var result: TransferFlowResult
-        
+
         if provider == .apple {
           result = try await SignInWithAppleUtils.signIn()
         } else {
-          result = try await signIn
+          result =
+            try await signIn
             .prepareFirstFactor(strategy: .oauth(provider: provider))
             .authenticateWithRedirect()
         }
-        
+
         switch result {
         case .signIn(let signIn):
           authState.setToStepForStatus(signIn: signIn)
         case .signUp(let signUp):
           authState.setToStepForStatus(signUp: signUp)
         }
-        
+
       } catch {
         if error.isUserCancelledError { return }
         self.error = error

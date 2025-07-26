@@ -310,7 +310,7 @@ extension SignIn {
         throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
       }
 
-      let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+      let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
       let callbackUrl = try await authSession.start()
       let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
       return transferFlowResult
@@ -348,7 +348,7 @@ extension SignIn {
         throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
       }
 
-      let authSession = await WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+      let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
       let callbackUrl = try await authSession.start()
       let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
       return transferFlowResult

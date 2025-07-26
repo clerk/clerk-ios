@@ -55,7 +55,7 @@
   }
 
   #Preview {
-    @Environment(\.clerkTheme) var theme
+    @Previewable @Environment(\.clerkTheme) var theme
 
     VStack(spacing: 0) {
       ScrollView {

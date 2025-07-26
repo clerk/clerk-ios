@@ -290,7 +290,7 @@ extension SignUp {
         throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
       }
 
-      let authSession = await WebAuthentication(
+      let authSession = WebAuthentication(
         url: url,
         prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
       )
@@ -334,7 +334,7 @@ extension SignUp {
         throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
       }
 
-      let authSession = await WebAuthentication(
+      let authSession = WebAuthentication(
         url: url,
         prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
       )

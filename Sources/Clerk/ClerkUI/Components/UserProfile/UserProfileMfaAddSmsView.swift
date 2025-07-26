@@ -25,6 +25,7 @@
     enum Destination: Hashable {
       case backupCodes([String])
       
+      @MainActor
       @ViewBuilder
       var view: some View {
         switch self {
