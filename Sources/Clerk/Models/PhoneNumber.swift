@@ -149,7 +149,7 @@ extension PhoneNumber {
       .add(path: "/v1/me/phone_numbers/\(id)")
       .method(.patch)
       .addClerkSessionId()
-      .body(formEncode: ["reserved_for_second_factor": reservedForSecondFactor])
+      .body(formEncode: ["reserved_for_second_factor": reserved])
       .data(type: ClientResponse<PhoneNumber>.self)
       .async()
       .response

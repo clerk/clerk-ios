@@ -86,7 +86,7 @@ extension EmailAddress {
   @discardableResult @MainActor
   public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
     try await Container.shared.apiClient().request()
-      .add(path: "v1/me/email_addresses/\(id)/prepare_verification")
+      .add(path: "/v1/me/email_addresses/\(id)/prepare_verification")
       .addClerkSessionId()
       .method(.post)
       .body(formEncode: strategy.requestBody)
@@ -110,7 +110,7 @@ extension EmailAddress {
   @discardableResult @MainActor
   public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
     try await Container.shared.apiClient().request()
-      .add(path: "v1/me/email_addresses/\(id)/attempt_verification")
+      .add(path: "/v1/me/email_addresses/\(id)/attempt_verification")
       .addClerkSessionId()
       .method(.post)
       .body(formEncode: strategy.requestBody)

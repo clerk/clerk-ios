@@ -16,6 +16,7 @@ final class URLRequestInterceptorClerkHeaders: URLRequestInterceptor, @unchecked
   
   func request(forURL url: URL?) -> URLRequestBuilder {
     var headers = [
+      "Content-Type": "application/x-www-form-urlencoded",
       "clerk-api-version": "2024-10-01",
       "x-ios-sdk-version": Clerk.version,
       "x-mobile": "1",
