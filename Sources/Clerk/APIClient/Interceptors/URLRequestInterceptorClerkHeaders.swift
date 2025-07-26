@@ -9,6 +9,7 @@ import FactoryKit
 import Foundation
 import RequestBuilder
 
+@MainActor
 final class URLRequestInterceptorClerkHeaders: URLRequestInterceptor, @unchecked Sendable {
   
   var parent: URLSessionManager!
@@ -26,12 +27,20 @@ final class URLRequestInterceptorClerkHeaders: URLRequestInterceptor, @unchecked
       headers["Authorization"] = deviceToken
     }
 
-    if Clerk.shared.settings.debugMode, let client = try? Container.shared.clerkService().loadClientFromKeychain() {
+    if Clerk.shared.settings.debugMode, let client = Clerk.shared.client {
       headers["x-clerk-client-id"] = client.id
     }
     
     return URLRequestBuilder(manager: self, builder: parent.request(forURL: url))
       .add(headers: headers)
+  }
+  
+  private func loadClientFromKeychain() throws -> Client? {
+    guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
+      return nil
+    }
+    let decoder = JSONDecoder.clerkDecoder
+    return try decoder.decode(Client.self, from: clientData)
   }
   
 }

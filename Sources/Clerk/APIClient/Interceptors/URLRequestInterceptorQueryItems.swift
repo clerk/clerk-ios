@@ -13,7 +13,7 @@ final class URLRequestInterceptorQueryItems: URLRequestInterceptor, @unchecked S
   var parent: URLSessionManager!
 
   func request(forURL url: URL?) -> URLRequestBuilder {
-    URLRequestBuilder(manager: self, url: url)
+    URLRequestBuilder(manager: self, builder: parent.request(forURL: url))
       .add(queryItems: [.init(name: "_is_native", value: "true")])
   }
   

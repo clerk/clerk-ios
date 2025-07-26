@@ -92,16 +92,17 @@ extension Organization {
     name: String,
     slug: String? = nil
   ) async throws -> Organization {
-    let request = Request<ClientResponse<Organization>>(
-      path: "/v1/organizations/\(id)",
-      method: .patch,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)")
+      .method(.patch)
+      .addClerkSessionId()
+      .body(fields: [
         "name": name,
         "slug": slug,
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+      ])
+      .data(type: ClientResponse<Organization>.self)
+      .async()
+      .response
   }
 
   /// Deletes the organization. Only administrators can delete an organization.
@@ -109,12 +110,13 @@ extension Organization {
   /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    let request = Request<ClientResponse<DeletedObject>>(
-      path: "/v1/organizations/\(id)",
-      method: .delete,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
   /// Sets or replaces an organization's logo.
@@ -131,13 +133,17 @@ extension Organization {
     data.append(imageData)
     data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
 
-    let request = Request<ClientResponse<Organization>>(
-      path: "/v1/organizations/\(id)/logo",
-      method: .put,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/logo")
+      .method(.put)
+      .body(data: data)
+      .addClerkSessionId()
+      .with { request in
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      }
+      .data(type: ClientResponse<Organization>.self)
+      .async()
+      .response
   }
 
   /// Returns a ClerkPaginatedResponse of RoleResource objects.
@@ -152,15 +158,16 @@ extension Organization {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<RoleResource>>>(
-      path: "/v1/organizations/\(id)/roles",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/roles")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+      ])
+      .data(type: ClientResponse<ClerkPaginatedResponse<RoleResource>>.self)
+      .async()
+      .response
   }
 
   /// Retrieves the list of memberships for the currently active organization.
@@ -180,19 +187,22 @@ extension Organization {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    let roleQueries = role?.map { ("role[]", $0) } ?? []
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
-      path: "/v1/organizations/\(id)/memberships",
-      query: ([
-        ("query", query),
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("paginated", String(true)),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ] + roleQueries)
-      .filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    var queryItems = [
+      URLQueryItem(name: "query", value: query),
+      .init(name: "offset", value: String(initialPage)),
+      .init(name: "limit", value: String(pageSize)),
+      .init(name: "paginated", value: String(true)),
+    ]
+
+    queryItems += role?.map { URLQueryItem(name: "role[]", value: $0) } ?? []
+
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/roles")
+      .addClerkSessionId()
+      .add(queryItems: queryItems.filter({ $0.value != nil }))
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.self)
+      .async()
+      .response
   }
 
   /// Adds a user as a member to an organization.
@@ -213,16 +223,17 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    let request = Request<ClientResponse<OrganizationMembership>>(
-      path: "/v1/organizations/\(id)/memberships",
-      method: .post,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/memberships")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
         "user_id": userId,
         "role": role,
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+      ])
+      .data(type: ClientResponse<OrganizationMembership>.self)
+      .async()
+      .response
   }
 
   /// Updates a member of an organization.
@@ -240,13 +251,16 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    let request = Request<ClientResponse<OrganizationMembership>>(
-      path: "/v1/organizations/\(id)/memberships/\(userId)",
-      method: .patch,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      body: ["role": role]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/memberships/\(userId)")
+      .method(.patch)
+      .addClerkSessionId()
+      .body(fields: [
+        "role": role
+      ])
+      .data(type: ClientResponse<OrganizationMembership>.self)
+      .async()
+      .response
   }
 
   /// Removes a member from the organization based on the user ID.
@@ -258,12 +272,13 @@ extension Organization {
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
   public func removeMember(userId: String) async throws -> OrganizationMembership {
-    let request = Request<ClientResponse<OrganizationMembership>>(
-      path: "/v1/organizations/\(id)/memberships/\(userId)",
-      method: .delete,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/memberships/\(userId)")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<OrganizationMembership>.self)
+      .async()
+      .response
   }
 
   /// Retrieves the list of invitations for the currently active organization.
@@ -282,16 +297,18 @@ extension Organization {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
-      path: "/v1/organizations/\(id)/invitations",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("status", status),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/invitations")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "status", value: status),
+        .init(name: "paginated", value: String(true)),
+      ].filter({ $0.value != nil }))
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>.self)
+      .async()
+      .response
   }
 
   /// Creates and sends an invitation to the target email address to become a member with the specified role.
@@ -307,16 +324,17 @@ extension Organization {
     emailAddress: String,
     role: String
   ) async throws -> OrganizationInvitation {
-    let request = Request<ClientResponse<OrganizationInvitation>>(
-      path: "/v1/organizations/\(id)/invitations",
-      method: .post,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/invitations")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
         "email_address": emailAddress,
         "role": role,
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+      ])
+      .data(type: ClientResponse<OrganizationInvitation>.self)
+      .async()
+      .response
   }
 
   //    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
@@ -344,13 +362,16 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @discardableResult @MainActor
   public func createDomain(domainName: String) async throws -> OrganizationDomain {
-    let request = Request<ClientResponse<OrganizationDomain>>(
-      path: "/v1/organizations/\(id)/domains",
-      method: .post,
-      query: [("_clerk_session_id", Clerk.shared.session?.id)],
-      body: ["name": domainName]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/domains")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
+        "name": domainName,
+      ])
+      .data(type: ClientResponse<OrganizationDomain>.self)
+      .async()
+      .response
   }
 
   /// Retrieves the list of domains for the currently active organization.
@@ -369,16 +390,17 @@ extension Organization {
     pageSize: Int = 20,
     enrollmentMode: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
-      path: "/v1/organizations/\(id)/domains",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("enrollment_mode", enrollmentMode),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/domains")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "enrollment_mode", value: enrollmentMode),
+      ].filter({ $0.value != nil }))
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>.self)
+      .async()
+      .response
   }
 
   /// Retrieves a domain for an organization based on the given domain ID.
@@ -388,11 +410,12 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @MainActor
   public func getDomain(domainId: String) async throws -> OrganizationDomain {
-    let request = Request<ClientResponse<OrganizationDomain>>(
-      path: "/v1/organizations/\(id)/domains/\(domainId)",
-      query: [("_clerk_session_id", Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/domains/\(domainId)")
+      .addClerkSessionId()
+      .data(type: ClientResponse<OrganizationDomain>.self)
+      .async()
+      .response
   }
 
   /// Retrieves the list of membership requests for the currently active organization.
@@ -409,16 +432,17 @@ extension Organization {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
-      path: "/v1/organizations/\(id)/membership_requests",
-      query: [
-        ("offset", String(initialPage)),
-        ("limit", String(pageSize)),
-        ("status", status),
-        ("_clerk_session_id", Clerk.shared.session?.id),
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(id)/membership_requests")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "status", value: status),
+      ].filter({ $0.value != nil }))
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>.self)
+      .async()
+      .response
   }
 }
 

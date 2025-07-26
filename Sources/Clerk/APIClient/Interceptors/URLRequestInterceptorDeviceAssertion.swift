@@ -25,7 +25,7 @@ final class URLRequestInterceptorDeviceAssertion: URLRequestInterceptor, @unchec
       clerkAPIError.code == "requires_assertion"
     {
       do {
-        try await Self.assertionManager.performDeviceAssertion(request: request, error: error)
+        try await Self.assertionManager.performDeviceAssertion(request: request, error: clerkAPIError)
       } catch {
         ClerkLogger.logError(error, message: "Device assertion interceptor failed for request: \(request)")
         return (data, response)

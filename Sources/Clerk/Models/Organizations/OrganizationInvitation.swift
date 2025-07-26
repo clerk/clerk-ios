@@ -64,11 +64,12 @@ extension OrganizationInvitation {
   /// Revokes the invitation for the email it corresponds to.
   @discardableResult @MainActor
   public func revoke() async throws -> OrganizationInvitation {
-    let request = Request<ClientResponse<OrganizationInvitation>>(
-      path: "/v1/organizations/\(organizationId)/invitations/\(id)/revoke",
-      method: .post
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/organizations/\(organizationId)/invitations/\(id)/revoke")
+      .method(.post)
+      .data(type: ClientResponse<OrganizationInvitation>.self)
+      .async()
+      .response
   }
 
 }

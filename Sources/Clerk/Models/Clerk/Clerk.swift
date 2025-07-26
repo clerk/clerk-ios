@@ -110,9 +110,11 @@ final public class Clerk {
   private(set) var frontendApiUrl: String = "" {
     didSet {
       Container.shared.apiClient.register { [frontendApiUrl] in
-        BaseSessionManager(base: URL(string: frontendApiUrl), session: .ephemeral)
-          .set(encoder: .clerkEncoder)
-          .set(decoder: .clerkDecoder)
+        let base = URL(string: frontendApiUrl)
+        let session = URLSession(configuration: URLSessionConfiguration.ephemeral)
+        return BaseSessionManager(base: base, session: session)
+          .set(encoder: JSONEncoder.clerkEncoder)
+          .set(decoder: JSONDecoder.clerkDecoder)
           .interceptor(URLRequestInterceptorClerkHeaders())
           .interceptor(URLRequestInterceptorQueryItems())
           .interceptor(URLRequestInterceptorInvalidAuth())
@@ -126,7 +128,7 @@ final public class Clerk {
   }
 
   /// The configuration settings for this Clerk instance.
-  nonisolated var settings: Settings = .init() {
+  var settings: Settings = .init() {
     didSet {
       Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
         SimpleKeychain(
@@ -204,13 +206,13 @@ extension Clerk {
   public func signOut(sessionId: String? = nil) async throws {
     if let sessionId {
       try await Container.shared.apiClient().request()
-        .add(path: "v1/client/sessions/\(sessionId)/remove")
+        .add(path: "/v1/client/sessions/\(sessionId)/remove")
         .method(.post)
         .data(type: ClientResponse<Session>.self)
         .async()
     } else {
       try await Container.shared.apiClient().request()
-        .add(path: "v1/client/sessions")
+        .add(path: "/v1/client/sessions")
         .method(.delete)
         .data(type: ClientResponse<Client>.self)
         .async()
@@ -225,7 +227,7 @@ extension Clerk {
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
     try await Container.shared.apiClient().request()
-      .add(path: "v1/client/sessions/\(sessionId)/touch")
+      .add(path: "/v1/client/sessions/\(sessionId)/touch")
       .method(.post)
       .body(fields: ["active_organization_id": organizationId])
       .data(type: ClientResponse<Session>.self)
@@ -334,13 +336,13 @@ extension Clerk {
     }
   }
 
-  private func saveClientToKeychain(client: Client) throws {
+  func saveClientToKeychain(client: Client) throws {
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(client)
     try Container.shared.keychain().set(clientData, forKey: "cachedClient")
   }
 
-  private func loadClientFromKeychain() throws -> Client? {
+  func loadClientFromKeychain() throws -> Client? {
     guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
       return nil
     }
@@ -348,13 +350,13 @@ extension Clerk {
     return try decoder.decode(Client.self, from: clientData)
   }
 
-  private func saveEnvironmentToKeychain(environment: Clerk.Environment) throws {
+  func saveEnvironmentToKeychain(environment: Clerk.Environment) throws {
     let encoder = JSONEncoder.clerkEncoder
     let environmentData = try encoder.encode(environment)
     try Container.shared.keychain().set(environmentData, forKey: "cachedEnvironment")
   }
 
-  private func loadEnvironmentFromKeychain() throws -> Environment? {
+  func loadEnvironmentFromKeychain() throws -> Environment? {
     guard let environmentData = try? Container.shared.keychain().data(forKey: "cachedEnvironment") else {
       return nil
     }

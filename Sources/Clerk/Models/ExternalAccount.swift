@@ -120,10 +120,13 @@ extension ExternalAccount {
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.externalAccounts.id(id).delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/external_accounts/\(id)")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 }
 

@@ -505,9 +505,10 @@ extension User {
     return try await Container.shared.apiClient().request()
       .add(path: "/v1/me/profile_image")
       .method(.post)
-      .with(handler: {
-        $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-      })
+      .body(data: data)
+      .with { request in
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      }
       .addClerkSessionId()
       .data(type: ClientResponse<ImageResource>.self)
       .async()

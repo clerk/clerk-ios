@@ -32,8 +32,11 @@ extension Clerk.Environment {
 
   @MainActor
   static func get() async throws -> Clerk.Environment {
-    let request = ClerkFAPI.v1.environment.get
-    let environment = try await Container.shared.apiClient().send(request).value
+    let environment = try await Container.shared.apiClient().request()
+      .add(path: "/v1/environment")
+      .data(type: Clerk.Environment.self)
+      .async()
+    
     Clerk.shared.environment = environment
     return environment
   }
