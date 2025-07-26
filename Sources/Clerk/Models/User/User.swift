@@ -220,6 +220,7 @@ extension User {
     try await Container.shared.apiClient().request()
       .add(path: "/v1/me")
       .method(.patch)
+      .body(formEncode: params)
       .addClerkSessionId()
       .data(type: ClientResponse<User>.self)
       .async()
@@ -271,7 +272,7 @@ extension User {
         "strategy": provider.strategy,
         "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
         "additional_scopes": additionalScopes?.joined(separator: ","),
-      ])
+      ].filter({ $0.value != nil }))
       .data(type: ClientResponse<ExternalAccount>.self)
       .async()
       .response

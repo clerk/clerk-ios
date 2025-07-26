@@ -108,6 +108,7 @@ extension PhoneNumber {
       .add(path: "/v1/me/phone_numbers/\(id)/prepare_verification")
       .method(.post)
       .addClerkSessionId()
+      .body(fields: ["strategy": "phone_code"])
       .data(type: ClientResponse<PhoneNumber>.self)
       .async()
       .response

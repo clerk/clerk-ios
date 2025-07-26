@@ -123,7 +123,7 @@ extension EmailAddress {
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
     try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/email_addresses/\(id)")
+      .add(path: "/v1/me/email_addresses/\(id)")
       .addClerkSessionId()
       .method(.delete)
       .data(type: ClientResponse<DeletedObject>.self)
