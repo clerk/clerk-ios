@@ -132,8 +132,13 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.post(body: strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
@@ -154,8 +159,13 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.post(body: params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins")
+      .method(.post)
+      .body(formEncode: params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Resets a user's password.
@@ -168,8 +178,13 @@ extension SignIn {
   /// - Throws: An error if the password reset attempt fails.
   @discardableResult @MainActor
   public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).resetPassword.post(params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)/reset_password")
+      .method(.post)
+      .body(formEncode: params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Begins the first factor verification process.
@@ -184,8 +199,13 @@ extension SignIn {
   /// - Throws: An error if the first factor preparation fails.
   @discardableResult @MainActor
   public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).prepareFirstFactor.post(strategy.params(signIn: self))
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)/prepare_first_factor")
+      .method(.post)
+      .body(formEncode: strategy.params(signIn: self))
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Attempts to complete the first factor verification process.
@@ -201,8 +221,13 @@ extension SignIn {
   /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
   @discardableResult @MainActor
   public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).attemptFirstFactor.post(body: strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)/attempt_first_factor")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Begins the second factor verification process.
@@ -219,8 +244,13 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).prepareSecondFactor.post(strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)/prepare_second_factor")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   /// Attempts to complete the second factor verification process (2FA).
@@ -239,8 +269,13 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).attemptSecondFactor.post(strategy.params)
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)/attempt_second_factor")
+      .method(.post)
+      .body(formEncode: strategy.params)
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -447,9 +482,18 @@ extension SignIn {
   /// Returns the current sign-in.
   @discardableResult @MainActor
   public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    let request = ClerkFAPI.v1.client.signIns.id(id).get(rotatingTokenNonce: rotatingTokenNonce)
-    let response = try await Container.shared.apiClient().send(request)
-    return response.value.response
+    let request = Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)")
+    
+    if let rotatingTokenNonce {
+      request
+        .add(queryItems: [.init(name: "rotating_token_nonce", value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))])
+    }
+    
+    return try await request
+      .data(type: ClientResponse<SignIn>.self)
+      .async()
+      .response
   }
 }
 
