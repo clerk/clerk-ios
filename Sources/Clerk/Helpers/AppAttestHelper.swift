@@ -27,10 +27,16 @@ struct AppAttestHelper {
   /// - Returns: A challenge string received from the server.
   /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
   private static func getChallenge() async throws -> String {
-    let request = ClerkFAPI.v1.client.deviceAttestation.challenges.post
-    guard let challenge = try await Container.shared.apiClient().send(request).value["challenge"] else {
+    let response = try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/device_attestation/challenges")
+      .method(.post)
+      .data(type: [String: String].self)
+      .async()
+    
+    guard let challenge = response["challenge"] else {
       throw AttestationError.unableToGetChallengeFromServer
     }
+    
     return challenge
   }
 
@@ -71,9 +77,13 @@ struct AppAttestHelper {
       "attestation": attestation.base64EncodedString(),
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
-
-    let request = ClerkFAPI.v1.client.deviceAttestation.verify.post(body)
-    try await Container.shared.apiClient().send(request)
+    
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/device_attestation/verify")
+      .method(.post)
+      .body(formEncode: body)
+      .data(type: EmptyDecodable.self)
+      .async()
   }
 
   /// Creates an assertion using the attestation key.
@@ -115,9 +125,13 @@ struct AppAttestHelper {
       "platform": "ios",
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
-
-    let request = ClerkFAPI.v1.client.verify.post(body)
-    try await Container.shared.apiClient().send(request)
+    
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/verify")
+      .method(.post)
+      .body(formEncode: body)
+      .data(type: EmptyDecodable.self)
+      .async()
   }
 
   /// Checks whether a key ID is stored in the keychain.
