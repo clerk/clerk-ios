@@ -74,42 +74,55 @@ extension Passkey {
   /// Creates a new passkey
   @discardableResult @MainActor
   public static func create() async throws -> Passkey {
-    let request = ClerkFAPI.v1.me.passkeys.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/passkeys")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<Passkey>.self)
+      .async()
+      .response
   }
 
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    let request = ClerkFAPI.v1.me.passkeys.withId(id).patch(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: ["name": name]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/passkeys/\(id)")
+      .method(.patch)
+      .addClerkSessionId()
+      .body(fields: ["name": name])
+      .data(type: ClientResponse<Passkey>.self)
+      .async()
+      .response
   }
 
   /// Attempts to verify the passkey with a credential.
   @discardableResult @MainActor
   public func attemptVerification(credential: String) async throws -> Passkey {
-    let request = ClerkFAPI.v1.me.passkeys.withId(id).attemptVerification.post(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: [
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/passkeys/\(id)/attempt_verification")
+      .method(.post)
+      .addClerkSessionId()
+      .body(fields: [
         "strategy": "passkey",
-        "public_key_credential": credential,
-      ]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+        "public_key_credential": credential
+      ])
+      .data(type: ClientResponse<Passkey>.self)
+      .async()
+      .response
   }
 
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    let request = ClerkFAPI.v1.me.passkeys.withId(id).delete(
-      queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/passkeys/\(id)")
+      .method(.delete)
+      .addClerkSessionId()
+      .body(fields: ["name": name])
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
   }
 
 }
