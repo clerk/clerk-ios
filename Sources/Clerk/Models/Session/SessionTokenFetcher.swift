@@ -55,14 +55,18 @@ actor SessionTokenFetcher {
 
     var token: TokenResource?
 
-    let tokensRequest = ClerkFAPI.v1.client.sessions.id(session.id).tokens
-
     if let template = options.template {
-      let templateTokenRequest = tokensRequest.template(template).post()
-      token = try await Container.shared.apiClient().send(templateTokenRequest).value
+      token = try await Container.shared.apiClient().request()
+        .add(path: "/v1/client/sessions/\(session.id)/tokens/\(template)")
+        .method(.post)
+        .data(type: TokenResource?.self)
+        .async()
     } else {
-      let defaultTokenRequest = tokensRequest.post()
-      token = try await Container.shared.apiClient().send(defaultTokenRequest).value
+      token = try await Container.shared.apiClient().request()
+        .add(path: "/v1/client/sessions/\(session.id)/tokens")
+        .method(.post)
+        .data(type: TokenResource?.self)
+        .async()
     }
 
     if let token {
