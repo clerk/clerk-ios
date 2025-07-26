@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 import RequestBuilder
 
 final class URLRequestInterceptorDeviceAssertion: URLRequestInterceptor, @unchecked Sendable {

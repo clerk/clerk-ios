@@ -10,7 +10,7 @@ import Foundation
 import RequestBuilder
 
 @MainActor
-final class URLRequestInterceptorClerkHeaders: URLRequestInterceptor, @unchecked Sendable {
+final class URLRequestInterceptorClerkHeaders: @preconcurrency URLRequestInterceptor, @unchecked Sendable {
   
   var parent: URLSessionManager!
   

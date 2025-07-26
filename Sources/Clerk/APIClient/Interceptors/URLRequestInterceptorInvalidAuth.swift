@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 import RequestBuilder
 
 final class URLRequestInterceptorInvalidAuth: URLRequestInterceptor, @unchecked Sendable {

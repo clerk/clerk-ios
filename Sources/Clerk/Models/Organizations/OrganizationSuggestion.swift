@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {

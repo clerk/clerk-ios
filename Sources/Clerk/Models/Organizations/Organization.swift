@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
 public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable {
@@ -133,17 +132,19 @@ extension Organization {
     data.append(imageData)
     data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
 
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/organizations/\(id)/logo")
-      .method(.put)
-      .body(data: data)
-      .addClerkSessionId()
-      .with { request in
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-      }
-      .data(type: ClientResponse<Organization>.self)
-      .async()
-      .response
+    return try await Task.detached {
+      try await Container.shared.apiClient().request()
+        .add(path: "/v1/organizations/\(id)/logo")
+        .method(.put)
+        .body(data: data)
+        .addClerkSessionId()
+        .with { request in
+          request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        }
+        .data(type: ClientResponse<Organization>.self)
+        .async()
+        .response
+    }.value
   }
 
   /// Returns a ClerkPaginatedResponse of RoleResource objects.

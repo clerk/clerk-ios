@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The model that describes the request of a user to join an organization.
 public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {

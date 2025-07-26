@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
 public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {

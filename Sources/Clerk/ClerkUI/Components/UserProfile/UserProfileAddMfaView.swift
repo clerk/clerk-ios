@@ -24,6 +24,7 @@
       case authApp(TOTPResource)
       var id: Self { self }
 
+      @MainActor
       @ViewBuilder
       var view: some View {
         switch self {

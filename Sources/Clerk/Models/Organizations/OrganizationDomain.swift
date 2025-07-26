@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The model representing an organization domain.
 public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {

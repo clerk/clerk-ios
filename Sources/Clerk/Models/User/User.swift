@@ -8,7 +8,6 @@
 import AuthenticationServices
 import FactoryKit
 import Foundation
-import Get
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
 ///
@@ -503,17 +502,19 @@ extension User {
     data.append(imageData)
     data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
     
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/profile_image")
-      .method(.post)
-      .body(data: data)
-      .with { request in
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-      }
-      .addClerkSessionId()
-      .data(type: ClientResponse<ImageResource>.self)
-      .async()
-      .response
+    return try await Task.detached {
+      try await Container.shared.apiClient().request()
+        .add(path: "/v1/me/profile_image")
+        .method(.post)
+        .body(data: data)
+        .with { request in
+          request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        }
+        .addClerkSessionId()
+        .data(type: ClientResponse<ImageResource>.self)
+        .async()
+        .response
+    }.value
   }
 
   /// Deletes the user's profile image.

@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 import RegexBuilder
 import RequestBuilder
 import SimpleKeychain
@@ -130,6 +129,10 @@ final public class Clerk {
   /// The configuration settings for this Clerk instance.
   var settings: Settings = .init() {
     didSet {
+      Container.shared.clerkSettings.register { [settings] in
+        settings
+      }
+      
       Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
         SimpleKeychain(
           service: keychainConfig.service,
@@ -375,6 +378,11 @@ extension Container {
 
   var keychain: Factory<SimpleKeychain> {
     self { SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly) }
+      .cached
+  }
+  
+  var clerkSettings: Factory<Clerk.Settings> {
+    self { .init() }
       .cached
   }
 

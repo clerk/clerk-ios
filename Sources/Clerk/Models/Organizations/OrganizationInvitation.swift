@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// Represents an organization invitation and its associated details.
 public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable {

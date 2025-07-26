@@ -165,6 +165,7 @@ extension AuthView {
     case signUpCode(SignUpCodeView.Field)
     case signUpCompleteProfile
     
+    @MainActor
     @ViewBuilder
     var view: some View {
       switch self {

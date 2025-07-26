@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
+import FactoryKit
 import Foundation
 
 extension SignIn {
@@ -111,7 +112,6 @@ extension SignIn {
     /// This is useful for inspecting a newly created `SignIn` object before deciding on a strategy.
     case none
 
-    @MainActor
     var params: SignInCreateParams {
       switch self {
       case .identifier(let identifier, let password, let strategy):
@@ -124,14 +124,14 @@ extension SignIn {
       case .oauth(let oauthProvider, let redirectUrl):
         .init(
           strategy: oauthProvider.strategy,
-          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+          redirectUrl: redirectUrl ?? Container.shared.clerkSettings().redirectConfig.redirectUrl
         )
 
       case .enterpriseSSO(let emailAddress, let redirectUrl):
         .init(
           strategy: "enterprise_sso",
           identifier: emailAddress,
-          redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+          redirectUrl: redirectUrl ?? Container.shared.clerkSettings().redirectConfig.redirectUrl
         )
 
       case .idToken(let provider, let idToken):
