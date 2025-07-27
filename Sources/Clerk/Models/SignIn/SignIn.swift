@@ -482,15 +482,18 @@ extension SignIn {
   /// Returns the current sign-in.
   @discardableResult @MainActor
   public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    let request = Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)")
-    
+    var queryItems: [URLQueryItem] = []
     if let rotatingTokenNonce {
-      request
-        .add(queryItems: [.init(name: "rotating_token_nonce", value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))])
+      queryItems.append(
+        .init(
+          name: "rotating_token_nonce",
+          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))
+      )
     }
-    
-    return try await request
+
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ins/\(id)")
+      .add(queryItems: queryItems)
       .data(type: ClientResponse<SignIn>.self)
       .async()
       .response

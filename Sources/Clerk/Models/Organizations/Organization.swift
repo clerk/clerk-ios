@@ -135,8 +135,8 @@ extension Organization {
     return try await Task.detached {
       try await Container.shared.apiClient().request()
         .add(path: "/v1/organizations/\(id)/logo")
-        .method(.put)
         .body(data: data)
+        .method(.put)
         .addClerkSessionId()
         .with { request in
           request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -198,7 +198,7 @@ extension Organization {
     queryItems += role?.map { URLQueryItem(name: "role[]", value: $0) } ?? []
 
     return try await Container.shared.apiClient().request()
-      .add(path: "/v1/organizations/\(id)/roles")
+      .add(path: "/v1/organizations/\(id)/memberships")
       .addClerkSessionId()
       .add(queryItems: queryItems.filter({ $0.value != nil }))
       .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.self)

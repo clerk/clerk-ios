@@ -659,8 +659,8 @@ struct UserTests {
   @Test func testUserUpdatePasswordRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = User.UpdatePasswordParams(
-      newPassword: "newPass",
       currentPassword: "currentPass",
+      newPassword: "newPass",
       signOutOfOtherSessions: true
     )
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/change_password")

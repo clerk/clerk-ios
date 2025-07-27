@@ -149,7 +149,7 @@ extension SignUp {
   public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
     var params = strategy.params
     params.legalAccepted = legalAccepted
-    
+
     return try await Container.shared.apiClient().request()
       .add(path: "/v1/client/sign_ups")
       .method(.post)
@@ -202,7 +202,7 @@ extension SignUp {
   @discardableResult @MainActor
   public func update(params: UpdateParams) async throws -> SignUp {
     try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups")
+      .add(path: "/v1/client/sign_ups/\(id)")
       .method(.patch)
       .body(formEncode: params)
       .data(type: ClientResponse<SignUp>.self)
@@ -425,15 +425,19 @@ extension SignUp {
   /// Returns the current sign up.
   @discardableResult @MainActor
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    let request = Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups/\(id)")
-      
+    var queryItems: [URLQueryItem] = []
     if let rotatingTokenNonce {
-      request
-        .add(queryItems: [.init(name: "rotating_token_nonce", value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))])
+      queryItems.append(
+        .init(
+          name: "rotating_token_nonce",
+          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        )
+      )
     }
-    
-    return try await request
+
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/client/sign_ups/\(id)")
+      .add(queryItems: queryItems)
       .data(type: ClientResponse<SignUp>.self)
       .async()
       .response

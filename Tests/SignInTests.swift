@@ -11,13 +11,13 @@ import Testing
 
 struct SignInTests {
 
-  @Test func testAuthenticateWithRedirectStrategyParams() {
+  @Test @MainActor func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignIn.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
-    #expect(enterpriseSSO.params.strategy == "enterprise_sso")
-    #expect(enterpriseSSO.params.identifier == "user@email.com")
+    #expect(enterpriseSSO.signInStrategy.params.strategy == "enterprise_sso")
+    #expect(enterpriseSSO.signInStrategy.params.identifier == "user@email.com")
 
     let oauth = SignIn.AuthenticateWithRedirectStrategy.oauth(provider: .google)
-    #expect(oauth.params.strategy == "oauth_google")
+    #expect(oauth.signInStrategy.params.strategy == "oauth_google")
   }
 
   @Test func testNeedsTransferToSignUp() {
@@ -89,6 +89,7 @@ struct SignInTests {
       .transfer,
       .none,
     ])
+  @MainActor
   func testCreateRequest(strategy: SignIn.CreateStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins")
@@ -190,6 +191,7 @@ struct SignInTests {
       .resetPasswordEmailCode(emailAddressId: "1"),
       .resetPasswordPhoneCode(phoneNumberId: "1"),
     ])
+  @MainActor
   func testPrepareFirstFactorRequest(strategy: SignIn.PrepareFirstFactorStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let signIn = SignIn.mock

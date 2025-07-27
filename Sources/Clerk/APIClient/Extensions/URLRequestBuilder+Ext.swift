@@ -15,9 +15,7 @@ extension URLRequestBuilder {
   @discardableResult
   func addClerkSessionId() -> Self {
     map {
-      guard let sessionId = try? loadClientFromKeychain()?.lastActiveSessionId else {
-        return
-      }
+      let sessionId = try? loadClientFromKeychain()?.lastActiveSessionId
       
       if let url = request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
         components.queryItems = (components.queryItems ?? []) + [.init(name: "_clerk_session_id", value: sessionId)]

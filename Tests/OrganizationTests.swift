@@ -33,7 +33,7 @@ import Testing
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.url!.query()!.contains("_clerk_session_id"))
-      #expect(request.urlEncodedFormBody["name"] == "new name")
+      #expect(request.urlEncodedFormBody["name"] == "new+name")
       #expect(request.urlEncodedFormBody["slug"] == "new-slug")
       requestHandled.setValue(true)
     }
