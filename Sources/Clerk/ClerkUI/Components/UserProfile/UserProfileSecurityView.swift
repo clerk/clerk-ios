@@ -31,7 +31,7 @@
       VStack(spacing: 0) {
         if let user {
           ScrollView {
-            LazyVStack(spacing: 0) {
+            VStack(spacing: 0) {
               if environment.passwordIsEnabled {
                 UserProfilePasswordSection()
               }
