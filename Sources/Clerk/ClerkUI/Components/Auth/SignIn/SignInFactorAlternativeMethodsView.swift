@@ -171,8 +171,7 @@
         case .signIn(let signIn):
           authState.setToStepForStatus(signIn: signIn)
         case .signUp(let signUp):
-          // TODO: Set to sign up status
-          return
+          authState.setToStepForStatus(signUp: signUp)
         }
       } catch {
         if error.isUserCancelledError { return }
