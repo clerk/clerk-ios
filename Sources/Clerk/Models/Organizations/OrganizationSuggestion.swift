@@ -81,13 +81,7 @@ extension OrganizationSuggestion {
   /// - Returns: The accepted ``OrganizationSuggestion``.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationSuggestion {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/organization_suggestions/\(id)/accept")
-      .method(.post)
-      .addClerkSessionId()
-      .data(type: ClientResponse<OrganizationSuggestion>.self)
-      .async()
-      .response
+    try await Container.shared.organizationService().acceptOrganizationSuggestion(id)
   }
 
 }

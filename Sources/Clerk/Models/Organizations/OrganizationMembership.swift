@@ -70,12 +70,7 @@ extension OrganizationMembership {
       throw ClerkClientError(message: "Unable to delete membership: missing userId")
     }
     
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/organizations/\(organization.id)/memberships/\(userId)")
-      .method(.delete)
-      .data(type: ClientResponse<OrganizationMembership>.self)
-      .async()
-      .response
+    return try await Container.shared.organizationService().destroyOrganizationMembership(organization.id, userId)
   }
 
   /// Updates the member's role in the organization.
@@ -89,13 +84,7 @@ extension OrganizationMembership {
       throw ClerkClientError(message: "Unable to update membership: missing userId")
     }
     
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/organizations/\(organization.id)/memberships/\(userId)")
-      .method(.patch)
-      .body(formEncode: ["role": role])
-      .data(type: ClientResponse<OrganizationMembership>.self)
-      .async()
-      .response
+    return try await Container.shared.organizationService().updateOrganizationMembership(organization.id, userId, role)
   }
 
 }

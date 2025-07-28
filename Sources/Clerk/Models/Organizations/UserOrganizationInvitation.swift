@@ -97,13 +97,7 @@ extension UserOrganizationInvitation {
   /// - Returns: The accepted ``UserOrganizationInvitation``.
   @discardableResult @MainActor
   public func accept() async throws -> UserOrganizationInvitation {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/organization_invitations/\(id)/accept")
-      .method(.post)
-      .addClerkSessionId()
-      .data(type: ClientResponse<UserOrganizationInvitation>.self)
-      .async()
-      .response
+    try await Container.shared.organizationService().acceptUserOrganizationInvitation(id)
   }
 
 }
