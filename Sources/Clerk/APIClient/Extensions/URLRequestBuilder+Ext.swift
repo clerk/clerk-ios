@@ -39,28 +39,9 @@ extension URLRequestBuilder {
     return map {
       do {
         // Encode to JSON data first
-        let jsonData = try encoder.encode(data)
-
-        // Convert JSON data to dictionary
-        if let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-          let stringDict = jsonObject.compactMapValues { value -> String? in
-            if let string = value as? String {
-              return string
-            } else if let number = value as? NSNumber {
-              return number.stringValue
-            } else if let bool = value as? Bool {
-              return bool ? "true" : "false"
-            } else {
-              return String(describing: value)
-            }
-          }
-
-          // Use form encoding logic
-          var components = URLComponents()
-          components.queryItems = stringDict.map { URLQueryItem(name: $0.key, value: $0.value) }
-          let escapedString = components.percentEncodedQuery?.replacingOccurrences(of: "%20", with: "+")
+        if let data: Data = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(data) {
           $0.add(value: "application/x-www-form-urlencoded", forHeader: "Content-Type")
-          $0.request.httpBody = escapedString?.data(using: .utf8)
+          $0.request.httpBody = data
         }
       } catch {
         ClerkLogger.logError(error, message: "Failed to form-encode object.")
