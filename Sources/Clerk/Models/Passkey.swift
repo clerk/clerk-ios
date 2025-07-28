@@ -90,7 +90,7 @@ extension Passkey {
       .add(path: "/v1/me/passkeys/\(id)")
       .method(.patch)
       .addClerkSessionId()
-      .body(fields: ["name": name])
+      .body(formEncode: ["name": name])
       .data(type: ClientResponse<Passkey>.self)
       .async()
       .response
@@ -103,7 +103,7 @@ extension Passkey {
       .add(path: "/v1/me/passkeys/\(id)/attempt_verification")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "strategy": "passkey",
         "public_key_credential": credential
       ])
@@ -119,7 +119,7 @@ extension Passkey {
       .add(path: "/v1/me/passkeys/\(id)")
       .method(.delete)
       .addClerkSessionId()
-      .body(fields: ["name": name])
+      .body(formEncode: ["name": name])
       .data(type: ClientResponse<DeletedObject>.self)
       .async()
       .response

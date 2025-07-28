@@ -16,14 +16,14 @@ extension URLRequestBuilder {
   func addClerkSessionId() -> Self {
     map {
       let sessionId = try? loadClientFromKeychain()?.lastActiveSessionId
-      
+
       if let url = request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
         components.queryItems = (components.queryItems ?? []) + [.init(name: "_clerk_session_id", value: sessionId)]
         $0.request.url = components.url
       }
     }
   }
-  
+
   func loadClientFromKeychain() throws -> Client? {
     guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
       return nil
@@ -34,17 +34,11 @@ extension URLRequestBuilder {
 
   /// Given an encodable data type, sets the request body to x-www-form-urlencoded data .
   @discardableResult
-  public func body<DataType: Encodable>(formEncode data: DataType, encoder: DataEncoder? = nil) -> Self {
-    let encoder = encoder ?? manager.encoder
+  public func body<DataType: Encodable>(formEncode data: DataType) -> Self {
     return map {
-      do {
-        // Encode to JSON data first
-        if let data: Data = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(data) {
-          $0.add(value: "application/x-www-form-urlencoded", forHeader: "Content-Type")
-          $0.request.httpBody = data
-        }
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to form-encode object.")
+      if let data: Data = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(data) {
+        $0.add(value: "application/x-www-form-urlencoded", forHeader: "Content-Type")
+        $0.request.httpBody = data
       }
     }
   }

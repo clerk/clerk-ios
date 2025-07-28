@@ -92,7 +92,7 @@ extension OrganizationMembership {
     return try await Container.shared.apiClient().request()
       .add(path: "/v1/organizations/\(organization.id)/memberships/\(userId)")
       .method(.patch)
-      .body(fields: ["role": role])
+      .body(formEncode: ["role": role])
       .data(type: ClientResponse<OrganizationMembership>.self)
       .async()
       .response

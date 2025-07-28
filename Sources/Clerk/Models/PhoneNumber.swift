@@ -81,7 +81,7 @@ extension PhoneNumber {
       .add(path: "/v1/me/phone_numbers")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: ["phone_number": phoneNumber])
+      .body(formEncode: ["phone_number": phoneNumber])
       .data(type: ClientResponse<PhoneNumber>.self)
       .async()
       .response
@@ -108,7 +108,7 @@ extension PhoneNumber {
       .add(path: "/v1/me/phone_numbers/\(id)/prepare_verification")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: ["strategy": "phone_code"])
+      .body(formEncode: ["strategy": "phone_code"])
       .data(type: ClientResponse<PhoneNumber>.self)
       .async()
       .response
@@ -123,7 +123,7 @@ extension PhoneNumber {
       .add(path: "/v1/me/phone_numbers/\(id)/attempt_verification")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: ["code": code])
+      .body(formEncode: ["code": code])
       .data(type: ClientResponse<PhoneNumber>.self)
       .async()
       .response

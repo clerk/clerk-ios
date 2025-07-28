@@ -95,7 +95,7 @@ extension Organization {
       .add(path: "/v1/organizations/\(id)")
       .method(.patch)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "name": name,
         "slug": slug,
       ])
@@ -228,7 +228,7 @@ extension Organization {
       .add(path: "/v1/organizations/\(id)/memberships")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "user_id": userId,
         "role": role,
       ])
@@ -256,7 +256,7 @@ extension Organization {
       .add(path: "/v1/organizations/\(id)/memberships/\(userId)")
       .method(.patch)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "role": role
       ])
       .data(type: ClientResponse<OrganizationMembership>.self)
@@ -329,7 +329,7 @@ extension Organization {
       .add(path: "/v1/organizations/\(id)/invitations")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "email_address": emailAddress,
         "role": role,
       ])
@@ -367,7 +367,7 @@ extension Organization {
       .add(path: "/v1/organizations/\(id)/domains")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "name": domainName,
       ])
       .data(type: ClientResponse<OrganizationDomain>.self)

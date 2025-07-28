@@ -267,7 +267,7 @@ extension User {
       .add(path: "/v1/me/external_accounts")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "strategy": provider.strategy,
         "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
         "additional_scopes": additionalScopes?.joined(separator: ","),
@@ -289,7 +289,7 @@ extension User {
       .add(path: "/v1/me/external_accounts")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: [
+      .body(formEncode: [
         "strategy": provider.strategy,
         "token": idToken,
       ])
@@ -373,7 +373,7 @@ extension User {
       .add(path: "/v1/me/totp/attempt_verification")
       .method(.post)
       .addClerkSessionId()
-      .body(fields: ["code": code])
+      .body(formEncode: ["code": code])
       .data(type: ClientResponse<TOTPResource>.self)
       .async()
       .response

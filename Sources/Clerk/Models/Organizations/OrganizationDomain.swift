@@ -123,7 +123,7 @@ extension OrganizationDomain {
     try await Container.shared.apiClient().request()
       .add(path: "/v1/organizations/\(organizationId)/domains/\(id)/prepare_affiliation_verification")
       .method(.post)
-      .body(fields: ["affiliation_email_address": affiliationEmailAddress])
+      .body(formEncode: ["affiliation_email_address": affiliationEmailAddress])
       .data(type: ClientResponse<OrganizationDomain>.self)
       .async()
       .response
@@ -143,7 +143,7 @@ extension OrganizationDomain {
     try await Container.shared.apiClient().request()
       .add(path: "/v1/organizations/\(organizationId)/domains/\(id)/attempt_affiliation_verification")
       .method(.post)
-      .body(fields: ["code": code])
+      .body(formEncode: ["code": code])
       .data(type: ClientResponse<OrganizationDomain>.self)
       .async()
       .response

@@ -64,7 +64,7 @@ extension EmailAddress {
       .add(path: "v1/me/email_addresses")
       .addClerkSessionId()
       .method(.post)
-      .body(fields: ["email_address": email])
+      .body(formEncode: ["email_address": email])
       .data(type: ClientResponse<EmailAddress>.self)
       .async()
       .response
