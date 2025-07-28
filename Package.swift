@@ -20,7 +20,6 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-algorithms", from: "1.2.0"),
     .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
-    .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
@@ -34,7 +33,6 @@ let package = Package(
       dependencies: [
         .product(name: "Algorithms", package: "swift-algorithms"),
         .product(name: "FactoryKit", package: "Factory"),
-        .product(name: "Get", package: "Get"),
         .product(name: "Kingfisher", package: "Kingfisher"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
         .product(name: "RequestBuilder", package: "RequestBuilder"),
