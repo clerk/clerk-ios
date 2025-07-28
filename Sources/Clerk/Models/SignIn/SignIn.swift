@@ -132,13 +132,7 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().create(strategy)
   }
 
   /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
@@ -159,13 +153,7 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins")
-      .method(.post)
-      .body(formEncode: params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().createWithParams(params)
   }
 
   /// Resets a user's password.
@@ -178,13 +166,7 @@ extension SignIn {
   /// - Throws: An error if the password reset attempt fails.
   @discardableResult @MainActor
   public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)/reset_password")
-      .method(.post)
-      .body(formEncode: params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().resetPassword(id, params)
   }
 
   /// Begins the first factor verification process.
@@ -199,13 +181,7 @@ extension SignIn {
   /// - Throws: An error if the first factor preparation fails.
   @discardableResult @MainActor
   public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)/prepare_first_factor")
-      .method(.post)
-      .body(formEncode: strategy.params(signIn: self))
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().prepareFirstFactor(id, strategy, self)
   }
 
   /// Attempts to complete the first factor verification process.
@@ -221,13 +197,7 @@ extension SignIn {
   /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
   @discardableResult @MainActor
   public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)/attempt_first_factor")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().attemptFirstFactor(id, strategy)
   }
 
   /// Begins the second factor verification process.
@@ -244,13 +214,7 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)/prepare_second_factor")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().prepareSecondFactor(id, strategy)
   }
 
   /// Attempts to complete the second factor verification process (2FA).
@@ -269,13 +233,7 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)/attempt_second_factor")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().attemptSecondFactor(id, strategy)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -304,16 +262,7 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
-
-      guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
-        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-      }
-
-      let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
-      let callbackUrl = try await authSession.start()
-      let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
-      return transferFlowResult
+      try await Container.shared.signInService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -342,16 +291,7 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      guard let externalVerificationRedirectUrl = firstFactorVerification?.externalVerificationRedirectUrl,
-        let url = URL(string: externalVerificationRedirectUrl)
-      else {
-        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-      }
-
-      let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
-      let callbackUrl = try await authSession.start()
-      let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
-      return transferFlowResult
+      try await Container.shared.signInService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
     }
 
   #endif
@@ -382,55 +322,7 @@ extension SignIn {
     ///         and formats them according to the WebAuthn standard.
     @MainActor
     public func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
-      guard
-        let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
-        let challengeString = nonceJSON["challenge"]?.stringValue,
-        let challenge = challengeString.dataFromBase64URL()
-      else {
-        throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-      }
-
-      let manager = PasskeyHelper()
-      var authorization: ASAuthorization
-
-      #if os(iOS) && !targetEnvironment(macCatalyst)
-        if autofill {
-          authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
-            challenge: challenge
-          )
-        } else {
-          authorization = try await manager.signIn(
-            challenge: challenge,
-            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-          )
-        }
-      #else
-        authorization = try await manager.signIn(
-          challenge: challenge,
-          preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-        )
-      #endif
-
-      guard
-        let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-        let authenticatorData = credentialAssertion.rawAuthenticatorData
-      else {
-        throw ClerkClientError(message: "Invalid credential type.")
-      }
-
-      let publicKeyCredential: [String: any Encodable] = [
-        "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-        "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-        "type": "public-key",
-        "response": [
-          "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
-          "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-          "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-          "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
-        ],
-      ]
-
-      return try JSON(publicKeyCredential).debugDescription
+      try await Container.shared.signInService().getCredentialForPasskey(self, autofill, preferImmediatelyAvailableCredentials)
     }
   #endif
 
@@ -456,8 +348,7 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))
-    return try await signIn.handleTransferFlow()
+    try await Container.shared.signInService().authenticateWithIdTokenStatic(provider, idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -476,27 +367,13 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public func authenticateWithIdToken() async throws -> TransferFlowResult {
-    try await handleTransferFlow()
+    try await Container.shared.signInService().authenticateWithIdToken(self)
   }
 
   /// Returns the current sign-in.
   @discardableResult @MainActor
   public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    var queryItems: [URLQueryItem] = []
-    if let rotatingTokenNonce {
-      queryItems.append(
-        .init(
-          name: "rotating_token_nonce",
-          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed))
-      )
-    }
-
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ins/\(id)")
-      .add(queryItems: queryItems)
-      .data(type: ClientResponse<SignIn>.self)
-      .async()
-      .response
+    try await Container.shared.signInService().get(id, rotatingTokenNonce)
   }
 }
 
