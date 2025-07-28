@@ -58,11 +58,7 @@ extension Client {
   /// Retrieves the current client.
   @discardableResult @MainActor
   public static func get() async throws -> Client? {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client")
-      .data(type: ClientResponse<Client?>.self)
-      .async()
-      .response
+    try await Container.shared.clientService().get()
   }
 
 }

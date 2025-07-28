@@ -77,26 +77,13 @@ extension PhoneNumber {
   ///     - phoneNumber: The phone number to add to the current user.
   @discardableResult @MainActor
   public static func create(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers")
-      .method(.post)
-      .addClerkSessionId()
-      .body(formEncode: ["phone_number": phoneNumber])
-      .data(type: ClientResponse<PhoneNumber>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().create(phoneNumber)
   }
 
   /// Deletes this phone number.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers/\(id)")
-      .method(.delete)
-      .addClerkSessionId()
-      .data(type: ClientResponse<DeletedObject>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().delete(id)
   }
 
   /// Kick off the verification process for this phone number.
@@ -104,14 +91,7 @@ extension PhoneNumber {
   /// An SMS message with a one-time code will be sent to the phone number value.
   @discardableResult @MainActor
   public func prepareVerification() async throws -> PhoneNumber {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers/\(id)/prepare_verification")
-      .method(.post)
-      .addClerkSessionId()
-      .body(formEncode: ["strategy": "phone_code"])
-      .data(type: ClientResponse<PhoneNumber>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().prepareVerification(id)
   }
 
   /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message.
@@ -119,41 +99,20 @@ extension PhoneNumber {
   /// The code will be sent when calling the ``PhoneNumber/prepareVerification()`` method.
   @discardableResult @MainActor
   public func attemptVerification(code: String) async throws -> PhoneNumber {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers/\(id)/attempt_verification")
-      .method(.post)
-      .addClerkSessionId()
-      .body(formEncode: ["code": code])
-      .data(type: ClientResponse<PhoneNumber>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().attemptVerification(id, code)
   }
 
   /// Marks this phone number as the default second factor for multi-factor authentication(2FA). A user can have exactly one default second factor.
   @discardableResult @MainActor
   public func makeDefaultSecondFactor() async throws -> PhoneNumber {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers/\(id)")
-      .method(.patch)
-      .addClerkSessionId()
-      .body(formEncode: ["default_second_factor": true])
-      .data(type: ClientResponse<PhoneNumber>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().makeDefaultSecondFactor(id)
   }
 
   /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
   /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
   @discardableResult @MainActor
   public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/phone_numbers/\(id)")
-      .method(.patch)
-      .addClerkSessionId()
-      .body(formEncode: ["reserved_for_second_factor": reserved])
-      .data(type: ClientResponse<PhoneNumber>.self)
-      .async()
-      .response
+    try await Container.shared.phoneNumberService().setReservedForSecondFactor(id, reserved)
   }
 
 }

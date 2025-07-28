@@ -147,16 +147,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
-    var params = strategy.params
-    params.legalAccepted = legalAccepted
-
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups")
-      .method(.post)
-      .body(formEncode: params)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().create(strategy, legalAccepted)
   }
 
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
@@ -178,13 +169,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups")
-      .method(.post)
-      .body(formEncode: params)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().createWithParams(params)
   }
 
   /// This method is used to update the current sign-up.
@@ -201,13 +186,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the changes.
   @discardableResult @MainActor
   public func update(params: UpdateParams) async throws -> SignUp {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups/\(id)")
-      .method(.patch)
-      .body(formEncode: params)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().update(id, params)
   }
 
   /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
@@ -224,13 +203,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification initiation.
   @discardableResult @MainActor
   public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups/\(id)/prepare_verification")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().prepareVerification(id, strategy)
   }
 
   /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
@@ -245,13 +218,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
   @discardableResult @MainActor
   public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups/\(id)/attempt_verification")
-      .method(.post)
-      .body(formEncode: strategy.params)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().attemptVerification(id, strategy)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -280,24 +247,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
-
-      guard
-        let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-        let redirectUrl = verification.externalVerificationRedirectUrl,
-        let url = URL(string: redirectUrl)
-      else {
-        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-      }
-
-      let authSession = WebAuthentication(
-        url: url,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      )
-
-      let callbackUrl = try await authSession.start()
-      let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
-      return transferFlowResult
+      try await Container.shared.signUpService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -326,22 +276,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      guard
-        let verification = verifications.first(where: { $0.key == "external_account" })?.value,
-        let redirectUrl = verification.externalVerificationRedirectUrl,
-        let url = URL(string: redirectUrl)
-      else {
-        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-      }
-
-      let authSession = WebAuthentication(
-        url: url,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      )
-
-      let callbackUrl = try await authSession.start()
-      let transferFlowResult = try await handleOAuthCallbackUrl(callbackUrl)
-      return transferFlowResult
+      try await Container.shared.signUpService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -367,8 +302,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
-    return try await signUp.handleTransferFlow()
+    try await Container.shared.signUpService().authenticateWithIdTokenStatic(provider, idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -387,7 +321,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public func authenticateWithIdToken() async throws -> TransferFlowResult {
-    try await handleTransferFlow()
+    try await Container.shared.signUpService().authenticateWithIdToken(self)
   }
 }
 
@@ -425,22 +359,7 @@ extension SignUp {
   /// Returns the current sign up.
   @discardableResult @MainActor
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    var queryItems: [URLQueryItem] = []
-    if let rotatingTokenNonce {
-      queryItems.append(
-        .init(
-          name: "rotating_token_nonce",
-          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        )
-      )
-    }
-
-    return try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sign_ups/\(id)")
-      .add(queryItems: queryItems)
-      .data(type: ClientResponse<SignUp>.self)
-      .async()
-      .response
+    try await Container.shared.signUpService().get(id, rotatingTokenNonce)
   }
 
 }
