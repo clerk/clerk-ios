@@ -120,13 +120,7 @@ extension ExternalAccount {
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/external_accounts/\(id)")
-      .method(.delete)
-      .addClerkSessionId()
-      .data(type: ClientResponse<DeletedObject>.self)
-      .async()
-      .response
+    try await Container.shared.externalAccountService().destroy(id)
   }
 }
 

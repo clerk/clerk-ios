@@ -195,13 +195,7 @@ extension Session {
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
   public func revoke() async throws -> Session {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/sessions/\(id)/revoke")
-      .method(.post)
-      .addClerkSessionId()
-      .data(type: ClientResponse<Session>.self)
-      .async()
-      .response
+    try await Container.shared.sessionService().revoke(id)
   }
 
   /**

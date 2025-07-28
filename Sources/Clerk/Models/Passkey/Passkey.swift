@@ -74,55 +74,25 @@ extension Passkey {
   /// Creates a new passkey
   @discardableResult @MainActor
   public static func create() async throws -> Passkey {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/passkeys")
-      .method(.post)
-      .addClerkSessionId()
-      .data(type: ClientResponse<Passkey>.self)
-      .async()
-      .response
+    try await Container.shared.passkeyService().create()
   }
 
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/passkeys/\(id)")
-      .method(.patch)
-      .addClerkSessionId()
-      .body(formEncode: ["name": name])
-      .data(type: ClientResponse<Passkey>.self)
-      .async()
-      .response
+    try await Container.shared.passkeyService().update(id, name)
   }
 
   /// Attempts to verify the passkey with a credential.
   @discardableResult @MainActor
   public func attemptVerification(credential: String) async throws -> Passkey {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/passkeys/\(id)/attempt_verification")
-      .method(.post)
-      .addClerkSessionId()
-      .body(formEncode: [
-        "strategy": "passkey",
-        "public_key_credential": credential
-      ])
-      .data(type: ClientResponse<Passkey>.self)
-      .async()
-      .response
+    try await Container.shared.passkeyService().attemptVerification(id, credential)
   }
 
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.apiClient().request()
-      .add(path: "/v1/me/passkeys/\(id)")
-      .method(.delete)
-      .addClerkSessionId()
-      .body(formEncode: ["name": name])
-      .data(type: ClientResponse<DeletedObject>.self)
-      .async()
-      .response
+    try await Container.shared.passkeyService().delete(id, name)
   }
 
 }
