@@ -78,7 +78,7 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
 
-    let response: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
+    let _: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/device_attestation/verify")
       .method(.post)
       .body(formEncode: body)
@@ -126,7 +126,7 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
 
-    let response: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
+    let _: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/verify")
       .method(.post)
       .body(formEncode: body)
