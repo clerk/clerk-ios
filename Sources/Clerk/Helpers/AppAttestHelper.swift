@@ -32,11 +32,11 @@ struct AppAttestHelper {
       .method(.post)
       .data(type: [String: String].self)
       .async()
-    
+
     guard let challenge = response["challenge"] else {
       throw AttestationError.unableToGetChallengeFromServer
     }
-    
+
     return challenge
   }
 
@@ -77,12 +77,12 @@ struct AppAttestHelper {
       "attestation": attestation.base64EncodedString(),
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
-    
-    _ = try await Container.shared.apiClient().request()
+
+    let response: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/device_attestation/verify")
       .method(.post)
       .body(formEncode: body)
-      .data(type: EmptyDecodable.self)
+      .data()
       .async()
   }
 
@@ -125,12 +125,12 @@ struct AppAttestHelper {
       "platform": "ios",
       "bundle_id": Bundle.main.bundleIdentifier,
     ]
-    
-    _ = try await Container.shared.apiClient().request()
+
+    let response: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/verify")
       .method(.post)
       .body(formEncode: body)
-      .data(type: EmptyDecodable.self)
+      .data()
       .async()
   }
 

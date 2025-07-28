@@ -13,7 +13,7 @@ final class URLRequestInterceptorDeviceAssertion: URLRequestInterceptor, @unchec
   private static let assertionManager = AssertionManager()
   var parent: URLSessionManager!
 
-  func data(for request: URLRequest) async throws -> (Any?, HTTPURLResponse?) {
+  func data(for request: URLRequest) async throws -> (Data?, HTTPURLResponse?) {
     let (data, response) = try await parent.data(for: request)
 
     if let response,
