@@ -114,6 +114,7 @@ final public class Clerk {
         return BaseSessionManager(base: base, session: session)
           .set(encoder: JSONEncoder.clerkEncoder)
           .set(decoder: JSONDecoder.clerkDecoder)
+          .interceptor(URLRequestInterceptorMock())
           .interceptor(URLRequestInterceptorClerkHeaders())
           .interceptor(URLRequestInterceptorQueryItems())
           .interceptor(URLRequestInterceptorInvalidAuth())
@@ -207,19 +208,7 @@ extension Clerk {
   /// try await clerk.signOut()
   /// ```
   public func signOut(sessionId: String? = nil) async throws {
-    if let sessionId {
-      _ = try await Container.shared.apiClient().request()
-        .add(path: "/v1/client/sessions/\(sessionId)/remove")
-        .method(.post)
-        .data(type: ClientResponse<Session>.self)
-        .async()
-    } else {
-      _ = try await Container.shared.apiClient().request()
-        .add(path: "/v1/client/sessions")
-        .method(.delete)
-        .data(type: ClientResponse<Client>.self)
-        .async()
-    }
+    try await Container.shared.clerkService().signOut(sessionId)
   }
 
   /// A method used to set the active session.
@@ -229,12 +218,7 @@ extension Clerk {
   /// - Parameter sessionId: The session ID to be set as active.
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    _ = try await Container.shared.apiClient().request()
-      .add(path: "/v1/client/sessions/\(sessionId)/touch")
-      .method(.post)
-      .body(formEncode: ["active_organization_id": organizationId])
-      .data(type: ClientResponse<Session>.self)
-      .async()
+    try await Container.shared.clerkService().setActive(sessionId, organizationId)
   }
 }
 
@@ -340,8 +324,7 @@ extension Clerk {
   }
 
   func saveClientToKeychain(client: Client) throws {
-    let encoder = JSONEncoder.clerkEncoder
-    let clientData = try encoder.encode(client)
+    let clientData = try JSONEncoder.clerkEncoder.encode(client)
     try Container.shared.keychain().set(clientData, forKey: "cachedClient")
   }
 
