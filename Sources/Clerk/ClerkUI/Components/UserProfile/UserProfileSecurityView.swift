@@ -44,7 +44,9 @@
                 UserProfileMfaSection()
               }
 
-              if !clerk.sessionsByUserId.isEmpty {
+              if
+                let sessions = clerk.sessionsByUserId[user.id],
+                  !sessions.filter({ $0.latestActivity != nil }).isEmpty {
                 UserProfileDevicesSection()
               }
               
