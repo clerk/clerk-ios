@@ -54,12 +54,11 @@ struct PasskeyService {
       .response
   }
   
-  var delete: (_ passkeyId: String, _ name: String) async throws -> DeletedObject = { passkeyId, name in
+  var delete: (_ passkeyId: String) async throws -> DeletedObject = { passkeyId in
     try await Container.shared.apiClient().request()
       .add(path: "/v1/me/passkeys/\(passkeyId)")
       .method(.delete)
       .addClerkSessionId()
-      .body(formEncode: ["name": name])
       .data(type: ClientResponse<DeletedObject>.self)
       .async()
       .response

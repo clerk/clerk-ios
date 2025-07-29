@@ -92,7 +92,7 @@ extension Passkey {
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.passkeyService().delete(id, name)
+    try await Container.shared.passkeyService().delete(id)
   }
 
 }
