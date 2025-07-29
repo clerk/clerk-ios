@@ -1,5 +1,5 @@
 import ConcurrencyExtras
-import Factory
+import FactoryKit
 import Foundation
 import Mocker
 import Testing
@@ -116,7 +116,7 @@ import Testing
     "Test Get Memberships",
     arguments: [
       (query: "query", role: ["org:role1", "org:role2"]),
-      (query: nil, role: nil),
+      (query: nil, role: nil)
     ])
   private func testGetMemberships(params: TestMembershipParams) async throws {
     let requestHandled = LockIsolated(false)

@@ -9,24 +9,24 @@ import Foundation
 
 extension Clerk.Environment {
 
-  struct FraudSettings: Codable, Sendable {
+    struct FraudSettings: Codable, Sendable, Equatable {
 
-    let native: Native
+        let native: Native
 
-    struct Native: Codable, Sendable {
+        struct Native: Codable, Sendable, Equatable {
 
-      let deviceAttestationMode: DeviceAttestationMode
+            let deviceAttestationMode: DeviceAttestationMode
 
-      enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable {
-        case disabled
-        case onboarding
-        case enforced
-        case unknown
+            enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
+                case disabled
+                case onboarding
+                case enforced
+                case unknown
 
-        public init(from decoder: Decoder) throws {
-          self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+                public init(from decoder: Decoder) throws {
+                    self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+                }
+            }
         }
-      }
     }
-  }
 }

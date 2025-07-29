@@ -5,111 +5,103 @@
 //  Created by Mike Pitre on 3/14/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
-import Get
 
 /// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
 
-  /// An interface representing an organization suggestion.
-  /// The ID of the organization suggestion.
-  public let id: String
-
-  /// The public data of the organization.
-  public let publicOrganizationData: PublicOrganizationData
-
-  /// The status of the organization suggestion.
-  public let status: String
-
-  /// The date and time when the organization suggestion was created.
-  public let createdAt: Date
-
-  /// The date and time when the organization suggestion was last updated.
-  public let updatedAt: Date
-
-  public init(
-    id: String,
-    publicOrganizationData: OrganizationSuggestion.PublicOrganizationData,
-    status: String,
-    createdAt: Date,
-    updatedAt: Date
-  ) {
-    self.id = id
-    self.publicOrganizationData = publicOrganizationData
-    self.status = status
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
-  }
-
-  /// The public data of the organization.
-  public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
-
-    /// Whether the organization has an image.
-    public let hasImage: Bool
-
-    /// Holds the organization logo. Compatible with Clerk's Image Optimization.
-    public let imageUrl: String
-
-    /// The name of the organization.
-    public let name: String
-
-    /// The ID of the organization.
+    /// An interface representing an organization suggestion.
+    /// The ID of the organization suggestion.
     public let id: String
 
-    /// The slug of the organization.
-    public let slug: String?
+    /// The public data of the organization.
+    public let publicOrganizationData: PublicOrganizationData
+
+    /// The status of the organization suggestion.
+    public let status: String
+
+    /// The date and time when the organization suggestion was created.
+    public let createdAt: Date
+
+    /// The date and time when the organization suggestion was last updated.
+    public let updatedAt: Date
 
     public init(
-      hasImage: Bool,
-      imageUrl: String,
-      name: String,
-      id: String,
-      slug: String? = nil
+        id: String,
+        publicOrganizationData: OrganizationSuggestion.PublicOrganizationData,
+        status: String,
+        createdAt: Date,
+        updatedAt: Date
     ) {
-      self.hasImage = hasImage
-      self.imageUrl = imageUrl
-      self.name = name
-      self.id = id
-      self.slug = slug
+        self.id = id
+        self.publicOrganizationData = publicOrganizationData
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
-  }
+
+    /// The public data of the organization.
+    public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
+
+        /// Whether the organization has an image.
+        public let hasImage: Bool
+
+        /// Holds the organization logo. Compatible with Clerk's Image Optimization.
+        public let imageUrl: String
+
+        /// The name of the organization.
+        public let name: String
+
+        /// The ID of the organization.
+        public let id: String
+
+        /// The slug of the organization.
+        public let slug: String?
+
+        public init(
+            hasImage: Bool,
+            imageUrl: String,
+            name: String,
+            id: String,
+            slug: String? = nil
+        ) {
+            self.hasImage = hasImage
+            self.imageUrl = imageUrl
+            self.name = name
+            self.id = id
+            self.slug = slug
+        }
+    }
 }
 
 extension OrganizationSuggestion {
 
-  /// Accepts the organization suggestion.
-  /// - Returns: The accepted ``OrganizationSuggestion``.
-  @discardableResult @MainActor
-  public func accept() async throws -> OrganizationSuggestion {
-    let request = Request<ClientResponse<OrganizationSuggestion>>(
-      path: "/v1/me/organization_suggestions/\(id)/accept",
-      method: .post,
-      query: [
-        ("_clerk_session_id", Clerk.shared.session?.id)
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
-  }
+    /// Accepts the organization suggestion.
+    /// - Returns: The accepted ``OrganizationSuggestion``.
+    @discardableResult @MainActor
+    public func accept() async throws -> OrganizationSuggestion {
+        try await Container.shared.organizationService().acceptOrganizationSuggestion(id)
+    }
 
 }
 
 extension OrganizationSuggestion {
 
-  static var mock: Self {
-    .init(
-      id: "1",
-      publicOrganizationData: .init(
-        hasImage: false,
-        imageUrl: "",
-        name: "name",
-        id: "1",
-        slug: "slug"
-      ),
-      status: "pending",
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
+    static var mock: Self {
+        .init(
+            id: "1",
+            publicOrganizationData: .init(
+                hasImage: false,
+                imageUrl: "",
+                name: "name",
+                id: "1",
+                slug: "slug"
+            ),
+            status: "pending",
+            createdAt: .distantPast,
+            updatedAt: .now
+        )
+    }
 
 }

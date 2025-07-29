@@ -1,0 +1,39 @@
+//
+//  URLRequestInterceptorClerkHeaders.swift
+//  Clerk
+//
+//  Created by Mike Pitre on 1/8/25.
+//
+
+import FactoryKit
+import Foundation
+import RequestBuilder
+
+@MainActor
+final class URLRequestInterceptorClerkHeaders: @preconcurrency URLRequestInterceptor, @unchecked Sendable {
+
+    var parent: URLSessionManager!
+
+    func request(forURL url: URL?) -> URLRequestBuilder {
+        var headers = [
+            "Content-Type": "application/x-www-form-urlencoded",
+            "clerk-api-version": "2024-10-01",
+            "x-ios-sdk-version": Clerk.version,
+            "x-mobile": "1",
+            "x-native-device-id": deviceID
+        ]
+
+        // Set the device token on every request
+        if let deviceToken = try? Container.shared.keychain().string(forKey: "clerkDeviceToken") {
+            headers["Authorization"] = deviceToken
+        }
+
+        if Clerk.shared.settings.debugMode, let client = Clerk.shared.client {
+            headers["x-clerk-client-id"] = client.id
+        }
+
+        return URLRequestBuilder(manager: self, builder: parent.request(forURL: url))
+            .add(headers: headers)
+    }
+
+}

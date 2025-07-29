@@ -5,7 +5,8 @@
 //  Created by Mike Pitre on 1/30/24.
 //
 
-import Factory
+import AuthenticationServices
+import FactoryKit
 import Foundation
 
 /// The `SignIn` object holds the state of the current sign-in process and provides helper methods
@@ -42,200 +43,200 @@ import Foundation
 
 public struct SignIn: Codable, Sendable, Equatable, Hashable {
 
-  /// Unique identifier for this sign in.
-  public let id: String
+    /// Unique identifier for this sign in.
+    public let id: String
 
-  /// The status of the current sign-in.
-  ///
-  /// See ``SignIn/Status-swift.enum`` for supported values.
-  public let status: Status
+    /// The status of the current sign-in.
+    ///
+    /// See ``SignIn/Status-swift.enum`` for supported values.
+    public let status: Status
 
-  /// Array of all the authentication identifiers that are supported for this sign in.
-  public let supportedIdentifiers: [Identifier]?
+    /// Array of all the authentication identifiers that are supported for this sign in.
+    public let supportedIdentifiers: [Identifier]?
 
-  /// The authentication identifier value for the current sign-in.
-  public let identifier: String?
+    /// The authentication identifier value for the current sign-in.
+    public let identifier: String?
 
-  /// Array of the first factors that are supported in the current sign-in.
-  ///
-  ///  Each factor contains information about the verification strategy that can be used. See the `SignInFirstFactor` type reference for more information.
-  public let supportedFirstFactors: [Factor]?
+    /// Array of the first factors that are supported in the current sign-in.
+    ///
+    ///  Each factor contains information about the verification strategy that can be used. See the `SignInFirstFactor` type reference for more information.
+    public let supportedFirstFactors: [Factor]?
 
-  /// Array of the second factors that are supported in the current sign-in.
-  ///
-  /// Each factor contains information about the verification strategy that can be used. This property is populated only when the first factor is verified. See the `SignInSecondFactor` type reference for more information.
-  public let supportedSecondFactors: [Factor]?
+    /// Array of the second factors that are supported in the current sign-in.
+    ///
+    /// Each factor contains information about the verification strategy that can be used. This property is populated only when the first factor is verified. See the `SignInSecondFactor` type reference for more information.
+    public let supportedSecondFactors: [Factor]?
 
-  /// The state of the verification process for the selected first factor.
-  ///
-  /// Initially, this property contains an empty verification object, since there is no first factor selected. You need to call the `prepareFirstFactor` method in order to start the verification process.
-  public let firstFactorVerification: Verification?
+    /// The state of the verification process for the selected first factor.
+    ///
+    /// Initially, this property contains an empty verification object, since there is no first factor selected. You need to call the `prepareFirstFactor` method in order to start the verification process.
+    public let firstFactorVerification: Verification?
 
-  /// The state of the verification process for the selected second factor.
-  ///
-  /// Initially, this property contains an empty verification object, since there is no second factor selected. For the `phone_code` strategy, you need to call the `prepareSecondFactor` method in order to start the verification process. For the `totp` strategy, you can directly attempt.
-  public let secondFactorVerification: Verification?
+    /// The state of the verification process for the selected second factor.
+    ///
+    /// Initially, this property contains an empty verification object, since there is no second factor selected. For the `phone_code` strategy, you need to call the `prepareSecondFactor` method in order to start the verification process. For the `totp` strategy, you can directly attempt.
+    public let secondFactorVerification: Verification?
 
-  /// An object containing information about the user of the current sign-in.
-  ///
-  /// This property is populated only once an identifier is given to the SignIn object.
-  public let userData: UserData?
+    /// An object containing information about the user of the current sign-in.
+    ///
+    /// This property is populated only once an identifier is given to the SignIn object.
+    public let userData: UserData?
 
-  /// The identifier of the session that was created upon completion of the current sign-in.
-  ///
-  /// The value of this property is `nil` if the sign-in status is not `complete`.
-  public let createdSessionId: String?
+    /// The identifier of the session that was created upon completion of the current sign-in.
+    ///
+    /// The value of this property is `nil` if the sign-in status is not `complete`.
+    public let createdSessionId: String?
 
-  public init(
-    id: String,
-    status: SignIn.Status,
-    supportedIdentifiers: [SignIn.Identifier]? = nil,
-    identifier: String? = nil,
-    supportedFirstFactors: [Factor]? = nil,
-    supportedSecondFactors: [Factor]? = nil,
-    firstFactorVerification: Verification? = nil,
-    secondFactorVerification: Verification? = nil,
-    userData: SignIn.UserData? = nil,
-    createdSessionId: String? = nil
-  ) {
-    self.id = id
-    self.status = status
-    self.supportedIdentifiers = supportedIdentifiers
-    self.identifier = identifier
-    self.supportedFirstFactors = supportedFirstFactors
-    self.supportedSecondFactors = supportedSecondFactors
-    self.firstFactorVerification = firstFactorVerification
-    self.secondFactorVerification = secondFactorVerification
-    self.userData = userData
-    self.createdSessionId = createdSessionId
-  }
+    public init(
+        id: String,
+        status: SignIn.Status,
+        supportedIdentifiers: [SignIn.Identifier]? = nil,
+        identifier: String? = nil,
+        supportedFirstFactors: [Factor]? = nil,
+        supportedSecondFactors: [Factor]? = nil,
+        firstFactorVerification: Verification? = nil,
+        secondFactorVerification: Verification? = nil,
+        userData: SignIn.UserData? = nil,
+        createdSessionId: String? = nil
+    ) {
+        self.id = id
+        self.status = status
+        self.supportedIdentifiers = supportedIdentifiers
+        self.identifier = identifier
+        self.supportedFirstFactors = supportedFirstFactors
+        self.supportedSecondFactors = supportedSecondFactors
+        self.firstFactorVerification = firstFactorVerification
+        self.secondFactorVerification = secondFactorVerification
+        self.userData = userData
+        self.createdSessionId = createdSessionId
+    }
 }
 
 extension SignIn {
 
-  /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
-  ///
-  /// - Parameters:
-  ///   - strategy: The strategy used to create the sign-in. See ``SignIn/CreateStrategy`` for the available strategies.
-  ///
-  /// What you must pass to `strategy` depends on which sign-in options you have enabled in your Clerk application instance.
-  ///
-  /// - Returns: A new `SignIn` object.
-  /// - Throws: An error if the sign-in request fails.
-  ///
-  ///### Example Usage:
-  /// ```swift
-  /// let signIn = try await SignIn.create(
-  ///     strategy: .identifier("user@email.com", password: "••••••••"))
-  /// )
-  /// ```
-  @discardableResult @MainActor
-  public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().create(strategy)
-  }
+    /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
+    ///
+    /// - Parameters:
+    ///   - strategy: The strategy used to create the sign-in. See ``SignIn/CreateStrategy`` for the available strategies.
+    ///
+    /// What you must pass to `strategy` depends on which sign-in options you have enabled in your Clerk application instance.
+    ///
+    /// - Returns: A new `SignIn` object.
+    /// - Throws: An error if the sign-in request fails.
+    ///
+    ///### Example Usage:
+    /// ```swift
+    /// let signIn = try await SignIn.create(
+    ///     strategy: .identifier("user@email.com", password: "••••••••"))
+    /// )
+    /// ```
+    @discardableResult @MainActor
+    public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
+        try await Container.shared.signInService().create(strategy)
+    }
 
-  /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
-  ///
-  /// - Parameters:
-  ///   - params: A dictionary of parameters used to create the sign-in.
-  ///
-  /// What you must pass to `params` depends on which sign-in options you have enabled in your Clerk application instance.
-  ///
-  /// - Returns: A new `SignIn` object.
-  /// - Throws: An error if the sign-in request fails.
-  ///
-  ///### Example Usage:
-  /// ```swift
-  /// let signIn = try await SignIn.create(
-  ///     ["identifier": "user@email.com", "password": "••••••••"]
-  /// )
-  /// ```
-  @discardableResult @MainActor
-  public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-    try await Container.shared.signInService().createRaw(AnyEncodable(params))
-  }
+    /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
+    ///
+    /// - Parameters:
+    ///   - params: A dictionary of parameters used to create the sign-in.
+    ///
+    /// What you must pass to `params` depends on which sign-in options you have enabled in your Clerk application instance.
+    ///
+    /// - Returns: A new `SignIn` object.
+    /// - Throws: An error if the sign-in request fails.
+    ///
+    ///### Example Usage:
+    /// ```swift
+    /// let signIn = try await SignIn.create(
+    ///     ["identifier": "user@email.com", "password": "••••••••"]
+    /// )
+    /// ```
+    @discardableResult @MainActor
+    public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
+        try await Container.shared.signInService().createWithParams(params)
+    }
 
-  /// Resets a user's password.
-  ///
-  /// This function allows users to reset their password by providing their current password and optionally logging them out of all other active sessions. Once the password is reset, the `SignIn` object is returned, reflecting the updated user session state.
-  ///
-  /// - Parameters:
-  ///   - params: See ``SignIn/ResetPasswordParams`` for the available parameters.
-  /// - Returns: A `SignIn` object reflecting the updated user session after the password reset.
-  /// - Throws: An error if the password reset attempt fails.
-  @discardableResult @MainActor
-  public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
-    try await Container.shared.signInService().resetPassword(self, params)
-  }
+    /// Resets a user's password.
+    ///
+    /// This function allows users to reset their password by providing their current password and optionally logging them out of all other active sessions. Once the password is reset, the `SignIn` object is returned, reflecting the updated user session state.
+    ///
+    /// - Parameters:
+    ///   - params: See ``SignIn/ResetPasswordParams`` for the available parameters.
+    /// - Returns: A `SignIn` object reflecting the updated user session after the password reset.
+    /// - Throws: An error if the password reset attempt fails.
+    @discardableResult @MainActor
+    public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
+        try await Container.shared.signInService().resetPassword(id, params)
+    }
 
-  /// Begins the first factor verification process.
-  ///
-  /// This is a required step to complete a sign-in, as users must be verified by at least one factor of authentication. The verification method is determined by the provided `PrepareFirstFactorStrategy`.
-  ///
-  /// Common scenarios include one-time code (OTP) or social account (SSO) verification. Each authentication identifier supports different strategies. The status of the first factor verification process can be checked using the `firstFactorVerification` attribute of the returned `SignIn` object.
-  ///
-  /// - Parameters:
-  ///   - prepareFirstFactorStrategy: The strategy to use for the first factor verification. See ``SignIn/PrepareFirstFactorStrategy`` for available strategies.
-  /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
-  /// - Throws: An error if the first factor preparation fails.
-  @discardableResult @MainActor
-  public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareFirstFactor(self, strategy)
-  }
+    /// Begins the first factor verification process.
+    ///
+    /// This is a required step to complete a sign-in, as users must be verified by at least one factor of authentication. The verification method is determined by the provided `PrepareFirstFactorStrategy`.
+    ///
+    /// Common scenarios include one-time code (OTP) or social account (SSO) verification. Each authentication identifier supports different strategies. The status of the first factor verification process can be checked using the `firstFactorVerification` attribute of the returned `SignIn` object.
+    ///
+    /// - Parameters:
+    ///   - prepareFirstFactorStrategy: The strategy to use for the first factor verification. See ``SignIn/PrepareFirstFactorStrategy`` for available strategies.
+    /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
+    /// - Throws: An error if the first factor preparation fails.
+    @discardableResult @MainActor
+    public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
+        try await Container.shared.signInService().prepareFirstFactor(id, strategy, self)
+    }
 
-  /// Attempts to complete the first factor verification process.
-  ///
-  /// This is a required step in order to complete a sign-in, as users must be verified at least by one factor of authentication. The verification method is determined by the provided `AttemptFirstFactorStrategy`. Depending on the selected strategy, the parameters may vary.
-  ///
-  ///
-  /// - Parameters:
-  ///   - attemptFirstFactorStrategy: The strategy to use for the first factor verification. See ``SignIn/AttemptFirstFactorStrategy`` for available strategies and their respective parameters.
-  /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
-  /// - Throws: An error if the first factor attempt fails.
-  /// - Important: Call this method after preparing the verification process using one of the available strategies.
-  /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
-  @discardableResult @MainActor
-  public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().attemptFirstFactor(self, strategy)
-  }
+    /// Attempts to complete the first factor verification process.
+    ///
+    /// This is a required step in order to complete a sign-in, as users must be verified at least by one factor of authentication. The verification method is determined by the provided `AttemptFirstFactorStrategy`. Depending on the selected strategy, the parameters may vary.
+    ///
+    ///
+    /// - Parameters:
+    ///   - attemptFirstFactorStrategy: The strategy to use for the first factor verification. See ``SignIn/AttemptFirstFactorStrategy`` for available strategies and their respective parameters.
+    /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
+    /// - Throws: An error if the first factor attempt fails.
+    /// - Important: Call this method after preparing the verification process using one of the available strategies.
+    /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
+    @discardableResult @MainActor
+    public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
+        try await Container.shared.signInService().attemptFirstFactor(id, strategy)
+    }
 
-  /// Begins the second factor verification process.
-  ///
-  /// This step is optional in order to complete a sign in.
-  ///
-  /// A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
-  ///
-  /// - Parameters:
-  ///   - prepareSecondFactorStrategy: An enum that defines the strategy for the second factor verification. See ``SignIn/PrepareSecondFactorStrategy`` for available strategies.
-  ///
-  /// - Returns: A `SignIn` object. Check the secondFactorVerification attribute for the status of the second factor verification process.
-  ///
-  /// - Throws: An error if the second factor verification fails.
-  @discardableResult @MainActor
-  public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareSecondFactor(self, strategy)
-  }
+    /// Begins the second factor verification process.
+    ///
+    /// This step is optional in order to complete a sign in.
+    ///
+    /// A common scenario for the second step verification (2FA) is to require a one-time code (OTP) as proof of identity. This is determined by the accepted strategy parameter values. Each authentication identifier supports different strategies.
+    ///
+    /// - Parameters:
+    ///   - prepareSecondFactorStrategy: An enum that defines the strategy for the second factor verification. See ``SignIn/PrepareSecondFactorStrategy`` for available strategies.
+    ///
+    /// - Returns: A `SignIn` object. Check the secondFactorVerification attribute for the status of the second factor verification process.
+    ///
+    /// - Throws: An error if the second factor verification fails.
+    @discardableResult @MainActor
+    public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
+        try await Container.shared.signInService().prepareSecondFactor(id, strategy)
+    }
 
-  /// Attempts to complete the second factor verification process (2FA).
-  ///
-  /// This step is optional in order to complete a sign in.
-  ///
-  /// For the `phone_code` strategy, make sure that a verification has already been prepared before you call this method, by first calling `SignIn.prepareSecondFactor`. Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
-  ///
-  /// The `totp` strategy can directly be attempted, without the need for preparation.
-  ///
-  /// - Parameters:
-  ///   - strategy: An enum that defines the strategy for second factor verification. See ``SignIn/AttemptSecondFactorStrategy`` for available strategies.
-  ///
-  /// - Returns: A `SignIn` object. Check the `secondFactorVerification` attribute for the status of the second factor verification process.
-  ///
-  /// - Throws: An error if the second factor verification fails.
-  @discardableResult @MainActor
-  public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().attemptSecondFactor(self, strategy)
-  }
+    /// Attempts to complete the second factor verification process (2FA).
+    ///
+    /// This step is optional in order to complete a sign in.
+    ///
+    /// For the `phone_code` strategy, make sure that a verification has already been prepared before you call this method, by first calling `SignIn.prepareSecondFactor`. Depending on the strategy that was selected when the verification was prepared, the method parameters should be different.
+    ///
+    /// The `totp` strategy can directly be attempted, without the need for preparation.
+    ///
+    /// - Parameters:
+    ///   - strategy: An enum that defines the strategy for second factor verification. See ``SignIn/AttemptSecondFactorStrategy`` for available strategies.
+    ///
+    /// - Returns: A `SignIn` object. Check the `secondFactorVerification` attribute for the status of the second factor verification process.
+    ///
+    /// - Throws: An error if the second factor verification fails.
+    @discardableResult @MainActor
+    public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
+        try await Container.shared.signInService().attemptSecondFactor(id, strategy)
+    }
 
-  #if !os(tvOS) && !os(watchOS)
+    #if !os(tvOS) && !os(watchOS)
     /// Creates a new ``SignIn`` and initiates an external authentication flow using a redirect-based strategy.
     ///
     /// This function handles the process of creating a ``SignIn`` instance,
@@ -261,11 +262,11 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirectCombined(strategy, prefersEphemeralWebBrowserSession)
+        try await Container.shared.signInService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
     }
-  #endif
+    #endif
 
-  #if !os(tvOS) && !os(watchOS)
+    #if !os(tvOS) && !os(watchOS)
     /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignIn`` instance.
     ///
     /// This function starts an external web authentication session,
@@ -290,12 +291,12 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirectTwoStep(self, prefersEphemeralWebBrowserSession)
+        try await Container.shared.signInService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
     }
 
-  #endif
+    #endif
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
     /// Presents the system sheet to allow the user to sign in using their passkey.
     ///
     /// This method handles the process of requesting a credential for passkey-based authentication by interacting with the
@@ -321,118 +322,125 @@ extension SignIn {
     ///         and formats them according to the WebAuthn standard.
     @MainActor
     public func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
-      try await Container.shared.signInService().getCredentialForPasskey(self, autofill, preferImmediatelyAvailableCredentials)
+        try await Container.shared.signInService().getCredentialForPasskey(self, autofill, preferImmediatelyAvailableCredentials)
     }
-  #endif
+    #endif
 
-  /// Authenticates the user using an ID Token and a specified provider.
-  ///
-  /// This method facilitates authentication using an ID token provided by a specific authentication provider.
-  /// It determines whether the user needs to be transferred to a sign-up flow.
-  ///
-  /// - Parameters:
-  ///   - provider: The identity provider associated with the ID token. See ``IDTokenProvider`` for supported values.
-  ///   - idToken: The ID token to use for authentication, obtained from the provider during the sign-in process.
-  ///
-  /// - Throws:``ClerkClientError``
-  ///
-  /// - Returns: An ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
-  ///
-  /// ### Example
-  /// ```swift
-  /// let result = try await SignIn.authenticateWithIdToken(
-  ///     provider: .apple,
-  ///     idToken: idToken
-  /// )
-  /// ```
-  @discardableResult @MainActor
-  public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await Container.shared.signInService().authenticateWithIdTokenCombined(provider, idToken)
-  }
+    /// Authenticates the user using an ID Token and a specified provider.
+    ///
+    /// This method facilitates authentication using an ID token provided by a specific authentication provider.
+    /// It determines whether the user needs to be transferred to a sign-up flow.
+    ///
+    /// - Parameters:
+    ///   - provider: The identity provider associated with the ID token. See ``IDTokenProvider`` for supported values.
+    ///   - idToken: The ID token to use for authentication, obtained from the provider during the sign-in process.
+    ///
+    /// - Throws:``ClerkClientError``
+    ///
+    /// - Returns: An ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
+    ///
+    /// ### Example
+    /// ```swift
+    /// let result = try await SignIn.authenticateWithIdToken(
+    ///     provider: .apple,
+    ///     idToken: idToken
+    /// )
+    /// ```
+    @discardableResult @MainActor
+    public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+        try await Container.shared.signInService().authenticateWithIdTokenStatic(provider, idToken)
+    }
 
-  /// Authenticates the user using an ID Token and a specified provider.
-  ///
-  /// This method completes authentication using an ID token provided by a specific authentication provider.
-  /// It determines whether the user needs to be transferred to a sign-up flow.
-  ///
-  /// - Throws:``ClerkClientError``
-  ///
-  /// - Returns: ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
-  ///
-  /// ### Example
-  /// ```swift
-  /// let signIn = try await SignIn.create(strategy: .idToken(provider: .apple, idToken: "idToken"))
-  /// let result = try await signIn.authenticateWithIdToken()
-  /// ```
-  @discardableResult @MainActor
-  public func authenticateWithIdToken() async throws -> TransferFlowResult {
-    try await Container.shared.signInService().authenticateWithIdTokenTwoStep(self)
-  }
+    /// Authenticates the user using an ID Token and a specified provider.
+    ///
+    /// This method completes authentication using an ID token provided by a specific authentication provider.
+    /// It determines whether the user needs to be transferred to a sign-up flow.
+    ///
+    /// - Throws:``ClerkClientError``
+    ///
+    /// - Returns: ``TransferFlowResult`` containing either a sign-in or a newly created sign-up instance.
+    ///
+    /// ### Example
+    /// ```swift
+    /// let signIn = try await SignIn.create(strategy: .idToken(provider: .apple, idToken: "idToken"))
+    /// let result = try await signIn.authenticateWithIdToken()
+    /// ```
+    @discardableResult @MainActor
+    public func authenticateWithIdToken() async throws -> TransferFlowResult {
+        try await Container.shared.signInService().authenticateWithIdToken(self)
+    }
 
-  /// Returns the current sign-in.
-  @discardableResult @MainActor
-  public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await Container.shared.signInService().get(self, rotatingTokenNonce)
-  }
+    /// Returns the current sign-in.
+    @discardableResult @MainActor
+    public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
+        try await Container.shared.signInService().get(id, rotatingTokenNonce)
+    }
 }
 
 extension SignIn {
 
-  // MARK: - Internal Helpers
+    // MARK: - Internal Helpers
 
-  /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
-  @discardableResult @MainActor
-  func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
-    if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-      let updatedSignIn = try await get(rotatingTokenNonce: nonce)
-      return .signIn(updatedSignIn)
-    } else {
-      // transfer flow
-      let signIn = try await get()
-      let result = try await signIn.handleTransferFlow()
-      return result
+    /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
+    @discardableResult @MainActor
+    func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+        if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
+            let updatedSignIn = try await get(rotatingTokenNonce: nonce)
+            return .signIn(updatedSignIn)
+        } else {
+            // transfer flow
+            let signIn = try await get()
+            let result = try await signIn.handleTransferFlow()
+            return result
+        }
     }
-  }
 
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
-  func handleTransferFlow() async throws -> TransferFlowResult {
-    if needsTransferToSignUp == true {
-      let signUp = try await SignUp.create(strategy: .transfer)
-      return .signUp(signUp)
-    } else {
-      return .signIn(self)
+    /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
+    func handleTransferFlow() async throws -> TransferFlowResult {
+        if needsTransferToSignUp == true {
+            let signUp = try await SignUp.create(strategy: .transfer)
+            return .signUp(signUp)
+        } else {
+            return .signIn(self)
+        }
     }
-  }
 
-  /// Helper to determine if the SignIn needs to be transferred to a SignUp
-  var needsTransferToSignUp: Bool {
-    firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
-  }
+    /// Helper to determine if the SignIn needs to be transferred to a SignUp
+    var needsTransferToSignUp: Bool {
+        firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+    }
 
-  /// The first factor for the identifier that was used to initiate the SignIn
-  func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
-    supportedFirstFactors?.first(where: { factor in
-      factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
-    })
-  }
+    /// The first factor for the identifier that was used to initiate the SignIn
+    func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
+        supportedFirstFactors?.first(where: { factor in
+            factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
+        })
+    }
 
 }
 
 extension SignIn {
 
-  static var mock: SignIn {
-    SignIn(
-      id: "1",
-      status: .needsIdentifier,
-      supportedIdentifiers: [.emailAddress, .phoneNumber],
-      identifier: User.mock.emailAddresses.first?.emailAddress,
-      supportedFirstFactors: [.mock],
-      supportedSecondFactors: nil,
-      firstFactorVerification: .mockEmailCodeUnverifiedVerification,
-      secondFactorVerification: nil,
-      userData: nil,
-      createdSessionId: nil
-    )
-  }
+    static var mock: SignIn {
+        SignIn(
+            id: "1",
+            status: .needsIdentifier,
+            supportedIdentifiers: [.emailAddress, .phoneNumber],
+            identifier: User.mock.emailAddresses.first?.emailAddress,
+            supportedFirstFactors: [
+                .mockEmailCode,
+                .mockPhoneCode,
+                .mockGoogle,
+                .mockApple,
+                .mockPasskey,
+                .mockPassword
+            ],
+            supportedSecondFactors: nil,
+            firstFactorVerification: .mockEmailCodeUnverifiedVerification,
+            secondFactorVerification: nil,
+            userData: nil,
+            createdSessionId: nil
+        )
+    }
 
 }

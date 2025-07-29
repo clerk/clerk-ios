@@ -1,4 +1,4 @@
-import Factory
+import FactoryKit
 import Foundation
 import Testing
 
@@ -119,7 +119,7 @@ struct OAuthProviderTests {
       .custom("invalid"),
       .apple,
       .facebook,
-      .custom("also_invalid"),
+      .custom("also_invalid")
     ]
 
     #expect(
@@ -128,7 +128,7 @@ struct OAuthProviderTests {
         .facebook,
         .google,
         .custom("invalid"),
-        .custom("also_invalid"),
+        .custom("also_invalid")
       ]
     )
   }

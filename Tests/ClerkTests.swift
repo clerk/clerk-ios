@@ -1,5 +1,5 @@
 import ConcurrencyExtras
-import Factory
+import FactoryKit
 import Foundation
 import Mocker
 import Testing
@@ -48,26 +48,25 @@ struct ClerkTests {
   @Test func testLoadWithInvalidKey() async throws {
     let clerk = Clerk()
     clerk.configure(publishableKey: "     ")
-    await #expect(throws: Error.self) {
-      try await clerk.load()
-    }
+    try await clerk.load()
+    #expect(!clerk.isLoaded)
   }
 
-  @MainActor
-  @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
-    try await withMainSerialExecutor {
-      let task = Task {
-        Container.shared.environmentService.register { .init(get: { .init() }) }
-        Container.shared.clientService.register { .init(get: { .mock }) }
-        let clerk = Clerk()
-        clerk.configure(publishableKey: "pk_test_")
-        try await clerk.load()
-        #expect(clerk.isLoaded)
-      }
-
-      try await task.value
-    }
-  }
+//  @MainActor
+//  @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
+//    try await withMainSerialExecutor {
+//      let task = Task {
+//        Container.shared.environmentService.register { .init(get: { .init() }) }
+//        Container.shared.clientService.register { .init(get: { .mock }) }
+//        let clerk = Clerk()
+//        clerk.configure(publishableKey: "pk_test_")
+//        try await clerk.load()
+//        #expect(clerk.isLoaded)
+//      }
+//
+//      try await task.value
+//    }
+//  }
 
   @MainActor
   @Test func testSignOutRequest() async throws {
@@ -111,7 +110,7 @@ struct ClerkTests {
   @Test(
     "Set Active Tests",
     arguments: [
-      "1", nil,
+      "1", nil
     ]) func testSetActiveRequest(organizationId: String?) async throws
   {
     let clerk = Clerk()

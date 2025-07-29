@@ -2,33 +2,29 @@
 //  ClientService.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/26/25.
+//  Created by Mike Pitre on 7/28/25.
 //
 
-import Factory
+import FactoryKit
 import Foundation
-
-struct ClientService {
-  var get: () async throws -> Client?
-}
-
-extension ClientService {
-
-  static var liveValue: Self {
-    .init(
-      get: {
-        let request = ClerkFAPI.v1.client.get
-        return try await Container.shared.apiClient().send(request).value.response
-      }
-    )
-  }
-
-}
 
 extension Container {
 
-  var clientService: Factory<ClientService> {
-    self { .liveValue }
-  }
+    var clientService: Factory<ClientService> {
+        self { @MainActor in ClientService() }
+    }
+
+}
+
+@MainActor
+struct ClientService {
+
+    var get: () async throws -> Client? = {
+        try await Container.shared.apiClient().request()
+            .add(path: "/v1/client")
+            .data(type: ClientResponse<Client?>.self)
+            .async()
+            .response
+    }
 
 }

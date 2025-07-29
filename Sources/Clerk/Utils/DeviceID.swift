@@ -8,14 +8,14 @@
 import Foundation
 
 #if canImport(UIKit)
-  import UIKit
+import UIKit
 #endif
 
 @MainActor
 var deviceID: String {
-  #if !os(watchOS) && !os(macOS)
+    #if !os(watchOS) && !os(macOS)
     UIDevice.current.identifierForVendor?.uuidString ?? "none"
-  #else
+    #else
     "uidevice-unsupported"
-  #endif
+    #endif
 }

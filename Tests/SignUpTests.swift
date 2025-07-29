@@ -1,5 +1,5 @@
 import ConcurrencyExtras
-import Factory
+import FactoryKit
 import Foundation
 import Mocker
 import Testing
@@ -11,7 +11,7 @@ import Testing
 
 struct SignUpTests {
 
-  @Test func testAuthenticateWithRedirectStrategyParams() {
+  @Test @MainActor func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignUp.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
     #expect(enterpriseSSO.params.strategy == "enterprise_sso")
     #expect(enterpriseSSO.params.identifier == "user@email.com")
@@ -36,8 +36,9 @@ struct SignUpTests {
       .idToken(provider: .apple, idToken: "token", firstName: "First", lastName: "Last"),
       .oauth(provider: .google, redirectUrl: "oauthRedirectUrl"),
       .standard(emailAddress: "user@email.com", password: "password", firstName: "First", lastName: "Last", username: "username", phoneNumber: "phoneNumber"),
-      .transfer,
+      .transfer
     ])
+  @MainActor
   func testCreateRequest(strategy: SignUp.CreateStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let legalAccepted: Bool? = true
@@ -94,7 +95,7 @@ struct SignUpTests {
       "legal_accepted": "1",
       "oidc_prompt": "oidcPrompt",
       "oidc_login_hint": "oidcHint",
-      "token": "token",
+      "token": "token"
     ]
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
     var mock = Mock(
@@ -187,7 +188,7 @@ struct SignUpTests {
     "All prepare strategies",
     arguments: [
       SignUp.PrepareStrategy.emailCode,
-      .phoneCode,
+      .phoneCode
     ])
   func testPrepareVerificationRequest(strategy: SignUp.PrepareStrategy) async throws {
     let requestHandled = LockIsolated(false)
@@ -212,7 +213,7 @@ struct SignUpTests {
     "All attempt strategies",
     arguments: [
       SignUp.AttemptStrategy.emailCode(code: "12345"),
-      .phoneCode(code: "67890"),
+      .phoneCode(code: "67890")
     ])
   func testPrepareVerificationRequest(strategy: SignUp.AttemptStrategy) async throws {
     let requestHandled = LockIsolated(false)

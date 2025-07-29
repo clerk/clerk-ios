@@ -1,5 +1,5 @@
 import ConcurrencyExtras
-import Factory
+import FactoryKit
 import Foundation
 import Mocker
 import Testing
@@ -609,7 +609,7 @@ struct UserTests {
     "Test get organization suggestions",
     arguments: [
       "pending",
-      nil,
+      nil
     ])
   func testGetOrganizationSuggestions(status: String?) async throws {
     let requestHandled = LockIsolated(false)
@@ -659,8 +659,8 @@ struct UserTests {
   @Test func testUserUpdatePasswordRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = User.UpdatePasswordParams(
-      newPassword: "newPass",
       currentPassword: "currentPass",
+      newPassword: "newPass",
       signOutOfOtherSessions: true
     )
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/change_password")
