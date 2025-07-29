@@ -206,7 +206,7 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 }
 
 extension User {
-
+  
   /// Updates the user's attributes. Use this method to save information you collected about the user.
   ///
   /// The appropriate settings must be enabled in the Clerk Dashboard for the user to be able to update their attributes.
@@ -229,8 +229,8 @@ extension User {
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
   /// - Parameter email: The value of the email address.
   @discardableResult @MainActor
-  public func createEmailAddress(_ email: String) async throws -> EmailAddress {
-    try await Container.shared.userService().createEmailAddress(email)
+  public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
+    try await Container.shared.userService().createEmailAddress(emailAddress)
   }
 
   /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
@@ -249,7 +249,7 @@ extension User {
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
   public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-    try await Container.shared.userService().createExternalAccountOAuth(provider, redirectUrl, additionalScopes)
+    try await Container.shared.userService().createExternalAccount(provider, redirectUrl, additionalScopes)
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -260,7 +260,7 @@ extension User {
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    try await Container.shared.userService().createExternalAccountIDToken(provider, idToken)
+    try await Container.shared.userService().createExternalAccountToken(provider, idToken)
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
@@ -278,7 +278,7 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    try await Container.shared.userService().createTOTP()
+    try await Container.shared.userService().createTotp()
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -288,13 +288,13 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    try await Container.shared.userService().verifyTOTP(code)
+    try await Container.shared.userService().verifyTotp(code)
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    try await Container.shared.userService().disableTOTP()
+    try await Container.shared.userService().disableTotp()
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -307,7 +307,7 @@ extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
+    return try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -400,7 +400,7 @@ extension User {
       primaryEmailAddressId: "1",
       primaryPhoneNumberId: "1",
       publicMetadata: nil,
-      totpEnabled: true,
+      totpEnabled: false,
       twoFactorEnabled: true,
       updatedAt: .now,
       unsafeMetadata: nil,

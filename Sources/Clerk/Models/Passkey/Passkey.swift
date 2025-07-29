@@ -80,19 +80,19 @@ extension Passkey {
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    try await Container.shared.passkeyService().update(self, name)
+    try await Container.shared.passkeyService().update(id, name)
   }
 
   /// Attempts to verify the passkey with a credential.
   @discardableResult @MainActor
   public func attemptVerification(credential: String) async throws -> Passkey {
-    try await Container.shared.passkeyService().attemptVerification(self, credential)
+    try await Container.shared.passkeyService().attemptVerification(id, credential)
   }
 
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Container.shared.passkeyService().delete(self)
+    try await Container.shared.passkeyService().delete(id)
   }
 
 }

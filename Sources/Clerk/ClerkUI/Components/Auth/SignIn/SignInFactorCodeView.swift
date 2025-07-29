@@ -358,102 +358,87 @@
   }
 
   #Preview("Email Code") {
-    Container.shared.signInService.preview {
-      var service = SignInService.liveValue
-      service.prepareFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      service.attemptFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
+    Container.shared.signInService.preview { @MainActor in
+      .init(
+        prepareFirstFactor: { _, _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        },
+        attemptFirstFactor: { _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        }
+      )
     }
-
+    
     SignInFactorCodeView(factor: .mockEmailCode)
       .environment(\.clerk, .mock)
   }
 
   #Preview("Phone Code") {
-    Container.shared.signInService.preview {
-      var service = SignInService.liveValue
-      service.prepareFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      service.attemptFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      service.attemptSecondFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
+    Container.shared.signInService.preview { @MainActor in
+      .init(
+        prepareFirstFactor: { _, _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        },
+        attemptFirstFactor: { _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        }
+      )
     }
-
+    
     SignInFactorCodeView(factor: .mockPhoneCode)
       .environment(\.clerk, .mock)
   }
 
   #Preview("Reset Password Email Code") {
-    Container.shared.signInService.preview {
-      var service = SignInService.liveValue
-      service.prepareFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      service.attemptFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
+    Container.shared.signInService.preview { @MainActor in
+      .init(
+        prepareFirstFactor: { _, _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        },
+        attemptFirstFactor: { _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        }
+      )
     }
-
+    
     SignInFactorCodeView(factor: .mockResetPasswordEmailCode)
       .environment(\.clerk, .mock)
   }
 
   #Preview("Reset Password Phone Code") {
-    Container.shared.signInService.preview {
-      var service = SignInService.liveValue
-      service.prepareFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      service.attemptFirstFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
+    Container.shared.signInService.preview { @MainActor in
+      .init(
+        prepareFirstFactor: { _, _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        },
+        attemptFirstFactor: { _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        }
+      )
     }
-
+    
     SignInFactorCodeView(factor: .mockResetPasswordPhoneCode)
       .environment(\.clerk, .mock)
   }
 
   #Preview("TOTP Code") {
-    Container.shared.signInService.preview {
-      var service = SignInService.liveValue
-
-      service.attemptSecondFactor = { _, _ in
-        try! await Task.sleep(for: .seconds(1))
-        return .mock
-      }
-
-      return service
+    Container.shared.signInService.preview { @MainActor in
+      .init(
+        attemptSecondFactor: { _, _ in
+          try! await Task.sleep(for: .seconds(1))
+          return .mock
+        }
+      )
     }
-
+    
     SignInFactorCodeView(factor: .mockTotp)
       .environment(\.clerk, .mock)
   }

@@ -2,241 +2,266 @@
 //  UserService.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/25/25.
+//  Created by Mike Pitre on 7/28/25.
 //
 
 import AuthenticationServices
 import FactoryKit
 import Foundation
-import Get
-
-struct UserService {
-  var update: @MainActor (_ params: User.UpdateParams) async throws -> User
-  var createBackupCodes: @MainActor () async throws -> BackupCodeResource
-  var createEmailAddress: @MainActor (_ email: String) async throws -> EmailAddress
-  var createPhoneNumber: @MainActor (_ phoneNumber: String) async throws -> PhoneNumber
-  var createExternalAccountOAuth: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
-  var createExternalAccountIDToken: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount
-  var createPasskey: @MainActor () async throws -> Passkey
-  var createTOTP: @MainActor () async throws -> TOTPResource
-  var verifyTOTP: @MainActor (_ code: String) async throws -> TOTPResource
-  var disableTOTP: @MainActor () async throws -> DeletedObject
-  var getOrganizationInvitations: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
-  var getOrganizationMemberships: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-  var getOrganizationSuggestions: @MainActor (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
-  var getSessions: @MainActor (_ user: User) async throws -> [Session]
-  var updatePassword: @MainActor (_ params: User.UpdatePasswordParams) async throws -> User
-  var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource
-  var deleteProfileImage: @MainActor () async throws -> DeletedObject
-  var delete: @MainActor () async throws -> DeletedObject
-}
-
-extension UserService {
-
-  static var liveValue: UserService {
-    .init(
-      update: { params in
-        let request = ClerkFAPI.v1.me.update(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: params
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createBackupCodes: {
-        let request = Request<ClientResponse<BackupCodeResource>>(
-          path: "/v1/me/backup_codes",
-          method: .post,
-          query: [("_clerk_session_id", Clerk.shared.session?.id)]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createEmailAddress: { email in
-        let request = ClerkFAPI.v1.me.emailAddresses.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: ["email_address": email]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createPhoneNumber: { phoneNumber in
-        let request = ClerkFAPI.v1.me.phoneNumbers.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: ["phone_number": phoneNumber]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createExternalAccountOAuth: { provider, redirectUrl, additionalScopes in
-        let request = ClerkFAPI.v1.me.externalAccounts.create(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: [
-            "strategy": provider.strategy,
-            "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
-            "additional_scopes": additionalScopes?.joined(separator: ","),
-          ]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createExternalAccountIDToken: { provider, idToken in
-        let request = ClerkFAPI.v1.me.externalAccounts.create(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: [
-            "strategy": provider.strategy,
-            "token": idToken,
-          ]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      createPasskey: {
-        #if canImport(AuthenticationServices) && !os(watchOS)
-          let passkey = try await Passkey.create()
-
-          guard let challenge = passkey.challenge else {
-            throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-          }
-
-          guard let name = passkey.username else {
-            throw ClerkClientError(message: "Unable to get the username for the passkey.")
-          }
-
-          guard let userId = passkey.userId else {
-            throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
-          }
-
-          let manager = PasskeyHelper()
-          let authorization = try await manager.createPasskey(
-            challenge: challenge,
-            name: name,
-            userId: userId
-          )
-
-          guard
-            let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
-            let rawAttestationObject = credentialRegistration.rawAttestationObject
-          else {
-            throw ClerkClientError(message: "Invalid credential type.")
-          }
-
-          let publicKeyCredential: [String: any Encodable] = [
-            "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-            "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-            "type": "public-key",
-            "response": [
-              "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
-              "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-            ],
-          ]
-
-          let publicKeyCredentialJSON = try JSON(publicKeyCredential)
-
-          return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
-        #else
-          throw ClerkClientError(message: "Passkey authentication is not supported on this platform.")
-        #endif
-      },
-      createTOTP: {
-        let request = ClerkFAPI.v1.me.totp.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      verifyTOTP: { code in
-        let request = ClerkFAPI.v1.me.totp.attemptVerification.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: ["code": code]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      disableTOTP: {
-        let request = ClerkFAPI.v1.me.totp.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      getOrganizationInvitations: { initialPage, pageSize in
-        let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
-          path: "/v1/me/organization_invitations",
-          query: [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("_clerk_session_id", Clerk.shared.session?.id),
-          ]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      getOrganizationMemberships: { initialPage, pageSize in
-        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
-          path: "/v1/me/organization_memberships",
-          query: [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("paginated", "true"),
-            ("_clerk_session_id", Clerk.shared.session?.id),
-          ]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      getOrganizationSuggestions: { initialPage, pageSize, status in
-        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
-          path: "/v1/me/organization_suggestions",
-          query: [
-            ("offset", String(initialPage)),
-            ("limit", String(pageSize)),
-            ("status", status),
-            ("_clerk_session_id", Clerk.shared.session?.id),
-          ].filter({ $1 != nil })
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      getSessions: { user in
-        let request = ClerkFAPI.v1.me.sessions.active.get(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
-
-        let sessions = try await Container.shared.apiClient().send(request).value
-        Clerk.shared.sessionsByUserId[user.id] = sessions
-        return sessions
-      },
-      updatePassword: { params in
-        let request = ClerkFAPI.v1.me.changePassword.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          body: params
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      setProfileImage: { imageData in
-        let boundary = UUID().uuidString
-        var data = Data()
-        data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
-        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        data.append(imageData)
-        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-
-        let request = ClerkFAPI.v1.me.profileImage.post(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)],
-          headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-        )
-        return try await Container.shared.apiClient().upload(for: request, from: data).value.response
-      },
-      deleteProfileImage: {
-        let request = ClerkFAPI.v1.me.profileImage.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      },
-      delete: {
-        let request = ClerkFAPI.v1.me.delete(
-          queryItems: [.init(name: "_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
-        return try await Container.shared.apiClient().send(request).value.response
-      }
-    )
-  }
-}
 
 extension Container {
-
+  
   var userService: Factory<UserService> {
-    self { .liveValue }
+    self { @MainActor in UserService() }
   }
+  
+}
 
+@MainActor
+struct UserService {
+  
+  var update: (_ params: User.UpdateParams) async throws -> User = { params in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me")
+      .method(.patch)
+      .body(formEncode: params)
+      .addClerkSessionId()
+      .data(type: ClientResponse<User>.self)
+      .async()
+      .response
+  }
+  
+  var createBackupCodes: () async throws -> BackupCodeResource = {
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/backup_codes")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<BackupCodeResource>.self)
+      .async()
+      .response
+  }
+  
+  var createEmailAddress: (_ emailAddress: String) async throws -> EmailAddress = { emailAddress in
+    try await EmailAddress.create(emailAddress)
+  }
+  
+  var createPhoneNumber: (_ phoneNumber: String) async throws -> PhoneNumber = { phoneNumber in
+    try await PhoneNumber.create(phoneNumber)
+  }
+  
+  var createExternalAccount: (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount = { provider, redirectUrl, additionalScopes in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/external_accounts")
+      .method(.post)
+      .addClerkSessionId()
+      .body(
+        formEncode: [
+          "strategy": provider.strategy,
+          "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
+          "additional_scopes": additionalScopes?.joined(separator: ","),
+        ].filter({ $0.value != nil })
+      )
+      .data(type: ClientResponse<ExternalAccount>.self)
+      .async()
+      .response
+  }
+  
+  var createExternalAccountToken: (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount = { provider, idToken in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/external_accounts")
+      .method(.post)
+      .addClerkSessionId()
+      .body(formEncode: [
+        "strategy": provider.strategy,
+        "token": idToken,
+      ])
+      .data(type: ClientResponse<ExternalAccount>.self)
+      .async()
+      .response
+  }
+  
+#if canImport(AuthenticationServices) && !os(watchOS)
+  var createPasskey: () async throws -> Passkey = {
+    let passkey = try await Passkey.create()
+    
+    guard let challenge = passkey.challenge else {
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+    }
+    
+    guard let name = passkey.username else {
+      throw ClerkClientError(message: "Unable to get the username for the passkey.")
+    }
+    
+    guard let userId = passkey.userId else {
+      throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+    }
+    
+    let manager = PasskeyHelper()
+    let authorization = try await manager.createPasskey(
+      challenge: challenge,
+      name: name,
+      userId: userId
+    )
+    
+    guard
+      let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+      let rawAttestationObject = credentialRegistration.rawAttestationObject
+    else {
+      throw ClerkClientError(message: "Invalid credential type.")
+    }
+    
+    let publicKeyCredential: [String: any Encodable] = [
+      "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "type": "public-key",
+      "response": [
+        "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+      ],
+    ]
+    
+    let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+    
+    return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
+  }
+#endif
+  
+  var createTotp: () async throws -> TOTPResource = {
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp")
+      .method(.post)
+      .addClerkSessionId()
+      .data(type: ClientResponse<TOTPResource>.self)
+      .async()
+      .response
+  }
+  
+  var verifyTotp: (_ code: String) async throws -> TOTPResource = { code in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp/attempt_verification")
+      .method(.post)
+      .addClerkSessionId()
+      .body(formEncode: ["code": code])
+      .data(type: ClientResponse<TOTPResource>.self)
+      .async()
+      .response
+  }
+  
+  var disableTotp: () async throws -> DeletedObject = {
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/totp")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
+  }
+  
+  var getOrganizationInvitations: (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> = { initialPage, pageSize in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_invitations")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+      ])
+      .data(type: ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>.self)
+      .async()
+      .response
+  }
+  
+  var getOrganizationMemberships: (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> = { initialPage, pageSize in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_memberships")
+      .addClerkSessionId()
+      .add(queryItems: [
+        .init(name: "offset", value: String(initialPage)),
+        .init(name: "limit", value: String(pageSize)),
+        .init(name: "paginated", value: "true"),
+      ])
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.self)
+      .async()
+      .response
+  }
+  
+  var getOrganizationSuggestions: (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> = { initialPage, pageSize, status in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/organization_suggestions")
+      .addClerkSessionId()
+      .add(
+        queryItems: [
+          .init(name: "offset", value: String(initialPage)),
+          .init(name: "limit", value: String(pageSize)),
+          .init(name: "status", value: status),
+        ].filter({ $0.value != nil })
+      )
+      .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>.self)
+      .async()
+      .response
+  }
+  
+  var getSessions: (_ user: User) async throws -> [Session] = { user in
+    let sessions = try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/sessions/active")
+      .addClerkSessionId()
+      .data(type: [Session].self)
+      .async()
+    
+    Clerk.shared.sessionsByUserId[user.id] = sessions
+    return sessions
+  }
+  
+  var updatePassword: (_ params: User.UpdatePasswordParams) async throws -> User = { params in
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/change_password")
+      .method(.post)
+      .body(formEncode: params)
+      .addClerkSessionId()
+      .data(type: ClientResponse<User>.self)
+      .async()
+      .response
+  }
+  
+  var setProfileImage: (_ imageData: Data) async throws -> ImageResource = { imageData in
+    let boundary = UUID().uuidString
+    var data = Data()
+    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
+    data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+    data.append(imageData)
+    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+    
+    return try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/profile_image")
+      .method(.post)
+      .body(data: data)
+      .addClerkSessionId()
+      .with {
+        $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      }
+      .data(type: ClientResponse<ImageResource>.self)
+      .async()
+      .response
+  }
+  
+  var deleteProfileImage: () async throws -> DeletedObject = {
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me/profile_image")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
+  }
+  
+  var delete: () async throws -> DeletedObject = {
+    try await Container.shared.apiClient().request()
+      .add(path: "/v1/me")
+      .method(.delete)
+      .addClerkSessionId()
+      .data(type: ClientResponse<DeletedObject>.self)
+      .async()
+      .response
+  }
+  
 }

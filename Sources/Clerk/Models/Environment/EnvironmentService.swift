@@ -2,35 +2,31 @@
 //  EnvironmentService.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/26/25.
+//  Created by Mike Pitre on 7/28/25.
 //
 
 import FactoryKit
 import Foundation
 
-struct EnvironmentService {
-  var get: @MainActor () async throws -> Clerk.Environment
-}
-
-extension EnvironmentService {
-
-  static var liveValue: Self {
-    .init(
-      get: {
-        let request = ClerkFAPI.v1.environment.get
-        let environment = try await Container.shared.apiClient().send(request).value
-        Clerk.shared.environment = environment
-        return environment
-      }
-    )
-  }
-
-}
-
 extension Container {
-
+  
   var environmentService: Factory<EnvironmentService> {
-    self { .liveValue }
+    self { @MainActor in EnvironmentService() }
   }
-
+  
 }
+
+@MainActor
+struct EnvironmentService {
+  
+  var get: () async throws -> Clerk.Environment = {
+    let environment = try await Container.shared.apiClient().request()
+      .add(path: "/v1/environment")
+      .data(type: Clerk.Environment.self)
+      .async()
+    
+    Clerk.shared.environment = environment
+    return environment
+  }
+  
+} 

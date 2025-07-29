@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 1/30/24.
 //
 
+import AuthenticationServices
 import FactoryKit
 import Foundation
 
@@ -152,7 +153,7 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-    try await Container.shared.signInService().createRaw(AnyEncodable(params))
+    try await Container.shared.signInService().createWithParams(params)
   }
 
   /// Resets a user's password.
@@ -165,7 +166,7 @@ extension SignIn {
   /// - Throws: An error if the password reset attempt fails.
   @discardableResult @MainActor
   public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
-    try await Container.shared.signInService().resetPassword(self, params)
+    try await Container.shared.signInService().resetPassword(id, params)
   }
 
   /// Begins the first factor verification process.
@@ -180,7 +181,7 @@ extension SignIn {
   /// - Throws: An error if the first factor preparation fails.
   @discardableResult @MainActor
   public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareFirstFactor(self, strategy)
+    try await Container.shared.signInService().prepareFirstFactor(id, strategy, self)
   }
 
   /// Attempts to complete the first factor verification process.
@@ -196,7 +197,7 @@ extension SignIn {
   /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
   @discardableResult @MainActor
   public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().attemptFirstFactor(self, strategy)
+    try await Container.shared.signInService().attemptFirstFactor(id, strategy)
   }
 
   /// Begins the second factor verification process.
@@ -213,7 +214,7 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().prepareSecondFactor(self, strategy)
+    try await Container.shared.signInService().prepareSecondFactor(id, strategy)
   }
 
   /// Attempts to complete the second factor verification process (2FA).
@@ -232,7 +233,7 @@ extension SignIn {
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
   public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
-    try await Container.shared.signInService().attemptSecondFactor(self, strategy)
+    try await Container.shared.signInService().attemptSecondFactor(id, strategy)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -261,7 +262,7 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirectCombined(strategy, prefersEphemeralWebBrowserSession)
+      try await Container.shared.signInService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -290,7 +291,7 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirectTwoStep(self, prefersEphemeralWebBrowserSession)
+      try await Container.shared.signInService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
     }
 
   #endif
@@ -347,7 +348,7 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await Container.shared.signInService().authenticateWithIdTokenCombined(provider, idToken)
+    try await Container.shared.signInService().authenticateWithIdTokenStatic(provider, idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -366,13 +367,13 @@ extension SignIn {
   /// ```
   @discardableResult @MainActor
   public func authenticateWithIdToken() async throws -> TransferFlowResult {
-    try await Container.shared.signInService().authenticateWithIdTokenTwoStep(self)
+    try await Container.shared.signInService().authenticateWithIdToken(self)
   }
 
   /// Returns the current sign-in.
   @discardableResult @MainActor
   public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await Container.shared.signInService().get(self, rotatingTokenNonce)
+    try await Container.shared.signInService().get(id, rotatingTokenNonce)
   }
 }
 
@@ -432,7 +433,7 @@ extension SignIn {
         .mockGoogle,
         .mockApple,
         .mockPasskey,
-        .mockPassword
+        .mockPassword,
       ],
       supportedSecondFactors: nil,
       firstFactorVerification: .mockEmailCodeUnverifiedVerification,

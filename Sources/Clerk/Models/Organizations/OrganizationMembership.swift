@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
@@ -70,11 +69,8 @@ extension OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to delete membership: missing userId")
     }
-    let request = Request<ClientResponse<OrganizationMembership>>(
-      path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
-      method: .delete
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    
+    return try await Container.shared.organizationService().destroyOrganizationMembership(organization.id, userId)
   }
 
   /// Updates the member's role in the organization.
@@ -87,12 +83,8 @@ extension OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to update membership: missing userId")
     }
-    let request = Request<ClientResponse<OrganizationMembership>>(
-      path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
-      method: .patch,
-      body: ["role": role]
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    
+    return try await Container.shared.organizationService().updateOrganizationMembership(organization.id, userId, role)
   }
 
 }

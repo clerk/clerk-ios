@@ -52,13 +52,19 @@ final public class EventEmitter<Event: Sendable> {
   /// ```
   public var events: AsyncStream<Event> {
     let id = UUID()
-    return AsyncStream { continuation in
+    
+    // Capture a weak reference to self to avoid strong reference cycles
+    weak var weakSelf = self
+    
+    return AsyncStream<Event> { continuation in
       // Store the continuation for broadcasting
-      continuations[id] = continuation
+      self.continuations[id] = continuation
 
       // Clean up when the stream is terminated
-      continuation.onTermination = { @MainActor _ in
-        self.continuations.removeValue(forKey: id)
+      continuation.onTermination = { @Sendable _ in
+        Task { @MainActor in
+          weakSelf?.continuations.removeValue(forKey: id)
+        }
       }
     }
   }

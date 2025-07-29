@@ -153,7 +153,7 @@
           .presentationDetents([.height(connectAccountSheetHeight)])
       }
       .task {
-        try? await Client.get()
+        _ = try? await Client.get()
       }
     }
   }

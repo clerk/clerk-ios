@@ -32,7 +32,7 @@ extension Clerk.Environment {
 
   @MainActor
   static func get() async throws -> Clerk.Environment {
-    return try await Container.shared.environmentService().get()
+    try await Container.shared.environmentService().get()
   }
 
 }

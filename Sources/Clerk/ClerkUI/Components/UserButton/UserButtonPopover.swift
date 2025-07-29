@@ -132,16 +132,6 @@
   }
 
   #Preview {
-    Container.shared.clerkService.preview {
-      var service = ClerkService.liveValue
-      service.signOut = { _ in
-        try! await Task.sleep(for: .seconds(1))
-        return
-      }
-
-      return service
-    }
-
     UserButtonPopover()
       .environment(\.clerk, .mock)
   }

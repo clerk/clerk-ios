@@ -11,7 +11,7 @@ import Testing
 
 struct SignUpTests {
 
-  @Test func testAuthenticateWithRedirectStrategyParams() {
+  @Test @MainActor func testAuthenticateWithRedirectStrategyParams() {
     let enterpriseSSO = SignUp.AuthenticateWithRedirectStrategy.enterpriseSSO(identifier: "user@email.com")
     #expect(enterpriseSSO.params.strategy == "enterprise_sso")
     #expect(enterpriseSSO.params.identifier == "user@email.com")
@@ -38,6 +38,7 @@ struct SignUpTests {
       .standard(emailAddress: "user@email.com", password: "password", firstName: "First", lastName: "Last", username: "username", phoneNumber: "phoneNumber"),
       .transfer,
     ])
+  @MainActor
   func testCreateRequest(strategy: SignUp.CreateStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let legalAccepted: Bool? = true

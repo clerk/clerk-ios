@@ -169,7 +169,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-    try await Container.shared.signUpService().createRaw(AnyEncodable(params))
+    try await Container.shared.signUpService().createWithParams(params)
   }
 
   /// This method is used to update the current sign-up.
@@ -186,7 +186,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the changes.
   @discardableResult @MainActor
   public func update(params: UpdateParams) async throws -> SignUp {
-    try await Container.shared.signUpService().update(self, params)
+    try await Container.shared.signUpService().update(id, params)
   }
 
   /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
@@ -203,7 +203,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification initiation.
   @discardableResult @MainActor
   public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-    try await Container.shared.signUpService().prepareVerification(self, strategy)
+    try await Container.shared.signUpService().prepareVerification(id, strategy)
   }
 
   /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
@@ -218,7 +218,7 @@ extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
   @discardableResult @MainActor
   public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-    try await Container.shared.signUpService().attemptVerification(self, strategy)
+    try await Container.shared.signUpService().attemptVerification(id, strategy)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -247,7 +247,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signUpService().authenticateWithRedirectCombined(strategy, prefersEphemeralWebBrowserSession)
+      try await Container.shared.signUpService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -276,7 +276,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signUpService().authenticateWithRedirectTwoStep(self, prefersEphemeralWebBrowserSession)
+      try await Container.shared.signUpService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
     }
   #endif
 
@@ -302,7 +302,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await Container.shared.signUpService().authenticateWithIdTokenCombined(provider, idToken)
+    try await Container.shared.signUpService().authenticateWithIdTokenStatic(provider, idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -321,7 +321,7 @@ extension SignUp {
   /// ```
   @discardableResult @MainActor
   public func authenticateWithIdToken() async throws -> TransferFlowResult {
-    try await Container.shared.signUpService().authenticateWithIdTokenTwoStep(self)
+    try await Container.shared.signUpService().authenticateWithIdToken(self)
   }
 }
 
@@ -359,7 +359,7 @@ extension SignUp {
   /// Returns the current sign up.
   @discardableResult @MainActor
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await Container.shared.signUpService().get(self, rotatingTokenNonce)
+    try await Container.shared.signUpService().get(id, rotatingTokenNonce)
   }
 
 }

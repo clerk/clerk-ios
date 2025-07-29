@@ -130,7 +130,7 @@ public struct AuthView: View {
     .tint(theme.colors.primary)
     .environment(\.authState, authState)
     .task {
-      try? await Clerk.Environment.get()
+      _ = try? await Clerk.Environment.get()
     }
     .task {
       if isDismissable {
@@ -165,6 +165,7 @@ extension AuthView {
     case signUpCode(SignUpCodeView.Field)
     case signUpCompleteProfile
     
+    @MainActor
     @ViewBuilder
     var view: some View {
       switch self {

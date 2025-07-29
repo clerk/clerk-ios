@@ -29,7 +29,6 @@
       case backupCodes
     }
 
-    @ViewBuilder
     private var icon: Image {
       return switch style {
       case .authenticatorApp:
@@ -41,12 +40,11 @@
       }
     }
 
-    @ViewBuilder
     private var text: Text {
       return switch style {
       case .authenticatorApp:
         Text("Authenticator app", bundle: .module)
-      case .sms(let phoneNumber):
+      case .sms:
         Text("SMS code", bundle: .module)
       case .backupCodes:
         Text("Backup codes", bundle: .module)
@@ -136,7 +134,7 @@
           .foregroundStyle(theme.colors.border)
       }
       .onChange(of: removeResource) {
-        if $0 != nil { isConfirmingRemoval = true }
+        if $1 != nil { isConfirmingRemoval = true }
       }
       .confirmationDialog(
         removeResource?.messageLine1 ?? "",

@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The model that describes the request of a user to join an organization.
 public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {
@@ -52,21 +51,13 @@ extension OrganizationMembershipRequest {
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationMembershipRequest {
-    let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-      path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/accept",
-      method: .post
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.organizationService().acceptOrganizationMembershipRequest(organizationId, id)
   }
 
   /// Rejects the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func reject() async throws -> OrganizationMembershipRequest {
-    let request = Request<ClientResponse<OrganizationMembershipRequest>>(
-      path: "/v1/organizations/\(organizationId)/membership_requests/\(id)/reject",
-      method: .post
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.organizationService().rejectOrganizationMembershipRequest(organizationId, id)
   }
 }
 

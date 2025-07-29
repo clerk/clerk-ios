@@ -7,8 +7,8 @@
 
 import FactoryKit
 import Foundation
-import Get
 import RegexBuilder
+import RequestBuilder
 import SimpleKeychain
 
 #if canImport(UIKit)
@@ -109,24 +109,31 @@ final public class Clerk {
   private(set) var frontendApiUrl: String = "" {
     didSet {
       Container.shared.apiClient.register { [frontendApiUrl] in
-        APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
-          configuration.delegate = ClerkAPIClientDelegate()
-          configuration.decoder = .clerkDecoder
-          configuration.encoder = .clerkEncoder
-          configuration.sessionConfiguration.httpAdditionalHeaders = [
-            "Content-Type": "application/x-www-form-urlencoded",
-            "clerk-api-version": "2024-10-01",
-            "x-ios-sdk-version": Clerk.version,
-            "x-mobile": "1",
-          ]
-        }
+        let base = URL(string: frontendApiUrl)
+        let session = URLSession(configuration: URLSessionConfiguration.ephemeral)
+        return BaseSessionManager(base: base, session: session)
+          .set(encoder: JSONEncoder.clerkEncoder)
+          .set(decoder: JSONDecoder.clerkDecoder)
+          .interceptor(URLRequestInterceptorMock())
+          .interceptor(URLRequestInterceptorClerkHeaders())
+          .interceptor(URLRequestInterceptorQueryItems())
+          .interceptor(URLRequestInterceptorInvalidAuth())
+          .interceptor(URLRequestInterceptorDeviceAssertion())
+          .interceptor(URLRequestInterceptorDeviceTokenSaving())
+          .interceptor(URLRequestInterceptorClientSync())
+          .interceptor(URLRequestInterceptorEventEmitter())
+          .interceptor(URLRequestInterceptorClerkErrorThrowing())
       }
     }
   }
-  
+
   /// The configuration settings for this Clerk instance.
   var settings: Settings = .init() {
     didSet {
+      Container.shared.clerkSettings.register { [settings] in
+        settings
+      }
+      
       Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
         SimpleKeychain(
           service: keychainConfig.service,
@@ -173,12 +180,12 @@ extension Clerk {
       setupNotificationObservers()
 
       // Both of these are automatically applied to the shared instance:
-      async let client = Client.get() // via middleware
-      async let environment = Environment.get() // via the function itself
-      
+      async let client = Client.get()  // via middleware
+      async let environment = Environment.get()  // via the function itself
+
       _ = try await client
       attestDeviceIfNeeded(environment: try await environment)
-      
+
       isLoaded = true
     } catch {
       throw error
@@ -262,7 +269,7 @@ extension Clerk {
     sessionPollingTask = Task(priority: .background) {
       repeat {
         if let session = session {
-          try? await session.getToken()
+          _ = try? await session.getToken()
         }
         try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
       } while !Task.isCancelled
@@ -296,7 +303,6 @@ extension Clerk {
         }
       }
     } catch {
-      // If loading fails, continue without cached client
       ClerkLogger.logError(error, message: "Failed to load cached client")
     }
   }
@@ -311,11 +317,10 @@ extension Clerk {
         }
       }
     } catch {
-      // If loading fails, continue without cached environment
       ClerkLogger.logError(error, message: "Failed to load cached environment")
     }
   }
-
+  
 }
 
 extension Container {
@@ -327,6 +332,11 @@ extension Container {
 
   var keychain: Factory<SimpleKeychain> {
     self { SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly) }
+      .cached
+  }
+  
+  var clerkSettings: Factory<Clerk.Settings> {
+    self { .init() }
       .cached
   }
 
@@ -342,7 +352,7 @@ extension Clerk {
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
     return clerk
   }
-  
+
   @_spi(Internal)
   public static var mockSignedOut: Clerk {
     let clerk = Clerk()

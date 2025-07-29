@@ -60,7 +60,7 @@ extension EmailAddress {
   ///     - email: The email address to add to the current user.
   @discardableResult @MainActor
   public static func create(_ email: String) async throws -> EmailAddress {
-    try await Container.shared.userService().createEmailAddress(email)
+    try await Container.shared.emailAddressService().create(email)
   }
 
   /// Prepares the verification process for this email address.

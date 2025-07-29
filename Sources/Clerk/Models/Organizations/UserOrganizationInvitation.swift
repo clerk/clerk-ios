@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
 public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
@@ -98,14 +97,7 @@ extension UserOrganizationInvitation {
   /// - Returns: The accepted ``UserOrganizationInvitation``.
   @discardableResult @MainActor
   public func accept() async throws -> UserOrganizationInvitation {
-    let request = Request<ClientResponse<UserOrganizationInvitation>>(
-      path: "/v1/me/organization_invitations/\(id)/accept",
-      method: .post,
-      query: [
-        ("_clerk_session_id", Clerk.shared.session?.id)
-      ].filter { $1 != nil }
-    )
-    return try await Container.shared.apiClient().send(request).value.response
+    try await Container.shared.organizationService().acceptUserOrganizationInvitation(id)
   }
 
 }

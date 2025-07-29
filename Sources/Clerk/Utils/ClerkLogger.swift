@@ -150,7 +150,7 @@ struct ClerkLogger {
       shouldLog = override
     } else {
       // Try to check debug mode safely, default to false if we can't access it
-      shouldLog = (try? MainActor.assumeIsolated { isDebugModeEnabled }) ?? false
+      shouldLog = (MainActor.assumeIsolated { isDebugModeEnabled })
     }
 
     guard shouldLog else { return }

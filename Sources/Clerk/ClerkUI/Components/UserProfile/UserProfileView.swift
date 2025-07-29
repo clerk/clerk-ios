@@ -239,10 +239,10 @@
           await getSessionsOnAllDevices()
         }
         .task {
-          try? await Clerk.Environment.get()
+          _ = try? await Clerk.Environment.get()
         }
         .task {
-          try? await Client.get()
+          _ = try? await Client.get()
         }
         .environment(\.userProfileSharedState, sharedState)
       }
@@ -253,11 +253,10 @@
 
     func signOut(sessionId: String) async {
       do {
-        if clerk.client?.activeSessions.count == 1 {
+        try await clerk.signOut(sessionId: sessionId)
+        if clerk.session == nil {
           dismiss()
         }
-        
-        try await clerk.signOut(sessionId: sessionId)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to sign out", error: error)
@@ -285,6 +284,7 @@
       case profileDetail
       case security
 
+      @MainActor
       @ViewBuilder
       var view: some View {
         switch self {

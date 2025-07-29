@@ -12,7 +12,7 @@ extension User {
     public init(
       currentPassword: String? = nil,
       newPassword: String,
-      signOutOfOtherSessions: Bool?
+      signOutOfOtherSessions: Bool = true
     ) {
       self.currentPassword = currentPassword
       self.newPassword = newPassword
@@ -24,7 +24,7 @@ extension User {
     /// The user's new password.
     public let newPassword: String
     /// If set to true, all sessions will be signed out.
-    public let signOutOfOtherSessions: Bool?
+    public let signOutOfOtherSessions: Bool
   }
 
 }
