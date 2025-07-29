@@ -36,12 +36,4 @@ final class URLRequestInterceptorClerkHeaders: @preconcurrency URLRequestInterce
       .add(headers: headers)
   }
   
-  private func loadClientFromKeychain() throws -> Client? {
-    guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
-      return nil
-    }
-    let decoder = JSONDecoder.clerkDecoder
-    return try decoder.decode(Client.self, from: clientData)
-  }
-  
 }

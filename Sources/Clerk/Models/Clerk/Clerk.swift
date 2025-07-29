@@ -40,7 +40,7 @@ final public class Clerk {
   internal(set) public var client: Client? {
     didSet {
       if let client = client {
-        try? saveClientToKeychain(client: client)
+        try? Container.shared.clerkService().saveClientToKeychain(client)
       } else {
         try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
       }
@@ -92,7 +92,7 @@ final public class Clerk {
   /// The Clerk environment for the instance.
   var environment = Environment() {
     didSet {
-      try? saveEnvironmentToKeychain(environment: environment)
+      try? Container.shared.clerkService().saveEnvironmentToKeychain(environment)
     }
   }
 
@@ -295,7 +295,7 @@ extension Clerk {
 
   private func loadCachedClient() {
     do {
-      if let cachedClient = try loadClientFromKeychain() {
+      if let cachedClient = try Container.shared.clerkService().loadClientFromKeychain() {
         // Only set cached client if we don't already have one
         // This prevents overwriting fresh data during load()
         if self.client == nil {
@@ -303,14 +303,13 @@ extension Clerk {
         }
       }
     } catch {
-      // If loading fails, continue without cached client
       ClerkLogger.logError(error, message: "Failed to load cached client")
     }
   }
 
   private func loadCachedEnvironment() {
     do {
-      if let cachedEnvironment = try loadEnvironmentFromKeychain() {
+      if let cachedEnvironment = try Container.shared.clerkService().loadEnvironmentFromKeychain() {
         // Only set cached environment if we don't already have fresh data
         // This prevents overwriting fresh data during load()
         if self.environment.isEmpty {
@@ -318,38 +317,10 @@ extension Clerk {
         }
       }
     } catch {
-      // If loading fails, continue without cached environment
       ClerkLogger.logError(error, message: "Failed to load cached environment")
     }
   }
-
-  func saveClientToKeychain(client: Client) throws {
-    let clientData = try JSONEncoder.clerkEncoder.encode(client)
-    try Container.shared.keychain().set(clientData, forKey: "cachedClient")
-  }
-
-  func loadClientFromKeychain() throws -> Client? {
-    guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
-      return nil
-    }
-    let decoder = JSONDecoder.clerkDecoder
-    return try decoder.decode(Client.self, from: clientData)
-  }
-
-  func saveEnvironmentToKeychain(environment: Clerk.Environment) throws {
-    let encoder = JSONEncoder.clerkEncoder
-    let environmentData = try encoder.encode(environment)
-    try Container.shared.keychain().set(environmentData, forKey: "cachedEnvironment")
-  }
-
-  func loadEnvironmentFromKeychain() throws -> Environment? {
-    guard let environmentData = try? Container.shared.keychain().data(forKey: "cachedEnvironment") else {
-      return nil
-    }
-    let decoder = JSONDecoder.clerkDecoder
-    return try decoder.decode(Clerk.Environment.self, from: environmentData)
-  }
-
+  
 }
 
 extension Container {
