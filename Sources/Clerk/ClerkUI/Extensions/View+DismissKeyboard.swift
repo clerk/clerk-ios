@@ -6,21 +6,21 @@
 //
 
 #if os(iOS)
-  import SwiftUI
+import SwiftUI
 
-  extension EnvironmentValues {
+extension EnvironmentValues {
     var dismissKeyboard: @MainActor () -> Void {
-      get { self[DismissKeyboardKey.self] }
-      set { self[DismissKeyboardKey.self] = newValue }
+        get { self[DismissKeyboardKey.self] }
+        set { self[DismissKeyboardKey.self] = newValue }
     }
-  }
+}
 
-  // Create a custom environment key
-  private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
+// Create a custom environment key
+private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
     @MainActor static let defaultValue: @MainActor () -> Void = {
-      DispatchQueue.main.async {
-        _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-      }
+        DispatchQueue.main.async {
+            _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
-  }
+}
 #endif

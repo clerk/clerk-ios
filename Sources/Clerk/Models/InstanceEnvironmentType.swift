@@ -11,18 +11,18 @@
 /// environment-specific behavior or configurations.
 public enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
 
-  /// Represents a production environment.
-  case production
+    /// Represents a production environment.
+    case production
 
-  /// Represents a development environment.
-  case development
+    /// Represents a development environment.
+    case development
 
-  /// Represents an unknown environment.
-  ///
-  /// Used as a fallback in case of decoding error.
-  case unknown
+    /// Represents an unknown environment.
+    ///
+    /// Used as a fallback in case of decoding error.
+    case unknown
 
-  public init(from decoder: Decoder) throws {
-    self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-  }
+    public init(from decoder: Decoder) throws {
+        self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+    }
 }

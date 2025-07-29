@@ -9,13 +9,12 @@ import Foundation
 import RequestBuilder
 
 final class URLRequestInterceptorQueryItems: URLRequestInterceptor, @unchecked Sendable {
-  
-  var parent: URLSessionManager!
 
-  func request(forURL url: URL?) -> URLRequestBuilder {
-    URLRequestBuilder(manager: self, builder: parent.request(forURL: url))
-      .add(queryItems: [.init(name: "_is_native", value: "true")])
-  }
-  
+    var parent: URLSessionManager!
+
+    func request(forURL url: URL?) -> URLRequestBuilder {
+        URLRequestBuilder(manager: self, builder: parent.request(forURL: url))
+            .add(queryItems: [.init(name: "_is_native", value: "true")])
+    }
+
 }
-

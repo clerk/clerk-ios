@@ -11,9 +11,9 @@ import RequestBuilder
 
 extension Container {
 
-  var apiClient: Factory<URLSessionManager> {
-    self { BaseSessionManager(base: URL(string: ""), session: .shared) }
-      .cached
-  }
+    var apiClient: Factory<URLSessionManager> {
+        self { BaseSessionManager(base: URL(string: ""), session: .shared) }
+            .cached
+    }
 
 }

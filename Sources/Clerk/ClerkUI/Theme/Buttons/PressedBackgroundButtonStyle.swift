@@ -10,28 +10,28 @@
 import SwiftUI
 
 struct PressedBackgroundButtonStyle: ButtonStyle {
-  @Environment(\.clerkTheme) private var theme
-  
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .background(configuration.isPressed ? theme.colors.backgroundSecondary : nil)
-  }
-  
+    @Environment(\.clerkTheme) private var theme
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? theme.colors.backgroundSecondary : nil)
+    }
+
 }
 
 extension ButtonStyle where Self == PressedBackgroundButtonStyle {
-  static var pressedBackground: PressedBackgroundButtonStyle {
-    .init()
-  }
+    static var pressedBackground: PressedBackgroundButtonStyle {
+        .init()
+    }
 }
 
 #Preview {
-  Button {
-    //
-  } label: {
-    Text("Continue", bundle: .module)
-  }
-  .buttonStyle(.pressedBackground)
+    Button {
+        //
+    } label: {
+        Text("Continue", bundle: .module)
+    }
+    .buttonStyle(.pressedBackground)
 }
 
 #endif

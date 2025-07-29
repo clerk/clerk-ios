@@ -9,18 +9,18 @@ import Foundation
 
 extension Clerk.Environment {
 
-  struct AuthConfig: Codable, Sendable, Equatable {
-    let singleSessionMode: Bool
-  }
+    struct AuthConfig: Codable, Sendable, Equatable {
+        let singleSessionMode: Bool
+    }
 
 }
 
 extension Clerk.Environment.AuthConfig {
 
-  static var mock: Self {
-    .init(
-      singleSessionMode: false
-    )
-  }
+    static var mock: Self {
+        .init(
+            singleSessionMode: false
+        )
+    }
 
 }

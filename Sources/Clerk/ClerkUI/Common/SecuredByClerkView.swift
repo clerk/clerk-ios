@@ -7,63 +7,66 @@
 
 #if os(iOS)
 
-  import SwiftUI
+import SwiftUI
 
-  struct SecuredByClerkView: View {
+struct SecuredByClerkView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {
-      if clerk.environment.displayConfig?.branded == true {
-        HStack(spacing: 6) {
-          Text("Secured by", bundle: .module)
-          Image("clerk-logo", bundle: .module)
+        if clerk.environment.displayConfig?.branded == true {
+            HStack(spacing: 6) {
+                Text("Secured by", bundle: .module)
+                Image("clerk-logo", bundle: .module)
+            }
+            .font(theme.fonts.footnote.weight(.medium))
+            .foregroundStyle(theme.colors.textSecondary)
+            .transition(.blurReplace.animation(.default))
+        } else {
+            EmptyView()
         }
-        .font(theme.fonts.footnote.weight(.medium))
-        .foregroundStyle(theme.colors.textSecondary)
-        .transition(.blurReplace.animation(.default))
-      } else {
-        EmptyView()
-      }
     }
-  }
+}
 
-  struct SecuredByClerkFooter: View {
+struct SecuredByClerkFooter: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {
-      if clerk.environment.displayConfig?.branded == true {
-        SecuredByClerkView()
-          .padding(16)
-          .frame(maxWidth: .infinity)
-          .background(theme.colors.backgroundSecondary)
-          .overlay(alignment: .top, content: {
-            Rectangle()
-              .fill(theme.colors.border)
-              .frame(height: 1)
-          })
-          .transition(.blurReplace.animation(.default))
-      } else {
-        EmptyView()
-      }
+        if clerk.environment.displayConfig?.branded == true {
+            SecuredByClerkView()
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(theme.colors.backgroundSecondary)
+                .overlay(
+                    alignment: .top,
+                    content: {
+                        Rectangle()
+                            .fill(theme.colors.border)
+                            .frame(height: 1)
+                    }
+                )
+                .transition(.blurReplace.animation(.default))
+        } else {
+            EmptyView()
+        }
     }
-  }
+}
 
-  #Preview {
+#Preview {
     SecuredByClerkView()
-  }
+}
 
-  #Preview {
+#Preview {
     @Previewable @Environment(\.clerkTheme) var theme
 
     VStack(spacing: 0) {
-      ScrollView {
-        theme.colors.backgroundSecondary
-          .containerRelativeFrame(.vertical)
-      }
-      SecuredByClerkFooter()
+        ScrollView {
+            theme.colors.backgroundSecondary
+                .containerRelativeFrame(.vertical)
+        }
+        SecuredByClerkFooter()
     }
-  }
+}
 
 #endif

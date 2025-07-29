@@ -12,19 +12,19 @@ import SwiftUI
 
 @Observable
 public class ClerkTheme {
-  public var colors: Colors
-  public var fonts: Fonts
-  public var design: Design
-  
-  public init(
-    colors: Colors = .default,
-    fonts: Fonts = .default,
-    design: Design = .default
-  ) {
-    self.colors = colors
-    self.fonts = fonts
-    self.design = design
-  }
+    public var colors: Colors
+    public var fonts: Fonts
+    public var design: Design
+
+    public init(
+        colors: Colors = .default,
+        fonts: Fonts = .default,
+        design: Design = .default
+    ) {
+        self.colors = colors
+        self.fonts = fonts
+        self.design = design
+    }
 }
 
 #endif

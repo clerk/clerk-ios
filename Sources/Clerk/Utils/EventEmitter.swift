@@ -34,64 +34,64 @@ import Foundation
 @MainActor
 final public class EventEmitter<Event: Sendable> {
 
-  /// A dictionary of active AsyncStream continuations keyed by UUID.
-  private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
+    /// A dictionary of active AsyncStream continuations keyed by UUID.
+    private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
 
-  /// Returns a new `AsyncStream` that receives all future events.
-  ///
-  /// Each consumer that calls this method will receive its own stream of events.
-  /// When a consumer finishes or cancels the stream, its continuation is removed.
-  ///
-  /// ### Example:
-  /// ```swift
-  /// Task {
-  ///     for await event in emitter.events {
-  ///         // Handle the event
-  ///     }
-  /// }
-  /// ```
-  public var events: AsyncStream<Event> {
-    let id = UUID()
-    
-    // Capture a weak reference to self to avoid strong reference cycles
-    weak var weakSelf = self
-    
-    return AsyncStream<Event> { continuation in
-      // Store the continuation for broadcasting
-      self.continuations[id] = continuation
+    /// Returns a new `AsyncStream` that receives all future events.
+    ///
+    /// Each consumer that calls this method will receive its own stream of events.
+    /// When a consumer finishes or cancels the stream, its continuation is removed.
+    ///
+    /// ### Example:
+    /// ```swift
+    /// Task {
+    ///     for await event in emitter.events {
+    ///         // Handle the event
+    ///     }
+    /// }
+    /// ```
+    public var events: AsyncStream<Event> {
+        let id = UUID()
 
-      // Clean up when the stream is terminated
-      continuation.onTermination = { @Sendable _ in
-        Task { @MainActor in
-          weakSelf?.continuations.removeValue(forKey: id)
+        // Capture a weak reference to self to avoid strong reference cycles
+        weak var weakSelf = self
+
+        return AsyncStream<Event> { continuation in
+            // Store the continuation for broadcasting
+            self.continuations[id] = continuation
+
+            // Clean up when the stream is terminated
+            continuation.onTermination = { @Sendable _ in
+                Task { @MainActor in
+                    weakSelf?.continuations.removeValue(forKey: id)
+                }
+            }
         }
-      }
     }
-  }
 
-  /// Sends an event to all active listeners.
-  ///
-  /// - Parameter event: The event to emit to all active streams.
-  ///
-  /// ### Example:
-  /// ```swift
-  /// emitter.send(.signUpCompleted(signUp: signUp))
-  /// ```
-  public func send(_ event: Event) {
-    for continuation in continuations.values {
-      continuation.yield(event)
+    /// Sends an event to all active listeners.
+    ///
+    /// - Parameter event: The event to emit to all active streams.
+    ///
+    /// ### Example:
+    /// ```swift
+    /// emitter.send(.signUpCompleted(signUp: signUp))
+    /// ```
+    public func send(_ event: Event) {
+        for continuation in continuations.values {
+            continuation.yield(event)
+        }
     }
-  }
 
-  /// Finishes all active event streams and removes all consumers.
-  ///
-  /// Use this to cleanly shut down the event emitter.
-  public func finish() {
-    for continuation in continuations.values {
-      continuation.finish()
+    /// Finishes all active event streams and removes all consumers.
+    ///
+    /// Use this to cleanly shut down the event emitter.
+    public func finish() {
+        for continuation in continuations.values {
+            continuation.finish()
+        }
+        continuations.removeAll()
     }
-    continuations.removeAll()
-  }
 }
 
 /// An enumeration of authentication-related events.
@@ -99,8 +99,8 @@ final public class EventEmitter<Event: Sendable> {
 /// `AuthEvent` represents specific events that occur during authentication processes,
 /// such as signing in or signing up.
 public enum AuthEvent: Sendable {
-  /// The current sign in was completed.
-  case signInCompleted(signIn: SignIn)
-  /// The current sign up was completed.
-  case signUpCompleted(signUp: SignUp)
+    /// The current sign in was completed.
+    case signInCompleted(signIn: SignIn)
+    /// The current sign up was completed.
+    case signUpCompleted(signUp: SignUp)
 }
