@@ -39,7 +39,7 @@ struct ClerkErrorViewModifier: ViewModifier {
                 ),
                 onDismiss: {
                     onDismiss?(error)
-                },
+                }
             ) {
                 if let error {
                     ErrorView(error: error, action: actionProvider?(error))

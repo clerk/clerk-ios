@@ -32,7 +32,7 @@ struct ClerkTextField: View {
         _ titleKey: LocalizedStringKey,
         text: Binding<String>,
         isSecure: Bool = false,
-        fieldState: FieldState = .default,
+        fieldState: FieldState = .default
     ) {
         self.titleKey = titleKey
         self._text = text

@@ -87,7 +87,7 @@ struct SignInTests {
       .passkey,
       .ticket("ticket"),
       .transfer,
-      .none,
+      .none
     ])
   @MainActor
   func testCreateRequest(strategy: SignIn.CreateStrategy) async throws {
@@ -129,7 +129,7 @@ struct SignInTests {
       "redirect_url": "url",
       "transfer": String(describing: NSNumber(booleanLiteral: true)),
       "oidc_prompt": "prompt",
-      "oidc_login_hint": "hint",
+      "oidc_login_hint": "hint"
     ]
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins")
     var mock = Mock(
@@ -189,7 +189,7 @@ struct SignInTests {
       .phoneCode(),
       .phoneCode(phoneNumberId: "1"),
       .resetPasswordEmailCode(emailAddressId: "1"),
-      .resetPasswordPhoneCode(phoneNumberId: "1"),
+      .resetPasswordPhoneCode(phoneNumberId: "1")
     ])
   @MainActor
   func testPrepareFirstFactorRequest(strategy: SignIn.PrepareFirstFactorStrategy) async throws {
@@ -223,7 +223,7 @@ struct SignInTests {
       .password(password: "password"),
       .phoneCode(code: "phonecode"),
       .resetPasswordEmailCode(code: "resetemailcode"),
-      .resetPasswordPhoneCode(code: "resetphonecode"),
+      .resetPasswordPhoneCode(code: "resetphonecode")
     ])
   func testAttemptFirstFactorRequest(strategy: SignIn.AttemptFirstFactorStrategy) async throws {
     let requestHandled = LockIsolated(false)
@@ -276,7 +276,7 @@ struct SignInTests {
     arguments: [
       SignIn.AttemptSecondFactorStrategy.backupCode(code: "backupcode"),
       .phoneCode(code: "phonecode"),
-      .totp(code: "totpcode"),
+      .totp(code: "totpcode")
     ])
   func testAttemptSecondFactorRequest(strategy: SignIn.AttemptSecondFactorStrategy) async throws {
     let requestHandled = LockIsolated(false)

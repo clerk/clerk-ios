@@ -34,7 +34,7 @@ extension ClerkPhoneNumberField {
             self.partialFormatter = .init(
                 utility: utility,
                 defaultRegion: defaultCountry.code,
-                withPrefix: false,
+                withPrefix: false
             )
         }
 

@@ -12,7 +12,7 @@ let package = Package(
     .macOS(.v14),
     .watchOS(.v10),
     .tvOS(.v17),
-    .visionOS(.v1),
+    .visionOS(.v1)
   ],
   products: [
     .library(name: "Clerk", targets: ["Clerk"])
@@ -25,7 +25,7 @@ let package = Package(
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
     .package(url: "https://github.com/hmlongco/RequestBuilder", branch: "main"),
     .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
-    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1")),
+    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1"))
   ],
   targets: [
     .target(
@@ -47,7 +47,7 @@ let package = Package(
       dependencies: [
         "Clerk",
         .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
-        .product(name: "Mocker", package: "Mocker"),
+        .product(name: "Mocker", package: "Mocker")
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")

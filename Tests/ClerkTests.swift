@@ -110,7 +110,7 @@ struct ClerkTests {
   @Test(
     "Set Active Tests",
     arguments: [
-      "1", nil,
+      "1", nil
     ]) func testSetActiveRequest(organizationId: String?) async throws
   {
     let clerk = Clerk()

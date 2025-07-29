@@ -42,7 +42,7 @@ struct SocialButton: View {
 
     init(
         provider: OAuthProvider,
-        action: (() async -> Void)? = nil,
+        action: (() async -> Void)? = nil
     ) {
         self.provider = provider
         self.action = action

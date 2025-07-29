@@ -37,7 +37,7 @@ extension ClerkTheme {
             callout: Font = Self.default.callout,
             footnote: Font = Self.default.footnote,
             caption: Font = Self.default.caption,
-            caption2: Font = Self.default.caption2,
+            caption2: Font = Self.default.caption2
         ) {
             self.largeTitle = largeTitle
             self.title = title

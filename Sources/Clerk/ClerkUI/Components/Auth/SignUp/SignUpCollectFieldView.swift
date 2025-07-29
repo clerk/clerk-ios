@@ -90,7 +90,7 @@ struct SignUpCollectFieldView: View {
         case .username:
             ClerkTextField(
                 "Choose your username",
-                text: $authState.signUpUsername,
+                text: $authState.signUpUsername
             )
             .textContentType(.username)
         }

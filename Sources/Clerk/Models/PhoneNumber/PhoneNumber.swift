@@ -57,7 +57,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
         verification: Verification? = nil,
         linkedTo: JSON? = nil,
         backupCodes: [String]? = nil,
-        createdAt: Date = .now,
+        createdAt: Date = .now
     ) {
         self.id = id
         self.phoneNumber = phoneNumber

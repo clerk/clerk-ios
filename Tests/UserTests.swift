@@ -609,7 +609,7 @@ struct UserTests {
     "Test get organization suggestions",
     arguments: [
       "pending",
-      nil,
+      nil
     ])
   func testGetOrganizationSuggestions(status: String?) async throws {
     let requestHandled = LockIsolated(false)
