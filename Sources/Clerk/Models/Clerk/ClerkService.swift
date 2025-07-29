@@ -39,7 +39,7 @@ struct ClerkService {
     _ = try await Container.shared.apiClient().request()
       .add(path: "/v1/client/sessions/\(sessionId)/touch")
       .method(.post)
-      .body(formEncode: ["active_organization_id": organizationId])
+      .body(formEncode: ["active_organization_id": organizationId ?? ""])
       .data(type: ClientResponse<Session>.self)
       .async()
   }
