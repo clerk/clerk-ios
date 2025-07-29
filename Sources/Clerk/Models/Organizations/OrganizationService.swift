@@ -59,8 +59,8 @@ struct OrganizationService {
       .body(data: data)
       .method(.put)
       .addClerkSessionId()
-      .with { request in
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      .with {
+        $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
       }
       .data(type: ClientResponse<Organization>.self)
       .async()

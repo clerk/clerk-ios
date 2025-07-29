@@ -235,8 +235,10 @@ struct UserService {
       .add(path: "/v1/me/profile_image")
       .method(.post)
       .body(data: data)
-      .add(headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"])
       .addClerkSessionId()
+      .with {
+        $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+      }
       .data(type: ClientResponse<ImageResource>.self)
       .async()
       .response
