@@ -160,6 +160,6 @@ struct AppAttestHelper {
   /// the app wont have a client yet
   @MainActor
   static var clientId: String? {
-    Clerk.shared.client?.id
+    try? Container.shared.clerkService().loadClientFromKeychain()?.id
   }
 }
