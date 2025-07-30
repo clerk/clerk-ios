@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		8FC2FE082E3A5C32001E5953 /* Quickstart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quickstart.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Quickstart;
 			packageProductDependencies = (
+				8F9023512E3A648E00831B13 /* Clerk */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 8FC2FDFF2E3A5C32001E5953;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8F9023502E3A648E00831B13 /* XCLocalSwiftPackageReference "../../../clerk-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE092E3A5C32001E5953 /* Products */;
 			projectDirPath = "";
@@ -261,6 +270,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -293,6 +303,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -332,6 +343,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8F9023502E3A648E00831B13 /* XCLocalSwiftPackageReference "../../../clerk-ios" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../clerk-ios";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8F9023512E3A648E00831B13 /* Clerk */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Clerk;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8FC2FE002E3A5C32001E5953 /* Project object */;
 }
