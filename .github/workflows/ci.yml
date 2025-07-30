@@ -65,7 +65,4 @@ jobs:
       - name: Run tests on iOS
         run: |
           set -o pipefail
-          xcodebuild test \
-            -scheme Clerk \
-            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
-            -disable-concurrent-destination-testing | xcpretty
+          xcodebuild test -scheme ClerkTests -destination "platform=iOS Simulator,name=iPhone 16 Pro" -disable-concurrent-destination-testing | xcpretty
