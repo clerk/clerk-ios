@@ -47,9 +47,10 @@ dependencies: [
 
 ## 🎓 Docs
 
-- [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerk)
 - [Quickstart](https://clerk.com/docs/quickstarts/ios)
+- [Prebuilt Components](https://clerk.com/docs/references/ios/auth-view)
 - [Custom Flows](https://clerk.com/docs/custom-flows/overview)
+- [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerk)
 
 ## 🚢 Release Notes
 
