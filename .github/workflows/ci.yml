@@ -41,7 +41,7 @@ jobs:
             tvOS) destination="platform=tvOS Simulator,name=Apple TV 4K (3rd generation)" ;;
             visionOS) destination="platform=visionOS Simulator,name=Apple Vision Pro" ;;
           esac
-          xcodebuild build -scheme Clerk -destination "$destination" | xcpretty
+          xcodebuild build -scheme Clerk -workspace Clerk.xcworkspace -destination "$destination" -verbose
 
   test:
     name: Run tests on iOS
@@ -65,4 +65,4 @@ jobs:
       - name: Run tests on iOS
         run: |
           set -o pipefail
-          xcodebuild test -scheme ClerkTests -destination "platform=iOS Simulator,name=iPhone 16 Pro" -disable-concurrent-destination-testing | xcpretty
+          xcodebuild test -scheme Clerk -workspace Clerk.xcworkspace -destination "platform=iOS Simulator,name=iPhone 16 Pro" -disable-concurrent-destination-testing -verbose
