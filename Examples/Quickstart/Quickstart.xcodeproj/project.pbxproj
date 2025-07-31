@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8F692CA52E3C046D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CA42E3C046D00E6E7ED /* Clerk */; };
 		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F692CA52E3C046D00E6E7ED /* Clerk in Frameworks */,
 				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,6 +73,7 @@
 			name = Quickstart;
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* Clerk */,
+				8F692CA42E3C046D00E6E7ED /* Clerk */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -101,7 +104,7 @@
 			mainGroup = 8FC2FDFF2E3A5C32001E5953;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8F9023502E3A648E00831B13 /* XCLocalSwiftPackageReference "../../../clerk-ios" */,
+				8F692CA32E3C046D00E6E7ED /* XCRemoteSwiftPackageReference "clerk-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE092E3A5C32001E5953 /* Products */;
@@ -344,14 +347,23 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		8F9023502E3A648E00831B13 /* XCLocalSwiftPackageReference "../../../clerk-ios" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../../clerk-ios";
+/* Begin XCRemoteSwiftPackageReference section */
+		8F692CA32E3C046D00E6E7ED /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.63.0;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8F692CA42E3C046D00E6E7ED /* Clerk */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F692CA32E3C046D00E6E7ED /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = Clerk;
+		};
 		8F9023512E3A648E00831B13 /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Clerk;
