@@ -32,7 +32,7 @@ struct AppAttestHelper {
             path: "/v1/client/device_attestation/challenges",
             method: .post
         )
-        
+
         let response = try await Container.shared.apiClient().send(request).value
 
         guard let challenge = response["challenge"] else {
@@ -79,13 +79,13 @@ struct AppAttestHelper {
             "attestation": attestation.base64EncodedString(),
             "bundle_id": Bundle.main.bundleIdentifier
         ]
-        
+
         let request = Request(
             path: "/v1/client/device_attestation/verify",
             method: .post,
-            body: body,
+            body: body
         )
-        
+
         try await Container.shared.apiClient().send(request)
     }
 
@@ -134,7 +134,7 @@ struct AppAttestHelper {
             method: .post,
             body: body
         )
-        
+
         try await Container.shared.apiClient().send(request)
     }
 
