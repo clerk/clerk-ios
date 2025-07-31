@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/13/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct UserProfileDeleteAccountSection: View {
@@ -30,3 +32,5 @@ struct UserProfileDeleteAccountSection: View {
 #Preview {
     UserProfileDeleteAccountSection()
 }
+
+#endif
