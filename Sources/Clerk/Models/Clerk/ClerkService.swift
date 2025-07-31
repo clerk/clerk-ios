@@ -30,7 +30,7 @@ struct ClerkService {
         } else {
             let request = Request(
                 path: "/v1/client/sessions",
-                method: .delete,
+                method: .delete
             )
             
             try await Container.shared.apiClient().send(request)

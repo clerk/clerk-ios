@@ -36,6 +36,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     }
     
     func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+        try ClerkDeviceTokenRequestProcessor.process(response: response, data: data, task: task)
         try ClerkClientSyncRequestProcessor.process(response: response, data: data, task: task)
         try ClerkEventEmitterRequestProcessor.process(response: response, data: data, task: task)
         try ClerkErrorThrowingRequestProcessor.process(response: response, data: data, task: task)
