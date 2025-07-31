@@ -1,4 +1,14 @@
 version: 1
 builder:
   configs:
+    - platform: ios
+      scheme: Clerk
+    - platform: macos
+      scheme: Clerk
+    - platform: tvos
+      scheme: Clerk
+    - platform: watchos
+      scheme: Clerk
+    - platform: visionos
+      scheme: Clerk
     - documentation_targets: [Clerk]
