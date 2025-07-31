@@ -7,59 +7,59 @@
 
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var emailAddressService: Factory<EmailAddressService> {
-        self { @MainActor in EmailAddressService() }
+        self { EmailAddressService() }
     }
 
 }
 
-@MainActor
 struct EmailAddressService {
 
-    var create: (_ email: String) async throws -> EmailAddress = { email in
-        try await Container.shared.apiClient().request()
-            .add(path: "v1/me/email_addresses")
-            .addClerkSessionId()
-            .method(.post)
-            .body(formEncode: ["email_address": email])
-            .data(type: ClientResponse<EmailAddress>.self)
-            .async()
-            .response
+    var create: @MainActor (_ email: String) async throws -> EmailAddress = { email in
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "v1/me/email_addresses",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["email_address": email]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var prepareVerification: (_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification")
-            .addClerkSessionId()
-            .method(.post)
-            .body(formEncode: strategy.requestBody)
-            .data(type: ClientResponse<EmailAddress>.self)
-            .async()
-            .response
+    var prepareVerification: @MainActor (_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var attemptVerification: (_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification")
-            .addClerkSessionId()
-            .method(.post)
-            .body(formEncode: strategy.requestBody)
-            .data(type: ClientResponse<EmailAddress>.self)
-            .async()
-            .response
+    var attemptVerification: @MainActor (_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var destroy: (_ emailAddressId: String) async throws -> DeletedObject = { emailAddressId in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/email_addresses/\(emailAddressId)")
-            .addClerkSessionId()
-            .method(.delete)
-            .data(type: ClientResponse<DeletedObject>.self)
-            .async()
-            .response
+    var destroy: @MainActor (_ emailAddressId: String) async throws -> DeletedObject = { emailAddressId in
+        let request = Request<ClientResponse<DeletedObject>>(
+            path: "/v1/me/email_addresses/\(emailAddressId)",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
 }

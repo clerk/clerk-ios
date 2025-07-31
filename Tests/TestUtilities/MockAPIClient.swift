@@ -7,8 +7,8 @@
 
 import FactoryKit
 import Foundation
+import Get
 import Mocker
-import RequestBuilder
 
 @testable import Clerk
 
@@ -18,21 +18,18 @@ extension Container: @retroactive AutoRegistering {
 
   public func autoRegister() {
     apiClient.context(.test) { _ in
-      let configuration = URLSessionConfiguration.default
-      configuration.protocolClasses = [MockingURLProtocol.self]
-      let session = URLSession(configuration: configuration)
-      return BaseSessionManager(base: mockBaseUrl, session: session)
-        .set(encoder: JSONEncoder.clerkEncoder)
-        .set(decoder: JSONDecoder.clerkDecoder)
-        .interceptor(URLRequestInterceptorClerkHeaders())
-        .interceptor(URLRequestInterceptorQueryItems())
-        .interceptor(URLRequestInterceptorInvalidAuth())
-        .interceptor(URLRequestInterceptorDeviceAssertion())
-        .interceptor(URLRequestInterceptorDeviceTokenSaving())
-        .interceptor(URLRequestInterceptorClientSync())
-        .interceptor(URLRequestInterceptorEventEmitter())
-        .interceptor(URLRequestInterceptorClerkErrorThrowing())
-        .interceptor(URLRequestInterceptorMock())
+        APIClient(baseURL: mockBaseUrl) { configuration in
+            configuration.delegate = ClerkAPIClientDelegate()
+            configuration.decoder = .clerkDecoder
+            configuration.encoder = .clerkEncoder
+            configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+            configuration.sessionConfiguration.httpAdditionalHeaders = [
+                "Content-Type": "application/x-www-form-urlencoded",
+                "clerk-api-version": "2024-10-01",
+                "x-ios-sdk-version": Clerk.version,
+                "x-mobile": "1"
+            ]
+        }
     }
   }
 

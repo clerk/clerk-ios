@@ -7,24 +7,21 @@
 
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var clientService: Factory<ClientService> {
-        self { @MainActor in ClientService() }
+        self { ClientService() }
     }
 
 }
 
-@MainActor
 struct ClientService {
 
-    var get: () async throws -> Client? = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/client")
-            .data(type: ClientResponse<Client?>.self)
-            .async()
-            .response
+    var get: @MainActor () async throws -> Client? = {
+        let request = Request<ClientResponse<Client?>>(path: "/v1/client")
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
 }

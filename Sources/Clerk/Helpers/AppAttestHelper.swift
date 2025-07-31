@@ -9,6 +9,7 @@ import CryptoKit
 import DeviceCheck
 import FactoryKit
 import Foundation
+import Get
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
 struct AppAttestHelper {
@@ -27,11 +28,12 @@ struct AppAttestHelper {
     /// - Returns: A challenge string received from the server.
     /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
     private static func getChallenge() async throws -> String {
-        let response = try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/device_attestation/challenges")
-            .method(.post)
-            .data(type: [String: String].self)
-            .async()
+        let request = Request<[String: String]>.init(
+            path: "/v1/client/device_attestation/challenges",
+            method: .post
+        )
+
+        let response = try await Container.shared.apiClient().send(request).value
 
         guard let challenge = response["challenge"] else {
             throw AttestationError.unableToGetChallengeFromServer
@@ -78,12 +80,13 @@ struct AppAttestHelper {
             "bundle_id": Bundle.main.bundleIdentifier
         ]
 
-        let _: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/device_attestation/verify")
-            .method(.post)
-            .body(formEncode: body)
-            .data()
-            .async()
+        let request = Request(
+            path: "/v1/client/device_attestation/verify",
+            method: .post,
+            body: body
+        )
+
+        try await Container.shared.apiClient().send(request)
     }
 
     /// Creates an assertion using the attestation key.
@@ -126,12 +129,13 @@ struct AppAttestHelper {
             "bundle_id": Bundle.main.bundleIdentifier
         ]
 
-        let _: (Data?, HTTPURLResponse?) = try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/verify")
-            .method(.post)
-            .body(formEncode: body)
-            .data()
-            .async()
+        let request = Request(
+            path: "/v1/client/verify",
+            method: .post,
+            body: body
+        )
+
+        try await Container.shared.apiClient().send(request)
     }
 
     /// Checks whether a key ID is stored in the keychain.

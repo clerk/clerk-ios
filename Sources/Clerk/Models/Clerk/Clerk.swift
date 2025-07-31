@@ -7,8 +7,8 @@
 
 import FactoryKit
 import Foundation
+import Get
 import RegexBuilder
-import RequestBuilder
 import SimpleKeychain
 
 #if canImport(UIKit)
@@ -109,20 +109,17 @@ final public class Clerk {
     private(set) var frontendApiUrl: String = "" {
         didSet {
             Container.shared.apiClient.register { [frontendApiUrl] in
-                let base = URL(string: frontendApiUrl)
-                let session = URLSession(configuration: URLSessionConfiguration.ephemeral)
-                return BaseSessionManager(base: base, session: session)
-                    .set(encoder: JSONEncoder.clerkEncoder)
-                    .set(decoder: JSONDecoder.clerkDecoder)
-                    .interceptor(URLRequestInterceptorMock())
-                    .interceptor(URLRequestInterceptorClerkHeaders())
-                    .interceptor(URLRequestInterceptorQueryItems())
-                    .interceptor(URLRequestInterceptorInvalidAuth())
-                    .interceptor(URLRequestInterceptorDeviceAssertion())
-                    .interceptor(URLRequestInterceptorDeviceTokenSaving())
-                    .interceptor(URLRequestInterceptorClientSync())
-                    .interceptor(URLRequestInterceptorEventEmitter())
-                    .interceptor(URLRequestInterceptorClerkErrorThrowing())
+                APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
+                    configuration.delegate = ClerkAPIClientDelegate()
+                    configuration.decoder = .clerkDecoder
+                    configuration.encoder = .clerkEncoder
+                    configuration.sessionConfiguration.httpAdditionalHeaders = [
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "clerk-api-version": "2024-10-01",
+                        "x-ios-sdk-version": Clerk.version,
+                        "x-mobile": "1"
+                    ]
+                }
             }
         }
     }

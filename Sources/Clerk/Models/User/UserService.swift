@@ -8,80 +8,83 @@
 import AuthenticationServices
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var userService: Factory<UserService> {
-        self { @MainActor in UserService() }
+        self { UserService() }
     }
 
 }
 
-@MainActor
 struct UserService {
 
-    var update: (_ params: User.UpdateParams) async throws -> User = { params in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me")
-            .method(.patch)
-            .body(formEncode: params)
-            .addClerkSessionId()
-            .data(type: ClientResponse<User>.self)
-            .async()
-            .response
+    var update: @MainActor (_ params: User.UpdateParams) async throws -> User = { params in
+        let request = Request<ClientResponse<User>>.init(
+            path: "/v1/me",
+            method: .patch,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var createBackupCodes: () async throws -> BackupCodeResource = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/backup_codes")
-            .method(.post)
-            .addClerkSessionId()
-            .data(type: ClientResponse<BackupCodeResource>.self)
-            .async()
-            .response
+    var createBackupCodes: @MainActor () async throws -> BackupCodeResource = {
+        let request = Request<ClientResponse<BackupCodeResource>>.init(
+            path: "/v1/me/backup_codes",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var createEmailAddress: (_ emailAddress: String) async throws -> EmailAddress = { emailAddress in
+    var createEmailAddress: @MainActor (_ emailAddress: String) async throws -> EmailAddress = { emailAddress in
         try await EmailAddress.create(emailAddress)
     }
 
-    var createPhoneNumber: (_ phoneNumber: String) async throws -> PhoneNumber = { phoneNumber in
+    var createPhoneNumber: @MainActor (_ phoneNumber: String) async throws -> PhoneNumber = { phoneNumber in
         try await PhoneNumber.create(phoneNumber)
     }
 
-    var createExternalAccount: (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount = { provider, redirectUrl, additionalScopes in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/external_accounts")
-            .method(.post)
-            .addClerkSessionId()
-            .body(
-                formEncode: [
-                    "strategy": provider.strategy,
-                    "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl,
-                    "additional_scopes": additionalScopes?.joined(separator: ",")
-                ].filter({ $0.value != nil })
-            )
-            .data(type: ClientResponse<ExternalAccount>.self)
-            .async()
-            .response
+    var createExternalAccount: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount = { provider, redirectUrl, additionalScopes in
+        var bodyParams: [String: String] = [
+            "strategy": provider.strategy,
+            "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+        ]
+        
+        if let additionalScopes = additionalScopes {
+            bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
+        }
+        
+        let request = Request<ClientResponse<ExternalAccount>>.init(
+            path: "/v1/me/external_accounts",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: bodyParams
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var createExternalAccountToken: (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount = { provider, idToken in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/external_accounts")
-            .method(.post)
-            .addClerkSessionId()
-            .body(formEncode: [
+    var createExternalAccountToken: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount = { provider, idToken in
+        let request = Request<ClientResponse<ExternalAccount>>.init(
+            path: "/v1/me/external_accounts",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: [
                 "strategy": provider.strategy,
                 "token": idToken
-            ])
-            .data(type: ClientResponse<ExternalAccount>.self)
-            .async()
-            .response
+            ]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
     #if canImport(AuthenticationServices) && !os(watchOS)
-    var createPasskey: () async throws -> Passkey = {
+    var createPasskey: @MainActor () async throws -> Passkey = {
         let passkey = try await Passkey.create()
 
         guard let challenge = passkey.challenge else {
@@ -126,103 +129,110 @@ struct UserService {
     }
     #endif
 
-    var createTotp: () async throws -> TOTPResource = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/totp")
-            .method(.post)
-            .addClerkSessionId()
-            .data(type: ClientResponse<TOTPResource>.self)
-            .async()
-            .response
+    var createTotp: @MainActor () async throws -> TOTPResource = {
+        let request = Request<ClientResponse<TOTPResource>>.init(
+            path: "/v1/me/totp",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var verifyTotp: (_ code: String) async throws -> TOTPResource = { code in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/totp/attempt_verification")
-            .method(.post)
-            .addClerkSessionId()
-            .body(formEncode: ["code": code])
-            .data(type: ClientResponse<TOTPResource>.self)
-            .async()
-            .response
+    var verifyTotp: @MainActor (_ code: String) async throws -> TOTPResource = { code in
+        let request = Request<ClientResponse<TOTPResource>>.init(
+            path: "/v1/me/totp/attempt_verification",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["code": code]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var disableTotp: () async throws -> DeletedObject = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/totp")
-            .method(.delete)
-            .addClerkSessionId()
-            .data(type: ClientResponse<DeletedObject>.self)
-            .async()
-            .response
+    var disableTotp: @MainActor () async throws -> DeletedObject = {
+        let request = Request<ClientResponse<DeletedObject>>.init(
+            path: "/v1/me/totp",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var getOrganizationInvitations: (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> = { initialPage, pageSize in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/organization_invitations")
-            .addClerkSessionId()
-            .add(queryItems: [
-                .init(name: "offset", value: String(initialPage)),
-                .init(name: "limit", value: String(pageSize))
-            ])
-            .data(type: ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>.self)
-            .async()
-            .response
+    var getOrganizationInvitations: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> = { initialPage, pageSize in
+        let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>.init(
+            path: "/v1/me/organization_invitations",
+            method: .get,
+            query: [
+                ("_clerk_session_id", value: Clerk.shared.session?.id),
+                ("offset", value: String(initialPage)),
+                ("limit", value: String(pageSize))
+            ]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var getOrganizationMemberships: (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> = { initialPage, pageSize in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/organization_memberships")
-            .addClerkSessionId()
-            .add(queryItems: [
-                .init(name: "offset", value: String(initialPage)),
-                .init(name: "limit", value: String(pageSize)),
-                .init(name: "paginated", value: "true")
-            ])
-            .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>.self)
-            .async()
-            .response
+    var getOrganizationMemberships: @MainActor (_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> = { initialPage, pageSize in
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>.init(
+            path: "/v1/me/organization_memberships",
+            method: .get,
+            query: [
+                ("_clerk_session_id", value: Clerk.shared.session?.id),
+                ("offset", value: String(initialPage)),
+                ("limit", value: String(pageSize)),
+                ("paginated", value: "true")
+            ]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var getOrganizationSuggestions: (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> = { initialPage, pageSize, status in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/organization_suggestions")
-            .addClerkSessionId()
-            .add(
-                queryItems: [
-                    .init(name: "offset", value: String(initialPage)),
-                    .init(name: "limit", value: String(pageSize)),
-                    .init(name: "status", value: status)
-                ].filter({ $0.value != nil })
-            )
-            .data(type: ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>.self)
-            .async()
-            .response
+    var getOrganizationSuggestions: @MainActor (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> = { initialPage, pageSize, status in
+        var queryParams: [(String, String?)] = [
+            ("_clerk_session_id", value: Clerk.shared.session?.id),
+            ("offset", value: String(initialPage)),
+            ("limit", value: String(pageSize))
+        ]
+        
+        if let status = status {
+            queryParams.append(("status", value: status))
+        }
+        
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>.init(
+            path: "/v1/me/organization_suggestions",
+            method: .get,
+            query: queryParams
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var getSessions: (_ user: User) async throws -> [Session] = { user in
-        let sessions = try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/sessions/active")
-            .addClerkSessionId()
-            .data(type: [Session].self)
-            .async()
-
+    var getSessions: @MainActor (_ user: User) async throws -> [Session] = { user in
+        let request = Request<[Session]>.init(
+            path: "/v1/me/sessions/active",
+            method: .get,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        let sessions = try await Container.shared.apiClient().send(request).value
         Clerk.shared.sessionsByUserId[user.id] = sessions
         return sessions
     }
 
-    var updatePassword: (_ params: User.UpdatePasswordParams) async throws -> User = { params in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/change_password")
-            .method(.post)
-            .body(formEncode: params)
-            .addClerkSessionId()
-            .data(type: ClientResponse<User>.self)
-            .async()
-            .response
+    var updatePassword: @MainActor (_ params: User.UpdatePasswordParams) async throws -> User = { params in
+        let request = Request<ClientResponse<User>>.init(
+            path: "/v1/me/change_password",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var setProfileImage: (_ imageData: Data) async throws -> ImageResource = { imageData in
+    var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource = { imageData in
         let boundary = UUID().uuidString
         var data = Data()
         data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
@@ -231,37 +241,34 @@ struct UserService {
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
 
-        return try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/profile_image")
-            .method(.post)
-            .body(data: data)
-            .addClerkSessionId()
-            .with {
-                $0.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-            }
-            .data(type: ClientResponse<ImageResource>.self)
-            .async()
-            .response
+        let request = Request<ClientResponse<ImageResource>>.init(
+            path: "/v1/me/profile_image",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+        )
+        
+        return try await Container.shared.apiClient().upload(for: request, from: data).value.response
     }
 
-    var deleteProfileImage: () async throws -> DeletedObject = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/profile_image")
-            .method(.delete)
-            .addClerkSessionId()
-            .data(type: ClientResponse<DeletedObject>.self)
-            .async()
-            .response
+    var deleteProfileImage: @MainActor () async throws -> DeletedObject = {
+        let request = Request<ClientResponse<DeletedObject>>.init(
+            path: "/v1/me/profile_image",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var delete: () async throws -> DeletedObject = {
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me")
-            .method(.delete)
-            .addClerkSessionId()
-            .data(type: ClientResponse<DeletedObject>.self)
-            .async()
-            .response
+    var delete: @MainActor () async throws -> DeletedObject = {
+        let request = Request<ClientResponse<DeletedObject>>.init(
+            path: "/v1/me",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
 }

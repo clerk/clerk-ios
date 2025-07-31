@@ -1,28 +1,23 @@
 //
-//  ClientSyncingMiddleware.swift
+//  ClerkClientSyncRequestProcessor.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/31/25.
 //
 
 import Foundation
-import RequestBuilder
 
-final class URLRequestInterceptorClientSync: URLRequestInterceptor, @unchecked Sendable {
-
-    var parent: URLSessionManager!
-
-    func data(for request: URLRequest) async throws -> (Data?, HTTPURLResponse?) {
-        let (data, response) = try await parent.data(for: request)
-        if let data, let client = decodeClient(from: data) {
+struct ClerkClientSyncRequestProcessor: RequestPostprocessor {
+    
+    static func process(response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+        if let client = decodeClient(from: data) {
             Task { @MainActor in
                 Clerk.shared.client = client
             }
         }
-        return (data, response)
     }
-
-    private func decodeClient(from jsonData: Data) -> Client? {
+    
+    private static func decodeClient(from jsonData: Data) -> Client? {
         struct ClientWrapper: Decodable {
             let client: Client?
 
@@ -55,5 +50,5 @@ final class URLRequestInterceptorClientSync: URLRequestInterceptor, @unchecked S
 
         return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
     }
-
+    
 }
