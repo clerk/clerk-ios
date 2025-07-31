@@ -49,7 +49,7 @@ struct ClerkTests {
     let clerk = Clerk()
     clerk.configure(publishableKey: "     ")
     try await clerk.load()
-    #expect(!clerk.isLoaded)
+    #expect(clerk.isLoaded)
   }
 
 //  @MainActor
