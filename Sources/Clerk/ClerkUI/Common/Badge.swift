@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 5/13/25.
 //
 
+#if os(iOS)
+
 import SwiftUI
 
 struct Badge: View {
@@ -111,3 +113,5 @@ struct Badge: View {
         Badge(key: "Badge Label", style: style)
     }
 }
+
+#endif
