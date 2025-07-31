@@ -8,92 +8,91 @@
 import AuthenticationServices
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var signUpService: Factory<SignUpService> {
-        self { @MainActor in SignUpService() }
+        self { SignUpService() }
     }
 
 }
 
-@MainActor
 struct SignUpService {
 
-    var create: (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp = { @MainActor strategy, legalAccepted in
+    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp = { strategy, legalAccepted in
         var params = strategy.params
         params.legalAccepted = legalAccepted
 
-        return try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups")
-            .method(.post)
-            .body(formEncode: params)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups",
+            method: .post,
+            body: params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var createWithParams: (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups")
-            .method(.post)
-            .body(formEncode: params)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+    var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups",
+            method: .post,
+            body: params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var update: (_ signUpId: String, _ params: SignUp.UpdateParams) async throws -> SignUp = { signUpId, params in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups/\(signUpId)")
-            .method(.patch)
-            .body(formEncode: params)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+    var update: @MainActor (_ signUpId: String, _ params: SignUp.UpdateParams) async throws -> SignUp = { signUpId, params in
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups/\(signUpId)",
+            method: .patch,
+            body: params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var prepareVerification: (_ signUpId: String, _ strategy: SignUp.PrepareStrategy) async throws -> SignUp = { signUpId, strategy in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups/\(signUpId)/prepare_verification")
-            .method(.post)
-            .body(formEncode: strategy.params)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+    var prepareVerification: @MainActor (_ signUpId: String, _ strategy: SignUp.PrepareStrategy) async throws -> SignUp = { signUpId, strategy in
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups/\(signUpId)/prepare_verification",
+            method: .post,
+            body: strategy.params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var attemptVerification: (_ signUpId: String, _ strategy: SignUp.AttemptStrategy) async throws -> SignUp = { signUpId, strategy in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups/\(signUpId)/attempt_verification")
-            .method(.post)
-            .body(formEncode: strategy.params)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+    var attemptVerification: @MainActor (_ signUpId: String, _ strategy: SignUp.AttemptStrategy) async throws -> SignUp = { signUpId, strategy in
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups/\(signUpId)/attempt_verification",
+            method: .post,
+            body: strategy.params
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var get: (_ signUpId: String, _ rotatingTokenNonce: String?) async throws -> SignUp = { signUpId, rotatingTokenNonce in
-        var queryItems: [URLQueryItem] = []
+    var get: @MainActor (_ signUpId: String, _ rotatingTokenNonce: String?) async throws -> SignUp = { signUpId, rotatingTokenNonce in
+        var queryParams: [(String, String?)] = []
         if let rotatingTokenNonce {
-            queryItems.append(
-                .init(
-                    name: "rotating_token_nonce",
-                    value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                )
-            )
+            queryParams.append((
+                "rotating_token_nonce",
+                value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+            ))
         }
 
-        return try await Container.shared.apiClient().request()
-            .add(path: "/v1/client/sign_ups/\(signUpId)")
-            .add(queryItems: queryItems)
-            .data(type: ClientResponse<SignUp>.self)
-            .async()
-            .response
+        let request = Request<ClientResponse<SignUp>>.init(
+            path: "/v1/client/sign_ups/\(signUpId)",
+            method: .get,
+            query: queryParams
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
     #if !os(tvOS) && !os(watchOS)
-    var authenticateWithRedirectStatic: (_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
+    var authenticateWithRedirectStatic: @MainActor (_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
         let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
 
         guard
@@ -114,7 +113,7 @@ struct SignUpService {
         return transferFlowResult
     }
 
-    var authenticateWithRedirect: (_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signUp, prefersEphemeralWebBrowserSession in
+    var authenticateWithRedirect: @MainActor (_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signUp, prefersEphemeralWebBrowserSession in
         guard
             let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -134,12 +133,12 @@ struct SignUpService {
     }
     #endif
 
-    var authenticateWithIdTokenStatic: (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult = { provider, idToken in
+    var authenticateWithIdTokenStatic: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult = { provider, idToken in
         let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
         return try await signUp.handleTransferFlow()
     }
 
-    var authenticateWithIdToken: (_ signUp: SignUp) async throws -> TransferFlowResult = { signUp in
+    var authenticateWithIdToken: @MainActor (_ signUp: SignUp) async throws -> TransferFlowResult = { signUp in
         try await signUp.handleTransferFlow()
     }
 

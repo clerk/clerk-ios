@@ -7,26 +7,26 @@
 
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var externalAccountService: Factory<ExternalAccountService> {
-        self { @MainActor in ExternalAccountService() }
+        self { ExternalAccountService() }
     }
 
 }
 
-@MainActor
 struct ExternalAccountService {
 
-    var destroy: (_ externalAccountId: String) async throws -> DeletedObject = { externalAccountId in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/external_accounts/\(externalAccountId)")
-            .method(.delete)
-            .addClerkSessionId()
-            .data(type: ClientResponse<DeletedObject>.self)
-            .async()
-            .response
+    var destroy: @MainActor (_ externalAccountId: String) async throws -> DeletedObject = { externalAccountId in
+        let request = Request<ClientResponse<DeletedObject>>.init(
+            path: "/v1/me/external_accounts/\(externalAccountId)",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
 }

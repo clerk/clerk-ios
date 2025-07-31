@@ -7,26 +7,26 @@
 
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var sessionService: Factory<SessionService> {
-        self { @MainActor in SessionService() }
+        self { SessionService() }
     }
 
 }
 
-@MainActor
 struct SessionService {
 
-    var revoke: (_ sessionId: String) async throws -> Session = { sessionId in
-        try await Container.shared.apiClient().request()
-            .add(path: "/v1/me/sessions/\(sessionId)/revoke")
-            .method(.post)
-            .addClerkSessionId()
-            .data(type: ClientResponse<Session>.self)
-            .async()
-            .response
+    var revoke: @MainActor (_ sessionId: String) async throws -> Session = { sessionId in
+        let request = Request<ClientResponse<Session>>.init(
+            path: "/v1/me/sessions/\(sessionId)/revoke",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+        
+        return try await Container.shared.apiClient().send(request).value.response
     }
 
 }

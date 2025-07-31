@@ -7,24 +7,21 @@
 
 import FactoryKit
 import Foundation
+import Get
 
 extension Container {
 
     var environmentService: Factory<EnvironmentService> {
-        self { @MainActor in EnvironmentService() }
+        self { EnvironmentService() }
     }
 
 }
 
-@MainActor
 struct EnvironmentService {
 
-    var get: () async throws -> Clerk.Environment = {
-        let environment = try await Container.shared.apiClient().request()
-            .add(path: "/v1/environment")
-            .data(type: Clerk.Environment.self)
-            .async()
-
+    var get: @MainActor () async throws -> Clerk.Environment = {
+        let request = Request<Clerk.Environment>(path: "/v1/environment")
+        let environment = try await Container.shared.apiClient().send(request).value
         Clerk.shared.environment = environment
         return environment
     }
