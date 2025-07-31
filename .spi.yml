@@ -3,7 +3,7 @@ builder:
   configs:
     - platform: ios
       scheme: Clerk
-    - platform: macos
+    - platform: macos-xcodebuild
       scheme: Clerk
     - platform: tvos
       scheme: Clerk
