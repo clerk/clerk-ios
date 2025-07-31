@@ -58,11 +58,10 @@ struct OrganizationService {
             path: "/v1/organizations/\(organizationId)/logo",
             method: .put,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: data,
             headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
         )
         
-        return try await Container.shared.apiClient().send(request).value.response
+        return try await Container.shared.apiClient().upload(for: request, from: data).value.response
     }
 
     var getOrganizationRoles: @MainActor (_ organizationId: String, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource> = { organizationId, initialPage, pageSize in

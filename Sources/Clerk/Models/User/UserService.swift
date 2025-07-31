@@ -245,11 +245,10 @@ struct UserService {
             path: "/v1/me/profile_image",
             method: .post,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: data,
             headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
         )
         
-        return try await Container.shared.apiClient().send(request).value.response
+        return try await Container.shared.apiClient().upload(for: request, from: data).value.response
     }
 
     var deleteProfileImage: @MainActor () async throws -> DeletedObject = {
