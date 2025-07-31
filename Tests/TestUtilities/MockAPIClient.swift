@@ -7,8 +7,8 @@
 
 import FactoryKit
 import Foundation
+import Get
 import Mocker
-import RequestBuilder
 
 @testable import Clerk
 
