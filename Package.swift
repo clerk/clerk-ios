@@ -23,7 +23,7 @@ let package = Package(
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
-    .package(url: "https://github.com/mikepitre/RequestBuilder", .upToNextMajor(from: "1.0.0")),
+    .package(url: "https://github.com/mikepitre/RequestBuilder", .upToNextMajor(from: "1.0.1")),
     .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
     .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1"))
   ],
