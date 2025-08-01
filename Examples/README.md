@@ -9,8 +9,7 @@ Each example is a standalone Xcode project that demonstrates specific features o
 ## Opening Examples
 
 1. Open `Clerk.xcworkspace` in the root directory
-2. Build and run the main Clerk scheme first to ensure dependencies are resolved
-3. Select and run any of the example projects
+2. Select a project/scheme and run
 
 ## Available Examples
 
