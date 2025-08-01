@@ -1,22 +1,16 @@
-# Clerk iOS Examples
+# Clerk Examples
 
-This directory contains example projects demonstrating how to use the Clerk iOS SDK.
+This directory contains example projects demonstrating how to use the Clerk Swift package.
 
-## Getting Started
+## Structure
+
+Each example is a standalone Xcode project that demonstrates specific features or use cases of the Clerk package.
+
+## Opening Examples
 
 1. Open `Clerk.xcworkspace` in the root directory
-2. Select an example project from the workspace navigator
-3. Build and run the example
+2. Select a project/scheme and run
 
-## Examples
+## Available Examples
 
-Each example project demonstrates different aspects of the Clerk iOS SDK:
-
-- **Quickstart** - Companion project to the [iOS Quickstart guide](https://clerk.com/docs/quickstarts/ios)
-
-## Adding New Examples
-
-1. Create a new Xcode project in this directory
-2. Configure the project to use the local Clerk package
-
-For detailed instructions on using each example, see the README.md file in each project directory.
+- **Quickstart** - Basic Clerk integration with sign-in/sign-up flows and user management
