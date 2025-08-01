@@ -1,9 +1,5 @@
 version: 1
 builder:
   configs:
-    - platform: ios
-    - platform: macos-xcodebuild  
-    - platform: tvos
-    - platform: watchos
-    - platform: visionos
+  - scheme: Clerk
   - documentation_targets: [Clerk]
