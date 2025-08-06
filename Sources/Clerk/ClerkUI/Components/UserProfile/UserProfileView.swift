@@ -100,7 +100,7 @@ public struct UserProfileView: View {
                     .font(theme.fonts.title2)
                     .fontWeight(.bold)
                     .frame(minHeight: 28)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
 
             Button {
@@ -188,7 +188,7 @@ public struct UserProfileView: View {
                             }
                         }
                     }
-                    .background(theme.colors.backgroundSecondary)
+                    .background(theme.colors.muted)
 
                     SecuredByClerkFooter()
                 }
@@ -199,7 +199,7 @@ public struct UserProfileView: View {
                         Text("Account", bundle: .module)
                             .font(theme.fonts.headline)
                             .fontWeight(.semibold)
-                            .foregroundStyle(theme.colors.text)
+                            .foregroundStyle(theme.colors.foreground)
                     }
 
                     if isDismissable {

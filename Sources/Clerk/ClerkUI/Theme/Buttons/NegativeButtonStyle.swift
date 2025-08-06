@@ -50,7 +50,7 @@ struct NegativeButtonStyle: ButtonStyle {
         case .low:
             theme.colors.danger
         case .high:
-            theme.colors.textOnPrimaryBackground
+            theme.colors.primaryForeground
         }
     }
 

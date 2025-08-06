@@ -28,7 +28,7 @@ struct UserButtonPopover: View {
                 Text("Account", bundle: .module)
                     .font(theme.fonts.title3)
                     .fontWeight(.semibold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .frame(minHeight: 25)
                 Spacer()
                 DismissButton()
@@ -102,7 +102,7 @@ struct UserButtonPopover: View {
             SecuredByClerkView()
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(theme.colors.backgroundSecondary)
+                .background(theme.colors.muted)
         }
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()

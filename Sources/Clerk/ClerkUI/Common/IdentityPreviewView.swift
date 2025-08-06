@@ -18,13 +18,13 @@ struct IdentityPreviewView: View {
         HStack(spacing: 4) {
             Text(label)
                 .font(theme.fonts.subheadline)
-                .foregroundStyle(theme.colors.text)
+                .foregroundStyle(theme.colors.foreground)
                 .frame(minHeight: 20)
             Image("icon-edit", bundle: .module)
                 .resizable()
                 .frame(width: 16, height: 16)
                 .scaledToFit()
-                .foregroundStyle(theme.colors.textSecondary)
+                .foregroundStyle(theme.colors.mutedForeground)
         }
     }
 }

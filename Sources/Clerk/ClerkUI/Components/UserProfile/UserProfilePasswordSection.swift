@@ -57,10 +57,10 @@ struct UserProfilePasswordSection: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                     Text(verbatim: "•••••••••••••••••••••••••")
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .frame(minHeight: 20)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

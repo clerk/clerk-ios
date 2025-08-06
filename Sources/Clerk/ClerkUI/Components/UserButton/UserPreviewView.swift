@@ -29,7 +29,7 @@ struct UserPreviewView: View {
                 if let fullName = user.fullName {
                     Text(fullName)
                         .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                         .frame(minHeight: 22)
                 }
 
@@ -42,8 +42,8 @@ struct UserPreviewView: View {
                         )
                         .foregroundStyle(
                             user.fullName == nil
-                                ? theme.colors.text
-                                : theme.colors.textSecondary
+                                ? theme.colors.foreground
+                                : theme.colors.mutedForeground
                         )
                 }
             }

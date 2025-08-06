@@ -44,7 +44,7 @@ struct UserProfileAddPhoneView: View {
                 VStack(spacing: 24) {
                     Text("A text message containing a verification code will be sent to this phone number. Message and data rates may apply.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     VStack(spacing: 4) {
@@ -70,12 +70,12 @@ struct UserProfileAddPhoneView: View {
                         HStack {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                     }
                     .buttonStyle(.primary())
@@ -96,7 +96,7 @@ struct UserProfileAddPhoneView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Add phone number", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
             .navigationDestination(for: Destination.self) {

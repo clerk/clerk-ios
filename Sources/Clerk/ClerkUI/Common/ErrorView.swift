@@ -35,12 +35,12 @@ struct ErrorView: View {
                 Text("Whoops, something is wrong", bundle: .module)
                     .font(theme.fonts.title2)
                     .fontWeight(.bold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .frame(minHeight: 28)
 
                 Text(error.localizedDescription)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -53,7 +53,7 @@ struct ErrorView: View {
                         Text(action.text, bundle: .module)
                             .frame(maxWidth: .infinity)
                             .overlayProgressView(isActive: isRunning) {
-                                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                                SpinnerView(color: theme.colors.primaryForeground)
                             }
                     }
                     .buttonStyle(.primary())

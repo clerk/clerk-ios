@@ -18,7 +18,7 @@ struct UserProfileSectionHeader: View {
         Text(text, bundle: .module)
             .font(theme.fonts.caption)
             .fontWeight(.medium)
-            .foregroundStyle(theme.colors.textSecondary)
+            .foregroundStyle(theme.colors.mutedForeground)
             .frame(minHeight: 16)
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -36,7 +36,7 @@ struct UserProfileSectionHeader: View {
     @Previewable @Environment(\.clerkTheme) var theme
 
     UserProfileSectionHeader(text: "EMAIL ADDRESSES")
-        .background(theme.colors.backgroundSecondary)
+        .background(theme.colors.muted)
 }
 
 #endif

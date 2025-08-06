@@ -18,7 +18,7 @@ struct SpinnerView: View {
     var body: some View {
         Image("icon-spinner", bundle: .module)
             .resizable()
-            .foregroundStyle(color ?? theme.colors.textSecondary)
+            .foregroundStyle(color ?? theme.colors.mutedForeground)
             .scaledToFit()
             .rotationEffect(.degrees(rotation))
             .onAppear {

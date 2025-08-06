@@ -21,11 +21,11 @@ struct UserProfileRowView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 48, height: 24)
-                .foregroundStyle(theme.colors.textSecondary)
+                .foregroundStyle(theme.colors.mutedForeground)
             Text(text, bundle: .module)
                 .font(theme.fonts.body)
                 .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.text)
+                .foregroundStyle(theme.colors.foreground)
                 .frame(minHeight: 22)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -58,7 +58,7 @@ struct UserProfileSecurityView: View {
                     .animation(.default, value: clerk.sessionsByUserId)
                     .animation(.default, value: environment)
                 }
-                .background(theme.colors.backgroundSecondary)
+                .background(theme.colors.muted)
             }
 
             SecuredByClerkFooter()
@@ -69,7 +69,7 @@ struct UserProfileSecurityView: View {
                 Text("Security", bundle: .module)
                     .font(theme.fonts.headline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .presentationBackground(theme.colors.background)

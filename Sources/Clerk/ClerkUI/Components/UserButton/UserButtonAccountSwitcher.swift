@@ -161,7 +161,7 @@ struct UserButtonAccountSwitcher: View {
                 ToolbarItem(placement: .principal) {
                     Text("Switch account", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
         }

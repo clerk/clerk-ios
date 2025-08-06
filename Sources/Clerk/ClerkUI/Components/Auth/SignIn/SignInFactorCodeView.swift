@@ -148,13 +148,13 @@ struct SignInFactorCodeView: View {
                                     .frame(width: 16, height: 16)
                                 Text("Verifying...", bundle: .module)
                             }
-                            .foregroundStyle(theme.colors.textSecondary)
+                            .foregroundStyle(theme.colors.mutedForeground)
                         case .success:
                             HStack(spacing: 4) {
                                 Image("icon-check-circle", bundle: .module)
                                     .foregroundStyle(theme.colors.success)
                                 Text("Success", bundle: .module)
-                                    .foregroundStyle(theme.colors.textSecondary)
+                                    .foregroundStyle(theme.colors.mutedForeground)
                             }
                         case .error(let error):
                             ErrorText(error: error)
@@ -173,7 +173,7 @@ struct SignInFactorCodeView: View {
                                 Text(resendString, bundle: .module)
                                     .foregroundStyle(
                                         remainingSeconds > 0
-                                            ? theme.colors.textSecondary
+                                            ? theme.colors.mutedForeground
                                             : theme.colors.primary
                                     )
                                     .monospacedDigit()

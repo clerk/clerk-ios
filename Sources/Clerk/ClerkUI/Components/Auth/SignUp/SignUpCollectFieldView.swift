@@ -138,12 +138,12 @@ struct SignUpCollectFieldView: View {
                         HStack(spacing: 4) {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                     }
                     .buttonStyle(.primary())
@@ -175,7 +175,7 @@ struct SignUpCollectFieldView: View {
             ToolbarItem(placement: .principal) {
                 Text("Sign up", bundle: .module)
                     .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .navigationBarTitleDisplayMode(.inline)

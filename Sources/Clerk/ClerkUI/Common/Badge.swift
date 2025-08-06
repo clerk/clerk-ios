@@ -23,9 +23,9 @@ struct Badge: View {
     var foregroundColor: Color {
         switch style {
         case .primary:
-            theme.colors.textOnPrimaryBackground
+            theme.colors.primaryForeground
         case .secondary:
-            theme.colors.textSecondary
+            theme.colors.mutedForeground
         case .positive:
             theme.colors.success
         case .negative:
@@ -40,7 +40,7 @@ struct Badge: View {
         case .primary:
             theme.colors.primary
         case .secondary:
-            theme.colors.backgroundSecondary
+            theme.colors.muted
         case .positive:
             theme.colors.backgroundSuccess
         case .negative:
@@ -55,7 +55,7 @@ struct Badge: View {
         case .primary:
             .clear
         case .secondary:
-            theme.colors.backgroundSecondary
+            theme.colors.muted
         case .positive:
             theme.colors.success
         case .negative:
@@ -98,7 +98,7 @@ struct Badge: View {
                     )
                 }
             }
-            .background(theme.colors.backgroundSecondary)
+            .background(theme.colors.muted)
             .background(backgroundColor)
             .clipShape(.rect(cornerRadius: theme.design.borderRadius))
             .overlay {

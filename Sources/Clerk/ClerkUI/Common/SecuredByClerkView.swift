@@ -20,7 +20,7 @@ struct SecuredByClerkView: View {
                 Image("clerk-logo", bundle: .module)
             }
             .font(theme.fonts.footnote.weight(.medium))
-            .foregroundStyle(theme.colors.textSecondary)
+            .foregroundStyle(theme.colors.mutedForeground)
             .transition(.blurReplace.animation(.default))
         } else {
             EmptyView()
@@ -37,7 +37,7 @@ struct SecuredByClerkFooter: View {
             SecuredByClerkView()
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(theme.colors.backgroundSecondary)
+                .background(theme.colors.muted)
                 .overlay(
                     alignment: .top,
                     content: {
@@ -62,7 +62,7 @@ struct SecuredByClerkFooter: View {
 
     VStack(spacing: 0) {
         ScrollView {
-            theme.colors.backgroundSecondary
+            theme.colors.muted
                 .containerRelativeFrame(.vertical)
         }
         SecuredByClerkFooter()

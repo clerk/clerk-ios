@@ -51,7 +51,7 @@ struct UserProfileMfaAddTotpView: View {
                     if let secret = totp.secret {
                         Text("Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account.", bundle: .module)
                             .font(theme.fonts.subheadline)
-                            .foregroundStyle(theme.colors.textSecondary)
+                            .foregroundStyle(theme.colors.mutedForeground)
 
                         VStack(spacing: 12) {
                             copyableText(secret)
@@ -61,7 +61,7 @@ struct UserProfileMfaAddTotpView: View {
                             } label: {
                                 HStack(spacing: 6) {
                                     Image("icon-clipboard", bundle: .module)
-                                        .foregroundStyle(theme.colors.textSecondary)
+                                        .foregroundStyle(theme.colors.mutedForeground)
                                     Text("Copy to clipboard", bundle: .module)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -73,7 +73,7 @@ struct UserProfileMfaAddTotpView: View {
                     if let uri = totp.uri {
                         Text("Alternatively, if your authenticator supports TOTP URIs, you can also copy the full URI.", bundle: .module)
                             .font(theme.fonts.subheadline)
-                            .foregroundStyle(theme.colors.textSecondary)
+                            .foregroundStyle(theme.colors.mutedForeground)
 
                         VStack(spacing: 12) {
                             copyableText(uri)
@@ -83,7 +83,7 @@ struct UserProfileMfaAddTotpView: View {
                             } label: {
                                 HStack(spacing: 6) {
                                     Image("icon-clipboard", bundle: .module)
-                                        .foregroundStyle(theme.colors.textSecondary)
+                                        .foregroundStyle(theme.colors.mutedForeground)
                                     Text("Copy to clipboard", bundle: .module)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -98,7 +98,7 @@ struct UserProfileMfaAddTotpView: View {
                         HStack(spacing: 4) {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
@@ -121,7 +121,7 @@ struct UserProfileMfaAddTotpView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Add authenticator application", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
             .navigationDestination(for: Destination.self) {
@@ -136,12 +136,12 @@ struct UserProfileMfaAddTotpView: View {
     func copyableText(_ string: String) -> some View {
         Text(verbatim: string)
             .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.text)
+            .foregroundStyle(theme.colors.foreground)
             .frame(maxWidth: .infinity, minHeight: 20)
             .lineLimit(1)
             .padding(.vertical, 18)
             .padding(.horizontal, 16)
-            .background(theme.colors.backgroundSecondary)
+            .background(theme.colors.muted)
             .clipShape(.rect(cornerRadius: theme.design.borderRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: theme.design.borderRadius)

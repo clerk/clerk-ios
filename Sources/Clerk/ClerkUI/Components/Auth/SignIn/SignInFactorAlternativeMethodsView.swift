@@ -122,11 +122,11 @@ struct SignInFactorAlternativeMethodsView: View {
                                             .resizable()
                                             .frame(width: 16, height: 16)
                                             .scaledToFit()
-                                            .foregroundStyle(theme.colors.textSecondary)
+                                            .foregroundStyle(theme.colors.mutedForeground)
                                     }
                                     Text(actionText, bundle: .module)
                                         .font(theme.fonts.body)
-                                        .foregroundStyle(theme.colors.text)
+                                        .foregroundStyle(theme.colors.foreground)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
                                 }

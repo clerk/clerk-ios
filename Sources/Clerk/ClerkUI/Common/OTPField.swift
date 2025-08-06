@@ -126,12 +126,12 @@ struct OTPField: View {
             }
         }
         .font(theme.fonts.body)
-        .foregroundStyle(theme.colors.text)
-        .background(theme.colors.inputBackground)
+        .foregroundStyle(theme.colors.foreground)
+        .background(theme.colors.input)
         .clipShape(.rect(cornerRadius: theme.design.borderRadius))
         .overlay {
             RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                .strokeBorder(theme.colors.inputBackground)
+                .strokeBorder(theme.colors.input)
         }
         .clerkFocusedBorder(
             isFocused: fieldState == .error || isSelected,
