@@ -60,7 +60,7 @@ struct UserProfileAddMfaView: View {
                 VStack(spacing: 24) {
                     Text("Choose how you'd like to receive your two-step verification code.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 24)
@@ -115,7 +115,7 @@ struct UserProfileAddMfaView: View {
                     ToolbarItem(placement: .principal) {
                         Text("Add two-step verification", bundle: .module)
                             .font(theme.fonts.headline)
-                            .foregroundStyle(theme.colors.text)
+                            .foregroundStyle(theme.colors.foreground)
                     }
                 }
                 .onGeometryChange(for: CGFloat.self) { proxy in

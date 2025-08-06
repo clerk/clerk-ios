@@ -23,9 +23,9 @@ struct Badge: View {
     var foregroundColor: Color {
         switch style {
         case .primary:
-            theme.colors.textOnPrimaryBackground
+            theme.colors.primaryForeground
         case .secondary:
-            theme.colors.textSecondary
+            theme.colors.mutedForeground
         case .positive:
             theme.colors.success
         case .negative:

@@ -14,14 +14,14 @@ extension ClerkTheme {
 
         public var primary: Color
         public var background: Color
-        public var inputBackground: Color
+        public var input: Color
         public var danger: Color
         public var success: Color
         public var warning: Color
-        public var text: Color
-        public var textSecondary: Color
-        public var textOnPrimaryBackground: Color
-        public var inputText: Color
+        public var foreground: Color
+        public var mutedForeground: Color
+        public var primaryForeground: Color
+        public var inputForeground: Color
         public var neutral: Color
         
         // Generated
@@ -44,26 +44,26 @@ extension ClerkTheme {
         public init(
             primary: Color = Self.default.primary,
             background: Color = Self.default.background,
-            inputBackground: Color = Self.default.inputBackground,
+            input: Color = Self.default.input,
             danger: Color = Self.default.danger,
             success: Color = Self.default.success,
             warning: Color = Self.default.warning,
-            text: Color = Self.default.text,
-            textSecondary: Color = Self.default.textSecondary,
-            textOnPrimaryBackground: Color = Self.default.textOnPrimaryBackground,
-            inputText: Color = Self.default.inputText,
+            foreground: Color = Self.default.foreground,
+            mutedForeground: Color = Self.default.mutedForeground,
+            primaryForeground: Color = Self.default.primaryForeground,
+            inputForeground: Color = Self.default.inputForeground,
             neutral: Color = Self.default.neutral
         ) {
             self.primary = primary
             self.background = background
-            self.inputBackground = inputBackground
+            self.input = input
             self.danger = danger
             self.success = success
             self.warning = warning
-            self.text = text
-            self.textSecondary = textSecondary
-            self.textOnPrimaryBackground = textOnPrimaryBackground
-            self.inputText = inputText
+            self.foreground = foreground
+            self.mutedForeground = mutedForeground
+            self.primaryForeground = primaryForeground
+            self.inputForeground = inputForeground
             self.neutral = neutral
             
             self.primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
@@ -91,14 +91,14 @@ extension ClerkTheme.Colors {
         .init(
             primary: Color(.primary),
             background: Color(.background),
-            inputBackground: Color(.inputBackground),
+            input: Color(.input),
             danger: Color(.danger),
             success: Color(.success),
             warning: Color(.warning),
-            text: Color(.text),
-            textSecondary: Color(.textSecondary),
-            textOnPrimaryBackground: Color(.textOnPrimaryBackground),
-            inputText: Color(.inputText),
+            foreground: Color(.foreground),
+            mutedForeground: Color(.mutedForeground),
+            primaryForeground: Color(.primaryForeground),
+            inputForeground: Color(.inputForeground),
             neutral: Color(.neutral)
         )
     }

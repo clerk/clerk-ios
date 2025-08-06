@@ -51,7 +51,7 @@ struct UserProfileMfaAddSmsView: View {
                 VStack(spacing: 24) {
                     Text("Select an existing phone number to register for SMS code two-step verification or add a new one.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -76,12 +76,12 @@ struct UserProfileMfaAddSmsView: View {
                         HStack {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                     }
                     .buttonStyle(.primary())
@@ -116,7 +116,7 @@ struct UserProfileMfaAddSmsView: View {
                     ToolbarItem(placement: .principal) {
                         Text("Add SMS code verification", bundle: .module)
                             .font(theme.fonts.headline)
-                            .foregroundStyle(theme.colors.text)
+                            .foregroundStyle(theme.colors.foreground)
                     }
                 }
             }
@@ -179,7 +179,7 @@ struct AddMfaSmsRow: View {
         if let country {
             Text(verbatim: "\(country.flag) \(country.code)")
                 .font(theme.fonts.footnote)
-                .foregroundStyle(theme.colors.text)
+                .foregroundStyle(theme.colors.foreground)
                 .monospaced()
                 .padding(.vertical, 13)
                 .padding(.horizontal, 10)
@@ -208,7 +208,7 @@ struct AddMfaSmsRow: View {
             countryIndicator
             Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
                 .font(theme.fonts.body)
-                .foregroundStyle(theme.colors.text)
+                .foregroundStyle(theme.colors.foreground)
             Spacer(minLength: 0)
             selectedIndicator
         }

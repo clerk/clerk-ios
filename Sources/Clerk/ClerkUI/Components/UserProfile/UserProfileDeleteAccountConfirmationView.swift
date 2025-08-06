@@ -60,7 +60,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
                         Text("Delete account", bundle: .module)
                             .frame(maxWidth: .infinity)
                             .overlayProgressView(isActive: isRunning) {
-                                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                                SpinnerView(color: theme.colors.primaryForeground)
                             }
                     }
                     .buttonStyle(.negative())
@@ -81,7 +81,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Delete account", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
         }

@@ -18,7 +18,7 @@ struct UserProfileSectionHeader: View {
         Text(text, bundle: .module)
             .font(theme.fonts.caption)
             .fontWeight(.medium)
-            .foregroundStyle(theme.colors.textSecondary)
+            .foregroundStyle(theme.colors.mutedForeground)
             .frame(minHeight: 16)
             .padding(.horizontal, 24)
             .padding(.top, 32)

@@ -36,7 +36,7 @@ struct DismissButton: View {
                 .resizable()
                 .scaledToFit()
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(theme.colors.textSecondary, secondaryPaletteStyle)
+                .foregroundStyle(theme.colors.mutedForeground, secondaryPaletteStyle)
                 .frame(width: 30, height: 30)
                 .brightness(colorScheme == .light ? -0.05 : 0.05)
         }

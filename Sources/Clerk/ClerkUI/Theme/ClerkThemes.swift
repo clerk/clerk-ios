@@ -24,7 +24,7 @@ extension ClerkTheme {
         colors: .init(
             primary: Color(.clerkPrimary),
             danger: Color(.clerkDanger),
-            textOnPrimaryBackground: Color(.clerkTextOnPrimaryBackground),
+            primaryForeground: Color(.clerkTextOnPrimaryBackground),
             neutral: Color(.clerkNeutral)
         ),
         design: .init(

@@ -20,7 +20,7 @@ struct SecuredByClerkView: View {
                 Image("clerk-logo", bundle: .module)
             }
             .font(theme.fonts.footnote.weight(.medium))
-            .foregroundStyle(theme.colors.textSecondary)
+            .foregroundStyle(theme.colors.mutedForeground)
             .transition(.blurReplace.animation(.default))
         } else {
             EmptyView()

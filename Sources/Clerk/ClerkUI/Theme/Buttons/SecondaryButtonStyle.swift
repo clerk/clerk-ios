@@ -28,12 +28,12 @@ struct SecondaryButtonStyle: ButtonStyle {
         switch config.emphasis {
         case .none:
             configuration.isPressed
-                ? theme.colors.text
-                : theme.colors.textSecondary
+                ? theme.colors.foreground
+                : theme.colors.mutedForeground
         case .low:
-            theme.colors.text
+            theme.colors.foreground
         case .high:
-            theme.colors.text
+            theme.colors.foreground
         }
     }
 

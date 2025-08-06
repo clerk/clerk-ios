@@ -39,14 +39,14 @@ struct BackupCodesView: View {
             VStack(spacing: 24) {
                 Text(mfaType.instructions, bundle: .module)
                     .font(theme.fonts.subheadline)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                 BackupCodesGrid(backupCodes: backupCodes)
                 Button {
                     copyToClipboard(backupCodes.joined(separator: ", "))
                 } label: {
                     HStack(spacing: 6) {
                         Image("icon-clipboard", bundle: .module)
-                            .foregroundStyle(theme.colors.textSecondary)
+                            .foregroundStyle(theme.colors.mutedForeground)
                         Text("Copy to clipboard", bundle: .module)
                     }
                     .frame(maxWidth: .infinity)
@@ -80,7 +80,7 @@ struct BackupCodesView: View {
             ToolbarItem(placement: .principal) {
                 Text("Backup codes", bundle: .module)
                     .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
     }
@@ -109,12 +109,12 @@ struct BackupCodesGrid: View {
         VStack(spacing: 20) {
             Text("Backup codes", bundle: .module)
                 .font(theme.fonts.caption)
-                .foregroundStyle(theme.colors.textSecondary)
+                .foregroundStyle(theme.colors.mutedForeground)
             LazyVGrid(columns: columns, spacing: 24) {
                 ForEach(backupCodes, id: \.self) { code in
                     Text(code)
                         .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
         }

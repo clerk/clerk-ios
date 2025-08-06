@@ -72,7 +72,7 @@ struct UserProfileUpdateProfileView: View {
                             Text("Save")
                                 .frame(maxWidth: .infinity)
                                 .overlayProgressView(isActive: isRunning) {
-                                    SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                                    SpinnerView(color: theme.colors.primaryForeground)
                                 }
                         }
                         .buttonStyle(.primary())
@@ -96,7 +96,7 @@ struct UserProfileUpdateProfileView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Update profile", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
             .photosPicker(
@@ -152,7 +152,7 @@ struct UserProfileUpdateProfileView: View {
             .overlay {
                 if imageIsLoading {
                     theme.colors.inputBorderFocused
-                    SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                    SpinnerView(color: theme.colors.primaryForeground)
                         .frame(width: 24, height: 24)
                 }
             }
@@ -168,7 +168,7 @@ struct UserProfileUpdateProfileView: View {
                         .scaledToFit()
                         .frame(width: 16, height: 16)
                         .padding(8)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .background(theme.colors.background)
                         .clipShape(.rect(cornerRadius: theme.design.borderRadius))
                         .overlay {

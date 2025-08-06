@@ -134,7 +134,7 @@ struct UserProfileVerifyView: View {
             VStack(spacing: 24) {
                 instructionsText
                     .font(theme.fonts.subheadline)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -158,13 +158,13 @@ struct UserProfileVerifyView: View {
                                 .frame(width: 16, height: 16)
                             Text("Verifying...", bundle: .module)
                         }
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                     case .success:
                         HStack(spacing: 4) {
                             Image("icon-check-circle", bundle: .module)
                                 .foregroundStyle(theme.colors.success)
                             Text("Success", bundle: .module)
-                                .foregroundStyle(theme.colors.textSecondary)
+                                .foregroundStyle(theme.colors.mutedForeground)
                         }
                     case .error(let error):
                         ErrorText(error: error)
@@ -183,7 +183,7 @@ struct UserProfileVerifyView: View {
                             Text(resendString, bundle: .module)
                                 .foregroundStyle(
                                     remainingSeconds > 0
-                                        ? theme.colors.textSecondary
+                                        ? theme.colors.mutedForeground
                                         : theme.colors.primary
                                 )
                                 .monospacedDigit()
@@ -226,7 +226,7 @@ struct UserProfileVerifyView: View {
             ToolbarItem(placement: .principal) {
                 Text(titleKey, bundle: .module)
                     .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .taskOnce {

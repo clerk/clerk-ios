@@ -52,10 +52,10 @@ struct SignInFactorOnePasskeyView: View {
                             options: .nonRepeating,
                             value: animateSymbol
                         )
-                        .foregroundStyle(theme.colors.text, theme.colors.primary)
+                        .foregroundStyle(theme.colors.foreground, theme.colors.primary)
                         .scaledToFit()
                         .frame(width: 64, height: 64)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
 
                     AsyncButton {
                         await authWithPasskey()
@@ -63,12 +63,12 @@ struct SignInFactorOnePasskeyView: View {
                         HStack(spacing: 4) {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: passkeyInProgress) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                     }
                     .buttonStyle(.primary())

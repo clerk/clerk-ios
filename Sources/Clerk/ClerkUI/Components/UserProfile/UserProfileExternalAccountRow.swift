@@ -48,7 +48,7 @@ struct UserProfileExternalAccountRow: View {
 
                         Text(externalAccount.oauthProvider.name)
                             .font(theme.fonts.subheadline)
-                            .foregroundStyle(theme.colors.textSecondary)
+                            .foregroundStyle(theme.colors.mutedForeground)
                             .frame(minHeight: 20)
                     }
                 }
@@ -56,7 +56,7 @@ struct UserProfileExternalAccountRow: View {
                 if !externalAccount.emailAddress.isEmpty {
                     Text(externalAccount.emailAddress)
                         .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                         .frame(minHeight: 22)
                 }
 
@@ -89,7 +89,7 @@ struct UserProfileExternalAccountRow: View {
                 Image("icon-three-dots-vertical", bundle: .module)
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(theme.colors.textSecondary)
+                    .foregroundColor(theme.colors.mutedForeground)
                     .frame(width: 20, height: 20)
             }
             .frame(width: 30, height: 30)

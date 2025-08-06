@@ -56,7 +56,7 @@ struct ClerkTextField: View {
                     Text(titleKey, bundle: .module)
                         .lineLimit(1)
                         .font(theme.fonts.caption)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .opacity(0)
 
@@ -79,7 +79,7 @@ struct ClerkTextField: View {
                     }
                     .lineLimit(1)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.inputText)
+                    .foregroundStyle(theme.colors.inputForeground)
                     .frame(minHeight: 22)
                     .tint(theme.colors.primary)
                     .animation(.default.delay(0.2)) {
@@ -108,7 +108,7 @@ struct ClerkTextField: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .allowsHitTesting(false)
                     .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
@@ -125,7 +125,7 @@ struct ClerkTextField: View {
                         .scaledToFit()
                         .frame(width: 18)
                         .contentTransition(.symbolEffect(.replace))
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                 }
                 .frame(width: 24)
             }
@@ -142,7 +142,7 @@ struct ClerkTextField: View {
             }
         }
         .background(
-            theme.colors.inputBackground,
+            theme.colors.input,
             in: .rect(cornerRadius: theme.design.borderRadius)
         )
         .clerkFocusedBorder(

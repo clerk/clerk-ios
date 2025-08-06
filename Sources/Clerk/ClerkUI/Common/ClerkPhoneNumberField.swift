@@ -142,11 +142,11 @@ struct ClerkPhoneNumberField: View {
             HStack(spacing: 4) {
                 Text(verbatim: "\(phoneNumberModel.currentCountry.flag) \(phoneNumberModel.currentCountry.code)")
                     .font(theme.fonts.footnote)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .monospaced()
 
                 Image("icon-up-down", bundle: .module)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 13)
@@ -165,7 +165,7 @@ struct ClerkPhoneNumberField: View {
                     Text(titleKey, bundle: .module)
                         .lineLimit(1)
                         .font(theme.fonts.caption)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .opacity(0)
 
@@ -194,7 +194,7 @@ struct ClerkPhoneNumberField: View {
                     }
                     .lineLimit(1)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.inputText)
+                    .foregroundStyle(theme.colors.inputForeground)
                     .frame(minHeight: 22)
                 }
                 .onGeometryChange(for: CGFloat.self) { geometry in
@@ -207,7 +207,7 @@ struct ClerkPhoneNumberField: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .allowsHitTesting(false)
                     .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
@@ -223,7 +223,7 @@ struct ClerkPhoneNumberField: View {
             isFocused = true
         }
         .background(
-            theme.colors.inputBackground,
+            theme.colors.input,
             in: .rect(cornerRadius: theme.design.borderRadius)
         )
         .clerkFocusedBorder(

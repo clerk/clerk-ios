@@ -79,7 +79,7 @@ struct SocialButton: View {
                     iconImage
                     Text("Continue with \(provider.name)", bundle: .module)
                         .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
 
                 iconImage

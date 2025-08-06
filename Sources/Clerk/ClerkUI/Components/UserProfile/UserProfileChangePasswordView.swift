@@ -67,7 +67,7 @@ struct UserProfileChangePasswordView: View {
             VStack(spacing: 24) {
                 Text("Enter your current password to set a new one.", bundle: .module)
                     .font(theme.fonts.subheadline)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                     .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
                     .multilineTextAlignment(.leading)
 
@@ -99,7 +99,7 @@ struct UserProfileChangePasswordView: View {
             ToolbarItem(placement: .principal) {
                 Text("Update password", bundle: .module)
                     .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .onAppear {
@@ -132,7 +132,7 @@ struct UserProfileChangePasswordView: View {
                     Text("Save")
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                 }
                 .buttonStyle(.primary())
@@ -167,7 +167,7 @@ struct UserProfileChangePasswordView: View {
             ToolbarItem(placement: .principal) {
                 Text(isAddingPassword ? "Add password" : "Update password", bundle: .module)
                     .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .onFirstAppear {
@@ -182,13 +182,13 @@ struct UserProfileChangePasswordView: View {
         VStack(spacing: 8) {
             Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
                 .font(theme.fonts.body)
-                .foregroundStyle(theme.colors.text)
+                .foregroundStyle(theme.colors.foreground)
                 .tint(theme.colors.primary)
                 .frame(minHeight: 22)
 
             Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
                 .font(theme.fonts.subheadline)
-                .foregroundStyle(theme.colors.textSecondary)
+                .foregroundStyle(theme.colors.mutedForeground)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 16)

@@ -44,7 +44,7 @@ struct UserProfileEmailRow: View {
 
                 Text(emailAddress.emailAddress)
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .frame(minHeight: 22)
             }
 
@@ -79,7 +79,7 @@ struct UserProfileEmailRow: View {
                 Image("icon-three-dots-vertical", bundle: .module)
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(theme.colors.textSecondary)
+                    .foregroundColor(theme.colors.mutedForeground)
                     .frame(width: 20, height: 20)
             }
             .frame(width: 30, height: 30)

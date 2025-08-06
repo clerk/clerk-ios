@@ -136,7 +136,7 @@ struct UserProfileDetailView: View {
                 Text("Profile", bundle: .module)
                     .font(theme.fonts.headline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .navigationBarTitleDisplayMode(.inline)

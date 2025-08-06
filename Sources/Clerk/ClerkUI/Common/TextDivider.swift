@@ -25,7 +25,7 @@ struct TextDivider: View {
             divider
             Text(string, bundle: .module)
                 .font(theme.fonts.footnote)
-                .foregroundStyle(theme.colors.textSecondary)
+                .foregroundStyle(theme.colors.mutedForeground)
                 .multilineTextAlignment(.center)
                 .layoutPriority(1)
             divider

@@ -44,7 +44,7 @@ struct UserProfileAddEmailView: View {
                 VStack(spacing: 24) {
                     Text("You'll need to verify this email address before it can be added to your account.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     VStack(spacing: 4) {
@@ -72,12 +72,12 @@ struct UserProfileAddEmailView: View {
                         HStack {
                             Text("Continue", bundle: .module)
                             Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.textOnPrimaryBackground)
+                                .foregroundStyle(theme.colors.primaryForeground)
                                 .opacity(0.6)
                         }
                         .frame(maxWidth: .infinity)
                         .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                            SpinnerView(color: theme.colors.primaryForeground)
                         }
                     }
                     .buttonStyle(.primary())
@@ -98,7 +98,7 @@ struct UserProfileAddEmailView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Add email address", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
             .navigationDestination(for: Destination.self) {

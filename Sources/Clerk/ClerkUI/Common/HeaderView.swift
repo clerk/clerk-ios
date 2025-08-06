@@ -50,9 +50,9 @@ struct HeaderView: View {
     var foregroundStyle: Color {
         switch style {
         case .title:
-            theme.colors.text
+            theme.colors.foreground
         case .subtitle:
-            theme.colors.textSecondary
+            theme.colors.mutedForeground
         }
     }
 

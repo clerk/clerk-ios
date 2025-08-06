@@ -44,7 +44,7 @@ struct UserProfileAddConnectedAccountView: View {
                 VStack(spacing: 24) {
                     Text("Link another login option to your account. You’ll need to verify it before it can be used.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -72,7 +72,7 @@ struct UserProfileAddConnectedAccountView: View {
                     ToolbarItem(placement: .principal) {
                         Text("Connect account", bundle: .module)
                             .font(theme.fonts.headline)
-                            .foregroundStyle(theme.colors.text)
+                            .foregroundStyle(theme.colors.foreground)
                     }
                 }
                 .onGeometryChange(for: CGFloat.self) { proxy in

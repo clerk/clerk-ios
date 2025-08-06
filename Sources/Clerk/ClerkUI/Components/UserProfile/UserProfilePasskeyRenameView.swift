@@ -30,7 +30,7 @@ struct UserProfilePasskeyRenameView: View {
                 VStack(spacing: 24) {
                     Text("You can change the passkey name to make it easier to find.", bundle: .module)
                         .font(theme.fonts.subheadline)
-                        .foregroundStyle(theme.colors.textSecondary)
+                        .foregroundStyle(theme.colors.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     VStack(spacing: 4) {
@@ -54,7 +54,7 @@ struct UserProfilePasskeyRenameView: View {
                         Text("Save", bundle: .module)
                             .frame(maxWidth: .infinity)
                             .overlayProgressView(isActive: isRunning) {
-                                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                                SpinnerView(color: theme.colors.primaryForeground)
                             }
                     }
                     .buttonStyle(.primary())
@@ -74,7 +74,7 @@ struct UserProfilePasskeyRenameView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Rename passkey", bundle: .module)
                         .font(theme.fonts.headline)
-                        .foregroundStyle(theme.colors.text)
+                        .foregroundStyle(theme.colors.foreground)
                 }
             }
         }

@@ -92,7 +92,7 @@ struct UserProfileMfaRow: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 24, height: 24)
-                    .foregroundStyle(theme.colors.textSecondary)
+                    .foregroundStyle(theme.colors.mutedForeground)
                 VStack(alignment: .leading, spacing: 4) {
                     if isDefault {
                         Badge(key: "Default", style: .secondary)
@@ -105,7 +105,7 @@ struct UserProfileMfaRow: View {
                         }
                     }
                     .font(theme.fonts.body)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .frame(minHeight: 22)
                 }
             }
@@ -118,7 +118,7 @@ struct UserProfileMfaRow: View {
                 Image("icon-three-dots-vertical", bundle: .module)
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(theme.colors.textSecondary)
+                    .foregroundColor(theme.colors.mutedForeground)
                     .frame(width: 20, height: 20)
             }
             .frame(width: 30, height: 30)

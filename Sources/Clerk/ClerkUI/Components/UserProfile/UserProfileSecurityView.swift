@@ -69,7 +69,7 @@ struct UserProfileSecurityView: View {
                 Text("Security", bundle: .module)
                     .font(theme.fonts.headline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
             }
         }
         .presentationBackground(theme.colors.background)

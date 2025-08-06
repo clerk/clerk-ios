@@ -78,7 +78,7 @@ struct SignInFactorOneForgotPasswordView: View {
                         Text("Reset your password", bundle: .module)
                             .frame(maxWidth: .infinity)
                             .overlayProgressView(isActive: isRunning) {
-                                SpinnerView(color: theme.colors.textOnPrimaryBackground)
+                                SpinnerView(color: theme.colors.primaryForeground)
                             }
                     }
                     .buttonStyle(.primary())
@@ -108,11 +108,11 @@ struct SignInFactorOneForgotPasswordView: View {
                                             .resizable()
                                             .frame(width: 16, height: 16)
                                             .scaledToFit()
-                                            .foregroundStyle(theme.colors.textSecondary)
+                                            .foregroundStyle(theme.colors.mutedForeground)
                                     }
                                     Text(actionText, bundle: .module)
                                         .font(theme.fonts.body)
-                                        .foregroundStyle(theme.colors.text)
+                                        .foregroundStyle(theme.colors.foreground)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
                                 }

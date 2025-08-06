@@ -28,7 +28,7 @@ struct UserButtonPopover: View {
                 Text("Account", bundle: .module)
                     .font(theme.fonts.title3)
                     .fontWeight(.semibold)
-                    .foregroundStyle(theme.colors.text)
+                    .foregroundStyle(theme.colors.foreground)
                     .frame(minHeight: 25)
                 Spacer()
                 DismissButton()

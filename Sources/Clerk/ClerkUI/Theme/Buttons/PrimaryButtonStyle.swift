@@ -31,7 +31,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         case .low:
             theme.colors.primary
         case .high:
-            theme.colors.textOnPrimaryBackground
+            theme.colors.primaryForeground
         }
     }
 
