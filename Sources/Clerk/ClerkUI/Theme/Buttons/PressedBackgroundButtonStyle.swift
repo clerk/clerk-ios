@@ -14,7 +14,7 @@ struct PressedBackgroundButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? theme.colors.backgroundSecondary : nil)
+            .background(configuration.isPressed ? theme.colors.muted : nil)
     }
 
 }

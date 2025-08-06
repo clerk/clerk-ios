@@ -85,7 +85,7 @@ struct SignInSetNewPasswordView: View {
                         .tint(theme.colors.primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(theme.colors.backgroundSecondary)
+                        .background(theme.colors.muted)
                         .clipShape(.rect(cornerRadius: theme.design.borderRadius))
 
                     AsyncButton {

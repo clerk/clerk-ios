@@ -183,7 +183,7 @@ struct AddMfaSmsRow: View {
                 .monospaced()
                 .padding(.vertical, 13)
                 .padding(.horizontal, 10)
-                .background(theme.colors.backgroundSecondary)
+                .background(theme.colors.muted)
                 .clipShape(.rect(cornerRadius: theme.design.borderRadius))
                 .contentShape(.rect(cornerRadius: theme.design.borderRadius))
         }

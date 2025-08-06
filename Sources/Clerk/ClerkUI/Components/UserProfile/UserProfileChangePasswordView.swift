@@ -193,7 +193,7 @@ struct UserProfileChangePasswordView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(theme.colors.backgroundSecondary, in: .rect(cornerRadius: theme.design.borderRadius))
+        .background(theme.colors.muted, in: .rect(cornerRadius: theme.design.borderRadius))
     }
 }
 

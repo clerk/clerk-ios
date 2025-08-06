@@ -125,7 +125,7 @@ struct UserProfileDetailView: View {
                         .animation(.default, value: sortedPhoneNumbers)
                         .animation(.default, value: sortedExternalAccounts)
                     }
-                    .background(theme.colors.backgroundSecondary)
+                    .background(theme.colors.muted)
 
                     SecuredByClerkFooter()
                 }

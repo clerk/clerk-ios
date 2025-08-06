@@ -188,7 +188,7 @@ public struct UserProfileView: View {
                             }
                         }
                     }
-                    .background(theme.colors.backgroundSecondary)
+                    .background(theme.colors.muted)
 
                     SecuredByClerkFooter()
                 }

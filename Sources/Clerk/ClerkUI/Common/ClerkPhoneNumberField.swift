@@ -150,7 +150,7 @@ struct ClerkPhoneNumberField: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 13)
-            .background(theme.colors.backgroundSecondary)
+            .background(theme.colors.muted)
             .clipShape(.rect(cornerRadius: theme.design.borderRadius))
             .contentShape(.rect(cornerRadius: theme.design.borderRadius))
         }

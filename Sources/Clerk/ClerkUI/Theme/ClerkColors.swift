@@ -23,12 +23,14 @@ extension ClerkTheme {
         public var primaryForeground: Color
         public var inputForeground: Color
         public var neutral: Color
+        public var ring: Color
+        public var muted: Color
+        public var shadow: Color
         
         // Generated
         public var primaryPressed: Color
         public var border: Color
         public var buttonBorder: Color
-        public var backgroundSecondary: Color
         public var inputBorder: Color
         public var inputBorderFocused: Color
         public var dangerInputBorder: Color
@@ -52,7 +54,11 @@ extension ClerkTheme {
             mutedForeground: Color = Self.default.mutedForeground,
             primaryForeground: Color = Self.default.primaryForeground,
             inputForeground: Color = Self.default.inputForeground,
-            neutral: Color = Self.default.neutral
+            neutral: Color = Self.default.neutral,
+            ring: Color = Self.default.ring,
+            muted: Color = Self.default.muted,
+            shadow: Color = Self.default.shadow,
+            border: Color = Self.default.border
         ) {
             self.primary = primary
             self.background = background
@@ -65,13 +71,15 @@ extension ClerkTheme {
             self.primaryForeground = primaryForeground
             self.inputForeground = inputForeground
             self.neutral = neutral
+            self.ring = ring
+            self.muted = muted
+            self.shadow = shadow
             
             self.primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
-            self.border = neutral.opacity(0.06)
-            self.buttonBorder = neutral.opacity(0.08)
-            self.backgroundSecondary = neutral.opacity(0.03)
-            self.inputBorder = neutral.opacity(0.11)
-            self.inputBorderFocused = neutral.opacity(0.28)
+            self.border = border.opacity(0.06)
+            self.buttonBorder = border.opacity(0.08)
+            self.inputBorder = border.opacity(0.11)
+            self.inputBorderFocused = ring.opacity(0.28)
             self.dangerInputBorder = danger.opacity(0.53)
             self.dangerInputBorderFocused = danger.opacity(0.15)
             self.backgroundTransparent = background.opacity(0.5)
@@ -99,7 +107,11 @@ extension ClerkTheme.Colors {
             mutedForeground: Color(.mutedForeground),
             primaryForeground: Color(.primaryForeground),
             inputForeground: Color(.inputForeground),
-            neutral: Color(.neutral)
+            neutral: Color(.neutral),
+            ring: Color(.neutral),
+            muted: Color(.muted),
+            shadow: Color(.neutral),
+            border: Color(.neutral)
         )
     }
 

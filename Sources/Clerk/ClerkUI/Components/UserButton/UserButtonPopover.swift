@@ -102,7 +102,7 @@ struct UserButtonPopover: View {
             SecuredByClerkView()
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(theme.colors.backgroundSecondary)
+                .background(theme.colors.muted)
         }
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()

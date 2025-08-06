@@ -50,11 +50,11 @@ struct PrimaryButtonStyle: ButtonStyle {
         switch config.emphasis {
         case .none:
             configuration.isPressed
-                ? theme.colors.backgroundSecondary
+                ? theme.colors.muted
                 : theme.colors.background
         case .low:
             configuration.isPressed
-                ? theme.colors.backgroundSecondary
+                ? theme.colors.muted
                 : theme.colors.background
         case .high:
             configuration.isPressed

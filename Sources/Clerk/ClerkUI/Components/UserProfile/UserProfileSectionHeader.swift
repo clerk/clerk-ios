@@ -36,7 +36,7 @@ struct UserProfileSectionHeader: View {
     @Previewable @Environment(\.clerkTheme) var theme
 
     UserProfileSectionHeader(text: "EMAIL ADDRESSES")
-        .background(theme.colors.backgroundSecondary)
+        .background(theme.colors.muted)
 }
 
 #endif

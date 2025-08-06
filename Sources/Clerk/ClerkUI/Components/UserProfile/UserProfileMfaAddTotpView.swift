@@ -141,7 +141,7 @@ struct UserProfileMfaAddTotpView: View {
             .lineLimit(1)
             .padding(.vertical, 18)
             .padding(.horizontal, 16)
-            .background(theme.colors.backgroundSecondary)
+            .background(theme.colors.muted)
             .clipShape(.rect(cornerRadius: theme.design.borderRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: theme.design.borderRadius)
