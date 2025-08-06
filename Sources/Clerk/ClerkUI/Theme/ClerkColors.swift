@@ -27,7 +27,7 @@ extension ClerkTheme {
         public var muted: Color
         public var shadow: Color
         
-        // Generated
+        // Generated Colors
         public var primaryPressed: Color
         public var border: Color
         public var buttonBorder: Color
@@ -44,21 +44,21 @@ extension ClerkTheme {
         public var borderWarning: Color
 
         public init(
-            primary: Color = Self.default.primary,
-            background: Color = Self.default.background,
-            input: Color = Self.default.input,
-            danger: Color = Self.default.danger,
-            success: Color = Self.default.success,
-            warning: Color = Self.default.warning,
-            foreground: Color = Self.default.foreground,
-            mutedForeground: Color = Self.default.mutedForeground,
-            primaryForeground: Color = Self.default.primaryForeground,
-            inputForeground: Color = Self.default.inputForeground,
-            neutral: Color = Self.default.neutral,
-            ring: Color = Self.default.ring,
-            muted: Color = Self.default.muted,
-            shadow: Color = Self.default.shadow,
-            border: Color = Self.default.border
+            primary: Color = Self.defaultPrimaryColor,
+            background: Color = Self.defaultBackgroundColor,
+            input: Color = Self.defaultInputColor,
+            danger: Color = Self.defaultDangerColor,
+            success: Color = Self.defaultSuccessColor,
+            warning: Color = Self.defaultWarningColor,
+            foreground: Color = Self.defaultForegroundColor,
+            mutedForeground: Color = Self.defaultMutedForegroundColor,
+            primaryForeground: Color = Self.defaultPrimaryForegroundColor,
+            inputForeground: Color = Self.defaultInputForegroundColor,
+            neutral: Color = Self.defaultNeutralColor,
+            ring: Color = Self.defaultRingColor,
+            muted: Color = Self.defaultMutedColor,
+            shadow: Color = Self.defaultShadowColor,
+            border: Color = Self.defaultBorderColor
         ) {
             self.primary = primary
             self.background = background
@@ -75,6 +75,7 @@ extension ClerkTheme {
             self.muted = muted
             self.shadow = shadow
             
+            // Generated Colors
             self.primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
             self.border = border.opacity(0.06)
             self.buttonBorder = border.opacity(0.08)
@@ -94,24 +95,41 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Colors {
+    
+    // Static properties for default colors to avoid circular reference
+    public static let defaultPrimaryColor = Color(.primary)
+    public static let defaultBackgroundColor = Color(.background)
+    public static let defaultInputColor = Color(.input)
+    public static let defaultDangerColor = Color(.danger)
+    public static let defaultSuccessColor = Color(.success)
+    public static let defaultWarningColor = Color(.warning)
+    public static let defaultForegroundColor = Color(.foreground)
+    public static let defaultMutedForegroundColor = Color(.mutedForeground)
+    public static let defaultPrimaryForegroundColor = Color(.primaryForeground)
+    public static let defaultInputForegroundColor = Color(.inputForeground)
+    public static let defaultNeutralColor = Color(.neutral)
+    public static let defaultRingColor = Color(.neutral)
+    public static let defaultMutedColor = Color(.muted)
+    public static let defaultShadowColor = Color(.neutral)
+    public static let defaultBorderColor = Color(.neutral)
 
     public nonisolated static var `default`: Self {
         .init(
-            primary: Color(.primary),
-            background: Color(.background),
-            input: Color(.input),
-            danger: Color(.danger),
-            success: Color(.success),
-            warning: Color(.warning),
-            foreground: Color(.foreground),
-            mutedForeground: Color(.mutedForeground),
-            primaryForeground: Color(.primaryForeground),
-            inputForeground: Color(.inputForeground),
-            neutral: Color(.neutral),
-            ring: Color(.neutral),
-            muted: Color(.muted),
-            shadow: Color(.neutral),
-            border: Color(.neutral)
+            primary: defaultPrimaryColor,
+            background: defaultBackgroundColor,
+            input: defaultInputColor,
+            danger: defaultDangerColor,
+            success: defaultSuccessColor,
+            warning: defaultWarningColor,
+            foreground: defaultForegroundColor,
+            mutedForeground: defaultMutedForegroundColor,
+            primaryForeground: defaultPrimaryForegroundColor,
+            inputForeground: defaultInputForegroundColor,
+            neutral: defaultNeutralColor,
+            ring: defaultRingColor,
+            muted: defaultMutedColor,
+            shadow: defaultShadowColor,
+            border: defaultBorderColor
         )
     }
 
