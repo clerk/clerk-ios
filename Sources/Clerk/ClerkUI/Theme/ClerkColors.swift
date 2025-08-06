@@ -23,6 +23,23 @@ extension ClerkTheme {
         public var textOnPrimaryBackground: Color
         public var inputText: Color
         public var neutral: Color
+        
+        // Generated
+        public var primaryPressed: Color
+        public var border: Color
+        public var buttonBorder: Color
+        public var backgroundSecondary: Color
+        public var inputBorder: Color
+        public var inputBorderFocused: Color
+        public var dangerInputBorder: Color
+        public var dangerInputBorderFocused: Color
+        public var backgroundTransparent: Color
+        public var backgroundSuccess: Color
+        public var borderSuccess: Color
+        public var backgroundDanger: Color
+        public var borderDanger: Color
+        public var backgroundWarning: Color
+        public var borderWarning: Color
 
         public init(
             primary: Color = Self.default.primary,
@@ -48,70 +65,23 @@ extension ClerkTheme {
             self.textOnPrimaryBackground = textOnPrimaryBackground
             self.inputText = inputText
             self.neutral = neutral
+            
+            self.primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
+            self.border = neutral.opacity(0.06)
+            self.buttonBorder = neutral.opacity(0.08)
+            self.backgroundSecondary = neutral.opacity(0.03)
+            self.inputBorder = neutral.opacity(0.11)
+            self.inputBorderFocused = neutral.opacity(0.28)
+            self.dangerInputBorder = danger.opacity(0.53)
+            self.dangerInputBorderFocused = danger.opacity(0.15)
+            self.backgroundTransparent = background.opacity(0.5)
+            self.backgroundSuccess = success.opacity(0.12)
+            self.borderSuccess = success.opacity(0.77)
+            self.backgroundDanger = danger.opacity(0.12)
+            self.borderDanger = danger.opacity(0.77)
+            self.backgroundWarning = warning.opacity(0.12)
+            self.borderWarning = warning.opacity(0.77)
         }
-
-        // MARK: - Generated Colors
-
-        var primaryPressed: Color {
-            primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
-        }
-
-        var border: Color {
-            neutral.opacity(0.06)
-        }
-
-        var buttonBorder: Color {
-            neutral.opacity(0.08)
-        }
-
-        var backgroundSecondary: Color {
-            neutral.opacity(0.03)
-        }
-
-        var inputBorder: Color {
-            neutral.opacity(0.11)
-        }
-
-        var inputBorderFocused: Color {
-            neutral.opacity(0.28)
-        }
-
-        var dangerInputBorder: Color {
-            danger.opacity(0.53)
-        }
-
-        var dangerInputBorderFocused: Color {
-            danger.opacity(0.15)
-        }
-
-        var backgroundTransparent: Color {
-            background.opacity(0.5)
-        }
-
-        var backgroundSuccess: Color {
-            success.opacity(0.12)
-        }
-
-        var borderSuccess: Color {
-            success.opacity(0.77)
-        }
-
-        var backgroundDanger: Color {
-            danger.opacity(0.12)
-        }
-
-        var borderDanger: Color {
-            danger.opacity(0.77)
-        }
-
-        var backgroundWarning: Color {
-            warning.opacity(0.12)
-        }
-
-        var borderWarning: Color {
-            warning.opacity(0.77)
-        }
-
     }
 }
 
