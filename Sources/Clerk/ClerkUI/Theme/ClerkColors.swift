@@ -57,59 +57,59 @@ extension ClerkTheme {
         }
 
         var border: Color {
-            Color(.neutral).opacity(0.06)
+            neutral.opacity(0.06)
         }
 
         var buttonBorder: Color {
-            Color(.neutral).opacity(0.08)
+            neutral.opacity(0.08)
         }
 
         var backgroundSecondary: Color {
-            Color(.neutral).opacity(0.03)
+            neutral.opacity(0.03)
         }
 
         var inputBorder: Color {
-            Color(.neutral).opacity(0.11)
+            neutral.opacity(0.11)
         }
 
         var inputBorderFocused: Color {
-            Color(.neutral).opacity(0.28)
+            neutral.opacity(0.28)
         }
 
         var dangerInputBorder: Color {
-            Color(.danger).opacity(0.53)
+            danger.opacity(0.53)
         }
 
         var dangerInputBorderFocused: Color {
-            Color(.danger).opacity(0.15)
+            danger.opacity(0.15)
         }
 
         var backgroundTransparent: Color {
-            Color(.background).opacity(0)
+            background.opacity(0.5)
         }
 
         var backgroundSuccess: Color {
-            Color(.success).opacity(0.12)
+            success.opacity(0.12)
         }
 
         var borderSuccess: Color {
-            Color(.success).opacity(0.77)
+            success.opacity(0.77)
         }
 
         var backgroundDanger: Color {
-            Color(.danger).opacity(0.12)
+            danger.opacity(0.12)
         }
 
         var borderDanger: Color {
-            Color(.danger).opacity(0.77)
+            danger.opacity(0.77)
         }
 
         var backgroundWarning: Color {
-            Color(.warning).opacity(0.12)
+            warning.opacity(0.12)
         }
 
         var borderWarning: Color {
-            Color(.warning).opacity(0.77)
+            warning.opacity(0.77)
         }
 
     }
