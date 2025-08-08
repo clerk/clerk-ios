@@ -70,7 +70,7 @@ public struct AuthView: View {
     @State var authState: AuthState
 
     /// The authentication mode that determines which flows are available to the user.
-    public enum Mode {
+    public enum Mode: String {
         /// Allows users to choose between signing in to existing accounts or creating new accounts.
         /// This is the default mode that provides the most flexibility for users.
         case signInOrUp
@@ -141,6 +141,16 @@ public struct AuthView: View {
                     }
                 }
             }
+        }
+        .taskOnce {
+            await clerk.telemetry.record(
+                TelemetryEvents.viewDidAppear(
+                    "AuthView",
+                    payload: [
+                        "mode": .string(authState.mode.rawValue),
+                        "isDismissable": .bool(isDismissable)
+                    ]
+                ))
         }
     }
 }

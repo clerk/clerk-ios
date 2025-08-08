@@ -15,6 +15,9 @@ extension Clerk {
         /// Enable additional debugging signals and logging. Defaults to false.
         public let debugMode: Bool
 
+        /// Enable development telemetry collection. Defaults to true.
+        public let telemetryEnabled: Bool
+
         /// Configuration for keychain storage behavior.
         public let keychainConfig: KeychainConfig
 
@@ -28,10 +31,12 @@ extension Clerk {
         ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling. Defaults to a new RedirectConfig instance.
         public init(
             debugMode: Bool = false,
+            telemetryEnabled: Bool = true,
             keychainConfig: KeychainConfig = .init(),
             redirectConfig: RedirectConfig = .init()
         ) {
             self.debugMode = debugMode
+            self.telemetryEnabled = telemetryEnabled
             self.keychainConfig = keychainConfig
             self.redirectConfig = redirectConfig
         }
