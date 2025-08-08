@@ -48,11 +48,6 @@ struct ClerkLogger {
     /// The unified logging instance for Clerk
     private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
-    /// Check if debug mode is enabled from MainActor context
-    @MainActor
-    private static var isDebugModeEnabled: Bool {
-        Clerk.shared.settings.debugMode
-    }
 
     /// Log an error message (always logs regardless of debug mode)
     /// - Parameters:
@@ -149,8 +144,8 @@ struct ClerkLogger {
         } else if let override = debugModeOverride {
             shouldLog = override
         } else {
-            // Try to check debug mode safely, default to false if we can't access it
-            shouldLog = (MainActor.assumeIsolated { isDebugModeEnabled })
+            // No override provided; default to not logging from this sync context
+            shouldLog = false
         }
 
         guard shouldLog else { return }
@@ -178,16 +173,8 @@ struct ClerkLogger {
             }
         }
 
-        // Use unified logging for structured logs
+        // Use unified logging for structured logs only (avoid duplicate console output)
         logger.log(level: level.osLogType, "\(logMessage)")
-
-        // Also use dump for development debugging (maintains existing behavior)
-        if shouldLog {
-            dump(logMessage)
-            if let error = error {
-                dump(error)
-            }
-        }
     }
 }
 

@@ -46,6 +46,11 @@ final public class Clerk {
             }
         }
     }
+    /// The telemetry collector for development diagnostics.
+    ///
+    /// Initialized with a default collector and refreshed during `load()`.
+    /// Used to record non-blocking telemetry events when running in development
+    internal private(set) var telemetry: TelemetryCollector = TelemetryCollector(options: .init())
 
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
@@ -184,6 +189,9 @@ extension Clerk {
             attestDeviceIfNeeded(environment: try await environment)
 
             isLoaded = true
+
+            // Refresh telemetry collector after successful load
+            telemetry = TelemetryCollector(options: .init())
         } catch {
             throw error
         }
