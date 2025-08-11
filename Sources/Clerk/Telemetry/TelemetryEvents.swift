@@ -9,16 +9,21 @@ import Foundation
 
 /// Helper builders for common telemetry events.
 enum TelemetryEvents {
-    private static let defaultSamplingRate: Double = 0.1
+    // Different sampling rates for different event types
+    private static let methodInvokedSamplingRate: Double = 0.1
+    private static let viewDidAppearSamplingRate: Double = 0.2
+    private static let frameworkMetadataSamplingRate: Double = 1.0 // Always capture framework info
 
     /// Create an event for when a method is invoked.
     /// - Parameters:
     ///   - method: A stable method identifier (e.g., "signIn", "getToken").
     ///   - payload: Additional payload data.
+    ///   - samplingRate: Optional custom sampling rate. If nil, uses the default for this event type.
     /// - Returns: A raw telemetry event ready to be recorded.
     static func methodInvoked(
         _ method: String,
-        payload: [String: JSON] = [:]
+        payload: [String: JSON] = [:],
+        samplingRate: Double? = nil
     ) -> TelemetryEventRaw {
         var body: [String: JSON] = ["method": .string(method)]
         body.merge(payload, uniquingKeysWith: { _, new in new })
@@ -26,7 +31,7 @@ enum TelemetryEvents {
         return TelemetryEventRaw(
             event: "METHOD_INVOKED",
             payload: body,
-            eventSamplingRate: defaultSamplingRate
+            eventSamplingRate: samplingRate ?? methodInvokedSamplingRate
         )
     }
 
@@ -34,10 +39,12 @@ enum TelemetryEvents {
     /// - Parameters:
     ///   - viewName: The view or screen identifier (e.g., "SignInView").
     ///   - payload: Additional payload data.
+    ///   - samplingRate: Optional custom sampling rate. If nil, uses the default for this event type.
     /// - Returns: A raw telemetry event ready to be recorded.
     static func viewDidAppear(
         _ viewName: String,
-        payload: [String: JSON] = [:]
+        payload: [String: JSON] = [:],
+        samplingRate: Double? = nil
     ) -> TelemetryEventRaw {
         var body: [String: JSON] = ["view": .string(viewName)]
         body.merge(payload, uniquingKeysWith: { _, new in new })
@@ -45,20 +52,23 @@ enum TelemetryEvents {
         return TelemetryEventRaw(
             event: "VIEW_DID_APPEAR",
             payload: body,
-            eventSamplingRate: defaultSamplingRate
+            eventSamplingRate: samplingRate ?? viewDidAppearSamplingRate
         )
     }
 
     /// Create an event to attach framework/host metadata.
-    /// - Parameter metadata: Arbitrary metadata (e.g., OS version, device).
+    /// - Parameters:
+    ///   - metadata: Arbitrary metadata (e.g., OS version, device).
+    ///   - samplingRate: Optional custom sampling rate. If nil, uses the default for this event type.
     /// - Returns: A raw telemetry event ready to be recorded.
     static func frameworkMetadata(
-        _ metadata: [String: JSON]
+        _ metadata: [String: JSON],
+        samplingRate: Double? = nil
     ) -> TelemetryEventRaw {
         TelemetryEventRaw(
             event: "FRAMEWORK_METADATA",
             payload: metadata,
-            eventSamplingRate: defaultSamplingRate
+            eventSamplingRate: samplingRate ?? frameworkMetadataSamplingRate
         )
     }
 }
