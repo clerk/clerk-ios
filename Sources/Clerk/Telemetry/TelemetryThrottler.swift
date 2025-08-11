@@ -34,7 +34,7 @@ actor TelemetryEventThrottler {
 
         // Invalidate if TTL expired
         if now - lastSeen > cacheTtlMs {
-            cache.removeValue(forKey: key)
+            cache[key] = now  // Record new timestamp
             saveCache(cache)
             return false
         }
@@ -66,7 +66,7 @@ actor TelemetryEventThrottler {
     }
 
     /// Generates a stable key by sorting the event fields and payload.
-    private func generateKey(for event: TelemetryEvent) -> String {
+    internal func generateKey(for event: TelemetryEvent) -> String {
         var fields: [String] = []
         fields.append("event:\(event.event)")
         fields.append("it:\(event.it)")

@@ -110,7 +110,7 @@ actor TelemetryCollector {
     }
 
     /// Flush buffered events to the telemetry endpoint.
-    private func flush() async {
+    internal func flush() async {
         let eventsToSend = buffer
         buffer.removeAll(keepingCapacity: true)
 
