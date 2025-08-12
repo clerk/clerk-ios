@@ -254,7 +254,7 @@ extension AuthStartView {
         do {
             var signIn = try await SignIn.create(
                 strategy: .identifier(
-                    phoneNumberFieldIsActive
+                    phoneNumberFieldIsActive && phoneNumberIsEnabled
                         ? authState.authStartPhoneNumber
                         : authState.authStartIdentifier
                 )
