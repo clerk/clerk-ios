@@ -7,9 +7,25 @@
 
 import Foundation
 import Testing
-import Mocker
 
 @testable import Clerk
+
+/// Mock network requester that doesn't make real requests
+struct MockNetworkRequester: NetworkRequester {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        // Return mock response without making actual network call
+        let mockData = Data()
+        let mockResponse = HTTPURLResponse(
+            url: request.url!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        return (mockData, mockResponse)
+    }
+}
+
+
 
 @Suite("Telemetry System Tests")
 struct TelemetryTests {
@@ -411,14 +427,17 @@ struct TelemetryTests {
             let defaultOptions = TelemetryCollectorOptions()
             #expect(defaultOptions.samplingRate == 1.0)
             #expect(defaultOptions.maxBufferSize == 5)
+            #expect(defaultOptions.disableThrottling == false)
             
             // Test custom values
             let customOptions = TelemetryCollectorOptions(
                 samplingRate: 0.5,
-                maxBufferSize: 10
+                maxBufferSize: 10,
+                disableThrottling: true
             )
             #expect(customOptions.samplingRate == 0.5)
             #expect(customOptions.maxBufferSize == 10)
+            #expect(customOptions.disableThrottling == true)
             
             // Test buffer size validation (minimum 1)
             let invalidOptions = TelemetryCollectorOptions(maxBufferSize: 0)
@@ -460,6 +479,7 @@ struct TelemetryTests {
             #expect(decodedEvent.payload["bool"] == .bool(true))
             #expect(decodedEvent.payload["null"] == .null)
         }
+
         
         @Test("TelemetryEventRaw initialization")
         func testTelemetryEventRaw() async throws {
@@ -497,7 +517,7 @@ struct TelemetryTests {
         @Test("Collector initialization")
         func testCollectorInitialization() async throws {
             let options = TelemetryCollectorOptions(samplingRate: 0.8, maxBufferSize: 3)
-            let _ = TelemetryCollector(options: options)
+            let _ = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
             
             // Test that collector is properly initialized (no crash)
             #expect(Bool(true)) // If we reach here, initialization succeeded
@@ -507,7 +527,7 @@ struct TelemetryTests {
         func testEventRecordingWithSampling() async throws {
             // Use 0% sampling to ensure events are never recorded
             let options = TelemetryCollectorOptions(samplingRate: 0.0, maxBufferSize: 10)
-            let collector = TelemetryCollector(options: options)
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
             
             let rawEvent = TelemetryEventRaw(
                 event: "TEST_EVENT",
@@ -523,7 +543,7 @@ struct TelemetryTests {
         func testEventRecordingWithPerEventSampling() async throws {
             // Use 0% global sampling but override with 100% for specific event
             let options = TelemetryCollectorOptions(samplingRate: 0.0, maxBufferSize: 1)
-            let collector = TelemetryCollector(options: options)
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
             
             let rawEvent = TelemetryEventRaw(
                 event: "TEST_EVENT",
@@ -538,24 +558,19 @@ struct TelemetryTests {
         @Test("Buffer size management")
         func testBufferSizeManagement() async throws {
             let options = TelemetryCollectorOptions(samplingRate: 1.0, maxBufferSize: 2)
-            let collector = TelemetryCollector(options: options)
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
             
-            // Record events up to buffer size
-            for i in 1...3 {
-                let rawEvent = TelemetryEventRaw(
-                    event: "TEST_EVENT_\(i)",
-                    payload: ["index": .number(Double(i))],
-                    eventSamplingRate: 1.0
-                )
-                await collector.record(rawEvent)
-            }
+            // Record events up to buffer size - should automatically flush
+            let event1 = TelemetryEventRaw(event: "TEST_1", payload: [:], eventSamplingRate: 1.0)
+            let event2 = TelemetryEventRaw(event: "TEST_2", payload: [:], eventSamplingRate: 1.0)
             
-            // Buffer should trigger flush when it reaches maxBufferSize
+            await collector.record(event1)
+            await collector.record(event2) // Should trigger flush when buffer is full
         }
         
         @Test("Manual flush functionality")
         func testManualFlush() async throws {
-            let collector = TelemetryCollector(options: .init())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
             
             // Test that manual flush doesn't crash
             await collector.flush()
@@ -563,7 +578,7 @@ struct TelemetryTests {
         
         @Test("Event throttling integration")
         func testEventThrottlingIntegration() async throws {
-            let collector = TelemetryCollector(options: .init())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
             
             let rawEvent = TelemetryEventRaw(
                 event: "REPEATED_EVENT",
@@ -576,6 +591,40 @@ struct TelemetryTests {
             
             // Second identical event should be throttled
             await collector.record(rawEvent)
+        }
+        
+        @Test("Disable throttling functionality") 
+        func testDisableThrottling() async throws {
+            // Test with all filtering disabled (should record ALL events)
+            let noFilteringOptions = TelemetryCollectorOptions(
+                samplingRate: 0.0, // 0% sampling rate (should be bypassed)
+                maxBufferSize: 10,
+                disableThrottling: true
+            )
+            let noFilteringCollector = TelemetryCollector(options: noFilteringOptions)
+            
+            // Test with normal filtering
+            let normalOptions = TelemetryCollectorOptions(
+                samplingRate: 0.0, // 0% sampling rate
+                maxBufferSize: 10,
+                disableThrottling: false
+            )
+            let normalCollector = TelemetryCollector(options: normalOptions)
+            
+            let rawEvent = TelemetryEventRaw(
+                event: "TEST_EVENT",
+                payload: ["test": .string("data")],
+                eventSamplingRate: 0.0 // 0% sampling (should be bypassed when filtering disabled)
+            )
+            
+            // With filtering disabled, ALL events should be recorded despite 0% sampling
+            await noFilteringCollector.record(rawEvent)
+            await noFilteringCollector.record(rawEvent) // Duplicate should also work
+            await noFilteringCollector.record(rawEvent) // Another duplicate should work
+            
+            // With normal filtering, events should be dropped due to 0% sampling
+            await normalCollector.record(rawEvent)
+            await normalCollector.record(rawEvent)
         }
     }
     
@@ -628,7 +677,7 @@ struct TelemetryTests {
         @Test("Event helpers produce valid events")
         func testEventHelpersProduceValidEvents() async throws {
             // Test that all event helpers produce events that can be processed
-            let collector = TelemetryCollector(options: .init())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
             
             let methodEvent = TelemetryEvents.methodInvoked("testMethod", payload: ["userId": .string("123")])
             let viewEvent = TelemetryEvents.viewDidAppear("TestView", payload: ["mode": .string("test")])
@@ -638,6 +687,58 @@ struct TelemetryTests {
             await collector.record(methodEvent)
             await collector.record(viewEvent)
             await collector.record(metadataEvent)
+        }
+        
+        @Test("Telemetry collector options configuration")
+        func testTelemetryCollectorOptionsConfiguration() async throws {
+            // Test custom options
+            let customOptions = TelemetryCollectorOptions(
+                samplingRate: 0.5,
+                maxBufferSize: 20,
+                flushInterval: 60.0,
+                disableThrottling: true
+            )
+            
+            #expect(customOptions.samplingRate == 0.5)
+            #expect(customOptions.maxBufferSize == 20)
+            #expect(customOptions.flushInterval == 60.0)
+            #expect(customOptions.disableThrottling == true)
+            
+            // Test default options
+            let defaultOptions = TelemetryCollectorOptions()
+            #expect(defaultOptions.samplingRate == 1.0)
+            #expect(defaultOptions.maxBufferSize == 5)
+            #expect(defaultOptions.flushInterval == 30.0)
+            #expect(defaultOptions.disableThrottling == false)
+            
+            // Test collector initialization
+            let collector = TelemetryCollector(options: customOptions, networkRequester: MockNetworkRequester())
+            let _ = collector // Should create successfully
+        }
+        
+        @Test("Flush interval validation")
+        func testFlushIntervalValidation() async throws {
+            // Test minimum flush interval is enforced
+            let options = TelemetryCollectorOptions(flushInterval: 0.5)
+            #expect(options.flushInterval == 1.0) // Should be clamped to minimum of 1.0
+            
+            let negativeOptions = TelemetryCollectorOptions(flushInterval: -5.0)
+            #expect(negativeOptions.flushInterval == 1.0) // Should be clamped to minimum of 1.0
+        }
+        
+        
+        @Test("Periodic flush timing configuration")
+        func testPeriodicFlushConfiguration() async throws {
+            // Test flush interval configuration
+            let quickOptions = TelemetryCollectorOptions(flushInterval: 5.0)
+            let slowOptions = TelemetryCollectorOptions(flushInterval: 120.0)
+            
+            #expect(quickOptions.flushInterval == 5.0)
+            #expect(slowOptions.flushInterval == 120.0)
+            
+            // Test that collectors can be created with different intervals
+            let _ = TelemetryCollector(options: quickOptions, networkRequester: MockNetworkRequester())
+            let _ = TelemetryCollector(options: slowOptions, networkRequester: MockNetworkRequester())
         }
     }
 }

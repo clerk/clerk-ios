@@ -66,7 +66,7 @@ actor TelemetryEventThrottler {
     }
 
     /// Generates a stable key by sorting the event fields and payload.
-    internal func generateKey(for event: TelemetryEvent) -> String {
+    func generateKey(for event: TelemetryEvent) -> String {
         var fields: [String] = []
         fields.append("event:\(event.event)")
         fields.append("it:\(event.it)")

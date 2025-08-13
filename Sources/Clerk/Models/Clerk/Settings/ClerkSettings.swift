@@ -27,6 +27,7 @@ extension Clerk {
         /// Initializes a ``Settings`` instance.
         /// - Parameters:
         ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
+        ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
         ///   - keychainConfig: Configuration for keychain storage behavior. Defaults to a new KeychainConfig instance.
         ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling. Defaults to a new RedirectConfig instance.
         public init(

@@ -7,6 +7,15 @@
 
 import Foundation
 
+/// Protocol for making network requests - allows for easy testing
+protocol NetworkRequester: Sendable {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse)
+}
+
+extension URLSession: NetworkRequester {
+    // URLSession already conforms to this signature
+}
+
 /// A development-only telemetry collector for the Clerk iOS SDK.
 ///
 /// The collector is automatically disabled in production instances.
@@ -17,6 +26,9 @@ actor TelemetryCollector {
         var samplingRate: Double
         var maxBufferSize: Int
         var endpoint: URL
+        var disableThrottling: Bool
+        var networkRequester: NetworkRequester
+        var flushInterval: TimeInterval
     }
 
     private struct Metadata: Sendable {
@@ -35,17 +47,23 @@ actor TelemetryCollector {
     private var metadata: Metadata
     private var buffer: [TelemetryEvent] = []
     private var flushTask: Task<Void, Never>? = nil
+    private var flushTimer: Task<Void, Never>? = nil
 
     // MARK: Init
 
     /// Creates a new telemetry collector.
     ///
-    /// - Parameter options: Configuration options controlling sampling, buffering and metadata.
-    init(options: TelemetryCollectorOptions) {
+    /// - Parameters:
+    ///   - options: Configuration options controlling sampling, buffering and metadata.
+    ///   - networkRequester: Network requester for making HTTP requests. Defaults to URLSession.shared.
+    init(options: TelemetryCollectorOptions = .init(), networkRequester: NetworkRequester = URLSession.shared) {
         self.config = Config(
             samplingRate: options.samplingRate,
             maxBufferSize: options.maxBufferSize,
-            endpoint: Self.defaultEndpoint
+            endpoint: Self.defaultEndpoint,
+            disableThrottling: options.disableThrottling,
+            networkRequester: networkRequester,
+            flushInterval: options.flushInterval
         )
 
         let sdkName = "clerk-ios"
@@ -55,6 +73,14 @@ actor TelemetryCollector {
             sdk: sdkName,
             sdkVersion: sdkVersion
         )
+        
+        // Start periodic flushing
+        Task { await startPeriodicFlush() }
+    }
+    
+    deinit {
+        flushTimer?.cancel()
+        flushTask?.cancel()
     }
 
     /// Record an event to be sampled, throttled, buffered and sent.
@@ -79,13 +105,39 @@ actor TelemetryCollector {
     }
 
     private func shouldBeSampled(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> Bool {
+        // When throttling is disabled, record all events (bypass sampling and throttling)
+        if config.disableThrottling {
+            return true
+        }
+        
         let randomSeed = Double.random(in: 0...1)
         let globalOk = randomSeed <= config.samplingRate
         let eventOk = eventSamplingRate.map { randomSeed <= $0 } ?? true
         guard globalOk && eventOk else { return false }
+        
         return !(await throttler.isEventThrottled(prepared))
     }
 
+    /// Starts a periodic timer to flush events at regular intervals
+    private func startPeriodicFlush() {
+        flushTimer = Task { [weak self] in
+            guard let self else { return }
+            
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(config.flushInterval))
+                
+                let hasEvents = await self.hasBufferedEvents()
+                if hasEvents {
+                    await self.flush()
+                }
+            }
+        }
+    }
+    
+    private func hasBufferedEvents() -> Bool {
+        !buffer.isEmpty
+    }
+    
     private func scheduleFlushIfNeeded() async {
         let isBufferFull = buffer.count >= config.maxBufferSize
         if isBufferFull {
@@ -95,22 +147,13 @@ actor TelemetryCollector {
                 guard let self else { return }
                 await self.flush()
             }
-            return
         }
-
-        // If a flush is already scheduled, do nothing
-        if flushTask != nil { return }
-
-        // Schedule a background flush on the next tick
-        flushTask = Task { [weak self] in
-            guard let self else { return }
-            await Task.yield()
-            await self.flush()
-        }
+        // Note: Only flush when buffer is full, not on every event
+        // This allows proper batching of events
     }
 
     /// Flush buffered events to the telemetry endpoint.
-    internal func flush() async {
+    func flush() async {
         let eventsToSend = buffer
         buffer.removeAll(keepingCapacity: true)
 
@@ -125,7 +168,7 @@ actor TelemetryCollector {
         request.httpBody = requestBody
 
         do {
-            let _ = try await URLSession.shared.data(for: request)
+            let _ = try await config.networkRequester.data(for: request)
         } catch {
             if await isDebugModeEnabled() {
                 ClerkLogger.logNetworkError(
@@ -173,7 +216,3 @@ actor TelemetryCollector {
         await MainActor.run { Clerk.shared.settings.debugMode }
     }
 }
-
-private extension TelemetryCollector { }
-
-

@@ -50,7 +50,7 @@ final public class Clerk {
     ///
     /// Initialized with a default collector and refreshed during `load()`.
     /// Used to record non-blocking telemetry events when running in development
-    internal private(set) var telemetry: TelemetryCollector = TelemetryCollector(options: .init())
+    internal private(set) var telemetry: TelemetryCollector = TelemetryCollector()
 
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
@@ -191,7 +191,7 @@ extension Clerk {
             isLoaded = true
 
             // Refresh telemetry collector after successful load
-            telemetry = TelemetryCollector(options: .init())
+            telemetry = TelemetryCollector()
         } catch {
             throw error
         }
@@ -260,6 +260,9 @@ extension Clerk {
                 named: UIApplication.didEnterBackgroundNotification
             ).map({ _ in () }) {
                 stopSessionTokenPolling()
+                
+                // Flush telemetry events when app goes to background
+                await telemetry.flush()
             }
         }
 
