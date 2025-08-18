@@ -2,7 +2,7 @@
 //  TelemetryTests.swift
 //  Clerk
 //
-//  Created by AI Assistant on 2025-08-08.
+//  Created by Mike Pitre on 8/8/25.
 //
 
 import Foundation
@@ -23,6 +23,42 @@ struct MockNetworkRequester: NetworkRequester {
         )!
         return (mockData, mockResponse)
     }
+}
+
+
+// MARK: - Test Utilities for Decoupled Telemetry
+
+/// Network requester that tracks call count and captures the last request body
+actor CapturingNetworkRequester: NetworkRequester {
+    private(set) var callCount = 0
+    private(set) var lastRequestBody: Data?
+
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        callCount += 1
+        lastRequestBody = request.httpBody
+        let response = HTTPURLResponse(
+            url: request.url!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        return (Data(), response)
+    }
+}
+
+/// Mock environment provider to decouple tests from `Clerk`.
+struct MockTelemetryEnvironment: TelemetryEnvironmentProviding {
+    var sdkName: String = "clerk-ios"
+    var sdkVersion: String = "1.0.0"
+    var instanceType: String = "development"
+    var telemetryEnabled: Bool = true
+    var debugModeEnabled: Bool = false
+    var pk: String? = nil
+
+    func instanceTypeString() async -> String { instanceType }
+    func isTelemetryEnabled() async -> Bool { telemetryEnabled }
+    func isDebugModeEnabled() async -> Bool { debugModeEnabled }
+    func publishableKey() async -> String? { pk }
 }
 
 
@@ -527,7 +563,7 @@ struct TelemetryTests {
         func testEventRecordingWithSampling() async throws {
             // Use 0% sampling to ensure events are never recorded
             let options = TelemetryCollectorOptions(samplingRate: 0.0, maxBufferSize: 10)
-            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             let rawEvent = TelemetryEventRaw(
                 event: "TEST_EVENT",
@@ -543,7 +579,7 @@ struct TelemetryTests {
         func testEventRecordingWithPerEventSampling() async throws {
             // Use 0% global sampling but override with 100% for specific event
             let options = TelemetryCollectorOptions(samplingRate: 0.0, maxBufferSize: 1)
-            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             let rawEvent = TelemetryEventRaw(
                 event: "TEST_EVENT",
@@ -558,7 +594,7 @@ struct TelemetryTests {
         @Test("Buffer size management")
         func testBufferSizeManagement() async throws {
             let options = TelemetryCollectorOptions(samplingRate: 1.0, maxBufferSize: 2)
-            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: options, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             // Record events up to buffer size - should automatically flush
             let event1 = TelemetryEventRaw(event: "TEST_1", payload: [:], eventSamplingRate: 1.0)
@@ -570,7 +606,7 @@ struct TelemetryTests {
         
         @Test("Manual flush functionality")
         func testManualFlush() async throws {
-            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             // Test that manual flush doesn't crash
             await collector.flush()
@@ -578,7 +614,7 @@ struct TelemetryTests {
         
         @Test("Event throttling integration")
         func testEventThrottlingIntegration() async throws {
-            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             let rawEvent = TelemetryEventRaw(
                 event: "REPEATED_EVENT",
@@ -601,7 +637,7 @@ struct TelemetryTests {
                 maxBufferSize: 10,
                 disableThrottling: true
             )
-            let noFilteringCollector = TelemetryCollector(options: noFilteringOptions)
+            let noFilteringCollector = TelemetryCollector(options: noFilteringOptions, environment: MockTelemetryEnvironment())
             
             // Test with normal filtering
             let normalOptions = TelemetryCollectorOptions(
@@ -609,7 +645,7 @@ struct TelemetryTests {
                 maxBufferSize: 10,
                 disableThrottling: false
             )
-            let normalCollector = TelemetryCollector(options: normalOptions)
+            let normalCollector = TelemetryCollector(options: normalOptions, environment: MockTelemetryEnvironment())
             
             let rawEvent = TelemetryEventRaw(
                 event: "TEST_EVENT",
@@ -677,7 +713,7 @@ struct TelemetryTests {
         @Test("Event helpers produce valid events")
         func testEventHelpersProduceValidEvents() async throws {
             // Test that all event helpers produce events that can be processed
-            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: .init(), networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             
             let methodEvent = TelemetryEvents.methodInvoked("testMethod", payload: ["userId": .string("123")])
             let viewEvent = TelemetryEvents.viewDidAppear("TestView", payload: ["mode": .string("test")])
@@ -712,7 +748,7 @@ struct TelemetryTests {
             #expect(defaultOptions.disableThrottling == false)
             
             // Test collector initialization
-            let collector = TelemetryCollector(options: customOptions, networkRequester: MockNetworkRequester())
+            let collector = TelemetryCollector(options: customOptions, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
             let _ = collector // Should create successfully
         }
         
@@ -737,8 +773,8 @@ struct TelemetryTests {
             #expect(slowOptions.flushInterval == 120.0)
             
             // Test that collectors can be created with different intervals
-            let _ = TelemetryCollector(options: quickOptions, networkRequester: MockNetworkRequester())
-            let _ = TelemetryCollector(options: slowOptions, networkRequester: MockNetworkRequester())
+            let _ = TelemetryCollector(options: quickOptions, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
+            let _ = TelemetryCollector(options: slowOptions, networkRequester: MockNetworkRequester(), environment: MockTelemetryEnvironment())
         }
     }
 }

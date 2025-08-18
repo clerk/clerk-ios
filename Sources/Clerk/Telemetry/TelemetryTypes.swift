@@ -2,7 +2,7 @@
 //  TelemetryTypes.swift
 //  Clerk
 //
-//  Created by AI Assistant on 2025-08-08.
+//  Created by Mike Pitre on 8/8/25.
 //
 
 import Foundation

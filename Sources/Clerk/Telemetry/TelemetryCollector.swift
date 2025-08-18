@@ -2,7 +2,7 @@
 //  TelemetryCollector.swift
 //  Clerk
 //
-//  Created by AI Assistant on 2025-08-08.
+//  Created by Mike Pitre on 8/8/25.
 //
 
 import Foundation
@@ -48,6 +48,7 @@ actor TelemetryCollector {
     private var buffer: [TelemetryEvent] = []
     private var flushTask: Task<Void, Never>? = nil
     private var flushTimer: Task<Void, Never>? = nil
+    private let environment: TelemetryEnvironmentProviding
 
     // MARK: Init
 
@@ -56,7 +57,12 @@ actor TelemetryCollector {
     /// - Parameters:
     ///   - options: Configuration options controlling sampling, buffering and metadata.
     ///   - networkRequester: Network requester for making HTTP requests. Defaults to URLSession.shared.
-    init(options: TelemetryCollectorOptions = .init(), networkRequester: NetworkRequester = URLSession.shared) {
+    ///   - environment: Provider for environment values used in telemetry. Defaults to `ClerkTelemetryEnvironment()`.
+    init(
+        options: TelemetryCollectorOptions = .init(),
+        networkRequester: NetworkRequester = URLSession.shared,
+        environment: TelemetryEnvironmentProviding = ClerkTelemetryEnvironment()
+    ) {
         self.config = Config(
             samplingRate: options.samplingRate,
             maxBufferSize: options.maxBufferSize,
@@ -65,13 +71,11 @@ actor TelemetryCollector {
             networkRequester: networkRequester,
             flushInterval: options.flushInterval
         )
-
-        let sdkName = "clerk-ios"
-        let sdkVersion = Clerk.version
+        self.environment = environment
 
         self.metadata = Metadata(
-            sdk: sdkName,
-            sdkVersion: sdkVersion
+            sdk: environment.sdkName,
+            sdkVersion: environment.sdkVersion
         )
         
         // Start periodic flushing
@@ -99,8 +103,8 @@ actor TelemetryCollector {
     // MARK: Private helpers
 
     private func shouldRecord(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> Bool {
-        guard await isTelemetryEnabled() else { return false }
-        guard await isDevelopmentInstance() else { return false }
+        guard await environment.isTelemetryEnabled() else { return false }
+        guard await environment.instanceTypeString() == "development" else { return false }
         return await shouldBeSampled(prepared, eventSamplingRate: eventSamplingRate)
     }
 
@@ -188,31 +192,19 @@ actor TelemetryCollector {
 
     /// Enrich the raw event with SDK metadata and instance information.
     private func preparePayload(event: String, payload: [String: JSON]) async -> TelemetryEvent {
-        let instanceTypeString = await instanceTypeString()
-        let publishableKey = await MainActor.run { Clerk.shared.publishableKey }
+        let instanceTypeString = await environment.instanceTypeString()
+        let publishableKey = await environment.publishableKey()
         return TelemetryEvent(
             event: event,
             it: instanceTypeString,
             sdk: metadata.sdk,
             sdkv: metadata.sdkVersion,
-            pk: publishableKey.isEmpty ? nil : publishableKey,
+            pk: publishableKey,
             payload: payload
         )
     }
 
-    private func isDevelopmentInstance() async -> Bool {
-        await MainActor.run { Clerk.shared.instanceType == .development }
-    }
-
-    private func instanceTypeString() async -> String {
-        await MainActor.run { Clerk.shared.instanceType.rawValue }
-    }
-
-    private func isTelemetryEnabled() async -> Bool {
-        await MainActor.run { Clerk.shared.settings.telemetryEnabled }
-    }
-
     private func isDebugModeEnabled() async -> Bool {
-        await MainActor.run { Clerk.shared.settings.debugMode }
+        await environment.isDebugModeEnabled()
     }
 }

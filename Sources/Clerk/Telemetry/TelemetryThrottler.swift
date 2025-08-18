@@ -2,7 +2,7 @@
 //  TelemetryThrottler.swift
 //  Clerk
 //
-//  Created by AI Assistant on 2025-08-08.
+//  Created by Mike Pitre on 8/8/25.
 //
 
 import Foundation
@@ -17,17 +17,26 @@ private typealias Milliseconds = Int64
 actor TelemetryEventThrottler {
     private let storageKey = "clerk_telemetry_throttler"
     private let cacheTtlMs: Milliseconds = 86_400_000 // 24h
+    private var memoryCache: [String: Milliseconds]? = nil
+    
 
     func isEventThrottled(_ event: TelemetryEvent) async -> Bool {
+        // Lazily initialize in-memory cache from persistent storage
+        if memoryCache == nil {
+            memoryCache = loadCache()
+        }
+
         let now = currentTimeMillis()
         let key = generateKey(for: event)
 
-        var cache = loadCache()
+        // Work on the in-memory cache for consistency within this actor instance
+        var cache = memoryCache ?? [:]
         let entry = cache[key]
 
         // New entry → write and allow
         guard let lastSeen = entry else {
             cache[key] = now
+            memoryCache = cache
             saveCache(cache)
             return false
         }
@@ -35,6 +44,7 @@ actor TelemetryEventThrottler {
         // Invalidate if TTL expired
         if now - lastSeen > cacheTtlMs {
             cache[key] = now  // Record new timestamp
+            memoryCache = cache
             saveCache(cache)
             return false
         }
