@@ -7,8 +7,6 @@
 
 import Foundation
 
-private typealias Milliseconds = Int64
-
 /// An actor that throttles telemetry events to avoid flooding.
 ///
 /// It stores a cache in `UserDefaults` keyed by a stable hash of the event
@@ -16,8 +14,8 @@ private typealias Milliseconds = Int64
 /// considered throttled.
 actor TelemetryEventThrottler {
     private let storageKey = "clerk_telemetry_throttler"
-    private let cacheTtlMs: Milliseconds = 86_400_000 // 24h
-    private var memoryCache: [String: Milliseconds]? = nil
+    private let cacheTtl: TimeInterval = 24 * 60 * 60 // 24 hours
+    private var memoryCache: [String: TimeInterval]? = nil
     
 
     func isEventThrottled(_ event: TelemetryEvent) async -> Bool {
@@ -26,7 +24,7 @@ actor TelemetryEventThrottler {
             memoryCache = loadCache()
         }
 
-        let now = currentTimeMillis()
+        let now = Date().timeIntervalSince1970
         let key = generateKey(for: event)
 
         // Work on the in-memory cache for consistency within this actor instance
@@ -42,7 +40,7 @@ actor TelemetryEventThrottler {
         }
 
         // Invalidate if TTL expired
-        if now - lastSeen > cacheTtlMs {
+        if now - lastSeen > cacheTtl {
             cache[key] = now  // Record new timestamp
             memoryCache = cache
             saveCache(cache)
@@ -55,20 +53,16 @@ actor TelemetryEventThrottler {
 
     // MARK: - Private
 
-    private func currentTimeMillis() -> Milliseconds {
-        Milliseconds(Date().timeIntervalSince1970 * 1000)
-    }
-
-    private func loadCache() -> [String: Milliseconds] {
+    private func loadCache() -> [String: TimeInterval] {
         let defaults = UserDefaults.standard
         guard let data = defaults.data(forKey: storageKey) else { return [:] }
-        if let decoded = try? JSONDecoder().decode([String: Milliseconds].self, from: data) {
+        if let decoded = try? JSONDecoder().decode([String: TimeInterval].self, from: data) {
             return decoded
         }
         return [:]
     }
 
-    private func saveCache(_ cache: [String: Milliseconds]) {
+    private func saveCache(_ cache: [String: TimeInterval]) {
         let defaults = UserDefaults.standard
         if let data = try? JSONEncoder().encode(cache) {
             defaults.set(data, forKey: storageKey)
