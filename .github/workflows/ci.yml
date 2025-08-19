@@ -34,17 +34,17 @@ jobs:
       - name: Build for ${{ matrix.platform }}
         run: |
           case "${{ matrix.platform }}" in
-            iOS) destination="platform=iOS Simulator,name=iPhone 16 Pro" ;;
+            iOS) destination="platform=iOS Simulator,OS=latest" ;;
             macOS) destination="platform=macOS" ;;
             macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
-            watchOS) destination="platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)" ;;
-            tvOS) destination="platform=tvOS Simulator,name=Apple TV 4K (3rd generation)" ;;
-            visionOS) destination="platform=visionOS Simulator,name=Apple Vision Pro" ;;
+            watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
+            tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
+            visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
           esac
           xcodebuild build -scheme Clerk -destination "$destination" | xcpretty
 
   test:
-    name: Run tests on iOS
+    name: Run tests on macOS
     runs-on: macos-15
     steps:
       - name: Checkout repository
@@ -55,6 +55,11 @@ jobs:
           sw_vers
           xcodebuild -version
 
+      - name: List available destinations
+        run: |
+          echo "Available destinations:"
+          xcodebuild -showdestinations -scheme ClerkTests
+
       - name: Cache Swift dependencies
         uses: actions/cache@v4
         with:
@@ -62,7 +67,7 @@ jobs:
           key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-macOS-
 
-      - name: Run tests on iOS
+      - name: Run tests on macOS
         run: |
           set -o pipefail
-          xcodebuild test -scheme ClerkTests -destination "platform=iOS Simulator,name=iPhone 16 Pro" -disable-concurrent-destination-testing | xcpretty
+          xcodebuild test -scheme ClerkTests -destination "platform=macOS" -disable-concurrent-destination-testing | xcpretty
