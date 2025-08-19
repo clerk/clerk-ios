@@ -9,10 +9,9 @@ import Foundation
 
 /// Helper builders for common telemetry events.
 enum TelemetryEvents {
-    // Different sampling rates for different event types
+    // Sampling rates matching JavaScript version
     private static let methodInvokedSamplingRate: Double = 0.1
-    private static let viewDidAppearSamplingRate: Double = 0.2
-    private static let frameworkMetadataSamplingRate: Double = 1.0 // Always capture framework info
+    private static let viewDidAppearSamplingRate: Double = 0.1
 
     /// Create an event for when a method is invoked.
     /// - Parameters:
@@ -53,22 +52,6 @@ enum TelemetryEvents {
             event: "VIEW_DID_APPEAR",
             payload: body,
             eventSamplingRate: samplingRate ?? viewDidAppearSamplingRate
-        )
-    }
-
-    /// Create an event to attach framework/host metadata.
-    /// - Parameters:
-    ///   - metadata: Arbitrary metadata (e.g., OS version, device).
-    ///   - samplingRate: Optional custom sampling rate. If nil, uses the default for this event type.
-    /// - Returns: A raw telemetry event ready to be recorded.
-    static func frameworkMetadata(
-        _ metadata: [String: JSON],
-        samplingRate: Double? = nil
-    ) -> TelemetryEventRaw {
-        TelemetryEventRaw(
-            event: "FRAMEWORK_METADATA",
-            payload: metadata,
-            eventSamplingRate: samplingRate ?? frameworkMetadataSamplingRate
         )
     }
 }
