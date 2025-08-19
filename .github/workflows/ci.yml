@@ -44,7 +44,7 @@ jobs:
           xcodebuild build -scheme Clerk -destination "$destination" | xcpretty
 
   test:
-    name: Run tests on iOS
+    name: Run tests on macOS
     runs-on: macos-15
     steps:
       - name: Checkout repository
@@ -67,7 +67,7 @@ jobs:
           key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-macOS-
 
-      - name: Run tests on iOS
+      - name: Run tests on macOS
         run: |
           set -o pipefail
-          xcodebuild test -scheme ClerkTests -destination "platform=iOS Simulator,OS=latest" -disable-concurrent-destination-testing | xcpretty
+          xcodebuild test -scheme ClerkTests -destination "platform=macOS" -disable-concurrent-destination-testing | xcpretty
