@@ -244,6 +244,14 @@ public struct UserProfileView: View {
             .task {
                 _ = try? await Client.get()
             }
+            .taskOnce {
+                await clerk.telemetry.record(
+                    TelemetryEvents.viewDidAppear(
+                        "UserProfileView",
+                        payload: ["isDismissable": .bool(isDismissable)]
+                    )
+                )
+            }
             .environment(\.userProfileSharedState, sharedState)
         }
     }

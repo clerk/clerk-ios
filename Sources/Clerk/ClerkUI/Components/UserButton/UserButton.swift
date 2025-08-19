@@ -99,6 +99,9 @@ public struct UserButton: View {
                 userProfileIsPresented = false
             }
         }
+        .taskOnce {
+            await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+        }
     }
 }
 
