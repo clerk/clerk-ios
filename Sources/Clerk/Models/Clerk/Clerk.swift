@@ -261,8 +261,9 @@ extension Clerk {
             ).map({ _ in () }) {
                 stopSessionTokenPolling()
                 
-                // Flush telemetry events when app goes to background
-                await telemetry.flush()
+                Task {
+                    await telemetry.flush()
+                }
             }
         }
 
