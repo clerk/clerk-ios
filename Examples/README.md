@@ -14,3 +14,4 @@ Each example is a standalone Xcode project that demonstrates specific features o
 ## Available Examples
 
 - **Quickstart** - Basic Clerk integration with sign-in/sign-up flows and user management
+- **Purchases** - Starting template for authentication-gated purchases and subscriptions
