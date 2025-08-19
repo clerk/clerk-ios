@@ -22,6 +22,8 @@ actor TelemetryEventThrottler {
         // Lazily initialize in-memory cache from persistent storage
         if memoryCache == nil {
             memoryCache = loadCache()
+            // Clean up expired entries on first access
+            cleanupExpiredEntries()
         }
 
         let now = Date().timeIntervalSince1970
@@ -52,6 +54,24 @@ actor TelemetryEventThrottler {
     }
 
     // MARK: - Private
+
+    private func cleanupExpiredEntries() {
+        guard var cache = memoryCache else { return }
+        
+        let now = Date().timeIntervalSince1970
+        let originalCount = cache.count
+        
+        // Remove expired entries
+        cache = cache.filter { _, timestamp in
+            now - timestamp <= cacheTtl
+        }
+        
+        // Update cache if any entries were removed
+        if cache.count < originalCount {
+            memoryCache = cache
+            saveCache(cache)
+        }
+    }
 
     private func loadCache() -> [String: TimeInterval] {
         let defaults = UserDefaults.standard

@@ -22,6 +22,11 @@ extension URLSession: NetworkRequester {
 actor TelemetryCollector {
     // MARK: Types
 
+    private struct RecordResult {
+        let shouldRecord: Bool
+        let reason: String
+    }
+
     private struct Config: Sendable {
         var samplingRate: Double
         var maxBufferSize: Int
@@ -78,8 +83,8 @@ actor TelemetryCollector {
             sdkVersion: environment.sdkVersion
         )
         
-        // Start periodic flushing
-        Task { await startPeriodicFlush() }
+        // Start periodic flushing after initialization
+        Task { await self.startPeriodicFlushing() }
     }
     
     deinit {
@@ -92,38 +97,62 @@ actor TelemetryCollector {
     /// - Parameter raw: The raw event description to record.
     func record(_ raw: TelemetryEventRaw) async {
         let prepared = await preparePayload(event: raw.event, payload: raw.payload)
-        let shouldRecordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
-        // Log exactly once in debug: either as normal or as [skipped]
-        await logEventIfDebug(name: shouldRecordResult ? prepared.event : "[skipped] \(prepared.event)", prepared)
-        if !shouldRecordResult { return }
+        let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
+        
+        // Log exactly once in debug: either as normal or as [skipped] with reason
+        if recordResult.shouldRecord {
+            await logEventIfDebug(name: prepared.event, prepared)
+        } else {
+            await logEventIfDebug(name: "[skipped - \(recordResult.reason)] \(prepared.event)", prepared)
+        }
+        
+        if !recordResult.shouldRecord { return }
         buffer.append(prepared)
         await scheduleFlushIfNeeded()
     }
 
     // MARK: Private helpers
 
-    private func shouldRecord(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> Bool {
-        guard await environment.isTelemetryEnabled() else { return false }
-        guard await environment.instanceTypeString() == "development" else { return false }
-        return await shouldBeSampled(prepared, eventSamplingRate: eventSamplingRate)
+    private func shouldRecord(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> RecordResult {
+        guard await environment.isTelemetryEnabled() else { 
+            return RecordResult(shouldRecord: false, reason: "telemetry disabled")
+        }
+        guard await environment.instanceTypeString() == "development" else { 
+            return RecordResult(shouldRecord: false, reason: "production instance")
+        }
+        
+        let samplingResult = await shouldBeSampled(prepared, eventSamplingRate: eventSamplingRate)
+        return RecordResult(shouldRecord: samplingResult.shouldRecord, reason: samplingResult.reason)
     }
 
-    private func shouldBeSampled(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> Bool {
+    private func shouldBeSampled(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> RecordResult {
         // When throttling is disabled, record all events (bypass sampling and throttling)
         if config.disableThrottling {
-            return true
+            return RecordResult(shouldRecord: true, reason: "throttling disabled")
         }
         
         let randomSeed = Double.random(in: 0...1)
         let globalOk = randomSeed <= config.samplingRate
         let eventOk = eventSamplingRate.map { randomSeed <= $0 } ?? true
-        guard globalOk && eventOk else { return false }
         
-        return !(await throttler.isEventThrottled(prepared))
+        if !globalOk {
+            return RecordResult(shouldRecord: false, reason: "global sampling (\(Int(config.samplingRate * 100))%)")
+        }
+        
+        if !eventOk, let eventRate = eventSamplingRate {
+            return RecordResult(shouldRecord: false, reason: "event sampling (\(Int(eventRate * 100))%)")
+        }
+        
+        let isThrottled = await throttler.isEventThrottled(prepared)
+        if isThrottled {
+            return RecordResult(shouldRecord: false, reason: "throttled")
+        }
+        
+        return RecordResult(shouldRecord: true, reason: "accepted")
     }
 
-    /// Starts a periodic timer to flush events at regular intervals
-    private func startPeriodicFlush() {
+    /// Initializes and starts the periodic flushing system
+    private func startPeriodicFlushing() {
         flushTimer = Task { [weak self] in
             guard let self else { return }
             
