@@ -1,4 +1,4 @@
-# Purchases
+# ClerkRevCat
 
 This is a starting template for integrating Clerk authentication with purchases/subscriptions in an iOS application. Build upon this foundation to create your own authentication-gated purchase flows.
 
@@ -21,7 +21,7 @@ This template provides:
 
 ### 2. Configure the Example
 
-1. Open `PurchasesApp.swift`
+1. Open `ClerkRevCatApp.swift`
 2. Replace `"YOUR_PUBLISHABLE_KEY"` with your actual Clerk publishable key:
 
 ```swift
@@ -30,7 +30,7 @@ clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
 
 ### 3. Run the App
 
-1. Select the **Purchases** scheme from the workspace navigator
+1. Select the **ClerkRevCat** scheme from the workspace navigator
 2. Choose your target device/simulator
 3. Build and run the project (⌘+R)
 

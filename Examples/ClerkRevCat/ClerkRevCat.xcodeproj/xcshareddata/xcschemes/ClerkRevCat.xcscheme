@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-               BuildableName = "Purchases.app"
-               BlueprintName = "Purchases"
-               ReferencedContainer = "container:Purchases.xcodeproj">
+               BuildableName = "ClerkRevCat.app"
+               BlueprintName = "ClerkRevCat"
+               ReferencedContainer = "container:ClerkRevCat.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-            BuildableName = "Purchases.app"
-            BlueprintName = "Purchases"
-            ReferencedContainer = "container:Purchases.xcodeproj">
+            BuildableName = "ClerkRevCat.app"
+            BlueprintName = "ClerkRevCat"
+            ReferencedContainer = "container:ClerkRevCat.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-            BuildableName = "Purchases.app"
-            BlueprintName = "Purchases"
-            ReferencedContainer = "container:Purchases.xcodeproj">
+            BuildableName = "ClerkRevCat.app"
+            BlueprintName = "ClerkRevCat"
+            ReferencedContainer = "container:ClerkRevCat.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -1,6 +1,6 @@
 //
-//  PurchasesApp.swift
-//  Purchases
+//  ClerkRevCatApp.swift
+//  ClerkRevCat
 //
 //  Created by Mike Pitre on 8/19/25.
 //
@@ -9,7 +9,7 @@ import Clerk
 import SwiftUI
 
 @main
-struct PurchasesApp: App {
+struct ClerkRevCatApp: App {
     @State private var clerk = Clerk.shared
     
     var body: some Scene {

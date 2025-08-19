@@ -12,13 +12,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		8FC2FE082E3A5C32001E5953 /* Purchases.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Purchases.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FC2FE082E3A5C32001E5953 /* ClerkRevCat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClerkRevCat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		8FC2FE0A2E3A5C32001E5953 /* Purchases */ = {
+		8FC2FE0A2E3A5C32001E5953 /* ClerkRevCat */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Purchases;
+			path = ClerkRevCat;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,7 +39,7 @@
 		8FC2FDFF2E3A5C32001E5953 = {
 			isa = PBXGroup;
 			children = (
-				8FC2FE0A2E3A5C32001E5953 /* Purchases */,
+				8FC2FE0A2E3A5C32001E5953 /* ClerkRevCat */,
 				8FC2FE092E3A5C32001E5953 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,7 +47,7 @@
 		8FC2FE092E3A5C32001E5953 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8FC2FE082E3A5C32001E5953 /* Purchases.app */,
+				8FC2FE082E3A5C32001E5953 /* ClerkRevCat.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,9 +55,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8FC2FE072E3A5C32001E5953 /* Purchases */ = {
+		8FC2FE072E3A5C32001E5953 /* ClerkRevCat */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8FC2FE132E3A5C33001E5953 /* Build configuration list for PBXNativeTarget "Purchases" */;
+			buildConfigurationList = 8FC2FE132E3A5C33001E5953 /* Build configuration list for PBXNativeTarget "ClerkRevCat" */;
 			buildPhases = (
 				8FC2FE042E3A5C32001E5953 /* Sources */,
 				8FC2FE052E3A5C32001E5953 /* Frameworks */,
@@ -68,15 +68,15 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				8FC2FE0A2E3A5C32001E5953 /* Purchases */,
+				8FC2FE0A2E3A5C32001E5953 /* ClerkRevCat */,
 			);
-			name = Purchases;
+			name = ClerkRevCat;
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* Clerk */,
 				8F692CBF2E3D008D00E6E7ED /* Clerk */,
 			);
-			productName = Purchases;
-			productReference = 8FC2FE082E3A5C32001E5953 /* Purchases.app */;
+			productName = ClerkRevCat;
+			productReference = 8FC2FE082E3A5C32001E5953 /* ClerkRevCat.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -94,7 +94,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 8FC2FE032E3A5C32001E5953 /* Build configuration list for PBXProject "Purchases" */;
+			buildConfigurationList = 8FC2FE032E3A5C32001E5953 /* Build configuration list for PBXProject "ClerkRevCat" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -110,7 +110,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8FC2FE072E3A5C32001E5953 /* Purchases */,
+				8FC2FE072E3A5C32001E5953 /* ClerkRevCat */,
 			);
 		};
 /* End PBXProject section */
@@ -278,7 +278,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.Purchases;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkRevCat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -311,7 +311,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.Purchases;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.ClerkRevCat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -326,7 +326,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8FC2FE032E3A5C32001E5953 /* Build configuration list for PBXProject "Purchases" */ = {
+		8FC2FE032E3A5C32001E5953 /* Build configuration list for PBXProject "ClerkRevCat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8FC2FE112E3A5C33001E5953 /* Debug */,
@@ -335,7 +335,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8FC2FE132E3A5C33001E5953 /* Build configuration list for PBXNativeTarget "Purchases" */ = {
+		8FC2FE132E3A5C33001E5953 /* Build configuration list for PBXNativeTarget "ClerkRevCat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8FC2FE142E3A5C33001E5953 /* Debug */,

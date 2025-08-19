@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Purchases
+//  ClerkRevCat
 //
 //  Created by Mike Pitre on 8/19/25.
 //
