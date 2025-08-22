@@ -8,5 +8,5 @@
 import Foundation
 
 extension Clerk {
-    nonisolated public static let version: String = "0.66.0"
+    nonisolated public static let version: String = "0.66.1"
 }
