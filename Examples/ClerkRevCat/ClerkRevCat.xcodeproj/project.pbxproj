@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* Clerk */; };
+		8F7DB0502E56614F00784E21 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 8F7DB04F2E56614F00784E21 /* RevenueCat */; };
+		8F7DB0522E56614F00784E21 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F7DB0512E56614F00784E21 /* RevenueCatUI */; };
 		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
 /* End PBXBuildFile section */
 
@@ -28,8 +30,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F7DB0522E56614F00784E21 /* RevenueCatUI in Frameworks */,
 				8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */,
 				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
+				8F7DB0502E56614F00784E21 /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +78,8 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* Clerk */,
 				8F692CBF2E3D008D00E6E7ED /* Clerk */,
+				8F7DB04F2E56614F00784E21 /* RevenueCat */,
+				8F7DB0512E56614F00784E21 /* RevenueCatUI */,
 			);
 			productName = ClerkRevCat;
 			productReference = 8FC2FE082E3A5C32001E5953 /* ClerkRevCat.app */;
@@ -104,6 +110,7 @@
 			mainGroup = 8FC2FDFF2E3A5C32001E5953;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				8F7DB04E2E56614F00784E21 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE092E3A5C32001E5953 /* Products */;
@@ -346,10 +353,31 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8F7DB04E2E56614F00784E21 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.35.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		8F692CBF2E3D008D00E6E7ED /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Clerk;
+		};
+		8F7DB04F2E56614F00784E21 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F7DB04E2E56614F00784E21 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+		8F7DB0512E56614F00784E21 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F7DB04E2E56614F00784E21 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCatUI;
 		};
 		8F9023512E3A648E00831B13 /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;

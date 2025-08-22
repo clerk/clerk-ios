@@ -1,0 +1,83 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "76288A60",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6751250425",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "L8SD6SB282",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 777476049.34188604,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21760143",
+      "localizations" : [
+
+      ],
+      "name" : "ClerkRevCat Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "10.0",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6751298399",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Premium",
+              "displayName" : "Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "clerkrevcat_10_1m",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly $10",
+          "subscriptionGroupID" : "21760143",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "subscriptionOffersKeyPair" : {
+    "id" : "1D447CA1",
+    "privateKey" : "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg+MEaWun4FnRjj0AQyJvXoz2LcC419u6yXns4jT8D27OgCgYIKoZIzj0DAQehRANCAARQu7XjSrf9ezguP3SM8DL5E0L10QLAoPuVUQ4u4FfTjJVlZBiW3+Y0JLGxeVX4hBi3SA1E3uGbiO9/SPM6Mbu5"
+  },
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
