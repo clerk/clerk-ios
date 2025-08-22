@@ -101,7 +101,7 @@ extension OrganizationMembership {
             id: "1",
             publicMetadata: "{}",
             role: "org:role",
-            userRole: "org:member",
+            userRole: "Member",
             permissions: ["org:sys_memberships:read"],
             publicUserData: .init(
                 firstName: "First",
@@ -122,7 +122,7 @@ extension OrganizationMembership {
             id: "1",
             publicMetadata: "{}",
             role: "org:role",
-            userRole: "org:member",
+            userRole: "Member",
             permissions: ["org:sys_memberships:read"],
             publicUserData: nil,
             organization: .mock,
