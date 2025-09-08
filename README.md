@@ -59,6 +59,42 @@ Curious what we shipped recently? Check out our [changelog](https://clerk.com/ch
 We're open to all community contributions! If you'd like to contribute in any way, please read [our contribution guidelines](https://github.com/clerk/javascript/blob/main/docs/CONTRIBUTING.md). We'd love to have you as part of the Clerk community!
 -->
 
+## 🧹 SwiftLint
+
+SwiftLint is used to enforce code style (2-space indentation) and catch common issues.
+
+### Install (local)
+
+```bash
+brew install swiftlint
+```
+
+### Run locally
+
+```bash
+# Lint
+swiftlint lint --config .swiftlint.yml
+
+# Optionally autocorrect formatting (including 2-space indentation)
+swiftlint autocorrect --format --config .swiftlint.yml
+```
+
+### Git pre-commit hook
+
+Enable the repository hooks path once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The `pre-commit` hook will:
+- Autocorrect and format staged `.swift` files
+- Re-lint them with `--strict` and block commits on violations
+
+### CI enforcement
+
+GitHub Actions runs SwiftLint on pull requests and pushes to `main`.
+
 ## 📝 License
 
 This project is licensed under the **MIT license**.
