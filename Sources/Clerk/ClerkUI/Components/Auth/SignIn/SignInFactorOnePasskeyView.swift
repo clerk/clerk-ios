@@ -7,9 +7,9 @@
 
 #if os(iOS)
 
-import SwiftUI
+  import SwiftUI
 
-struct SignInFactorOnePasskeyView: View {
+  struct SignInFactorOnePasskeyView: View {
     @Environment(\.clerk) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.authState) private var authState
@@ -19,138 +19,136 @@ struct SignInFactorOnePasskeyView: View {
     @State var error: Error?
 
     var signIn: SignIn? {
-        clerk.client?.signIn
+      clerk.client?.signIn
     }
 
     let factor: Factor
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                VStack(spacing: 8) {
-                    HeaderView(style: .title, text: "Use your passkey")
-                    HeaderView(style: .subtitle, text: "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock.")
+      ScrollView {
+        VStack(spacing: 0) {
+          VStack(spacing: 8) {
+            HeaderView(style: .title, text: "Use your passkey")
+            HeaderView(style: .subtitle, text: "Using your passkey confirms it's you. Your device may ask for your fingerprint, face or screen lock.")
 
-                    if let identifier = factor.safeIdentifier {
-                        Button {
-                            authState.path = []
-                        } label: {
-                            IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
-                        }
-                        .buttonStyle(.secondary(config: .init(size: .small)))
-                        .simultaneousGesture(TapGesture())
-                    }
-                }
-                .padding(.bottom, 32)
-
-                VStack(spacing: 24) {
-                    Image(systemName: "faceid")
-                        .resizable()
-                        .symbolRenderingMode(.palette)
-                        .symbolEffect(
-                            .bounce.down,
-                            options: .nonRepeating,
-                            value: animateSymbol
-                        )
-                        .foregroundStyle(theme.colors.foreground, theme.colors.primary)
-                        .scaledToFit()
-                        .frame(width: 64, height: 64)
-                        .foregroundStyle(theme.colors.mutedForeground)
-
-                    AsyncButton {
-                        await authWithPasskey()
-                    } label: { isRunning in
-                        HStack(spacing: 4) {
-                            Text("Continue", bundle: .module)
-                            Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.primaryForeground)
-                                .opacity(0.6)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .overlayProgressView(isActive: passkeyInProgress) {
-                            SpinnerView(color: theme.colors.primaryForeground)
-                        }
-                    }
-                    .buttonStyle(.primary())
-                    .disabled(passkeyInProgress)
-                    .simultaneousGesture(TapGesture())
-
-                    Button {
-                        authState.path.append(
-                            AuthView.Destination.signInFactorOneUseAnotherMethod(
-                                currentFactor: factor
-                            )
-                        )
-                    } label: {
-                        Text("Use another method", bundle: .module)
-                    }
-                    .buttonStyle(
-                        .primary(
-                            config: .init(
-                                emphasis: .none,
-                                size: .small
-                            )
-                        )
-                    )
-                    .simultaneousGesture(TapGesture())
-                }
-                .padding(.bottom, 32)
-
-                SecuredByClerkView()
+            if let identifier = factor.safeIdentifier {
+              Button {
+                authState.path = []
+              } label: {
+                IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
+              }
+              .buttonStyle(.secondary(config: .init(size: .small)))
+              .simultaneousGesture(TapGesture())
             }
-            .padding(16)
-        }
-        .clerkErrorPresenting($error)
-        .background(theme.colors.background)
-        .onFirstAppear {
-            animateSymbol.toggle()
-        }
-        .taskOnce {
-            try? await Task.sleep(for: .seconds(0.5))
-            await authWithPasskey()
-        }
-    }
-}
+          }
+          .padding(.bottom, 32)
 
-extension SignInFactorOnePasskeyView {
+          VStack(spacing: 24) {
+            Image(systemName: "faceid")
+              .resizable()
+              .symbolRenderingMode(.palette)
+              .symbolEffect(
+                .bounce.down,
+                options: .nonRepeating,
+                value: animateSymbol
+              )
+              .foregroundStyle(theme.colors.foreground, theme.colors.primary)
+              .scaledToFit()
+              .frame(width: 64, height: 64)
+              .foregroundStyle(theme.colors.mutedForeground)
 
-    func authWithPasskey() async {
-        guard var signIn else {
-            authState.path = []
-            return
-        }
+            AsyncButton {
+              await authWithPasskey()
+            } label: { _ in
+              HStack(spacing: 4) {
+                Text("Continue", bundle: .module)
+                Image("icon-triangle-right", bundle: .module)
+                  .foregroundStyle(theme.colors.primaryForeground)
+                  .opacity(0.6)
+              }
+              .frame(maxWidth: .infinity)
+              .overlayProgressView(isActive: passkeyInProgress) {
+                SpinnerView(color: theme.colors.primaryForeground)
+              }
+            }
+            .buttonStyle(.primary())
+            .disabled(passkeyInProgress)
+            .simultaneousGesture(TapGesture())
 
-        passkeyInProgress = true
-        defer { passkeyInProgress = false }
-
-        do {
-            signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
-            let credential = try await signIn.getCredentialForPasskey()
-            signIn = try await signIn.attemptFirstFactor(
-                strategy: .passkey(publicKeyCredential: credential)
+            Button {
+              authState.path.append(
+                AuthView.Destination.signInFactorOneUseAnotherMethod(
+                  currentFactor: factor
+                )
+              )
+            } label: {
+              Text("Use another method", bundle: .module)
+            }
+            .buttonStyle(
+              .primary(
+                config: .init(
+                  emphasis: .none,
+                  size: .small
+                )
+              )
             )
+            .simultaneousGesture(TapGesture())
+          }
+          .padding(.bottom, 32)
 
-            self.error = nil
-            authState.setToStepForStatus(signIn: signIn)
-        } catch {
-            if error.isUserCancelledError { return }
-            self.error = error
-            ClerkLogger.error("Failed to authenticate with passkey", error: error)
+          SecuredByClerkView()
         }
+        .padding(16)
+      }
+      .clerkErrorPresenting($error)
+      .background(theme.colors.background)
+      .onFirstAppear {
+        animateSymbol.toggle()
+      }
+      .taskOnce {
+        try? await Task.sleep(for: .seconds(0.5))
+        await authWithPasskey()
+      }
     }
+  }
 
-}
+  extension SignInFactorOnePasskeyView {
+    func authWithPasskey() async {
+      guard var signIn else {
+        authState.path = []
+        return
+      }
 
-#Preview {
+      passkeyInProgress = true
+      defer { passkeyInProgress = false }
+
+      do {
+        signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
+        let credential = try await signIn.getCredentialForPasskey()
+        signIn = try await signIn.attemptFirstFactor(
+          strategy: .passkey(publicKeyCredential: credential)
+        )
+
+        error = nil
+        authState.setToStepForStatus(signIn: signIn)
+      } catch {
+        if error.isUserCancelledError { return }
+        self.error = error
+        ClerkLogger.error("Failed to authenticate with passkey", error: error)
+      }
+    }
+  }
+
+  #Preview {
     SignInFactorOnePasskeyView(factor: .mockPasskey)
-        .environment(\.clerk, .mock)
-        .environment(\.clerkTheme, .clerk)
-}
+      .environment(\.clerk, .mock)
+      .environment(\.clerkTheme, .clerk)
+  }
 
-#Preview("Localized") {
+  #Preview("Localized") {
     SignInFactorOnePasskeyView(factor: .mockPasskey)
-        .environment(\.clerk, .mock)
-        .environment(\.locale, .init(identifier: "fr"))
-}
+      .environment(\.clerk, .mock)
+      .environment(\.locale, .init(identifier: "fr"))
+  }
 
 #endif

@@ -7,9 +7,9 @@
 
 #if os(iOS)
 
-import SwiftUI
+  import SwiftUI
 
-struct DismissButton: View {
+  struct DismissButton: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.clerkTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
@@ -17,34 +17,34 @@ struct DismissButton: View {
     var action: (() -> Void)?
 
     var secondaryPaletteStyle: AnyShapeStyle {
-        if #available(iOS 26.0, *) {
-            AnyShapeStyle(Color.clear)
-        } else {
-            AnyShapeStyle(Material.ultraThinMaterial)
-        }
+      if #available(iOS 26.0, *) {
+        AnyShapeStyle(Color.clear)
+      } else {
+        AnyShapeStyle(Material.ultraThinMaterial)
+      }
     }
 
     var body: some View {
-        Button {
-            if let action {
-                action()
-            } else {
-                dismiss()
-            }
-        } label: {
-            Image(systemName: "xmark.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(theme.colors.mutedForeground, secondaryPaletteStyle)
-                .frame(width: 30, height: 30)
-                .brightness(colorScheme == .light ? -0.05 : 0.05)
+      Button {
+        if let action {
+          action()
+        } else {
+          dismiss()
         }
+      } label: {
+        Image(systemName: "xmark.circle.fill")
+          .resizable()
+          .scaledToFit()
+          .symbolRenderingMode(.palette)
+          .foregroundStyle(theme.colors.mutedForeground, secondaryPaletteStyle)
+          .frame(width: 30, height: 30)
+          .brightness(colorScheme == .light ? -0.05 : 0.05)
+      }
     }
-}
+  }
 
-#Preview {
+  #Preview {
     DismissButton()
-}
+  }
 
 #endif

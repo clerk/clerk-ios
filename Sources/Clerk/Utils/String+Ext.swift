@@ -8,27 +8,24 @@
 import Foundation
 
 extension String {
+  var isEmptyTrimmed: Bool {
+    trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
 
-    var isEmptyTrimmed: Bool {
-        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-    
-    var nonBreaking: String {
-        self
-            .replacingOccurrences(of: " ", with: "\u{00A0}")
-            .replacingOccurrences(of: "-", with: "\u{2011}")
-    }
+  var nonBreaking: String {
+    replacingOccurrences(of: " ", with: "\u{00A0}")
+      .replacingOccurrences(of: "-", with: "\u{2011}")
+  }
 
-    var capitalizedSentence: String {
-        let firstLetter = self.prefix(1).capitalized
-        let remainingLetters = self.dropFirst().lowercased()
-        return firstLetter + remainingLetters
-    }
+  var capitalizedSentence: String {
+    let firstLetter = prefix(1).capitalized
+    let remainingLetters = dropFirst().lowercased()
+    return firstLetter + remainingLetters
+  }
 
-    var isEmailAddress: Bool {
-        let emailRegex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
-        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
-        return emailPredicate.evaluate(with: self)
-    }
-
+  var isEmailAddress: Bool {
+    let emailRegex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
+    let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+    return emailPredicate.evaluate(with: self)
+  }
 }

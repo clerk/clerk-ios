@@ -8,7 +8,7 @@
 import Foundation
 
 struct ClerkQueryItemsRequestProcessor: RequestPreprocessor {
-    static func process(request: inout URLRequest) async throws {
-        request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
-    }
+  static func process(request: inout URLRequest) async throws {
+    request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
+  }
 }

@@ -7,37 +7,37 @@
 
 #if os(iOS)
 
-import SwiftUI
+  import SwiftUI
 
-struct SpinnerView: View {
+  struct SpinnerView: View {
     @Environment(\.clerkTheme) private var theme
     @State private var rotation = 0.0
 
     var color: Color?
 
     var body: some View {
-        Image("icon-spinner", bundle: .module)
-            .resizable()
-            .foregroundStyle(color ?? theme.colors.mutedForeground)
-            .scaledToFit()
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(
-                    .linear(duration: 1.0)
-                        .repeatForever(autoreverses: false)
-                ) {
-                    rotation = 360
-                }
-            }
+      Image("icon-spinner", bundle: .module)
+        .resizable()
+        .foregroundStyle(color ?? theme.colors.mutedForeground)
+        .scaledToFit()
+        .rotationEffect(.degrees(rotation))
+        .onAppear {
+          withAnimation(
+            .linear(duration: 1.0)
+              .repeatForever(autoreverses: false)
+          ) {
+            rotation = 360
+          }
+        }
     }
-}
+  }
 
-#Preview {
+  #Preview {
     SpinnerView()
-        .frame(width: 24, height: 24)
+      .frame(width: 24, height: 24)
 
     SpinnerView()
-        .frame(width: 16, height: 16)
-}
+      .frame(width: 16, height: 16)
+  }
 
 #endif

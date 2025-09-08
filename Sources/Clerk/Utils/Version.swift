@@ -7,6 +7,6 @@
 
 import Foundation
 
-extension Clerk {
-    nonisolated public static let version: String = "0.67.0"
+public extension Clerk {
+  nonisolated static let version: String = "0.67.0"
 }

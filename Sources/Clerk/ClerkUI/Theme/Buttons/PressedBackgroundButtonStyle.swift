@@ -7,31 +7,30 @@
 
 #if os(iOS)
 
-import SwiftUI
+  import SwiftUI
 
-struct PressedBackgroundButtonStyle: ButtonStyle {
+  struct PressedBackgroundButtonStyle: ButtonStyle {
     @Environment(\.clerkTheme) private var theme
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? theme.colors.muted : nil)
+      configuration.label
+        .background(configuration.isPressed ? theme.colors.muted : nil)
     }
+  }
 
-}
-
-extension ButtonStyle where Self == PressedBackgroundButtonStyle {
+  extension ButtonStyle where Self == PressedBackgroundButtonStyle {
     static var pressedBackground: PressedBackgroundButtonStyle {
-        .init()
+      .init()
     }
-}
+  }
 
-#Preview {
+  #Preview {
     Button {
-        //
+      //
     } label: {
-        Text("Continue", bundle: .module)
+      Text("Continue", bundle: .module)
     }
     .buttonStyle(.pressedBackground)
-}
+  }
 
 #endif

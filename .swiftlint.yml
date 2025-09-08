@@ -1,4 +1,6 @@
 excluded:
+  - .build
+  - .swiftpm
   - Carthage
   - Pods
   - DerivedData

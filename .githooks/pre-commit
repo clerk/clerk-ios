@@ -6,12 +6,6 @@ set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
-# If swiftlint is not installed, skip
-if ! command -v swiftlint >/dev/null 2>&1; then
-  echo "SwiftLint not found. Install with: brew install swiftlint"
-  exit 0
-fi
-
 # Collect staged Swift files
 STAGED_SWIFT_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.swift$' || true)
 
@@ -19,10 +13,23 @@ if [ -z "$STAGED_SWIFT_FILES" ]; then
   exit 0
 fi
 
-echo "Running SwiftLint autocorrect (with --format) on staged files..."
+if command -v swiftformat >/dev/null 2>&1; then
+  echo "Running SwiftFormat on staged files (2-space indentation)..."
+  swiftformat --config "$REPO_ROOT/.swiftformat" $STAGED_SWIFT_FILES >/dev/null || true
+  git add $STAGED_SWIFT_FILES
+else
+  echo "SwiftFormat not found. Install with: brew install swiftformat"
+fi
+
+if ! command -v swiftlint >/dev/null 2>&1; then
+  echo "SwiftLint not found. Install with: brew install swiftlint"
+  exit 0
+fi
+
+echo "Running SwiftLint autocorrect on staged files..."
 for FILE in $STAGED_SWIFT_FILES; do
   if [ -f "$FILE" ]; then
-    swiftlint autocorrect --format --config "$REPO_ROOT/.swiftlint.yml" --path "$FILE" || true
+    swiftlint autocorrect --config "$REPO_ROOT/.swiftlint.yml" --path "$FILE" || true
     git add "$FILE"
   fi
 done
