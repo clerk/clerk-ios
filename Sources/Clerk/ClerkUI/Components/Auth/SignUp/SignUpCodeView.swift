@@ -173,16 +173,14 @@ struct SignUpCodeView: View {
     }
     .navigationBarTitleDisplayMode(.inline)
     .background(theme.colors.background)
-    .clerkErrorPresenting(
-      $error
-    ) { error in
+    .clerkErrorPresenting($error, action: { error in
       if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
         return .init(text: "Continue") {
           authState.setToStepForStatus(signUp: signUp)
         }
       }
       return nil
-    }
+    })
     .taskOnce {
       startTimer()
       if let signUp, authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] == nil {

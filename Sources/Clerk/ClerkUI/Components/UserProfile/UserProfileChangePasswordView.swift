@@ -142,9 +142,7 @@ struct UserProfileChangePasswordView: View {
     }
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
-    .clerkErrorPresenting(
-      $error
-    ) { error in
+    .clerkErrorPresenting($error, action: { error in
       if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"]?.stringValue == "current_password" {
         return .init(text: "Go back") {
           path = NavigationPath()
@@ -152,7 +150,7 @@ struct UserProfileChangePasswordView: View {
       }
 
       return nil
-    }
+    })
     .toolbar {
       if isAddingPassword {
         ToolbarItem(placement: .cancellationAction) {

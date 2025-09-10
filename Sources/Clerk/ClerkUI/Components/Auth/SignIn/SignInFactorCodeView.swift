@@ -431,7 +431,7 @@ extension SignInFactorCodeView {
 
 #Preview("TOTP Code") {
   Container.shared.signInService.preview { @MainActor in
-    .init { _, _ in
+    .init { _ in
       try? await Task.sleep(for: .seconds(1))
       return .mock
     }

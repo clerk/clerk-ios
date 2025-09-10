@@ -54,7 +54,7 @@ struct UserProfileDetailView: View {
   var sortedExternalAccounts: [ExternalAccount] {
     (user?.externalAccounts.filter {
       $0.verification?.status == .verified || $0.verification?.error != nil
-    }??[])
+    } ?? [])
     .sorted { lhs, rhs in
       lhs.createdAt < rhs.createdAt
     }

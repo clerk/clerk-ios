@@ -1031,7 +1031,11 @@
         }
       }
     },
+    "Alternatively, if your authenticator supports TOTP URIs, you can\nalso copy the full URI." : {
+
+    },
     "Alternatively, if your authenticator supports TOTP URIs, you can also copy the full URI." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1479,7 +1483,11 @@
         }
       }
     },
+    "Backup codes are now enabled. You can use one of these to sign in to\nyour account if you lose access to your authentication device. Each\ncode can only be used once." : {
+
+    },
     "Backup codes are now enabled. You can use one of these to sign in to your account, if you lose access to your authentication device. Each code can only be used once." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8392,7 +8400,11 @@
         }
       }
     },
+    "Set up a new sign-in method in your authenticator and enter the\nKey provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish\nlinking your account." : {
+
+    },
     "Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9672,7 +9684,11 @@
         }
       }
     },
+    "Two-step verification is now enabled. When signing in, you will need\nto enter a verification code from this authenticator app as an\nadditional step.\n\nSave these backup codes and store them somewhere safe. If you lose\naccess to your authentication device, you can use backup codes to sign in." : {
+
+    },
     "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -11785,7 +11801,11 @@
         }
       }
     },
+    "When signing in, you will need to enter a verification code\nsent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe.\nIf you lose access to your authentication device, you can use\nbackup codes to sign in." : {
+
+    },
     "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
