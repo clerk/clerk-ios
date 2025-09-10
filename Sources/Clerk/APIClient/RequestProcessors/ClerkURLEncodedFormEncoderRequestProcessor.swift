@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkURLEncodedFormEncoderRequestProcessor: RequestPreprocessor {
+struct ClerkURLEncodedFormPreprocessor: RequestPreprocessor {
   static func process(request: inout URLRequest) async throws {
     if let data = request.httpBody {
       let json = try? JSONDecoder.clerkDecoder.decode(JSON.self, from: data)

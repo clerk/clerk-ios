@@ -21,6 +21,7 @@
 //  SOFTWARE.
 
 // https://github.com/iwill/generic-json-swift
+// swiftlint:disable all
 
 import Foundation
 

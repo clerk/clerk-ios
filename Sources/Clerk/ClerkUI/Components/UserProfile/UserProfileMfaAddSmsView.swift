@@ -7,248 +7,247 @@
 
 #if os(iOS)
 
-  import FactoryKit
-  import PhoneNumberKit
-  import SwiftUI
+import FactoryKit
+import PhoneNumberKit
+import SwiftUI
 
-  struct UserProfileMfaAddSmsView: View {
-    @Environment(\.clerk) private var clerk
-    @Environment(\.clerkTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.userProfileSharedState) private var sharedState
+struct UserProfileMfaAddSmsView: View {
+  @Environment(\.clerk) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
+  @Environment(\.userProfileSharedState) private var sharedState
 
-    @State private var selectedPhoneNumber: PhoneNumber?
-    @State private var addPhoneNumberIsPresented = false
-    @State private var path = NavigationPath()
-    @State private var error: Error?
+  @State private var selectedPhoneNumber: PhoneNumber?
+  @State private var addPhoneNumberIsPresented = false
+  @State private var path = NavigationPath()
+  @State private var error: Error?
 
-    enum Destination: Hashable {
-      case backupCodes([String])
+  enum Destination: Hashable {
+    case backupCodes([String])
 
-      @MainActor
-      @ViewBuilder
-      var view: some View {
-        switch self {
-        case let .backupCodes(backupCodes):
-          BackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
-        }
+    @MainActor
+    @ViewBuilder
+    var view: some View {
+      switch self {
+      case let .backupCodes(backupCodes):
+        BackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
       }
     }
+  }
 
-    private var user: User? {
-      clerk.user
-    }
+  private var user: User? {
+    clerk.user
+  }
 
-    private var availablePhoneNumbers: [PhoneNumber] {
-      (user?.phoneNumbersAvailableForMfa ?? [])
-        .filter { $0.verification?.status == .verified }
-        .sorted { $0.createdAt < $1.createdAt }
-    }
+  private var availablePhoneNumbers: [PhoneNumber] {
+    (user?.phoneNumbersAvailableForMfa ?? [])
+      .filter { $0.verification?.status == .verified }
+      .sorted { $0.createdAt < $1.createdAt }
+  }
 
-    var body: some View {
-      NavigationStack(path: $path) {
-        ScrollView {
-          VStack(spacing: 24) {
-            Text("Select an existing phone number to register for SMS code two-step verification or add a new one.", bundle: .module)
-              .font(theme.fonts.subheadline)
-              .foregroundStyle(theme.colors.mutedForeground)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .fixedSize(horizontal: false, vertical: true)
+  var body: some View {
+    NavigationStack(path: $path) {
+      ScrollView {
+        VStack(spacing: 24) {
+          Text("Select an existing phone number to register for SMS code two-step verification or add a new one.", bundle: .module)
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.mutedForeground)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 12) {
-              ForEach(availablePhoneNumbers) { phoneNumber in
-                Button {
-                  selectedPhoneNumber = phoneNumber
-                } label: {
-                  AddMfaSmsRow(
-                    phoneNumber: phoneNumber,
-                    isSelected: selectedPhoneNumber == phoneNumber
-                  )
-                }
-                .buttonStyle(.pressedBackground)
-              }
-            }
-
-            AsyncButton {
-              guard let selectedPhoneNumber else { return }
-              await reserveForSecondFactor(phoneNumber: selectedPhoneNumber)
-            } label: { isRunning in
-              HStack {
-                Text("Continue", bundle: .module)
-                Image("icon-triangle-right", bundle: .module)
-                  .foregroundStyle(theme.colors.primaryForeground)
-                  .opacity(0.6)
-              }
-              .frame(maxWidth: .infinity)
-              .overlayProgressView(isActive: isRunning) {
-                SpinnerView(color: theme.colors.primaryForeground)
-              }
-            }
-            .buttonStyle(.primary())
-            .disabled(selectedPhoneNumber == nil)
-
-            Button {
-              addPhoneNumberIsPresented = true
-            } label: {
-              Text("Add phone number", bundle: .module)
-            }
-            .buttonStyle(
-              .primary(
-                config: .init(
-                  emphasis: .none,
-                  size: .small
+          VStack(spacing: 12) {
+            ForEach(availablePhoneNumbers) { phoneNumber in
+              Button {
+                selectedPhoneNumber = phoneNumber
+              } label: {
+                AddMfaSmsRow(
+                  phoneNumber: phoneNumber,
+                  isSelected: selectedPhoneNumber == phoneNumber
                 )
+              }
+              .buttonStyle(.pressedBackground)
+            }
+          }
+
+          AsyncButton {
+            guard let selectedPhoneNumber else { return }
+            await reserveForSecondFactor(phoneNumber: selectedPhoneNumber)
+          } label: { isRunning in
+            HStack {
+              Text("Continue", bundle: .module)
+              Image("icon-triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.primaryForeground)
+                .opacity(0.6)
+            }
+            .frame(maxWidth: .infinity)
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.primaryForeground)
+            }
+          }
+          .buttonStyle(.primary())
+          .disabled(selectedPhoneNumber == nil)
+
+          Button {
+            addPhoneNumberIsPresented = true
+          } label: {
+            Text("Add phone number", bundle: .module)
+          }
+          .buttonStyle(
+            .primary(
+              config: .init(
+                emphasis: .none,
+                size: .small
               )
             )
-          }
-          .padding(24)
-          .clerkErrorPresenting($error)
-          .navigationBarTitleDisplayMode(.inline)
-          .preGlassSolidNavBar()
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              Button("Cancel") {
-                dismiss()
-              }
-              .foregroundStyle(theme.colors.primary)
-            }
-
-            ToolbarItem(placement: .principal) {
-              Text("Add SMS code verification", bundle: .module)
-                .font(theme.fonts.headline)
-                .foregroundStyle(theme.colors.foreground)
-            }
-          }
+          )
         }
-        .navigationDestination(for: Destination.self) {
-          $0.view
+        .padding(24)
+        .clerkErrorPresenting($error)
+        .navigationBarTitleDisplayMode(.inline)
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
+          }
+
+          ToolbarItem(placement: .principal) {
+            Text("Add SMS code verification", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
+          }
         }
       }
-      .background(theme.colors.background)
-      .presentationBackground(theme.colors.background)
-      .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
-      .sheet(isPresented: $addPhoneNumberIsPresented) {
-        UserProfileAddPhoneView()
+      .navigationDestination(for: Destination.self) {
+        $0.view
       }
     }
-  }
-
-  extension UserProfileMfaAddSmsView {
-    private func reserveForSecondFactor(phoneNumber: PhoneNumber) async {
-      do {
-        let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
-        if let backupCodes = phoneNumber.backupCodes {
-          path.append(Destination.backupCodes(backupCodes))
-        } else {
-          sharedState.presentedAddMfaType = nil
-        }
-      } catch {
-        self.error = error
-        ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
-      }
+    .background(theme.colors.background)
+    .presentationBackground(theme.colors.background)
+    .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
+    .sheet(isPresented: $addPhoneNumberIsPresented) {
+      UserProfileAddPhoneView()
     }
   }
+}
 
-  struct AddMfaSmsRow: View {
-    @Environment(\.clerkTheme) private var theme
-    let utility = Container.shared.phoneNumberUtility()
-
-    let phoneNumber: PhoneNumber
-    let isSelected: Bool
-
-    var country: CountryCodePickerViewController.Country? {
-      if let phoneNumber = try? utility.parse(phoneNumber.phoneNumber),
-         let regionId = phoneNumber.regionID {
-        return CountryCodePickerViewController.Country(
-          for: regionId,
-          with: utility
-        )
+extension UserProfileMfaAddSmsView {
+  private func reserveForSecondFactor(phoneNumber: PhoneNumber) async {
+    do {
+      let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
+      if let backupCodes = phoneNumber.backupCodes {
+        path.append(Destination.backupCodes(backupCodes))
+      } else {
+        sharedState.presentedAddMfaType = nil
       }
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
+    }
+  }
+}
 
+struct AddMfaSmsRow: View {
+  @Environment(\.clerkTheme) private var theme
+  let utility = Container.shared.phoneNumberUtility()
+
+  let phoneNumber: PhoneNumber
+  let isSelected: Bool
+
+  var country: CountryCodePickerViewController.Country? {
+    if let phoneNumber = try? utility.parse(phoneNumber.phoneNumber), let regionId = phoneNumber.regionID {
       return CountryCodePickerViewController.Country(
-        for: "US",
+        for: regionId,
         with: utility
       )
     }
 
-    @ViewBuilder
-    var countryIndicator: some View {
-      if let country {
-        Text(verbatim: "\(country.flag) \(country.code)")
-          .font(theme.fonts.footnote)
-          .foregroundStyle(theme.colors.foreground)
-          .monospaced()
-          .padding(.vertical, 13)
-          .padding(.horizontal, 10)
-          .background(theme.colors.muted)
-          .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-          .contentShape(.rect(cornerRadius: theme.design.borderRadius))
-      }
-    }
+    return CountryCodePickerViewController.Country(
+      for: "US",
+      with: utility
+    )
+  }
 
-    @ViewBuilder
-    var selectedIndicator: some View {
-      Image(systemName: isSelected ? "record.circle.fill" : "record.circle")
-        .resizable()
-        .scaledToFit()
-        .symbolRenderingMode(.palette)
-        .foregroundStyle(
-          isSelected ? theme.colors.background : .clear,
-          isSelected ? theme.colors.primary : theme.colors.inputBorder
+  @ViewBuilder
+  var countryIndicator: some View {
+    if let country {
+      Text(verbatim: "\(country.flag) \(country.code)")
+        .font(theme.fonts.footnote)
+        .foregroundStyle(theme.colors.foreground)
+        .monospaced()
+        .padding(.vertical, 13)
+        .padding(.horizontal, 10)
+        .background(theme.colors.muted)
+        .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+        .contentShape(.rect(cornerRadius: theme.design.borderRadius))
+    }
+  }
+
+  @ViewBuilder
+  var selectedIndicator: some View {
+    Image(systemName: isSelected ? "record.circle.fill" : "record.circle")
+      .resizable()
+      .scaledToFit()
+      .symbolRenderingMode(.palette)
+      .foregroundStyle(
+        isSelected ? theme.colors.background : .clear,
+        isSelected ? theme.colors.primary : theme.colors.inputBorder
+      )
+      .frame(width: 20, height: 20)
+      .contentTransition(.symbolEffect(.replace.offUp))
+  }
+
+  var body: some View {
+    HStack(spacing: 8) {
+      countryIndicator
+      Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
+        .font(theme.fonts.body)
+        .foregroundStyle(theme.colors.foreground)
+      Spacer(minLength: 0)
+      selectedIndicator
+    }
+    .padding(.vertical, 8)
+    .padding(.leading, 6)
+    .padding(.trailing, 16)
+    .overlay {
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
+        .strokeBorder(
+          isSelected ? theme.colors.primary : theme.colors.inputBorder,
+          lineWidth: 1
         )
-        .frame(width: 20, height: 20)
-        .contentTransition(.symbolEffect(.replace.offUp))
     }
-
-    var body: some View {
-      HStack(spacing: 8) {
-        countryIndicator
-        Text(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.foreground)
-        Spacer(minLength: 0)
-        selectedIndicator
-      }
-      .padding(.vertical, 8)
-      .padding(.leading, 6)
-      .padding(.trailing, 16)
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(
-            isSelected ? theme.colors.primary : theme.colors.inputBorder,
-            lineWidth: 1
-          )
-      }
-      .contentShape(.rect)
-      .animation(.default, value: isSelected)
-    }
+    .contentShape(.rect)
+    .animation(.default, value: isSelected)
   }
+}
 
-  #Preview {
-    UserProfileMfaAddSmsView()
-      .environment(\.clerk, .mock)
-      .environment(\.clerkTheme, .clerk)
-  }
-
-  #Preview("Row") {
-    @Previewable @State var selectedPhoneNumber: PhoneNumber?
-    let phoneNumbers: [PhoneNumber] = [.mock, .mockMfa]
-
-    VStack {
-      ForEach(phoneNumbers) { phoneNumber in
-        Button {
-          selectedPhoneNumber = phoneNumber
-        } label: {
-          AddMfaSmsRow(
-            phoneNumber: phoneNumber,
-            isSelected: selectedPhoneNumber == phoneNumber
-          )
-        }
-        .buttonStyle(.pressedBackground)
-      }
-    }
-    .padding()
+#Preview {
+  UserProfileMfaAddSmsView()
+    .environment(\.clerk, .mock)
     .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Row") {
+  @Previewable @State var selectedPhoneNumber: PhoneNumber?
+  let phoneNumbers: [PhoneNumber] = [.mock, .mockMfa]
+
+  VStack {
+    ForEach(phoneNumbers) { phoneNumber in
+      Button {
+        selectedPhoneNumber = phoneNumber
+      } label: {
+        AddMfaSmsRow(
+          phoneNumber: phoneNumber,
+          isSelected: selectedPhoneNumber == phoneNumber
+        )
+      }
+      .buttonStyle(.pressedBackground)
+    }
   }
+  .padding()
+  .environment(\.clerkTheme, .clerk)
+}
 
 #endif

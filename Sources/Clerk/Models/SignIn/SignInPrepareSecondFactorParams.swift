@@ -22,7 +22,7 @@ extension SignIn {
     var params: PrepareSecondFactorParams {
       switch self {
       case .phoneCode:
-        return .init(strategy: "phone_code")
+        .init(strategy: "phone_code")
       }
     }
   }

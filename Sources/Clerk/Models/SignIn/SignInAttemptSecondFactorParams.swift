@@ -34,11 +34,11 @@ public extension SignIn {
     var params: AttemptSecondFactorParams {
       switch self {
       case let .phoneCode(code):
-        return .init(strategy: "phone_code", code: code)
+        .init(strategy: "phone_code", code: code)
       case let .totp(code):
-        return .init(strategy: "totp", code: code)
+        .init(strategy: "totp", code: code)
       case let .backupCode(code):
-        return .init(strategy: "backup_code", code: code)
+        .init(strategy: "backup_code", code: code)
       }
     }
   }

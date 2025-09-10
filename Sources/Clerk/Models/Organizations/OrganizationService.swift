@@ -45,11 +45,11 @@ struct OrganizationService {
   var setOrganizationLogo: @MainActor (_ organizationId: String, _ imageData: Data) async throws -> Organization = { organizationId, imageData in
     let boundary = UUID().uuidString
     var data = Data()
-    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
-    data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)\r\n".utf8))
+    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
+    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
     data.append(imageData)
-    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
 
     var request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations/\(organizationId)/logo",
@@ -75,30 +75,37 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var getOrganizationMemberships: @MainActor (_ organizationId: String, _ query: String?, _ role: [String]?, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> = { organizationId, query, role, initialPage, pageSize in
-    var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize)),
-      ("paginated", value: String(true))
-    ]
+  var getOrganizationMemberships:
+    @MainActor (
+      _ organizationId: String,
+      _ query: String?,
+      _ role: [String]?,
+      _ initialPage: Int,
+      _ pageSize: Int
+    ) async throws -> ClerkPaginatedResponse<OrganizationMembership> = { organizationId, query, role, initialPage, pageSize in
+      var queryParams: [(String, String?)] = [
+        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("offset", value: String(initialPage)),
+        ("limit", value: String(pageSize)),
+        ("paginated", value: String(true))
+      ]
 
-    if let query = query {
-      queryParams.append(("query", value: query))
+      if let query {
+        queryParams.append(("query", value: query))
+      }
+
+      if let role {
+        queryParams += role.map { ("role[]", value: $0) }
+      }
+
+      let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
+        path: "/v1/organizations/\(organizationId)/memberships",
+        method: .get,
+        query: queryParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    if let role = role {
-      queryParams += role.map { ("role[]", value: $0) }
-    }
-
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
-      path: "/v1/organizations/\(organizationId)/memberships",
-      method: .get,
-      query: queryParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   var addOrganizationMember: @MainActor (_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership = { organizationId, userId, role in
     let request = Request<ClientResponse<OrganizationMembership>>(
@@ -137,26 +144,32 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var getOrganizationInvitations: @MainActor (_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> = { organizationId, initialPage, pageSize, status in
-    var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize)),
-      ("paginated", value: String(true))
-    ]
+  var getOrganizationInvitations:
+    @MainActor (
+      _ organizationId: String,
+      _ initialPage: Int,
+      _ pageSize: Int,
+      _ status: String?
+    ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> = { organizationId, initialPage, pageSize, status in
+      var queryParams: [(String, String?)] = [
+        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("offset", value: String(initialPage)),
+        ("limit", value: String(pageSize)),
+        ("paginated", value: String(true))
+      ]
 
-    if let status = status {
-      queryParams.append(("status", value: status))
+      if let status {
+        queryParams.append(("status", value: status))
+      }
+
+      let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
+        path: "/v1/organizations/\(organizationId)/invitations",
+        method: .get,
+        query: queryParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
-      path: "/v1/organizations/\(organizationId)/invitations",
-      method: .get,
-      query: queryParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   var inviteOrganizationMember: @MainActor (_ organizationId: String, _ emailAddress: String, _ role: String) async throws -> OrganizationInvitation = { organizationId, emailAddress, role in
     let request = Request<ClientResponse<OrganizationInvitation>>(
@@ -185,25 +198,31 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var getOrganizationDomains: @MainActor (_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> = { organizationId, initialPage, pageSize, enrollmentMode in
-    var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
-    ]
+  var getOrganizationDomains:
+    @MainActor (
+      _ organizationId: String,
+      _ initialPage: Int,
+      _ pageSize: Int,
+      _ enrollmentMode: String?
+    ) async throws -> ClerkPaginatedResponse<OrganizationDomain> = { organizationId, initialPage, pageSize, enrollmentMode in
+      var queryParams: [(String, String?)] = [
+        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("offset", value: String(initialPage)),
+        ("limit", value: String(pageSize))
+      ]
 
-    if let enrollmentMode = enrollmentMode {
-      queryParams.append(("enrollment_mode", value: enrollmentMode))
+      if let enrollmentMode {
+        queryParams.append(("enrollment_mode", value: enrollmentMode))
+      }
+
+      let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
+        path: "/v1/organizations/\(organizationId)/domains",
+        method: .get,
+        query: queryParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
-      path: "/v1/organizations/\(organizationId)/domains",
-      method: .get,
-      query: queryParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   var getOrganizationDomain: @MainActor (_ organizationId: String, _ domainId: String) async throws -> OrganizationDomain = { organizationId, domainId in
     let request = Request<ClientResponse<OrganizationDomain>>(
@@ -215,25 +234,31 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var getOrganizationMembershipRequests: @MainActor (_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> = { organizationId, initialPage, pageSize, status in
-    var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
-    ]
+  var getOrganizationMembershipRequests:
+    @MainActor (
+      _ organizationId: String,
+      _ initialPage: Int,
+      _ pageSize: Int,
+      _ status: String?
+    ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> = { organizationId, initialPage, pageSize, status in
+      var queryParams: [(String, String?)] = [
+        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("offset", value: String(initialPage)),
+        ("limit", value: String(pageSize))
+      ]
 
-    if let status = status {
-      queryParams.append(("status", value: status))
+      if let status {
+        queryParams.append(("status", value: status))
+      }
+
+      let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
+        path: "/v1/organizations/\(organizationId)/membership_requests",
+        method: .get,
+        query: queryParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
-      path: "/v1/organizations/\(organizationId)/membership_requests",
-      method: .get,
-      query: queryParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   // MARK: - Organization Domain Methods
 
@@ -246,25 +271,35 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var prepareOrganizationDomainAffiliationVerification: @MainActor (_ organizationId: String, _ domainId: String, _ affiliationEmailAddress: String) async throws -> OrganizationDomain = { organizationId, domainId, affiliationEmailAddress in
-    let request = Request<ClientResponse<OrganizationDomain>>(
-      path: "/v1/organizations/\(organizationId)/domains/\(domainId)/prepare_affiliation_verification",
-      method: .post,
-      body: ["affiliation_email_address": affiliationEmailAddress]
-    )
+  var prepareOrganizationDomainAffiliationVerification:
+    @MainActor (
+      _ organizationId: String,
+      _ domainId: String,
+      _ affiliationEmailAddress: String
+    ) async throws -> OrganizationDomain = { organizationId, domainId, affiliationEmailAddress in
+      let request = Request<ClientResponse<OrganizationDomain>>(
+        path: "/v1/organizations/\(organizationId)/domains/\(domainId)/prepare_affiliation_verification",
+        method: .post,
+        body: ["affiliation_email_address": affiliationEmailAddress]
+      )
 
-    return try await Container.shared.apiClient().send(request).value.response
-  }
+      return try await Container.shared.apiClient().send(request).value.response
+    }
 
-  var attemptOrganizationDomainAffiliationVerification: @MainActor (_ organizationId: String, _ domainId: String, _ code: String) async throws -> OrganizationDomain = { organizationId, domainId, code in
-    let request = Request<ClientResponse<OrganizationDomain>>(
-      path: "/v1/organizations/\(organizationId)/domains/\(domainId)/attempt_affiliation_verification",
-      method: .post,
-      body: ["code": code]
-    )
+  var attemptOrganizationDomainAffiliationVerification:
+    @MainActor (
+      _ organizationId: String,
+      _ domainId: String,
+      _ code: String
+    ) async throws -> OrganizationDomain = { organizationId, domainId, code in
+      let request = Request<ClientResponse<OrganizationDomain>>(
+        path: "/v1/organizations/\(organizationId)/domains/\(domainId)/attempt_affiliation_verification",
+        method: .post,
+        body: ["code": code]
+      )
 
-    return try await Container.shared.apiClient().send(request).value.response
-  }
+      return try await Container.shared.apiClient().send(request).value.response
+    }
 
   // MARK: - Organization Invitation Methods
 

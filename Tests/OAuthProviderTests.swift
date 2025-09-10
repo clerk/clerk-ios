@@ -88,7 +88,7 @@ struct OAuthProviderTests {
             notSelectable: false,
             name: "Custom",
             logoUrl: "https://img.clerk.com/static/custom.png"
-          ),
+          )
         ],
         actions: .init(),
         passkeySettings: nil

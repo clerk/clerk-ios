@@ -24,6 +24,8 @@
 
 import Foundation
 
+// swiftlint:disable all
+
 /// An object that encodes instances into URL-encoded query strings.
 ///
 /// `ArrayEncoding` can be used to configure how `Array` values are encoded. By default, the `.brackets` encoding is
@@ -245,15 +247,15 @@ public final class URLEncodedFormEncoder {
       //
       // It is assumed, per Swift naming conventions, that the first character of the key is lowercase.
       var wordStart = key.startIndex
-      var searchRange = key.index(after: wordStart) ..< key.endIndex
+      var searchRange = key.index(after: wordStart)..<key.endIndex
 
       // Find next uppercase character
       while let upperCaseRange = key.rangeOfCharacter(from: .uppercaseLetters, options: [], range: searchRange) {
-        let untilUpperCase = wordStart ..< upperCaseRange.lowerBound
+        let untilUpperCase = wordStart..<upperCaseRange.lowerBound
         words.append(untilUpperCase)
 
         // Find next lowercase character
-        searchRange = upperCaseRange.lowerBound ..< searchRange.upperBound
+        searchRange = upperCaseRange.lowerBound..<searchRange.upperBound
         guard let lowerCaseRange = key.rangeOfCharacter(from: .lowercaseLetters, options: [], range: searchRange) else {
           // There are no more lower case letters. Just end here.
           wordStart = searchRange.lowerBound
@@ -272,14 +274,14 @@ public final class URLEncodedFormEncoder {
           // There was a range of >1 capital letters. Turn those into a word, stopping at the capital before
           // the lower case character.
           let beforeLowerIndex = key.index(before: lowerCaseRange.lowerBound)
-          words.append(upperCaseRange.lowerBound ..< beforeLowerIndex)
+          words.append(upperCaseRange.lowerBound..<beforeLowerIndex)
 
           // Next word starts at the capital before the lowercase we just found
           wordStart = beforeLowerIndex
         }
-        searchRange = lowerCaseRange.upperBound ..< searchRange.upperBound
+        searchRange = lowerCaseRange.upperBound..<searchRange.upperBound
       }
-      words.append(wordStart ..< searchRange.upperBound)
+      words.append(wordStart..<searchRange.upperBound)
       let result = words.map { range in
         key[range].lowercased()
       }.joined(separator: separator)
@@ -1187,7 +1189,7 @@ public extension CharacterSet {
   /// query strings to include a URL. Therefore, all "reserved" characters with the exception of "?" and "/"
   /// should be percent-escaped in the query string.
   static let afURLQueryAllowed: CharacterSet = {
-    let generalDelimitersToEncode = ":#[]@" // does not include "?" or "/" due to RFC 3986 - Section 3.4
+    let generalDelimitersToEncode = ":#[]@"  // does not include "?" or "/" due to RFC 3986 - Section 3.4
     let subDelimitersToEncode = "!$&'()*+,;="
     let encodableDelimiters = CharacterSet(charactersIn: "\(generalDelimitersToEncode)\(subDelimitersToEncode)")
 

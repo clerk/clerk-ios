@@ -7,44 +7,44 @@
 
 #if os(iOS)
 
-  import SwiftUI
+import SwiftUI
 
-  struct DismissButton: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.clerkTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
+struct DismissButton: View {
+  @Environment(\.dismiss) private var dismiss
+  @Environment(\.clerkTheme) private var theme
+  @Environment(\.colorScheme) private var colorScheme
 
-    var action: (() -> Void)?
+  var action: (() -> Void)?
 
-    var secondaryPaletteStyle: AnyShapeStyle {
-      if #available(iOS 26.0, *) {
-        AnyShapeStyle(Color.clear)
+  var secondaryPaletteStyle: AnyShapeStyle {
+    if #available(iOS 26.0, *) {
+      AnyShapeStyle(Color.clear)
+    } else {
+      AnyShapeStyle(Material.ultraThinMaterial)
+    }
+  }
+
+  var body: some View {
+    Button {
+      if let action {
+        action()
       } else {
-        AnyShapeStyle(Material.ultraThinMaterial)
+        dismiss()
       }
-    }
-
-    var body: some View {
-      Button {
-        if let action {
-          action()
-        } else {
-          dismiss()
-        }
-      } label: {
-        Image(systemName: "xmark.circle.fill")
-          .resizable()
-          .scaledToFit()
-          .symbolRenderingMode(.palette)
-          .foregroundStyle(theme.colors.mutedForeground, secondaryPaletteStyle)
-          .frame(width: 30, height: 30)
-          .brightness(colorScheme == .light ? -0.05 : 0.05)
-      }
+    } label: {
+      Image(systemName: "xmark.circle.fill")
+        .resizable()
+        .scaledToFit()
+        .symbolRenderingMode(.palette)
+        .foregroundStyle(theme.colors.mutedForeground, secondaryPaletteStyle)
+        .frame(width: 30, height: 30)
+        .brightness(colorScheme == .light ? -0.05 : 0.05)
     }
   }
+}
 
-  #Preview {
-    DismissButton()
-  }
+#Preview {
+  DismissButton()
+}
 
 #endif

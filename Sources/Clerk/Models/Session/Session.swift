@@ -8,6 +8,8 @@
 import FactoryKit
 import Foundation
 
+// swiftlint:disable indentation_width
+
 /**
  The Session object is an abstraction over an HTTP session. It models the period of information exchange between a user and the server.
 
@@ -181,7 +183,7 @@ extension Session {
   /// - If the template is 'supabase', the key will be 'sess_abc12345-supabase'
   func tokenCacheKey(template: String?) -> String {
     var tokenCacheKey = id
-    if let template = template {
+    if let template {
       tokenCacheKey += "-\(template)"
     }
     return tokenCacheKey
@@ -202,7 +204,7 @@ public extension Session {
    */
   @discardableResult
   func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
-    return try await SessionTokenFetcher.shared.getToken(self, options: options)
+    try await SessionTokenFetcher.shared.getToken(self, options: options)
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.

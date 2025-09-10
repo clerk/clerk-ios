@@ -79,40 +79,40 @@ extension SignIn {
     func params(signIn: SignIn) -> PrepareFirstFactorParams {
       switch self {
       case let .emailCode(emailAddressId):
-        return .init(
+        .init(
           strategy: strategy,
           emailAddressId: emailAddressId ?? signIn.identifyingFirstFactor(strategy: self)?.emailAddressId
         )
 
       case let .phoneCode(phoneNumberId):
-        return .init(
+        .init(
           strategy: strategy,
           phoneNumberId: phoneNumberId ?? signIn.identifyingFirstFactor(strategy: self)?.phoneNumberId
         )
 
       case let .oauth(provider, redirectUrl):
-        return .init(
+        .init(
           strategy: provider.strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case .passkey:
-        return .init(strategy: strategy)
+        .init(strategy: strategy)
 
       case let .enterpriseSSO(redirectUrl):
-        return .init(
+        .init(
           strategy: strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
 
       case let .resetPasswordEmailCode(emailAddressId):
-        return .init(
+        .init(
           strategy: strategy,
           emailAddressId: emailAddressId ?? signIn.identifyingFirstFactor(strategy: self)?.emailAddressId
         )
 
       case let .resetPasswordPhoneCode(phoneNumberId):
-        return .init(
+        .init(
           strategy: strategy,
           phoneNumberId: phoneNumberId ?? signIn.identifyingFirstFactor(strategy: self)?.phoneNumberId
         )

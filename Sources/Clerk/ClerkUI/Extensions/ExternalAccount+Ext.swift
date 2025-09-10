@@ -14,9 +14,9 @@ extension ExternalAccount {
 
   var displayName: String {
     if let username, !username.isEmptyTrimmed {
-      return username
+      username
     } else {
-      return emailAddress
+      emailAddress
     }
   }
 

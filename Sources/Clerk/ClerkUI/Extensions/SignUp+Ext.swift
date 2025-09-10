@@ -7,46 +7,46 @@
 
 #if os(iOS)
 
-  import Foundation
+import Foundation
 
-  extension SignUp {
-    static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
-    static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
+extension SignUp {
+  static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
+  static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
 
-    var firstFieldToCollect: String? {
-      missingFields.sortedByPriority(SignUp.fieldPriority).first
-    }
+  var firstFieldToCollect: String? {
+    missingFields.sortedByPriority(SignUp.fieldPriority).first
+  }
 
-    var firstFieldToVerify: String? {
-      unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
-    }
+  var firstFieldToVerify: String? {
+    unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
+  }
 
-    func fieldIsRequired(field: String) -> Bool {
-      requiredFields.contains(field)
-    }
+  func fieldIsRequired(field: String) -> Bool {
+    requiredFields.contains(field)
+  }
 
-    var firstVerification: Verification? {
-      verifications.first { $0.key == firstFieldToVerify }?.value
-    }
+  var firstVerification: Verification? {
+    verifications.first { $0.key == firstFieldToVerify }?.value
+  }
 
-    func fieldWasCollected(field: String) -> Bool {
-      switch field {
-      case "email_address":
-        return emailAddress != nil
-      case "phone_number":
-        return phoneNumber != nil
-      case "username":
-        return username != nil
-      case "password":
-        return passwordEnabled
-      case "first_name":
-        return firstName != nil
-      case "last_name":
-        return lastName != nil
-      default:
-        return false
-      }
+  func fieldWasCollected(field: String) -> Bool {
+    switch field {
+    case "email_address":
+      emailAddress != nil
+    case "phone_number":
+      phoneNumber != nil
+    case "username":
+      username != nil
+    case "password":
+      passwordEnabled
+    case "first_name":
+      firstName != nil
+    case "last_name":
+      lastName != nil
+    default:
+      false
     }
   }
+}
 
 #endif

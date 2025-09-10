@@ -7,16 +7,16 @@
 
 #if os(iOS)
 
-  import Foundation
+import Foundation
 
-  extension Array where Element == String {
-    func sortedByPriority(_ priorityOrder: [String]) -> [String] {
-      return sorted { first, second in
-        let firstPriority = priorityOrder.firstIndex(of: first) ?? Int.max
-        let secondPriority = priorityOrder.firstIndex(of: second) ?? Int.max
-        return firstPriority < secondPriority
-      }
+extension [String] {
+  func sortedByPriority(_ priorityOrder: [String]) -> [String] {
+    sorted { first, second in
+      let firstPriority = priorityOrder.firstIndex(of: first) ?? Int.max
+      let secondPriority = priorityOrder.firstIndex(of: second) ?? Int.max
+      return firstPriority < secondPriority
     }
   }
+}
 
 #endif

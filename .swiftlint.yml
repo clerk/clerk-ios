@@ -12,11 +12,9 @@ disabled_rules:
   - notification_center_detachment
   - orphaned_doc_comment
   - todo
-  - unused_capture_list
   - nesting
   - function_parameter_count
   - blanket_disable_command
-  - attributes
   - unhandled_throwing_task
 
 opt_in_rules:
@@ -54,10 +52,12 @@ opt_in_rules:
   - toggle_bool
   - trailing_closure
   - unneeded_parentheses_in_closure_argument
-  - unused_import
   - vertical_whitespace_closing_braces
   - vertical_whitespace_opening_braces
   - yoda_condition
+
+analyzer_rules:
+  - unused_import
 
 custom_rules:
   array_constructor:
@@ -76,12 +76,7 @@ custom_rules:
     match_kinds:
       - identifier
 
-attributes:
-  always_on_same_line:
-    - "@IBSegueAction"
-    - "@IBAction"
-    - "@NSManaged"
-    - "@objc"
+# attributes rule configuration removed to avoid config warning when rule is disabled
 
 colon: error
 
@@ -100,6 +95,10 @@ identifier_name:
     - x
     - y
     - z
+    - to
+    - prepareOrganizationDomainAffiliationVerification
+    - attemptOrganizationDomainAffiliationVerification
+    - mockExternalAccountUnverifiedVerification
 
 indentation_width:
   indentation_width: 2
@@ -108,6 +107,13 @@ line_length:
   ignores_urls: true
   ignores_function_declarations: true
   ignores_comments: true
+  warning: 200
+
+file_length:
+  warning: 500
+
+type_body_length:
+  warning: 300
 
 multiline_arguments:
   first_argument_location: next_line
@@ -125,5 +131,3 @@ vertical_whitespace:
 
 cyclomatic_complexity:
   ignores_case_statements: true
-
-

@@ -1,3 +1,4 @@
+// swiftlint:disable indentation_width
 /*
  The MIT License (MIT)
 
@@ -23,6 +24,8 @@
  */
 
 import Foundation
+
+// swiftlint:disable all
 
 /// A decoded JWT.
 ///
@@ -229,8 +232,8 @@ public struct Claim {
 private func base64UrlDecode(_ value: String) -> Data? {
   var base64 =
     value
-      .replacingOccurrences(of: "-", with: "+")
-      .replacingOccurrences(of: "_", with: "/")
+    .replacingOccurrences(of: "-", with: "+")
+    .replacingOccurrences(of: "_", with: "/")
   let length = Double(base64.lengthOfBytes(using: String.Encoding.utf8))
   let requiredLength = 4 * ceil(length / 4.0)
   let paddingLength = requiredLength - length
@@ -247,7 +250,7 @@ private func decodeJWTPart(_ value: String) throws -> [String: Any] {
   }
 
   guard let json = try? JSONSerialization.jsonObject(with: bodyData, options: []),
-        let payload = json as? [String: Any]
+    let payload = json as? [String: Any]
   else {
     throw JWTDecodeError.invalidJSON(value)
   }

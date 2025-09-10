@@ -19,7 +19,7 @@ actor WebAuthContinuationManager {
       continuation = nil
     }
 
-    guard let continuation = continuation else {
+    guard let continuation else {
       ClerkLogger.warning("Continuation already completed. Ignoring.")
       return
     }
@@ -61,11 +61,11 @@ final class WebAuthentication: NSObject {
         }
 
         #if !os(watchOS) && !os(tvOS)
-          session.presentationContextProvider = self
+        session.presentationContextProvider = self
         #endif
 
         #if !os(tvOS)
-          session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+        session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
         #endif
 
         Self.currentSession = session
@@ -80,9 +80,9 @@ final class WebAuthentication: NSObject {
       await continuationManager.completeSession(with: url, error: nil)
 
       #if targetEnvironment(macCatalyst)
-        // mac catalyst web auth window doesn't close without
-        // this when the callback is intercepted as a universal link
-        currentSession?.cancel()
+      // mac catalyst web auth window doesn't close without
+      // this when the callback is intercepted as a universal link
+      currentSession?.cancel()
       #endif
 
       currentSession = nil
@@ -91,15 +91,15 @@ final class WebAuthentication: NSObject {
 }
 
 #if !os(watchOS) && !os(tvOS)
-  extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
-    @MainActor
-    func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
-      #if os(iOS)
-        UIApplication.shared.windows.first { $0.isKeyWindow }?? ASPresentationAnchor()
-      #else
-        ASPresentationAnchor()
-      #endif
-    }
+extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
+  @MainActor
+  func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    #if os(iOS)
+    UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    #else
+    ASPresentationAnchor()
+    #endif
   }
+}
 
 #endif

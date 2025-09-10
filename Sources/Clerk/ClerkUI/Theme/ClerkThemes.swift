@@ -7,42 +7,42 @@
 
 #if os(iOS)
 
-  import Foundation
-  import SwiftUI
+import Foundation
+import SwiftUI
 
-  public extension ClerkTheme {
-    @MainActor
-    static let `default`: ClerkTheme = .init(
-      colors: .default,
-      fonts: .default,
-      design: .default
+public extension ClerkTheme {
+  @MainActor
+  static let `default`: ClerkTheme = .init(
+    colors: .default,
+    fonts: .default,
+    design: .default
+  )
+
+  @MainActor
+  static let clerk: ClerkTheme = .init(
+    colors: .init(
+      primary: Color(.clerkPrimary),
+      danger: Color(.clerkDanger),
+      primaryForeground: Color(.clerkPrimaryForeground),
+      neutral: Color(.clerkNeutral),
+      muted: Color(.clerkMuted)
+    ),
+    design: .init(
+      borderRadius: 8.0
     )
+  )
+}
 
-    @MainActor
-    static let clerk: ClerkTheme = .init(
-      colors: .init(
-        primary: Color(.clerkPrimary),
-        danger: Color(.clerkDanger),
-        primaryForeground: Color(.clerkPrimaryForeground),
-        neutral: Color(.clerkNeutral),
-        muted: Color(.clerkMuted)
-      ),
-      design: .init(
-        borderRadius: 8.0
-      )
-    )
+public extension EnvironmentValues {
+  var clerkTheme: ClerkTheme {
+    get { self[ClerkThemeEnvironmentKey.self] }
+    set { self[ClerkThemeEnvironmentKey.self] = newValue }
   }
+}
 
-  public extension EnvironmentValues {
-    var clerkTheme: ClerkTheme {
-      get { self[ClerkThemeEnvironmentKey.self] }
-      set { self[ClerkThemeEnvironmentKey.self] = newValue }
-    }
-  }
-
-  // Create a custom environment key
-  private struct ClerkThemeEnvironmentKey: @preconcurrency EnvironmentKey {
-    @MainActor static var defaultValue: ClerkTheme = .default
-  }
+// Create a custom environment key
+private struct ClerkThemeEnvironmentKey: @preconcurrency EnvironmentKey {
+  @MainActor static var defaultValue: ClerkTheme = .default
+}
 
 #endif

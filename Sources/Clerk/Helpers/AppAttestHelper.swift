@@ -93,12 +93,12 @@ enum AppAttestHelper {
   /// - Returns: A base64-encoded assertion string.
   /// - Throws: An error if assertion generation fails.
   private static func createAssertion(payload: Data) async throws -> String {
-    let keyId: String
-    if let existingKeyId = Self.keyId {
-      keyId = existingKeyId
-    } else {
-      keyId = try await performDeviceAttestation()
-    }
+    let keyId: String =
+      if let existingKeyId = Self.keyId {
+        existingKeyId
+      } else {
+        try await performDeviceAttestation()
+      }
 
     let hash = Data(SHA256.hash(data: payload))
     let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: hash)
@@ -114,14 +114,14 @@ enum AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId = clientId else {
+    guard let clientId else {
       throw ClerkClientError(message: "Client ID is unavailble.")
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
     let assertion = try await createAssertion(payload: payload)
 
     let body = [
-      "client_data": String(decoding: payload, as: UTF8.self),
+      "client_data": String(bytes: payload, encoding: .utf8),
       "assertion": assertion,
       "challenge": challenge,
       "platform": "ios",

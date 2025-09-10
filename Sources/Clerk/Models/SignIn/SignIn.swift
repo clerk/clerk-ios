@@ -150,7 +150,7 @@ public extension SignIn {
   /// )
   /// ```
   @discardableResult @MainActor
-  static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
+  static func create(_ params: some Encodable & Sendable) async throws -> SignIn {
     try await Container.shared.signInService().createWithParams(params)
   }
 
@@ -235,93 +235,93 @@ public extension SignIn {
   }
 
   #if !os(tvOS) && !os(watchOS)
-    /// Creates a new ``SignIn`` and initiates an external authentication flow using a redirect-based strategy.
-    ///
-    /// This function handles the process of creating a ``SignIn`` instance,
-    /// starting an external web authentication session, and processing the callback URL upon successful
-    /// authentication.
-    ///
-    /// - Parameters:
-    ///   - strategy: The authentication strategy to use for the external authentication flow.
-    ///               See ``SignIn/AuthenticateWithRedirectStrategy`` for available options.
-    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-    ///                                         browser session (default is `false`). When `true`, the session
-    ///                                         does not persist cookies or other data between sessions, ensuring
-    ///                                         a private browsing experience.
-    ///
-    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-    ///           encountered during the sign-in or authentication processes.
-    ///
-    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignIn`` or ``SignUp``.
-    ///
-    /// Example:
-    /// ```swift
-    /// let result = try await SignIn.authenticateWithRedirect(strategy: .oauth(provider: .google))
-    /// ```
-    @discardableResult @MainActor
-    static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
-    }
+  /// Creates a new ``SignIn`` and initiates an external authentication flow using a redirect-based strategy.
+  ///
+  /// This function handles the process of creating a ``SignIn`` instance,
+  /// starting an external web authentication session, and processing the callback URL upon successful
+  /// authentication.
+  ///
+  /// - Parameters:
+  ///   - strategy: The authentication strategy to use for the external authentication flow.
+  ///               See ``SignIn/AuthenticateWithRedirectStrategy`` for available options.
+  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+  ///                                         browser session (default is `false`). When `true`, the session
+  ///                                         does not persist cookies or other data between sessions, ensuring
+  ///                                         a private browsing experience.
+  ///
+  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+  ///           encountered during the sign-in or authentication processes.
+  ///
+  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignIn`` or ``SignUp``.
+  ///
+  /// Example:
+  /// ```swift
+  /// let result = try await SignIn.authenticateWithRedirect(strategy: .oauth(provider: .google))
+  /// ```
+  @discardableResult @MainActor
+  static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await Container.shared.signInService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
+  }
   #endif
 
   #if !os(tvOS) && !os(watchOS)
-    /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignIn`` instance.
-    ///
-    /// This function starts an external web authentication session,
-    /// and processes the callback URL upon successful authentication.
-    ///
-    /// - Parameters:
-    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-    ///                                         browser session (default is `false`). When `true`, the session
-    ///                                         does not persist cookies or other data between sessions,
-    ///                                         ensuring a private browsing experience.
-    ///
-    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-    ///           encountered during the authentication process.
-    ///
-    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
-    ///            which can be either a ``SignIn`` or ``SignUp``.
-    ///
-    /// Example:
-    /// ```swift
-    /// let signIn = try await SignIn.create(strategy: .oauth(provider: .google))
-    /// let result = try await signIn.authenticateWithRedirect()
-    /// ```
-    @discardableResult @MainActor
-    func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signInService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
-    }
+  /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignIn`` instance.
+  ///
+  /// This function starts an external web authentication session,
+  /// and processes the callback URL upon successful authentication.
+  ///
+  /// - Parameters:
+  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+  ///                                         browser session (default is `false`). When `true`, the session
+  ///                                         does not persist cookies or other data between sessions,
+  ///                                         ensuring a private browsing experience.
+  ///
+  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+  ///           encountered during the authentication process.
+  ///
+  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
+  ///            which can be either a ``SignIn`` or ``SignUp``.
+  ///
+  /// Example:
+  /// ```swift
+  /// let signIn = try await SignIn.create(strategy: .oauth(provider: .google))
+  /// let result = try await signIn.authenticateWithRedirect()
+  /// ```
+  @discardableResult @MainActor
+  func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await Container.shared.signInService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
+  }
 
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    /// Presents the system sheet to allow the user to sign in using their passkey.
-    ///
-    /// This method handles the process of requesting a credential for passkey-based authentication by interacting with the
-    /// platform's authentication services. It supports both autofill-assisted flows and standard credential selection flows,
-    /// allowing for a seamless user experience.
-    ///
-    /// - Parameters:
-    ///   - autofill: A Boolean indicating whether to use an autofill-assisted flow (default is `false`).
-    ///   - preferImmediatelyAvailableCredentials: Tells the authorization controller to prefer credentials that are immediately available on the local device (default is `true`).
-    ///
-    /// - Throws: ``ClerkClientError``
-    ///
-    /// - Returns: A `String` containing the passkey credential as a JSON-encoded string. This includes the necessary
-    ///            information for verifying the user's identity with the public key credential response.
-    ///
-    /// Example:
-    /// ```swift
-    /// let signIn = try await SignIn.create(strategy: .passkey)
-    /// let credential = try await signIn.getCredentialForPasskey()
-    /// ```
-    ///
-    /// - Note: This method uses `ASAuthorizationPlatformPublicKeyCredentialAssertion` to retrieve the passkey credentials
-    ///         and formats them according to the WebAuthn standard.
-    @MainActor
-    func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
-      try await Container.shared.signInService().getCredentialForPasskey(self, autofill, preferImmediatelyAvailableCredentials)
-    }
+  /// Presents the system sheet to allow the user to sign in using their passkey.
+  ///
+  /// This method handles the process of requesting a credential for passkey-based authentication by interacting with the
+  /// platform's authentication services. It supports both autofill-assisted flows and standard credential selection flows,
+  /// allowing for a seamless user experience.
+  ///
+  /// - Parameters:
+  ///   - autofill: A Boolean indicating whether to use an autofill-assisted flow (default is `false`).
+  ///   - preferImmediatelyAvailableCredentials: Tells the authorization controller to prefer credentials that are immediately available on the local device (default is `true`).
+  ///
+  /// - Throws: ``ClerkClientError``
+  ///
+  /// - Returns: A `String` containing the passkey credential as a JSON-encoded string. This includes the necessary
+  ///            information for verifying the user's identity with the public key credential response.
+  ///
+  /// Example:
+  /// ```swift
+  /// let signIn = try await SignIn.create(strategy: .passkey)
+  /// let credential = try await signIn.getCredentialForPasskey()
+  /// ```
+  ///
+  /// - Note: This method uses `ASAuthorizationPlatformPublicKeyCredentialAssertion` to retrieve the passkey credentials
+  ///         and formats them according to the WebAuthn standard.
+  @MainActor
+  func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
+    try await Container.shared.signInService().getCredentialForPasskey(self, autofill, preferImmediatelyAvailableCredentials)
+  }
   #endif
 
   /// Authenticates the user using an ID Token and a specified provider.

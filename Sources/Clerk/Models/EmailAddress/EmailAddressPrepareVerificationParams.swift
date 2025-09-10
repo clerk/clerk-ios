@@ -17,7 +17,7 @@ public extension EmailAddress {
     var requestBody: RequestBody {
       switch self {
       case .emailCode:
-        return .init(strategy: "email_code")
+        .init(strategy: "email_code")
       }
     }
 

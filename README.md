@@ -73,10 +73,10 @@ brew install swiftlint
 
 ```bash
 # Lint
-swiftlint lint --config .swiftlint.yml
+swiftlint --strict --config .swiftlint.yml
 
-# Optionally autocorrect formatting (including 2-space indentation)
-swiftlint autocorrect --format --config .swiftlint.yml
+# Autocorrect common issues (including indentation)
+swiftlint autocorrect --config .swiftlint.yml
 ```
 
 ### Git pre-commit hook
@@ -88,7 +88,7 @@ git config core.hooksPath .githooks
 ```
 
 The `pre-commit` hook will:
-- Autocorrect and format staged `.swift` files
+- Autocorrect staged `.swift` files
 - Re-lint them with `--strict` and block commits on violations
 
 ### CI enforcement

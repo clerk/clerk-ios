@@ -42,12 +42,12 @@ extension SignIn {
     var signInStrategy: SignIn.CreateStrategy {
       switch self {
       case let .oauth(provider, redirectUrl):
-        return .oauth(
+        .oauth(
           provider: provider,
           redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )
       case let .enterpriseSSO(identifier, redirectUrl):
-        return .enterpriseSSO(
+        .enterpriseSSO(
           identifier: identifier,
           redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
         )

@@ -11,9 +11,7 @@ import Foundation
 
 struct ClerkInvalidAuthRequestProcessor: RequestPostprocessor {
   static func process(response _: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
-    if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
-       let clerkAPIError = clerkErrorResponse.errors.first,
-       clerkAPIError.code == "authentication_invalid" {
+    if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data), let clerkAPIError = clerkErrorResponse.errors.first, clerkAPIError.code == "authentication_invalid" {
       // If the original request was also a GET client, return so we don't end up in a loop of failed GET Clients.
       if task.originalRequest?.url?.lastPathComponent == "client", task.originalRequest?.httpMethod == "GET" {
         return

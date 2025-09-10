@@ -13,14 +13,6 @@ if [ -z "$STAGED_SWIFT_FILES" ]; then
   exit 0
 fi
 
-if command -v swiftformat >/dev/null 2>&1; then
-  echo "Running SwiftFormat on staged files (2-space indentation)..."
-  swiftformat --config "$REPO_ROOT/.swiftformat" $STAGED_SWIFT_FILES >/dev/null || true
-  git add $STAGED_SWIFT_FILES
-else
-  echo "SwiftFormat not found. Install with: brew install swiftformat"
-fi
-
 if ! command -v swiftlint >/dev/null 2>&1; then
   echo "SwiftLint not found. Install with: brew install swiftlint"
   exit 0
@@ -50,5 +42,3 @@ if [ "$FAILED" -ne 0 ]; then
 fi
 
 exit 0
-
-

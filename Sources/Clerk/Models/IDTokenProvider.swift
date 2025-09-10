@@ -21,7 +21,7 @@ public enum IDTokenProvider: CaseIterable, Codable, Sendable {
   var strategy: String {
     switch self {
     case .apple:
-      return "oauth_token_apple"
+      "oauth_token_apple"
     }
   }
 

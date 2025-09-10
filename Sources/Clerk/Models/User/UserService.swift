@@ -46,25 +46,30 @@ struct UserService {
     try await PhoneNumber.create(phoneNumber)
   }
 
-  var createExternalAccount: @MainActor (_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount = { provider, redirectUrl, additionalScopes in
-    var bodyParams: [String: String] = [
-      "strategy": provider.strategy,
-      "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
-    ]
+  var createExternalAccount:
+    @MainActor (
+      _ provider: OAuthProvider,
+      _ redirectUrl: String?,
+      _ additionalScopes: [String]?
+    ) async throws -> ExternalAccount = { provider, redirectUrl, additionalScopes in
+      var bodyParams: [String: String] = [
+        "strategy": provider.strategy,
+        "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+      ]
 
-    if let additionalScopes = additionalScopes {
-      bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
+      if let additionalScopes {
+        bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
+      }
+
+      let request = Request<ClientResponse<ExternalAccount>>(
+        path: "/v1/me/external_accounts",
+        method: .post,
+        query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+        body: bodyParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    let request = Request<ClientResponse<ExternalAccount>>(
-      path: "/v1/me/external_accounts",
-      method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: bodyParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   var createExternalAccountToken: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount = { provider, idToken in
     let request = Request<ClientResponse<ExternalAccount>>(
@@ -81,49 +86,49 @@ struct UserService {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
-    var createPasskey: @MainActor () async throws -> Passkey = {
-      let passkey = try await Passkey.create()
+  var createPasskey: @MainActor () async throws -> Passkey = {
+    let passkey = try await Passkey.create()
 
-      guard let challenge = passkey.challenge else {
-        throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-      }
-
-      guard let name = passkey.username else {
-        throw ClerkClientError(message: "Unable to get the username for the passkey.")
-      }
-
-      guard let userId = passkey.userId else {
-        throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
-      }
-
-      let manager = PasskeyHelper()
-      let authorization = try await manager.createPasskey(
-        challenge: challenge,
-        name: name,
-        userId: userId
-      )
-
-      guard
-        let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
-        let rawAttestationObject = credentialRegistration.rawAttestationObject
-      else {
-        throw ClerkClientError(message: "Invalid credential type.")
-      }
-
-      let publicKeyCredential: [String: any Encodable] = [
-        "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-        "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-        "type": "public-key",
-        "response": [
-          "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
-          "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
-        ]
-      ]
-
-      let publicKeyCredentialJSON = try JSON(publicKeyCredential)
-
-      return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
+    guard let challenge = passkey.challenge else {
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
     }
+
+    guard let name = passkey.username else {
+      throw ClerkClientError(message: "Unable to get the username for the passkey.")
+    }
+
+    guard let userId = passkey.userId else {
+      throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+    }
+
+    let manager = PasskeyHelper()
+    let authorization = try await manager.createPasskey(
+      challenge: challenge,
+      name: name,
+      userId: userId
+    )
+
+    guard
+      let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+      let rawAttestationObject = credentialRegistration.rawAttestationObject
+    else {
+      throw ClerkClientError(message: "Invalid credential type.")
+    }
+
+    let publicKeyCredential: [String: any Encodable] = [
+      "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "type": "public-key",
+      "response": [
+        "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
+      ]
+    ]
+
+    let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+
+    return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
+  }
   #endif
 
   var createTotp: @MainActor () async throws -> TOTPResource = {
@@ -186,25 +191,30 @@ struct UserService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var getOrganizationSuggestions: @MainActor (_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> = { initialPage, pageSize, status in
-    var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
-    ]
+  var getOrganizationSuggestions:
+    @MainActor (
+      _ initialPage: Int,
+      _ pageSize: Int,
+      _ status: String?
+    ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> = { initialPage, pageSize, status in
+      var queryParams: [(String, String?)] = [
+        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("offset", value: String(initialPage)),
+        ("limit", value: String(pageSize))
+      ]
 
-    if let status = status {
-      queryParams.append(("status", value: status))
+      if let status {
+        queryParams.append(("status", value: status))
+      }
+
+      let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
+        path: "/v1/me/organization_suggestions",
+        method: .get,
+        query: queryParams
+      )
+
+      return try await Container.shared.apiClient().send(request).value.response
     }
-
-    let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
-      path: "/v1/me/organization_suggestions",
-      method: .get,
-      query: queryParams
-    )
-
-    return try await Container.shared.apiClient().send(request).value.response
-  }
 
   var getSessions: @MainActor (_ user: User) async throws -> [Session] = { user in
     let request = Request<[Session]>(
@@ -232,11 +242,11 @@ struct UserService {
   var setProfileImage: @MainActor (_ imageData: Data) async throws -> ImageResource = { imageData in
     let boundary = UUID().uuidString
     var data = Data()
-    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
-    data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)\r\n".utf8))
+    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
+    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
     data.append(imageData)
-    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
 
     let request = Request<ClientResponse<ImageResource>>(
       path: "/v1/me/profile_image",

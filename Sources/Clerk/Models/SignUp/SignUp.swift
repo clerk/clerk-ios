@@ -166,7 +166,7 @@ public extension SignUp {
   /// let signUp = try await SignUp.create(["email_address": "user@email.com", "password": "••••••••"])
   /// ```
   @discardableResult @MainActor
-  static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
+  static func create(_ params: some Encodable & Sendable) async throws -> SignUp {
     try await Container.shared.signUpService().createWithParams(params)
   }
 
@@ -220,62 +220,62 @@ public extension SignUp {
   }
 
   #if !os(tvOS) && !os(watchOS)
-    /// Creates a new ``SignUp`` and initiates an external authentication flow using a redirect-based strategy.
-    ///
-    /// This function handles the process of creating a ``SignUp`` instance,
-    /// starting an external web authentication session, and processing the callback URL upon successful
-    /// authentication.
-    ///
-    /// - Parameters:
-    ///   - strategy: The authentication strategy to use for the external authentication flow.
-    ///               See ``SignUp/AuthenticateWithRedirectStrategy`` for available options.
-    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-    ///                                         browser session (default is `false`). When `true`, the session
-    ///                                         does not persist cookies or other data between sessions, ensuring
-    ///                                         a private browsing experience.
-    ///
-    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-    ///           encountered during the sign-up or authentication processes.
-    ///
-    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignUp`` or ``SignIn``.
-    ///
-    /// Example:
-    /// ```swift
-    /// let result = try await SignUp.authenticateWithRedirect(strategy: .oauth(provider: .google))
-    /// ```
-    @discardableResult @MainActor
-    static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signUpService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
-    }
+  /// Creates a new ``SignUp`` and initiates an external authentication flow using a redirect-based strategy.
+  ///
+  /// This function handles the process of creating a ``SignUp`` instance,
+  /// starting an external web authentication session, and processing the callback URL upon successful
+  /// authentication.
+  ///
+  /// - Parameters:
+  ///   - strategy: The authentication strategy to use for the external authentication flow.
+  ///               See ``SignUp/AuthenticateWithRedirectStrategy`` for available options.
+  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+  ///                                         browser session (default is `false`). When `true`, the session
+  ///                                         does not persist cookies or other data between sessions, ensuring
+  ///                                         a private browsing experience.
+  ///
+  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+  ///           encountered during the sign-up or authentication processes.
+  ///
+  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow which can be either a ``SignUp`` or ``SignIn``.
+  ///
+  /// Example:
+  /// ```swift
+  /// let result = try await SignUp.authenticateWithRedirect(strategy: .oauth(provider: .google))
+  /// ```
+  @discardableResult @MainActor
+  static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await Container.shared.signUpService().authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
+  }
   #endif
 
   #if !os(tvOS) && !os(watchOS)
-    /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignUp`` instance.
-    ///
-    /// This function starts an external web authentication session,
-    /// and processes the callback URL upon successful authentication.
-    ///
-    /// - Parameters:
-    ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
-    ///                                         browser session (default is `false`). When `true`, the session
-    ///                                         does not persist cookies or other data between sessions,
-    ///                                         ensuring a private browsing experience.
-    ///
-    /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
-    ///           encountered during the authentication process.
-    ///
-    /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
-    ///            which can be either a ``SignUp`` or ``SignIn``.
-    ///
-    /// Example:
-    /// ```swift
-    /// let signUp = try await SignUp.create(strategy: .oauth(provider: .google))
-    /// let result = try await signUp.authenticateWithRedirect()
-    /// ```
-    @discardableResult @MainActor
-    func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-      try await Container.shared.signUpService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
-    }
+  /// Initiates an external authentication flow using a redirect-based strategy for the current ``SignUp`` instance.
+  ///
+  /// This function starts an external web authentication session,
+  /// and processes the callback URL upon successful authentication.
+  ///
+  /// - Parameters:
+  ///   - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
+  ///                                         browser session (default is `false`). When `true`, the session
+  ///                                         does not persist cookies or other data between sessions,
+  ///                                         ensuring a private browsing experience.
+  ///
+  /// - Throws: An error of type ``ClerkClientError`` if the redirect URL is missing or invalid, or any errors
+  ///           encountered during the authentication process.
+  ///
+  /// - Returns: ``TransferFlowResult`` object containing the result of the external authentication flow
+  ///            which can be either a ``SignUp`` or ``SignIn``.
+  ///
+  /// Example:
+  /// ```swift
+  /// let signUp = try await SignUp.create(strategy: .oauth(provider: .google))
+  /// let result = try await signUp.authenticateWithRedirect()
+  /// ```
+  @discardableResult @MainActor
+  func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await Container.shared.signUpService().authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
+  }
   #endif
 
   /// Authenticates the user using an ID Token and a specified provider.

@@ -116,6 +116,7 @@ public extension SignUp {
     ///   - lastName: The user's last name (optional).
     ///   - username: The user's username (optional).
     ///   - phoneNumber: The user's phone number (optional).
+    // swiftlint:disable:next enum_case_associated_values_count
     case standard(
       emailAddress: String? = nil,
       password: String? = nil,

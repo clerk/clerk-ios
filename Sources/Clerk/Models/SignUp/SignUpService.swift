@@ -73,10 +73,11 @@ struct SignUpService {
   var get: @MainActor (_ signUpId: String, _ rotatingTokenNonce: String?) async throws -> SignUp = { signUpId, rotatingTokenNonce in
     var queryParams: [(String, String?)] = []
     if let rotatingTokenNonce {
-      queryParams.append((
-        "rotating_token_nonce",
-        value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-      ))
+      queryParams.append(
+        (
+          "rotating_token_nonce",
+          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        ))
     }
 
     let request = Request<ClientResponse<SignUp>>(
@@ -89,7 +90,11 @@ struct SignUpService {
   }
 
   #if !os(tvOS) && !os(watchOS)
-    var authenticateWithRedirectStatic: @MainActor (_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
+  var authenticateWithRedirectStatic:
+    @MainActor (
+      _ strategy: SignUp.AuthenticateWithRedirectStrategy,
+      _ prefersEphemeralWebBrowserSession: Bool
+    ) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
       let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
 
       guard
@@ -110,7 +115,11 @@ struct SignUpService {
       return transferFlowResult
     }
 
-    var authenticateWithRedirect: @MainActor (_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signUp, prefersEphemeralWebBrowserSession in
+  var authenticateWithRedirect:
+    @MainActor (
+      _ signUp: SignUp,
+      _ prefersEphemeralWebBrowserSession: Bool
+    ) async throws -> TransferFlowResult = { signUp, prefersEphemeralWebBrowserSession in
       guard
         let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
         let redirectUrl = verification.externalVerificationRedirectUrl,

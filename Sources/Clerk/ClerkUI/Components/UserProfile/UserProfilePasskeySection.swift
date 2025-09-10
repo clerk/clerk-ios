@@ -7,62 +7,62 @@
 
 #if os(iOS)
 
-  import SwiftUI
+import SwiftUI
 
-  struct UserProfilePasskeySection: View {
-    @Environment(\.clerk) private var clerk
-    @Environment(\.clerkTheme) private var theme
+struct UserProfilePasskeySection: View {
+  @Environment(\.clerk) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
-    @State private var error: Error?
+  @State private var error: Error?
 
-    var user: User? {
-      clerk.user
+  var user: User? {
+    clerk.user
+  }
+
+  var sortedPasskeys: [Passkey] {
+    guard let user else { return [] }
+    return user.passkeys.sorted { lhs, rhs in
+      lhs.createdAt < rhs.createdAt
     }
+  }
 
-    var sortedPasskeys: [Passkey] {
-      guard let user else { return [] }
-      return user.passkeys.sorted { lhs, rhs in
-        lhs.createdAt < rhs.createdAt
-      }
-    }
-
-    var body: some View {
-      Section {
-        VStack(spacing: 0) {
-          ForEach(sortedPasskeys) {
-            UserProfilePasskeyRow(passkey: $0)
-          }
-
-          UserProfileButtonRow(text: "Add a passkey") {
-            await createPasskey()
-          }
+  var body: some View {
+    Section {
+      VStack(spacing: 0) {
+        ForEach(sortedPasskeys) {
+          UserProfilePasskeyRow(passkey: $0)
         }
-        .background(theme.colors.background)
-      } header: {
-        UserProfileSectionHeader(text: "PASSKEYS")
+
+        UserProfileButtonRow(text: "Add a passkey") {
+          await createPasskey()
+        }
       }
-      .clerkErrorPresenting($error)
+      .background(theme.colors.background)
+    } header: {
+      UserProfileSectionHeader(text: "PASSKEYS")
+    }
+    .clerkErrorPresenting($error)
+  }
+}
+
+extension UserProfilePasskeySection {
+  func createPasskey() async {
+    guard let user else { return }
+
+    do {
+      try await user.createPasskey()
+    } catch {
+      if error.isUserCancelledError { return }
+      self.error = error
+      ClerkLogger.error("Failed to create passkey", error: error)
     }
   }
+}
 
-  extension UserProfilePasskeySection {
-    func createPasskey() async {
-      guard let user else { return }
-
-      do {
-        try await user.createPasskey()
-      } catch {
-        if error.isUserCancelledError { return }
-        self.error = error
-        ClerkLogger.error("Failed to create passkey", error: error)
-      }
-    }
-  }
-
-  #Preview {
-    UserProfilePasskeySection()
-      .environment(\.clerk, .mock)
-      .environment(\.clerkTheme, .clerk)
-  }
+#Preview {
+  UserProfilePasskeySection()
+    .environment(\.clerk, .mock)
+    .environment(\.clerkTheme, .clerk)
+}
 
 #endif

@@ -12,12 +12,14 @@ import RegexBuilder
 import SimpleKeychain
 
 #if canImport(UIKit)
-  import UIKit
+import UIKit
 #endif
 
+// swiftlint:disable indentation_width
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
+// swiftlint:enable indentation_width
 @MainActor
 @Observable
 public final class Clerk {
@@ -38,7 +40,7 @@ public final class Clerk {
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
-      if let client = client {
+      if let client {
         try? Container.shared.clerkService().saveClientToKeychain(client)
       } else {
         try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
@@ -83,8 +85,7 @@ public final class Clerk {
         }
       }
 
-      if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-         let apiUrl = String(match).base64String() {
+      if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1, let apiUrl = String(match).base64String() {
         frontendApiUrl = "https://\(apiUrl.dropLast())"
       }
     }
@@ -180,11 +181,11 @@ public extension Clerk {
       setupNotificationObservers()
 
       // Both of these are automatically applied to the shared instance:
-      async let client = Client.get() // via middleware
-      async let environment = Environment.get() // via the function itself
+      async let client = Client.get()  // via middleware
+      async let environment = Environment.get()  // via the function itself
 
       _ = try await client
-      try attestDeviceIfNeeded(environment: await environment)
+      try await attestDeviceIfNeeded(environment: environment)
 
       isLoaded = true
 
@@ -229,42 +230,46 @@ extension Clerk {
   // MARK: - Private Properties
 
   private func setupNotificationObservers() {
-    #if !os(watchOS) && !os(macOS)
+  #if !os(watchOS) && !os(macOS)
 
-      // cancel existing tasks if they exist (switching instances)
-      willEnterForegroundTask?.cancel()
-      didEnterBackgroundTask?.cancel()
+    // cancel existing tasks if they exist (switching instances)
+    willEnterForegroundTask?.cancel()
+    didEnterBackgroundTask?.cancel()
 
-      willEnterForegroundTask = Task {
-        for await _ in NotificationCenter.default.notifications(
+    willEnterForegroundTask = Task {
+      for await _ in NotificationCenter.default
+        .notifications(
           named: UIApplication.willEnterForegroundNotification
-        ).map({ _ in () }) {
-          self.startSessionTokenPolling()
+        )
+        .map({ _ in () }) {
+        self.startSessionTokenPolling()
 
-          // Start both functions concurrently without waiting for them
-          Task {
-            try? await Client.get()
-          }
+        // Start both functions concurrently without waiting for them
+        Task {
+          try? await Client.get()
+        }
 
-          Task {
-            try? await Environment.get()
-          }
+        Task {
+          try? await Environment.get()
         }
       }
+    }
 
-      didEnterBackgroundTask = Task {
-        for await _ in NotificationCenter.default.notifications(
+    didEnterBackgroundTask = Task {
+      for await _ in NotificationCenter.default
+        .notifications(
           named: UIApplication.didEnterBackgroundNotification
-        ).map({ _ in () }) {
-          stopSessionTokenPolling()
+        )
+        .map({ _ in () }) {
+        stopSessionTokenPolling()
 
-          Task {
-            await telemetry.flush()
-          }
+        Task {
+          await telemetry.flush()
         }
       }
+    }
 
-    #endif
+  #endif
   }
 
   private func startSessionTokenPolling() {
@@ -274,7 +279,7 @@ extension Clerk {
 
     sessionPollingTask = Task(priority: .background) {
       repeat {
-        if let session = session {
+        if let session {
           _ = try? await session.getToken()
         }
         try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
@@ -366,9 +371,9 @@ public extension Clerk {
 }
 
 #if canImport(SwiftUI)
-  import SwiftUI
+import SwiftUI
 
-  public extension EnvironmentValues {
-    @Entry var clerk = Clerk.shared
-  }
+public extension EnvironmentValues {
+  @Entry var clerk = Clerk.shared
+}
 #endif

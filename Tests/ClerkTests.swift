@@ -52,21 +52,21 @@ struct ClerkTests {
     #expect(!clerk.isLoaded)
   }
 
-//  @MainActor
-//  @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
-//    try await withMainSerialExecutor {
-//      let task = Task {
-//        Container.shared.environmentService.register { .init(get: { .init() }) }
-//        Container.shared.clientService.register { .init(get: { .mock }) }
-//        let clerk = Clerk()
-//        clerk.configure(publishableKey: "pk_test_")
-//        try await clerk.load()
-//        #expect(clerk.isLoaded)
-//      }
-//
-//      try await task.value
-//    }
-//  }
+  //  @MainActor
+  //  @Test func testLoadingStateSetAfterLoadWithValidKey() async throws {
+  //    try await withMainSerialExecutor {
+  //      let task = Task {
+  //        Container.shared.environmentService.register { .init(get: { .init() }) }
+  //        Container.shared.clientService.register { .init(get: { .mock }) }
+  //        let clerk = Clerk()
+  //        clerk.configure(publishableKey: "pk_test_")
+  //        try await clerk.load()
+  //        #expect(clerk.isLoaded)
+  //      }
+  //
+  //      try await task.value
+  //    }
+  //  }
 
   @MainActor
   @Test func testSignOutRequest() async throws {

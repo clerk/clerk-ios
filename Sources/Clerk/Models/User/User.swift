@@ -123,9 +123,9 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
   public let updatedAt: Date
 
   /**
-   Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
-   Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
-   */
+    Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
+    Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
+    */
   public let unsafeMetadata: JSON?
 
   /// A getter for the user's list of unverified external accounts.
@@ -262,13 +262,13 @@ public extension User {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
-    /// Creates a passkey for the signed-in user.
-    ///
-    /// - Returns: ``Passkey``
-    @discardableResult @MainActor
-    func createPasskey() async throws -> Passkey {
-      try await Container.shared.userService().createPasskey()
-    }
+  /// Creates a passkey for the signed-in user.
+  ///
+  /// - Returns: ``Passkey``
+  @discardableResult @MainActor
+  func createPasskey() async throws -> Passkey {
+    try await Container.shared.userService().createPasskey()
+  }
   #endif
 
   /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice.
@@ -305,7 +305,7 @@ public extension User {
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    return try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
+    try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
   }
 
   /// Retrieves a list of organization memberships for the user.

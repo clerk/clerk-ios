@@ -53,17 +53,17 @@ public extension SignIn {
     var params: AttemptFirstFactorParams {
       switch self {
       case let .password(password):
-        return .init(strategy: "password", password: password)
+        .init(strategy: "password", password: password)
       case let .emailCode(code):
-        return .init(strategy: "email_code", code: code)
+        .init(strategy: "email_code", code: code)
       case let .phoneCode(code):
-        return .init(strategy: "phone_code", code: code)
+        .init(strategy: "phone_code", code: code)
       case let .passkey(publicKeyCredential):
-        return .init(strategy: "passkey", publicKeyCredential: publicKeyCredential)
+        .init(strategy: "passkey", publicKeyCredential: publicKeyCredential)
       case let .resetPasswordEmailCode(code):
-        return .init(strategy: "reset_password_email_code", code: code)
+        .init(strategy: "reset_password_email_code", code: code)
       case let .resetPasswordPhoneCode(code):
-        return .init(strategy: "reset_password_phone_code", code: code)
+        .init(strategy: "reset_password_phone_code", code: code)
       }
     }
   }

@@ -30,7 +30,7 @@ struct UserTests {
           emailAddress: "secondary@email.com",
           verification: nil,
           linkedTo: nil
-        ),
+        )
       ],
       enterpriseAccounts: [],
       externalAccounts: [.mockVerified, .mockUnverified],
@@ -212,7 +212,7 @@ struct UserTests {
           verification: nil,
           linkedTo: nil,
           backupCodes: nil
-        ),
+        )
       ],
       primaryEmailAddressId: nil,
       primaryPhoneNumberId: "1",
@@ -384,7 +384,7 @@ struct UserTests {
     try await User.mock.update(updatePasswordParams)
     #expect(requestHandled.value)
   }
-  
+
   @Test func testUserCreateBackupCodesRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me/backup_codes")

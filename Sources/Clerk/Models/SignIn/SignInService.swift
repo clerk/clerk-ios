@@ -90,10 +90,11 @@ struct SignInService {
   var get: @MainActor (_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn = { signInId, rotatingTokenNonce in
     var queryParams: [(String, String?)] = []
     if let rotatingTokenNonce {
-      queryParams.append((
-        "rotating_token_nonce",
-        value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-      ))
+      queryParams.append(
+        (
+          "rotating_token_nonce",
+          value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        ))
     }
 
     let request = Request<ClientResponse<SignIn>>(
@@ -106,7 +107,11 @@ struct SignInService {
   }
 
   #if !os(tvOS) && !os(watchOS)
-    var authenticateWithRedirectStatic: @MainActor (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
+  var authenticateWithRedirectStatic:
+    @MainActor (
+      _ strategy: SignIn.AuthenticateWithRedirectStrategy,
+      _ prefersEphemeralWebBrowserSession: Bool
+    ) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
       let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
 
       guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
@@ -119,10 +124,12 @@ struct SignInService {
       return transferFlowResult
     }
 
-    var authenticateWithRedirect: @MainActor (_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signIn, prefersEphemeralWebBrowserSession in
-      guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-            let url = URL(string: externalVerificationRedirectUrl)
-      else {
+  var authenticateWithRedirect:
+    @MainActor (
+      _ signIn: SignIn,
+      _ prefersEphemeralWebBrowserSession: Bool
+    ) async throws -> TransferFlowResult = { signIn, prefersEphemeralWebBrowserSession in
+      guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
         throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
       }
 
@@ -134,7 +141,12 @@ struct SignInService {
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    var getCredentialForPasskey: @MainActor (_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String = { signIn, autofill, preferImmediatelyAvailableCredentials in
+  var getCredentialForPasskey:
+    @MainActor (
+      _ signIn: SignIn,
+      _ autofill: Bool,
+      _ preferImmediatelyAvailableCredentials: Bool
+    ) async throws -> String = { signIn, autofill, preferImmediatelyAvailableCredentials in
       guard
         let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
         let challengeString = nonceJSON["challenge"]?.stringValue,
@@ -147,21 +159,21 @@ struct SignInService {
       var authorization: ASAuthorization
 
       #if os(iOS) && !targetEnvironment(macCatalyst)
-        if autofill {
-          authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
-            challenge: challenge
-          )
-        } else {
-          authorization = try await manager.signIn(
-            challenge: challenge,
-            preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-          )
-        }
-      #else
+      if autofill {
+        authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
+          challenge: challenge
+        )
+      } else {
         authorization = try await manager.signIn(
           challenge: challenge,
           preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
         )
+      }
+      #else
+      authorization = try await manager.signIn(
+        challenge: challenge,
+        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      )
       #endif
 
       guard

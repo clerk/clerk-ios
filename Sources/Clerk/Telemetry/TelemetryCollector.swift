@@ -43,7 +43,12 @@ actor TelemetryCollector {
 
   // MARK: Constants
 
-  private static let defaultEndpoint = URL(string: "https://clerk-telemetry.com")!
+  private static let defaultEndpoint: URL = {
+    guard let url = URL(string: "https://clerk-telemetry.com") else {
+      fatalError("Invalid telemetry endpoint URL")
+    }
+    return url
+  }()
 
   // MARK: State
 
@@ -131,7 +136,7 @@ actor TelemetryCollector {
       return RecordResult(shouldRecord: true, reason: "throttling disabled")
     }
 
-    let randomSeed = Double.random(in: 0 ... 1)
+    let randomSeed = Double.random(in: 0...1)
     let globalOk = randomSeed <= config.samplingRate
     let eventOk = eventSamplingRate.map { randomSeed <= $0 } ?? true
 
@@ -159,9 +164,9 @@ actor TelemetryCollector {
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(config.flushInterval))
 
-        let hasEvents = await self.hasBufferedEvents()
+        let hasEvents = await hasBufferedEvents()
         if hasEvents {
-          await self.flush()
+          await flush()
         }
       }
     }
@@ -178,7 +183,7 @@ actor TelemetryCollector {
       flushTask?.cancel()
       flushTask = Task { [weak self] in
         guard let self else { return }
-        await self.flush()
+        await flush()
       }
     }
     // Note: Only flush when buffer is full, not on every event

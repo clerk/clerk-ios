@@ -31,7 +31,7 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
   func client(_: APIClient, willSendRequest request: inout URLRequest) async throws {
     try await ClerkHeaderRequestProcessor.process(request: &request)
     try await ClerkQueryItemsRequestProcessor.process(request: &request)
-    try await ClerkURLEncodedFormEncoderRequestProcessor.process(request: &request)
+    try await ClerkURLEncodedFormPreprocessor.process(request: &request)
   }
 
   func client(_: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {

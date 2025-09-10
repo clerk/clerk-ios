@@ -22,9 +22,9 @@ public extension SignUp {
     var params: AttemptVerificationParams {
       switch self {
       case let .emailCode(code):
-        return .init(strategy: "email_code", code: code)
+        .init(strategy: "email_code", code: code)
       case let .phoneCode(code):
-        return .init(strategy: "phone_code", code: code)
+        .init(strategy: "phone_code", code: code)
       }
     }
   }

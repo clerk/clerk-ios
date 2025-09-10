@@ -23,7 +23,7 @@ public extension EmailAddress {
     var requestBody: RequestBody {
       switch self {
       case let .emailCode(code):
-        return .init(code: code)
+        .init(code: code)
       }
     }
 

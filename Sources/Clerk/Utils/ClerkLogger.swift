@@ -20,26 +20,26 @@ enum ClerkLogger {
     var osLogType: OSLogType {
       switch self {
       case .error:
-        return .error
+        .error
       case .warning:
-        return .default
+        .default
       case .info:
-        return .info
+        .info
       case .debug:
-        return .debug
+        .debug
       }
     }
 
     var emoji: String {
       switch self {
       case .error:
-        return "❌"
+        "❌"
       case .warning:
-        return "⚠️"
+        "⚠️"
       case .info:
-        return "ℹ️"
+        "ℹ️"
       case .debug:
-        return "🔍"
+        "🔍"
       }
     }
   }
@@ -136,15 +136,15 @@ enum ClerkLogger {
     line: Int
   ) {
     // Determine if we should log
-    let shouldLog: Bool
-    if forceLog {
-      shouldLog = true
-    } else if let override = debugModeOverride {
-      shouldLog = override
-    } else {
-      // No override provided; default to not logging from this sync context
-      shouldLog = false
-    }
+    let shouldLog: Bool =
+      if forceLog {
+        true
+      } else if let override = debugModeOverride {
+        override
+      } else {
+        // No override provided; default to not logging from this sync context
+        false
+      }
 
     guard shouldLog else { return }
 
@@ -153,18 +153,16 @@ enum ClerkLogger {
 
     var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestamp) \(fileName):\(line) \(function) - \(message)"
 
-    if let error = error {
+    if let error {
       logMessage += "\n   Error: \(error)"
 
       // Include localized description if available
-      if let localizedError = error as? LocalizedError,
-         let description = localizedError.errorDescription {
+      if let localizedError = error as? LocalizedError, let description = localizedError.errorDescription {
         logMessage += "\n   Description: \(description)"
       }
 
       // Include failure reason if available
-      if let localizedError = error as? LocalizedError,
-         let failureReason = localizedError.failureReason {
+      if let localizedError = error as? LocalizedError, let failureReason = localizedError.failureReason {
         logMessage += "\n   Reason: \(failureReason)"
       }
     }
@@ -211,7 +209,7 @@ extension ClerkLogger {
     line: Int = #line
   ) {
     var message = "Network request failed for endpoint: \(endpoint)"
-    if let statusCode = statusCode {
+    if let statusCode {
       message += " (Status: \(statusCode))"
     }
     logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)

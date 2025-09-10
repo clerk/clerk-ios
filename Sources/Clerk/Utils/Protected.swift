@@ -50,50 +50,50 @@ extension Lock {
 }
 
 #if canImport(Darwin)
-  // Number of Apple engineers who insisted on inspecting this: 5
-  /// An `os_unfair_lock` wrapper.
-  final class UnfairLock: Lock, @unchecked Sendable {
-    private let unfairLock: os_unfair_lock_t
+// Number of Apple engineers who insisted on inspecting this: 5
+/// An `os_unfair_lock` wrapper.
+final class UnfairLock: Lock, @unchecked Sendable {
+  private let unfairLock: os_unfair_lock_t
 
-    init() {
-      unfairLock = .allocate(capacity: 1)
-      unfairLock.initialize(to: os_unfair_lock())
-    }
-
-    deinit {
-      unfairLock.deinitialize(count: 1)
-      unfairLock.deallocate()
-    }
-
-    fileprivate func lock() {
-      os_unfair_lock_lock(unfairLock)
-    }
-
-    fileprivate func unlock() {
-      os_unfair_lock_unlock(unfairLock)
-    }
+  init() {
+    unfairLock = .allocate(capacity: 1)
+    unfairLock.initialize(to: os_unfair_lock())
   }
 
+  deinit {
+    unfairLock.deinitialize(count: 1)
+    unfairLock.deallocate()
+  }
+
+  fileprivate func lock() {
+    os_unfair_lock_lock(unfairLock)
+  }
+
+  fileprivate func unlock() {
+    os_unfair_lock_unlock(unfairLock)
+  }
+}
+
 #elseif canImport(Foundation)
-  extension NSLock: Lock {}
+extension NSLock: Lock {}
 #else
-  #error("This platform needs a Lock-conforming type without Foundation.")
+#error("This platform needs a Lock-conforming type without Foundation.")
 #endif
 
 /// A thread-safe wrapper around a value.
 @dynamicMemberLookup
 final class Protected<Value> {
   #if canImport(Darwin)
-    private let lock = UnfairLock()
+  private let lock = UnfairLock()
   #elseif canImport(Foundation)
-    private let lock = NSLock()
+  private let lock = NSLock()
   #else
-    #error("This platform needs a Lock-conforming type without Foundation.")
+  #error("This platform needs a Lock-conforming type without Foundation.")
   #endif
   #if compiler(>=6)
-    private nonisolated(unsafe) var value: Value
+  private nonisolated(unsafe) var value: Value
   #else
-    private var value: Value
+  private var value: Value
   #endif
 
   init(_ value: Value) {
@@ -137,7 +137,7 @@ final class Protected<Value> {
 }
 
 #if compiler(>=6)
-  extension Protected: Sendable {}
+extension Protected: Sendable {}
 #else
-  extension Protected: @unchecked Sendable {}
+extension Protected: @unchecked Sendable {}
 #endif
