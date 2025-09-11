@@ -369,7 +369,7 @@ extension SignUp {
       optionalFields: [],
       missingFields: [],
       unverifiedFields: [],
-      verifications: ["email_address": .mockPhoneCodeVerifiedVerification],
+      verifications: ["email_address": .mockPhoneCodeVerified],
       username: User.mock.username,
       emailAddress: User.mock.emailAddresses.first?.emailAddress,
       phoneNumber: User.mock.phoneNumbers.first?.phoneNumber,

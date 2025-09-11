@@ -112,7 +112,7 @@ public extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
   func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-    try await Container.shared.organizationService().prepareOrganizationDomainAffiliationVerification(organizationId, id, affiliationEmailAddress)
+    try await Container.shared.organizationService().prepareAffiliationVerification(organizationId, id, affiliationEmailAddress)
   }
 
   /// Attempts to complete the domain verification process.
@@ -126,7 +126,7 @@ public extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
-    try await Container.shared.organizationService().attemptOrganizationDomainAffiliationVerification(organizationId, id, code)
+    try await Container.shared.organizationService().attemptAffiliationVerification(organizationId, id, code)
   }
 }
 

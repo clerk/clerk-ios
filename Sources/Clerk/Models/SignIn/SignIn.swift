@@ -431,7 +431,7 @@ extension SignIn {
         .mockPassword
       ],
       supportedSecondFactors: nil,
-      firstFactorVerification: .mockEmailCodeUnverifiedVerification,
+      firstFactorVerification: .mockEmailCodeUnverified,
       secondFactorVerification: nil,
       userData: nil,
       createdSessionId: nil

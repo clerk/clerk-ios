@@ -137,7 +137,7 @@ extension ExternalAccount {
       username: "username",
       publicMetadata: "{}",
       label: nil,
-      verification: .mockExternalAccountVerifiedVerification
+      verification: .mockExternalAccountVerified
     )
   }
 
@@ -155,7 +155,7 @@ extension ExternalAccount {
       username: "username",
       publicMetadata: "{}",
       label: nil,
-      verification: .mockExternalAccountUnverifiedVerification
+      verification: .mockExternalAccountUnverified
     )
   }
 }

@@ -76,8 +76,6 @@ custom_rules:
     match_kinds:
       - identifier
 
-# attributes rule configuration removed to avoid config warning when rule is disabled
-
 colon: error
 
 force_cast: warning
@@ -95,10 +93,6 @@ identifier_name:
     - x
     - y
     - z
-    - to
-    - prepareOrganizationDomainAffiliationVerification
-    - attemptOrganizationDomainAffiliationVerification
-    - mockExternalAccountUnverifiedVerification
 
 indentation_width:
   indentation_width: 2
@@ -131,3 +125,10 @@ vertical_whitespace:
 
 cyclomatic_complexity:
   ignores_case_statements: true
+
+# Allow opening brace on a new line for
+# multi-line if/guard/while conditions.
+opening_brace:
+  # Allow newline before the brace when
+  # if/guard/while conditions span multiple lines.
+  ignore_multiline_statement_conditions: true

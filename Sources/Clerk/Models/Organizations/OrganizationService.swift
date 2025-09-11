@@ -271,7 +271,7 @@ struct OrganizationService {
     return try await Container.shared.apiClient().send(request).value.response
   }
 
-  var prepareOrganizationDomainAffiliationVerification:
+  var prepareAffiliationVerification:
     @MainActor (
       _ organizationId: String,
       _ domainId: String,
@@ -286,7 +286,7 @@ struct OrganizationService {
       return try await Container.shared.apiClient().send(request).value.response
     }
 
-  var attemptOrganizationDomainAffiliationVerification:
+  var attemptAffiliationVerification:
     @MainActor (
       _ organizationId: String,
       _ domainId: String,

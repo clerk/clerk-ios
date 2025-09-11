@@ -65,7 +65,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
 }
 
 extension Verification {
-  static var mockEmailCodeVerifiedVerification: Verification {
+  static var mockEmailCodeVerified: Verification {
     Verification(
       status: .verified,
       strategy: "email_code",
@@ -77,7 +77,7 @@ extension Verification {
     )
   }
 
-  static var mockEmailCodeUnverifiedVerification: Verification {
+  static var mockEmailCodeUnverified: Verification {
     Verification(
       status: .unverified,
       strategy: "email_code",
@@ -89,7 +89,7 @@ extension Verification {
     )
   }
 
-  static var mockPhoneCodeVerifiedVerification: Verification {
+  static var mockPhoneCodeVerified: Verification {
     Verification(
       status: .verified,
       strategy: "phone_code",
@@ -101,7 +101,7 @@ extension Verification {
     )
   }
 
-  static var mockPhoneCodeUnverifiedVerification: Verification {
+  static var mockPhoneCodeUnverified: Verification {
     Verification(
       status: .unverified,
       strategy: "phone_code",
@@ -113,7 +113,7 @@ extension Verification {
     )
   }
 
-  static var mockPasskeyVerifiedVerification: Verification {
+  static var mockPasskeyVerified: Verification {
     Verification(
       status: .verified,
       strategy: "passkey",
@@ -125,7 +125,7 @@ extension Verification {
     )
   }
 
-  static var mockPasskeyUnverifiedVerification: Verification {
+  static var mockPasskeyUnverified: Verification {
     Verification(
       status: .unverified,
       strategy: "passkey",
@@ -137,7 +137,7 @@ extension Verification {
     )
   }
 
-  static var mockExternalAccountVerifiedVerification: Verification {
+  static var mockExternalAccountVerified: Verification {
     Verification(
       status: .verified,
       strategy: "oauth_google",
@@ -149,7 +149,7 @@ extension Verification {
     )
   }
 
-  static var mockExternalAccountUnverifiedVerification: Verification {
+  static var mockExternalAccountUnverified: Verification {
     Verification(
       status: .unverified,
       strategy: "oauth_google",

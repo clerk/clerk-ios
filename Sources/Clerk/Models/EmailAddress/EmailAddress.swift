@@ -108,7 +108,7 @@ extension EmailAddress {
     EmailAddress(
       id: "1",
       emailAddress: "user@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
+      verification: .mockEmailCodeVerified,
       linkedTo: nil
     )
   }
@@ -117,7 +117,7 @@ extension EmailAddress {
     EmailAddress(
       id: "12",
       emailAddress: "user2@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
+      verification: .mockEmailCodeVerified,
       linkedTo: nil
     )
   }

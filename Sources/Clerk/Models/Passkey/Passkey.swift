@@ -97,7 +97,7 @@ extension Passkey {
     Passkey(
       id: "1",
       name: "iCloud Keychain",
-      verification: .mockPasskeyVerifiedVerification,
+      verification: .mockPasskeyVerified,
       createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       lastUsedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)

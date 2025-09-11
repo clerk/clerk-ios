@@ -121,7 +121,7 @@ extension PhoneNumber {
       phoneNumber: "+15555550100",
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
-      verification: .mockPhoneCodeVerifiedVerification,
+      verification: .mockPhoneCodeVerified,
       linkedTo: nil,
       backupCodes: nil
     )
@@ -133,7 +133,7 @@ extension PhoneNumber {
       phoneNumber: "+15555550101",
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
-      verification: .mockPhoneCodeVerifiedVerification,
+      verification: .mockPhoneCodeVerified,
       linkedTo: nil,
       backupCodes: nil
     )
@@ -145,7 +145,7 @@ extension PhoneNumber {
       phoneNumber: "+15555550102",
       reservedForSecondFactor: true,
       defaultSecondFactor: true,
-      verification: .mockPhoneCodeVerifiedVerification,
+      verification: .mockPhoneCodeVerified,
       linkedTo: nil,
       backupCodes: nil
     )
