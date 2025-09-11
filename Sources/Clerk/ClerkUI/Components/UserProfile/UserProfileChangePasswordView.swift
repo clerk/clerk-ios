@@ -142,6 +142,7 @@ struct UserProfileChangePasswordView: View {
     }
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
+    // swiftlint:disable:next trailing_closure
     .clerkErrorPresenting($error, action: { error in
       if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"]?.stringValue == "current_password" {
         return .init(text: "Go back") {

@@ -46,7 +46,10 @@ actor SessionTokenFetcher {
   func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
-    if options.skipCache == false, let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey), let expiresAt = token.decodedJWT?.expiresAt, Date.now.distance(to: expiresAt) > options.expirationBuffer {
+    if options.skipCache == false,
+       let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
+       let expiresAt = token.decodedJWT?.expiresAt,
+       Date.now.distance(to: expiresAt) > options.expirationBuffer {
       return token
     }
 

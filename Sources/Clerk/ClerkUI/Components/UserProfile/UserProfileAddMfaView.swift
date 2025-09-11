@@ -146,7 +146,8 @@ extension UserProfileAddMfaView {
 
 #Preview {
   Container.shared.userService.preview { @MainActor in
-    UserService(createTotp:  {
+    // swiftlint:disable:next trailing_closure
+    UserService(createTotp: {
       try await Task.sleep(for: .seconds(1))
       return .mock
     })
