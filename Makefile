@@ -10,7 +10,7 @@ LINT_CONFIG := .swiftlint.yml
 # Paths (shared)
 SRC_PATHS := Sources Tests
 
-.PHONY: lint lint-fix precommit install-hooks tools
+.PHONY: lint lint-fix precommit tools
 
 
 ## Run SwiftLint (strict)
@@ -26,11 +26,6 @@ lint-fix:
 ## Convenience: lint-fix + lint
 precommit: lint-fix lint
 	@echo "[precommit] OK"
-
-## Point git to use repo hooks (includes pre-commit format+lint)
-install-hooks:
-	@git config core.hooksPath .githooks
-	@echo "[hooks] Installed: git will use .githooks/"
 
 ## Check tools are installed
 tools:

@@ -79,18 +79,6 @@ swiftlint --strict --config .swiftlint.yml
 swiftlint autocorrect --config .swiftlint.yml
 ```
 
-### Git pre-commit hook
-
-Enable the repository hooks path once per clone:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-The `pre-commit` hook will:
-- Autocorrect staged `.swift` files
-- Re-lint them with `--strict` and block commits on violations
-
 ### CI enforcement
 
 GitHub Actions runs SwiftLint on pull requests and pushes to `main`.
