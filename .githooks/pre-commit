@@ -21,7 +21,7 @@ fi
 echo "Running SwiftLint autocorrect on staged files..."
 for FILE in $STAGED_SWIFT_FILES; do
   if [ -f "$FILE" ]; then
-    swiftlint autocorrect --config "$REPO_ROOT/.swiftlint.yml" --path "$FILE" || true
+    swiftlint autocorrect --config "$REPO_ROOT/.swiftlint.yml" "$FILE" || true
     git add "$FILE"
   fi
 done
@@ -30,7 +30,7 @@ echo "Running SwiftLint lint --strict on staged files..."
 FAILED=0
 for FILE in $STAGED_SWIFT_FILES; do
   if [ -f "$FILE" ]; then
-    if ! swiftlint lint --strict --config "$REPO_ROOT/.swiftlint.yml" --path "$FILE"; then
+    if ! swiftlint --strict --config "$REPO_ROOT/.swiftlint.yml" "$FILE"; then
       FAILED=1
     fi
   fi
