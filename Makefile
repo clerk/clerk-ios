@@ -18,10 +18,10 @@ lint:
 	@echo "[lint] Running SwiftLint (strict)"
 	@$(SWIFTLINT) --no-cache --strict --config $(LINT_CONFIG)
 
-## Attempt SwiftLint autocorrect where possible
+## Attempt SwiftLint fixes where possible
 lint-fix:
-	@echo "[lint] Running SwiftLint autocorrect"
-	@$(SWIFTLINT) autocorrect --config $(LINT_CONFIG) || true
+	@echo "[lint] Running SwiftLint --fix"
+	@$(SWIFTLINT) --fix --config $(LINT_CONFIG) || true
 
 ## Convenience: lint-fix + lint
 precommit: lint-fix lint

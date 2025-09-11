@@ -75,8 +75,8 @@ brew install swiftlint
 # Lint
 swiftlint --strict --config .swiftlint.yml
 
-# Autocorrect common issues (including indentation)
-swiftlint autocorrect --config .swiftlint.yml
+# Fix common issues (including indentation)
+swiftlint --fix --config .swiftlint.yml
 ```
 
 ### CI enforcement
