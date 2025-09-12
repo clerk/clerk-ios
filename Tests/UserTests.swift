@@ -103,7 +103,7 @@ struct UserTests {
         .init(
           id: "1",
           emailAddress: "user@email.com",
-          verification: .mockEmailCodeVerifiedVerification,
+          verification: .mockEmailCodeVerified,
           linkedTo: nil
         )
       ],
@@ -144,7 +144,7 @@ struct UserTests {
         .init(
           id: "1",
           emailAddress: "user@email.com",
-          verification: .mockEmailCodeUnverifiedVerification,
+          verification: .mockEmailCodeUnverified,
           linkedTo: nil
         )
       ],
