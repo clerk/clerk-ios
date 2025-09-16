@@ -104,6 +104,9 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         /// The session is valid, and all activity is allowed.
         case active
 
+        /// The session requires additional steps before becoming active.
+        case pending
+
         /// The user signed out of the session, but the Session remains in the Client object.
         case ended
 

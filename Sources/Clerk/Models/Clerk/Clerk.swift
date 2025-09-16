@@ -41,8 +41,10 @@ final public class Clerk {
         didSet {
             if let client = client {
                 try? Container.shared.clerkService().saveClientToKeychain(client)
+                logPendingSessionStatusIfNeeded(for: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
+                loggedPendingSessionIds.removeAll()
             }
         }
     }
@@ -146,6 +148,9 @@ final public class Clerk {
         }
     }
 
+    /// Tracks session IDs that have already triggered the pending status log.
+    private var loggedPendingSessionIds: Set<String> = []
+
     /// Holds a reference to the task performed when the app will enter the foreground.
     private var willEnterForegroundTask: Task<Void, Error>?
 
@@ -230,6 +235,18 @@ extension Clerk {
 extension Clerk {
 
     // MARK: - Private Properties
+
+    private func logPendingSessionStatusIfNeeded(for client: Client) {
+        let pendingSessionIds = Set(client.sessions.filter { $0.status == .pending }.map(\.id))
+        let hasNewPendingSession = !pendingSessionIds.subtracting(loggedPendingSessionIds).isEmpty
+
+        loggedPendingSessionIds = pendingSessionIds
+
+        guard hasNewPendingSession else { return }
+
+        let message = "Your session is currently pending and requires additional steps to become active. Please review the remaining session tasks."
+        ClerkLogger.info(message, debugMode: true)
+    }
 
     private func setupNotificationObservers() {
         #if !os(watchOS) && !os(macOS)
