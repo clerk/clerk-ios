@@ -230,7 +230,7 @@ public struct UserProfileView: View {
             .task {
                 for await event in clerk.authEventEmitter.events {
                     switch event {
-                    case .signInCompleted, .signUpCompleted:
+                    case .signInCompleted, .signUpCompleted, .signedOut:
                         sharedState.authViewIsPresented = false
                     }
                 }

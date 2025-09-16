@@ -73,6 +73,14 @@ struct ClerkTests {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions")
+    let eventTask = Task<AuthEvent?, Never> { @MainActor in
+      for await event in Clerk.shared.authEventEmitter.events {
+        if case .signedOut = event {
+          return event
+        }
+      }
+      return nil
+    }
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
@@ -85,6 +93,12 @@ struct ClerkTests {
     mock.register()
     try await clerk.signOut()
     #expect(requestHandled.value)
+    let event = await eventTask.value
+    var didReceiveSignedOutEvent = false
+    if case .signedOut? = event {
+      didReceiveSignedOutEvent = true
+    }
+    #expect(didReceiveSignedOutEvent)
   }
 
   @MainActor
@@ -92,6 +106,14 @@ struct ClerkTests {
     let clerk = Clerk()
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
+    let eventTask = Task<AuthEvent?, Never> { @MainActor in
+      for await event in Clerk.shared.authEventEmitter.events {
+        if case .signedOut = event {
+          return event
+        }
+      }
+      return nil
+    }
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
@@ -104,6 +126,12 @@ struct ClerkTests {
     mock.register()
     try await clerk.signOut(sessionId: Session.mock.id)
     #expect(requestHandled.value)
+    let event = await eventTask.value
+    var didReceiveSignedOutEvent = false
+    if case .signedOut? = event {
+      didReceiveSignedOutEvent = true
+    }
+    #expect(didReceiveSignedOutEvent)
   }
 
   @MainActor
