@@ -138,7 +138,7 @@ public struct AuthView: View {
                     switch event {
                     case .signInCompleted, .signUpCompleted:
                         dismiss()
-                    case .signedOut:
+                    default:
                         break
                     }
                 }
