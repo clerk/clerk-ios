@@ -28,43 +28,46 @@ import Foundation
 public struct Session: Codable, Identifiable, Equatable, Sendable {
 
     /// A unique identifier for the session.
-    public let id: String
+    public var id: String
 
     /// The current state of the session.
     public var status: SessionStatus
 
     /// The time the session expires and will cease to be active.
-    public let expireAt: Date
+    public var expireAt: Date
 
     /// The time when the session was abandoned by the user.
-    public let abandonAt: Date
+    public var abandonAt: Date
 
     /// The time the session was last active on the client.
-    public let lastActiveAt: Date
+    public var lastActiveAt: Date
 
     /// The latest activity associated with the session.
-    public let latestActivity: SessionActivity?
+    public var latestActivity: SessionActivity?
 
     /// The last active organization identifier.
-    public let lastActiveOrganizationId: String?
+    public var lastActiveOrganizationId: String?
 
     /// The JWT actor for the session.
-    public let actor: String?
+    public var actor: String?
 
     /// The user associated with the session.
-    public let user: User?
+    public var user: User?
 
     /// Public information about the user that this session belongs to.
-    public let publicUserData: PublicUserData?
+    public var publicUserData: PublicUserData?
 
     /// The time the session was created.
-    public let createdAt: Date
+    public var createdAt: Date
 
     /// The last time the session recorded activity of any kind.
-    public let updatedAt: Date
+    public var updatedAt: Date
+
+    /// The pending tasks required to activate this session.
+    public var tasks: [Task]?
 
     /// The last active token for the session.
-    public let lastActiveToken: TokenResource?
+    public var lastActiveToken: TokenResource?
 
     public init(
         id: String,
@@ -79,6 +82,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         publicUserData: PublicUserData? = nil,
         createdAt: Date,
         updatedAt: Date,
+        tasks: [Task]? = nil,
         lastActiveToken: TokenResource? = nil
     ) {
         self.id = id
@@ -93,6 +97,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         self.publicUserData = publicUserData
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.tasks = tasks
         self.lastActiveToken = lastActiveToken
     }
 
@@ -103,6 +108,9 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
         /// The session is valid, and all activity is allowed.
         case active
+
+        /// Authentication is complete, but the session requires additional steps before becoming active.
+        case pending
 
         /// The user signed out of the session, but the Session remains in the Client object.
         case ended
@@ -123,6 +131,16 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
         public init(from decoder: Decoder) throws {
             self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
+    }
+
+    public struct Task: Codable, Equatable, Sendable {
+
+        /// The key of the task.
+        public var key: String
+
+        public init(key: String) {
+            self.key = key
         }
     }
 }
@@ -257,6 +275,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 
@@ -282,6 +301,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 
@@ -298,6 +318,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 

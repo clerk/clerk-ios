@@ -41,6 +41,7 @@ final public class Clerk {
         didSet {
             if let client = client {
                 try? Container.shared.clerkService().saveClientToKeychain(client)
+                logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
             }
@@ -154,6 +155,7 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
+
 }
 
 extension Clerk {
@@ -229,7 +231,47 @@ extension Clerk {
 
 extension Clerk {
 
-    // MARK: - Private Properties
+    private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
+        guard shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient) else { return }
+
+        let tasksDescription: String
+        if let sessionId = currentClient.lastActiveSessionId,
+           let session = currentClient.sessions.first(where: { $0.id == sessionId }),
+           let tasks = session.tasks,
+           !tasks.isEmpty
+        {
+            let taskKeys = tasks.map(\.key).joined(separator: ", ")
+            tasksDescription = " Remaining session tasks: [\(taskKeys)]."
+        } else {
+            tasksDescription = ""
+        }
+
+        let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
+        ClerkLogger.info(message, debugMode: true)
+    }
+
+    func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
+        guard let sessionId = currentClient.lastActiveSessionId,
+              let session = currentClient.sessions.first(where: { $0.id == sessionId })
+        else {
+            return false
+        }
+
+        guard session.status == .pending else { return false }
+
+        guard let previousClient,
+              let previousId = previousClient.lastActiveSessionId,
+              let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
+        else {
+            return true
+        }
+
+        if previousSession.id != session.id { return true }
+        if previousSession.status != session.status { return true }
+        if (previousSession.tasks ?? []) != (session.tasks ?? []) { return true }
+
+        return false
+    }
 
     private func setupNotificationObservers() {
         #if !os(watchOS) && !os(macOS)

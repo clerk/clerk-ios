@@ -14,16 +14,16 @@ import Foundation
 public struct Client: Codable, Sendable, Equatable {
 
     /// Unique identifier for this client.
-    public let id: String
+    public var id: String
 
     /// The current sign in attempt, or nil if there is none.
-    public let signIn: SignIn?
+    public var signIn: SignIn?
 
     /// The current sign up attempt, or nil if there is none.
-    public let signUp: SignUp?
+    public var signUp: SignUp?
 
     /// A list of sessions that have been created on this client.
-    public let sessions: [Session]
+    public var sessions: [Session]
 
     /// A list of active sessions on this client.
     public var activeSessions: [Session] {
@@ -31,10 +31,10 @@ public struct Client: Codable, Sendable, Equatable {
     }
 
     /// The ID of the last active Session on this client.
-    public let lastActiveSessionId: String?
+    public var lastActiveSessionId: String?
 
     /// Timestamp of last update for the client.
-    public let updatedAt: Date
+    public var updatedAt: Date
 
     public init(
         id: String,
