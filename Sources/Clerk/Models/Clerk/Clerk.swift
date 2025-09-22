@@ -41,7 +41,7 @@ final public class Clerk {
         didSet {
             if let client = client {
                 try? Container.shared.clerkService().saveClientToKeychain(client)
-                logPendingSessionStatusIfNeeded(for: client)
+                logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
             }
@@ -232,13 +232,20 @@ extension Clerk {
 
     // MARK: - Private Properties
 
-    private func logPendingSessionStatusIfNeeded(for client: Client) {
-        let signInComplete = client.signIn?.status == .complete
-        let signUpComplete = client.signUp?.status == .complete
+    private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
+        guard let previousClient else { return }
 
-        guard (signInComplete || signUpComplete),
-              client.sessions.contains(where: { $0.status == .pending })
-        else { return }
+        let previousStatuses = previousClient.sessions.reduce(into: [String: Session.SessionStatus]()) { result, session in
+            result[session.id] = session.status
+        }
+
+        let hasPendingTransition = currentClient.sessions.contains { session in
+            guard session.status == .pending else { return false }
+            guard let previousStatus = previousStatuses[session.id] else { return true }
+            return previousStatus != .pending
+        }
+
+        guard hasPendingTransition else { return }
 
         let message = "You have successfully authenticated but your session is in pending status. Please see the remaining session tasks on the current session in order for your session to become \"active\"."
         ClerkLogger.info(message, debugMode: true)
