@@ -50,17 +50,20 @@ struct ClerkTests {
     pendingSession.status = .pending
     pendingSession.tasks = [.init(key: "task-a")]
 
-    var client = Client.mock
-    client.sessions = [pendingSession]
-    client.lastActiveSessionId = pendingSession.id
+    var clientV1 = Client.mock
+    clientV1.sessions = [pendingSession]
+    clientV1.lastActiveSessionId = pendingSession.id
 
-    #expect(clerk.shouldLogPendingSessionStatus(currentClient: client))
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: client))
+    var pendingSessionUpdated = pendingSession
+    pendingSessionUpdated.tasks = [.init(key: "task-b")]
 
-    pendingSession.tasks = [.init(key: "task-b")]
-    client.sessions = [pendingSession]
+    var clientV2 = Client.mock
+    clientV2.sessions = [pendingSessionUpdated]
+    clientV2.lastActiveSessionId = pendingSessionUpdated.id
 
-    #expect(clerk.shouldLogPendingSessionStatus(currentClient: client))
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: clientV1))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV1))
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
   }
 
   @MainActor
@@ -74,7 +77,7 @@ struct ClerkTests {
     client.sessions = [activeSession]
     client.lastActiveSessionId = activeSession.id
 
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: client))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
@@ -88,7 +91,7 @@ struct ClerkTests {
     client.sessions = [pendingSession]
     client.lastActiveSessionId = "unknown"
 
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: client))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
@@ -101,7 +104,7 @@ struct ClerkTests {
     client.sessions = [pendingSession]
     client.lastActiveSessionId = nil
 
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: client))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
@@ -115,27 +118,34 @@ struct ClerkTests {
     activeSession.id = "session-1"
     activeSession.status = .active
 
-    var pendingClient = Client.mock
-    pendingClient.sessions = [pendingSession]
-    pendingClient.lastActiveSessionId = pendingSession.id
+    var pendingClientV1 = Client.mock
+    pendingClientV1.sessions = [pendingSession]
+    pendingClientV1.lastActiveSessionId = pendingSession.id
 
     var activeClient = Client.mock
     activeClient.sessions = [activeSession]
     activeClient.lastActiveSessionId = activeSession.id
 
-    pendingSession.tasks = [.init(key: "task-a")]
-    activeSession.tasks = nil
-    pendingClient.sessions = [pendingSession]
-    activeClient.sessions = [activeSession]
+    var pendingSessionWithTasks = pendingSession
+    pendingSessionWithTasks.tasks = [.init(key: "task-a")]
 
-    #expect(clerk.shouldLogPendingSessionStatus(currentClient: pendingClient))
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: pendingClient))
-    #expect(!clerk.shouldLogPendingSessionStatus(currentClient: activeClient))
+    var pendingClientV2 = Client.mock
+    pendingClientV2.sessions = [pendingSessionWithTasks]
+    pendingClientV2.lastActiveSessionId = pendingSessionWithTasks.id
 
-    pendingSession.tasks = [.init(key: "task-b")]
-    pendingClient.sessions = [pendingSession]
+    var pendingSessionWithDifferentTasks = pendingSessionWithTasks
+    pendingSessionWithDifferentTasks.tasks = [.init(key: "task-b")]
 
-    #expect(clerk.shouldLogPendingSessionStatus(currentClient: pendingClient))
+    var pendingClientV3 = Client.mock
+    pendingClientV3.sessions = [pendingSessionWithDifferentTasks]
+    pendingClientV3.lastActiveSessionId = pendingSessionWithDifferentTasks.id
+
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: pendingClientV1))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: pendingClientV1, currentClient: pendingClientV1))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: pendingClientV1, currentClient: activeClient))
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: activeClient, currentClient: pendingClientV2))
+    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: pendingClientV2, currentClient: pendingClientV2))
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: pendingClientV2, currentClient: pendingClientV3))
   }
 
 }

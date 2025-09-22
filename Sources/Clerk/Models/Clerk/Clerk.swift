@@ -41,7 +41,7 @@ final public class Clerk {
         didSet {
             if let client = client {
                 try? Container.shared.clerkService().saveClientToKeychain(client)
-                logPendingSessionStatusIfNeeded(currentClient: client)
+                logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
             }
@@ -156,8 +156,6 @@ final public class Clerk {
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
 
-    /// Stores the last pending session we emitted a warning for.
-    private var lastLoggedPendingSession: Session?
 }
 
 extension Clerk {
@@ -233,8 +231,8 @@ extension Clerk {
 
 extension Clerk {
 
-    private func logPendingSessionStatusIfNeeded(currentClient: Client) {
-        guard shouldLogPendingSessionStatus(currentClient: currentClient) else { return }
+    private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
+        guard shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient) else { return }
 
         let tasksDescription: String
         if let sessionId = currentClient.lastActiveSessionId,
@@ -252,28 +250,26 @@ extension Clerk {
         ClerkLogger.info(message, debugMode: true)
     }
 
-    func shouldLogPendingSessionStatus(currentClient: Client) -> Bool {
+    func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
         guard let sessionId = currentClient.lastActiveSessionId,
               let session = currentClient.sessions.first(where: { $0.id == sessionId })
         else {
-            lastLoggedPendingSession = nil
             return false
         }
 
-        if session.status == .pending {
-            if let lastSession = lastLoggedPendingSession,
-               lastSession.id == session.id,
-               lastSession.status == session.status,
-               (lastSession.tasks ?? []) == (session.tasks ?? [])
-            {
-                return false
-            }
+        guard session.status == .pending else { return false }
 
-            lastLoggedPendingSession = session
+        guard let previousClient,
+              let previousId = previousClient.lastActiveSessionId,
+              let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
+        else {
             return true
         }
 
-        lastLoggedPendingSession = nil
+        if previousSession.id != session.id { return true }
+        if previousSession.status != session.status { return true }
+        if (previousSession.tasks ?? []) != (session.tasks ?? []) { return true }
+
         return false
     }
 
