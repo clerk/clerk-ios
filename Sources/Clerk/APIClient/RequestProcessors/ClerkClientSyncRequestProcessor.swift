@@ -12,6 +12,7 @@ struct ClerkClientSyncRequestProcessor: RequestPostprocessor {
     static func process(response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
         if let client = decodeClient(from: data) {
             Task { @MainActor in
+                ClerkEventEmitterRequestProcessor.recordActiveSessionBeforeClientUpdate(Clerk.shared.client)
                 Clerk.shared.client = client
             }
         }
