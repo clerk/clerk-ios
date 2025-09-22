@@ -20,6 +20,16 @@ extension Container {
 
 struct UserService {
 
+    var reload: @MainActor () async throws -> User = {
+        let request = Request<ClientResponse<User>>.init(
+            path: "/v1/me",
+            method: .get,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Container.shared.apiClient().send(request).value.response
+    }
+
     var update: @MainActor (_ params: User.UpdateParams) async throws -> User = { params in
         let request = Request<ClientResponse<User>>.init(
             path: "/v1/me",
