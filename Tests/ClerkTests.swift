@@ -6,6 +6,12 @@ import Testing
 
 @testable import Clerk
 
+private let signedOutSession: Session = {
+  var session = Session.mock
+  session.status = .removed
+  return session
+}()
+
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
 
@@ -85,7 +91,7 @@ struct ClerkTests {
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mockSignedOut, client: .mockSignedOut))
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: signedOutSession, client: .mockSignedOut))
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -95,11 +101,12 @@ struct ClerkTests {
     try await clerk.signOut()
     #expect(requestHandled.value)
     let event = await eventTask.value
-    var didReceiveSignedOutEvent = false
-    if case .signedOut? = event {
-      didReceiveSignedOutEvent = true
+    guard case let .signedOut(session: eventSession)? = event else {
+      Issue.record("Expected signedOut auth event")
+      return
     }
-    #expect(didReceiveSignedOutEvent)
+    #expect(eventSession.id == signedOutSession.id)
+    #expect(eventSession.status == .removed)
   }
 
   @MainActor
@@ -119,7 +126,7 @@ struct ClerkTests {
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mockSignedOut))
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: signedOutSession, client: .mockSignedOut))
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -129,12 +136,13 @@ struct ClerkTests {
     try await clerk.signOut(sessionId: Session.mock.id)
     #expect(requestHandled.value)
     let event = await eventTask.value
-    var didReceiveSignedOutEvent = false
-    if case .signedOut? = event {
-      didReceiveSignedOutEvent = true
+    guard case let .signedOut(session: eventSession)? = event else {
+      Issue.record("Expected signedOut auth event")
+      return
     }
-    #expect(didReceiveSignedOutEvent)
-  }
+    #expect(eventSession.id == signedOutSession.id)
+    #expect(eventSession.status == .removed)
+}
 
   @MainActor
   @Test(

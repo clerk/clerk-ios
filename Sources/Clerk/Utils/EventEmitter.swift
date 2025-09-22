@@ -104,5 +104,5 @@ public enum AuthEvent: Sendable {
     /// The current sign up was completed.
     case signUpCompleted(signUp: SignUp)
     /// A session was signed out.
-    case signedOut
+    case signedOut(session: Session)
 }

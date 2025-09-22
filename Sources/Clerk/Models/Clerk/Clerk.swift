@@ -44,10 +44,6 @@ final public class Clerk {
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
             }
-
-            if shouldEmitSignedOutEvent(previousClient: oldValue, newClient: client) {
-                authEventEmitter.send(.signedOut)
-            }
         }
     }
     /// The telemetry collector for development diagnostics.
@@ -158,43 +154,6 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
-
-    private func shouldEmitSignedOutEvent(previousClient: Client?, newClient: Client?) -> Bool {
-        guard let previousClient else { return false }
-
-        if previousClient.sessions.isEmpty {
-            return false
-        }
-
-        guard let newClient else {
-            return true
-        }
-
-        if let previousActiveSessionId = previousClient.lastActiveSessionId {
-            if let session = newClient.sessions.first(where: { $0.id == previousActiveSessionId }) {
-                return session.status != .active
-            }
-
-            return true
-        }
-
-        let previouslyActiveSessions = previousClient.activeSessions
-        if previouslyActiveSessions.isEmpty {
-            return false
-        }
-
-        for session in previouslyActiveSessions {
-            guard let updatedSession = newClient.sessions.first(where: { $0.id == session.id }) else {
-                return true
-            }
-
-            if updatedSession.status != .active {
-                return true
-            }
-        }
-
-        return false
-    }
 }
 
 extension Clerk {

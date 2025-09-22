@@ -18,6 +18,10 @@ struct ClerkEventEmitterRequestProcessor: RequestPostprocessor {
             if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response, signUp.status == .complete {
                 Clerk.shared.authEventEmitter.send(.signUpCompleted(signUp: signUp))
             }
+
+            if let session = try? JSONDecoder.clerkDecoder.decode(ClientResponse<Session>.self, from: data).response, session.status == .removed {
+                Clerk.shared.authEventEmitter.send(.signedOut(session: session))
+            }
         }
     }
 }

@@ -31,7 +31,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     public let id: String
 
     /// The current state of the session.
-    public let status: SessionStatus
+    public var status: SessionStatus
 
     /// The time the session expires and will cease to be active.
     public let expireAt: Date
