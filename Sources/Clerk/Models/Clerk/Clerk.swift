@@ -44,7 +44,6 @@ final public class Clerk {
                 logPendingSessionStatusIfNeeded(for: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
-                loggedPendingSessionIds.removeAll()
             }
         }
     }
@@ -148,9 +147,6 @@ final public class Clerk {
         }
     }
 
-    /// Tracks session IDs that have already triggered the pending status log.
-    private var loggedPendingSessionIds: Set<String> = []
-
     /// Holds a reference to the task performed when the app will enter the foreground.
     private var willEnterForegroundTask: Task<Void, Error>?
 
@@ -237,14 +233,14 @@ extension Clerk {
     // MARK: - Private Properties
 
     private func logPendingSessionStatusIfNeeded(for client: Client) {
-        let pendingSessionIds = Set(client.sessions.filter { $0.status == .pending }.map(\.id))
-        let hasNewPendingSession = !pendingSessionIds.subtracting(loggedPendingSessionIds).isEmpty
+        let signInComplete = client.signIn?.status == .complete
+        let signUpComplete = client.signUp?.status == .complete
 
-        loggedPendingSessionIds = pendingSessionIds
+        guard (signInComplete || signUpComplete),
+              client.sessions.contains(where: { $0.status == .pending })
+        else { return }
 
-        guard hasNewPendingSession else { return }
-
-        let message = "Your session is currently pending and requires additional steps to become active. Please review the remaining session tasks."
+        let message = "You have successfully authenticated but your session is in pending status. Please see the remaining session tasks on the current session in order for your session to become \"active\"."
         ClerkLogger.info(message, debugMode: true)
     }
 
