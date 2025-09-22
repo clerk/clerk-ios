@@ -93,3 +93,5 @@ iOSInjectionProject/
 
 # Documentation
 .docc-build/
+
+buildServer.json
