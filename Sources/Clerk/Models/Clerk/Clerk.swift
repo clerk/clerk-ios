@@ -41,7 +41,7 @@ final public class Clerk {
         didSet {
             if let client = client {
                 try? Container.shared.clerkService().saveClientToKeychain(client)
-                logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
+                logPendingSessionStatusIfNeeded(currentClient: client)
             } else {
                 try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
             }
@@ -155,6 +155,9 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
+
+    /// Stores the last pending session we emitted a warning for.
+    private var lastLoggedPendingSession: Session?
 }
 
 extension Clerk {
@@ -230,23 +233,48 @@ extension Clerk {
 
 extension Clerk {
 
-    private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
-        guard shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient) else { return }
+    private func logPendingSessionStatusIfNeeded(currentClient: Client) {
+        guard shouldLogPendingSessionStatus(currentClient: currentClient) else { return }
 
-        let message = "Your session is currently pending. Complete the remaining session tasks to activate it."
+        let tasksDescription: String
+        if let sessionId = currentClient.lastActiveSessionId,
+           let session = currentClient.sessions.first(where: { $0.id == sessionId }),
+           let tasks = session.tasks,
+           !tasks.isEmpty
+        {
+            let taskKeys = tasks.map(\.key).joined(separator: ", ")
+            tasksDescription = " Remaining session tasks: [\(taskKeys)]."
+        } else {
+            tasksDescription = ""
+        }
+
+        let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
         ClerkLogger.info(message, debugMode: true)
     }
 
-    func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
-        let pendingSessions = currentClient.sessions.filter { $0.status == .pending }
-
-        guard !pendingSessions.isEmpty else { return false }
-
-        return pendingSessions.contains { session in
-            guard let previousClient else { return true }
-            guard let previousSession = previousClient.sessions.first(where: { $0.id == session.id }) else { return true }
-            return previousSession.status != .pending
+    func shouldLogPendingSessionStatus(currentClient: Client) -> Bool {
+        guard let sessionId = currentClient.lastActiveSessionId,
+              let session = currentClient.sessions.first(where: { $0.id == sessionId })
+        else {
+            lastLoggedPendingSession = nil
+            return false
         }
+
+        if session.status == .pending {
+            if let lastSession = lastLoggedPendingSession,
+               lastSession.id == session.id,
+               lastSession.status == session.status,
+               (lastSession.tasks ?? []) == (session.tasks ?? [])
+            {
+                return false
+            }
+
+            lastLoggedPendingSession = session
+            return true
+        }
+
+        lastLoggedPendingSession = nil
+        return false
     }
 
     private func setupNotificationObservers() {

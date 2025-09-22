@@ -63,6 +63,9 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     /// The last time the session recorded activity of any kind.
     public var updatedAt: Date
 
+    /// The pending tasks required to activate this session.
+    public var tasks: [Task]?
+
     /// The last active token for the session.
     public var lastActiveToken: TokenResource?
 
@@ -79,6 +82,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         publicUserData: PublicUserData? = nil,
         createdAt: Date,
         updatedAt: Date,
+        tasks: [Task]? = nil,
         lastActiveToken: TokenResource? = nil
     ) {
         self.id = id
@@ -93,6 +97,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         self.publicUserData = publicUserData
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.tasks = tasks
         self.lastActiveToken = lastActiveToken
     }
 
@@ -104,7 +109,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         /// The session is valid, and all activity is allowed.
         case active
 
-        /// The session requires additional steps before becoming active.
+        /// Authentication is complete, but the session requires additional steps before becoming active.
         case pending
 
         /// The user signed out of the session, but the Session remains in the Client object.
@@ -126,6 +131,16 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
         public init(from decoder: Decoder) throws {
             self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+        }
+    }
+
+    public struct Task: Codable, Equatable, Sendable {
+
+        /// The key of the task.
+        public var key: String
+
+        public init(key: String) {
+            self.key = key
         }
     }
 }
@@ -260,6 +275,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 
@@ -285,6 +301,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 
@@ -301,6 +318,7 @@ extension Session {
         publicUserData: nil,
         createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
         updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+        tasks: [],
         lastActiveToken: nil
     )
 
