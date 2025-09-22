@@ -42,6 +42,109 @@ struct ClerkTests {
     #expect(clerk.session?.id == Session.mock.id)
   }
 
+  @MainActor
+  @Test func testPendingSessionLogsWhenNewPendingAppears() async throws {
+    let clerk = Clerk()
+    var pendingSession = Session.mock
+    pendingSession.id = "pending-1"
+    pendingSession.status = .pending
+
+    var currentClient = Client.mock
+    currentClient.id = "client-1"
+    currentClient.sessions = [pendingSession]
+    currentClient.lastActiveSessionId = pendingSession.id
+
+    #expect(clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: currentClient))
+  }
+
+  @MainActor
+  @Test func testPendingSessionLogsWhenStatusTransitionsToPending() async throws {
+    let clerk = Clerk()
+    var activeSession = Session.mock
+    activeSession.id = "session-1"
+    activeSession.status = .active
+
+    var pendingSession = Session.mock
+    pendingSession.id = "session-1"
+    pendingSession.status = .pending
+
+    var previousClient = Client.mock
+    previousClient.id = "client-1"
+    previousClient.sessions = [activeSession]
+    previousClient.lastActiveSessionId = activeSession.id
+
+    var currentClient = Client.mock
+    currentClient.id = "client-1"
+    currentClient.sessions = [pendingSession]
+    currentClient.lastActiveSessionId = pendingSession.id
+
+    #expect(
+      clerk.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
+    )
+  }
+
+  @MainActor
+  @Test func testPendingSessionSkipsLogWhenStillPending() async throws {
+    let clerk = Clerk()
+    var pendingSession = Session.mock
+    pendingSession.id = "session-1"
+    pendingSession.status = .pending
+
+    var previousClient = Client.mock
+    previousClient.id = "client-1"
+    previousClient.sessions = [pendingSession]
+    previousClient.lastActiveSessionId = pendingSession.id
+
+    let currentClient = previousClient
+
+    #expect(
+      !clerk.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
+    )
+  }
+
+  @MainActor
+  @Test func testPendingSessionLogsWhenNewPendingIdArrives() async throws {
+    let clerk = Clerk()
+    var previousPending = Session.mock
+    previousPending.id = "session-1"
+    previousPending.status = .pending
+
+    var newPending = Session.mock
+    newPending.id = "session-2"
+    newPending.status = .pending
+
+    var previousClient = Client.mock
+    previousClient.id = "client-1"
+    previousClient.sessions = [previousPending]
+    previousClient.lastActiveSessionId = previousPending.id
+
+    var currentClient = Client.mock
+    currentClient.id = "client-1"
+    currentClient.sessions = [newPending]
+    currentClient.lastActiveSessionId = newPending.id
+
+    #expect(
+      clerk.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
+    )
+  }
+
+  @MainActor
+  @Test func testPendingSessionSkipsLogWhenNoPendingSessions() async throws {
+    let clerk = Clerk()
+    var activeSession = Session.mock
+    activeSession.id = "session-1"
+    activeSession.status = .active
+
+    var currentClient = Client.mock
+    currentClient.id = "client-1"
+    currentClient.sessions = [activeSession]
+    currentClient.lastActiveSessionId = activeSession.id
+
+    #expect(
+      !clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: currentClient)
+    )
+  }
+
 }
 
 @Suite(.serialized) final class ClerkSerializedTests {

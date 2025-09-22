@@ -230,23 +230,23 @@ extension Clerk {
 
 extension Clerk {
 
-    // MARK: - Private Properties
-
     private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
+        guard shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient) else { return }
+
+        let message = "Your session is currently pending. Complete the remaining session tasks to activate it."
+        ClerkLogger.info(message, debugMode: true)
+    }
+
+    func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
         let pendingSessions = currentClient.sessions.filter { $0.status == .pending }
 
-        guard !pendingSessions.isEmpty else { return }
+        guard !pendingSessions.isEmpty else { return false }
 
-        let shouldLog = pendingSessions.contains { session in
+        return pendingSessions.contains { session in
             guard let previousClient else { return true }
             guard let previousSession = previousClient.sessions.first(where: { $0.id == session.id }) else { return true }
             return previousSession.status != .pending
         }
-
-        guard shouldLog else { return }
-
-        let message = "Your session is currently pending. Complete the remaining session tasks to activate it."
-        ClerkLogger.info(message, debugMode: true)
     }
 
     private func setupNotificationObservers() {
