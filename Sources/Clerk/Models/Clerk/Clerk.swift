@@ -233,21 +233,19 @@ extension Clerk {
     // MARK: - Private Properties
 
     private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
-        guard let previousClient else { return }
+        let pendingSessions = currentClient.sessions.filter { $0.status == .pending }
 
-        let previousStatuses = previousClient.sessions.reduce(into: [String: Session.SessionStatus]()) { result, session in
-            result[session.id] = session.status
+        guard !pendingSessions.isEmpty else { return }
+
+        let shouldLog = pendingSessions.contains { session in
+            guard let previousClient else { return true }
+            guard let previousSession = previousClient.sessions.first(where: { $0.id == session.id }) else { return true }
+            return previousSession.status != .pending
         }
 
-        let hasPendingTransition = currentClient.sessions.contains { session in
-            guard session.status == .pending else { return false }
-            guard let previousStatus = previousStatuses[session.id] else { return true }
-            return previousStatus != .pending
-        }
+        guard shouldLog else { return }
 
-        guard hasPendingTransition else { return }
-
-        let message = "You have successfully authenticated but your session is in pending status. Please see the remaining session tasks on the current session in order for your session to become \"active\"."
+        let message = "Your session is currently pending. Complete the remaining session tasks to activate it."
         ClerkLogger.info(message, debugMode: true)
     }
 
