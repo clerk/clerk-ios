@@ -232,6 +232,8 @@ public struct UserProfileView: View {
                     switch event {
                     case .signInCompleted, .signUpCompleted:
                         sharedState.authViewIsPresented = false
+                    default:
+                        break
                     }
                 }
             }

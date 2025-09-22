@@ -6,6 +6,12 @@ import Testing
 
 @testable import Clerk
 
+private let signedOutSession: Session = {
+  var session = Session.mock
+  session.status = .removed
+  return session
+}()
+
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
 
@@ -70,13 +76,22 @@ struct ClerkTests {
 
   @MainActor
   @Test func testSignOutRequest() async throws {
-    let clerk = Clerk()
+    let clerk = Clerk.shared
+    clerk.client = .mock
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions")
+    let eventTask = Task<AuthEvent?, Never> { @MainActor in
+      for await event in clerk.authEventEmitter.events {
+        if case .signedOut = event {
+          return event
+        }
+      }
+      return nil
+    }
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: signedOutSession, client: .mockSignedOut))
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -85,17 +100,33 @@ struct ClerkTests {
     mock.register()
     try await clerk.signOut()
     #expect(requestHandled.value)
+    let event = await eventTask.value
+    guard case let .signedOut(session: eventSession)? = event else {
+      Issue.record("Expected signedOut auth event")
+      return
+    }
+    #expect(eventSession.id == signedOutSession.id)
+    #expect(eventSession.status == .removed)
   }
 
   @MainActor
   @Test func testSignOutWithSessionIdRequest() async throws {
-    let clerk = Clerk()
+    let clerk = Clerk.shared
+    clerk.client = .mock
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sessions/\(Session.mock.id)/remove")
+    let eventTask = Task<AuthEvent?, Never> { @MainActor in
+      for await event in clerk.authEventEmitter.events {
+        if case .signedOut = event {
+          return event
+        }
+      }
+      return nil
+    }
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: .mock))
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: signedOutSession, client: .mockSignedOut))
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -104,7 +135,14 @@ struct ClerkTests {
     mock.register()
     try await clerk.signOut(sessionId: Session.mock.id)
     #expect(requestHandled.value)
-  }
+    let event = await eventTask.value
+    guard case let .signedOut(session: eventSession)? = event else {
+      Issue.record("Expected signedOut auth event")
+      return
+    }
+    #expect(eventSession.id == signedOutSession.id)
+    #expect(eventSession.status == .removed)
+}
 
   @MainActor
   @Test(
