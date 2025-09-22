@@ -353,6 +353,24 @@ struct UserTests {
     Container.shared.reset()
   }
 
+  @Test func testUserReloadRequest() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalUrl = mockBaseUrl.appending(path: "/v1/me")
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock))
+      ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url!.query()!.contains("_clerk_session_id"))
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    try await User.mock.reload()
+    #expect(requestHandled.value)
+  }
+
   @Test func testUserUpdateRequest() async throws {
     let requestHandled = LockIsolated(false)
     let originalUrl = mockBaseUrl.appending(path: "/v1/me")

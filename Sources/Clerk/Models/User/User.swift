@@ -207,6 +207,12 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 
 extension User {
 
+    /// Reloads the user from the Clerk API.
+    @discardableResult @MainActor
+    public func reload() async throws -> User {
+        try await Container.shared.userService().reload()
+    }
+
     /// Updates the user's attributes. Use this method to save information you collected about the user.
     ///
     /// The appropriate settings must be enabled in the Clerk Dashboard for the user to be able to update their attributes.
