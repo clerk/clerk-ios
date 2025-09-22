@@ -183,9 +183,20 @@ struct TelemetryTests {
             UserDefaults.standard.removeObject(forKey: "clerk_telemetry_throttler")
         }
         
+        private func makeIsolatedDefaults(for function: StaticString) -> (defaults: UserDefaults, suiteName: String) {
+            let suiteName = "TelemetryEventThrottlerTests.\(String(describing: function)).\(UUID().uuidString)"
+            guard let defaults = UserDefaults(suiteName: suiteName) else {
+                fatalError("Unable to create UserDefaults suite: \(suiteName)")
+            }
+            defaults.removePersistentDomain(forName: suiteName)
+            return (defaults, suiteName)
+        }
+        
         @Test("Same event with different payloads")
         func testSameEventWithDifferentPayloads() async throws {
-            let throttler = TelemetryEventThrottler()
+            let (defaults, suiteName) = makeIsolatedDefaults(for: #function)
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let throttler = TelemetryEventThrottler(userDefaults: defaults)
             
             let event1 = TelemetryEvent(
                 event: "TEST_EVENT",
@@ -218,14 +229,13 @@ struct TelemetryTests {
             
             #expect(isThrottled1Second == true)
             #expect(isThrottled2Second == true)
-            
-            // Clean up
-            UserDefaults.standard.removeObject(forKey: "clerk_telemetry_throttler")
         }
         
         @Test("Key generation consistency")
         func testKeyGeneration() async throws {
-            let throttler = TelemetryEventThrottler()
+            let (defaults, suiteName) = makeIsolatedDefaults(for: #function)
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let throttler = TelemetryEventThrottler(userDefaults: defaults)
             
             let event1 = TelemetryEvent(
                 event: "TEST_EVENT",
@@ -259,7 +269,9 @@ struct TelemetryTests {
         
         @Test("Throttling works for identical events")
         func testThrottlingBehavior() async throws {
-            let throttler = TelemetryEventThrottler()
+            let (defaults, suiteName) = makeIsolatedDefaults(for: #function)
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let throttler = TelemetryEventThrottler(userDefaults: defaults)
             
             let event = TelemetryEvent(
                 event: "TEST_EVENT",
@@ -277,14 +289,13 @@ struct TelemetryTests {
             // Behavior: Identical event should be throttled
             let isThrottled2 = await throttler.isEventThrottled(event)
             #expect(isThrottled2 == true)
-            
-            // Clean up
-            UserDefaults.standard.removeObject(forKey: "clerk_telemetry_throttler")
         }
         
         @Test("Multiple different events work independently")
         func testMultipleEventsIndependentThrottling() async throws {
-            let throttler = TelemetryEventThrottler()
+            let (defaults, suiteName) = makeIsolatedDefaults(for: #function)
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let throttler = TelemetryEventThrottler(userDefaults: defaults)
             
             let event1 = TelemetryEvent(
                 event: "EVENT_ONE",
@@ -317,16 +328,15 @@ struct TelemetryTests {
             
             #expect(isEvent1ThrottledAgain == true) // Same as first event1
             #expect(isEvent2ThrottledAgain == true) // Same as first event2
-            
-            // Clean up
-            UserDefaults.standard.removeObject(forKey: "clerk_telemetry_throttler")
         }
         
         @Test("Multiple throttler instances share storage")
         func testMultipleThrottlers() async throws {
+            let (defaults, suiteName) = makeIsolatedDefaults(for: #function)
+            defer { defaults.removePersistentDomain(forName: suiteName) }
             // Test that multiple throttler instances share the same storage
-            let throttler1 = TelemetryEventThrottler()
-            let throttler2 = TelemetryEventThrottler()
+            let throttler1 = TelemetryEventThrottler(userDefaults: defaults)
+            let throttler2 = TelemetryEventThrottler(userDefaults: defaults)
             
             let event = TelemetryEvent(
                 event: "TEST_EVENT",
@@ -344,9 +354,6 @@ struct TelemetryTests {
             // Second throttler should see it as throttled
             let isThrottled2 = await throttler2.isEventThrottled(event)
             #expect(isThrottled2 == true)
-            
-            // Clean up
-            UserDefaults.standard.removeObject(forKey: "clerk_telemetry_throttler")
         }
     }
     

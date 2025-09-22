@@ -13,10 +13,14 @@ import Foundation
 /// contents. If the same event is recorded within the TTL window, it is
 /// considered throttled.
 actor TelemetryEventThrottler {
+    private let userDefaults: UserDefaults
     private let storageKey = "clerk_telemetry_throttler"
     private let cacheTtl: TimeInterval = 24 * 60 * 60 // 24 hours
     private var memoryCache: [String: TimeInterval]? = nil
     
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+    }
 
     func isEventThrottled(_ event: TelemetryEvent) async -> Bool {
         // Lazily initialize in-memory cache from persistent storage
@@ -74,8 +78,7 @@ actor TelemetryEventThrottler {
     }
 
     private func loadCache() -> [String: TimeInterval] {
-        let defaults = UserDefaults.standard
-        guard let data = defaults.data(forKey: storageKey) else { return [:] }
+        guard let data = userDefaults.data(forKey: storageKey) else { return [:] }
         if let decoded = try? JSONDecoder().decode([String: TimeInterval].self, from: data) {
             return decoded
         }
@@ -83,9 +86,8 @@ actor TelemetryEventThrottler {
     }
 
     private func saveCache(_ cache: [String: TimeInterval]) {
-        let defaults = UserDefaults.standard
         if let data = try? JSONEncoder().encode(cache) {
-            defaults.set(data, forKey: storageKey)
+            userDefaults.set(data, forKey: storageKey)
         }
     }
 
@@ -131,5 +133,4 @@ actor TelemetryEventThrottler {
         return String(data: data, encoding: .utf8) ?? "{}"
     }
 }
-
 
