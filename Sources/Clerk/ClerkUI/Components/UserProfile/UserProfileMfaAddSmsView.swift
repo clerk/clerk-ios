@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import PhoneNumberKit
 import SwiftUI
 
@@ -153,7 +152,7 @@ extension UserProfileMfaAddSmsView {
 
 struct AddMfaSmsRow: View {
     @Environment(\.clerkTheme) private var theme
-    let utility = Container.shared.phoneNumberUtility()
+    let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
 
     let phoneNumber: PhoneNumber
     let isSelected: Bool

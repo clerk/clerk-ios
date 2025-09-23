@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
-import FactoryKit
 import Foundation
+import Get
 
 /// Represents an organization invitation and its associated details.
 public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable {
@@ -63,7 +63,13 @@ extension OrganizationInvitation {
     /// Revokes the invitation for the email it corresponds to.
     @discardableResult @MainActor
     public func revoke() async throws -> OrganizationInvitation {
-        try await Container.shared.organizationService().revokeOrganizationInvitation(organizationId, id)
+        let request = Request<ClientResponse<OrganizationInvitation>>(
+            path: "/v1/organizations/\(organizationId)/invitations/\(id)",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
 }

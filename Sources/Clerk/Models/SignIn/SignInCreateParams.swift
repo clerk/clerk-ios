@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
-import FactoryKit
 import Foundation
 
 extension SignIn {
@@ -124,14 +123,14 @@ extension SignIn {
             case .oauth(let oauthProvider, let redirectUrl):
                 .init(
                     strategy: oauthProvider.strategy,
-                    redirectUrl: redirectUrl ?? Container.shared.clerkSettings().redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
                 )
 
             case .enterpriseSSO(let emailAddress, let redirectUrl):
                 .init(
                     strategy: "enterprise_sso",
                     identifier: emailAddress,
-                    redirectUrl: redirectUrl ?? Container.shared.clerkSettings().redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
                 )
 
             case .idToken(let provider, let idToken):

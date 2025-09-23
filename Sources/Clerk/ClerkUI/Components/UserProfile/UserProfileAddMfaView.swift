@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import SwiftUI
 
 struct UserProfileAddMfaView: View {
@@ -147,16 +146,11 @@ extension UserProfileAddMfaView {
 }
 
 #Preview {
-    Container.shared.userService.preview { @MainActor in
-        UserService(createTotp: {
-            try await Task.sleep(for: .seconds(1))
-            return .mock
-        })
-    }
-
-    UserProfileAddMfaView()
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return UserProfileAddMfaView()
+        .environment(\.clerk, clerk)
         .environment(\.clerkTheme, .clerk)
+        .environment(\.userProfileSharedState, UserProfileView.SharedState())
 }
 
 #endif

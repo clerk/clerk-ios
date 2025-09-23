@@ -5,15 +5,8 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import FactoryKit
 import Foundation
 import Get
-
-extension Container {
-    var apiClient: Factory<APIClient> {
-        self { APIClient(baseURL: nil) }.cached
-    }
-}
 
 protocol RequestPreprocessor {
     static func process(request: inout URLRequest) async throws

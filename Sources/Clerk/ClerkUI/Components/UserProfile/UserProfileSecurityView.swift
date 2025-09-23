@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import SwiftUI
 
 struct UserProfileSecurityView: View {
@@ -88,11 +87,13 @@ struct UserProfileSecurityView: View {
 }
 
 #Preview {
-    NavigationStack {
+    let clerk = Clerk.mock
+    return NavigationStack {
         UserProfileSecurityView()
     }
-    .environment(\.clerk, .mock)
+    .environment(\.clerk, clerk)
     .environment(\.clerkTheme, .clerk)
+    .environment(\.userProfileSharedState, UserProfileView.SharedState())
 }
 
 #endif

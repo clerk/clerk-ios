@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 3/14/25.
 //
 
-import FactoryKit
 import Foundation
+import Get
 
 /// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
@@ -81,7 +81,13 @@ extension OrganizationSuggestion {
     /// - Returns: The accepted ``OrganizationSuggestion``.
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationSuggestion {
-        try await Container.shared.organizationService().acceptOrganizationSuggestion(id)
+        let request = Request<ClientResponse<OrganizationSuggestion>>(
+            path: "/v1/me/organization_suggestions/\(id)/accept",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
 }

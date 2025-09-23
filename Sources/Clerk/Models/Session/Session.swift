@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 10/5/23.
 //
 
-import FactoryKit
 import Foundation
+import Get
 
 /**
  The Session object is an abstraction over an HTTP session. It models the period of information exchange between a user and the server.
@@ -213,7 +213,13 @@ extension Session {
     /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
-        try await Container.shared.sessionService().revoke(id)
+        let request = Request<ClientResponse<Session>>(
+            path: "/v1/me/sessions/\(id)/revoke",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
     /**

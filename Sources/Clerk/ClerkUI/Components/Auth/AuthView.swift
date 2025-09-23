@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import SwiftUI
 
 /// A comprehensive authentication view that handles user sign-in and sign-up flows.

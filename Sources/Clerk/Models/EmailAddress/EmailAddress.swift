@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import FactoryKit
 import Foundation
+import Get
 
 /// The `EmailAddress` object is a model around an email address.
 ///
@@ -60,7 +60,14 @@ extension EmailAddress {
     ///     - email: The email address to add to the current user.
     @discardableResult @MainActor
     public static func create(_ email: String) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().create(email)
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "v1/me/email_addresses",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: ["email_address": email]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
     /// Prepares the verification process for this email address.
@@ -78,7 +85,14 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().prepareVerification(id, strategy)
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "/v1/me/email_addresses/\(id)/prepare_verification",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
     /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -95,13 +109,26 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().attemptVerification(id, strategy)
+        let request = Request<ClientResponse<EmailAddress>>(
+            path: "/v1/me/email_addresses/\(id)/attempt_verification",
+            method: .post,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: strategy.requestBody
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
     /// Deletes this email address.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await Container.shared.emailAddressService().destroy(id)
+        let request = Request<ClientResponse<DeletedObject>>(
+            path: "/v1/me/email_addresses/\(id)",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
 }

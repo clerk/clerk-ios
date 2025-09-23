@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import Kingfisher
 import SwiftUI
 
@@ -159,14 +158,12 @@ struct UserProfileDetailView: View {
 }
 
 #Preview {
-    Container.shared.clerk.preview { @MainActor in
-        .mock
-    }
-
-    NavigationStack {
+    let clerk = Clerk.mock
+    return NavigationStack {
         UserProfileDetailView()
-            .environment(\.clerk, .mock)
+            .environment(\.clerk, clerk)
             .environment(\.clerkTheme, .clerk)
+            .environment(\.userProfileSharedState, UserProfileView.SharedState())
     }
 }
 

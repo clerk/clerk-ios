@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 1/8/25.
 //
 
-import FactoryKit
 import Foundation
 
 struct ClerkHeaderRequestProcessor: RequestPreprocessor {
@@ -13,7 +12,8 @@ struct ClerkHeaderRequestProcessor: RequestPreprocessor {
     @MainActor
     static func process(request: inout URLRequest) async throws {
         // Set the device token on every request
-        if let deviceToken = try? Container.shared.keychain().string(forKey: "clerkDeviceToken") {
+        let keychain = Clerk.shared.dependencyContainer.keychain
+        if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         

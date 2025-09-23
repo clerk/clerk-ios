@@ -29,19 +29,19 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
     var sdkVersion: String { Clerk.version }
 
     func instanceTypeString() async -> String {
-        await Clerk.shared.instanceType.rawValue
+        Clerk.shared.instanceType.rawValue
     }
 
     func isTelemetryEnabled() async -> Bool {
-        await Clerk.shared.settings.telemetryEnabled
+        Clerk.shared.settings.telemetryEnabled
     }
 
     func isDebugModeEnabled() async -> Bool {
-        await Clerk.shared.settings.debugMode
+        Clerk.shared.settings.debugMode
     }
 
     func publishableKey() async -> String? {
-        let key = await Clerk.shared.publishableKey
+        let key = Clerk.shared.publishableKey
         return key.isEmpty ? nil : key
     }
 }

@@ -7,19 +7,18 @@
 
 #if os(iOS)
 
-import FactoryKit
 import Foundation
 import PhoneNumberKit
 
 extension String {
     var formattedAsPhoneNumberIfPossible: String {
-        let utility = Container.shared.phoneNumberUtility()
+        let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
         let partialFormatter = PartialFormatter(utility: utility, withPrefix: true)
         return partialFormatter.formatPartial(self).nonBreaking
     }
 
     var isPhoneNumber: Bool {
-        let utility = Container.shared.phoneNumberUtility()
+        let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
         return utility.isValidPhoneNumber(self)
     }
 }

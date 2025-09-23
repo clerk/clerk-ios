@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 2/6/25.
 //
 
-import FactoryKit
 import Foundation
+import Get
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
@@ -75,7 +75,13 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to delete membership: missing userId")
         }
 
-        return try await Container.shared.organizationService().destroyOrganizationMembership(organization.id, userId)
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
+            method: .delete,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
     /// Updates the member's role in the organization.
@@ -89,7 +95,16 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
 
-        return try await Container.shared.organizationService().updateOrganizationMembership(organization.id, userId, role)
+        let request = Request<ClientResponse<OrganizationMembership>>(
+            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
+            method: .patch,
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+            body: [
+                "role": role
+            ]
+        )
+
+        return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 
 }

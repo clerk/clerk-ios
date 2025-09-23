@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import SwiftUI
 
 struct SignInFactorCodeView: View {
@@ -358,89 +357,38 @@ extension SignInFactorCodeView {
 }
 
 #Preview("Email Code") {
-    Container.shared.signInService.preview { @MainActor in
-        .init(
-            prepareFirstFactor: { _, _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            },
-            attemptFirstFactor: { _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            }
-        )
-    }
-
-    SignInFactorCodeView(factor: .mockEmailCode)
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return SignInFactorCodeView(factor: .mockEmailCode)
+        .environment(\.clerk, clerk)
+        .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Phone Code") {
-    Container.shared.signInService.preview { @MainActor in
-        .init(
-            prepareFirstFactor: { _, _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            },
-            attemptFirstFactor: { _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            }
-        )
-    }
-
-    SignInFactorCodeView(factor: .mockPhoneCode)
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return SignInFactorCodeView(factor: .mockPhoneCode)
+        .environment(\.clerk, clerk)
+        .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Reset Password Email Code") {
-    Container.shared.signInService.preview { @MainActor in
-        .init(
-            prepareFirstFactor: { _, _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            },
-            attemptFirstFactor: { _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            }
-        )
-    }
-
-    SignInFactorCodeView(factor: .mockResetPasswordEmailCode)
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return SignInFactorCodeView(factor: .mockResetPasswordEmailCode)
+        .environment(\.clerk, clerk)
+        .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Reset Password Phone Code") {
-    Container.shared.signInService.preview { @MainActor in
-        .init(
-            prepareFirstFactor: { _, _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            },
-            attemptFirstFactor: { _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            }
-        )
-    }
-
-    SignInFactorCodeView(factor: .mockResetPasswordPhoneCode)
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return SignInFactorCodeView(factor: .mockResetPasswordPhoneCode)
+        .environment(\.clerk, clerk)
+        .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("TOTP Code") {
-    Container.shared.signInService.preview { @MainActor in
-        .init(
-            attemptSecondFactor: { _, _ in
-                try! await Task.sleep(for: .seconds(1))
-                return .mock
-            }
-        )
-    }
-
-    SignInFactorCodeView(factor: .mockTotp)
-        .environment(\.clerk, .mock)
+    let clerk = Clerk.mock
+    return SignInFactorCodeView(factor: .mockTotp)
+        .environment(\.clerk, clerk)
+        .environment(\.clerkTheme, .clerk)
 }
 
 #endif

@@ -5,11 +5,9 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import FactoryKit
 import Foundation
 import Get
 import RegexBuilder
-import SimpleKeychain
 
 #if canImport(UIKit)
 import UIKit
@@ -18,12 +16,38 @@ import UIKit
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
-@MainActor
 @Observable
 final public class Clerk {
 
-    /// The shared Clerk instance.
-    public nonisolated static let shared = Container.shared.clerk()
+    private static var configuredClerk: Clerk?
+
+    /// The configured shared instance of ``Clerk``.
+    ///
+    /// - Warning: You must call ``configure(publishableKey:settings:)`` before accessing this.
+    public nonisolated static var shared: Clerk {
+        guard let clerk = configuredClerk else {
+            assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:settings:)")
+            return Clerk()
+        }
+        return clerk
+    }
+
+    /// Tracks whether ``Clerk.configure`` has been called.
+    public private(set) static var isConfigured = false
+
+    /// Configures the shared clerk instance.
+    @MainActor
+    public static func configure(
+        publishableKey: String,
+        settings: Settings = .init()
+    ) {
+        let container = DependencyContainer(settings: settings)
+        let clerk = Clerk(dependencyContainer: container)
+        clerk.publishableKey = publishableKey
+        clerk.settings = settings
+        configuredClerk = clerk
+        isConfigured = true
+    }
 
     /// A getter to see if the Clerk object is ready for use or not.
     private(set) public var isLoaded: Bool = false
@@ -40,10 +64,10 @@ final public class Clerk {
     internal(set) public var client: Client? {
         didSet {
             if let client = client {
-                try? Container.shared.clerkService().saveClientToKeychain(client)
+                try? saveClientToKeychain(client)
                 logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
             } else {
-                try? Container.shared.keychain().deleteItem(forKey: "cachedClient")
+                try? dependencyContainer.keychain.deleteItem(forKey: "cachedClient")
             }
         }
     }
@@ -98,52 +122,31 @@ final public class Clerk {
     /// The Clerk environment for the instance.
     var environment = Environment() {
         didSet {
-            try? Container.shared.clerkService().saveEnvironmentToKeychain(environment)
+            try? saveEnvironmentToKeychain(environment)
         }
     }
 
     // MARK: - Private Properties
 
-    nonisolated init() {
-        Task { @MainActor in
-            loadCachedClient()
-            loadCachedEnvironment()
-        }
+    let dependencyContainer: DependencyContainer
+
+    init(dependencyContainer: DependencyContainer = DependencyContainer()) {
+        self.dependencyContainer = dependencyContainer
+        loadCachedClient()
+        loadCachedEnvironment()
     }
 
     /// Frontend API URL.
     private(set) var frontendApiUrl: String = "" {
         didSet {
-            Container.shared.apiClient.register { [frontendApiUrl] in
-                APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
-                    configuration.delegate = ClerkAPIClientDelegate()
-                    configuration.decoder = .clerkDecoder
-                    configuration.encoder = .clerkEncoder
-                    configuration.sessionConfiguration.httpAdditionalHeaders = [
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "clerk-api-version": "2025-04-10",
-                        "x-ios-sdk-version": Clerk.version,
-                        "x-mobile": "1"
-                    ]
-                }
-            }
+            dependencyContainer.updateFrontendAPIURL(frontendApiUrl)
         }
     }
 
     /// The configuration settings for this Clerk instance.
     var settings: Settings = .init() {
         didSet {
-            Container.shared.clerkSettings.register { [settings] in
-                settings
-            }
-
-            Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
-                SimpleKeychain(
-                    service: keychainConfig.service,
-                    accessGroup: keychainConfig.accessGroup,
-                    accessibility: .afterFirstUnlockThisDeviceOnly
-                )
-            }
+            dependencyContainer.updateSettings(settings, keychain: dependencyContainer.keychain)
         }
     }
 
@@ -160,19 +163,9 @@ final public class Clerk {
 
 extension Clerk {
 
-    /// Configures the shared clerk instance.
-    /// - Parameters:
-    ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    public func configure(
-        publishableKey: String,
-        settings: Settings = .init()
-    ) {
-        self.publishableKey = publishableKey
-        self.settings = settings
-    }
-
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
+    @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             ClerkLogger.error("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
@@ -214,8 +207,23 @@ extension Clerk {
     /// ```swift
     /// try await clerk.signOut()
     /// ```
+    @MainActor
     public func signOut(sessionId: String? = nil) async throws {
-        try await Container.shared.clerkService().signOut(sessionId)
+        if let sessionId {
+            let request = Request(
+                path: "/v1/client/sessions/\(sessionId)/remove",
+                method: .post
+            )
+
+            try await dependencyContainer.apiClient.send(request)
+        } else {
+            let request = Request(
+                path: "/v1/client/sessions",
+                method: .delete
+            )
+
+            try await dependencyContainer.apiClient.send(request)
+        }
     }
 
     /// A method used to set the active session.
@@ -224,8 +232,15 @@ extension Clerk {
     ///
     /// - Parameter sessionId: The session ID to be set as active.
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
+    @MainActor
     public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-        try await Container.shared.clerkService().setActive(sessionId, organizationId)
+        let request = Request(
+            path: "/v1/client/sessions/\(sessionId)/touch",
+            method: .post,
+            body: ["active_organization_id": organizationId ?? ""]
+        )
+
+        try await dependencyContainer.apiClient.send(request)
     }
 }
 
@@ -287,17 +302,17 @@ extension Clerk {
                 self.startSessionTokenPolling()
 
                 // Start both functions concurrently without waiting for them
-                Task {
+                Task { @MainActor in
                     try? await Client.get()
                 }
 
-                Task {
+                Task { @MainActor in
                     try? await Environment.get()
                 }
             }
         }
 
-        didEnterBackgroundTask = Task {
+        didEnterBackgroundTask = Task { @MainActor in
             for await _ in NotificationCenter.default.notifications(
                 named: UIApplication.didEnterBackgroundNotification
             ).map({ _ in () }) {
@@ -317,7 +332,7 @@ extension Clerk {
             return
         }
 
-        sessionPollingTask = Task(priority: .background) {
+        sessionPollingTask = Task(priority: .background) { @MainActor in
             repeat {
                 if let session = session {
                     _ = try? await session.getToken()
@@ -334,7 +349,7 @@ extension Clerk {
 
     private func attestDeviceIfNeeded(environment: Environment) {
         if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
-            Task.detached {
+            Task {
                 do {
                     try await AppAttestHelper.performDeviceAttestation()
                 } catch {
@@ -346,7 +361,7 @@ extension Clerk {
 
     private func loadCachedClient() {
         do {
-            if let cachedClient = try Container.shared.clerkService().loadClientFromKeychain() {
+            if let cachedClient = try loadClientFromKeychain() {
                 // Only set cached client if we don't already have one
                 // This prevents overwriting fresh data during load()
                 if self.client == nil {
@@ -360,7 +375,7 @@ extension Clerk {
 
     private func loadCachedEnvironment() {
         do {
-            if let cachedEnvironment = try Container.shared.clerkService().loadEnvironmentFromKeychain() {
+            if let cachedEnvironment = try loadEnvironmentFromKeychain() {
                 // Only set cached environment if we don't already have fresh data
                 // This prevents overwriting fresh data during load()
                 if self.environment.isEmpty {
@@ -372,23 +387,31 @@ extension Clerk {
         }
     }
 
-}
-
-extension Container {
-
-    var clerk: Factory<Clerk> {
-        self { Clerk() }
-            .singleton
+    private func saveClientToKeychain(_ client: Client) throws {
+        let clientData = try JSONEncoder.clerkEncoder.encode(client)
+        try dependencyContainer.keychain.set(clientData, forKey: "cachedClient")
     }
 
-    var keychain: Factory<SimpleKeychain> {
-        self { SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly) }
-            .cached
+    private func loadClientFromKeychain() throws -> Client? {
+        guard let clientData = try? dependencyContainer.keychain.data(forKey: "cachedClient") else {
+            return nil
+        }
+        let decoder = JSONDecoder.clerkDecoder
+        return try decoder.decode(Client.self, from: clientData)
     }
 
-    var clerkSettings: Factory<Clerk.Settings> {
-        self { .init() }
-            .cached
+    private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
+        let encoder = JSONEncoder.clerkEncoder
+        let environmentData = try encoder.encode(environment)
+        try dependencyContainer.keychain.set(environmentData, forKey: "cachedEnvironment")
+    }
+
+    private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
+        guard let environmentData = try? dependencyContainer.keychain.data(forKey: "cachedEnvironment") else {
+            return nil
+        }
+        let decoder = JSONDecoder.clerkDecoder
+        return try decoder.decode(Clerk.Environment.self, from: environmentData)
     }
 
 }
@@ -422,3 +445,15 @@ extension EnvironmentValues {
     @Entry public var clerk = Clerk.shared
 }
 #endif
+
+extension Clerk {
+
+    @_spi(Testing)
+    public func configureForTesting(
+        publishableKey: String,
+        settings: Settings = .init()
+    ) {
+        self.publishableKey = publishableKey
+        self.settings = settings
+    }
+}
