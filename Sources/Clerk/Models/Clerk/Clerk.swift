@@ -24,7 +24,7 @@ final public class Clerk {
     /// The configured shared instance of ``Clerk``.
     ///
     /// - Warning: You must call ``configure(publishableKey:settings:)`` before accessing this.
-    public nonisolated static var shared: Clerk {
+    public static var shared: Clerk {
         guard let clerk = configuredClerk else {
             assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:settings:)")
             return Clerk()
@@ -36,7 +36,6 @@ final public class Clerk {
     public private(set) static var isConfigured = false
 
     /// Configures the shared clerk instance.
-    @MainActor
     public static func configure(
         publishableKey: String,
         settings: Settings = .init()
