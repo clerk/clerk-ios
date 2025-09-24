@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 ///The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
 ///
@@ -120,11 +119,10 @@ extension ExternalAccount {
     /// Deletes this external account.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/external_accounts/\(id)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/external_accounts/\(id)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

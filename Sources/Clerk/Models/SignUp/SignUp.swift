@@ -7,7 +7,6 @@
 
 import AuthenticationServices
 import Foundation
-import Get
 
 /// The `SignUp` object holds the state of the current sign-up and provides helper methods to navigate and complete the sign-up process.
 /// Once a sign-up is complete, a new user is created.
@@ -150,11 +149,10 @@ extension SignUp {
         var params = strategy.params
         params.legalAccepted = legalAccepted
 
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups",
-            method: .post,
-            body: params
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups") {
+            $0.method(.post)
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -178,11 +176,10 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups",
-            method: .post,
-            body: params
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups") {
+            $0.method(.post)
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -201,11 +198,10 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the changes.
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups/\(id)",
-            method: .patch,
-            body: params
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups/\(id)") {
+            $0.method(.patch)
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -224,11 +220,10 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification initiation.
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups/\(id)/prepare_verification",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups/\(id)/prepare_verification") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -245,11 +240,10 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups/\(id)/attempt_verification",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups/\(id)/attempt_verification") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -429,15 +423,15 @@ extension SignUp {
         if let rotatingTokenNonce {
             queryParams.append((
                 "rotating_token_nonce",
-                value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ))
         }
 
-        let request = Request<ClientResponse<SignUp>>(
-            path: "/v1/client/sign_ups/\(id)",
-            method: .get,
-            query: queryParams
-        )
+        let request = Request<ClientResponse<SignUp>>.build(path: "/v1/client/sign_ups/\(id)") {
+            if !queryParams.isEmpty {
+                $0.queryItems(queryParams)
+            }
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

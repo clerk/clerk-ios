@@ -8,7 +8,6 @@
 import CryptoKit
 import DeviceCheck
 import Foundation
-import Get
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
 struct AppAttestHelper {
@@ -27,10 +26,9 @@ struct AppAttestHelper {
   /// - Returns: A challenge string received from the server.
   /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
   private static func getChallenge() async throws -> String {
-    let request = Request<[String: String]>.init(
-      path: "/v1/client/device_attestation/challenges",
-      method: .post
-    )
+    let request = Request<[String: String]>.build(path: "/v1/client/device_attestation/challenges") {
+      $0.method(.post)
+    }
 
     let response = try await Clerk.shared.dependencyContainer.apiClient.send(request).value
 
@@ -79,11 +77,10 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier
     ]
 
-    let request = Request(
-      path: "/v1/client/device_attestation/verify",
-      method: .post,
-      body: body
-    )
+    let request = Request<NoContent>.build(path: "/v1/client/device_attestation/verify") {
+      $0.method(.post)
+      $0.body(body)
+    }
 
     try await Clerk.shared.dependencyContainer.apiClient.send(request)
   }
@@ -128,11 +125,10 @@ struct AppAttestHelper {
       "bundle_id": Bundle.main.bundleIdentifier
     ]
 
-    let request = Request(
-      path: "/v1/client/verify",
-      method: .post,
-      body: body
-    )
+    let request = Request<NoContent>.build(path: "/v1/client/verify") {
+      $0.method(.post)
+      $0.body(body)
+    }
 
     try await Clerk.shared.dependencyContainer.apiClient.send(request)
   }

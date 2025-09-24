@@ -7,7 +7,6 @@
 
 import AuthenticationServices
 import Foundation
-import Get
 
 /// The `SignIn` object holds the state of the current sign-in process and provides helper methods
 /// to navigate and complete the sign-in lifecycle. This includes managing the first and second factor
@@ -132,11 +131,10 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -159,11 +157,10 @@ extension SignIn {
     /// ```
     @discardableResult @MainActor
     public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins",
-            method: .post,
-            body: params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins") {
+            $0.method(.post)
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -178,11 +175,10 @@ extension SignIn {
     /// - Throws: An error if the password reset attempt fails.
     @discardableResult @MainActor
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)/reset_password",
-            method: .post,
-            body: params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)/reset_password") {
+            $0.method(.post)
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -199,11 +195,10 @@ extension SignIn {
     /// - Throws: An error if the first factor preparation fails.
     @discardableResult @MainActor
     public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)/prepare_first_factor",
-            method: .post,
-            body: strategy.params(signIn: self)
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)/prepare_first_factor") {
+            $0.method(.post)
+            $0.body(strategy.params(signIn: self))
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -221,11 +216,10 @@ extension SignIn {
     /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
     @discardableResult @MainActor
     public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)/attempt_first_factor",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)/attempt_first_factor") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -244,11 +238,10 @@ extension SignIn {
     /// - Throws: An error if the second factor verification fails.
     @discardableResult @MainActor
     public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)/prepare_second_factor",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)/prepare_second_factor") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -269,11 +262,10 @@ extension SignIn {
     /// - Throws: An error if the second factor verification fails.
     @discardableResult @MainActor
     public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)/attempt_second_factor",
-            method: .post,
-            body: strategy.params
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)/attempt_second_factor") {
+            $0.method(.post)
+            $0.body(strategy.params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -500,15 +492,15 @@ extension SignIn {
         if let rotatingTokenNonce {
             queryParams.append((
                 "rotating_token_nonce",
-                value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ))
         }
 
-        let request = Request<ClientResponse<SignIn>>(
-            path: "/v1/client/sign_ins/\(id)",
-            method: .get,
-            query: queryParams
-        )
+        let request = Request<ClientResponse<SignIn>>.build(path: "/v1/client/sign_ins/\(id)") {
+            if !queryParams.isEmpty {
+                $0.queryItems(queryParams)
+            }
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

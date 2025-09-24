@@ -9,7 +9,7 @@ import Foundation
 
 struct ClerkEventEmitterRequestProcessor: RequestPostprocessor {
 
-    static func process(response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+    static func process(response: HTTPURLResponse, data: Data, context: RequestPipelineContext) throws {
         Task { @MainActor in
             if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response, signIn.status == .complete {
                 Clerk.shared.authEventEmitter.send(.signInCompleted(signIn: signIn))

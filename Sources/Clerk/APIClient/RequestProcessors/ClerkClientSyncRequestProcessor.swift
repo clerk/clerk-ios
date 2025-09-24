@@ -8,8 +8,8 @@
 import Foundation
 
 struct ClerkClientSyncRequestProcessor: RequestPostprocessor {
-    
-    static func process(response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+
+    static func process(response: HTTPURLResponse, data: Data, context: RequestPipelineContext) throws {
         if let client = decodeClient(from: data) {
             Task { @MainActor in
                 Clerk.shared.client = client

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 import RegexBuilder
 
 #if canImport(UIKit)
@@ -208,21 +207,19 @@ extension Clerk {
     /// ```
     @MainActor
     public func signOut(sessionId: String? = nil) async throws {
-        if let sessionId {
-            let request = Request(
-                path: "/v1/client/sessions/\(sessionId)/remove",
-                method: .post
-            )
-
-            try await dependencyContainer.apiClient.send(request)
-        } else {
-            let request = Request(
-                path: "/v1/client/sessions",
-                method: .delete
-            )
-
-            try await dependencyContainer.apiClient.send(request)
+      if let sessionId {
+        let request = Request<NoContent>.build(path: "/v1/client/sessions/\(sessionId)/remove") {
+          $0.method(.post)
         }
+
+        try await dependencyContainer.apiClient.send(request)
+      } else {
+        let request = Request<NoContent>.build(path: "/v1/client/sessions") {
+          $0.method(.delete)
+        }
+
+        try await dependencyContainer.apiClient.send(request)
+      }
     }
 
     /// A method used to set the active session.
@@ -233,13 +230,29 @@ extension Clerk {
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
     @MainActor
     public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-        let request = Request(
-            path: "/v1/client/sessions/\(sessionId)/touch",
-            method: .post,
-            body: ["active_organization_id": organizationId ?? ""]
-        )
+        let request = Request<NoContent>.build(path: "/v1/client/sessions/\(sessionId)/touch") {
+            $0.method(.post)
+            $0.body(["active_organization_id": organizationId ?? ""])
+        }
 
         try await dependencyContainer.apiClient.send(request)
+    }
+
+    // MARK: - Testing Utilities
+
+    /// Overrides the networking client used by Clerk. Intended for tests.
+    @MainActor
+    @_spi(Internal)
+    public func use(apiClient: MockAPIClient) {
+        dependencyContainer.overrideApiClient(apiClient)
+    }
+
+    /// Restores the default networking client constructed from the configured frontend API URL.
+    @_spi(Internal)
+    @MainActor
+    public func resetAPIClientToDefault() {
+        let baseURL = frontendApiUrl.isEmpty ? nil : URL(string: frontendApiUrl)
+        dependencyContainer.resetApiClient(baseURL: baseURL)
     }
 }
 

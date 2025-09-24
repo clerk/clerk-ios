@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// The `PhoneNumber` object describes a phone number.
 ///
@@ -77,12 +76,11 @@ extension PhoneNumber {
     ///     - phoneNumber: The phone number to add to the current user.
     @discardableResult @MainActor
     public static func create(_ phoneNumber: String) async throws -> PhoneNumber {
-        let request = Request<ClientResponse<PhoneNumber>>(
-            path: "/v1/me/phone_numbers",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["phone_number": phoneNumber]
-        )
+        let request = Request<ClientResponse<PhoneNumber>>.build(path: "/v1/me/phone_numbers") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(["phone_number": phoneNumber])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -90,11 +88,10 @@ extension PhoneNumber {
     /// Deletes this phone number.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/phone_numbers/\(id)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/phone_numbers/\(id)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -104,12 +101,11 @@ extension PhoneNumber {
     /// An SMS message with a one-time code will be sent to the phone number value.
     @discardableResult @MainActor
     public func prepareVerification() async throws -> PhoneNumber {
-        let request = Request<ClientResponse<PhoneNumber>>(
-            path: "/v1/me/phone_numbers/\(id)/prepare_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["strategy": "phone_code"]
-        )
+        let request = Request<ClientResponse<PhoneNumber>>.build(path: "/v1/me/phone_numbers/\(id)/prepare_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(["strategy": "phone_code"])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -119,12 +115,11 @@ extension PhoneNumber {
     /// The code will be sent when calling the ``PhoneNumber/prepareVerification()`` method.
     @discardableResult @MainActor
     public func attemptVerification(code: String) async throws -> PhoneNumber {
-        let request = Request<ClientResponse<PhoneNumber>>(
-            path: "/v1/me/phone_numbers/\(id)/attempt_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["code": code]
-        )
+        let request = Request<ClientResponse<PhoneNumber>>.build(path: "/v1/me/phone_numbers/\(id)/attempt_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(["code": code])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -132,12 +127,11 @@ extension PhoneNumber {
     /// Marks this phone number as the default second factor for multi-factor authentication(2FA). A user can have exactly one default second factor.
     @discardableResult @MainActor
     public func makeDefaultSecondFactor() async throws -> PhoneNumber {
-        let request = Request<ClientResponse<PhoneNumber>>(
-            path: "/v1/me/phone_numbers/\(id)",
-            method: .patch,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["default_second_factor": true]
-        )
+        let request = Request<ClientResponse<PhoneNumber>>.build(path: "/v1/me/phone_numbers/\(id)") {
+            $0.method(.patch)
+            $0.appendSessionIdQuery()
+            $0.body(["default_second_factor": true])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -146,12 +140,11 @@ extension PhoneNumber {
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
     @discardableResult @MainActor
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
-        let request = Request<ClientResponse<PhoneNumber>>(
-            path: "/v1/me/phone_numbers/\(id)",
-            method: .patch,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["reserved_for_second_factor": reserved]
-        )
+        let request = Request<ClientResponse<PhoneNumber>>.build(path: "/v1/me/phone_numbers/\(id)") {
+            $0.method(.patch)
+            $0.appendSessionIdQuery()
+            $0.body(["reserved_for_second_factor": reserved])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

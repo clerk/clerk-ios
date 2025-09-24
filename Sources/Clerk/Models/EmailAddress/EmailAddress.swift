@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// The `EmailAddress` object is a model around an email address.
 ///
@@ -60,12 +59,11 @@ extension EmailAddress {
     ///     - email: The email address to add to the current user.
     @discardableResult @MainActor
     public static func create(_ email: String) async throws -> EmailAddress {
-        let request = Request<ClientResponse<EmailAddress>>(
-            path: "v1/me/email_addresses",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["email_address": email]
-        )
+        let request = Request<ClientResponse<EmailAddress>>.build(path: "v1/me/email_addresses") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(["email_address": email])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -85,12 +83,11 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-        let request = Request<ClientResponse<EmailAddress>>(
-            path: "/v1/me/email_addresses/\(id)/prepare_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: strategy.requestBody
-        )
+        let request = Request<ClientResponse<EmailAddress>>.build(path: "/v1/me/email_addresses/\(id)/prepare_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(strategy.requestBody)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -109,12 +106,11 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-        let request = Request<ClientResponse<EmailAddress>>(
-            path: "/v1/me/email_addresses/\(id)/attempt_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: strategy.requestBody
-        )
+        let request = Request<ClientResponse<EmailAddress>>.build(path: "/v1/me/email_addresses/\(id)/attempt_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(strategy.requestBody)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -122,11 +118,10 @@ extension EmailAddress {
     /// Deletes this email address.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/email_addresses/\(id)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/email_addresses/\(id)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
 // This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
@@ -56,16 +55,14 @@ actor SessionTokenFetcher {
         var token: TokenResource?
 
         if let template = options.template {
-            let request = Request<TokenResource?>.init(
-                path: "/v1/client/sessions/\(session.id)/tokens/\(template)",
-                method: .post
-            )
+            let request = Request<TokenResource?>.build(path: "/v1/client/sessions/\(session.id)/tokens/\(template)") {
+                $0.method(.post)
+            }
             token = try await Clerk.shared.dependencyContainer.apiClient.send(request).value
         } else {
-            let request = Request<TokenResource?>.init(
-                path: "/v1/client/sessions/\(session.id)/tokens",
-                method: .post
-            )
+            let request = Request<TokenResource?>.build(path: "/v1/client/sessions/\(session.id)/tokens") {
+                $0.method(.post)
+            }
             token = try await Clerk.shared.dependencyContainer.apiClient.send(request).value
         }
 

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
@@ -75,11 +74,10 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to delete membership: missing userId")
         }
 
-        let request = Request<ClientResponse<OrganizationMembership>>(
-            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<OrganizationMembership>>.build(path: "/v1/organizations/\(organization.id)/memberships/\(userId)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -95,14 +93,13 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
 
-        let request = Request<ClientResponse<OrganizationMembership>>(
-            path: "/v1/organizations/\(organization.id)/memberships/\(userId)",
-            method: .patch,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: [
+        let request = Request<ClientResponse<OrganizationMembership>>.build(path: "/v1/organizations/\(organization.id)/memberships/\(userId)") {
+            $0.method(.patch)
+            $0.appendSessionIdQuery()
+            $0.body([
                 "role": role
-            ]
-        )
+            ])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
 ///
@@ -58,7 +57,7 @@ extension Client {
     /// Retrieves the current client.
     @discardableResult @MainActor
     public static func get() async throws -> Client? {
-        let request = Request<ClientResponse<Client?>>(path: "/v1/client")
+        let request = Request<ClientResponse<Client?>>.build(path: "/v1/client")
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
 

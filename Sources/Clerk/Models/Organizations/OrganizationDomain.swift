@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// The model representing an organization domain.
 public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
@@ -103,11 +102,10 @@ extension OrganizationDomain {
     /// Deletes the organization domain and removes it from the organization.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/organizations/\(organizationId)/domains/\(id)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/organizations/\(organizationId)/domains/\(id)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -121,14 +119,13 @@ extension OrganizationDomain {
     /// - Throws: An error if the verification process cannot be initiated.
     @discardableResult @MainActor
     public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-        let request = Request<ClientResponse<OrganizationDomain>>(
-            path: "/v1/organizations/\(organizationId)/domains/\(id)/prepare_affiliation_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: [
+        let request = Request<ClientResponse<OrganizationDomain>>.build(path: "/v1/organizations/\(organizationId)/domains/\(id)/prepare_affiliation_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body([
                 "email_address": affiliationEmailAddress
-            ]
-        )
+            ])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -144,14 +141,13 @@ extension OrganizationDomain {
     /// - Throws: An error if the verification process cannot be completed.
     @discardableResult @MainActor
     public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
-        let request = Request<ClientResponse<OrganizationDomain>>(
-            path: "/v1/organizations/\(organizationId)/domains/\(id)/attempt_affiliation_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: [
+        let request = Request<ClientResponse<OrganizationDomain>>.build(path: "/v1/organizations/\(organizationId)/domains/\(id)/attempt_affiliation_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body([
                 "code": code
-            ]
-        )
+            ])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

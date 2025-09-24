@@ -8,16 +8,19 @@
 import Foundation
 
 struct ClerkDeviceAssertionRetrier: RequestRetrier {
-        
-    static func shouldRetry(task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
-        guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
-            return false
+
+    static func retryDecision(context: RequestPipelineContext, error: any Error, attempts: Int) async throws -> RetryDecision {
+        guard attempts == 1 else {
+            return .doNotRetry
         }
-        
+        guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
+            return .doNotRetry
+        }
+
         try await AssertionManager.shared.performDeviceAssertion()
-        return true
+        return .retry()
     }
-    
+
 }
 
 private actor AssertionManager {

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Get
 
 /// An object that represents a passkey associated with a user.
 public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
@@ -74,11 +73,10 @@ extension Passkey {
     /// Creates a new passkey
     @discardableResult @MainActor
     public static func create() async throws -> Passkey {
-        let request = Request<ClientResponse<Passkey>>(
-            path: "/v1/me/passkeys",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<Passkey>>.build(path: "/v1/me/passkeys") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -86,12 +84,11 @@ extension Passkey {
     /// Updates the name of the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func update(name: String) async throws -> Passkey {
-        let request = Request<ClientResponse<Passkey>>(
-            path: "/v1/me/passkeys/\(id)",
-            method: .patch,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["name": name]
-        )
+        let request = Request<ClientResponse<Passkey>>.build(path: "/v1/me/passkeys/\(id)") {
+            $0.method(.patch)
+            $0.appendSessionIdQuery()
+            $0.body(["name": name])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -99,15 +96,14 @@ extension Passkey {
     /// Attempts to verify the passkey with a credential.
     @discardableResult @MainActor
     public func attemptVerification(credential: String) async throws -> Passkey {
-        let request = Request<ClientResponse<Passkey>>(
-            path: "/v1/me/passkeys/\(id)/attempt_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: [
+        let request = Request<ClientResponse<Passkey>>.build(path: "/v1/me/passkeys/\(id)/attempt_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body([
                 "strategy": "passkey",
                 "public_key_credential": credential
-            ]
-        )
+            ])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -115,11 +111,10 @@ extension Passkey {
     /// Deletes the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/passkeys/\(id)",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/passkeys/\(id)") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

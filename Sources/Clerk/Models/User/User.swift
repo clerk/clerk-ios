@@ -7,7 +7,6 @@
 
 import AuthenticationServices
 import Foundation
-import Get
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
 ///
@@ -211,11 +210,9 @@ extension User {
     /// Reloads the user from the Clerk API.
     @discardableResult @MainActor
     public func reload() async throws -> User {
-        let request = Request<ClientResponse<User>>(
-            path: "/v1/me",
-            method: .get,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<User>>.build(path: "/v1/me") {
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -228,12 +225,11 @@ extension User {
     /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
     @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
-        let request = Request<ClientResponse<User>>(
-            path: "/v1/me",
-            method: .patch,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: params
-        )
+        let request = Request<ClientResponse<User>>.build(path: "/v1/me") {
+            $0.method(.patch)
+            $0.appendSessionIdQuery()
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -243,11 +239,10 @@ extension User {
     /// - Returns: ``BackupCodeResource``
     @discardableResult @MainActor
     public func createBackupCodes() async throws -> BackupCodeResource {
-        let request = Request<ClientResponse<BackupCodeResource>>(
-            path: "/v1/me/backup_codes",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<BackupCodeResource>>.build(path: "/v1/me/backup_codes") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -284,12 +279,11 @@ extension User {
             bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
         }
 
-        let request = Request<ClientResponse<ExternalAccount>>(
-            path: "/v1/me/external_accounts",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: bodyParams
-        )
+        let request = Request<ClientResponse<ExternalAccount>>.build(path: "/v1/me/external_accounts") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(bodyParams)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -302,15 +296,14 @@ extension User {
     ///     - idToken: The ID token from the provider.
     @discardableResult @MainActor
     public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-        let request = Request<ClientResponse<ExternalAccount>>(
-            path: "/v1/me/external_accounts",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: [
+        let request = Request<ClientResponse<ExternalAccount>>.build(path: "/v1/me/external_accounts") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body([
                 "strategy": provider.strategy,
                 "token": idToken
-            ]
-        )
+            ])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -370,11 +363,10 @@ extension User {
     /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
     @discardableResult @MainActor
     public func createTOTP() async throws -> TOTPResource {
-        let request = Request<ClientResponse<TOTPResource>>(
-            path: "/v1/me/totp",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<TOTPResource>>.build(path: "/v1/me/totp") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -386,12 +378,11 @@ extension User {
     /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
     @discardableResult @MainActor
    public func verifyTOTP(code: String) async throws -> TOTPResource {
-        let request = Request<ClientResponse<TOTPResource>>(
-            path: "/v1/me/totp/attempt_verification",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: ["code": code]
-        )
+        let request = Request<ClientResponse<TOTPResource>>.build(path: "/v1/me/totp/attempt_verification") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(["code": code])
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -399,11 +390,10 @@ extension User {
     /// Disables TOTP by deleting the user's TOTP secret.
     @discardableResult @MainActor
     public func disableTOTP() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/totp",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/totp") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -418,15 +408,11 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-        let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
-            path: "/v1/me/organization_invitations",
-            method: .get,
-            query: [
-                ("_clerk_session_id", value: Clerk.shared.session?.id),
-                ("offset", value: String(initialPage)),
-                ("limit", value: String(pageSize))
-            ]
-        )
+        let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>.build(path: "/v1/me/organization_invitations") {
+            $0.appendSessionIdQuery()
+            $0.appendQueryItem(name: "offset", value: String(initialPage))
+            $0.appendQueryItem(name: "limit", value: String(pageSize))
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -441,16 +427,12 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
-            path: "/v1/me/organization_memberships",
-            method: .get,
-            query: [
-                ("_clerk_session_id", value: Clerk.shared.session?.id),
-                ("offset", value: String(initialPage)),
-                ("limit", value: String(pageSize)),
-                ("paginated", value: "true")
-            ]
-        )
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>.build(path: "/v1/me/organization_memberships") {
+            $0.appendSessionIdQuery()
+            $0.appendQueryItem(name: "offset", value: String(initialPage))
+            $0.appendQueryItem(name: "limit", value: String(pageSize))
+            $0.appendQueryItem(name: "paginated", value: "true")
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -467,21 +449,14 @@ extension User {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-        var queryParams: [(String, String?)] = [
-            ("_clerk_session_id", value: Clerk.shared.session?.id),
-            ("offset", value: String(initialPage)),
-            ("limit", value: String(pageSize))
-        ]
-
-        if let status {
-            queryParams.append(("status", value: status))
+        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>.build(path: "/v1/me/organization_suggestions") {
+            $0.appendSessionIdQuery()
+            $0.appendQueryItem(name: "offset", value: String(initialPage))
+            $0.appendQueryItem(name: "limit", value: String(pageSize))
+            if let status {
+                $0.appendQueryItem(name: "status", value: status)
+            }
         }
-
-        let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
-            path: "/v1/me/organization_suggestions",
-            method: .get,
-            query: queryParams
-        )
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -491,11 +466,9 @@ extension User {
     /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
     @discardableResult @MainActor
     public func getSessions() async throws -> [Session] {
-        let request = Request<[Session]>(
-            path: "/v1/me/sessions/active",
-            method: .get,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<[Session]>.build(path: "/v1/me/sessions/active") {
+            $0.appendSessionIdQuery()
+        }
 
         let sessions = try await Clerk.shared.dependencyContainer.apiClient.send(request).value
         Clerk.shared.sessionsByUserId[id] = sessions
@@ -505,12 +478,11 @@ extension User {
     /// Updates the user's password. Passwords must be at least 8 characters long.
     @discardableResult @MainActor
     public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-        let request = Request<ClientResponse<User>>(
-            path: "/v1/me/change_password",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            body: params
-        )
+        let request = Request<ClientResponse<User>>.build(path: "/v1/me/change_password") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.body(params)
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -528,24 +500,22 @@ extension User {
         data.append(imageData)
         data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
 
-        let request = Request<ClientResponse<ImageResource>>(
-            path: "/v1/me/profile_image",
-            method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
-        )
+        let request = Request<ClientResponse<ImageResource>>.build(path: "/v1/me/profile_image") {
+            $0.method(.post)
+            $0.appendSessionIdQuery()
+            $0.headers(["Content-Type": "multipart/form-data; boundary=\(boundary)"])
+        }
 
-        return try await Clerk.shared.dependencyContainer.apiClient.upload(for: request, from: data).value.response
+        return try await Clerk.shared.dependencyContainer.apiClient.upload(request, from: data).value.response
     }
 
     /// Deletes the user's profile image.
     @discardableResult @MainActor
     public func deleteProfileImage() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me/profile_image",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me/profile_image") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }
@@ -553,11 +523,10 @@ extension User {
     /// Deletes the current user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        let request = Request<ClientResponse<DeletedObject>>(
-            path: "/v1/me",
-            method: .delete,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-        )
+        let request = Request<ClientResponse<DeletedObject>>.build(path: "/v1/me") {
+            $0.method(.delete)
+            $0.appendSessionIdQuery()
+        }
 
         return try await Clerk.shared.dependencyContainer.apiClient.send(request).value.response
     }

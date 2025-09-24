@@ -18,7 +18,6 @@ let package = Package(
     .library(name: "Clerk", targets: ["Clerk"])
   ],
   dependencies: [
-    .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0"))
   ],
@@ -26,7 +25,6 @@ let package = Package(
     .target(
       name: "Clerk",
       dependencies: [
-        .product(name: "Get", package: "Get"),
         .product(name: "Kingfisher", package: "Kingfisher"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
       ]
