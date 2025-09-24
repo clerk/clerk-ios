@@ -21,8 +21,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-algorithms", from: "1.2.0"),
     .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
-    .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
-    .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0"))
+    .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0"))
   ],
   targets: [
     .target(
@@ -31,8 +30,7 @@ let package = Package(
         .product(name: "Algorithms", package: "swift-algorithms"),
         .product(name: "Get", package: "Get"),
         .product(name: "Kingfisher", package: "Kingfisher"),
-        .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
-        .product(name: "SimpleKeychain", package: "SimpleKeychain")
+        .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
       ]
     )
   ]

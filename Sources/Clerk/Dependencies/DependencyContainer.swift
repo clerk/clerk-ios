@@ -1,6 +1,5 @@
 import Foundation
 import Get
-import SimpleKeychain
 
 #if os(iOS)
 import PhoneNumberKit
@@ -77,10 +76,12 @@ private extension DependencyContainer {
   }
 
   static func makeKeychain(config: KeychainConfig) -> KeychainStore {
-    DefaultKeychain(simpleKeychain: SimpleKeychain(
-      service: config.service,
-      accessGroup: config.accessGroup,
-      accessibility: .afterFirstUnlockThisDeviceOnly
-    ))
+    KeychainStore(
+      configuration: .init(
+        service: config.service,
+        accessGroup: config.accessGroup,
+        accessibility: .afterFirstUnlockThisDeviceOnly
+      )
+    )
   }
 }
