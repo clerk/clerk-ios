@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 /// A circular button that displays the current user's profile image and opens the user profile when tapped.
@@ -75,18 +75,11 @@ public struct UserButton: View {
                 Button {
                     userProfileIsPresented = true
                 } label: {
-                    KFImage(URL(string: user.imageUrl))
-                        .placeholder {
-                            Image("icon-profile", bundle: .module)
-                                .resizable()
-                                .scaledToFit()
-                                .foregroundStyle(theme.colors.primary.gradient)
-                                .opacity(0.5)
-                        }
-                        .resizable()
-                        .fade(duration: 0.2)
-                        .scaledToFill()
-                        .clipShape(.circle)
+                    LazyImage(url: URL(string: user.imageUrl)) { state in
+                        avatarContent(for: state)
+                    }
+                    .frame(width: 36, height: 36)
+                    .clipShape(.circle)
                 }
             }
         }
@@ -101,6 +94,24 @@ public struct UserButton: View {
         }
         .taskOnce {
             await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+        }
+    }
+}
+
+extension UserButton {
+
+    @ViewBuilder
+    private func avatarContent(for state: LazyImageState) -> some View {
+        if let image = state.image {
+            image
+                .resizable()
+                .scaledToFill()
+        } else {
+            Image("icon-profile", bundle: .module)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(theme.colors.primary.gradient)
+                .opacity(0.5)
         }
     }
 }

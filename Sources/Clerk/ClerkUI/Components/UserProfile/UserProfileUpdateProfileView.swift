@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import PhotosUI
 import SwiftUI
 
@@ -109,7 +109,7 @@ struct UserProfileUpdateProfileView: View {
 
                 Task {
                     imageIsLoading = true
-
+                    defer { imageIsLoading = false }
                     do {
                         guard
                             let data = try await item.loadTransferable(type: Data.self),
@@ -126,7 +126,6 @@ struct UserProfileUpdateProfileView: View {
                     } catch {
                         self.error = error
                         ClerkLogger.error("Failed to set profile image", error: error)
-                        imageIsLoading = false
                     }
                 }
             }
@@ -137,28 +136,11 @@ struct UserProfileUpdateProfileView: View {
 
     @ViewBuilder
     private var menu: some View {
-        KFImage(URL(string: user.imageUrl))
-            .resizable()
-            .fade(duration: 0.25)
-            .placeholder { progress in
-                Image("icon-profile", bundle: .module)
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(theme.colors.primary.gradient)
-                    .opacity(0.5)
-            }
-            .onSuccess { _ in imageIsLoading = false }
-            .onFailure { _ in imageIsLoading = false }
-            .overlay {
-                if imageIsLoading {
-                    theme.colors.inputBorderFocused
-                    SpinnerView(color: theme.colors.primaryForeground)
-                        .frame(width: 24, height: 24)
-                }
-            }
-            .scaledToFill()
-            .frame(width: 96, height: 96)
-            .clipShape(.circle)
+        LazyImage(url: URL(string: user.imageUrl)) { state in
+            avatar(for: state)
+        }
+        .frame(width: 96, height: 96)
+        .clipShape(.circle)
             .overlay(alignment: .bottomTrailing) {
                 Menu {
                     menuContent
@@ -205,6 +187,29 @@ struct UserProfileUpdateProfileView: View {
 }
 
 extension UserProfileUpdateProfileView {
+
+    @ViewBuilder
+    private func avatar(for state: LazyImageState) -> some View {
+        ZStack {
+            if let image = state.image {
+                image
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image("icon-profile", bundle: .module)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(theme.colors.primary.gradient)
+                    .opacity(0.5)
+            }
+
+            if state.isLoading || imageIsLoading {
+                theme.colors.inputBorderFocused
+                SpinnerView(color: theme.colors.primaryForeground)
+                    .frame(width: 24, height: 24)
+            }
+        }
+    }
 
     func save() async {
         do {

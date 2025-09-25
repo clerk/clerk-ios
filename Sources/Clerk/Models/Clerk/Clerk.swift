@@ -249,7 +249,6 @@ extension Clerk {
 
     /// Restores the default networking client constructed from the configured frontend API URL.
     @_spi(Internal)
-    @MainActor
     public func resetAPIClientToDefault() {
         let baseURL = frontendApiUrl.isEmpty ? nil : URL(string: frontendApiUrl)
         dependencyContainer.resetApiClient(baseURL: baseURL)

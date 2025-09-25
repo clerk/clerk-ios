@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct SocialButton: View {
@@ -21,17 +21,10 @@ struct SocialButton: View {
     var onError: ((Error) -> Void)? = nil
 
     private var iconImage: some View {
-        KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
-            .resizable()
-            .placeholder {
-                Image(systemName: "globe")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 21, height: 21)
-            }
-            .fade(duration: 0.25)
-            .scaledToFit()
-            .frame(width: 21, height: 21)
+        LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+            iconContent(for: state)
+        }
+        .frame(width: 21, height: 21)
     }
 
     init(
@@ -92,6 +85,19 @@ struct SocialButton: View {
 }
 
 extension SocialButton {
+
+    @ViewBuilder
+    private func iconContent(for state: LazyImageState) -> some View {
+        if let image = state.image {
+            image
+                .resizable()
+                .scaledToFit()
+        } else {
+            Image(systemName: "globe")
+                .resizable()
+                .scaledToFit()
+        }
+    }
 
     func defaultAction() async throws {
         let result: TransferFlowResult

@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 /// A comprehensive user profile view that displays user information and account management options.
@@ -81,19 +81,21 @@ public struct UserProfileView: View {
     @ViewBuilder
     private func userProfileHeader(_ user: User) -> some View {
         VStack(spacing: 12) {
-            KFImage(URL(string: user.imageUrl))
-                .resizable()
-                .placeholder {
+            LazyImage(url: URL(string: user.imageUrl)) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } else {
                     Image("icon-profile", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .foregroundStyle(theme.colors.primary.gradient)
                         .opacity(0.5)
                 }
-                .fade(duration: 0.25)
-                .scaledToFill()
-                .frame(width: 96, height: 96)
-                .clipShape(.circle)
+            }
+            .frame(width: 96, height: 96)
+            .clipShape(.circle)
 
             if let fullName = user.fullName {
                 Text(fullName)

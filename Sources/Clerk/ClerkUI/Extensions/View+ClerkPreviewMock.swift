@@ -18,15 +18,13 @@ private struct ClerkPreviewMockModifier: ViewModifier {
                 do {
                     let mock = MockAPIClient()
                     try await configure(mock)
-                    await Clerk.shared.use(apiClient: mock)
+                    Clerk.shared.use(apiClient: mock)
                 } catch {
                     assertionFailure("Failed to configure MockAPIClient for preview: \(error)")
                 }
             }
             .onDisappear {
-                Task {
-                    await Clerk.shared.resetAPIClientToDefault()
-                }
+                Clerk.shared.resetAPIClientToDefault()
             }
     }
 }

@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct UserProfileDetailView: View {

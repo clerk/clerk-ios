@@ -18,14 +18,14 @@ let package = Package(
     .library(name: "Clerk", targets: ["Clerk"])
   ],
   dependencies: [
-    .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
+    .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0"))
   ],
   targets: [
     .target(
       name: "Clerk",
       dependencies: [
-        .product(name: "Kingfisher", package: "Kingfisher"),
+        .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
       ]
     )
