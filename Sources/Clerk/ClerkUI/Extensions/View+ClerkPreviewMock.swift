@@ -10,18 +10,14 @@
 import SwiftUI
 
 private struct ClerkPreviewMockModifier: ViewModifier {
-    let configure: @Sendable (MockAPIClient) async throws -> Void
+    let configure: @Sendable (MockAPIClient) -> Void
 
     func body(content: Content) -> some View {
         content
             .task(priority: .high) {
-                do {
-                    let mock = MockAPIClient()
-                    try await configure(mock)
-                    Clerk.shared.use(apiClient: mock)
-                } catch {
-                    assertionFailure("Failed to configure MockAPIClient for preview: \(error)")
-                }
+                let mock = MockAPIClient()
+                configure(mock)
+                Clerk.shared.use(apiClient: mock)
             }
             .onDisappear {
                 Clerk.shared.resetAPIClientToDefault()
@@ -31,7 +27,7 @@ private struct ClerkPreviewMockModifier: ViewModifier {
 
 extension View {
     func clerkPreviewMock(
-        _ configure: @escaping @Sendable (MockAPIClient) async throws -> Void
+        _ configure: @escaping @Sendable (MockAPIClient) -> Void
     ) -> some View {
         modifier(ClerkPreviewMockModifier(configure: configure))
     }
