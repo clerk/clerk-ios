@@ -1,9 +1,5 @@
 import Foundation
 
-#if os(iOS)
-import PhoneNumberKit
-#endif
-
 /// Minimal dependency container owned by `Clerk`. This mirrors Superwall's
 /// approach of a central object that wires up shared utilities.
 final class DependencyContainer {
@@ -12,10 +8,6 @@ final class DependencyContainer {
   private(set) var keychain: KeychainStore
   private(set) var apiClient: any APIClientProtocol
   private var isUsingCustomAPIClient = false
-
-  #if os(iOS)
-  lazy var phoneNumberUtility = PhoneNumberUtility()
-  #endif
 
   init(
     settings: Clerk.Settings = .init(),

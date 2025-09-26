@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import Clerk
 import PhoneNumberKit
 import SwiftUI
 
@@ -16,7 +15,7 @@ extension ClerkPhoneNumberField {
     @MainActor
     final class PhoneNumberModel {
 
-        private let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
+        private let utility = PhoneNumberKitProvider.utility
         let textField: PhoneNumberTextField
         let partialFormatter: PartialFormatter
 
@@ -39,13 +38,13 @@ extension ClerkPhoneNumberField {
         }
 
         var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
-            utility.allCountries.filter { country in
+            PhoneNumberKitProvider.allCountries.filter { country in
                 country.code != defaultCountry.code
             }
         }
 
         func stringForCountry(_ country: CountryCodePickerViewController.Country) -> String {
-            "\(country.flag) \(country.name) \(country.prefix)"
+            PhoneNumberKitProvider.stringForCountry(country)
         }
 
         var exampleNumber: String {

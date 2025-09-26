@@ -153,7 +153,7 @@ extension UserProfileMfaAddSmsView {
 
 struct AddMfaSmsRow: View {
     @Environment(\.clerkTheme) private var theme
-    let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
+    let utility = PhoneNumberKitProvider.utility
 
     let phoneNumber: PhoneNumber
     let isSelected: Bool

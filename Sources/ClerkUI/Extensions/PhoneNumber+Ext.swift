@@ -7,21 +7,26 @@
 
 #if os(iOS)
 
-import Clerk
 import Foundation
 import PhoneNumberKit
 
-extension PhoneNumberKit.PhoneNumberUtility {
+enum PhoneNumberKitProvider {
 
-    var allCountries: [CountryCodePickerViewController.Country] {
-        self
+    static let utility = PhoneNumberKit.PhoneNumberUtility()
+
+    static var allCountries: [CountryCodePickerViewController.Country] {
+        PhoneNumberKitProvider.utility
             .allCountries()
             .compactMap({
-                CountryCodePickerViewController.Country(for: $0, with: self)
+                CountryCodePickerViewController.Country(for: $0, with: PhoneNumberKitProvider.utility)
             })
             .sorted(by: {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             })
+    }
+
+    static func stringForCountry(_ country: CountryCodePickerViewController.Country) -> String {
+        "\(country.flag) \(country.name) \(country.prefix)"
     }
 
 }

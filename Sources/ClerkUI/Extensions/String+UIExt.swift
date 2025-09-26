@@ -7,19 +7,18 @@
 
 #if os(iOS)
 
-import Clerk
 import Foundation
 import PhoneNumberKit
 
 extension String {
     var formattedAsPhoneNumberIfPossible: String {
-        let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
+        let utility = PhoneNumberKitProvider.utility
         let partialFormatter = PartialFormatter(utility: utility, withPrefix: true)
         return partialFormatter.formatPartial(self).nonBreaking
     }
 
     var isPhoneNumber: Bool {
-        let utility = Clerk.shared.dependencyContainer.phoneNumberUtility
+        let utility = PhoneNumberKitProvider.utility
         return utility.isValidPhoneNumber(self)
     }
 }
