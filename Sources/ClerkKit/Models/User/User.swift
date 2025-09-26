@@ -272,7 +272,7 @@ extension User {
     public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
         var bodyParams: [String: String] = [
             "strategy": provider.strategy,
-            "redirect_url": redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+            "redirect_url": redirectUrl ?? Clerk.shared.options.redirect.redirectURL
         ]
 
         if let additionalScopes {

@@ -46,12 +46,12 @@ extension SignIn {
             case .oauth(let provider, let redirectUrl):
                 return .oauth(
                     provider: provider,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
             case .enterpriseSSO(let identifier, let redirectUrl):
                 return .enterpriseSSO(
                     identifier: identifier,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
             }
         }

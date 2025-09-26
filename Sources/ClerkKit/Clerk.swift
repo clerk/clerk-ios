@@ -23,10 +23,10 @@ final public class Clerk {
 
     /// The configured shared instance of ``Clerk``.
     ///
-    /// - Warning: You must call ``configure(publishableKey:settings:)`` before accessing this.
+    /// - Warning: You must call ``configure(publishableKey:options:)`` before accessing this.
     public static var shared: Clerk {
         guard let clerk = clerk else {
-            assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:settings:)")
+            assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)")
             return Clerk()
         }
         return clerk
@@ -43,34 +43,34 @@ final public class Clerk {
     /// - Parameters:
     ///   - publishableKey: The publishable key from your Clerk Dashboard. Must start with
     ///     `pk_live_` or `pk_test_`.
-    ///   - settings: Optional ``Settings`` that customize SDK behavior, such as debug logging
-    ///     and keychain configuration.
+    ///   - options: ``ClerkOptions`` that customize logging, telemetry, and persistence behaviour.
     public static func configure(
         publishableKey: String,
-        settings: Settings = .init()
+        options: ClerkOptions = .init()
     ) {
         guard clerk == nil else {
-            if settings.debugMode {
-                ClerkLogger.warning(
-                    "Clerk.configure called multiple times. Ignoring subsequent call.",
-                    debugMode: true
-                )
-            }
+            ClerkLogger.warning(
+                "Clerk.configure called multiple times. Ignoring subsequent call.",
+                debugMode: true
+            )
             return
         }
 
-        let container = DependencyContainer(settings: settings)
+        let container = DependencyContainer(options: options)
         let clerk = Clerk(dependencyContainer: container)
         clerk.publishableKey = publishableKey
         self.clerk = clerk
         isConfigured = true
 
-        if settings.debugMode {
-            ClerkLogger.info(
-                "Clerk SDK version \(Clerk.version). Instance type: \(clerk.instanceType)",
-                debugMode: true
-            )
-        }
+        ClerkLogger.info(
+            "Clerk SDK version \(Clerk.version). Instance type: \(clerk.instanceType)",
+            debugMode: true
+        )
+    }
+
+    /// Access the configured options that drive Clerk behaviour.
+    public var options: ClerkOptions {
+        dependencyContainer.options
     }
 
     /// A getter to see if the Clerk object is ready for use or not.
@@ -177,44 +177,6 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
-
-}
-
-extension Clerk {
-
-    /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
-    public struct Settings: Sendable {
-
-        /// Enable additional debugging signals and logging. Defaults to false.
-        public let debugMode: Bool
-
-        /// Enable development telemetry collection. Defaults to true.
-        public let telemetryEnabled: Bool
-
-        /// Configuration for keychain storage behavior.
-        public let keychainConfig: KeychainConfig
-
-        /// Configuration for OAuth redirect URLs and callback handling.
-        public let redirectConfig: RedirectConfig
-
-        /// Initializes a ``Settings`` instance.
-        /// - Parameters:
-        ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
-        ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
-        ///   - keychainConfig: Configuration for keychain storage behavior. Defaults to a new KeychainConfig instance.
-        ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling. Defaults to a new RedirectConfig instance.
-        public init(
-            debugMode: Bool = false,
-            telemetryEnabled: Bool = true,
-            keychainConfig: KeychainConfig = .init(),
-            redirectConfig: RedirectConfig = .init()
-        ) {
-            self.debugMode = debugMode
-            self.telemetryEnabled = telemetryEnabled
-            self.keychainConfig = keychainConfig
-            self.redirectConfig = redirectConfig
-        }
-    }
 
 }
 
@@ -521,9 +483,9 @@ extension Clerk {
     @_spi(Testing)
     public func configureForTesting(
         publishableKey: String,
-        settings: Settings = .init()
+        options: ClerkOptions = .init()
     ) {
         self.publishableKey = publishableKey
-        dependencyContainer.updateSettings(settings, keychain: dependencyContainer.keychain)
+        dependencyContainer.updateOptions(options)
     }
 }
