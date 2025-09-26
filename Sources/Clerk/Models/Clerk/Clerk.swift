@@ -118,7 +118,8 @@ final public class Clerk {
     public let authEventEmitter = EventEmitter<AuthEvent>()
 
     /// The Clerk environment for the instance.
-    var environment = Environment() {
+    @_spi(Internal)
+    public var environment = Environment() {
         didSet {
             try? saveEnvironmentToKeychain(environment)
         }

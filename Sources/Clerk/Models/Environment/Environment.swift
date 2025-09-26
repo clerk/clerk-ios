@@ -9,14 +9,15 @@ import Foundation
 
 extension Clerk {
 
-    struct Environment: Codable, Sendable, Equatable {
-        var authConfig: AuthConfig?
-        var userSettings: UserSettings?
-        var displayConfig: DisplayConfig?
-        var fraudSettings: FraudSettings?
-        var commerceSettings: CommerceSettings?
+    @_spi(Internal)
+    public struct Environment: Codable, Sendable, Equatable {
+        public var authConfig: AuthConfig?
+        public var userSettings: UserSettings?
+        public var displayConfig: DisplayConfig?
+        public var fraudSettings: FraudSettings?
+        public var commerceSettings: CommerceSettings?
 
-        var isEmpty: Bool {
+        public var isEmpty: Bool {
             authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil && commerceSettings == nil
         }
     }

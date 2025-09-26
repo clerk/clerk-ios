@@ -6,6 +6,7 @@
 //
 
 import Clerk
+import ClerkUI
 import SwiftUI
 
 @main

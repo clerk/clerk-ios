@@ -15,7 +15,8 @@ let package = Package(
     .visionOS(.v1)
   ],
   products: [
-    .library(name: "Clerk", targets: ["Clerk"])
+    .library(name: "Clerk", targets: ["Clerk"]),
+    .library(name: "ClerkUI", targets: ["ClerkUI"])
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
@@ -24,9 +25,17 @@ let package = Package(
   targets: [
     .target(
       name: "Clerk",
+      dependencies: []
+    ),
+    .target(
+      name: "ClerkUI",
       dependencies: [
+        "Clerk",
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
+      ],
+      resources: [
+        .process("Resources")
       ]
     )
   ]

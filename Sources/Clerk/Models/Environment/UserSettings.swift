@@ -9,50 +9,50 @@ import Foundation
 
 extension Clerk.Environment {
 
-    struct UserSettings: Codable, Equatable, Sendable {
+    public struct UserSettings: Codable, Equatable, Sendable {
 
-        let attributes: [String: AttributesConfig]
-        let signUp: SignUp
-        let social: [String: SocialConfig]
-        let actions: Actions
-        let passkeySettings: PasskeySettings?
+        public let attributes: [String: AttributesConfig]
+        public let signUp: SignUp
+        public let social: [String: SocialConfig]
+        public let actions: Actions
+        public let passkeySettings: PasskeySettings?
 
-        struct AttributesConfig: Codable, Equatable, Sendable {
-            let enabled: Bool
-            let required: Bool
-            let usedForFirstFactor: Bool
-            let firstFactors: [String]?
-            let usedForSecondFactor: Bool
-            let secondFactors: [String]?
-            let verifications: [String]?
-            let verifyAtSignUp: Bool
+        public struct AttributesConfig: Codable, Equatable, Sendable {
+            public let enabled: Bool
+            public let required: Bool
+            public let usedForFirstFactor: Bool
+            public let firstFactors: [String]?
+            public let usedForSecondFactor: Bool
+            public let secondFactors: [String]?
+            public let verifications: [String]?
+            public let verifyAtSignUp: Bool
         }
 
-        struct SignUp: Codable, Equatable, Sendable {
-            let customActionRequired: Bool
-            let progressive: Bool
-            let mode: String
-            let legalConsentEnabled: Bool
+        public struct SignUp: Codable, Equatable, Sendable {
+            public let customActionRequired: Bool
+            public let progressive: Bool
+            public let mode: String
+            public let legalConsentEnabled: Bool
         }
 
-        struct SocialConfig: Codable, Equatable, Sendable {
-            let enabled: Bool
-            let required: Bool
-            let authenticatable: Bool
-            let strategy: String
-            let notSelectable: Bool
-            let name: String
-            let logoUrl: String?
+        public struct SocialConfig: Codable, Equatable, Sendable {
+            public let enabled: Bool
+            public let required: Bool
+            public let authenticatable: Bool
+            public let strategy: String
+            public let notSelectable: Bool
+            public let name: String
+            public let logoUrl: String?
         }
 
-        struct Actions: Codable, Equatable, Sendable {
-            var deleteSelf: Bool = false
-            var createOrganization: Bool = false
+        public struct Actions: Codable, Equatable, Sendable {
+            public var deleteSelf: Bool = false
+            public var createOrganization: Bool = false
         }
 
-        struct PasskeySettings: Codable, Equatable, Sendable {
-            let allowAutofill: Bool
-            let showSignInButton: Bool
+        public struct PasskeySettings: Codable, Equatable, Sendable {
+            public let allowAutofill: Bool
+            public let showSignInButton: Bool
         }
     }
 

@@ -76,4 +76,15 @@ extension Client {
         )
     }
 
+    static var mockSignedOut: Client {
+        return Client(
+            id: "1",
+            signIn: nil,
+            signUp: nil,
+            sessions: [],
+            lastActiveSessionId: nil,
+            updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+        )
+    }
+
 }

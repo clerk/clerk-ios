@@ -7,12 +7,13 @@
 
 import Foundation
 
-extension String {
+@_spi(Internal)
+public extension String {
 
     var isEmptyTrimmed: Bool {
         trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-    
+
     var nonBreaking: String {
         self
             .replacingOccurrences(of: " ", with: "\u{00A0}")

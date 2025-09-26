@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* Clerk */; };
+		8F8628C62E85D04200B085A3 /* ClerkUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F8628C52E85D04200B085A3 /* ClerkUI */; };
 		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F8628C62E85D04200B085A3 /* ClerkUI in Frameworks */,
 				8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */,
 				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
 			);
@@ -36,10 +38,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8F8628C42E85D04200B085A3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8FC2FDFF2E3A5C32001E5953 = {
 			isa = PBXGroup;
 			children = (
 				8FC2FE0A2E3A5C32001E5953 /* Quickstart */,
+				8F8628C42E85D04200B085A3 /* Frameworks */,
 				8FC2FE092E3A5C32001E5953 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,6 +84,7 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* Clerk */,
 				8F692CBF2E3D008D00E6E7ED /* Clerk */,
+				8F8628C52E85D04200B085A3 /* ClerkUI */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -350,6 +361,10 @@
 		8F692CBF2E3D008D00E6E7ED /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Clerk;
+		};
+		8F8628C52E85D04200B085A3 /* ClerkUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClerkUI;
 		};
 		8F9023512E3A648E00831B13 /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;

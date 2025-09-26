@@ -45,7 +45,8 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     }
 }
 
-extension Factor {
+@_spi(Internal)
+public extension Factor {
 
     static var mockEmailCode: Factor {
         Factor(strategy: "email_code")
