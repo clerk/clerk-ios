@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* Clerk */; };
-		8F8628C62E85D04200B085A3 /* ClerkUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F8628C52E85D04200B085A3 /* ClerkUI */; };
-		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
+		8FED4A9B2E87125A0089A432 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED4A9A2E87125A0089A432 /* ClerkKit */; };
+		8FED4A9D2E87125A0089A432 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED4A9C2E87125A0089A432 /* ClerkKitUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,9 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8F8628C62E85D04200B085A3 /* ClerkUI in Frameworks */,
-				8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */,
-				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
+				8FED4A9B2E87125A0089A432 /* ClerkKit in Frameworks */,
+				8FED4A9D2E87125A0089A432 /* ClerkKitUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,9 +80,8 @@
 			);
 			name = Quickstart;
 			packageProductDependencies = (
-				8F9023512E3A648E00831B13 /* Clerk */,
-				8F692CBF2E3D008D00E6E7ED /* Clerk */,
-				8F8628C52E85D04200B085A3 /* ClerkUI */,
+				8FED4A9A2E87125A0089A432 /* ClerkKit */,
+				8FED4A9C2E87125A0089A432 /* ClerkKitUI */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -358,17 +355,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8F692CBF2E3D008D00E6E7ED /* Clerk */ = {
+		8FED4A9A2E87125A0089A432 /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Clerk;
+			productName = ClerkKit;
 		};
-		8F8628C52E85D04200B085A3 /* ClerkUI */ = {
+		8FED4A9C2E87125A0089A432 /* ClerkKitUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = ClerkUI;
-		};
-		8F9023512E3A648E00831B13 /* Clerk */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Clerk;
+			productName = ClerkKitUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

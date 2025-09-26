@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "Clerk",
+  name: "ClerkKit",
   defaultLocalization: "en",
   platforms: [
     .iOS(.v17),
@@ -15,8 +15,8 @@ let package = Package(
     .visionOS(.v1)
   ],
   products: [
-    .library(name: "Clerk", targets: ["Clerk"]),
-    .library(name: "ClerkUI", targets: ["ClerkUI"])
+    .library(name: "ClerkKit", targets: ["ClerkKit"]),
+    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"])
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
@@ -24,13 +24,13 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "Clerk",
+      name: "ClerkKit",
       dependencies: []
     ),
     .target(
-      name: "ClerkUI",
+      name: "ClerkKitUI",
       dependencies: [
-        "Clerk",
+        "ClerkKit",
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
       ],

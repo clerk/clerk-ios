@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 7/30/25.
 //
 
-import Clerk
-import ClerkUI
+import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 @main
