@@ -35,16 +35,42 @@ final public class Clerk {
     /// Tracks whether ``Clerk.configure`` has been called.
     public private(set) static var isConfigured = false
 
-    /// Configures the shared clerk instance.
+    /// Configures a shared instance of ``Clerk`` for use throughout your app.
+    ///
+    /// Call this as soon as your app finishes launching, typically from ``UIApplicationDelegate`` or
+    /// your SwiftUI app entry point. See our configuration guide in the documentation for details.
+    ///
+    /// - Parameters:
+    ///   - publishableKey: The publishable key from your Clerk Dashboard. Must start with
+    ///     `pk_live_` or `pk_test_`.
+    ///   - settings: Optional ``Settings`` that customize SDK behavior, such as debug logging
+    ///     and keychain configuration.
     public static func configure(
         publishableKey: String,
         settings: Settings = .init()
     ) {
+        guard clerk == nil else {
+            if settings.debugMode {
+                ClerkLogger.warning(
+                    "Clerk.configure called multiple times. Ignoring subsequent call.",
+                    debugMode: true
+                )
+            }
+            return
+        }
+
         let container = DependencyContainer(settings: settings)
         let clerk = Clerk(dependencyContainer: container)
         clerk.publishableKey = publishableKey
         self.clerk = clerk
         isConfigured = true
+
+        if settings.debugMode {
+            ClerkLogger.info(
+                "Clerk SDK version \(Clerk.version). Instance type: \(clerk.instanceType)",
+                debugMode: true
+            )
+        }
     }
 
     /// A getter to see if the Clerk object is ready for use or not.
