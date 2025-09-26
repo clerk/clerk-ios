@@ -18,6 +18,7 @@ import UIKit
 @Observable
 final public class Clerk {
 
+    /// The internal singleton instance backing `shared`.
     private static var clerk: Clerk?
 
     /// The configured shared instance of ``Clerk``.
@@ -150,6 +151,44 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
+
+}
+
+extension Clerk {
+
+    /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
+    public struct Settings: Sendable {
+
+        /// Enable additional debugging signals and logging. Defaults to false.
+        public let debugMode: Bool
+
+        /// Enable development telemetry collection. Defaults to true.
+        public let telemetryEnabled: Bool
+
+        /// Configuration for keychain storage behavior.
+        public let keychainConfig: KeychainConfig
+
+        /// Configuration for OAuth redirect URLs and callback handling.
+        public let redirectConfig: RedirectConfig
+
+        /// Initializes a ``Settings`` instance.
+        /// - Parameters:
+        ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
+        ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
+        ///   - keychainConfig: Configuration for keychain storage behavior. Defaults to a new KeychainConfig instance.
+        ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling. Defaults to a new RedirectConfig instance.
+        public init(
+            debugMode: Bool = false,
+            telemetryEnabled: Bool = true,
+            keychainConfig: KeychainConfig = .init(),
+            redirectConfig: RedirectConfig = .init()
+        ) {
+            self.debugMode = debugMode
+            self.telemetryEnabled = telemetryEnabled
+            self.keychainConfig = keychainConfig
+            self.redirectConfig = redirectConfig
+        }
+    }
 
 }
 
