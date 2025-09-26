@@ -7,6 +7,7 @@
 
 #if os(iOS)
 
+@_spi(Internal) import Clerk
 import Foundation
 import PhoneNumberKit
 

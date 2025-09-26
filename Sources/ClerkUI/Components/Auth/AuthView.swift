@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import SwiftUI
 
 /// A comprehensive authentication view that handles user sign-in and sign-up flows.

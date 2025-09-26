@@ -8,7 +8,8 @@
 import Foundation
 
 /// Helper builders for common telemetry events.
-enum TelemetryEvents {
+@_spi(Internal)
+public enum TelemetryEvents {
     // Sampling rates matching JavaScript version
     private static let methodInvokedSamplingRate: Double = 0.1
     private static let viewDidAppearSamplingRate: Double = 0.1
@@ -40,7 +41,7 @@ enum TelemetryEvents {
     ///   - payload: Additional payload data.
     ///   - samplingRate: Optional custom sampling rate. If nil, uses the default for this event type.
     /// - Returns: A raw telemetry event ready to be recorded.
-    static func viewDidAppear(
+    public static func viewDidAppear(
         _ viewName: String,
         payload: [String: JSON] = [:],
         samplingRate: Double? = nil

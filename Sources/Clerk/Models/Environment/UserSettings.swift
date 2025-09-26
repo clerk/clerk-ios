@@ -12,47 +12,47 @@ extension Clerk.Environment {
     public struct UserSettings: Codable, Equatable, Sendable {
 
         public let attributes: [String: AttributesConfig]
-        public let signUp: SignUp
+        let signUp: SignUp
         public let social: [String: SocialConfig]
         public let actions: Actions
-        public let passkeySettings: PasskeySettings?
+        let passkeySettings: PasskeySettings?
 
         public struct AttributesConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
-            public let required: Bool
+            let required: Bool
             public let usedForFirstFactor: Bool
-            public let firstFactors: [String]?
+            let firstFactors: [String]?
             public let usedForSecondFactor: Bool
-            public let secondFactors: [String]?
-            public let verifications: [String]?
-            public let verifyAtSignUp: Bool
+            let secondFactors: [String]?
+            let verifications: [String]?
+            let verifyAtSignUp: Bool
         }
 
-        public struct SignUp: Codable, Equatable, Sendable {
-            public let customActionRequired: Bool
-            public let progressive: Bool
-            public let mode: String
-            public let legalConsentEnabled: Bool
+        struct SignUp: Codable, Equatable, Sendable {
+            let customActionRequired: Bool
+            let progressive: Bool
+            let mode: String
+            let legalConsentEnabled: Bool
         }
 
         public struct SocialConfig: Codable, Equatable, Sendable {
             public let enabled: Bool
-            public let required: Bool
+            let required: Bool
             public let authenticatable: Bool
             public let strategy: String
-            public let notSelectable: Bool
-            public let name: String
-            public let logoUrl: String?
+            let notSelectable: Bool
+            let name: String
+            let logoUrl: String?
         }
 
         public struct Actions: Codable, Equatable, Sendable {
             public var deleteSelf: Bool = false
-            public var createOrganization: Bool = false
+            var createOrganization: Bool = false
         }
 
-        public struct PasskeySettings: Codable, Equatable, Sendable {
-            public let allowAutofill: Bool
-            public let showSignInButton: Bool
+        struct PasskeySettings: Codable, Equatable, Sendable {
+            let allowAutofill: Bool
+            let showSignInButton: Bool
         }
     }
 

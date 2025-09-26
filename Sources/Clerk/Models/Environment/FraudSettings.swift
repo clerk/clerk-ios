@@ -11,13 +11,13 @@ extension Clerk.Environment {
 
     public struct FraudSettings: Codable, Sendable, Equatable {
 
-        public let native: Native
+        let native: Native
 
-        public struct Native: Codable, Sendable, Equatable {
+        struct Native: Codable, Sendable, Equatable {
 
-            public let deviceAttestationMode: DeviceAttestationMode
+            let deviceAttestationMode: DeviceAttestationMode
 
-            public enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
+            enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
                 case disabled
                 case onboarding
                 case enforced

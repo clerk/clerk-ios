@@ -128,7 +128,8 @@ extension EmailAddress {
 
 }
 
-extension EmailAddress {
+@_spi(Internal)
+public extension EmailAddress {
 
     static var mock: EmailAddress {
         EmailAddress(

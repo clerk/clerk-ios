@@ -5,7 +5,7 @@
 //  Created by Mike Pitre on 6/10/25.
 //
 
-import Clerk
+@_spi(Internal) import Clerk
 import SwiftUI
 
 #if os(iOS)

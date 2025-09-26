@@ -121,7 +121,8 @@ extension Passkey {
 
 }
 
-extension Passkey {
+@_spi(Internal)
+public extension Passkey {
 
     static var mock: Passkey {
         Passkey(

@@ -7,11 +7,12 @@
 
 #if os(iOS)
 
+@_spi(Internal) import Clerk
 import Foundation
 
 extension User {
 
-    var fullName: String? {
+    public var fullName: String? {
         let fullName = [firstName, lastName]
             .compactMap(\.self)
             .joined(separator: " ")

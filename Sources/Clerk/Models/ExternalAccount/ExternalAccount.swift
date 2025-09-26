@@ -128,7 +128,8 @@ extension ExternalAccount {
     }
 }
 
-extension ExternalAccount {
+@_spi(Internal)
+public extension ExternalAccount {
 
     static var mockVerified: ExternalAccount {
         .init(

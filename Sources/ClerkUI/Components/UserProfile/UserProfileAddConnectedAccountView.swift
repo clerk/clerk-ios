@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import SwiftUI
 
 struct UserProfileAddConnectedAccountView: View {
@@ -112,7 +112,7 @@ extension UserProfileAddConnectedAccountView {
 
 #Preview {
     let clerk = Clerk.mock
-    return UserProfileAddConnectedAccountView(contentHeight: .constant(300))
+    UserProfileAddConnectedAccountView(contentHeight: .constant(300))
         .environment(\.clerk, clerk)
         .environment(\.clerkTheme, .clerk)
 }

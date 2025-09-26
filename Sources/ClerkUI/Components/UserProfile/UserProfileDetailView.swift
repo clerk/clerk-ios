@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import NukeUI
 import SwiftUI
 
@@ -160,7 +160,7 @@ struct UserProfileDetailView: View {
 
 #Preview {
     let clerk = Clerk.mock
-    return NavigationStack {
+    NavigationStack {
         UserProfileDetailView()
             .environment(\.clerk, clerk)
             .environment(\.clerkTheme, .clerk)

@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import PhoneNumberKit
 import SwiftUI
 
@@ -39,7 +39,7 @@ struct UserProfileMfaAddSmsView: View {
         clerk.user
     }
 
-    private var availablePhoneNumbers: [PhoneNumber] {
+    private var availablePhoneNumbers: [Clerk.PhoneNumber] {
         (user?.phoneNumbersAvailableForMfa ?? [])
             .filter { $0.verification?.status == .verified }
             .sorted { $0.createdAt < $1.createdAt }
@@ -155,7 +155,7 @@ struct AddMfaSmsRow: View {
     @Environment(\.clerkTheme) private var theme
     let utility = PhoneNumberKitProvider.utility
 
-    let phoneNumber: PhoneNumber
+    let phoneNumber: Clerk.PhoneNumber
     let isSelected: Bool
 
     var country: CountryCodePickerViewController.Country? {
@@ -233,25 +233,25 @@ struct AddMfaSmsRow: View {
         .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("Row") {
-    @Previewable @State var selectedPhoneNumber: PhoneNumber?
-    let phoneNumbers: [PhoneNumber] = [.mock, .mockMfa]
-
-    VStack {
-        ForEach(phoneNumbers) { phoneNumber in
-            Button {
-                selectedPhoneNumber = phoneNumber
-            } label: {
-                AddMfaSmsRow(
-                    phoneNumber: phoneNumber,
-                    isSelected: selectedPhoneNumber == phoneNumber
-                )
-            }
-            .buttonStyle(.pressedBackground)
-        }
-    }
-    .padding()
-    .environment(\.clerkTheme, .clerk)
-}
+//#Preview("Row") {
+//    @Previewable @State var selectedPhoneNumber: PhoneNumber?
+//    let phoneNumbers: [PhoneNumber] = [.mock, .mockMfa]
+//
+//    VStack {
+//        ForEach(phoneNumbers) { phoneNumber in
+//            Button {
+//                selectedPhoneNumber = phoneNumber
+//            } label: {
+//                AddMfaSmsRow(
+//                    phoneNumber: phoneNumber,
+//                    isSelected: selectedPhoneNumber == phoneNumber
+//                )
+//            }
+//            .buttonStyle(.pressedBackground)
+//        }
+//    }
+//    .padding()
+//    .environment(\.clerkTheme, .clerk)
+//}
 
 #endif

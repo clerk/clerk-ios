@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import SwiftUI
 
 struct UserProfileAddMfaView: View {
@@ -147,11 +147,11 @@ extension UserProfileAddMfaView {
 }
 
 #Preview {
-    let clerk = Clerk.mock
-    return UserProfileAddMfaView()
-        .environment(\.clerk, clerk)
-        .environment(\.clerkTheme, .clerk)
-        .environment(\.userProfileSharedState, UserProfileView.SharedState())
+  let clerk = Clerk.mock
+  UserProfileAddMfaView()
+    .environment(\.clerk, clerk)
+    .environment(\.clerkTheme, .clerk)
+    .environment(\.userProfileSharedState, UserProfileView.SharedState())
 }
 
 #endif

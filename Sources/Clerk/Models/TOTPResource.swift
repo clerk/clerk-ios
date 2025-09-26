@@ -50,7 +50,8 @@ public struct TOTPResource: Codable, Hashable, Equatable, Sendable {
     }
 }
 
-extension TOTPResource {
+@_spi(Internal)
+public extension TOTPResource {
 
     static var mock: TOTPResource {
         .init(

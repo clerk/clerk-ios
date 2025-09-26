@@ -12,7 +12,8 @@ import Foundation
 
 extension Clerk.Environment {
 
-    var authenticatableSocialProviders: [OAuthProvider] {
+    @_spi(Internal)
+    public var authenticatableSocialProviders: [OAuthProvider] {
         guard let social = userSettings?.social else {
             return []
         }

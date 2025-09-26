@@ -60,7 +60,7 @@ public final actor MockAPIClient {
     private var handlers: [Handler] = []
     private var recordedInteractions: [RequestContext] = []
 
-    init() {}
+    public init() {}
 
     // MARK: - Registration
 

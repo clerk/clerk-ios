@@ -12,12 +12,13 @@ public struct CommerceSettings: Codable, Sendable, Equatable {
 
     public struct Billing: Codable, Sendable, Equatable {
         public let enabled: Bool
-        public let hasPaidUserPlans: Bool
-        public let hasPaidOrgPlans: Bool
+        let hasPaidUserPlans: Bool
+        let hasPaidOrgPlans: Bool
     }
 }
 
-extension CommerceSettings {
+@_spi(Internal)
+public extension CommerceSettings {
 
     static var mock: Self {
         .init(

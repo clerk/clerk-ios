@@ -533,7 +533,8 @@ extension User {
 
 }
 
-extension User {
+@_spi(Internal)
+public extension User {
 
     static var mock: Self {
         .init(

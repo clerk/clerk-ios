@@ -151,7 +151,8 @@ extension PhoneNumber {
 
 }
 
-extension PhoneNumber {
+@_spi(Internal)
+public extension PhoneNumber {
 
     static var mock: PhoneNumber {
         PhoneNumber(

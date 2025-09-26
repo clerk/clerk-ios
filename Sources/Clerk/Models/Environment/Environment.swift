@@ -9,7 +9,6 @@ import Foundation
 
 extension Clerk {
 
-    @_spi(Internal)
     public struct Environment: Codable, Sendable, Equatable {
         public var authConfig: AuthConfig?
         public var userSettings: UserSettings?
@@ -27,7 +26,7 @@ extension Clerk {
 extension Clerk.Environment {
 
     @MainActor
-    static func get() async throws -> Clerk.Environment {
+    public static func get() async throws -> Clerk.Environment {
         let request = Request<Clerk.Environment>.build(path: "/v1/environment")
         let environment = try await Clerk.shared.dependencyContainer.apiClient.send(request).value
         Clerk.shared.environment = environment

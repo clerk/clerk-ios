@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Clerk
+@_spi(Internal) import Clerk
 import SwiftUI
 
 private struct ClerkPreviewMockModifier: ViewModifier {
@@ -26,7 +26,8 @@ private struct ClerkPreviewMockModifier: ViewModifier {
     }
 }
 
-extension View {
+@_spi(Internal)
+public extension View {
     func clerkPreviewMock(
         _ configure: @escaping @Sendable (MockAPIClient) -> Void
     ) -> some View {

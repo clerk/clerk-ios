@@ -73,7 +73,9 @@ final public class Clerk {
     ///
     /// Initialized with a default collector and refreshed during `load()`.
     /// Used to record non-blocking telemetry events when running in development
-    internal private(set) var telemetry: TelemetryCollector = TelemetryCollector()
+    @_spi(Internal)
+    @ObservationIgnored
+    public private(set) var telemetry: TelemetryCollector = TelemetryCollector()
 
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
@@ -118,7 +120,6 @@ final public class Clerk {
     public let authEventEmitter = EventEmitter<AuthEvent>()
 
     /// The Clerk environment for the instance.
-    @_spi(Internal)
     public var environment = Environment() {
         didSet {
             try? saveEnvironmentToKeychain(environment)

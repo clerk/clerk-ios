@@ -255,7 +255,8 @@ extension Session {
 
 }
 
-extension Session {
+@_spi(Internal)
+public extension Session {
 
     static let mock = Session(
         id: "1",

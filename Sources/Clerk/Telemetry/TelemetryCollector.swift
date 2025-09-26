@@ -19,7 +19,8 @@ extension URLSession: NetworkRequester {
 /// A development-only telemetry collector for the Clerk iOS SDK.
 ///
 /// The collector is automatically disabled in production instances.
-actor TelemetryCollector {
+@_spi(Internal)
+public actor TelemetryCollector {
     // MARK: Types
 
     private struct RecordResult {
@@ -95,7 +96,7 @@ actor TelemetryCollector {
     /// Record an event to be sampled, throttled, buffered and sent.
     ///
     /// - Parameter raw: The raw event description to record.
-    func record(_ raw: TelemetryEventRaw) async {
+    public func record(_ raw: TelemetryEventRaw) async {
         let prepared = await preparePayload(event: raw.event, payload: raw.payload)
         let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
         
