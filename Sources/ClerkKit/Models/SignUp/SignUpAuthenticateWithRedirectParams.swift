@@ -46,12 +46,12 @@ extension SignUp {
             case .oauth(let provider, let redirectUrl):
                 .oauth(
                     provider: provider,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
             case .enterpriseSSO(let identifier, let redirectUrl):
                 .enterpriseSSO(
                     identifier: identifier,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
             }
         }
@@ -62,12 +62,12 @@ extension SignUp {
             case .oauth(let provider, let redirectUrl):
                 .init(
                     strategy: provider.strategy,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
             case .enterpriseSSO(let identifier, let redirectUrl):
                 .init(
                     strategy: "enterprise_sso",
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl,
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL,
                     identifier: identifier
                 )
             }

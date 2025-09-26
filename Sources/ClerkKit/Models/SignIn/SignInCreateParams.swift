@@ -123,14 +123,14 @@ extension SignIn {
             case .oauth(let oauthProvider, let redirectUrl):
                 .init(
                     strategy: oauthProvider.strategy,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
 
             case .enterpriseSSO(let emailAddress, let redirectUrl):
                 .init(
                     strategy: "enterprise_sso",
                     identifier: emailAddress,
-                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirect.redirectURL
                 )
 
             case .idToken(let provider, let idToken):
