@@ -10,13 +10,13 @@ import Foundation
 extension Clerk.Environment {
 
     public struct DisplayConfig: Codable, Sendable, Equatable {
-        public let instanceEnvironmentType: InstanceEnvironmentType
+        let instanceEnvironmentType: InstanceEnvironmentType
         public let applicationName: String
         public let preferredSignInStrategy: PreferredSignInStrategy
         public let supportEmail: String?
         public let branded: Bool
         public let logoImageUrl: String
-        public let homeUrl: String
+        let homeUrl: String
         public let privacyPolicyUrl: String?
         public let termsUrl: String?
 
