@@ -17,7 +17,7 @@ struct ClerkHeaderRequestProcessor: RequestPreprocessor {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         
-        if Clerk.shared.settings.debugMode, let client = Clerk.shared.client {
+        if Clerk.shared.dependencyContainer.settings.debugMode, let client = Clerk.shared.client {
             request.setValue(client.id, forHTTPHeaderField: "x-clerk-client-id")
         }
         

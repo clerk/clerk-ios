@@ -18,13 +18,13 @@ import UIKit
 @Observable
 final public class Clerk {
 
-    private static var configuredClerk: Clerk?
+    private static var clerk: Clerk?
 
     /// The configured shared instance of ``Clerk``.
     ///
     /// - Warning: You must call ``configure(publishableKey:settings:)`` before accessing this.
     public static var shared: Clerk {
-        guard let clerk = configuredClerk else {
+        guard let clerk = clerk else {
             assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:settings:)")
             return Clerk()
         }
@@ -42,8 +42,7 @@ final public class Clerk {
         let container = DependencyContainer(settings: settings)
         let clerk = Clerk(dependencyContainer: container)
         clerk.publishableKey = publishableKey
-        clerk.settings = settings
-        configuredClerk = clerk
+        self.clerk = clerk
         isConfigured = true
     }
 
@@ -140,13 +139,6 @@ final public class Clerk {
     private(set) var frontendApiUrl: String = "" {
         didSet {
             dependencyContainer.updateFrontendAPIURL(frontendApiUrl)
-        }
-    }
-
-    /// The configuration settings for this Clerk instance.
-    var settings: Settings = .init() {
-        didSet {
-            dependencyContainer.updateSettings(settings, keychain: dependencyContainer.keychain)
         }
     }
 
@@ -467,6 +459,6 @@ extension Clerk {
         settings: Settings = .init()
     ) {
         self.publishableKey = publishableKey
-        self.settings = settings
+        dependencyContainer.updateSettings(settings, keychain: dependencyContainer.keychain)
     }
 }

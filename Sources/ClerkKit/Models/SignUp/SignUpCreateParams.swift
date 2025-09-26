@@ -183,13 +183,13 @@ extension SignUp {
             case .oauth(let provider, let redirectUrl):
                 .init(
                     strategy: provider.strategy,
-                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
                 )
             case .enterpriseSSO(let identifier, let redirectUrl):
                 .init(
                     strategy: "enterprise_sso",
                     emailAddress: identifier,
-                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.dependencyContainer.settings.redirectConfig.redirectUrl
                 )
             case .ticket(let ticket):
                 .init(
