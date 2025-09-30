@@ -257,22 +257,6 @@ extension Clerk {
 
         try await dependencyContainer.apiClient.send(request)
     }
-
-    // MARK: - Testing Utilities
-
-    /// Overrides the networking client used by Clerk. Intended for tests.
-    @MainActor
-    @_spi(Internal)
-    public func use(apiClient: MockAPIClient) {
-        dependencyContainer.apiClient = apiClient
-    }
-
-    /// Restores the default networking client constructed from the configured frontend API URL.
-    @_spi(Internal)
-    public func resetAPIClientToDefault() {
-        let baseURL = frontendApiUrl.isEmpty ? nil : URL(string: frontendApiUrl)
-        dependencyContainer.resetApiClient(baseURL: baseURL)
-    }
 }
 
 extension Clerk {
@@ -476,21 +460,3 @@ extension EnvironmentValues {
     @Entry public var clerk = Clerk.shared
 }
 #endif
-
-extension Clerk {
-
-    @_spi(Internal)
-    public static func resetForTesting() {
-        clerk = nil
-        isConfigured = false
-    }
-
-    @_spi(Internal)
-    public static func configureForTesting(
-        publishableKey: String,
-        options: ClerkOptions = .init()
-    ) {
-        resetForTesting()
-        configure(publishableKey: publishableKey, options: options)
-    }
-}
