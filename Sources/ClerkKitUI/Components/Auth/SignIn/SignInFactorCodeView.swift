@@ -307,7 +307,7 @@ extension SignInFactorCodeView {
         } catch {
             otpFieldIsFocused = false
             self.error = error
-            ClerkLogger.error("Failed to prepare factor for sign in", error: error)
+            Logger.log(level: .error, message: "Failed to prepare factor for sign in", error: error)
         }
     }
 
@@ -349,7 +349,7 @@ extension SignInFactorCodeView {
 
             if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
                 self.error = error
-                ClerkLogger.error("Failed to attempt factor for sign in", error: error)
+                Logger.log(level: .error, message: "Failed to attempt factor for sign in", error: error)
                 otpFieldIsFocused = false
             }
         }

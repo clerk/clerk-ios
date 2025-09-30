@@ -196,7 +196,7 @@ extension SignUpCompleteProfileView {
             authState.setToStepForStatus(signUp: signUp)
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to update sign up with profile data", error: error)
+            Logger.log(level: .error, message: "Failed to update sign up with profile data", error: error)
         }
     }
 

@@ -20,7 +20,7 @@ actor WebAuthContinuationManager {
         }
 
         guard let continuation = continuation else {
-            ClerkLogger.warning("Continuation already completed. Ignoring.")
+            Logger.log(level: .warning, scope: .auth, message: "Continuation already completed. Ignoring.")
             return
         }
 

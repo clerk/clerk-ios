@@ -131,7 +131,7 @@ extension UserProfileEmailRow {
             try await user?.update(.init(primaryEmailAddressId: email.id))
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to set email as primary", error: error)
+            Logger.log(level: .error, message: "Failed to set email as primary", error: error)
         }
     }
 
@@ -142,7 +142,7 @@ extension UserProfileEmailRow {
             try await resource?.deleteAction()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to remove email resource", error: error)
+            Logger.log(level: .error, message: "Failed to remove email resource", error: error)
         }
     }
 

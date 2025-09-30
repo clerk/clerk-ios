@@ -174,7 +174,7 @@ extension UserProfileMfaRow {
             try await removeResource?.deleteAction()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to remove MFA resource", error: error)
+            Logger.log(level: .error, message: "Failed to remove MFA resource", error: error)
         }
     }
 
@@ -183,7 +183,7 @@ extension UserProfileMfaRow {
             try await phoneNumber.makeDefaultSecondFactor()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to make phone number default second factor", error: error)
+            Logger.log(level: .error, message: "Failed to make phone number default second factor", error: error)
         }
     }
 
@@ -194,7 +194,7 @@ extension UserProfileMfaRow {
             self.backupCodes = try await user.createBackupCodes()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to regenerate backup codes", error: error)
+            Logger.log(level: .error, message: "Failed to regenerate backup codes", error: error)
         }
     }
 }

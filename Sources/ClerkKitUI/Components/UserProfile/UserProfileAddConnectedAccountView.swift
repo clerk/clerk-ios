@@ -104,7 +104,7 @@ extension UserProfileAddConnectedAccountView {
         } catch {
             if error.isUserCancelledError { return }
             self.error = error
-            ClerkLogger.error("Failed to connect external account", error: error)
+            Logger.log(level: .error, message: "Failed to connect external account", error: error)
         }
     }
 

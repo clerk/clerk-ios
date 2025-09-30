@@ -144,7 +144,7 @@ extension UserProfileExternalAccountRow {
             try await account.reauthorize()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to reconnect external account", error: error)
+            Logger.log(level: .error, message: "Failed to reconnect external account", error: error)
         }
     }
 
@@ -155,7 +155,7 @@ extension UserProfileExternalAccountRow {
             try await resource?.deleteAction()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to remove external account resource", error: error)
+            Logger.log(level: .error, message: "Failed to remove external account resource", error: error)
         }
     }
 

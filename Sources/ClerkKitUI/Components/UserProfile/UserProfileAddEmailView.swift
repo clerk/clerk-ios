@@ -131,7 +131,7 @@ extension UserProfileAddEmailView {
             path.append(Destination.verify(emailAddress))
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to add email address", error: error)
+            Logger.log(level: .error, message: "Failed to add email address", error: error)
         }
     }
 

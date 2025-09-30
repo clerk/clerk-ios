@@ -10,8 +10,7 @@ import Foundation
 struct ClerkDeviceTokenRequestProcessor: RequestPostprocessor {
     static func process(response: HTTPURLResponse, data: Data, context: RequestPipelineContext) throws {
         if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-            let keychain = Clerk.shared.dependencyContainer.keychain
-            try? keychain.set(deviceToken, forKey: "clerkDeviceToken")
+            try? Clerk.shared.dependencyContainer.keychain.set(deviceToken, forKey: "clerkDeviceToken")
         }
     }
 }

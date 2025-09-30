@@ -238,7 +238,7 @@ extension SignUpCodeView {
         } catch {
             otpFieldIsFocused = false
             self.error = error
-            ClerkLogger.error("Failed to prepare verification for sign up", error: error)
+            Logger.log(level: .error, message: "Failed to prepare verification for sign up", error: error)
         }
     }
 

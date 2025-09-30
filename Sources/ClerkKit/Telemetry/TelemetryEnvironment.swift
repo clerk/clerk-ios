@@ -37,7 +37,7 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
     }
 
     func isDebugModeEnabled() async -> Bool {
-        Clerk.shared.options.logging.level.allowsDebugLogging
+        Clerk.shared.options.logging.level == .debug
     }
 
     func publishableKey() async -> String? {
@@ -45,5 +45,4 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
         return key.isEmpty ? nil : key
     }
 }
-
 

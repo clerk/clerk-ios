@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import RegexBuilder
 
 #if canImport(UIKit)
 import UIKit
@@ -21,19 +20,25 @@ final public class Clerk {
     /// The internal singleton instance backing `shared`.
     private static var clerk: Clerk?
 
+    /// A variable that is only `true` if ``shared`` is available for use.
+    /// Gets set to `true` immediately after
+    /// ``configure(publishableKey:options:)`` is called.
+    public private(set) static var isInitialized = false
+
     /// The configured shared instance of ``Clerk``.
     ///
     /// - Warning: You must call ``configure(publishableKey:options:)`` before accessing this.
     public static var shared: Clerk {
-        guard let clerk = clerk else {
+        guard let clerk else {
+            Logger.log(
+                level: .warning,
+                message: "Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)"
+            )
             assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)")
             return Clerk()
         }
         return clerk
     }
-
-    /// Tracks whether ``Clerk.configure`` has been called.
-    public private(set) static var isConfigured = false
 
     /// Configures a shared instance of ``Clerk`` for use throughout your app.
     ///
@@ -44,33 +49,52 @@ final public class Clerk {
     ///   - publishableKey: The publishable key from your Clerk Dashboard. Must start with
     ///     `pk_live_` or `pk_test_`.
     ///   - options: ``ClerkOptions`` that customize logging, telemetry, and persistence behaviour.
+    @discardableResult
     public static func configure(
         publishableKey: String,
-        options: ClerkOptions = .init()
-    ) {
+        options: ClerkOptions? = nil
+    ) -> Clerk {
+        precondition(
+            !publishableKey.isEmptyTrimmed,
+            "Clerk.configure(publishableKey:options:) requires a non-empty publishable key."
+        )
+
         guard clerk == nil else {
-            ClerkLogger.warning(
-                "Clerk.configure called multiple times. Ignoring subsequent call.",
-                debugMode: true
+            Logger.log(
+                level: .warning,
+                message: "Clerk.configure called multiple times. Please make sure you only call this once on app launch."
             )
-            return
+            return shared
         }
 
-        let container = DependencyContainer(options: options)
-        let clerk = Clerk(dependencyContainer: container)
-        clerk.publishableKey = publishableKey
-        self.clerk = clerk
-        isConfigured = true
-
-        ClerkLogger.info(
-            "Clerk SDK version \(Clerk.version). Instance type: \(clerk.instanceType)",
-            debugMode: true
+        clerk = Clerk(
+            publishableKey: publishableKey,
+            options: options
         )
+
+        Logger.log(
+            level: .debug,
+            message: "Clerk SDK Version - \(Clerk.version)"
+        )
+
+        isInitialized = true
+
+        return shared
     }
 
     /// Access the configured options that drive Clerk behaviour.
     public var options: ClerkOptions {
         dependencyContainer.options
+    }
+
+    /// Specifies the detail of the logs returned from the SDK to the console.
+    public var logLevel: ClerkLogLevel {
+        get {
+            options.logging.level
+        }
+        set {
+            options.logging.level = newValue
+        }
     }
 
     /// A getter to see if the Clerk object is ready for use or not.
@@ -82,6 +106,11 @@ final public class Clerk {
             return .production
         }
         return .development
+    }
+
+    /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
+    public var publishableKey: String {
+        dependencyContainer.configuration.publishableKey
     }
 
     /// The Client object for the current device.
@@ -96,12 +125,11 @@ final public class Clerk {
         }
     }
     /// The telemetry collector for development diagnostics.
-    ///
-    /// Initialized with a default collector and refreshed during `load()`.
-    /// Used to record non-blocking telemetry events when running in development
     @_spi(Internal)
     @ObservationIgnored
-    public private(set) var telemetry: TelemetryCollector = TelemetryCollector()
+    public var telemetry: TelemetryCollector {
+        dependencyContainer.telemetry
+    }
 
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
@@ -117,33 +145,10 @@ final public class Clerk {
     /// A dictionary of a user's active sessions on all devices.
     internal(set) public var sessionsByUserId: [String: [Session]] = [:]
 
-    /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    private(set) public var publishableKey: String = "" {
-        didSet {
-            let liveRegex = Regex {
-                "pk_live_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-
-            let testRegex = Regex {
-                "pk_test_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-
-            if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-                let apiUrl = String(match).base64String()
-            {
-                frontendApiUrl = "https://\(apiUrl.dropLast())"
-            }
-        }
-    }
-
     /// The event emitter for auth events.
-    public let authEventEmitter = EventEmitter<AuthEvent>()
+    public var authEventEmitter: EventEmitter<AuthEvent> {
+        dependencyContainer.authEventEmitter
+    }
 
     /// The Clerk environment for the instance.
     public var environment = Environment() {
@@ -162,11 +167,13 @@ final public class Clerk {
         loadCachedEnvironment()
     }
 
-    /// Frontend API URL.
-    private(set) var frontendApiUrl: String = "" {
-        didSet {
-            dependencyContainer.updateFrontendAPIURL(frontendApiUrl)
-        }
+    private convenience init(
+        publishableKey: String,
+        options: ClerkOptions?
+    ) {
+        let dependencyContainer = DependencyContainer(options: options)
+        dependencyContainer.updatePublishableKey(publishableKey)
+        self.init(dependencyContainer: dependencyContainer)
     }
 
     /// Holds a reference to the task performed when the app will enter the foreground.
@@ -187,7 +194,10 @@ extension Clerk {
     @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            ClerkLogger.error("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+            Logger.log(
+                level: .warning,
+                message: "Clerk loaded without a publishable key. Please call configure() with a valid publishable key first."
+            )
             return
         }
 
@@ -203,9 +213,6 @@ extension Clerk {
             attestDeviceIfNeeded(environment: try await environment)
 
             isLoaded = true
-
-            // Refresh telemetry collector after successful load
-            telemetry = TelemetryCollector()
         } catch {
             throw error
         }
@@ -258,23 +265,8 @@ extension Clerk {
 
         try await dependencyContainer.apiClient.send(request)
     }
-
-    // MARK: - Testing Utilities
-
-    /// Overrides the networking client used by Clerk. Intended for tests.
-    @MainActor
-    @_spi(Internal)
-    public func use(apiClient: MockAPIClient) {
-        dependencyContainer.overrideApiClient(apiClient)
-    }
-
-    /// Restores the default networking client constructed from the configured frontend API URL.
-    @_spi(Internal)
-    public func resetAPIClientToDefault() {
-        let baseURL = frontendApiUrl.isEmpty ? nil : URL(string: frontendApiUrl)
-        dependencyContainer.resetApiClient(baseURL: baseURL)
-    }
 }
+
 
 extension Clerk {
 
@@ -294,7 +286,7 @@ extension Clerk {
         }
 
         let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
-        ClerkLogger.info(message, debugMode: true)
+        Logger.log(level: .info, scope: .session, message: message)
     }
 
     func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
@@ -385,7 +377,7 @@ extension Clerk {
                 do {
                     try await AppAttestHelper.performDeviceAttestation()
                 } catch {
-                    ClerkLogger.logError(error, message: "Device attestation failed")
+                    Logger.log(level: .error, message: "Device attestation failed", error: error)
                 }
             }
         }
@@ -401,7 +393,7 @@ extension Clerk {
                 }
             }
         } catch {
-            ClerkLogger.logError(error, message: "Failed to load cached client")
+            Logger.log(level: .error, message: "Failed to load cached client", error: error)
         }
     }
 
@@ -415,7 +407,7 @@ extension Clerk {
                 }
             }
         } catch {
-            ClerkLogger.logError(error, message: "Failed to load cached environment")
+            Logger.log(level: .error, message: "Failed to load cached environment", error: error)
         }
     }
 
@@ -452,7 +444,7 @@ extension Clerk {
 
     @_spi(Internal)
     public static var mock: Clerk {
-        let clerk = Clerk()
+        let clerk = Clerk(dependencyContainer: DependencyContainer())
         clerk.client = .mock
         clerk.environment = .mock
         clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
@@ -461,7 +453,7 @@ extension Clerk {
 
     @_spi(Internal)
     public static var mockSignedOut: Clerk {
-        let clerk = Clerk()
+        let clerk = Clerk(dependencyContainer: DependencyContainer())
         clerk.client = .mockSignedOut
         clerk.environment = .mock
         clerk.sessionsByUserId = [:]
@@ -477,15 +469,3 @@ extension EnvironmentValues {
     @Entry public var clerk = Clerk.shared
 }
 #endif
-
-extension Clerk {
-
-    @_spi(Testing)
-    public func configureForTesting(
-        publishableKey: String,
-        options: ClerkOptions = .init()
-    ) {
-        self.publishableKey = publishableKey
-        dependencyContainer.updateOptions(options)
-    }
-}

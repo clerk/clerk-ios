@@ -131,7 +131,7 @@ extension UserProfilePhoneRow {
             try await user?.update(.init(primaryPhoneNumberId: phone.id))
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to set phone as primary", error: error)
+            Logger.log(level: .error, message: "Failed to set phone as primary", error: error)
         }
     }
 
@@ -142,7 +142,7 @@ extension UserProfilePhoneRow {
             try await resource?.deleteAction()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to remove phone resource", error: error)
+            Logger.log(level: .error, message: "Failed to remove phone resource", error: error)
         }
     }
 

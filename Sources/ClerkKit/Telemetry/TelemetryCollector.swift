@@ -205,9 +205,12 @@ public actor TelemetryCollector {
             let _ = try await config.networkRequester.data(for: request)
         } catch {
             if await isDebugModeEnabled() {
-                ClerkLogger.logNetworkError(
-                    error,
-                    endpoint: request.url?.absoluteString ?? "telemetry"
+                Logger.log(
+                    level: .error,
+                    scope: .network,
+                    message: "Network request failed",
+                    info: ["endpoint": request.url?.absoluteString ?? "telemetry"],
+                    error: error
                 )
             }
         }
@@ -217,7 +220,7 @@ public actor TelemetryCollector {
 
     private func logEventIfDebug(name: String, _ payload: Any) async {
         guard await isDebugModeEnabled() else { return }
-        ClerkLogger.debug("[telemetry] \(name): \(payload)", debugMode: true)
+        Logger.log(level: .debug, scope: .telemetry, message: "[telemetry] \(name): \(payload)")
     }
 
     /// Enrich the raw event with SDK metadata and instance information.
