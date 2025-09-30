@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import RegexBuilder
 
 #if canImport(UIKit)
 import UIKit
@@ -31,8 +30,9 @@ final public class Clerk {
     /// - Warning: You must call ``configure(publishableKey:options:)`` before accessing this.
     public static var shared: Clerk {
         guard let clerk else {
-            ClerkLogger.warning(
-                "Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)"
+            Logger.log(
+                level: .warning,
+                message: "Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)"
             )
             assertionFailure("Clerk has not been configured. Please call Clerk.configure(publishableKey:options:)")
             return Clerk()
@@ -60,8 +60,9 @@ final public class Clerk {
         )
 
         guard clerk == nil else {
-            ClerkLogger.warning(
-                "Clerk.configure called multiple times. Please make sure you only call this once on app launch."
+            Logger.log(
+                level: .warning,
+                message: "Clerk.configure called multiple times. Please make sure you only call this once on app launch."
             )
             return shared
         }
@@ -71,9 +72,9 @@ final public class Clerk {
             options: options
         )
 
-        ClerkLogger.debug(
-            "Clerk SDK Version - \(Clerk.version)",
-            scope: .core
+        Logger.log(
+            level: .debug,
+            message: "Clerk SDK Version - \(Clerk.version)"
         )
 
         isInitialized = true
@@ -93,8 +94,6 @@ final public class Clerk {
         }
         set {
             options.logging.level = newValue
-
-            // No automatic telemetry emission; callers can record changes manually if desired.
         }
     }
 
@@ -107,6 +106,11 @@ final public class Clerk {
             return .production
         }
         return .development
+    }
+
+    /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
+    public var publishableKey: String {
+        dependencyContainer.configuration.publishableKey
     }
 
     /// The Client object for the current device.
@@ -141,30 +145,6 @@ final public class Clerk {
     /// A dictionary of a user's active sessions on all devices.
     internal(set) public var sessionsByUserId: [String: [Session]] = [:]
 
-    /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    private(set) public var publishableKey: String = "" {
-        didSet {
-            let liveRegex = Regex {
-                "pk_live_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-
-            let testRegex = Regex {
-                "pk_test_"
-                Capture {
-                    OneOrMore(.any)
-                }
-            }
-
-            if let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-               let apiUrl = String(match).base64String() {
-                frontendApiUrl = "https://\(apiUrl.dropLast())"
-            }
-        }
-    }
-
     /// The event emitter for auth events.
     public var authEventEmitter: EventEmitter<AuthEvent> {
         dependencyContainer.authEventEmitter
@@ -192,15 +172,8 @@ final public class Clerk {
         options: ClerkOptions?
     ) {
         let dependencyContainer = DependencyContainer(options: options)
+        dependencyContainer.updatePublishableKey(publishableKey)
         self.init(dependencyContainer: dependencyContainer)
-        self.publishableKey = publishableKey
-    }
-
-    /// Frontend API URL.
-    private(set) var frontendApiUrl: String = "" {
-        didSet {
-            dependencyContainer.updateFrontendAPIURL(frontendApiUrl)
-        }
     }
 
     /// Holds a reference to the task performed when the app will enter the foreground.
@@ -221,7 +194,10 @@ extension Clerk {
     @MainActor
     public func load() async throws {
         if publishableKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            ClerkLogger.error("Clerk loaded without a publishable key. Please call configure() with a valid publishable key first.")
+            Logger.log(
+                level: .warning,
+                message: "Clerk loaded without a publishable key. Please call configure() with a valid publishable key first."
+            )
             return
         }
 
@@ -237,9 +213,6 @@ extension Clerk {
             attestDeviceIfNeeded(environment: try await environment)
 
             isLoaded = true
-
-            // Refresh telemetry collector after successful load
-            dependencyContainer.resetTelemetryCollector()
         } catch {
             throw error
         }
@@ -294,6 +267,7 @@ extension Clerk {
     }
 }
 
+
 extension Clerk {
 
     private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
@@ -312,7 +286,7 @@ extension Clerk {
         }
 
         let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
-        ClerkLogger.info(message, scope: .session)
+        Logger.log(level: .info, scope: .session, message: message)
     }
 
     func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
@@ -403,7 +377,7 @@ extension Clerk {
                 do {
                     try await AppAttestHelper.performDeviceAttestation()
                 } catch {
-                    ClerkLogger.logError(error, message: "Device attestation failed")
+                    Logger.log(level: .error, message: "Device attestation failed", error: error)
                 }
             }
         }
@@ -419,7 +393,7 @@ extension Clerk {
                 }
             }
         } catch {
-            ClerkLogger.logError(error, message: "Failed to load cached client")
+            Logger.log(level: .error, message: "Failed to load cached client", error: error)
         }
     }
 
@@ -433,7 +407,7 @@ extension Clerk {
                 }
             }
         } catch {
-            ClerkLogger.logError(error, message: "Failed to load cached environment")
+            Logger.log(level: .error, message: "Failed to load cached environment", error: error)
         }
     }
 

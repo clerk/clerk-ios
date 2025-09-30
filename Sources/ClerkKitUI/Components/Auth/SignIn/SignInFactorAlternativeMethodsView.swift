@@ -177,7 +177,7 @@ extension SignInFactorAlternativeMethodsView {
         } catch {
             if error.isUserCancelledError { return }
             self.error = error
-            ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
+            Logger.log(level: .error, message: "Failed to sign in with OAuth provider", error: error)
         }
     }
 

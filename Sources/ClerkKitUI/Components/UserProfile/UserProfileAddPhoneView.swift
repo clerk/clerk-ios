@@ -129,7 +129,7 @@ extension UserProfileAddPhoneView {
             path.append(Destination.verify(phoneNumber))
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to add phone number", error: error)
+            Logger.log(level: .error, message: "Failed to add phone number", error: error)
         }
     }
 

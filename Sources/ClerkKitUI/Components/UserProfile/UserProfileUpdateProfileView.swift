@@ -126,7 +126,7 @@ struct UserProfileUpdateProfileView: View {
                         try await user.setProfileImage(imageData: resizedData)
                     } catch {
                         self.error = error
-                        ClerkLogger.error("Failed to set profile image", error: error)
+                        Logger.log(level: .error, message: "Failed to set profile image", error: error)
                     }
                 }
             }
@@ -178,7 +178,7 @@ struct UserProfileUpdateProfileView: View {
                     try await user.deleteProfileImage()
                 } catch {
                     self.error = error
-                    ClerkLogger.error("Failed to delete profile image", error: error)
+                    Logger.log(level: .error, message: "Failed to delete profile image", error: error)
                 }
             } label: { _ in
                 Text("Remove photo")
@@ -224,7 +224,7 @@ extension UserProfileUpdateProfileView {
             dismiss()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to update user profile", error: error)
+            Logger.log(level: .error, message: "Failed to update user profile", error: error)
         }
     }
 

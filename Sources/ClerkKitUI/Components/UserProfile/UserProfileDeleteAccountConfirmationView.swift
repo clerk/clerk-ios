@@ -105,7 +105,7 @@ extension UserProfileDeleteAccountConfirmationView {
             }
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to delete account", error: error)
+            Logger.log(level: .error, message: "Failed to delete account", error: error)
         }
     }
 

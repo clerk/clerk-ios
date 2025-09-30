@@ -39,7 +39,7 @@ struct UserButtonAccountSwitcher: View {
             dismiss()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to set active session", error: error)
+            Logger.log(level: .error, message: "Failed to set active session", error: error)
         }
     }
 
@@ -48,7 +48,7 @@ struct UserButtonAccountSwitcher: View {
             try await clerk.signOut()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to sign out of all accounts", error: error)
+            Logger.log(level: .error, message: "Failed to sign out of all accounts", error: error)
         }
     }
 

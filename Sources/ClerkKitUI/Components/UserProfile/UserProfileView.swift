@@ -272,7 +272,7 @@ extension UserProfileView {
             }
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to sign out", error: error)
+            Logger.log(level: .error, message: "Failed to sign out", error: error)
         }
     }
 
@@ -282,10 +282,10 @@ extension UserProfileView {
             try await user.getSessions()
         } catch {
             if error.isCancellationError {
-                ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
+                Logger.log(level: .error, message: "Get sessions on all devices cancelled.", error: error)
             } else {
                 self.error = error
-                ClerkLogger.error("Failed to get sessions on all devices", error: error)
+                Logger.log(level: .error, message: "Failed to get sessions on all devices", error: error)
             }
         }
     }

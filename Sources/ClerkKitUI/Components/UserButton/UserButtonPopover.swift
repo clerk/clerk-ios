@@ -125,7 +125,7 @@ extension UserButtonPopover {
             }
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to sign out from popover", error: error)
+            Logger.log(level: .error, message: "Failed to sign out from popover", error: error)
         }
     }
 

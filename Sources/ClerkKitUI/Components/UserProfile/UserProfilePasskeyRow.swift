@@ -110,7 +110,7 @@ extension UserProfilePasskeyRow {
             try await removeResource?.deleteAction()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to remove passkey resource", error: error)
+            Logger.log(level: .error, message: "Failed to remove passkey resource", error: error)
         }
     }
 

@@ -55,7 +55,7 @@ extension UserProfilePasskeySection {
         } catch {
             if error.isUserCancelledError { return }
             self.error = error
-            ClerkLogger.error("Failed to create passkey", error: error)
+            Logger.log(level: .error, message: "Failed to create passkey", error: error)
         }
     }
 }

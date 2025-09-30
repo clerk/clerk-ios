@@ -28,7 +28,7 @@ extension TokenResource {
         do {
             return try DecodedJWT(jwt: jwt)
         } catch {
-            ClerkLogger.error("Failed to decode JWT", error: error)
+            Logger.log(level: .error, message: "Failed to decode JWT", error: error)
             return nil
         }
     }

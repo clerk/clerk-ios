@@ -92,7 +92,7 @@ extension UserProfilePasskeyRenameView {
             dismiss()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to rename passkey", error: error)
+            Logger.log(level: .error, message: "Failed to rename passkey", error: error)
         }
     }
 

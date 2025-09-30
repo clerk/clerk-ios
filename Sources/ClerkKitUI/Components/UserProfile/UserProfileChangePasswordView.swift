@@ -214,7 +214,7 @@ extension UserProfileChangePasswordView {
             dismiss()
         } catch {
             self.error = error
-            ClerkLogger.error("Failed to reset password", error: error)
+            Logger.log(level: .error, message: "Failed to reset password", error: error)
         }
     }
 
