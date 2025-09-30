@@ -110,7 +110,15 @@ final public class Clerk {
 
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     public var publishableKey: String {
-        dependencyContainer.configuration.publishableKey
+        dependencyContainer.configManager.state.config?.publishableKey
+            ?? dependencyContainer.configurationStore.publishableKey
+    }
+
+    /// Frontend API URL as a string.
+    public var frontendApiUrl: String {
+        dependencyContainer.configManager.state.config?.frontendAPIURL?.absoluteString
+            ?? dependencyContainer.configurationStore.frontendAPIURL?.absoluteString
+            ?? ""
     }
 
     /// The Client object for the current device.
@@ -172,18 +180,9 @@ final public class Clerk {
         options: ClerkOptions?
     ) {
         let dependencyContainer = DependencyContainer(options: options)
-        dependencyContainer.updatePublishableKey(publishableKey)
+        dependencyContainer.configurationStore.configure(publishableKey: publishableKey)
         self.init(dependencyContainer: dependencyContainer)
     }
-
-    /// Holds a reference to the task performed when the app will enter the foreground.
-    private var willEnterForegroundTask: Task<Void, Error>?
-
-    /// Holds a reference to the task performed when the app entered the background.
-    private var didEnterBackgroundTask: Task<Void, Error>?
-
-    /// Holds a reference to the session polling task.
-    private var sessionPollingTask: Task<Void, Error>?
 
 }
 
@@ -202,15 +201,13 @@ extension Clerk {
         }
 
         do {
-            startSessionTokenPolling()
-            setupNotificationObservers()
-
             // Both of these are automatically applied to the shared instance:
             async let client = Client.get()  // via middleware
             async let environment = Environment.get()  // via the function itself
 
             _ = try await client
             attestDeviceIfNeeded(environment: try await environment)
+            await dependencyContainer.configManager.load()
 
             isLoaded = true
         } catch {
@@ -310,65 +307,6 @@ extension Clerk {
         if (previousSession.tasks ?? []) != (session.tasks ?? []) { return true }
 
         return false
-    }
-
-    private func setupNotificationObservers() {
-        #if !os(watchOS) && !os(macOS)
-
-        // cancel existing tasks if they exist (switching instances)
-        willEnterForegroundTask?.cancel()
-        didEnterBackgroundTask?.cancel()
-
-        willEnterForegroundTask = Task {
-            for await _ in NotificationCenter.default.notifications(
-                named: UIApplication.willEnterForegroundNotification
-            ).map({ _ in () }) {
-                self.startSessionTokenPolling()
-
-                // Start both functions concurrently without waiting for them
-                Task { @MainActor in
-                    try? await Client.get()
-                }
-
-                Task { @MainActor in
-                    try? await Environment.get()
-                }
-            }
-        }
-
-        didEnterBackgroundTask = Task { @MainActor in
-            for await _ in NotificationCenter.default.notifications(
-                named: UIApplication.didEnterBackgroundNotification
-            ).map({ _ in () }) {
-                stopSessionTokenPolling()
-                
-                Task {
-                    await telemetry.flush()
-                }
-            }
-        }
-
-        #endif
-    }
-
-    private func startSessionTokenPolling() {
-        guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
-            return
-        }
-
-        sessionPollingTask = Task(priority: .background) { @MainActor in
-            repeat {
-                if let session = session {
-                    _ = try? await session.getToken()
-                }
-                try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
-            } while !Task.isCancelled
-        }
-    }
-
-    private func stopSessionTokenPolling() {
-        sessionPollingTask?.cancel()
-        sessionPollingTask = nil
     }
 
     private func attestDeviceIfNeeded(environment: Environment) {

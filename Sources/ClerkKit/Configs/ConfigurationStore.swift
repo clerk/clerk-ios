@@ -1,17 +1,17 @@
 import Foundation
 import RegexBuilder
 
-final class ClerkConfiguration {
+final class ConfigurationStore {
   private(set) var publishableKey: String = ""
   private(set) var frontendAPIURL: URL?
 
-  func update(publishableKey: String) {
+  func configure(publishableKey: String) {
     self.publishableKey = publishableKey
     frontendAPIURL = Self.makeFrontendAPIURL(from: publishableKey)
   }
 }
 
-private extension ClerkConfiguration {
+private extension ConfigurationStore {
   static func makeFrontendAPIURL(from publishableKey: String) -> URL? {
     guard !publishableKey.isEmpty else {
       return nil

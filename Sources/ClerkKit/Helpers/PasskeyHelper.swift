@@ -18,7 +18,7 @@ final class PasskeyHelper: NSObject {
 
     @MainActor
     var domain: String {
-        guard let urlComponents = URLComponents(string: Clerk.shared.dependencyContainer.configuration.frontendAPIURL?.absoluteString ?? "") else {
+        guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
             return ""
         }
 
