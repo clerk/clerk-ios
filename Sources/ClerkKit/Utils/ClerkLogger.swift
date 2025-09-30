@@ -1,236 +1,239 @@
-//
-//  ClerkLogger.swift
-//  Clerk
-//
-//  Created by Assistant on 1/21/25.
-//
-
 import Foundation
-import os.log
 
-/// A unified logging system for the Clerk SDK that respects the debugMode setting.
+// MARK: - Log Types
+
+public enum ClerkLogLevel: Int, Codable, Sendable, CustomStringConvertible {
+  case debug = 0
+  case info
+  case warning
+  case error
+  case none
+
+  public var description: String {
+    switch self {
+    case .debug:
+      return "DEBUG"
+    case .info:
+      return "INFO"
+    case .warning:
+      return "WARNING"
+    case .error:
+      return "ERROR"
+    case .none:
+      return "NONE"
+    }
+  }
+
+  var emoji: String {
+    switch self {
+    case .debug:
+      return "🔍"
+    case .info:
+      return "ℹ️"
+    case .warning:
+      return "⚠️"
+    case .error:
+      return "❌"
+    case .none:
+      return ""
+    }
+  }
+}
+
+public enum ClerkLogScope: Int, Codable, Sendable, CustomStringConvertible {
+  case core
+  case network
+  case auth
+  case session
+  case keychain
+  case telemetry
+  case environment
+  case ui
+  case all
+
+  public var description: String {
+    switch self {
+    case .core:
+      return "core"
+    case .network:
+      return "network"
+    case .auth:
+      return "auth"
+    case .session:
+      return "session"
+    case .keychain:
+      return "keychain"
+    case .telemetry:
+      return "telemetry"
+    case .environment:
+      return "environment"
+    case .ui:
+      return "ui"
+    case .all:
+      return "all"
+    }
+  }
+}
+
+private protocol ClerkLoggable {
+  static func shouldLog(level: ClerkLogLevel, scope: ClerkLogScope) -> Bool
+  static func emit(
+    level: ClerkLogLevel,
+    scope: ClerkLogScope,
+    message: String?,
+    info: [String: Any]?,
+    error: Error?
+  )
+}
+
+// MARK: - Logger
 @_spi(Internal)
-public struct ClerkLogger {
+public enum ClerkLogger: ClerkLoggable {
+  static func shouldLog(level: ClerkLogLevel, scope: ClerkLogScope) -> Bool {
+    var logging = ClerkOptions.Logging()
 
-    /// Log levels for different types of messages
-    enum LogLevel: String, CaseIterable {
-        case error = "ERROR"
-        case warning = "WARNING"
-        case info = "INFO"
-        case debug = "DEBUG"
-
-        var osLogType: OSLogType {
-            switch self {
-            case .error:
-                return .error
-            case .warning:
-                return .default
-            case .info:
-                return .info
-            case .debug:
-                return .debug
-            }
-        }
-
-        var emoji: String {
-            switch self {
-            case .error:
-                return "❌"
-            case .warning:
-                return "⚠️"
-            case .info:
-                return "ℹ️"
-            case .debug:
-                return "🔍"
-            }
-        }
+    if Clerk.isInitialized {
+      logging = Clerk.shared.options.logging
     }
 
-    /// The unified logging instance for Clerk
-    private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
-
-
-    /// Log an error message (always logs regardless of debug mode)
-    /// - Parameters:
-    ///   - message: The error message to log
-    ///   - error: Optional error object to include
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
-  public static func error(
-        _ message: String,
-        error: Error? = nil,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
+    guard logging.level != .none else {
+      return false
     }
 
-    /// Log a warning message (only logs when debug mode is enabled)
-    /// - Parameters:
-    ///   - message: The warning message to log
-    ///   - debugMode: Override debug mode setting (optional)
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
-  public static func warning(
-        _ message: String,
-        debugMode: Bool? = nil,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        logSync(level: .warning, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
-    }
+    let meetsLevel = level.rawValue >= logging.level.rawValue
+    let isInScope = logging.scopes.contains(scope) || logging.scopes.contains(.all)
 
-    /// Log an info message (only logs when debug mode is enabled)
-    /// - Parameters:
-    ///   - message: The info message to log
-    ///   - debugMode: Override debug mode setting (optional)
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
-  public static func info(
-        _ message: String,
-        debugMode: Bool? = nil,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        logSync(level: .info, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
-    }
+    return meetsLevel && isInScope
+  }
 
-    /// Log a debug message (only logs when debug mode is enabled)
-    /// - Parameters:
-    ///   - message: The debug message to log
-    ///   - debugMode: Override debug mode setting (optional)
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
+  static func emit(
+    level: ClerkLogLevel,
+    scope: ClerkLogScope,
+    message: String?,
+    info: [String: Any]?,
+    error: Error?
+  ) {
+    Task.detached(priority: .utility) {
+      guard shouldLog(level: level, scope: scope) else {
+        return
+      }
+
+      var dumping: [String: Any] = [:]
+
+      if let info {
+        dumping["info"] = info
+      }
+
+      if let error {
+        dumping["error"] = error
+      }
+
+      var name = "\(Date().clerkLogTimestamp) \(level.emoji) [Clerk] [\(scope.description)] - \(level.description)"
+
+      if let message, !message.isEmpty {
+        name += ": \(message)"
+      }
+
+      if dumping.isEmpty {
+        print(name)
+      } else {
+        dump(
+          dumping,
+          name: name,
+          indent: 0,
+          maxDepth: 50,
+          maxItems: 200
+        )
+      }
+    }
+  }
+
+  private static func log(
+    level: ClerkLogLevel,
+    scope: ClerkLogScope,
+    message: String?,
+    info: [String: Any]?,
+    error: Error?
+  ) {
+    emit(level: level, scope: scope, message: message, info: info, error: error)
+  }
+
   public static func debug(
-        _ message: String,
-        debugMode: Bool? = nil,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        logSync(level: .debug, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
-    }
+    _ message: String?,
+    scope: ClerkLogScope = .core,
+    info: [String: Any]? = nil,
+    error: Error? = nil
+  ) {
+    log(level: .debug, scope: scope, message: message, info: info, error: error)
+  }
 
-    /// Synchronous logging function that doesn't require MainActor access
-    /// - Parameters:
-    ///   - level: The log level
-    ///   - message: The message to log
-    ///   - error: Optional error object
-    ///   - forceLog: Force logging regardless of debug mode (used for errors)
-    ///   - debugModeOverride: Override the debug mode setting
-    ///   - file: The source file
-    ///   - function: The source function
-    ///   - line: The source line number
-    private static func logSync(
-        level: LogLevel,
-        message: String,
-        error: Error? = nil,
-        forceLog: Bool = false,
-        debugModeOverride: Bool? = nil,
-        file: String,
-        function: String,
-        line: Int
-    ) {
-        // Determine if we should log
-        let shouldLog: Bool
-        if forceLog {
-            shouldLog = true
-        } else if let override = debugModeOverride {
-            shouldLog = override
-        } else {
-            // No override provided; default to not logging from this sync context
-            shouldLog = false
-        }
+  public static func info(
+    _ message: String?,
+    scope: ClerkLogScope = .core,
+    info: [String: Any]? = nil,
+    error: Error? = nil
+  ) {
+    log(level: .info, scope: scope, message: message, info: info, error: error)
+  }
 
-        guard shouldLog else { return }
+  public static func warning(
+    _ message: String?,
+    scope: ClerkLogScope = .core,
+    info: [String: Any]? = nil,
+    error: Error? = nil
+  ) {
+    log(level: .warning, scope: scope, message: message, info: info, error: error)
+  }
 
-        let fileName = URL(fileURLWithPath: file).lastPathComponent
-        let timestamp = DateFormatter.logFormatter.string(from: Date())
+  public static func error(
+    _ message: String?,
+    scope: ClerkLogScope = .core,
+    info: [String: Any]? = nil,
+    error: Error? = nil
+  ) {
+    log(level: .error, scope: scope, message: message, info: info, error: error)
+  }
 
-        var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestamp) \(fileName):\(line) \(function) - \(message)"
-
-        if let error = error {
-            logMessage += "\n   Error: \(error)"
-
-            // Include localized description if available
-            if let localizedError = error as? LocalizedError,
-                let description = localizedError.errorDescription
-            {
-                logMessage += "\n   Description: \(description)"
-            }
-
-            // Include failure reason if available
-            if let localizedError = error as? LocalizedError,
-                let failureReason = localizedError.failureReason
-            {
-                logMessage += "\n   Reason: \(failureReason)"
-            }
-        }
-
-        // Use unified logging for structured logs only (avoid duplicate console output)
-        logger.log(level: level.osLogType, "\(logMessage)")
-    }
-}
-
-// MARK: - Convenience Extensions
-
-extension ClerkLogger {
-
-    /// Log an error with automatic error extraction
-    /// - Parameters:
-    ///   - error: The error to log
-    ///   - message: Optional custom message (defaults to "An error occurred")
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
   public static func logError(
-        _ error: Error,
-        message: String = "An error occurred",
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
-    }
+    _ error: Error,
+    message: String = "An error occurred",
+    scope: ClerkLogScope = .core
+  ) {
+    self.error(message, scope: scope, error: error)
+  }
 
-    /// Log a network request error with additional context
-    /// - Parameters:
-    ///   - error: The network error
-    ///   - endpoint: The API endpoint that failed
-    ///   - statusCode: HTTP status code if available
-    ///   - file: The file where the log is called (automatically filled)
-    ///   - function: The function where the log is called (automatically filled)
-    ///   - line: The line number where the log is called (automatically filled)
   public static func logNetworkError(
-        _ error: Error,
-        endpoint: String,
-        statusCode: Int? = nil,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        var message = "Network request failed for endpoint: \(endpoint)"
-        if let statusCode = statusCode {
-            message += " (Status: \(statusCode))"
-        }
-        logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
+    _ error: Error,
+    endpoint: String,
+    statusCode: Int? = nil
+  ) {
+    var info: [String: Any] = [
+      "endpoint": endpoint
+    ]
+    if let statusCode {
+      info["statusCode"] = statusCode
     }
+    self.error(
+      "Network request failed",
+      scope: .network,
+      info: info,
+      error: error
+    )
+  }
 }
 
-// MARK: - DateFormatter Extension
+// MARK: - Date helper
+private extension Date {
+  var clerkLogTimestamp: String {
+    ClerkLogger.dateFormatter.string(from: self)
+  }
+}
 
-private extension DateFormatter {
-    static let logFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+private extension ClerkLogger {
+  static let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+    return formatter
+  }()
 }

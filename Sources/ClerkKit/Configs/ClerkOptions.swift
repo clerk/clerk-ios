@@ -1,10 +1,6 @@
 import Foundation
 
 /// Options for configuring Clerk behaviour.
-///
-/// Modeled after Superwall's simple options container, this class groups
-/// together the small set of user-configurable knobs we expose in the new
-/// major version without any automatic binding or change observation.
 public final class ClerkOptions: Sendable, Encodable {
 
     /// Logging configuration used by the SDK.
@@ -39,24 +35,17 @@ extension ClerkOptions {
 
     public final class Logging: Sendable, Encodable {
 
-        public enum Level: String, Codable {
-            case off
-            case error
-            case warning
-            case info
-            case debug
-        }
-
-        public var level: Level
-        public var attachClientRequestMetadata: Bool
+        public var level: ClerkLogLevel
+        public var scopes: Set<ClerkLogScope>
 
         public init(
-            level: Level = .info,
-            attachClientRequestMetadata: Bool = false
+            level: ClerkLogLevel = .info,
+            scopes: Set<ClerkLogScope> = [.all]
         ) {
             self.level = level
-            self.attachClientRequestMetadata = attachClientRequestMetadata
+            self.scopes = scopes
         }
+
     }
 }
 
@@ -118,24 +107,3 @@ extension ClerkOptions {
         }
     }
 }
-
-// MARK: - Convenience helpers
-
-extension ClerkOptions.Logging.Level {
-    /// Whether informational logs should be emitted for the current level.
-    var allowsInfoLogging: Bool {
-        switch self {
-        case .off, .error, .warning:
-            return false
-        case .info, .debug:
-            return true
-        }
-    }
-
-    /// Whether debug-level diagnostics should be emitted for the current level.
-    var allowsDebugLogging: Bool {
-        self == .debug
-    }
-}
-
-

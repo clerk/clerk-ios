@@ -217,7 +217,7 @@ public actor TelemetryCollector {
 
     private func logEventIfDebug(name: String, _ payload: Any) async {
         guard await isDebugModeEnabled() else { return }
-        ClerkLogger.debug("[telemetry] \(name): \(payload)", debugMode: true)
+        ClerkLogger.debug("[telemetry] \(name): \(payload)", scope: .telemetry)
     }
 
     /// Enrich the raw event with SDK metadata and instance information.

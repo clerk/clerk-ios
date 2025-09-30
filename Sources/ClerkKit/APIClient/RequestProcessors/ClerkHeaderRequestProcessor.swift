@@ -12,14 +12,11 @@ struct ClerkHeaderRequestProcessor: RequestPreprocessor {
     @MainActor
     static func process(request: inout URLRequest) async throws {
         // Set the device token on every request
-        let keychain = Clerk.shared.dependencyContainer.keychain
-        if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
+        if let deviceToken = try? Clerk.shared.dependencyContainer.keychain.string(forKey: "clerkDeviceToken") {
             request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
         }
         
-        if Clerk.shared.options.logging.attachClientRequestMetadata,
-           Clerk.shared.options.logging.level.allowsDebugLogging,
-           let client = Clerk.shared.client {
+        if let client = Clerk.shared.client {
             request.setValue(client.id, forHTTPHeaderField: "x-clerk-client-id")
         }
         
