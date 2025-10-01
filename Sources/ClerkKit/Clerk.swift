@@ -7,10 +7,6 @@
 
 import Foundation
 
-#if canImport(UIKit)
-import UIKit
-#endif
-
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
@@ -84,7 +80,7 @@ final public class Clerk {
 
     /// Access the configured options that drive Clerk behaviour.
     public var options: ClerkOptions {
-      dependencyContainer.configManager.options
+        dependencyContainer.configurationStore.options
     }
 
     /// Specifies the detail of the logs returned from the SDK to the console.
@@ -106,25 +102,22 @@ final public class Clerk {
 
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     public var publishableKey: String {
-        dependencyContainer.configManager.state.config?.publishableKey
-            ?? dependencyContainer.configurationStore.publishableKey
+        dependencyContainer.configurationStore.publishableKey
     }
 
     /// Frontend API URL as a string.
     public var frontendApiUrl: String {
-        dependencyContainer.configManager.state.config?.frontendAPIURL?.absoluteString
-            ?? dependencyContainer.configurationStore.frontendAPIURL?.absoluteString
-            ?? ""
+        dependencyContainer.configurationStore.frontendAPIURL?.absoluteString ?? ""
     }
 
     /// The Client object for the current device.
     internal(set) public var client: Client? {
         didSet {
-            if let client = client {
-                try? saveClientToKeychain(client)
-                logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
+            if let client {
+                dependencyContainer.persistedStateStore.store(client: client)
+                dependencyContainer.pendingSessionLogger.logChange(previousClient: oldValue, currentClient: client)
             } else {
-                try? dependencyContainer.keychain.deleteItem(forKey: "cachedClient")
+                dependencyContainer.persistedStateStore.clearClient()
             }
         }
     }
@@ -157,7 +150,7 @@ final public class Clerk {
     /// The Clerk environment for the instance.
     public var environment = Environment() {
         didSet {
-            try? saveEnvironmentToKeychain(environment)
+            dependencyContainer.persistedStateStore.store(environment: environment)
         }
     }
 
@@ -167,8 +160,16 @@ final public class Clerk {
 
     init(dependencyContainer: DependencyContainer = DependencyContainer()) {
         self.dependencyContainer = dependencyContainer
-        loadCachedClient()
-        loadCachedEnvironment()
+
+        if self.client == nil,
+           let cachedClient = dependencyContainer.persistedStateStore.restoreClient() {
+            self.client = cachedClient
+        }
+
+        if environment.isEmpty,
+           let cachedEnvironment = dependencyContainer.persistedStateStore.restoreEnvironment() {
+            self.environment = cachedEnvironment
+        }
     }
 
     private convenience init(
@@ -176,6 +177,7 @@ final public class Clerk {
         options: ClerkOptions?
     ) {
         let dependencyContainer = DependencyContainer(options: options)
+        dependencyContainer.configure(publishableKey: publishableKey)
         self.init(dependencyContainer: dependencyContainer)
     }
 
@@ -196,13 +198,10 @@ extension Clerk {
         }
 
         do {
-            // Both of these are automatically applied to the shared instance:
-            async let client = Client.get()  // via middleware
-            async let environment = Environment.get()  // via the function itself
-
-            _ = try await client
-            attestDeviceIfNeeded(environment: try await environment)
-            await dependencyContainer.configManager.load()
+            async let client = Client.get()
+            async let environment = Environment.get()
+            let (_, fetchedEnvironment) = try await (client, environment)
+            dependencyContainer.deviceAttestationCoordinator.attestIfNeeded(with: fetchedEnvironment)
 
             isLoaded = true
         } catch {
@@ -259,119 +258,6 @@ extension Clerk {
     }
 }
 
-
-extension Clerk {
-
-    private func logPendingSessionStatusIfNeeded(previousClient: Client?, currentClient: Client) {
-        guard shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient) else { return }
-
-        let tasksDescription: String
-        if let sessionId = currentClient.lastActiveSessionId,
-           let session = currentClient.sessions.first(where: { $0.id == sessionId }),
-           let tasks = session.tasks,
-           !tasks.isEmpty
-        {
-            let taskKeys = tasks.map(\.key).joined(separator: ", ")
-            tasksDescription = " Remaining session tasks: [\(taskKeys)]."
-        } else {
-            tasksDescription = ""
-        }
-
-        let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
-        Logger.log(level: .info, scope: .session, message: message)
-    }
-
-    func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
-        guard let sessionId = currentClient.lastActiveSessionId,
-              let session = currentClient.sessions.first(where: { $0.id == sessionId })
-        else {
-            return false
-        }
-
-        guard session.status == .pending else { return false }
-
-        guard let previousClient,
-              let previousId = previousClient.lastActiveSessionId,
-              let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
-        else {
-            return true
-        }
-
-        if previousSession.id != session.id { return true }
-        if previousSession.status != session.status { return true }
-        if (previousSession.tasks ?? []) != (session.tasks ?? []) { return true }
-
-        return false
-    }
-
-    private func attestDeviceIfNeeded(environment: Environment) {
-        if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
-            Task {
-                do {
-                    try await AppAttestHelper.performDeviceAttestation()
-                } catch {
-                    Logger.log(level: .error, message: "Device attestation failed", error: error)
-                }
-            }
-        }
-    }
-
-    private func loadCachedClient() {
-        do {
-            if let cachedClient = try loadClientFromKeychain() {
-                // Only set cached client if we don't already have one
-                // This prevents overwriting fresh data during load()
-                if self.client == nil {
-                    self.client = cachedClient
-                }
-            }
-        } catch {
-            Logger.log(level: .error, message: "Failed to load cached client", error: error)
-        }
-    }
-
-    private func loadCachedEnvironment() {
-        do {
-            if let cachedEnvironment = try loadEnvironmentFromKeychain() {
-                // Only set cached environment if we don't already have fresh data
-                // This prevents overwriting fresh data during load()
-                if self.environment.isEmpty {
-                    self.environment = cachedEnvironment
-                }
-            }
-        } catch {
-            Logger.log(level: .error, message: "Failed to load cached environment", error: error)
-        }
-    }
-
-    private func saveClientToKeychain(_ client: Client) throws {
-        let clientData = try JSONEncoder.clerkEncoder.encode(client)
-        try dependencyContainer.keychain.set(clientData, forKey: "cachedClient")
-    }
-
-    private func loadClientFromKeychain() throws -> Client? {
-        guard let clientData = try? dependencyContainer.keychain.data(forKey: "cachedClient") else {
-            return nil
-        }
-        let decoder = JSONDecoder.clerkDecoder
-        return try decoder.decode(Client.self, from: clientData)
-    }
-
-    private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
-        let encoder = JSONEncoder.clerkEncoder
-        let environmentData = try encoder.encode(environment)
-        try dependencyContainer.keychain.set(environmentData, forKey: "cachedEnvironment")
-    }
-
-    private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
-        guard let environmentData = try? dependencyContainer.keychain.data(forKey: "cachedEnvironment") else {
-            return nil
-        }
-        let decoder = JSONDecoder.clerkDecoder
-        return try decoder.decode(Clerk.Environment.self, from: environmentData)
-    }
-
-}
 
 extension Clerk {
 

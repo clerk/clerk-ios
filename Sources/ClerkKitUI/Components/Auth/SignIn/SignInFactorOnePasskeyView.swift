@@ -136,7 +136,7 @@ extension SignInFactorOnePasskeyView {
         } catch {
             if error.isUserCancelledError { return }
             self.error = error
-            Logger.log(level: .error, message: "Failed to authenticate with passkey", error: error)
+            Logger.log(level: .error, scope: .auth, message: "Failed to authenticate with passkey", error: error)
         }
     }
 

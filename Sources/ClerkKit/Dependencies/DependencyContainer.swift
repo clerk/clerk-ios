@@ -4,33 +4,35 @@ import Foundation
 final class DependencyContainer {
   var configurationStore: ConfigurationStore
   var keychain: KeychainStore
-  var apiClient: (any APIClientProtocol)
+  var apiClient: any APIClientProtocol
   var telemetry: TelemetryCollector
   var authEventEmitter: EventEmitter<AuthEvent>
-  var configManager: ConfigManager
   var appLifecycleManager: AppLifecycleManager
+  var persistedStateStore: PersistedStateStore
+  var pendingSessionLogger: PendingSessionLogger
+  var deviceAttestationCoordinator: DeviceAttestationCoordinator
 
   init(options: ClerkOptions? = nil) {
     let options = options ?? ClerkOptions()
-    self.configurationStore = ConfigurationStore()
+    self.configurationStore = ConfigurationStore(options: options)
     self.keychain = DependencyContainer.makeKeychain(options: options.keychain)
     self.apiClient = DependencyContainer.makeApiClient(baseURL: configurationStore.frontendAPIURL)
-    self.telemetry = DependencyContainer.makeTelemetryCollector()
-    self.authEventEmitter = DependencyContainer.makeAuthEventEmitter()
-
-    self.configManager = ConfigManager(
-      configurationStore: configurationStore,
-      options: options
-    )
+    self.telemetry = TelemetryCollector()
+    self.authEventEmitter = EventEmitter<AuthEvent>()
 
     self.appLifecycleManager = AppLifecycleManager(
       notificationCenter: .default,
       telemetry: telemetry
     )
 
-    Task {
-      await self.configManager.load()
-    }
+    self.persistedStateStore = PersistedStateStore(keychain: keychain)
+    self.pendingSessionLogger = PendingSessionLogger()
+    self.deviceAttestationCoordinator = DeviceAttestationCoordinator()
+  }
+
+  func configure(publishableKey: String) {
+    configurationStore.configure(publishableKey: publishableKey)
+    apiClient = DependencyContainer.makeApiClient(baseURL: configurationStore.frontendAPIURL)
   }
 
 }
@@ -85,13 +87,5 @@ extension DependencyContainer {
         accessibility: .afterFirstUnlockThisDeviceOnly
       )
     )
-  }
-
-  static func makeTelemetryCollector() -> TelemetryCollector {
-    TelemetryCollector()
-  }
-
-  static func makeAuthEventEmitter() -> EventEmitter<AuthEvent> {
-    EventEmitter<AuthEvent>()
   }
 }

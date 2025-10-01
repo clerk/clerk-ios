@@ -2,8 +2,13 @@ import Foundation
 import RegexBuilder
 
 final class ConfigurationStore {
+  var options: ClerkOptions
   private(set) var publishableKey: String = ""
   private(set) var frontendAPIURL: URL?
+
+  init(options: ClerkOptions) {
+    self.options = options
+  }
 
   func configure(publishableKey: String) {
     self.publishableKey = publishableKey
