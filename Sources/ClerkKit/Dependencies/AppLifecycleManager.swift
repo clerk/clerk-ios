@@ -25,13 +25,6 @@ final class AppLifecycleManager {
     }
   }
 
-  deinit {
-    cancelNotificationObservers()
-    stopSessionTokenPolling()
-  }
-}
-
-private extension AppLifecycleManager {
   @MainActor
   func setupNotificationObservers() {
     #if !os(watchOS) && !os(macOS)
@@ -84,24 +77,20 @@ private extension AppLifecycleManager {
     didEnterBackgroundTask?.cancel()
     didEnterBackgroundTask = nil
   }
-}
 
-private extension AppLifecycleManager {
   func startSessionTokenPolling() {
     guard sessionPollingTask == nil || sessionPollingTask?.isCancelled == true else {
       return
     }
 
-    sessionPollingTask = Task(priority: .background) {
-      while !Task.isCancelled {
-        let currentSession = await MainActor.run { Clerk.shared.session }
-
-        if let session = currentSession {
+    sessionPollingTask = Task(priority: .background) { @MainActor in
+      repeat {
+        let session = Clerk.shared.session
+        if let session {
           _ = try? await session.getToken()
         }
-
-        try await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
-      }
+        try? await Task.sleep(for: .seconds(5), tolerance: .seconds(0.1))
+      } while !Task.isCancelled
     }
   }
 
@@ -109,4 +98,5 @@ private extension AppLifecycleManager {
     sessionPollingTask?.cancel()
     sessionPollingTask = nil
   }
+
 }

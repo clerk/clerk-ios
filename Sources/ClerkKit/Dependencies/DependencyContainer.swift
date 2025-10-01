@@ -3,7 +3,6 @@ import Foundation
 /// Central dependency container owned by `Clerk`.
 final class DependencyContainer {
   var configurationStore: ConfigurationStore
-  var options: ClerkOptions
   var keychain: KeychainStore
   var apiClient: (any APIClientProtocol)
   var telemetry: TelemetryCollector
@@ -12,30 +11,27 @@ final class DependencyContainer {
   var appLifecycleManager: AppLifecycleManager
 
   init(options: ClerkOptions? = nil) {
-    self.options = options ?? ClerkOptions()
+    let options = options ?? ClerkOptions()
     self.configurationStore = ConfigurationStore()
-    self.keychain = DependencyContainer.makeKeychain(options: self.options.keychain)
+    self.keychain = DependencyContainer.makeKeychain(options: options.keychain)
     self.apiClient = DependencyContainer.makeApiClient(baseURL: configurationStore.frontendAPIURL)
     self.telemetry = DependencyContainer.makeTelemetryCollector()
     self.authEventEmitter = DependencyContainer.makeAuthEventEmitter()
 
-    let fetcher = DefaultConfigFetcher(
+    self.configManager = ConfigManager(
       configurationStore: configurationStore,
-      optionsProvider: { [weak self] in
-        self?.options ?? ClerkOptions()
-      }
+      options: options
     )
-    self.configManager = ConfigManager(fetcher: fetcher)
-
-    Task { await self.configManager.load() }
 
     self.appLifecycleManager = AppLifecycleManager(
       notificationCenter: .default,
       telemetry: telemetry
     )
-  }
 
-  // MARK: - Public Helpers
+    Task {
+      await self.configManager.load()
+    }
+  }
 
 }
 

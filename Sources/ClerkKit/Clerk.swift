@@ -84,17 +84,13 @@ final public class Clerk {
 
     /// Access the configured options that drive Clerk behaviour.
     public var options: ClerkOptions {
-        dependencyContainer.options
+      dependencyContainer.configManager.options
     }
 
     /// Specifies the detail of the logs returned from the SDK to the console.
     public var logLevel: ClerkLogLevel {
-        get {
-            options.logging.level
-        }
-        set {
-            options.logging.level = newValue
-        }
+        get { options.logging.level }
+        set { options.logging.level = newValue }
     }
 
     /// A getter to see if the Clerk object is ready for use or not.
@@ -180,7 +176,6 @@ final public class Clerk {
         options: ClerkOptions?
     ) {
         let dependencyContainer = DependencyContainer(options: options)
-        dependencyContainer.configurationStore.configure(publishableKey: publishableKey)
         self.init(dependencyContainer: dependencyContainer)
     }
 
