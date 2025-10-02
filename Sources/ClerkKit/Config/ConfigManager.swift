@@ -1,8 +1,8 @@
 import Foundation
 import RegexBuilder
 
-final class ConfigurationStore {
-  var options: ClerkOptions
+final class ConfigManager {
+  private(set) var options: ClerkOptions
   private(set) var publishableKey: String = ""
   private(set) var frontendAPIURL: URL?
 
@@ -16,7 +16,7 @@ final class ConfigurationStore {
   }
 }
 
-private extension ConfigurationStore {
+private extension ConfigManager {
   static func makeFrontendAPIURL(from publishableKey: String) -> URL? {
     guard !publishableKey.isEmpty else {
       return nil

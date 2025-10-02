@@ -2,7 +2,7 @@ import Foundation
 
 /// Central dependency container owned by `Clerk`.
 final class DependencyContainer {
-  var configurationStore: ConfigurationStore
+  var configManager: ConfigManager
   var keychain: KeychainStore
   var apiClient: any APIClientProtocol
   var telemetry: TelemetryCollector
@@ -14,9 +14,9 @@ final class DependencyContainer {
 
   init(options: ClerkOptions? = nil) {
     let options = options ?? ClerkOptions()
-    self.configurationStore = ConfigurationStore(options: options)
+    self.configManager = ConfigManager(options: options)
     self.keychain = DependencyContainer.makeKeychain(options: options.keychain)
-    self.apiClient = DependencyContainer.makeApiClient(baseURL: configurationStore.frontendAPIURL)
+    self.apiClient = DependencyContainer.makeApiClient(baseURL: configManager.frontendAPIURL)
     self.telemetry = TelemetryCollector()
     self.authEventEmitter = EventEmitter<AuthEvent>()
 
@@ -31,8 +31,8 @@ final class DependencyContainer {
   }
 
   func configure(publishableKey: String) {
-    configurationStore.configure(publishableKey: publishableKey)
-    apiClient = DependencyContainer.makeApiClient(baseURL: configurationStore.frontendAPIURL)
+    configManager.configure(publishableKey: publishableKey)
+    apiClient = DependencyContainer.makeApiClient(baseURL: configManager.frontendAPIURL)
   }
 
 }

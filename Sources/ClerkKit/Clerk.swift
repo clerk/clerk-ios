@@ -80,7 +80,7 @@ final public class Clerk {
 
     /// Access the configured options that drive Clerk behaviour.
     public var options: ClerkOptions {
-        dependencyContainer.configurationStore.options
+        dependencyContainer.configManager.options
     }
 
     /// Specifies the detail of the logs returned from the SDK to the console.
@@ -102,12 +102,12 @@ final public class Clerk {
 
     /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
     public var publishableKey: String {
-        dependencyContainer.configurationStore.publishableKey
+        dependencyContainer.configManager.publishableKey
     }
 
     /// Frontend API URL as a string.
     public var frontendApiUrl: String {
-        dependencyContainer.configurationStore.frontendAPIURL?.absoluteString ?? ""
+        dependencyContainer.configManager.frontendAPIURL?.absoluteString ?? ""
     }
 
     /// The Client object for the current device.
