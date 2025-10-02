@@ -83,7 +83,9 @@ public enum Logger {
     scope: ClerkLogScope = .core,
     message: String? = nil,
     info: [String: Any]? = nil,
-    error: Error? = nil
+    error: Error? = nil,
+    file: StaticString = #fileID,
+    line: UInt = #line
   ) {
     Task.detached(priority: .utility) {
       guard shouldLog(level: level, scope: scope) else {
@@ -99,6 +101,8 @@ public enum Logger {
       if let error {
         dumping["error"] = error
       }
+
+      dumping["source"] = "\(file):\(line)"
 
       var name = "\(Date().clerkLogTimestamp) \(level.emoji) [Clerk] [\(scope.description)] - \(level.description)"
 
