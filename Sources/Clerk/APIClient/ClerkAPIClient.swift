@@ -33,8 +33,6 @@ final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
         try await ClerkProxyRequestProcessor.process(request: &request)
         try await ClerkHeaderRequestProcessor.process(request: &request)
         try await ClerkQueryItemsRequestProcessor.process(request: &request)
-        // Inject locale before encoding the body to urlencoded
-        try await ClerkLocaleInjectorRequestProcessor.process(request: &request)
         try await ClerkURLEncodedFormEncoderRequestProcessor.process(request: &request)
     }
     
