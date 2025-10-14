@@ -38,10 +38,19 @@ struct SignUpService {
     }
 
     var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
+        // If a raw parameter dictionary is passed, merge in the locale
+        var body: any Encodable & Sendable = params
+        if var dict = params as? [String: String] {
+            if dict["locale"] == nil {
+                dict["locale"] = LocaleUtils.userLocale()
+            }
+            body = dict
+        }
+
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
             method: .post,
-            body: params
+            body: body
         )
         
         return try await Container.shared.apiClient().send(request).value.response

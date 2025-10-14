@@ -172,17 +172,7 @@ extension SignUp {
         try await Container.shared.signUpService().createWithParams(params)
     }
 
-    /// Initiates a new sign-up process using a raw parameter dictionary.
-    ///
-    /// This overload ensures the user's locale is included in the request body.
-    @discardableResult @MainActor
-    public static func create(_ params: [String: String]) async throws -> SignUp {
-        var merged = params
-        if merged["locale"] == nil {
-            merged["locale"] = LocaleUtils.userLocale()
-        }
-        return try await Container.shared.signUpService().createWithParams(merged)
-    }
+    
 
     /// This method is used to update the current sign-up.
     ///
