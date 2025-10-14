@@ -10,8 +10,12 @@ import Foundation
 struct ClerkURLEncodedFormEncoderRequestProcessor: RequestPreprocessor {
     static func process(request: inout URLRequest) async throws {
         if let data = request.httpBody {
-            let json = try? JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
-            request.httpBody = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(json)
+            // Encode as URL-encoded form using Foundation types only.
+            if let foundationJson = try? JSONSerialization.jsonObject(with: data),
+               let encoded = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(foundationJson)
+            {
+                request.httpBody = encoded
+            }
         }
     }
 }
