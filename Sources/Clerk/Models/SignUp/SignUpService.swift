@@ -23,6 +23,10 @@ struct SignUpService {
     var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp = { strategy, legalAccepted in
         var params = strategy.params
         params.legalAccepted = legalAccepted
+        // Ensure locale is attached for localized communications
+        if params.locale == nil {
+            params.locale = LocaleUtils.userLocale()
+        }
 
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
@@ -34,10 +38,17 @@ struct SignUpService {
     }
 
     var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
+        // Best-effort: inject locale for raw-params sign up requests by wrapping into JSON
+        let body: JSON = (try? JSON(encodable: params)) ?? .object([:])
+        var mergedBody = body
+        if case .object(var obj) = mergedBody {
+            obj["locale"] = .string(LocaleUtils.userLocale())
+            mergedBody = .object(obj)
+        }
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
             method: .post,
-            body: params
+            body: mergedBody
         )
         
         return try await Container.shared.apiClient().send(request).value.response

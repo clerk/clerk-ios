@@ -70,6 +70,11 @@ extension SignUp {
         /// The ID token from a provider used for authentication (e.g., SignInWithApple).
         public var token: String?
 
+        /// The user's locale in BCP-47 format (e.g., "en-US").
+        ///
+        /// Used by backend services to localize communications like verification codes.
+        public var locale: String?
+
         public init(
             strategy: String? = nil,
             firstName: String? = nil,
@@ -86,7 +91,8 @@ extension SignUp {
             legalAccepted: Bool? = nil,
             oidcPrompt: String? = nil,
             oidcLoginHint: String? = nil,
-            token: String? = nil
+            token: String? = nil,
+            locale: String? = nil
         ) {
             self.strategy = strategy
             self.firstName = firstName
@@ -104,6 +110,7 @@ extension SignUp {
             self.oidcPrompt = oidcPrompt
             self.oidcLoginHint = oidcLoginHint
             self.token = token
+            self.locale = locale
         }
     }
 

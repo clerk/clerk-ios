@@ -448,6 +448,7 @@ struct SignInTests {
     mockSignUp.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["transfer"] == String(describing: NSNumber(booleanLiteral: true)))
+      #expect(request.urlEncodedFormBody["locale"] == LocaleUtils.userLocale())
       signUpRequestHandled.setValue(true)
     }
     mockSignUp.register()
