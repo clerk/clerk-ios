@@ -53,6 +53,13 @@ final public class Clerk {
     /// Used to record non-blocking telemetry events when running in development
     internal private(set) var telemetry: TelemetryCollector = TelemetryCollector()
 
+    /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Can be either a relative path (/__clerk) or a full URL (https://<your-domain>/__clerk).
+    public private(set) var proxyUrl: URL? {
+        didSet {
+            proxyConfiguration = ProxyConfiguration(url: proxyUrl)
+        }
+    }
+
     /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
     public var session: Session? {
         guard let client else { return nil }
@@ -114,19 +121,7 @@ final public class Clerk {
     /// Frontend API URL.
     private(set) var frontendApiUrl: String = "" {
         didSet {
-            Container.shared.apiClient.register { [frontendApiUrl] in
-                APIClient(baseURL: URL(string: frontendApiUrl)) { configuration in
-                    configuration.delegate = ClerkAPIClientDelegate()
-                    configuration.decoder = .clerkDecoder
-                    configuration.encoder = .clerkEncoder
-                    configuration.sessionConfiguration.httpAdditionalHeaders = [
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "clerk-api-version": "2025-04-10",
-                        "x-ios-sdk-version": Clerk.version,
-                        "x-mobile": "1"
-                    ]
-                }
-            }
+            configureAPIClient()
         }
     }
 
@@ -144,6 +139,8 @@ final public class Clerk {
                     accessibility: .afterFirstUnlockThisDeviceOnly
                 )
             }
+
+            proxyUrl = settings.proxyUrl
         }
     }
 
@@ -155,6 +152,13 @@ final public class Clerk {
 
     /// Holds a reference to the session polling task.
     private var sessionPollingTask: Task<Void, Error>?
+
+    /// Proxy configuration derived from `proxyUrl`, if present.
+    internal private(set) var proxyConfiguration: ProxyConfiguration? {
+        didSet {
+            configureAPIClient()
+        }
+    }
 
 }
 
@@ -369,6 +373,25 @@ extension Clerk {
             }
         } catch {
             ClerkLogger.logError(error, message: "Failed to load cached environment")
+        }
+    }
+
+    @MainActor
+    private func configureAPIClient() {
+        let baseUrl = proxyConfiguration?.baseURL ?? URL(string: frontendApiUrl)
+
+        Container.shared.apiClient.register { [baseUrl] in
+            APIClient(baseURL: baseUrl) { configuration in
+                configuration.delegate = ClerkAPIClientDelegate()
+                configuration.decoder = .clerkDecoder
+                configuration.encoder = .clerkEncoder
+                configuration.sessionConfiguration.httpAdditionalHeaders = [
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "clerk-api-version": "2025-04-10",
+                    "x-ios-sdk-version": Clerk.version,
+                    "x-mobile": "1"
+                ]
+            }
         }
     }
 
