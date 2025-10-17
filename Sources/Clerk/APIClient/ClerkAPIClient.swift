@@ -30,6 +30,7 @@ protocol RequestRetrier {
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
     
     func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
+        try await ClerkProxyRequestProcessor.process(request: &request)
         try await ClerkHeaderRequestProcessor.process(request: &request)
         try await ClerkQueryItemsRequestProcessor.process(request: &request)
         try await ClerkURLEncodedFormEncoderRequestProcessor.process(request: &request)
