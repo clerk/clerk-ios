@@ -53,6 +53,7 @@ struct SignUpTests {
       #expect(request.urlEncodedFormBody["email_address"] == strategy.params.emailAddress)
       #expect(request.urlEncodedFormBody["first_name"] == strategy.params.firstName)
       #expect(request.urlEncodedFormBody["last_name"] == strategy.params.lastName)
+      #expect(request.urlEncodedFormBody["locale"] == LocaleUtils.userLocale())
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == strategy.params.oidcLoginHint)
       #expect(request.urlEncodedFormBody["oidc_prompt"] == strategy.params.oidcPrompt)
       #expect(request.urlEncodedFormBody["password"] == strategy.params.password)
@@ -108,6 +109,7 @@ struct SignUpTests {
       #expect(request.urlEncodedFormBody["email_address"] == params["email_address"])
       #expect(request.urlEncodedFormBody["first_name"] == params["first_name"])
       #expect(request.urlEncodedFormBody["last_name"] == params["last_name"])
+      #expect(request.urlEncodedFormBody["locale"] == LocaleUtils.userLocale())
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == params["oidc_login_hint"])
       #expect(request.urlEncodedFormBody["oidc_prompt"] == params["oidc_prompt"])
       #expect(request.urlEncodedFormBody["password"] == params["password"])
@@ -125,6 +127,26 @@ struct SignUpTests {
     }
     mock.register()
     _ = try await SignUp.create(params)
+    #expect(requestHandled.value)
+  }
+
+  @Test func testCreateRequestWithCustomLocale() async throws {
+    let requestHandled = LockIsolated(false)
+    let strategy = SignUp.CreateStrategy.standard(emailAddress: "user@email.com", password: "password")
+    let customLocale = "fr-FR"
+    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["locale"] == customLocale)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    _ = try await SignUp.create(strategy: strategy, locale: customLocale)
     #expect(requestHandled.value)
   }
 

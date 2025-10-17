@@ -138,6 +138,7 @@ extension SignUp {
     /// - Parameters:
     ///   - strategy: The strategy to use for creating the sign-up. This defines the parameters used for the sign-up process. See ``SignUp/CreateStrategy`` for available strategies.
     ///   - legalAccepted: A Boolean value indicating whether the user has accepted the legal terms.
+    ///   - locale: Override for the locale sent to the backend (defaults to the device locale when omitted).
     ///
     /// - Returns: A `SignUp` object containing the current status and details of the sign-up process. The `status` property reflects the current state of the sign-up.
     ///
@@ -146,8 +147,8 @@ extension SignUp {
     /// let signUp = try await SignUp.create(strategy: .standard(emailAddress: "user@email.com", password: "••••••••"))
     /// ```
     @discardableResult @MainActor
-    public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil) async throws -> SignUp {
-        try await Container.shared.signUpService().create(strategy, legalAccepted)
+    public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil, locale: String? = nil) async throws -> SignUp {
+        try await Container.shared.signUpService().create(strategy, legalAccepted, locale)
     }
 
     /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.

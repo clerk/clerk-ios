@@ -20,9 +20,10 @@ extension Container {
 
 struct SignUpService {
 
-    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp = { strategy, legalAccepted in
+    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?, _ locale: String?) async throws -> SignUp = { strategy, legalAccepted, locale in
         var params = strategy.params
         params.legalAccepted = legalAccepted
+        params.locale = locale ?? LocaleUtils.userLocale()
 
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
@@ -34,10 +35,19 @@ struct SignUpService {
     }
 
     var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
+        var body: any Encodable & Sendable = params
+        if var json = try? JSON(encodable: params), case .object(var object) = json {
+            if object["locale"] == nil || object["locale"] == .null {
+                object["locale"] = .string(LocaleUtils.userLocale())
+                json = .object(object)
+            }
+            body = json
+        }
+
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
             method: .post,
-            body: params
+            body: body
         )
         
         return try await Container.shared.apiClient().send(request).value.response
