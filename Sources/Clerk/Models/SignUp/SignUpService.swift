@@ -20,13 +20,10 @@ extension Container {
 
 struct SignUpService {
 
-    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?) async throws -> SignUp = { strategy, legalAccepted in
+    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?, _ locale: String?) async throws -> SignUp = { strategy, legalAccepted, locale in
         var params = strategy.params
         params.legalAccepted = legalAccepted
-        // Ensure locale is attached for localized communications
-        if params.locale == nil {
-            params.locale = LocaleUtils.userLocale()
-        }
+        params.locale = locale ?? LocaleUtils.userLocale()
 
         let request = Request<ClientResponse<SignUp>>.init(
             path: "/v1/client/sign_ups",
@@ -38,13 +35,13 @@ struct SignUpService {
     }
 
     var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
-        // If a raw parameter dictionary is passed, merge in the locale
         var body: any Encodable & Sendable = params
-        if var dict = params as? [String: String] {
-            if dict["locale"] == nil {
-                dict["locale"] = LocaleUtils.userLocale()
+        if var json = try? JSON(encodable: params), case .object(var object) = json {
+            if object["locale"] == nil || object["locale"] == .null {
+                object["locale"] = .string(LocaleUtils.userLocale())
+                json = .object(object)
             }
-            body = dict
+            body = json
         }
 
         let request = Request<ClientResponse<SignUp>>.init(

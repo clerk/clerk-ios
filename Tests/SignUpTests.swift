@@ -130,6 +130,26 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
+  @Test func testCreateRequestWithCustomLocale() async throws {
+    let requestHandled = LockIsolated(false)
+    let strategy = SignUp.CreateStrategy.standard(emailAddress: "user@email.com", password: "password")
+    let customLocale = "fr-FR"
+    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ups")
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock))
+      ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["locale"] == customLocale)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    _ = try await SignUp.create(strategy: strategy, locale: customLocale)
+    #expect(requestHandled.value)
+  }
+
   @Test func testUpdateRequest() async throws {
     let requestHandled = LockIsolated(false)
     let params = SignUp.UpdateParams(
