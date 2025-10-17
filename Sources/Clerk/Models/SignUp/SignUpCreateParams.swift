@@ -72,7 +72,7 @@ extension SignUp {
 
         /// The user's locale in BCP-47 format (e.g., "en-US").
         ///
-        /// Used by backend services to localize communications like verification codes.
+        /// Used by backend services to localize communications.
         public var locale: String?
 
         public init(
