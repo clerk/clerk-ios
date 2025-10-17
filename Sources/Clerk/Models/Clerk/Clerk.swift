@@ -53,7 +53,7 @@ final public class Clerk {
     /// Used to record non-blocking telemetry events when running in development
     internal private(set) var telemetry: TelemetryCollector = TelemetryCollector()
 
-    /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Can be either a relative path (/__clerk) or a full URL (https://<your-domain>/__clerk).
+    /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
     public private(set) var proxyUrl: URL? {
         didSet {
             proxyConfiguration = ProxyConfiguration(url: proxyUrl)
