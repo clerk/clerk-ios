@@ -80,6 +80,9 @@ public struct UserProfileView: View {
 
     @ViewBuilder
     private func userProfileHeader(_ user: User) -> some View {
+        let fullName = user.fullName
+        let hasFullName = fullName != nil
+
         VStack(spacing: 12) {
             KFImage(URL(string: user.imageUrl))
                 .resizable()
@@ -95,12 +98,26 @@ public struct UserProfileView: View {
                 .frame(width: 96, height: 96)
                 .clipShape(.circle)
 
-            if let fullName = user.fullName {
-                Text(fullName)
-                    .font(theme.fonts.title2)
-                    .fontWeight(.bold)
-                    .frame(minHeight: 28)
-                    .foregroundStyle(theme.colors.foreground)
+            VStack(spacing: 0) {
+                if let fullName {
+                    Text(fullName)
+                        .font(theme.fonts.title2)
+                        .fontWeight(.bold)
+                        .frame(minHeight: 28)
+                        .foregroundStyle(theme.colors.foreground)
+                }
+
+                if let username = user.username, !username.isEmptyTrimmed {
+                    Text(username)
+                        .font(
+                            hasFullName
+                                ? theme.fonts.subheadline
+                                : theme.fonts.title2
+                        )
+                        .fontWeight(hasFullName ? .regular : .bold)
+                        .frame(minHeight: hasFullName ? nil : 28)
+                        .foregroundStyle(hasFullName ? theme.colors.mutedForeground : theme.colors.foreground)
+                }
             }
 
             Button {
