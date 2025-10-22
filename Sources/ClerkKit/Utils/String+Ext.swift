@@ -9,26 +9,25 @@ import Foundation
 
 extension String {
 
-    var isEmptyTrimmed: Bool {
+    public var isEmptyTrimmed: Bool {
         trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-    
-    var nonBreaking: String {
+
+    public var nonBreaking: String {
         self
             .replacingOccurrences(of: " ", with: "\u{00A0}")
             .replacingOccurrences(of: "-", with: "\u{2011}")
     }
 
-    var capitalizedSentence: String {
-        let firstLetter = self.prefix(1).capitalized
-        let remainingLetters = self.dropFirst().lowercased()
+    public var capitalizedSentence: String {
+        let firstLetter = prefix(1).capitalized
+        let remainingLetters = dropFirst().lowercased()
         return firstLetter + remainingLetters
     }
 
-    var isEmailAddress: Bool {
+    public var isEmailAddress: Bool {
         let emailRegex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: self)
     }
-
 }
