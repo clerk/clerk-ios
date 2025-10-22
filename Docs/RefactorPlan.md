@@ -40,14 +40,10 @@
 - Shared resource bundles (localizations, themes) migrate to `ClerkKitUI` to keep the core lightweight.
 
 ## Dependency Injection Strategy
-- Introduce a lightweight container (`ClerkContainer`) initialised with configuration at app startup.
-- Registrations keyed by protocol compose hierarchically; runtime validation ensures required services exist.
-- Container supports scopes:
-  - `singleton` for long-lived services (network client, auth state actor).
-  - `scoped` for feature workflows (sign-in flow, passkey registration).
-  - `transient` for value builders (requests, serializers).
-- Provide `ContainerSnapshot` for tests/previews to swap implementations by supplying overrides during initialisation.
-- Avoid global singletons—expose container through initialisers, environment values, or explicit parameter passing.
+- Continue leveraging FactoryKit during the initial refactor phase to keep churn low while logic is moved into the new targets.
+- Define clear protocol boundaries for each feature so FactoryKit registrations remain explicit and test-friendly.
+- Document a path to a bespoke container once the rest of the rewrite stabilises; that work shifts to a later milestone to minimise disruption.
+- Provide guidance for overriding FactoryKit registrations in Swift Testing and SwiftUI previews to keep the new APIs mockable.
 
 ## Concurrency Model
 - Default to async functions returning domain-specific result types (`Result<Value, ClerkError>` where propagation is desired).
@@ -74,23 +70,25 @@
 
 ## Prototype Scope (Phase 0)
 - **Milestone A – Target scaffolding**: Add `ClerkKit` and `ClerkKitUI` targets to `Package.swift`, move minimal entry points, set up shared build settings, and ensure current tests compile with stubs.
-- **Milestone B – Container spike**: Implement `ClerkContainer`, registration API, and validation; provide in-memory implementations for clock/logger/network to verify overrides in Swift Testing.
+- **Milestone B – FactoryKit consolidation**: Audit current FactoryKit registrations, relocate them into the new targets, and document override points for tests/previews.
 - **Milestone C – Networking spike**: Build the initial `HTTPClient` with middleware pipeline, response decoding, and error mapping; cover with Swift Testing using fixture-driven mocks.
-- **Milestone D – Auth flow pilot**: Rebuild sign-in flow using the new container + networking stack, exposing async façades and async streams for session changes.
-- **Milestone E – Preview harness**: Create preview container plus sample data to render a representative subset of ClerkUI views without live services.
+- **Milestone D – Auth flow pilot**: Rebuild sign-in flow using the new networking stack, exposing async façades and async streams for session changes.
+- **Milestone E – Preview harness**: Create preview helpers plus sample data to render a representative subset of ClerkUI views without live services.
+- **Milestone F – Custom container (deferred)**: Once earlier milestones harden, revisit rolling a bespoke container to replace FactoryKit with richer scoping and validation.
 
 ### Exit Criteria
-- New container and networking stack compile and run in isolation tests.
-- Sign-in pilot exercises async APIs end-to-end (network -> use case -> published state).
-- SwiftUI preview compiles with new dependency injection API using mock data.
+- New module layout compiles and existing FactoryKit wiring functions within it.
+- Networking spike and auth pilot exercise async APIs end-to-end (network -> use case -> published state).
+- SwiftUI preview compiles with new dependency injection override guidance using mock data.
 
 ## Breaking Changes (Draft Outline)
 - **Package restructuring**: Product name changes from `Clerk` to `ClerkKit`; UI entry points migrate to `ClerkKitUI`. Apps must update imports and target references.
 - **Async API surface**: All major services (sign-in, session, user management) expose async methods. Callback-based APIs removed. Clients need to adopt `await` and handle cancellation.
-- **Dependency configuration**: Global singletons replaced by explicit container initialisation (`ClerkKit.configure(...)`). Consumers must pass container references into UI or store them in environment.
+- **Dependency configuration**: FactoryKit registrations become explicit per module, replacing previous global singletons. Future bespoke container work will ship once stabilised; consumers should plan for a configuration entry point.
 - **Networking customisation**: Public configuration points (`HTTPMiddleware`, retry policy) replace previous Get-specific hooks. Apps with custom URLSession behaviour must re-register middleware.
 - **Telemetry hooks**: Unified observer protocol replaces scattered delegate callbacks; adopt new event enum for analytics integrations.
 - **Image loading**: UI now uses Nuke under the hood; apps overriding image loaders must conform to the new `ImageLoading` protocol provided by `ClerkKitUI`.
 
 ## Progress Log
 - 2025-10-22: Captured current structure, drafted refactor blueprint, and outlined prototype scope plus breaking changes.
+- 2025-10-22: Split legacy sources by moving `ClerkUI` into the new `ClerkKitUI` target, renamed the core source directory to `ClerkKit`, and kept a thin compatibility target exporting both modules.
