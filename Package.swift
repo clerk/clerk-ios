@@ -15,6 +15,9 @@ let package = Package(
     .visionOS(.v1)
   ],
   products: [
+    .library(name: "ClerkKit", targets: ["ClerkKit"]),
+    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
+    // Legacy product retained temporarily while the new modules are rolled out.
     .library(name: "Clerk", targets: ["Clerk"])
   ],
   dependencies: [
@@ -22,6 +25,7 @@ let package = Package(
     .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
     .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
+    .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
     .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
@@ -29,14 +33,38 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "Clerk",
+      name: "ClerkKit",
       dependencies: [
         .product(name: "Algorithms", package: "swift-algorithms"),
         .product(name: "FactoryKit", package: "Factory"),
         .product(name: "Get", package: "Get"),
-        .product(name: "Kingfisher", package: "Kingfisher"),
-        .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
         .product(name: "SimpleKeychain", package: "SimpleKeychain")
+      ],
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency")
+      ]
+    ),
+    .target(
+      name: "ClerkKitUI",
+      dependencies: [
+        "ClerkKit",
+        .product(name: "FactoryKit", package: "Factory"),
+        .product(name: "Kingfisher", package: "Kingfisher"),
+        .product(name: "Nuke", package: "Nuke"),
+        .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
+      ],
+      resources: [
+        .process("Resources")
+      ],
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency")
+      ]
+    ),
+    .target(
+      name: "Clerk",
+      dependencies: [
+        "ClerkKit",
+        "ClerkKitUI"
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
