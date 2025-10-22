@@ -60,6 +60,11 @@ extension SignIn {
         ///
         /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
         var oidcLoginHint: String?
+
+        /// The user's locale in BCP-47 format (e.g., "en-US").
+        ///
+        /// Used by backend services to localize communications.
+        var locale: String?
     }
 
     /// Represents the various strategies for creating a `SignIn` request.

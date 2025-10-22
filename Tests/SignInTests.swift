@@ -111,6 +111,7 @@ struct SignInTests {
       }
       #expect(request.urlEncodedFormBody["oidc_prompt"] == strategy.params.oidcPrompt)
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == strategy.params.oidcLoginHint)
+      #expect(request.urlEncodedFormBody["locale"] == LocaleUtils.userLocale())
       requestHandled.setValue(true)
     }
     mock.register()
@@ -148,10 +149,31 @@ struct SignInTests {
       #expect(request.urlEncodedFormBody["transfer"] == params["transfer"])
       #expect(request.urlEncodedFormBody["oidc_prompt"] == params["oidc_prompt"])
       #expect(request.urlEncodedFormBody["oidc_login_hint"] == params["oidc_login_hint"])
+      #expect(request.urlEncodedFormBody["locale"] == LocaleUtils.userLocale())
       requestHandled.setValue(true)
     }
     mock.register()
     _ = try await SignIn.create(params)
+    #expect(requestHandled.value)
+  }
+
+  @Test @MainActor func testCreateRequestWithCustomLocale() async throws {
+    let requestHandled = LockIsolated(false)
+    let strategy = SignIn.CreateStrategy.identifier("user@email.com", password: "password")
+    let customLocale = "fr-FR"
+    let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins")
+    var mock = Mock(
+      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
+      ])
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody["locale"] == customLocale)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+    _ = try await SignIn.create(strategy: strategy, locale: customLocale)
     #expect(requestHandled.value)
   }
 
