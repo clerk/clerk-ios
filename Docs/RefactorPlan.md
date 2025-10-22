@@ -92,3 +92,4 @@
 ## Progress Log
 - 2025-10-22: Captured current structure, drafted refactor blueprint, and outlined prototype scope plus breaking changes.
 - 2025-10-22: Split legacy sources by moving `ClerkUI` into the new `ClerkKitUI` target, renamed the core source directory to `ClerkKit`, and kept a thin compatibility target exporting both modules.
+- 2025-10-22: Restructured core sources (`Networking`, `Features/Session`) to match the new architecture and verified a targeted test subset (`ProxyConfigurationTests`) while keychain-dependent suites remain temporarily disabled in CLI runs.
