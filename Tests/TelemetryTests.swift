@@ -8,7 +8,7 @@
 import Foundation
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 /// Mock network requester that doesn't make real requests
 struct MockNetworkRequester: NetworkRequester {

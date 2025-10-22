@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 @Suite(.serialized)
 struct ClerkProxyRequestProcessorTests {

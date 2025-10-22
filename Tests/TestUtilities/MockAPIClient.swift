@@ -10,7 +10,7 @@ import Foundation
 import Get
 import Mocker
 
-@testable import Clerk
+@testable import ClerkKit
 
 let mockBaseUrl = URL(string: "https://clerk.mock.dev")!
 

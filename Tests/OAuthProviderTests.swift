@@ -2,7 +2,7 @@ import FactoryKit
 import Foundation
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 struct OAuthProviderTests {
 

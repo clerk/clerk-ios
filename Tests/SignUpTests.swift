@@ -4,7 +4,7 @@ import Foundation
 import Mocker
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 // Any test that accesses Container.shared or performs networking
 // should be placed in the serialized tests below
