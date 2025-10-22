@@ -4,7 +4,7 @@ import Foundation
 import Mocker
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 @Suite(.serialized) final class SerializedPasskeyTests {
 
