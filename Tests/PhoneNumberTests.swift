@@ -17,7 +17,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @Test func testDelete() async throws {

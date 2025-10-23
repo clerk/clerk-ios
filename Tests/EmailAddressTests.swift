@@ -20,7 +20,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @Test func testPrepareVerificationRequest() async throws {
