@@ -75,9 +75,9 @@
   - Define a central helper for test/preview overrides to reduce duplication. *(TestContainer helper prepared.)*
   - Document DI ownership per domain to prepare for a future container swap.
 - **Milestone C – Networking spike ⏭️**:
-  - Implement request middleware pipeline (auth headers, encoding, logging hooks). ✅ (logging hooks pending)
+  - Implement request middleware pipeline (auth headers, encoding, logging hooks). ✅
   - Add response validation middleware with typed error conversion. ✅
-  - Prototype retry/backoff strategy and instrumentation hooks (metrics/events). 🔄
+  - Prototype retry/backoff strategy and instrumentation hooks (metrics/events). 🔄 (existing retry/backoff restored; instrumentation still pending)
   - Cover the home-grown client with Swift Testing via `MockingURLProtocol`. ✅
   - Document middleware responsibilities in code (request preprocessors, response validators, retriers). ✅
 - **Milestone D – Auth flow pilot ⏭️ (no new features yet)**: Rebuild sign-in/sign-up flows atop the new networking client, sticking to existing functionality; defer feature additions until the refactor is complete.
@@ -108,3 +108,4 @@
 - 2025-10-23: Continued DI consolidation by introducing service protocols for sessions, users, and environment fetching; container registrations now expose protocol types for easier testing/preview overrides.
 - 2025-10-23: Replaced legacy request processors with concrete networking middleware types, introduced a reusable middleware pipeline, and updated tests to exercise the new request path mechanics.
 - 2025-10-23: Added Swift Testing coverage for request/response/retry middleware (proxy/header/form encoding, auth event emission, invalid auth client refresh, and device assertion retries).
+- 2025-10-23: Restored debug request/response logging and the legacy rate-limit/backoff retry behaviour inside the middleware pipeline, including tests that drive the new logging and retry paths.
