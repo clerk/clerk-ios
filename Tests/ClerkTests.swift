@@ -158,7 +158,7 @@ struct ClerkTests {
 @Suite(.serialized) final class ClerkSerializedTests {
 
   init() {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @MainActor

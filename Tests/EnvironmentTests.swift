@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized) struct EnvironmentSerializedTests {
 
   init() {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @Test func testGet() async throws {
