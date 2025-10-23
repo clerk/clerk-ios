@@ -539,6 +539,7 @@ struct NetworkingPipelineTests {
     #expect(shouldRetry)
     #expect(delay.value == 500_000_000) // default 0.5s
   }
+
 }
 
 // MARK: - Helpers

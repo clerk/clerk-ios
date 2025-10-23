@@ -11,26 +11,8 @@ import Foundation
 /// Logs outgoing requests when debug mode is enabled.
 struct ClerkRequestLoggingMiddleware: NetworkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
-    let debugContext = await Task { @MainActor () -> (Bool, String?, String?) in
-      (
-        Clerk.shared.settings.debugMode,
-        Clerk.shared.client?.id,
-        try? Container.shared.keychain().string(forKey: "clerkDeviceToken")
-      )
-    }.value
-
-    if let deviceToken = debugContext.2 {
-      request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
-    }
-
-    if debugContext.0, let clientId = debugContext.1 {
-      request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
-    }
-
-    let nativeDeviceId = await Task { @MainActor in deviceID }.value
-    request.setValue(nativeDeviceId, forHTTPHeaderField: "x-native-device-id")
-
-    guard debugContext.0 else { return }
+    let debugEnabled = await Task { @MainActor in Clerk.shared.settings.debugMode }.value
+    guard debugEnabled else { return }
 
     let method = request.httpMethod ?? "GET"
     let url = request.url?.absoluteString ?? "<unknown url>"
@@ -55,10 +37,7 @@ struct ClerkRequestLoggingMiddleware: NetworkRequestMiddleware {
       message += " | Body: \(bodyString)"
     }
 
-    Task { @MainActor in
-      guard Clerk.shared.settings.debugMode else { return }
-      ClerkLogger.debug(message, debugMode: true)
-    }
+    ClerkLogger.debug(message, debugMode: true)
   }
 }
 

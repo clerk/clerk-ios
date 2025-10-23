@@ -35,17 +35,17 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
       return true
     }
 
-    if let urlError = error as? URLError,
-       shouldRetry(urlError: urlError)
-    {
-      let delay = defaultBackoffDelay()
-      await sleep(delay)
-      await logRetry(
-        reason: "URLError \(urlError.code.rawValue)",
-        request: task.originalRequest,
-        delay: delay
-      )
-      return true
+    if let urlError = error as? URLError {
+      if shouldRetry(urlError: urlError) {
+        let delay = defaultBackoffDelay()
+        await sleep(delay)
+        await logRetry(
+          reason: "URLError \(urlError.code.rawValue)",
+          request: task.originalRequest,
+          delay: delay
+        )
+        return true
+      }
     }
 
     return false

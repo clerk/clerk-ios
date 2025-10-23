@@ -236,4 +236,14 @@ actor TelemetryCollector {
     private func isDebugModeEnabled() async -> Bool {
         await environment.isDebugModeEnabled()
     }
+
+    // MARK: - Testing hooks
+
+    func debugBufferedEvents() async -> [TelemetryEvent] {
+        buffer
+    }
+
+    func debugResetBuffer() async {
+        buffer.removeAll(keepingCapacity: true)
+    }
 }
