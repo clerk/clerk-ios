@@ -66,8 +66,8 @@ extension NetworkingPipeline {
         ClerkDeviceTokenResponseMiddleware(),
         ClerkClientSyncResponseMiddleware(),
         ClerkAuthEventEmitterResponseMiddleware(),
-        ClerkErrorThrowingResponseMiddleware(),
-        ClerkInvalidAuthResponseMiddleware()
+        ClerkInvalidAuthResponseMiddleware(),
+        ClerkErrorThrowingResponseMiddleware()
       ],
       retryMiddleware: [
         ClerkDeviceAssertionRetryMiddleware()

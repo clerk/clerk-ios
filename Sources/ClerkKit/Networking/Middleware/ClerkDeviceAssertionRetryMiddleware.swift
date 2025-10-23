@@ -8,13 +8,23 @@
 import Foundation
 
 struct ClerkDeviceAssertionRetryMiddleware: NetworkRetryMiddleware {
+  private let assertionHandler: @Sendable () async throws -> Void
+
+  init(
+    assertionHandler: @escaping @Sendable () async throws -> Void = {
+      try await AssertionManager.shared.performDeviceAssertion()
+    }
+  ) {
+    self.assertionHandler = assertionHandler
+  }
+
   func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
     guard attempts == 1 else { return false }
     guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
       return false
     }
 
-    try await AssertionManager.shared.performDeviceAssertion()
+    try await assertionHandler()
     return true
   }
 }

@@ -71,18 +71,18 @@
 ## Roadmap (Phase 0 → Phase 1)
 - **Milestone A – Target scaffolding ✅**: Added `ClerkKit`/`ClerkKitUI` products and preserved a compatibility target.
 - **Milestone B – FactoryKit consolidation 🔄**:
-  - Convert remaining services (Session, User, Organization, Environment) to protocol-first registrations. *(Session/User/Environment complete; Organization next.)*
+  - Convert remaining services (Session, User, Organization, Environment) to protocol-first registrations. *(Session/User/Environment/Organization complete.)*
   - Define a central helper for test/preview overrides to reduce duplication. *(TestContainer helper prepared.)*
   - Document DI ownership per domain to prepare for a future container swap.
 - **Milestone C – Networking spike ⏭️**:
-  - Implement request middleware pipeline (auth headers, encoding, logging hooks).
-  - Add response validation middleware with typed error conversion.
-  - Prototype retry/backoff strategy and instrumentation hooks (metrics/events).
-  - Cover the home-grown client with Swift Testing via `MockingURLProtocol`.
-  - Document middleware responsibilities in code (request preprocessors, response validators, retriers).
-- **Milestone D – Auth flow pilot ⏭️**: Rebuild sign-in/sign-up flows atop the new networking client once Milestone C stabilises; surface async streams for UI updates.
-- **Milestone E – Preview harness ⏭️**: Provide deterministic preview container and sample data for SwiftUI screens.
-- **Milestone F – Custom container (deferred)**: Evaluate replacing FactoryKit after DI boundaries settle.
+  - Implement request middleware pipeline (auth headers, encoding, logging hooks). ✅ (logging hooks pending)
+  - Add response validation middleware with typed error conversion. ✅
+  - Prototype retry/backoff strategy and instrumentation hooks (metrics/events). 🔄
+  - Cover the home-grown client with Swift Testing via `MockingURLProtocol`. ✅
+  - Document middleware responsibilities in code (request preprocessors, response validators, retriers). ✅
+- **Milestone D – Auth flow pilot ⏭️ (no new features yet)**: Rebuild sign-in/sign-up flows atop the new networking client, sticking to existing functionality; defer feature additions until the refactor is complete.
+- **Milestone E – Preview harness ⏭️ (existing scope only)**: Provide deterministic preview container and sample data that mirror current behaviour; enhancements wait until post-refactor.
+- **Milestone F – Custom container (deferred)**: Evaluate replacing FactoryKit after DI boundaries settle and once we resume feature work.
 
 ### Exit Criteria
 - Domain modules depend on protocol-based services with clear testing hooks.
@@ -107,3 +107,4 @@
 - 2025-10-23: Drafted networking middleware interfaces and planned next steps for replacing the `Get` dependency with a home-grown client.
 - 2025-10-23: Continued DI consolidation by introducing service protocols for sessions, users, and environment fetching; container registrations now expose protocol types for easier testing/preview overrides.
 - 2025-10-23: Replaced legacy request processors with concrete networking middleware types, introduced a reusable middleware pipeline, and updated tests to exercise the new request path mechanics.
+- 2025-10-23: Added Swift Testing coverage for request/response/retry middleware (proxy/header/form encoding, auth event emission, invalid auth client refresh, and device assertion retries).
