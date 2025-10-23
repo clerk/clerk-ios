@@ -26,7 +26,7 @@ struct OAuthProviderTests {
 @Suite(.serialized) struct OAuthProviderSerializedTests {
 
   init() {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
