@@ -71,8 +71,8 @@
 ## Roadmap (Phase 0 → Phase 1)
 - **Milestone A – Target scaffolding ✅**: Added `ClerkKit`/`ClerkKitUI` products and preserved a compatibility target.
 - **Milestone B – FactoryKit consolidation 🔄**:
-  - Convert remaining services (Session, User, Organization, Environment) to protocol-first registrations.
-  - Define a central helper for test/preview overrides to reduce duplication.
+  - Convert remaining services (Session, User, Organization, Environment) to protocol-first registrations. *(Session/User/Environment complete; Organization next.)*
+  - Define a central helper for test/preview overrides to reduce duplication. *(TestContainer helper prepared.)*
   - Document DI ownership per domain to prepare for a future container swap.
 - **Milestone C – Networking spike ⏭️**:
   - Implement request middleware pipeline (auth headers, encoding, logging hooks).
