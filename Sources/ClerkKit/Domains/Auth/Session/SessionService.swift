@@ -11,22 +11,28 @@ import Get
 
 extension Container {
 
-    var sessionService: Factory<SessionService> {
+    var sessionService: Factory<SessionServiceProtocol> {
         self { SessionService() }
     }
 
 }
 
-struct SessionService {
+protocol SessionServiceProtocol: Sendable {
+    @MainActor func revoke(_ sessionId: String) async throws -> Session
+}
 
-    var revoke: @MainActor (_ sessionId: String) async throws -> Session = { sessionId in
-        let request = Request<ClientResponse<Session>>.init(
+final class SessionService: SessionServiceProtocol {
+
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
+    @MainActor
+    func revoke(_ sessionId: String) async throws -> Session {
+        let request = Request<ClientResponse<Session>>(
             path: "/v1/me/sessions/\(sessionId)/revoke",
             method: .post,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
-    }
 
+        return try await apiClient.send(request).value.response
+    }
 }
