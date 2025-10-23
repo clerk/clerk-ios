@@ -60,9 +60,11 @@ extension NetworkingPipeline {
         ClerkProxyRequestMiddleware(),
         ClerkHeaderRequestMiddleware(),
         ClerkQueryItemsRequestMiddleware(),
-        ClerkURLEncodedFormEncoderMiddleware()
+        ClerkURLEncodedFormEncoderMiddleware(),
+        ClerkRequestLoggingMiddleware()
       ],
       responseMiddleware: [
+        ClerkResponseLoggingMiddleware(),
         ClerkDeviceTokenResponseMiddleware(),
         ClerkClientSyncResponseMiddleware(),
         ClerkAuthEventEmitterResponseMiddleware(),
@@ -70,7 +72,8 @@ extension NetworkingPipeline {
         ClerkErrorThrowingResponseMiddleware()
       ],
       retryMiddleware: [
-        ClerkDeviceAssertionRetryMiddleware()
+        ClerkDeviceAssertionRetryMiddleware(),
+        ClerkRateLimitRetryMiddleware()
       ]
     )
   }
