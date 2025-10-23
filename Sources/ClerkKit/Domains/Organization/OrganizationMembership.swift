@@ -89,7 +89,7 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
 
-        return try await Container.shared.organizationService().updateOrganizationMembership(organization.id, userId, role)
+        return try await Container.shared.organizationService().updateOrganizationMember(organization.id, userId, role)
     }
 
 }
