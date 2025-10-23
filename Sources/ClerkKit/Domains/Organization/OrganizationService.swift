@@ -37,7 +37,6 @@ protocol OrganizationServiceProtocol: Sendable {
     @MainActor func attemptOrganizationDomainAffiliationVerification(_ organizationId: String, _ domainId: String, _ code: String) async throws -> OrganizationDomain
     @MainActor func revokeOrganizationInvitation(_ organizationId: String, _ invitationId: String) async throws -> OrganizationInvitation
     @MainActor func destroyOrganizationMembership(_ organizationId: String, _ userId: String) async throws -> OrganizationMembership
-    @MainActor func updateOrganizationMembership(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership
     @MainActor func acceptUserOrganizationInvitation(_ invitationId: String) async throws -> UserOrganizationInvitation
     @MainActor func acceptOrganizationSuggestion(_ suggestionId: String) async throws -> OrganizationSuggestion
     @MainActor func acceptOrganizationMembershipRequest(_ organizationId: String, _ requestId: String) async throws -> OrganizationMembershipRequest
@@ -78,18 +77,11 @@ final class OrganizationService: OrganizationServiceProtocol {
     func setOrganizationLogo(_ organizationId: String, _ imageData: Data) async throws -> Organization {
         let boundary = UUID().uuidString
         var data = Data()
-        data.append("
---\(boundary)
-".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name="file"; filename="\(UUID().uuidString)"
-".data(using: .utf8)!)
-        data.append("Content-Type: image/jpeg
-
-".data(using: .utf8)!)
+        data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         data.append(imageData)
-        data.append("
---\(boundary)--
-".data(using: .utf8)!)
+        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
 
         let request = Request<ClientResponse<Organization>>(
             path: "/v1/organizations/\(organizationId)/logo",
@@ -329,17 +321,6 @@ final class OrganizationService: OrganizationServiceProtocol {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
             method: .delete
-        )
-
-        return try await apiClient.send(request).value.response
-    }
-
-    @MainActor
-    func updateOrganizationMembership(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership {
-        let request = Request<ClientResponse<OrganizationMembership>>(
-            path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
-            method: .patch,
-            body: ["role": role]
         )
 
         return try await apiClient.send(request).value.response

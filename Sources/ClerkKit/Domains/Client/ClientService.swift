@@ -11,17 +11,23 @@ import Get
 
 extension Container {
 
-    var clientService: Factory<ClientService> {
+    var clientService: Factory<ClientServiceProtocol> {
         self { ClientService() }
     }
 
 }
 
-struct ClientService {
+protocol ClientServiceProtocol: Sendable {
+    @MainActor func get() async throws -> Client?
+}
 
-    var get: @MainActor () async throws -> Client? = {
+final class ClientService: ClientServiceProtocol {
+
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
+    @MainActor
+    func get() async throws -> Client? {
         let request = Request<ClientResponse<Client?>>(path: "/v1/client")
-        return try await Container.shared.apiClient().send(request).value.response
+        return try await apiClient.send(request).value.response
     }
-
 }
