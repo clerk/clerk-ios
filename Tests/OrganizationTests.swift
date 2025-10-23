@@ -9,15 +9,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -382,15 +379,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationDomainTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -467,15 +461,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationInvitationTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -505,15 +496,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationMembershipTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -587,15 +575,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationMembershipRequestTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -647,15 +632,12 @@ import Testing
 @Suite(.serialized) final class SerializedOrganizationSuggestionTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
@@ -684,15 +666,12 @@ import Testing
 @Suite(.serialized) final class SerializedUserOrganizationInvitationTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
       return clerk
     }
-  }
-
-  deinit {
-    TestContainer.reset()
   }
 
   @MainActor
