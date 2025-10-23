@@ -10,50 +10,46 @@ import Foundation
 import Get
 
 extension Container {
-    var apiClient: Factory<APIClient> {
-        self { APIClient(baseURL: nil) }.cached
-    }
-}
+  var networkingPipeline: Factory<NetworkingPipeline> {
+    self { .clerkDefault }.cached
+  }
 
-protocol RequestPreprocessor {
-    static func process(request: inout URLRequest) async throws
-}
-
-protocol RequestPostprocessor {
-    static func process(response: HTTPURLResponse, data: Data, task: URLSessionTask) throws
-}
-
-protocol RequestRetrier {
-    static func shouldRetry(task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool
+  var apiClient: Factory<APIClient> {
+    self {
+      let pipeline = self.networkingPipeline()
+      return APIClient(baseURL: nil) { configuration in
+        configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
+      }
+    }.cached
+  }
 }
 
 final class ClerkAPIClientDelegate: APIClientDelegate, Sendable {
-    
-    func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
-        try await ClerkProxyRequestProcessor.process(request: &request)
-        try await ClerkHeaderRequestProcessor.process(request: &request)
-        try await ClerkQueryItemsRequestProcessor.process(request: &request)
-        try await ClerkURLEncodedFormEncoderRequestProcessor.process(request: &request)
-    }
-    
-    func client(_ client: APIClient, validateResponse response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
-        try ClerkDeviceTokenRequestProcessor.process(response: response, data: data, task: task)
-        try ClerkClientSyncRequestProcessor.process(response: response, data: data, task: task)
-        try ClerkEventEmitterRequestProcessor.process(response: response, data: data, task: task)
-        try ClerkErrorThrowingRequestProcessor.process(response: response, data: data, task: task)
-        try ClerkInvalidAuthRequestProcessor.process(response: response, data: data, task: task)
-    }
-    
-    func client(_ client: APIClient, shouldRetry task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
-        guard attempts == 1 else {
-            return false
-        }
-        
-        if try await ClerkDeviceAssertionRetrier.shouldRetry(task: task, error: error, attempts: attempts) {
-            return true
-        }
-        
-        return false
-    }
-    
+  private let pipeline: NetworkingPipeline
+
+  init(pipeline: NetworkingPipeline) {
+    self.pipeline = pipeline
+  }
+
+  func client(_ client: APIClient, willSendRequest request: inout URLRequest) async throws {
+    try await pipeline.prepare(&request)
+  }
+
+  func client(
+    _ client: APIClient,
+    validateResponse response: HTTPURLResponse,
+    data: Data,
+    task: URLSessionTask
+  ) throws {
+    try pipeline.validate(response, data: data, task: task)
+  }
+
+  func client(
+    _ client: APIClient,
+    shouldRetry task: URLSessionTask,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool {
+    try await pipeline.shouldRetry(task, error: error, attempts: attempts)
+  }
 }

@@ -381,8 +381,9 @@ extension Clerk {
         let baseUrl = proxyConfiguration?.baseURL ?? URL(string: frontendApiUrl)
 
         Container.shared.apiClient.register { [baseUrl] in
-            APIClient(baseURL: baseUrl) { configuration in
-                configuration.delegate = ClerkAPIClientDelegate()
+            let pipeline = Container.shared.networkingPipeline()
+            return APIClient(baseURL: baseUrl) { configuration in
+                configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
                 configuration.decoder = .clerkDecoder
                 configuration.encoder = .clerkEncoder
                 configuration.sessionConfiguration.httpAdditionalHeaders = [

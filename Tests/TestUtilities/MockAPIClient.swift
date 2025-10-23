@@ -19,7 +19,8 @@ extension Container: @retroactive AutoRegistering {
   public func autoRegister() {
     apiClient.context(.test) { _ in
         APIClient(baseURL: mockBaseUrl) { configuration in
-            configuration.delegate = ClerkAPIClientDelegate()
+            let pipeline = Container.shared.networkingPipeline()
+            configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
             configuration.decoder = .clerkDecoder
             configuration.encoder = .clerkEncoder
             configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]

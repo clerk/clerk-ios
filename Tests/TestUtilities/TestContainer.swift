@@ -19,7 +19,8 @@ enum TestContainer {
 
     Container.shared.apiClient.register {
       APIClient(baseURL: mockBaseUrl) { configuration in
-        configuration.delegate = ClerkAPIClientDelegate()
+        let pipeline = Container.shared.networkingPipeline()
+        configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
         configuration.decoder = .clerkDecoder
         configuration.encoder = .clerkEncoder
         configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]

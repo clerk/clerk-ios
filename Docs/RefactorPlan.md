@@ -106,3 +106,4 @@
 - 2025-10-23: Introduced `SignInServiceProtocol`/`SignUpServiceProtocol` abstractions with concrete implementations registered in the container to standardise async API usage ahead of the networking rewrite.
 - 2025-10-23: Drafted networking middleware interfaces and planned next steps for replacing the `Get` dependency with a home-grown client.
 - 2025-10-23: Continued DI consolidation by introducing service protocols for sessions, users, and environment fetching; container registrations now expose protocol types for easier testing/preview overrides.
+- 2025-10-23: Replaced legacy request processors with concrete networking middleware types, introduced a reusable middleware pipeline, and updated tests to exercise the new request path mechanics.
