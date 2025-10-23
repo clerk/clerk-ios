@@ -79,6 +79,7 @@
   - Add response validation middleware with typed error conversion.
   - Prototype retry/backoff strategy and instrumentation hooks (metrics/events).
   - Cover the home-grown client with Swift Testing via `MockingURLProtocol`.
+  - Document middleware responsibilities in code (request preprocessors, response validators, retriers).
 - **Milestone D – Auth flow pilot ⏭️**: Rebuild sign-in/sign-up flows atop the new networking client once Milestone C stabilises; surface async streams for UI updates.
 - **Milestone E – Preview harness ⏭️**: Provide deterministic preview container and sample data for SwiftUI screens.
 - **Milestone F – Custom container (deferred)**: Evaluate replacing FactoryKit after DI boundaries settle.

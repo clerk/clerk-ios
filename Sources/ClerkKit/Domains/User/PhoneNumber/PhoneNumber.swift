@@ -112,7 +112,7 @@ extension PhoneNumber {
     /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
     @discardableResult @MainActor
     public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
-        try await Container.shared.phoneNumberService().setReservedForSecondFactor(id, reserved)
+        try await Container.shared.phoneNumberService().setReservedForSecondFactor(id, reserved: reserved)
     }
 
 }

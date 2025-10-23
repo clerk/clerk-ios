@@ -11,55 +11,67 @@ import Get
 
 extension Container {
 
-    var emailAddressService: Factory<EmailAddressService> {
+    var emailAddressService: Factory<EmailAddressServiceProtocol> {
         self { EmailAddressService() }
     }
 
 }
 
-struct EmailAddressService {
+protocol EmailAddressServiceProtocol: Sendable {
+    @MainActor func create(_ email: String) async throws -> EmailAddress
+    @MainActor func prepareVerification(_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress
+    @MainActor func attemptVerification(_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress
+    @MainActor func destroy(_ emailAddressId: String) async throws -> DeletedObject
+}
 
-    var create: @MainActor (_ email: String) async throws -> EmailAddress = { email in
+final class EmailAddressService: EmailAddressServiceProtocol {
+
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
+    @MainActor
+    func create(_ email: String) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "v1/me/email_addresses",
             method: .post,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
             body: ["email_address": email]
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var prepareVerification: @MainActor (_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
+    @MainActor
+    func prepareVerification(_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification",
             method: .post,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
             body: strategy.requestBody
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var attemptVerification: @MainActor (_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress = { emailAddressId, strategy in
+    @MainActor
+    func attemptVerification(_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification",
             method: .post,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
             body: strategy.requestBody
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var destroy: @MainActor (_ emailAddressId: String) async throws -> DeletedObject = { emailAddressId in
+    @MainActor
+    func destroy(_ emailAddressId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/me/email_addresses/\(emailAddressId)",
             method: .delete,
             query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
-    }
 
+        return try await apiClient.send(request).value.response
+    }
 }
