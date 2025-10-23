@@ -14,3 +14,9 @@ protocol NetworkResponseMiddleware: Sendable {
 protocol NetworkRetryMiddleware: Sendable {
   func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool
 }
+
+// TODO: define concrete middleware types (e.g., AuthHeaderMiddleware, LoggingMiddleware, RetryMiddleware).
+// TODO: add tests ensuring middleware order and error handling using MockingURLProtocol.
+
+// TODO: create NetworkingPipeline type that composes request/response/retry middleware.
+// TODO: expose APIClient extension to register middleware pipeline.
