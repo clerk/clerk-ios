@@ -54,6 +54,5 @@ enum TelemetryEvents {
             eventSamplingRate: samplingRate ?? viewDidAppearSamplingRate
         )
     }
+
 }
-
-
