@@ -56,7 +56,7 @@ import Testing
   }
 
   deinit {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @MainActor
