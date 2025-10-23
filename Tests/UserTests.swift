@@ -350,7 +350,7 @@ struct UserTests {
   }
 
   deinit {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @Test func testUserReloadRequest() async throws {
