@@ -19,7 +19,7 @@ extension Container {
 }
 
 protocol SignInServiceProtocol: Sendable {
-    @MainActor func create(_ strategy: SignIn.CreateStrategy) async throws -> SignIn
+    @MainActor func create(_ strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn
     @MainActor func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn
     @MainActor func resetPassword(_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
     @MainActor func prepareFirstFactor(_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn
@@ -45,7 +45,10 @@ final class SignInService: SignInServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func create(_ strategy: SignIn.CreateStrategy) async throws -> SignIn {
+    func create(_ strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn {
+        var params = strategy.params
+        params.locale = locale ?? LocaleUtils.userLocale()
+
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins",
             method: .post,
@@ -57,6 +60,15 @@ final class SignInService: SignInServiceProtocol {
 
     @MainActor
     func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn {
+        var body: any Encodable & Sendable = params
+        if var json = try? JSON(encodable: params), case .object(var object) = json {
+            if object["locale"] == nil || object["locale"] == .null {
+                object["locale"] = .string(LocaleUtils.userLocale())
+                json = .object(object)
+            }
+            body = json
+        }
+
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins",
             method: .post,
