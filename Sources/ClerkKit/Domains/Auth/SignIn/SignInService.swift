@@ -12,144 +12,167 @@ import Get
 
 extension Container {
 
-    var signInService: Factory<SignInService> {
+    var signInService: Factory<SignInServiceProtocol> {
         self { SignInService() }
     }
 
 }
 
-struct SignInService {
+protocol SignInServiceProtocol: Sendable {
+    @MainActor func create(_ strategy: SignIn.CreateStrategy) async throws -> SignIn
+    @MainActor func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn
+    @MainActor func resetPassword(_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
+    @MainActor func prepareFirstFactor(_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn
+    @MainActor func attemptFirstFactor(_ signInId: String, _ strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
+    @MainActor func prepareSecondFactor(_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy, _ signIn: SignIn) async throws -> SignIn
+    @MainActor func attemptSecondFactor(_ signInId: String, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
+    @MainActor func get(_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn
 
-    var create: @MainActor (_ strategy: SignIn.CreateStrategy, _ locale: String?) async throws -> SignIn = { strategy, locale in
-        var params = strategy.params
-        params.locale = locale ?? LocaleUtils.userLocale()
+    #if !os(tvOS) && !os(watchOS)
+    @MainActor func authenticateWithRedirectStatic(_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirect(_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    #endif
 
-        let request = Request<ClientResponse<SignIn>>.init(
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    @MainActor func getCredentialForPasskey(_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String
+    @MainActor func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
+    @MainActor func authenticateWithIdToken(_ signIn: SignIn) async throws -> TransferFlowResult
+    #endif
+}
+
+final class SignInService: SignInServiceProtocol {
+
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
+    @MainActor
+    func create(_ strategy: SignIn.CreateStrategy) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins",
             method: .post,
             body: params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignIn = { params in
-        var body: any Encodable & Sendable = params
-        if var json = try? JSON(encodable: params), case .object(var object) = json {
-            if object["locale"] == nil || object["locale"] == .null {
-                object["locale"] = .string(LocaleUtils.userLocale())
-                json = .object(object)
-            }
-            body = json
-        }
-
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins",
             method: .post,
             body: body
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var resetPassword: @MainActor (_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn = { signInId, params in
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func resetPassword(_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/reset_password",
             method: .post,
             body: params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var prepareFirstFactor: @MainActor (_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn = { signInId, strategy, signIn in
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func prepareFirstFactor(_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/prepare_first_factor",
             method: .post,
             body: strategy.params(signIn: signIn)
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var attemptFirstFactor: @MainActor (_ signInId: String, _ strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn = { signInId, strategy in
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func attemptFirstFactor(_ signInId: String, _ strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/attempt_first_factor",
             method: .post,
             body: strategy.params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var prepareSecondFactor: @MainActor (_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy, _ signIn: SignIn) async throws -> SignIn = { signInId, strategy, signIn in
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func prepareSecondFactor(_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy, _ signIn: SignIn) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/prepare_second_factor",
             method: .post,
             body: strategy.params(signIn: signIn)
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var attemptSecondFactor: @MainActor (_ signInId: String, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn = { signInId, strategy in
-        let request = Request<ClientResponse<SignIn>>.init(
+    @MainActor
+    func attemptSecondFactor(_ signInId: String, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn {
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/attempt_second_factor",
             method: .post,
             body: strategy.params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var get: @MainActor (_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn = { signInId, rotatingTokenNonce in
+    @MainActor
+    func get(_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn {
         var queryParams: [(String, String?)] = []
         if let rotatingTokenNonce {
             queryParams.append((
-                "rotating_token_nonce", 
-                value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                "rotating_token_nonce",
+                rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ))
         }
 
-        let request = Request<ClientResponse<SignIn>>.init(
+        let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)",
             method: .get,
             query: queryParams
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
     #if !os(tvOS) && !os(watchOS)
-    var authenticateWithRedirectStatic: @MainActor (_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
+    @MainActor
+    func authenticateWithRedirectStatic(_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
 
-        guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl, let url = URL(string: externalVerificationRedirectUrl) else {
-            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-        }
-
-        let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
-        let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
-        return transferFlowResult
-    }
-
-    var authenticateWithRedirect: @MainActor (_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signIn, prefersEphemeralWebBrowserSession in
         guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-            let url = URL(string: externalVerificationRedirectUrl)
+              let url = URL(string: externalVerificationRedirectUrl)
         else {
             throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
         }
 
         let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await signIn.handleOAuthCallbackUrl(callbackUrl)
-        return transferFlowResult
+        return try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    }
+
+    @MainActor
+    func authenticateWithRedirect(_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+        guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+              let url = URL(string: externalVerificationRedirectUrl)
+        else {
+            throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+        }
+
+        let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+        let callbackUrl = try await authSession.start()
+        return try await signIn.handleOAuthCallbackUrl(callbackUrl)
     }
     #endif
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    var getCredentialForPasskey: @MainActor (_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String = { signIn, autofill, preferImmediatelyAvailableCredentials in
+    @MainActor
+    func getCredentialForPasskey(_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String {
         guard
             let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
             let challengeString = nonceJSON["challenge"]?.stringValue,
@@ -159,13 +182,11 @@ struct SignInService {
         }
 
         let manager = PasskeyHelper()
-        var authorization: ASAuthorization
+        let authorization: ASAuthorization
 
         #if os(iOS) && !targetEnvironment(macCatalyst)
         if autofill {
-            authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
-                challenge: challenge
-            )
+            authorization = try await manager.beginAutoFillAssistedPasskeySignIn(challenge: challenge)
         } else {
             authorization = try await manager.signIn(
                 challenge: challenge,
@@ -200,15 +221,16 @@ struct SignInService {
 
         return try JSON(publicKeyCredential).debugDescription
     }
-    #endif
 
-    var authenticateWithIdTokenStatic: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult = { provider, idToken in
+    @MainActor
+    func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult {
         let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))
         return try await signIn.handleTransferFlow()
     }
 
-    var authenticateWithIdToken: @MainActor (_ signIn: SignIn) async throws -> TransferFlowResult = { signIn in
+    @MainActor
+    func authenticateWithIdToken(_ signIn: SignIn) async throws -> TransferFlowResult {
         try await signIn.handleTransferFlow()
     }
-
+    #endif
 }
