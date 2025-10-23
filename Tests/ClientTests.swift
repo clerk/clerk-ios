@@ -29,7 +29,7 @@ struct ClientTests {
 @Suite(.serialized) struct ClientSerializedTests {
 
   init() {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @Test func testGet() async throws {

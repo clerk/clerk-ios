@@ -17,7 +17,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -390,7 +390,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -475,7 +475,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -513,7 +513,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -595,7 +595,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -655,7 +655,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor
@@ -692,7 +692,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor

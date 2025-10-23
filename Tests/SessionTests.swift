@@ -56,7 +56,7 @@ import Testing
   }
 
   deinit {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @MainActor

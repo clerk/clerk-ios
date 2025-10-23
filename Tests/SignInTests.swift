@@ -73,7 +73,7 @@ struct SignInTests {
 @Suite(.serialized) struct SignInSerializedTests {
 
   init() {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @Test(
