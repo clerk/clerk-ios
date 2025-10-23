@@ -104,3 +104,4 @@
   - Locale is automatically attached to sign-in creation requests (with override support) to match recent main-branch behaviour.
 - 2025-10-23: Introduced `SignInServiceProtocol`/`SignUpServiceProtocol` abstractions with concrete implementations registered in the container to standardise async API usage ahead of the networking rewrite.
 - 2025-10-23: Drafted networking middleware interfaces and planned next steps for replacing the `Get` dependency with a home-grown client.
+- 2025-10-23: Continued DI consolidation by introducing service protocols for sessions, users, and environment fetching; container registrations now expose protocol types for easier testing/preview overrides.
