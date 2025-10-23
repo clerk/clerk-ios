@@ -121,6 +121,9 @@ extension SignIn {
     ///
     /// What you must pass to `strategy` depends on which sign-in options you have enabled in your Clerk application instance.
     ///
+    /// - Parameters:
+    ///   - strategy: The strategy used to create the sign-in. See ``SignIn/CreateStrategy`` for the available strategies.
+    ///   - locale: Optional locale override to associate with the request (defaults to the user's preferred locale).
     /// - Returns: A new `SignIn` object.
     /// - Throws: An error if the sign-in request fails.
     ///
@@ -131,8 +134,8 @@ extension SignIn {
     /// )
     /// ```
     @discardableResult @MainActor
-    public static func create(strategy: SignIn.CreateStrategy) async throws -> SignIn {
-        try await Container.shared.signInService().create(strategy)
+    public static func create(strategy: SignIn.CreateStrategy, locale: String? = nil) async throws -> SignIn {
+        try await Container.shared.signInService().create(strategy, locale: locale)
     }
 
     /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.

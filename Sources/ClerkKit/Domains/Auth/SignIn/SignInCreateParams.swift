@@ -60,6 +60,11 @@ extension SignIn {
         ///
         /// Optional if `strategy` is `'oauth_<provider>'` or `'enterprise_sso'`.
         var oidcLoginHint: String?
+
+        /// The locale that should be associated with this sign-in request.
+        ///
+        /// Defaults to the user's preferred locale when not provided.
+        var locale: String?
     }
 
     /// Represents the various strategies for creating a `SignIn` request.
