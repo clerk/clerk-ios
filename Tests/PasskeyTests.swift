@@ -17,7 +17,7 @@ import Testing
   }
 
   deinit {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @Test func testUpdate() async throws {

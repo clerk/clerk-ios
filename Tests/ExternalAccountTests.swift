@@ -20,7 +20,7 @@ import Testing
   }
 
   deinit {
-    Container.shared.reset()
+    resetTestContainer()
   }
 
   @Test func testDestroyRequest() async throws {
