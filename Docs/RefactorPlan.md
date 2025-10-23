@@ -68,18 +68,25 @@
 - Provide SwiftUI `EnvironmentKey` helpers to inject dependencies into views.
 - Include sample JSON payloads in `ClerkKitUI/Previews` for realistic data without hitting network.
 
-## Prototype Scope (Phase 0)
-- **Milestone A – Target scaffolding**: Add `ClerkKit` and `ClerkKitUI` targets to `Package.swift`, move minimal entry points, set up shared build settings, and ensure current tests compile with stubs.
-- **Milestone B – FactoryKit consolidation**: Audit current FactoryKit registrations, relocate them into the new targets, and document override points for tests/previews.
-- **Milestone C – Networking spike**: Build the initial `HTTPClient` with middleware pipeline, response decoding, and error mapping; cover with Swift Testing using fixture-driven mocks.
-- **Milestone D – Auth flow pilot**: Rebuild sign-in flow using the new networking stack, exposing async façades and async streams for session changes.
-- **Milestone E – Preview harness**: Create preview helpers plus sample data to render a representative subset of ClerkUI views without live services.
-- **Milestone F – Custom container (deferred)**: Once earlier milestones harden, revisit rolling a bespoke container to replace FactoryKit with richer scoping and validation.
+## Roadmap (Phase 0 → Phase 1)
+- **Milestone A – Target scaffolding ✅**: Added `ClerkKit`/`ClerkKitUI` products and preserved a compatibility target.
+- **Milestone B – FactoryKit consolidation 🔄**:
+  - Convert remaining services (Session, User, Organization, Environment) to protocol-first registrations.
+  - Define a central helper for test/preview overrides to reduce duplication.
+  - Document DI ownership per domain to prepare for a future container swap.
+- **Milestone C – Networking spike ⏭️**:
+  - Implement request middleware pipeline (auth headers, encoding, logging hooks).
+  - Add response validation middleware with typed error conversion.
+  - Prototype retry/backoff strategy and instrumentation hooks (metrics/events).
+  - Cover the home-grown client with Swift Testing via `MockingURLProtocol`.
+- **Milestone D – Auth flow pilot ⏭️**: Rebuild sign-in/sign-up flows atop the new networking client once Milestone C stabilises; surface async streams for UI updates.
+- **Milestone E – Preview harness ⏭️**: Provide deterministic preview container and sample data for SwiftUI screens.
+- **Milestone F – Custom container (deferred)**: Evaluate replacing FactoryKit after DI boundaries settle.
 
 ### Exit Criteria
-- New module layout compiles and existing FactoryKit wiring functions within it.
-- Networking spike and auth pilot exercise async APIs end-to-end (network -> use case -> published state).
-- SwiftUI preview compiles with new dependency injection override guidance using mock data.
+- Domain modules depend on protocol-based services with clear testing hooks.
+- Networking spike validates request/response middleware via Swift Testing (no third-party client dependency).
+- Preview harness offers stubbed data for core flows without runtime networking.
 
 ## Breaking Changes (Draft Outline)
 - **Package restructuring**: Product name changes from `Clerk` to `ClerkKit`; UI entry points migrate to `ClerkKitUI`. Apps must update imports and target references.
@@ -89,9 +96,11 @@
 - **Telemetry hooks**: Unified observer protocol replaces scattered delegate callbacks; adopt new event enum for analytics integrations.
 - **Image loading**: UI now uses Nuke under the hood; apps overriding image loaders must conform to the new `ImageLoading` protocol provided by `ClerkKitUI`.
 
--## Progress Log
+## Progress Log
 - 2025-10-22: Captured current structure, drafted refactor blueprint, and outlined prototype scope plus breaking changes.
 - 2025-10-22: Split legacy sources by moving `ClerkUI` into the new `ClerkKitUI` target, renamed the core source directory to `ClerkKit`, and kept a thin compatibility target exporting both modules.
 - 2025-10-22: Restructured core sources (`Networking`, `Domains/Auth/Session`) to match the new architecture and verified a targeted test subset (`ProxyConfigurationTests`) while keychain-dependent suites remain temporarily disabled in CLI runs.
 - 2025-10-22: Migrated `Client`, `Environment`, `SignIn`, `SignUp`, `User`, `Passkey`, and related resource models into domain namespaces; introduced a test-only keychain + API client registration helper so CLI tests can run without SimpleKeychain crashes.
+  - Locale is automatically attached to sign-in creation requests (with override support) to match recent main-branch behaviour.
 - 2025-10-23: Introduced `SignInServiceProtocol`/`SignUpServiceProtocol` abstractions with concrete implementations registered in the container to standardise async API usage ahead of the networking rewrite.
+- 2025-10-23: Drafted networking middleware interfaces and planned next steps for replacing the `Get` dependency with a home-grown client.
