@@ -28,10 +28,10 @@
 - `Core`: lightweight kernel containing the dependency container, configuration DSL, logging hooks, and shared protocols (clock, uuid generator).
 - `Networking`: home-rolled HTTP client using `URLSession` with middleware pipeline (auth headers, retries, logging).
 - `Storage`: keychain/token secure storage, cache providers, persistence strategy.
-- `Features/*`: folders per bounded context (`Auth`, `Session`, `UserProfile`, `Organization`, `Identification`). Each exposes:
+- `Domains/*`: bounded contexts (`Auth`, `User`, `Organization`, `Client`, `Environment`, etc.). Each exposes:
   - `Interfaces`: public protocols and models.
   - `UseCases`: async workflows orchestrating services (often actors to manage state).
-  - `DataSources`: networking/storage implementations that conform to the feature interfaces.
+  - `DataSources`: networking/storage implementations that conform to the domain interfaces.
 - `Support`: utilities, error definitions, and strongly typed configuration.
 
 ### Cross-Target Dependencies
@@ -89,8 +89,8 @@
 - **Telemetry hooks**: Unified observer protocol replaces scattered delegate callbacks; adopt new event enum for analytics integrations.
 - **Image loading**: UI now uses Nuke under the hood; apps overriding image loaders must conform to the new `ImageLoading` protocol provided by `ClerkKitUI`.
 
-## Progress Log
+-## Progress Log
 - 2025-10-22: Captured current structure, drafted refactor blueprint, and outlined prototype scope plus breaking changes.
 - 2025-10-22: Split legacy sources by moving `ClerkUI` into the new `ClerkKitUI` target, renamed the core source directory to `ClerkKit`, and kept a thin compatibility target exporting both modules.
-- 2025-10-22: Restructured core sources (`Networking`, `Features/Session`) to match the new architecture and verified a targeted test subset (`ProxyConfigurationTests`) while keychain-dependent suites remain temporarily disabled in CLI runs.
-- 2025-10-22: Migrated `Client`, `Environment`, `SignIn`, `SignUp`, `User`, `Passkey`, and related resource models into feature namespaces; introduced a test-only keychain + API client registration helper so CLI tests can run without SimpleKeychain crashes.
+- 2025-10-22: Restructured core sources (`Networking`, `Domains/Auth/Session`) to match the new architecture and verified a targeted test subset (`ProxyConfigurationTests`) while keychain-dependent suites remain temporarily disabled in CLI runs.
+- 2025-10-22: Migrated `Client`, `Environment`, `SignIn`, `SignUp`, `User`, `Passkey`, and related resource models into domain namespaces; introduced a test-only keychain + API client registration helper so CLI tests can run without SimpleKeychain crashes.
