@@ -148,7 +148,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil, locale: String? = nil) async throws -> SignUp {
-        try await Container.shared.signUpService().create(strategy, legalAccepted, locale)
+        try await Container.shared.signUpService().create(strategy, legalAccepted: legalAccepted, locale: locale)
     }
 
     /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
@@ -187,7 +187,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the changes.
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
-        try await Container.shared.signUpService().update(id, params)
+        try await Container.shared.signUpService().update(id, params: params)
     }
 
     /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
@@ -204,7 +204,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification initiation.
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-        try await Container.shared.signUpService().prepareVerification(id, strategy)
+        try await Container.shared.signUpService().prepareVerification(id, strategy: strategy)
     }
 
     /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
@@ -219,7 +219,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-        try await Container.shared.signUpService().attemptVerification(id, strategy)
+        try await Container.shared.signUpService().attemptVerification(id, strategy: strategy)
     }
 
     #if !os(tvOS) && !os(watchOS)
@@ -360,7 +360,7 @@ extension SignUp {
     /// Returns the current sign up.
     @discardableResult @MainActor
     func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-        try await Container.shared.signUpService().get(id, rotatingTokenNonce)
+        try await Container.shared.signUpService().get(id, rotatingTokenNonce: rotatingTokenNonce)
     }
 
 }

@@ -94,3 +94,4 @@
 - 2025-10-22: Split legacy sources by moving `ClerkUI` into the new `ClerkKitUI` target, renamed the core source directory to `ClerkKit`, and kept a thin compatibility target exporting both modules.
 - 2025-10-22: Restructured core sources (`Networking`, `Domains/Auth/Session`) to match the new architecture and verified a targeted test subset (`ProxyConfigurationTests`) while keychain-dependent suites remain temporarily disabled in CLI runs.
 - 2025-10-22: Migrated `Client`, `Environment`, `SignIn`, `SignUp`, `User`, `Passkey`, and related resource models into domain namespaces; introduced a test-only keychain + API client registration helper so CLI tests can run without SimpleKeychain crashes.
+- 2025-10-23: Introduced `SignInServiceProtocol`/`SignUpServiceProtocol` abstractions with concrete implementations registered in the container to standardise async API usage ahead of the networking rewrite.

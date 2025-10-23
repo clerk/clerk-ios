@@ -12,29 +12,52 @@ import Get
 
 extension Container {
 
-    var signUpService: Factory<SignUpService> {
+    var signUpService: Factory<SignUpServiceProtocol> {
         self { SignUpService() }
     }
 
 }
 
-struct SignUpService {
+protocol SignUpServiceProtocol: Sendable {
+    @MainActor func create(_ strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp
+    @MainActor func createWithParams(_ params: any Encodable & Sendable) async throws -> SignUp
+    @MainActor func update(_ signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp
+    @MainActor func prepareVerification(_ signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp
+    @MainActor func attemptVerification(_ signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp
+    @MainActor func get(_ signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp
 
-    var create: @MainActor (_ strategy: SignUp.CreateStrategy, _ legalAccepted: Bool?, _ locale: String?) async throws -> SignUp = { strategy, legalAccepted, locale in
+    #if !os(tvOS) && !os(watchOS)
+    @MainActor func authenticateWithRedirectStatic(_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirect(_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    #endif
+
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    @MainActor func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
+    @MainActor func authenticateWithIdToken(_ signUp: SignUp) async throws -> TransferFlowResult
+    #endif
+}
+
+final class SignUpService: SignUpServiceProtocol {
+
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
+    @MainActor
+    func create(_ strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp {
         var params = strategy.params
         params.legalAccepted = legalAccepted
         params.locale = locale ?? LocaleUtils.userLocale()
 
-        let request = Request<ClientResponse<SignUp>>.init(
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups",
             method: .post,
             body: params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var createWithParams: @MainActor (_ params: any Encodable & Sendable) async throws -> SignUp = { params in
+    @MainActor
+    func createWithParams(_ params: any Encodable & Sendable) async throws -> SignUp {
         var body: any Encodable & Sendable = params
         if var json = try? JSON(encodable: params), case .object(var object) = json {
             if object["locale"] == nil || object["locale"] == .null {
@@ -44,65 +67,70 @@ struct SignUpService {
             body = json
         }
 
-        let request = Request<ClientResponse<SignUp>>.init(
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups",
             method: .post,
             body: body
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var update: @MainActor (_ signUpId: String, _ params: SignUp.UpdateParams) async throws -> SignUp = { signUpId, params in
-        let request = Request<ClientResponse<SignUp>>.init(
+    @MainActor
+    func update(_ signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp {
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)",
             method: .patch,
             body: params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var prepareVerification: @MainActor (_ signUpId: String, _ strategy: SignUp.PrepareStrategy) async throws -> SignUp = { signUpId, strategy in
-        let request = Request<ClientResponse<SignUp>>.init(
+    @MainActor
+    func prepareVerification(_ signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp {
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)/prepare_verification",
             method: .post,
             body: strategy.params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var attemptVerification: @MainActor (_ signUpId: String, _ strategy: SignUp.AttemptStrategy) async throws -> SignUp = { signUpId, strategy in
-        let request = Request<ClientResponse<SignUp>>.init(
+    @MainActor
+    func attemptVerification(_ signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp {
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)/attempt_verification",
             method: .post,
             body: strategy.params
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
-    var get: @MainActor (_ signUpId: String, _ rotatingTokenNonce: String?) async throws -> SignUp = { signUpId, rotatingTokenNonce in
+    @MainActor
+    func get(_ signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp {
         var queryParams: [(String, String?)] = []
         if let rotatingTokenNonce {
             queryParams.append((
                 "rotating_token_nonce",
-                value: rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ))
         }
 
-        let request = Request<ClientResponse<SignUp>>.init(
+        let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)",
             method: .get,
             query: queryParams
         )
-        
-        return try await Container.shared.apiClient().send(request).value.response
+
+        return try await apiClient.send(request).value.response
     }
 
     #if !os(tvOS) && !os(watchOS)
-    var authenticateWithRedirectStatic: @MainActor (_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { strategy, prefersEphemeralWebBrowserSession in
+    @MainActor
+    func authenticateWithRedirectStatic(_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
 
         guard
@@ -119,11 +147,11 @@ struct SignUpService {
         )
 
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
-        return transferFlowResult
+        return try await signUp.handleOAuthCallbackUrl(callbackUrl)
     }
 
-    var authenticateWithRedirect: @MainActor (_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult = { signUp, prefersEphemeralWebBrowserSession in
+    @MainActor
+    func authenticateWithRedirect(_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         guard
             let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -138,23 +166,20 @@ struct SignUpService {
         )
 
         let callbackUrl = try await authSession.start()
-        let transferFlowResult = try await signUp.handleOAuthCallbackUrl(callbackUrl)
-        return transferFlowResult
+        return try await signUp.handleOAuthCallbackUrl(callbackUrl)
     }
     #endif
 
-    var authenticateWithIdTokenStatic: @MainActor (_ provider: IDTokenProvider, _ idToken: String, _ firstName: String?, _ lastName: String?) async throws -> TransferFlowResult = { provider, idToken, firstName, lastName in
-        let signUp = try await SignUp.create(strategy: .idToken(
-            provider: provider, 
-            idToken: idToken, 
-            firstName: firstName, 
-            lastName: lastName
-        ))
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    @MainActor
+    func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult {
+        let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
         return try await signUp.handleTransferFlow()
     }
 
-    var authenticateWithIdToken: @MainActor (_ signUp: SignUp) async throws -> TransferFlowResult = { signUp in
+    @MainActor
+    func authenticateWithIdToken(_ signUp: SignUp) async throws -> TransferFlowResult {
         try await signUp.handleTransferFlow()
     }
-
+    #endif
 }
