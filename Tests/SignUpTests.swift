@@ -25,7 +25,7 @@ struct SignUpTests {
 @Suite(.serialized) struct SignUpSerializedTests {
 
   init() {
-    resetTestContainer()
+    TestContainer.reset()
   }
 
   @Test(
