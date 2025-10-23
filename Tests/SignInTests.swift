@@ -157,10 +157,8 @@ struct SignInTests {
     #expect(requestHandled.value)
   }
 
-  @Test @MainActor func testCreateRequestWithCustomLocale() async throws {
+  @Test func testCreateRequestWithLocaleOverride() async throws {
     let requestHandled = LockIsolated(false)
-    let strategy = SignIn.CreateStrategy.identifier("user@email.com", password: "password")
-    let customLocale = "fr-FR"
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins")
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -169,11 +167,11 @@ struct SignInTests {
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody["locale"] == customLocale)
+      #expect(request.urlEncodedFormBody["locale"] == "fr-CA")
       requestHandled.setValue(true)
     }
     mock.register()
-    _ = try await SignIn.create(strategy: strategy, locale: customLocale)
+    _ = try await SignIn.create(strategy: .identifier("user@email.com"), locale: "fr-CA")
     #expect(requestHandled.value)
   }
 
