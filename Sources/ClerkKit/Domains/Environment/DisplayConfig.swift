@@ -35,7 +35,7 @@ extension Clerk.Environment {
 
 extension Clerk.Environment.DisplayConfig {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             instanceEnvironmentType: .development,
             applicationName: "Acme Co",

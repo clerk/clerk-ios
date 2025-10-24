@@ -52,7 +52,7 @@ public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
 
 extension PermissionResource {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             key: "key",

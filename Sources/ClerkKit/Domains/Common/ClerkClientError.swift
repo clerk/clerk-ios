@@ -27,7 +27,7 @@ extension ClerkClientError {
 
 extension ClerkClientError {
 
-    static var mock: ClerkClientError {
+    package static var mock: ClerkClientError {
         .init(message: "An unknown error occurred.")
     }
 

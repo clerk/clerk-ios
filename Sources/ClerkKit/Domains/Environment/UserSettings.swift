@@ -60,7 +60,7 @@ extension Clerk.Environment {
 
 extension Clerk.Environment.UserSettings {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             attributes: [
                 "email_address": .init(

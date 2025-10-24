@@ -96,7 +96,7 @@ extension OrganizationMembership {
 
 extension OrganizationMembership {
 
-    static var mockWithUserData: Self {
+    package static var mockWithUserData: Self {
         .init(
             id: "1",
             publicMetadata: "{}",
@@ -117,7 +117,7 @@ extension OrganizationMembership {
         )
     }
 
-    static var mockWithoutUserData: Self {
+    package static var mockWithoutUserData: Self {
         .init(
             id: "1",
             publicMetadata: "{}",

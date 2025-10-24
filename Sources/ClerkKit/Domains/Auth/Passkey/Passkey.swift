@@ -99,7 +99,7 @@ extension Passkey {
 
 extension Passkey {
 
-    static var mock: Passkey {
+    package static var mock: Passkey {
         Passkey(
             id: "1",
             name: "iCloud Keychain",

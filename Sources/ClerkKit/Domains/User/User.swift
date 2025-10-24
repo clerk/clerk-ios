@@ -382,7 +382,7 @@ extension User {
 
 extension User {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             backupCodeEnabled: true,
             createdAt: .distantPast,
@@ -414,7 +414,7 @@ extension User {
         )
     }
 
-    static var mock2: Self {
+    package static var mock2: Self {
         .init(
             backupCodeEnabled: true,
             createdAt: .distantPast,

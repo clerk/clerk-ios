@@ -126,7 +126,7 @@ extension ExternalAccount {
 
 extension ExternalAccount {
 
-    static var mockVerified: ExternalAccount {
+    package static var mockVerified: ExternalAccount {
         .init(
             id: "1",
             identificationId: "1",
@@ -144,7 +144,7 @@ extension ExternalAccount {
         )
     }
 
-    static var mockUnverified: ExternalAccount {
+    package static var mockUnverified: ExternalAccount {
         .init(
             id: "1",
             identificationId: "1",

@@ -65,7 +65,7 @@ extension Client {
 
 extension Client {
 
-    static var mock: Client {
+    package static var mock: Client {
         return Client(
             id: "1",
             signIn: .mock,
@@ -76,7 +76,7 @@ extension Client {
         )
     }
 
-    static var mockSignedOut: Client {
+    package static var mockSignedOut: Client {
         return Client(
             id: "2",
             signIn: .mock,

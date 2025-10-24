@@ -19,7 +19,7 @@ struct CommerceSettings: Codable, Sendable, Equatable {
 
 extension CommerceSettings {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             billing: .init(
                 enabled: true,

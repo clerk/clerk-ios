@@ -52,7 +52,7 @@ public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
 
 extension RoleResource {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             key: "key",

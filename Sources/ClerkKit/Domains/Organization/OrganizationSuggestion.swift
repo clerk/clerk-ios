@@ -88,7 +88,7 @@ extension OrganizationSuggestion {
 
 extension OrganizationSuggestion {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             publicOrganizationData: .init(

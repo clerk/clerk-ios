@@ -63,7 +63,7 @@ extension OrganizationMembershipRequest {
 
 extension OrganizationMembershipRequest {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             organizationId: "1",

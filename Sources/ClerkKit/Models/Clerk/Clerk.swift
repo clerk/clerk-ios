@@ -419,8 +419,7 @@ extension Container {
 
 extension Clerk {
 
-    @_spi(Internal)
-    public static var mock: Clerk {
+    package static var mock: Clerk {
         let clerk = Clerk()
         clerk.client = .mock
         clerk.environment = .mock
@@ -428,8 +427,7 @@ extension Clerk {
         return clerk
     }
 
-    @_spi(Internal)
-    public static var mockSignedOut: Clerk {
+    package static var mockSignedOut: Clerk {
         let clerk = Clerk()
         clerk.client = .mockSignedOut
         clerk.environment = .mock

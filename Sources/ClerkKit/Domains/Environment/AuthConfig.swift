@@ -17,7 +17,7 @@ extension Clerk.Environment {
 
 extension Clerk.Environment.AuthConfig {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             singleSessionMode: false
         )

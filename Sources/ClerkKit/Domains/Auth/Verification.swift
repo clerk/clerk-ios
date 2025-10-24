@@ -67,7 +67,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
 
 extension Verification {
 
-    static var mockEmailCodeVerifiedVerification: Verification {
+    package static var mockEmailCodeVerifiedVerification: Verification {
         Verification(
             status: .verified,
             strategy: "email_code",
@@ -79,7 +79,7 @@ extension Verification {
         )
     }
 
-    static var mockEmailCodeUnverifiedVerification: Verification {
+    package static var mockEmailCodeUnverifiedVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "email_code",
@@ -91,7 +91,7 @@ extension Verification {
         )
     }
 
-    static var mockPhoneCodeVerifiedVerification: Verification {
+    package static var mockPhoneCodeVerifiedVerification: Verification {
         Verification(
             status: .verified,
             strategy: "phone_code",
@@ -103,7 +103,7 @@ extension Verification {
         )
     }
 
-    static var mockPhoneCodeUnverifiedVerification: Verification {
+    package static var mockPhoneCodeUnverifiedVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "phone_code",
@@ -115,7 +115,7 @@ extension Verification {
         )
     }
 
-    static var mockPasskeyVerifiedVerification: Verification {
+    package static var mockPasskeyVerifiedVerification: Verification {
         Verification(
             status: .verified,
             strategy: "passkey",
@@ -127,7 +127,7 @@ extension Verification {
         )
     }
 
-    static var mockPasskeyUnverifiedVerification: Verification {
+    package static var mockPasskeyUnverifiedVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "passkey",
@@ -139,7 +139,7 @@ extension Verification {
         )
     }
 
-    static var mockExternalAccountVerifiedVerification: Verification {
+    package static var mockExternalAccountVerifiedVerification: Verification {
         Verification(
             status: .verified,
             strategy: "oauth_google",
@@ -151,7 +151,7 @@ extension Verification {
         )
     }
 
-    static var mockExternalAccountUnverifiedVerification: Verification {
+    package static var mockExternalAccountUnverifiedVerification: Verification {
         Verification(
             status: .unverified,
             strategy: "oauth_google",

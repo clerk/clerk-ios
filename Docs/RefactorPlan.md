@@ -67,6 +67,7 @@
 - Ship `PreviewClerkContainer` with canned services and deterministic data.
 - Provide SwiftUI `EnvironmentKey` helpers to inject dependencies into views.
 - Include sample JSON payloads in `ClerkKitUI/Previews` for realistic data without hitting network.
+- Keep model mocks declared with Swift’s `package` access level so `ClerkKit`, `ClerkKitUI`, and all test targets share a single fixture surface while keeping the mocks out of the public API. SwiftUI previews now import `ClerkKit` directly and use the shared mocks without extra wrapper helpers.
 
 ## Roadmap (Phase 0 → Phase 1)
 - **Milestone A – Target scaffolding ✅**: Added `ClerkKit`/`ClerkKitUI` products and preserved a compatibility target.
@@ -109,3 +110,4 @@
 - 2025-10-23: Replaced legacy request processors with concrete networking middleware types, introduced a reusable middleware pipeline, and updated tests to exercise the new request path mechanics.
 - 2025-10-23: Added Swift Testing coverage for request/response/retry middleware (proxy/header/form encoding, auth event emission, invalid auth client refresh, and device assertion retries).
 - 2025-10-23: Restored debug request/response logging and the legacy rate-limit/backoff retry behaviour inside the middleware pipeline, including tests that drive the new logging and retry paths.
+- 2025-10-23: Converted legacy static mocks to `package` scope for cross-target reuse while SwiftUI previews import `ClerkKit` directly, eliminating the need for dedicated preview wrappers.

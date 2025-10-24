@@ -104,7 +104,7 @@ extension UserOrganizationInvitation {
 
 extension UserOrganizationInvitation {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             emailAddress: "user@email.com",
