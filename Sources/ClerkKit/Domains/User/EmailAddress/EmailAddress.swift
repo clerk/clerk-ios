@@ -108,7 +108,7 @@ extension EmailAddress {
 
 extension EmailAddress {
 
-    static var mock: EmailAddress {
+    package static var mock: EmailAddress {
         EmailAddress(
             id: "1",
             emailAddress: "user@email.com",
@@ -117,7 +117,7 @@ extension EmailAddress {
         )
     }
 
-    static var mock2: EmailAddress {
+    package static var mock2: EmailAddress {
         EmailAddress(
             id: "12",
             emailAddress: "user2@email.com",

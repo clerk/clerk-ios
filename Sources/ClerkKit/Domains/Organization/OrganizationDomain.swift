@@ -136,7 +136,7 @@ extension OrganizationDomain {
 
 extension OrganizationDomain {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             name: "name",
