@@ -159,9 +159,9 @@ struct UserProfileDetailView: View {
 }
 
 #Preview {
-    Container.shared.clerk.preview { @MainActor in
-        .mock
-    }
+//    Container.shared.clerk.preview { @MainActor in
+//        .mock
+//    }
 
     NavigationStack {
         UserProfileDetailView()

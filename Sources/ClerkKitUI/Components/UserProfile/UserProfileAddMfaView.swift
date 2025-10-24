@@ -147,12 +147,12 @@ extension UserProfileAddMfaView {
 }
 
 #Preview {
-    Container.shared.userService.preview { @MainActor in
-        UserService(createTotp: {
-            try await Task.sleep(for: .seconds(1))
-            return .mock
-        })
-    }
+//    Container.shared.userService.preview { @MainActor in
+//        UserService(createTotp: {
+//            try await Task.sleep(for: .seconds(1))
+//            return .mock
+//        })
+//    }
 
     UserProfileAddMfaView()
         .environment(\.clerk, .mock)

@@ -17,7 +17,7 @@ struct UserProfileMfaAddSmsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.userProfileSharedState) private var sharedState
 
-    @State private var selectedPhoneNumber: PhoneNumber?
+    @State private var selectedPhoneNumber: ClerkKit.PhoneNumber?
     @State private var addPhoneNumberIsPresented = false
     @State private var path = NavigationPath()
     @State private var error: Error?
@@ -39,7 +39,7 @@ struct UserProfileMfaAddSmsView: View {
         clerk.user
     }
 
-    private var availablePhoneNumbers: [PhoneNumber] {
+    private var availablePhoneNumbers: [ClerkKit.PhoneNumber] {
         (user?.phoneNumbersAvailableForMfa ?? [])
             .filter { $0.verification?.status == .verified }
             .sorted { $0.createdAt < $1.createdAt }
@@ -135,7 +135,7 @@ struct UserProfileMfaAddSmsView: View {
 
 extension UserProfileMfaAddSmsView {
 
-    private func reserveForSecondFactor(phoneNumber: PhoneNumber) async {
+    private func reserveForSecondFactor(phoneNumber: ClerkKit.PhoneNumber) async {
         do {
             let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
             if let backupCodes = phoneNumber.backupCodes {
@@ -155,7 +155,7 @@ struct AddMfaSmsRow: View {
     @Environment(\.clerkTheme) private var theme
     let utility = Container.shared.phoneNumberUtility()
 
-    let phoneNumber: PhoneNumber
+    let phoneNumber: ClerkKit.PhoneNumber
     let isSelected: Bool
 
     var country: CountryCodePickerViewController.Country? {
@@ -234,8 +234,8 @@ struct AddMfaSmsRow: View {
 }
 
 #Preview("Row") {
-    @Previewable @State var selectedPhoneNumber: PhoneNumber?
-    let phoneNumbers: [PhoneNumber] = [.mock, .mockMfa]
+    @Previewable @State var selectedPhoneNumber: ClerkKit.PhoneNumber?
+    let phoneNumbers: [ClerkKit.PhoneNumber] = [.mock, .mockMfa]
 
     VStack {
         ForEach(phoneNumbers) { phoneNumber in
