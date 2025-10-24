@@ -309,7 +309,7 @@ extension Organization {
 
 extension Organization {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             name: "Organization Name",

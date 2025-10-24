@@ -25,7 +25,7 @@ public struct BackupCodeResource: Identifiable, Codable, Hashable, Equatable, Se
 
 extension BackupCodeResource {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             codes: [

@@ -367,7 +367,7 @@ extension SignUp {
 
 extension SignUp {
 
-    static var mock: SignUp {
+    package static var mock: SignUp {
         SignUp(
             id: "1",
             status: .missingRequirements,
