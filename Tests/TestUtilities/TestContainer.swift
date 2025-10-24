@@ -1,6 +1,5 @@
 import FactoryKit
 import Mocker
-import SimpleKeychain
 
 @testable import ClerkKit
 
@@ -9,11 +8,7 @@ enum TestContainer {
     Container.shared.reset()
 
     Container.shared.keychain.register {
-      SimpleKeychain(
-        service: "com.clerk.tests",
-        accessGroup: nil,
-        accessibility: .afterFirstUnlockThisDeviceOnly
-      )
+      InMemoryKeychain() as any KeychainStorage
     }
 
     Container.shared.apiClient.register {

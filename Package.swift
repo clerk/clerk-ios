@@ -26,15 +26,13 @@ let package = Package(
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
-    .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
     .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1"))
   ],
   targets: [
     .target(
       name: "ClerkKit",
       dependencies: [
-        .product(name: "FactoryKit", package: "Factory"),
-        .product(name: "SimpleKeychain", package: "SimpleKeychain")
+        .product(name: "FactoryKit", package: "Factory")
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
