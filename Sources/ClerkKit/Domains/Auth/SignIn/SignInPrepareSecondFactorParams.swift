@@ -10,7 +10,7 @@ import Foundation
 extension SignIn {
 
     /// A parameter object for preparing the second factor verification.
-    struct PrepareSecondFactorParams: Encodable {
+    struct PrepareSecondFactorParams: Encodable, Sendable {
         /// The strategy used for second factor verification..
         let strategy: String
     }
