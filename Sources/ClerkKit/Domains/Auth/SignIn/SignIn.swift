@@ -432,7 +432,7 @@ extension SignIn {
 
 extension SignIn {
 
-    static var mock: SignIn {
+    package static var mock: SignIn {
         SignIn(
             id: "1",
             status: .needsIdentifier,
