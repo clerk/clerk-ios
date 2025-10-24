@@ -7,12 +7,17 @@ protocol NetworkRequestMiddleware: Sendable {
 
 /// Shared protocol for middleware that can validate responses.
 protocol NetworkResponseMiddleware: Sendable {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws
 }
 
 /// Allows middleware to influence retry decisions.
 protocol NetworkRetryMiddleware: Sendable {
-  func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool
+  func shouldRetry(
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool
 }
 
 /// Describes the order of execution for networking middleware.
@@ -37,15 +42,20 @@ struct NetworkingPipeline: Sendable {
     }
   }
 
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     for middleware in responseMiddleware {
-      try middleware.validate(response, data: data, task: task)
+      try middleware.validate(response, data: data, for: request)
     }
   }
 
-  func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+  func shouldRetry(
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool {
     for middleware in retryMiddleware {
-      if try await middleware.shouldRetry(task, error: error, attempts: attempts) {
+      if try await middleware.shouldRetry(request: request, response: response, error: error, attempts: attempts) {
         return true
       }
     }
