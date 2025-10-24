@@ -9,7 +9,7 @@ import Foundation
 import os.log
 
 /// A unified logging system for the Clerk SDK that respects the debugMode setting.
-struct ClerkLogger {
+package struct ClerkLogger {
 
     /// Log levels for different types of messages
     enum LogLevel: String, CaseIterable {
@@ -56,7 +56,7 @@ struct ClerkLogger {
     ///   - file: The file where the log is called (automatically filled)
     ///   - function: The function where the log is called (automatically filled)
     ///   - line: The line number where the log is called (automatically filled)
-    static func error(
+    package static func error(
         _ message: String,
         error: Error? = nil,
         file: String = #file,
@@ -180,7 +180,7 @@ struct ClerkLogger {
 
 // MARK: - Convenience Extensions
 
-extension ClerkLogger {
+package extension ClerkLogger {
 
     /// Log an error with automatic error extraction
     /// - Parameters:
