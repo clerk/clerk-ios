@@ -13,7 +13,7 @@ extension SignIn {
     /// Represents the parameters required to initiate a sign-in flow.
     ///
     /// This structure encapsulates the various options for initiating a sign-in, including the authentication strategy, user identifier, optional passwords, and additional settings for redirect URLs or OAuth-specific parameters.
-    public struct SignInCreateParams: Encodable {
+    public struct SignInCreateParams: Encodable, Sendable {
 
         /// The first factor verification strategy to use in the sign-in flow.
         ///
