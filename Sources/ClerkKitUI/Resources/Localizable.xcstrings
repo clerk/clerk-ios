@@ -1096,6 +1096,7 @@
       }
     },
     "An unknown error occurred." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2120,6 +2121,7 @@
       }
     },
     "Client ID is unavailble." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5128,6 +5130,7 @@
       }
     },
     "Invalid credential type." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5640,6 +5643,7 @@
       }
     },
     "Missing callback URL" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9033,6 +9037,7 @@
       }
     },
     "Something went wrong. Please try again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9801,6 +9806,7 @@
       }
     },
     "Unable to delete membership: missing userId" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9930,6 +9936,7 @@
       }
     },
     "Unable to get the challenge for the passkey." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9994,6 +10001,7 @@
       }
     },
     "Unable to get the user ID for the passkey." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10058,6 +10066,7 @@
       }
     },
     "Unable to get the username for the passkey." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10122,6 +10131,7 @@
       }
     },
     "Unable to get your Apple ID credential." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10250,6 +10260,7 @@
       }
     },
     "Unable to update membership: missing userId" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

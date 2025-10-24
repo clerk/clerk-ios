@@ -63,7 +63,7 @@ struct TelemetryEvent: Codable, Sendable {
 }
 
 /// Raw input describing a telemetry event to be recorded by the collector.
-struct TelemetryEventRaw: Sendable {
+package struct TelemetryEventRaw: Sendable {
     /// The event name.
     let event: String
     /// Arbitrary JSON payload.
