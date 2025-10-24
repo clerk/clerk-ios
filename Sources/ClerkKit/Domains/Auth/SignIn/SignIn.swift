@@ -415,7 +415,7 @@ extension SignIn {
     }
 
     /// The first factor for the identifier that was used to initiate the SignIn
-    func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
+    package func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
         supportedFirstFactors?.first(where: { factor in
             factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
         })

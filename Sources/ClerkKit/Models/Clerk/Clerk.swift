@@ -49,7 +49,7 @@ final public class Clerk {
     ///
     /// Initialized with a default collector and refreshed during `load()`.
     /// Used to record non-blocking telemetry events when running in development
-    internal private(set) var telemetry: TelemetryCollector = TelemetryCollector()
+    package private(set) var telemetry: TelemetryCollector = TelemetryCollector()
 
     /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
     public private(set) var proxyUrl: URL? {
@@ -101,7 +101,7 @@ final public class Clerk {
     public let authEventEmitter = EventEmitter<AuthEvent>()
 
     /// The Clerk environment for the instance.
-    var environment = Environment() {
+    public internal(set) var environment = Environment() {
         didSet {
             try? Container.shared.clerkService().saveEnvironmentToKeychain(environment)
         }

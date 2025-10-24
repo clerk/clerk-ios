@@ -7,13 +7,13 @@
 
 import Foundation
 
-struct CommerceSettings: Codable, Sendable, Equatable {
-    let billing: Billing
+public struct CommerceSettings: Codable, Sendable, Equatable {
+    public let billing: Billing
 
-    struct Billing: Codable, Sendable, Equatable {
-        let enabled: Bool
-        let hasPaidUserPlans: Bool
-        let hasPaidOrgPlans: Bool
+    public struct Billing: Codable, Sendable, Equatable {
+        public let enabled: Bool
+        public let hasPaidUserPlans: Bool
+        public let hasPaidOrgPlans: Bool
     }
 }
 

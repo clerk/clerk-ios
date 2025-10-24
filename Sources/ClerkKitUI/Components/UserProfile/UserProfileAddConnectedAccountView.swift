@@ -111,9 +111,9 @@ extension UserProfileAddConnectedAccountView {
 }
 
 #Preview {
-    Container.shared.clerk.preview { @MainActor in
-        .mock
-    }
+//    Container.shared.clerk.preview { @MainActor in
+//        .mock
+//    }
 
     UserProfileAddConnectedAccountView(contentHeight: .constant(300))
         .environment(\.clerk, .mock)
