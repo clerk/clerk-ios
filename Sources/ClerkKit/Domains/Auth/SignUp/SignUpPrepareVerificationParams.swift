@@ -30,7 +30,7 @@ extension SignUp {
     }
 
     /// Parameters used to prepare the verification process for the sign-up flow.
-    public struct PrepareVerificationParams: Encodable {
+    public struct PrepareVerificationParams: Encodable, Sendable {
         /// The verification strategy to use.
         public let strategy: String
     }
