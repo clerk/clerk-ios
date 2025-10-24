@@ -31,7 +31,7 @@ extension SignUp {
     }
 
     /// Parameters used for the verification attempt during the sign-up process.
-    public struct AttemptVerificationParams: Encodable {
+    public struct AttemptVerificationParams: Encodable, Sendable {
         /// The strategy used for verification (e.g., `email_code` or `phone_code`).
         public let strategy: String
 
