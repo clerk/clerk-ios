@@ -9,7 +9,7 @@ import FactoryKit
 import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
       try? Container.shared.keychain().set(deviceToken, forKey: "clerkDeviceToken")
     }
