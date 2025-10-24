@@ -47,43 +47,43 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
 
 extension Factor {
 
-    static var mockEmailCode: Factor {
+    package static var mockEmailCode: Factor {
         Factor(strategy: "email_code")
     }
 
-    static var mockPhoneCode: Factor {
+    package static var mockPhoneCode: Factor {
         Factor(strategy: "phone_code")
     }
 
-    static var mockGoogle: Factor {
+    package static var mockGoogle: Factor {
         Factor(strategy: "oauth_google")
     }
 
-    static var mockApple: Factor {
+    package static var mockApple: Factor {
         Factor(strategy: "oauth_apple")
     }
 
-    static var mockPassword: Factor {
+    package static var mockPassword: Factor {
         Factor(strategy: "password")
     }
 
-    static var mockPasskey: Factor {
+    package static var mockPasskey: Factor {
         Factor(strategy: "passkey")
     }
 
-    static var mockResetPasswordEmailCode: Factor {
+    package static var mockResetPasswordEmailCode: Factor {
         Factor(strategy: "reset_password_email_code")
     }
 
-    static var mockResetPasswordPhoneCode: Factor {
+    package static var mockResetPasswordPhoneCode: Factor {
         Factor(strategy: "reset_password_phone_code")
     }
 
-    static var mockTotp: Factor {
+    package static var mockTotp: Factor {
         Factor(strategy: "totp")
     }
 
-    static var mockBackupCode: Factor {
+    package static var mockBackupCode: Factor {
         Factor(strategy: "backup_code")
     }
 
