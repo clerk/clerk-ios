@@ -8,7 +8,6 @@
 import AuthenticationServices
 import FactoryKit
 import Foundation
-import Get
 
 extension Container {
 
@@ -296,8 +295,8 @@ final class UserService: UserServiceProtocol {
         let request = Request<ClientResponse<ImageResource>>(
             path: "/v1/me/profile_image",
             method: .post,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
         )
 
         return try await apiClient.upload(for: request, from: data).value.response
