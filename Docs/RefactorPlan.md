@@ -52,7 +52,7 @@
 - Adopt cooperative cancellation (`withTaskCancellationHandler`) for flows triggered from UI.
 
 ## Networking Stack Highlights
-- `HTTPClient` protocol with async `send(_:)` method returning a `HTTPResponse` wrapper.
+- `HTTPClient` protocol backed by `URLSession` async APIs; the new `APIClient` sends requests through the middleware pipeline without relying on Get.
 - Plug-in middleware chain (auth headers, telemetry, logging, retry, decoding).
 - Request builders per feature using strongly typed endpoints; responses decoded via `Decodable` with error mapping to `ClerkAPIError`.
 - Built-in test double (`MockHTTPClient`) driven by fixtures for Swift Testing.
@@ -110,4 +110,5 @@
 - 2025-10-23: Replaced legacy request processors with concrete networking middleware types, introduced a reusable middleware pipeline, and updated tests to exercise the new request path mechanics.
 - 2025-10-23: Added Swift Testing coverage for request/response/retry middleware (proxy/header/form encoding, auth event emission, invalid auth client refresh, and device assertion retries).
 - 2025-10-23: Restored debug request/response logging and the legacy rate-limit/backoff retry behaviour inside the middleware pipeline, including tests that drive the new logging and retry paths.
+- 2025-10-23: Replaced the `Get` dependency with a home-grown `APIClient` built on async `URLSession` plus the existing middleware stack; updated tests and mocks to use the new client.
 - 2025-10-23: Converted legacy static mocks to `package` scope for cross-target reuse while SwiftUI previews import `ClerkKit` directly, eliminating the need for dedicated preview wrappers.

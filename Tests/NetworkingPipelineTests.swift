@@ -1,7 +1,6 @@
 import ConcurrencyExtras
 import FactoryKit
 import Foundation
-import Get
 import Mocker
 import Testing
 
@@ -415,7 +414,6 @@ struct NetworkingPipelineTests {
     }
 
     let request = URLRequest(url: URL(string: "https://example.com")!)
-    let task = URLSession.shared.dataTask(with: request)
     let error = ClerkAPIError(
       code: "requires_assertion",
       message: nil,
@@ -424,7 +422,12 @@ struct NetworkingPipelineTests {
       clerkTraceId: nil
     )
 
-    let shouldRetry = try await middleware.shouldRetry(task, error: error, attempts: 1)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: error,
+      attempts: 1
+    )
 
     #expect(shouldRetry)
     #expect(invocationCount.value == 1)
@@ -438,7 +441,6 @@ struct NetworkingPipelineTests {
     }
 
     let request = URLRequest(url: URL(string: "https://example.com")!)
-    let task = URLSession.shared.dataTask(with: request)
     let error = ClerkAPIError(
       code: "requires_assertion",
       message: nil,
@@ -447,7 +449,12 @@ struct NetworkingPipelineTests {
       clerkTraceId: nil
     )
 
-    let shouldRetry = try await middleware.shouldRetry(task, error: error, attempts: 2)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: error,
+      attempts: 2
+    )
 
     #expect(!shouldRetry)
     #expect(invocationCount.value == 0)
@@ -461,10 +468,14 @@ struct NetworkingPipelineTests {
     }
 
     let request = URLRequest(url: URL(string: "https://example.com")!)
-    let task = URLSession.shared.dataTask(with: request)
     let error = URLError(.badServerResponse)
 
-    let shouldRetry = try await middleware.shouldRetry(task, error: error, attempts: 1)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: error,
+      attempts: 1
+    )
 
     #expect(!shouldRetry)
     #expect(invocationCount.value == 0)
@@ -485,12 +496,13 @@ struct NetworkingPipelineTests {
       headerFields: ["Retry-After": "1"]
     )!
 
-    let task = URLSessionTaskMock(
-      request: URLRequest(url: url),
-      response: response
+    let request = URLRequest(url: url)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response,
+      error: ClerkAPIError.mock,
+      attempts: 1
     )
-
-    let shouldRetry = try await middleware.shouldRetry(task, error: ClerkAPIError.mock, attempts: 1)
 
     #expect(shouldRetry)
     #expect(delay.value >= 100_000_000) // >= 100ms
@@ -510,12 +522,13 @@ struct NetworkingPipelineTests {
       httpVersion: nil,
       headerFields: ["Retry-After": "1"]
     )!
-    let task = URLSessionTaskMock(
-      request: URLRequest(url: url),
-      response: response
+    let request = URLRequest(url: url)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response,
+      error: ClerkAPIError.mock,
+      attempts: 2
     )
-
-    let shouldRetry = try await middleware.shouldRetry(task, error: ClerkAPIError.mock, attempts: 2)
 
     #expect(!shouldRetry)
     #expect(delay.value == 0)
@@ -529,12 +542,13 @@ struct NetworkingPipelineTests {
     }
 
     let url = URL(string: "https://example.com")!
-    let task = URLSessionTaskMock(
-      request: URLRequest(url: url),
-      response: nil
+    let request = URLRequest(url: url)
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: URLError(.timedOut),
+      attempts: 1
     )
-
-    let shouldRetry = try await middleware.shouldRetry(task, error: URLError(.timedOut), attempts: 1)
 
     #expect(shouldRetry)
     #expect(delay.value == 500_000_000) // default 0.5s
@@ -543,20 +557,3 @@ struct NetworkingPipelineTests {
 }
 
 // MARK: - Helpers
-
-private final class URLSessionTaskMock: URLSessionTask {
-  private let storedRequest: URLRequest?
-  private let storedResponse: URLResponse?
-
-  override var currentRequest: URLRequest? { storedRequest }
-  override var originalRequest: URLRequest? { storedRequest }
-  override var response: URLResponse? { storedResponse }
-
-  init(request: URLRequest?, response: URLResponse?) {
-    self.storedRequest = request
-    self.storedResponse = response
-    super.init()
-  }
-}
-
-extension URLSessionTaskMock: @unchecked Sendable {}

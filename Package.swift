@@ -22,7 +22,6 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
-    .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
     .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
@@ -35,7 +34,6 @@ let package = Package(
       name: "ClerkKit",
       dependencies: [
         .product(name: "FactoryKit", package: "Factory"),
-        .product(name: "Get", package: "Get"),
         .product(name: "SimpleKeychain", package: "SimpleKeychain")
       ],
       swiftSettings: [

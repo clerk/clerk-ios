@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 extension Container {
 
@@ -21,14 +20,14 @@ struct ClerkService {
 
     var signOut: @MainActor (_ sessionId: String?) async throws -> Void = { sessionId in
         if let sessionId {
-            let request = Request(
+            let request = Request<EmptyResponse>(
                 path: "/v1/client/sessions/\(sessionId)/remove",
                 method: .post
             )
             
             try await Container.shared.apiClient().send(request)
         } else {
-            let request = Request(
+            let request = Request<EmptyResponse>(
                 path: "/v1/client/sessions",
                 method: .delete
             )
@@ -38,7 +37,7 @@ struct ClerkService {
     }
 
     var setActive: @MainActor (_ sessionId: String, _ organizationId: String?) async throws -> Void = { sessionId, organizationId in
-        let request = Request(
+        let request = Request<EmptyResponse>(
             path: "/v1/client/sessions/\(sessionId)/touch",
             method: .post,
             body: ["active_organization_id": organizationId ?? ""]

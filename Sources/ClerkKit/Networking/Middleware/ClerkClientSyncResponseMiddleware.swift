@@ -8,7 +8,7 @@
 import Foundation
 
 struct ClerkClientSyncResponseMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     if let client = Self.decodeClient(from: data) {
       Task { @MainActor in
         Clerk.shared.client = client
