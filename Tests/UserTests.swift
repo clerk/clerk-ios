@@ -342,6 +342,7 @@ struct UserTests {
 @Suite(.serialized) final class UserSerializedTests {
 
   init() {
+    TestContainer.reset()
     Container.shared.clerk.register { @MainActor in
       let clerk = Clerk()
       clerk.client = .mock
