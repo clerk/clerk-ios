@@ -8,7 +8,6 @@
 import FactoryKit
 import Foundation
 import RegexBuilder
-import SimpleKeychain
 
 #if canImport(UIKit)
 import UIKit
@@ -132,11 +131,10 @@ final public class Clerk {
             }
 
             Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
-                SimpleKeychain(
+                SystemKeychain(
                     service: keychainConfig.service,
-                    accessGroup: keychainConfig.accessGroup,
-                    accessibility: .afterFirstUnlockThisDeviceOnly
-                )
+                    accessGroup: keychainConfig.accessGroup
+                ) as any KeychainStorage
             }
 
             proxyUrl = settings.proxyUrl
@@ -377,7 +375,9 @@ extension Clerk {
 
     @MainActor
     private func configureAPIClient() {
-        let baseUrl = proxyConfiguration?.baseURL ?? URL(string: frontendApiUrl)
+        guard let baseUrl = proxyConfiguration?.baseURL ?? URL(string: frontendApiUrl) else {
+            return
+        }
 
         Container.shared.apiClient.register { [baseUrl] in
             APIClient(baseURL: baseUrl) { configuration in
@@ -403,9 +403,13 @@ extension Container {
             .singleton
     }
 
-    var keychain: Factory<SimpleKeychain> {
-        self { SimpleKeychain(accessibility: .afterFirstUnlockThisDeviceOnly) }
-            .cached
+    var keychain: Factory<any KeychainStorage> {
+        self {
+            SystemKeychain(
+                service: Bundle.main.bundleIdentifier ?? ""
+            ) as any KeychainStorage
+        }
+        .cached
     }
 
     var clerkSettings: Factory<Clerk.Settings> {
