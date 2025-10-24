@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 extension Container {
 

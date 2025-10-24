@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 import Mocker
 
 @testable import ClerkKit
@@ -19,8 +18,7 @@ extension Container: @retroactive AutoRegistering {
   public func autoRegister() {
     apiClient.context(.test) { _ in
         APIClient(baseURL: mockBaseUrl) { configuration in
-            let pipeline = Container.shared.networkingPipeline()
-            configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
+            configuration.pipeline = Container.shared.networkingPipeline()
             configuration.decoder = .clerkDecoder
             configuration.encoder = .clerkEncoder
             configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]

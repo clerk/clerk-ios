@@ -9,7 +9,7 @@ import Foundation
 
 /// When the API indicates authentication is invalid, re-sync the client state unless we already attempted it.
 struct ClerkInvalidAuthResponseMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     guard
       let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
       let clerkAPIError = clerkErrorResponse.errors.first,
@@ -18,8 +18,8 @@ struct ClerkInvalidAuthResponseMiddleware: NetworkResponseMiddleware {
       return
     }
 
-    if task.originalRequest?.url?.lastPathComponent == "client",
-       task.originalRequest?.httpMethod == "GET" {
+    if request.url?.lastPathComponent == "client",
+       request.httpMethod == "GET" {
       return
     }
 

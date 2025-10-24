@@ -8,7 +8,7 @@
 import Foundation
 
 struct ClerkErrorThrowingResponseMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     guard response.isError else { return }
 
     if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),

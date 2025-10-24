@@ -19,17 +19,22 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     self.sleep = sleep
   }
 
-  func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+  func shouldRetry(
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool {
     guard attempts == 1 else { return false }
 
-    if let response = task.response as? HTTPURLResponse,
+    if let response,
        shouldRetry(statusCode: response.statusCode)
     {
       let delay = retryDelay(for: response)
       await sleep(delay)
       await logRetry(
         reason: "HTTP \(response.statusCode)",
-        request: task.originalRequest,
+        request: request,
         delay: delay
       )
       return true
@@ -41,7 +46,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
         await sleep(delay)
         await logRetry(
           reason: "URLError \(urlError.code.rawValue)",
-          request: task.originalRequest,
+          request: request,
           delay: delay
         )
         return true

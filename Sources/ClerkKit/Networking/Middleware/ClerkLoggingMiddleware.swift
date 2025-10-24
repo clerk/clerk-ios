@@ -43,15 +43,13 @@ struct ClerkRequestLoggingMiddleware: NetworkRequestMiddleware {
 
 /// Logs incoming responses when debug mode is enabled.
 struct ClerkResponseLoggingMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, task: URLSessionTask) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     let url = response.url?.absoluteString ?? "<unknown url>"
     let status = response.statusCode
 
     var message = "⬅️ Response: \(status) \(url)"
 
-    if let request = task.originalRequest,
-       let method = request.httpMethod
-    {
+    if let method = request.httpMethod {
       message = "⬅️ Response: \(status) \(method) \(url)"
     }
 

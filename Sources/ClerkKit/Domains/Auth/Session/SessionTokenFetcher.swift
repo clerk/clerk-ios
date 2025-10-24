@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
 // This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.

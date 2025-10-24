@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 
 extension Container {
 
@@ -86,8 +85,8 @@ final class OrganizationService: OrganizationServiceProtocol {
         let request = Request<ClientResponse<Organization>>(
             path: "/v1/organizations/\(organizationId)/logo",
             method: .put,
-            query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+            headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
+            query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
         )
 
         return try await apiClient.upload(for: request, from: data).value.response

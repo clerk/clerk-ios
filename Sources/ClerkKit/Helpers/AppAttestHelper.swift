@@ -9,7 +9,6 @@ import CryptoKit
 import DeviceCheck
 import FactoryKit
 import Foundation
-import Get
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
 struct AppAttestHelper {
@@ -80,7 +79,7 @@ struct AppAttestHelper {
             "bundle_id": Bundle.main.bundleIdentifier
         ]
 
-        let request = Request(
+        let request = Request<EmptyResponse>(
             path: "/v1/client/device_attestation/verify",
             method: .post,
             body: body
@@ -129,7 +128,7 @@ struct AppAttestHelper {
             "bundle_id": Bundle.main.bundleIdentifier
         ]
 
-        let request = Request(
+        let request = Request<EmptyResponse>(
             path: "/v1/client/verify",
             method: .post,
             body: body
