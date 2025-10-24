@@ -7,7 +7,6 @@
 
 import FactoryKit
 import Foundation
-import Get
 import RegexBuilder
 import SimpleKeychain
 
@@ -381,9 +380,8 @@ extension Clerk {
         let baseUrl = proxyConfiguration?.baseURL ?? URL(string: frontendApiUrl)
 
         Container.shared.apiClient.register { [baseUrl] in
-            let pipeline = Container.shared.networkingPipeline()
-            return APIClient(baseURL: baseUrl) { configuration in
-                configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
+            APIClient(baseURL: baseUrl) { configuration in
+                configuration.pipeline = Container.shared.networkingPipeline()
                 configuration.decoder = .clerkDecoder
                 configuration.encoder = .clerkEncoder
                 configuration.sessionConfiguration.httpAdditionalHeaders = [

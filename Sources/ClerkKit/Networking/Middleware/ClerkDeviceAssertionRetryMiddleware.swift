@@ -18,7 +18,12 @@ struct ClerkDeviceAssertionRetryMiddleware: NetworkRetryMiddleware {
     self.assertionHandler = assertionHandler
   }
 
-  func shouldRetry(_ task: URLSessionTask, error: any Error, attempts: Int) async throws -> Bool {
+  func shouldRetry(
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool {
     guard attempts == 1 else { return false }
     guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
       return false
