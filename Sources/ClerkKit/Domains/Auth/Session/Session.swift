@@ -253,7 +253,7 @@ extension Session {
 
 extension Session {
 
-    static let mock = Session(
+    package static let mock = Session(
         id: "1",
         status: .active,
         expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
@@ -279,7 +279,7 @@ extension Session {
         lastActiveToken: nil
     )
 
-    static let mock2 = Session(
+    package static let mock2 = Session(
         id: "2",
         status: .active,
         expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
@@ -305,7 +305,7 @@ extension Session {
         lastActiveToken: nil
     )
 
-    static let mockExpired = Session(
+    package static let mockExpired = Session(
         id: "1",
         status: .expired,
         expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),

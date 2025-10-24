@@ -52,7 +52,7 @@ public struct TOTPResource: Codable, Hashable, Equatable, Sendable {
 
 extension TOTPResource {
 
-    static var mock: TOTPResource {
+    package static var mock: TOTPResource {
         .init(
             id: "1",
             secret: "1234567890",
