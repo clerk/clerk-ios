@@ -8,7 +8,7 @@
 extension SignIn {
 
     /// A parameter object for attempting the first factor verification process.
-    public struct AttemptFirstFactorParams: Encodable {
+    public struct AttemptFirstFactorParams: Encodable, Sendable {
 
         /// The verification strategy being used.
         public let strategy: String

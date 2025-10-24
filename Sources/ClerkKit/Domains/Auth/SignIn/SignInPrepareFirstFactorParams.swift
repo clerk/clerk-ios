@@ -10,7 +10,7 @@ import Foundation
 extension SignIn {
 
     /// A parameter object for preparing the first factor verification.
-    struct PrepareFirstFactorParams: Encodable {
+    struct PrepareFirstFactorParams: Encodable, Sendable {
         /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
         let strategy: String
 
