@@ -1,5 +1,4 @@
 import FactoryKit
-import Get
 import Mocker
 import SimpleKeychain
 
@@ -19,8 +18,7 @@ enum TestContainer {
 
     Container.shared.apiClient.register {
       APIClient(baseURL: mockBaseUrl) { configuration in
-        let pipeline = Container.shared.networkingPipeline()
-        configuration.delegate = ClerkAPIClientDelegate(pipeline: pipeline)
+        configuration.pipeline = Container.shared.networkingPipeline()
         configuration.decoder = .clerkDecoder
         configuration.encoder = .clerkEncoder
         configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
