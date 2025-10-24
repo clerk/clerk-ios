@@ -119,7 +119,7 @@ extension PhoneNumber {
 
 extension PhoneNumber {
 
-    static var mock: PhoneNumber {
+    package static var mock: PhoneNumber {
         PhoneNumber(
             id: "1",
             phoneNumber: "+15555550100",
@@ -131,7 +131,7 @@ extension PhoneNumber {
         )
     }
 
-    static var mock2: PhoneNumber {
+    package static var mock2: PhoneNumber {
         PhoneNumber(
             id: "2",
             phoneNumber: "+15555550101",
@@ -143,7 +143,7 @@ extension PhoneNumber {
         )
     }
 
-    static var mockMfa: PhoneNumber {
+    package static var mockMfa: PhoneNumber {
         PhoneNumber(
             id: "3",
             phoneNumber: "+15555550102",

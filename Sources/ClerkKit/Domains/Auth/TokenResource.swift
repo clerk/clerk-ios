@@ -36,7 +36,7 @@ extension TokenResource {
 
 extension TokenResource {
 
-    static var mock: TokenResource {
+    package static var mock: TokenResource {
         .init(jwt: "jwt")
     }
 

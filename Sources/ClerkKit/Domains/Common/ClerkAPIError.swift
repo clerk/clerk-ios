@@ -45,7 +45,7 @@ public struct ClerkErrorResponse: Codable, Equatable {
 
 extension ClerkAPIError {
 
-    static var mock: ClerkAPIError {
+    package static var mock: ClerkAPIError {
         .init(
             code: "error",
             message: "An unknown error occurred.",

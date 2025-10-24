@@ -70,7 +70,7 @@ extension OrganizationInvitation {
 
 extension OrganizationInvitation {
 
-    static var mock: Self {
+    package static var mock: Self {
         .init(
             id: "1",
             emailAddress: EmailAddress.mock.emailAddress,

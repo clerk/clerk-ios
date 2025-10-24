@@ -32,7 +32,7 @@ public struct DeletedObject: Codable, Sendable {
 
 extension DeletedObject {
 
-    static var mock: DeletedObject {
+    package static var mock: DeletedObject {
         .init(
             object: "object",
             id: "1",
