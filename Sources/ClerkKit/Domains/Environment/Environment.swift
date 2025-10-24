@@ -10,13 +10,13 @@ import Foundation
 
 extension Clerk {
 
-    struct Environment: Codable, Sendable, Equatable {
-        var authConfig: AuthConfig?
-        var userSettings: UserSettings?
-        var displayConfig: DisplayConfig?
-        var fraudSettings: FraudSettings?
+    public struct Environment: Codable, Sendable, Equatable {
+        public var authConfig: AuthConfig?
+        public var userSettings: UserSettings?
+        public var displayConfig: DisplayConfig?
+        public var fraudSettings: FraudSettings?
 
-        var isEmpty: Bool {
+        public var isEmpty: Bool {
             authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil
         }
     }
@@ -26,7 +26,7 @@ extension Clerk {
 extension Clerk.Environment {
 
     @MainActor
-    static func get() async throws -> Clerk.Environment {
+    public static func get() async throws -> Clerk.Environment {
         try await Container.shared.environmentService().get()
     }
 
