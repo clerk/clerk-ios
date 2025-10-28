@@ -10186,6 +10186,7 @@
       }
     },
     "Unable to retrieve the apple identity token." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

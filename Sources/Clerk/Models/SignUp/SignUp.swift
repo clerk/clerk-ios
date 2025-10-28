@@ -302,8 +302,8 @@ extension SignUp {
     /// )
     /// ```
     @discardableResult @MainActor
-    public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-        try await Container.shared.signUpService().authenticateWithIdTokenStatic(provider, idToken)
+    public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
+        try await Container.shared.signUpService().authenticateWithIdTokenStatic(provider, idToken, firstName, lastName)
     }
 
     /// Authenticates the user using an ID Token and a specified provider.

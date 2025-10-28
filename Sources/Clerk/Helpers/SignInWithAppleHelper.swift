@@ -94,11 +94,11 @@ final public class SignInWithAppleHelper: NSObject {
     ///
     /// - Parameters:
     ///   - requestedScopes: An array of `ASAuthorization.Scope` values to request specific information
-    ///     such as the user's email or full name. Defaults to `[.email]`.
+    ///     such as the user's email or full name. Defaults to `[.email, .fullName]`.
     /// - Returns: An `ASAuthorizationAppleIDCredential` object containing the user's Apple ID credentials.
     /// - Throws: An error if the authorization fails or if the credential cannot be retrieved.
     @MainActor
-    public static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
+    public static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ASAuthorizationAppleIDCredential {
         let authManager = SignInWithAppleHelper()
         let authorization = try await authManager.start(requestedScopes: requestedScopes)
 
