@@ -139,6 +139,11 @@ extension Clerk.Environment {
         }
     }
 
+    var signUpIsPublic: Bool {
+        guard let userSettings else { return true }
+        return userSettings.signUp.mode == "public"
+    }
+
 }
 
 #endif

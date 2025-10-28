@@ -143,8 +143,13 @@ struct SignUpService {
     }
     #endif
 
-    var authenticateWithIdTokenStatic: @MainActor (_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult = { provider, idToken in
-        let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
+    var authenticateWithIdTokenStatic: @MainActor (_ provider: IDTokenProvider, _ idToken: String, _ firstName: String?, _ lastName: String?) async throws -> TransferFlowResult = { provider, idToken, firstName, lastName in
+        let signUp = try await SignUp.create(strategy: .idToken(
+            provider: provider, 
+            idToken: idToken, 
+            firstName: firstName, 
+            lastName: lastName
+        ))
         return try await signUp.handleTransferFlow()
     }
 

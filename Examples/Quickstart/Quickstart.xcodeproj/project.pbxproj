@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8F1A8F9A2EB01CD3008383C8 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8F1A8F992EB01CD3008383C8 /* Atlantis */; };
 		8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* Clerk */; };
 		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
 /* End PBXBuildFile section */
@@ -15,9 +16,22 @@
 		8FC2FE082E3A5C32001E5953 /* Quickstart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quickstart.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8F1A8F9C2EB01E1D008383C8 /* Exceptions for "Quickstart" folder in "Quickstart" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8FC2FE072E3A5C32001E5953 /* Quickstart */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8FC2FE0A2E3A5C32001E5953 /* Quickstart */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8F1A8F9C2EB01E1D008383C8 /* Exceptions for "Quickstart" folder in "Quickstart" target */,
+			);
 			path = Quickstart;
 			sourceTree = "<group>";
 		};
@@ -29,6 +43,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */,
+				8F1A8F9A2EB01CD3008383C8 /* Atlantis in Frameworks */,
 				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -74,6 +89,7 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* Clerk */,
 				8F692CBF2E3D008D00E6E7ED /* Clerk */,
+				8F1A8F992EB01CD3008383C8 /* Atlantis */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -104,6 +120,7 @@
 			mainGroup = 8FC2FDFF2E3A5C32001E5953;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				8F1A8F982EB01CD3008383C8 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE092E3A5C32001E5953 /* Products */;
@@ -262,11 +279,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Quickstart/Quickstart.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = L8SD6SB282;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Quickstart/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis would use Bonjour Service to discover Proxyman app from your local network.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -295,11 +315,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Quickstart/Quickstart.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = L8SD6SB282;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Quickstart/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis would use Bonjour Service to discover Proxyman app from your local network.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -346,7 +369,23 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8F1A8F982EB01CD3008383C8 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.30.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		8F1A8F992EB01CD3008383C8 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F1A8F982EB01CD3008383C8 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
+		};
 		8F692CBF2E3D008D00E6E7ED /* Clerk */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Clerk;
