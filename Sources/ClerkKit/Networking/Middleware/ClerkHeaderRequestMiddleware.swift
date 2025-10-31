@@ -9,9 +9,11 @@ import FactoryKit
 import Foundation
 
 struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
+  private var keychain: any KeychainStorage { Container.shared.keychain() }
+
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    if let deviceToken = try? Container.shared.keychain().string(forKey: "clerkDeviceToken") {
+    if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 

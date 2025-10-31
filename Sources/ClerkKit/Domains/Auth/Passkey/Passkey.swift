@@ -71,28 +71,32 @@ extension Passkey {
 
 extension Passkey {
 
+    private static var passkeyService: any PasskeyServiceProtocol { Container.shared.passkeyService() }
+
+    private var passkeyService: any PasskeyServiceProtocol { Container.shared.passkeyService() }
+
     /// Creates a new passkey
     @discardableResult @MainActor
     public static func create() async throws -> Passkey {
-        try await Container.shared.passkeyService().create()
+        try await Self.passkeyService.create()
     }
 
     /// Updates the name of the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func update(name: String) async throws -> Passkey {
-        try await Container.shared.passkeyService().update(id, name)
+        try await passkeyService.update(id, name)
     }
 
     /// Attempts to verify the passkey with a credential.
     @discardableResult @MainActor
     public func attemptVerification(credential: String) async throws -> Passkey {
-        try await Container.shared.passkeyService().attemptVerification(id, credential)
+        try await passkeyService.attemptVerification(id, credential)
     }
 
     /// Deletes the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        try await Container.shared.passkeyService().delete(id)
+        try await passkeyService.delete(id)
     }
 
 }
