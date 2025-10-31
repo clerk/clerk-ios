@@ -11,7 +11,7 @@ import NukeUI
 import SwiftUI
 
 struct AppLogoView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
 
     var body: some View {
         LazyImage(url: URL(string: clerk.environment.displayConfig?.logoImageUrl ?? "")) { state in

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileDevicesSection: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var user: User? {
@@ -47,7 +47,7 @@ struct UserProfileDevicesSection: View {
 
 #Preview {
     UserProfileDevicesSection()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

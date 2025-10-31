@@ -11,9 +11,9 @@ import FactoryKit
 import SwiftUI
 
 struct AuthStartView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
     @Environment(\.dismissKeyboard) private var dismissKeyboard
 
     @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
@@ -316,18 +316,18 @@ extension AuthStartView {
 
 #Preview {
     AuthStartView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("Clerk Theme") {
     AuthStartView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
     AuthStartView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
         .environment(\.locale, .init(identifier: "en"))
 }
