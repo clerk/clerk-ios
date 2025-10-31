@@ -16,7 +16,7 @@
 
 ### Products and Targets
 1. `ClerkKit` (core logic)
-   - Depends on Foundation, Swift Algorithms (evaluate necessity), URLSession, Keychain APIs.
+  - Depends on Foundation, URLSession, Keychain APIs.
    - Declares internal submodules (namespaces) for `Auth`, `Sessions`, `User`, `Organization`, `Telemetry`, and `Configuration`.
    - Exposes async APIs via façade types (`ClerkClient`, `SessionStore`, etc.) backed by injected services.
 2. `ClerkKitUI` (presentation)
@@ -35,7 +35,7 @@
 - `Support`: utilities, error definitions, and strongly typed configuration.
 
 ### Cross-Target Dependencies
-- `ClerkKit` is dependency-free beyond Apple frameworks and vetted core libs (consider dropping Swift Algorithms if unused in the new design).
+- `ClerkKit` is dependency-free beyond Apple frameworks and vetted core libs.
 - `ClerkKitUI` is the only target allowed to import UI-specific dependencies; enforce this via target membership checks.
 - Shared resource bundles (localizations, themes) migrate to `ClerkKitUI` to keep the core lightweight.
 
