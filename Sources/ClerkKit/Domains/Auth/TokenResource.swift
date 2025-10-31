@@ -24,7 +24,7 @@ extension TokenResource {
     /// Attempts to decode the JWT into a `DecodedJWT` object.
     ///
     /// - Returns: A `DecodedJWT` object if decoding is successful; otherwise `nil`.
-    internal var decodedJWT: DecodedJWT? {
+    var decodedJWT: DecodedJWT? {
         do {
             return try DecodedJWT(jwt: jwt)
         } catch {
