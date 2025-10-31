@@ -7,6 +7,15 @@
 
 import Foundation
 
+/// Protocol defining an interface for providing the current session.
+///
+/// Implementations of this protocol can provide the current active session
+/// for token refresh operations.
+protocol SessionProviding: Sendable {
+    /// Returns the current active session, if available.
+    @MainActor var session: Session? { get }
+}
+
 /// Manages periodic polling of session tokens to keep them refreshed.
 ///
 /// This class handles the background task that periodically refreshes session tokens
@@ -23,8 +32,8 @@ final class SessionPollingManager {
     /// Task that performs the periodic token polling.
     nonisolated(unsafe) private var pollingTask: Task<Void, Error>?
     
-    /// Closure that returns the current session for token retrieval.
-    @MainActor private let getSession: () -> Session?
+    /// The provider that supplies the current session for token retrieval.
+    @MainActor private let sessionProvider: any SessionProviding
     
     /// The interval between polling attempts.
     private let pollInterval: TimeInterval
@@ -35,15 +44,15 @@ final class SessionPollingManager {
     /// Creates a new session polling manager.
     ///
     /// - Parameters:
-    ///   - getSession: A closure that returns the current active session, if available.
+    ///   - sessionProvider: The object that provides the current active session.
     ///   - pollInterval: The interval between polling attempts. Defaults to 5 seconds.
     ///   - pollTolerance: The tolerance for the polling interval. Defaults to 0.1 seconds.
     init(
-        getSession: @escaping @MainActor () -> Session?,
+        sessionProvider: any SessionProviding,
         pollInterval: TimeInterval = defaultPollInterval,
         pollTolerance: TimeInterval = defaultPollTolerance
     ) {
-        self.getSession = getSession
+        self.sessionProvider = sessionProvider
         self.pollInterval = pollInterval
         self.pollTolerance = pollTolerance
     }
@@ -80,7 +89,7 @@ final class SessionPollingManager {
     /// Refreshes the token for the current session if one exists.
     @MainActor
     private func refreshTokenIfNeeded() async {
-        guard let session = getSession() else {
+        guard let session = sessionProvider.session else {
             return
         }
         
