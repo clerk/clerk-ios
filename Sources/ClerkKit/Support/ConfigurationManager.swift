@@ -36,6 +36,9 @@ final class ConfigurationManager {
     ///
     /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
     func configure(publishableKey: String, options: Clerk.ClerkOptions) throws {
+        // Validate publishable key early for fail-fast behavior
+        try validatePublishableKey(publishableKey)
+        
         state.publishableKey = publishableKey
         state.options = options
         
@@ -52,6 +55,9 @@ final class ConfigurationManager {
         
         // Configure API client
         configureAPIClient()
+        
+        // Register telemetry collector
+        registerTelemetryCollector()
         
         state.isConfigured = true
     }
@@ -104,11 +110,36 @@ final class ConfigurationManager {
         state.options
     }
     
+    /// Returns the instance environment type based on the publishable key.
+    var instanceType: InstanceEnvironmentType {
+        if state.publishableKey.starts(with: "pk_live_") {
+            return .production
+        }
+        return .development
+    }
+    
+    /// Validates the publishable key format and throws an error if invalid.
+    ///
+    /// - Parameter key: The publishable key to validate.
+    /// - Throws: `ClerkInitializationError` if the key is empty or has an invalid format.
+    private func validatePublishableKey(_ key: String) throws {
+        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedKey.isEmpty else {
+            throw ClerkInitializationError.missingPublishableKey
+        }
+        
+        guard trimmedKey.starts(with: "pk_test_") || trimmedKey.starts(with: "pk_live_") else {
+            throw ClerkInitializationError.invalidPublishableKeyFormat(key: trimmedKey)
+        }
+    }
+    
     /// Extracts the frontend API URL from a publishable key.
     ///
     /// The publishable key contains encoded information that can be used to derive the API URL.
+    /// Assumes the publishable key has already been validated.
     ///
-    /// - Parameter publishableKey: The publishable key to extract the URL from.
+    /// - Parameter publishableKey: The publishable key to extract the URL from (must be validated).
     /// - Returns: The extracted frontend API URL.
     /// - Throws: `ClerkInitializationError.invalidPublishableKeyFormat` if the key format is invalid.
     private func extractFrontendApiUrl(from publishableKey: String) throws -> String {
@@ -171,6 +202,21 @@ final class ConfigurationManager {
                     "x-ios-sdk-version": Clerk.version,
                     "x-mobile": "1"
                 ]
+            }
+        }
+    }
+    
+    /// Registers the telemetry collector in the container based on options.
+    private func registerTelemetryCollector() {
+        if state.options.telemetryEnabled {
+            let telemetryOptions = TelemetryCollectorOptions(
+                samplingRate: 1.0,
+                maxBufferSize: 5,
+                flushInterval: 30.0,
+                disableThrottling: state.options.debugMode
+            )
+            Container.shared.telemetryCollector.register {
+                TelemetryCollector(options: telemetryOptions)
             }
         }
     }
