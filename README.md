@@ -40,6 +40,17 @@ Alternatively, add the following as a dependency to your `Package.swift`:
 dependencies: [
     .package(url: "https://github.com/clerk/clerk-ios", from: "0.1.0")
 ]
+
+// Then add ClerkKit and/or ClerkKitUI to your target dependencies:
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [
+            .product(name: "ClerkKit", package: "clerk-ios"),
+            .product(name: "ClerkKitUI", package: "clerk-ios")
+        ]
+    )
+]
 ```
 
 ## 🎓 Docs
