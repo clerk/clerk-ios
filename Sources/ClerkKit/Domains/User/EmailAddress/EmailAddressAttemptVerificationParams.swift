@@ -22,7 +22,7 @@ extension EmailAddress {
         /// The request body that will be sent with the verification attempt.
         ///
         /// This computed property returns the appropriate `RequestBody` struct based on the selected strategy.
-        internal var requestBody: RequestBody {
+        var requestBody: RequestBody {
             switch self {
             case .emailCode(let code):
                 return .init(code: code)
@@ -30,7 +30,7 @@ extension EmailAddress {
         }
 
         /// A struct that represents the request body for attempting email address verification.
-        internal struct RequestBody: Encodable {
+        struct RequestBody: Encodable {
             /// The one-time code that the user enters to verify their email address.
             let code: String
         }
