@@ -207,10 +207,12 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 
 extension User {
 
+    private var userService: any UserServiceProtocol { Container.shared.userService() }
+
     /// Reloads the user from the Clerk API.
     @discardableResult @MainActor
     public func reload() async throws -> User {
-        try await Container.shared.userService().reload()
+        try await userService.reload()
     }
 
     /// Updates the user's attributes. Use this method to save information you collected about the user.
@@ -221,7 +223,7 @@ extension User {
     /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
     @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
-        try await Container.shared.userService().update(params)
+        try await userService.update(params)
     }
 
     /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
@@ -229,21 +231,21 @@ extension User {
     /// - Returns: ``BackupCodeResource``
     @discardableResult @MainActor
     public func createBackupCodes() async throws -> BackupCodeResource {
-        try await Container.shared.userService().createBackupCodes()
+        try await userService.createBackupCodes()
     }
 
     /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
     /// - Parameter email: The value of the email address.
     @discardableResult @MainActor
     public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
-        try await Container.shared.userService().createEmailAddress(emailAddress)
+        try await userService.createEmailAddress(emailAddress)
     }
 
     /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
     /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
     @discardableResult @MainActor
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-        try await Container.shared.userService().createPhoneNumber(phoneNumber)
+        try await userService.createPhoneNumber(phoneNumber)
     }
 
     /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -255,7 +257,7 @@ extension User {
     ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
     @discardableResult @MainActor
     public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-        try await Container.shared.userService().createExternalAccount(provider, redirectUrl, additionalScopes)
+        try await userService.createExternalAccount(provider, redirectUrl, additionalScopes)
     }
 
     /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -266,7 +268,7 @@ extension User {
     ///     - idToken: The ID token from the provider.
     @discardableResult @MainActor
     public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-        try await Container.shared.userService().createExternalAccountToken(provider, idToken)
+        try await userService.createExternalAccountToken(provider, idToken)
     }
 
     #if canImport(AuthenticationServices) && !os(watchOS)
@@ -275,7 +277,7 @@ extension User {
     /// - Returns: ``Passkey``
     @discardableResult @MainActor
     public func createPasskey() async throws -> Passkey {
-        try await Container.shared.userService().createPasskey()
+        try await userService.createPasskey()
     }
     #endif
 
@@ -284,7 +286,7 @@ extension User {
     /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
     @discardableResult @MainActor
     public func createTOTP() async throws -> TOTPResource {
-        try await Container.shared.userService().createTotp()
+        try await userService.createTotp()
     }
 
     /// Verifies a TOTP secret after a user has created it.
@@ -294,13 +296,13 @@ extension User {
     /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
     @discardableResult @MainActor
     public func verifyTOTP(code: String) async throws -> TOTPResource {
-        try await Container.shared.userService().verifyTotp(code)
+        try await userService.verifyTotp(code)
     }
 
     /// Disables TOTP by deleting the user's TOTP secret.
     @discardableResult @MainActor
     public func disableTOTP() async throws -> DeletedObject {
-        try await Container.shared.userService().disableTotp()
+        try await userService.disableTotp()
     }
 
     /// Retrieves a list of organization invitations for the user.
@@ -313,7 +315,7 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-        return try await Container.shared.userService().getOrganizationInvitations(initialPage, pageSize)
+        return try await userService.getOrganizationInvitations(initialPage, pageSize)
     }
 
     /// Retrieves a list of organization memberships for the user.
@@ -326,7 +328,7 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        try await Container.shared.userService().getOrganizationMemberships(initialPage, pageSize)
+        try await userService.getOrganizationMemberships(initialPage, pageSize)
     }
 
     /// Retrieves a list of organization suggestions for the user.
@@ -341,7 +343,7 @@ extension User {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-        try await Container.shared.userService().getOrganizationSuggestions(initialPage, pageSize, status)
+        try await userService.getOrganizationSuggestions(initialPage, pageSize, status)
     }
 
     /// Retrieves all active sessions for this user.
@@ -349,13 +351,13 @@ extension User {
     /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
     @discardableResult @MainActor
     public func getSessions() async throws -> [Session] {
-        try await Container.shared.userService().getSessions(self)
+        try await userService.getSessions(self)
     }
 
     /// Updates the user's password. Passwords must be at least 8 characters long.
     @discardableResult @MainActor
     public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-        try await Container.shared.userService().updatePassword(params)
+        try await userService.updatePassword(params)
     }
 
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -363,19 +365,19 @@ extension User {
     ///     - imageData: The image, in data format, to set as the user's profile image.
     @discardableResult @MainActor
     public func setProfileImage(imageData: Data) async throws -> ImageResource {
-        try await Container.shared.userService().setProfileImage(imageData)
+        try await userService.setProfileImage(imageData)
     }
 
     /// Deletes the user's profile image.
     @discardableResult @MainActor
     public func deleteProfileImage() async throws -> DeletedObject {
-        try await Container.shared.userService().deleteProfileImage()
+        try await userService.deleteProfileImage()
     }
 
     /// Deletes the current user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        try await Container.shared.userService().delete()
+        try await userService.delete()
     }
 
 }
