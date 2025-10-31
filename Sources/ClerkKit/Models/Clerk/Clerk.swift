@@ -189,7 +189,6 @@ extension Clerk {
     /// Configures the shared Clerk instance.
     /// 
     /// This method must be called before accessing `Clerk.shared`. It can only be called once.
-    /// For internal debugging purposes, use `_reconfigure()`.
     /// 
     /// This method:
     /// 1. Sets up configuration (API client, options, etc.)
@@ -425,20 +424,6 @@ extension Container {
             Clerk._shared ?? Clerk()
         }
         .singleton
-    }
-
-    var keychain: Factory<any KeychainStorage> {
-        self {
-            SystemKeychain(
-                service: Bundle.main.bundleIdentifier ?? ""
-            ) as any KeychainStorage
-        }
-        .cached
-    }
-
-    var clerkOptions: Factory<Clerk.ClerkOptions> {
-        self { .init() }
-            .cached
     }
 
 }
