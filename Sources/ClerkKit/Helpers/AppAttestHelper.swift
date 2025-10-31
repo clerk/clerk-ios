@@ -16,6 +16,12 @@ struct AppAttestHelper {
     /// The key used to store the attestation key ID in the keychain.
     private static let keychainKey = "AttestKeyId"
 
+    /// The API client for making network requests.
+    private static var apiClient: APIClient { Container.shared.apiClient() }
+
+    /// The keychain storage for secure data persistence.
+    private static var keychain: any KeychainStorage { Container.shared.keychain() }
+
     /// Errors that can occur during the attestation process.
     enum AttestationError: Error {
         case unsupportedDevice
@@ -32,7 +38,7 @@ struct AppAttestHelper {
             method: .post
         )
 
-        let response = try await Container.shared.apiClient().send(request).value
+        let response = try await apiClient.send(request).value
 
         guard let challenge = response["challenge"] else {
             throw AttestationError.unableToGetChallengeFromServer
@@ -61,7 +67,7 @@ struct AppAttestHelper {
         let attestation = try await DCAppAttestService.shared.attestKey(keyId, clientDataHash: clientDataHash)
         try await verify(keyId: keyId, challenge: challenge, attestation: attestation)
 
-        try Container.shared.keychain().set(keyId, forKey: keychainKey)
+        try keychain.set(keyId, forKey: keychainKey)
         return keyId
     }
 
@@ -85,7 +91,7 @@ struct AppAttestHelper {
             body: body
         )
 
-        try await Container.shared.apiClient().send(request)
+        try await apiClient.send(request)
     }
 
     /// Creates an assertion using the attestation key.
@@ -134,13 +140,13 @@ struct AppAttestHelper {
             body: body
         )
 
-        try await Container.shared.apiClient().send(request)
+        try await apiClient.send(request)
     }
 
     /// Checks whether a key ID is stored in the keychain.
     static var hasKeyId: Bool {
         do {
-            return try Container.shared.keychain().hasItem(forKey: keychainKey)
+            return try keychain.hasItem(forKey: keychainKey)
         } catch {
             return false
         }
@@ -148,13 +154,13 @@ struct AppAttestHelper {
 
     /// Retrieves the stored attestation key ID from the keychain.
     private static var keyId: String? {
-        try? Container.shared.keychain().string(forKey: keychainKey)
+        try? keychain.string(forKey: keychainKey)
     }
 
     /// Removes the stored attestation key ID from the keychain.
     /// - Throws: An error if key deletion fails.
     static func removeKeyId() throws {
-        try Container.shared.keychain().deleteItem(forKey: keychainKey)
+        try keychain.deleteItem(forKey: keychainKey)
     }
 
     /// Retrieves the stored attestation client ID from the keychain.
@@ -163,7 +169,7 @@ struct AppAttestHelper {
     /// the app wont have a client yet
     @MainActor
     static var clientId: String? {
-        guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
+        guard let clientData = try? keychain.data(forKey: "cachedClient") else {
             return nil
         }
         let decoder = JSONDecoder.clerkDecoder

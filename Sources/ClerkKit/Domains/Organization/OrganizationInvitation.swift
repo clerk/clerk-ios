@@ -60,10 +60,12 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
 
 extension OrganizationInvitation {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Revokes the invitation for the email it corresponds to.
     @discardableResult @MainActor
     public func revoke() async throws -> OrganizationInvitation {
-        try await Container.shared.organizationService().revokeOrganizationInvitation(organizationId, id)
+        try await organizationService.revokeOrganizationInvitation(organizationId, id)
     }
 
 }

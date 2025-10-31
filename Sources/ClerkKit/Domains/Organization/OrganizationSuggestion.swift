@@ -77,11 +77,13 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 
 extension OrganizationSuggestion {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Accepts the organization suggestion.
     /// - Returns: The accepted ``OrganizationSuggestion``.
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationSuggestion {
-        try await Container.shared.organizationService().acceptOrganizationSuggestion(id)
+        try await organizationService.acceptOrganizationSuggestion(id)
     }
 
 }

@@ -93,11 +93,13 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 
 extension UserOrganizationInvitation {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Accepts the organization invitation.
     /// - Returns: The accepted ``UserOrganizationInvitation``.
     @discardableResult @MainActor
     public func accept() async throws -> UserOrganizationInvitation {
-        try await Container.shared.organizationService().acceptUserOrganizationInvitation(id)
+        try await organizationService.acceptUserOrganizationInvitation(id)
     }
 
 }

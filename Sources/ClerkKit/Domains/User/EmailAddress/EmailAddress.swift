@@ -55,12 +55,16 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 
 extension EmailAddress {
 
+    private static var emailAddressService: any EmailAddressServiceProtocol { Container.shared.emailAddressService() }
+
+    private var emailAddressService: any EmailAddressServiceProtocol { Container.shared.emailAddressService() }
+
     /// Creates a new email address for the current user.
     /// - Parameters:
     ///     - email: The email address to add to the current user.
     @discardableResult @MainActor
     public static func create(_ email: String) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().create(email)
+        try await Self.emailAddressService.create(email)
     }
 
     /// Prepares the verification process for this email address.
@@ -78,7 +82,7 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().prepareVerification(id, strategy)
+        try await emailAddressService.prepareVerification(id, strategy)
     }
 
     /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -95,13 +99,13 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-        try await Container.shared.emailAddressService().attemptVerification(id, strategy)
+        try await emailAddressService.attemptVerification(id, strategy)
     }
 
     /// Deletes this email address.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await Container.shared.emailAddressService().destroy(id)
+        try await emailAddressService.destroy(id)
     }
 
 }

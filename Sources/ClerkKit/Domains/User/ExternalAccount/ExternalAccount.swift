@@ -90,6 +90,8 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
 
 extension ExternalAccount {
 
+    private var externalAccountService: any ExternalAccountServiceProtocol { Container.shared.externalAccountService() }
+
     /// Invokes a re-authorization flow for an existing external account.
     ///
     /// - Parameters:
@@ -120,7 +122,7 @@ extension ExternalAccount {
     /// Deletes this external account.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await Container.shared.externalAccountService().destroy(id)
+        try await externalAccountService.destroy(id)
     }
 }
 

@@ -210,10 +210,12 @@ extension Session {
 
 extension Session {
 
+    private var sessionService: any SessionServiceProtocol { Container.shared.sessionService() }
+
     /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
-        try await Container.shared.sessionService().revoke(id)
+        try await sessionService.revoke(id)
     }
 
     /**

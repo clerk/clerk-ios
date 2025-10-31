@@ -55,10 +55,12 @@ public struct Client: Codable, Sendable, Equatable {
 
 extension Client {
 
+    private static var clientService: any ClientServiceProtocol { Container.shared.clientService() }
+
     /// Retrieves the current client.
     @discardableResult @MainActor
     public static func get() async throws -> Client? {
-        try await Container.shared.clientService().get()
+        try await clientService.get()
     }
 
 }
