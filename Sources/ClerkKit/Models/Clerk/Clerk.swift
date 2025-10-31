@@ -99,8 +99,6 @@ final public class Clerk {
     public var options: Clerk.ClerkOptions {
         configurationManager.options
     }
-
-    // MARK: - Private Properties
     
     /// Coordinates task lifecycle and cleanup.
     private var taskCoordinator: TaskCoordinator?
@@ -117,7 +115,7 @@ final public class Clerk {
     }
     
     /// Frontend API URL.
-    internal var frontendApiUrl: String {
+    var frontendApiUrl: String {
         configurationManager.frontendApiUrl
     }
 
@@ -137,7 +135,7 @@ final public class Clerk {
     private var sessionStatusLogger = SessionStatusLogger()
 
     /// Proxy configuration derived from `proxyUrl`, if present.
-    internal var proxyConfiguration: ProxyConfiguration? {
+    var proxyConfiguration: ProxyConfiguration? {
         configurationManager.proxyConfiguration
     }
 
