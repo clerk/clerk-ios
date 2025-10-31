@@ -44,7 +44,7 @@ struct ClerkTests {
 
   @MainActor
   @Test func testLogsWhenLastActiveSessionPending() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var pendingSession = Session.mock
     pendingSession.id = "pending-1"
     pendingSession.status = .pending
@@ -61,14 +61,14 @@ struct ClerkTests {
     clientV2.sessions = [pendingSessionUpdated]
     clientV2.lastActiveSessionId = pendingSessionUpdated.id
 
-    #expect(clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: clientV1))
-    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV1))
-    #expect(clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
+    #expect(logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: clientV1))
+    #expect(!logger.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV1))
+    #expect(logger.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
   }
 
   @MainActor
   @Test func testSkipsWhenLastActiveSessionActive() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var activeSession = Session.mock
     activeSession.id = "session-1"
     activeSession.status = .active
@@ -77,12 +77,12 @@ struct ClerkTests {
     client.sessions = [activeSession]
     client.lastActiveSessionId = activeSession.id
 
-    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
+    #expect(!logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
   @Test func testSkipsWhenLastActiveSessionMissing() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var pendingSession = Session.mock
     pendingSession.id = "pending-1"
     pendingSession.status = .pending
@@ -91,12 +91,12 @@ struct ClerkTests {
     client.sessions = [pendingSession]
     client.lastActiveSessionId = "unknown"
 
-    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
+    #expect(!logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
   @Test func testSkipsWhenLastActiveSessionNotSet() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var pendingSession = Session.mock
     pendingSession.status = .pending
 
@@ -104,12 +104,12 @@ struct ClerkTests {
     client.sessions = [pendingSession]
     client.lastActiveSessionId = nil
 
-    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
+    #expect(!logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client))
   }
 
   @MainActor
   @Test func testLogsAgainAfterPendingSessionResolves() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var pendingSession = Session.mock
     pendingSession.id = "session-1"
     pendingSession.status = .pending
@@ -126,12 +126,12 @@ struct ClerkTests {
     activeClient.sessions = [activeSession]
     activeClient.lastActiveSessionId = activeSession.id
 
-    #expect(clerk.shouldLogPendingSessionStatus(previousClient: pendingClientV1, currentClient: activeClient))
+    #expect(logger.shouldLogPendingSessionStatus(previousClient: pendingClientV1, currentClient: activeClient))
   }
 
   @MainActor
   @Test func testLogsRecordsWhenSessionUpdated() async throws {
-    let clerk = Clerk()
+    let logger = SessionStatusLogger()
     var session = Session.mock
     session.id = "session-1"
     session.status = .pending
@@ -143,14 +143,14 @@ struct ClerkTests {
     var clientV2 = clientV1
     clientV2.sessions = [session]
 
-    #expect(!clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
+    #expect(!logger.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
 
     var sessionUpdated = session
     sessionUpdated.tasks = [.init(key: "task-updated")]
 
     clientV2.sessions = [sessionUpdated]
 
-    #expect(clerk.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
+    #expect(logger.shouldLogPendingSessionStatus(previousClient: clientV1, currentClient: clientV2))
   }
 
 }
