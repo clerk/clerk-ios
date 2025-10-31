@@ -7,23 +7,27 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct AppLogoView: View {
     @Environment(\.clerk) private var clerk
 
     var body: some View {
-        KFImage(URL(string: clerk.environment.displayConfig?.logoImageUrl ?? ""))
-            .resizable()
-            //      .placeholder {
-            //        #if DEBUG
+        LazyImage(url: URL(string: clerk.environment.displayConfig?.logoImageUrl ?? "")) { state in
+            if let image = state.image {
+                image
+                    .resizable()
+                    .scaledToFit()
+            }
+            //      #if DEBUG
+            //      else {
             //        Image(systemName: "circle.square.fill")
             //          .resizable()
             //          .scaledToFit()
-            //        #endif
             //      }
-            .scaledToFit()
+            //      #endif
+        }
     }
 }
 

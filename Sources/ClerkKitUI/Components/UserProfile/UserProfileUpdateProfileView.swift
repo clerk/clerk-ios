@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import PhotosUI
 import SwiftUI
 
@@ -137,47 +137,63 @@ struct UserProfileUpdateProfileView: View {
 
     @ViewBuilder
     private var menu: some View {
-        KFImage(URL(string: user.imageUrl))
-            .resizable()
-            .fade(duration: 0.25)
-            .placeholder { progress in
+        LazyImage(url: URL(string: user.imageUrl)) { state in
+            if let image = state.image {
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .onAppear {
+                        imageIsLoading = false
+                    }
+            } else if state.error != nil {
+                Image("icon-profile", bundle: .module)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(theme.colors.primary.gradient)
+                    .opacity(0.5)
+                    .onAppear {
+                        imageIsLoading = false
+                    }
+            } else {
                 Image("icon-profile", bundle: .module)
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(theme.colors.primary.gradient)
                     .opacity(0.5)
             }
-            .onSuccess { _ in imageIsLoading = false }
-            .onFailure { _ in imageIsLoading = false }
-            .overlay {
-                if imageIsLoading {
-                    theme.colors.inputBorderFocused
-                    SpinnerView(color: theme.colors.primaryForeground)
-                        .frame(width: 24, height: 24)
-                }
+        }
+        .onChange(of: user.imageUrl) { _, _ in
+            imageIsLoading = true
+        }
+        .overlay {
+            if imageIsLoading {
+                theme.colors.inputBorderFocused
+                SpinnerView(color: theme.colors.primaryForeground)
+                    .frame(width: 24, height: 24)
             }
-            .scaledToFill()
-            .frame(width: 96, height: 96)
-            .clipShape(.circle)
-            .overlay(alignment: .bottomTrailing) {
-                Menu {
-                    menuContent
-                } label: {
-                    Image("icon-edit", bundle: .module)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 16, height: 16)
-                        .padding(8)
-                        .foregroundStyle(theme.colors.mutedForeground)
-                        .background(theme.colors.background)
-                        .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                                .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
-                        }
-                        .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
-                }
+        }
+        .frame(width: 96, height: 96)
+        .clipShape(.circle)
+        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+        .overlay(alignment: .bottomTrailing) {
+            Menu {
+                menuContent
+            } label: {
+                Image("icon-edit", bundle: .module)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .padding(8)
+                    .foregroundStyle(theme.colors.mutedForeground)
+                    .background(theme.colors.background)
+                    .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: theme.design.borderRadius)
+                            .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
+                    }
+                    .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
             }
+        }
     }
 
     @ViewBuilder
