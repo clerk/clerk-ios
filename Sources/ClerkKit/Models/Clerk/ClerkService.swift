@@ -8,17 +8,31 @@
 import FactoryKit
 import Foundation
 
+/// Protocol defining Clerk service operations for dependency injection and testing.
+protocol ClerkServiceProtocol: Sendable {
+    /// Signs out the active user.
+    /// - Parameter sessionId: Optional session ID to sign out from a specific session.
+    @MainActor func signOut(sessionId: String?) async throws
+    
+    /// Sets the active session and optionally the active organization.
+    /// - Parameters:
+    ///   - sessionId: The session ID to set as active.
+    ///   - organizationId: Optional organization ID to set as active in the session.
+    @MainActor func setActive(sessionId: String, organizationId: String?) async throws
+}
+
 extension Container {
 
-    var clerkService: Factory<ClerkService> {
-        self { ClerkService() }
+    var clerkService: Factory<any ClerkServiceProtocol> {
+        self { ClerkService() }.cached
     }
 
 }
 
-struct ClerkService {
+struct ClerkService: ClerkServiceProtocol {
 
-    var signOut: @MainActor (_ sessionId: String?) async throws -> Void = { sessionId in
+    @MainActor
+    func signOut(sessionId: String?) async throws {
         if let sessionId {
             let request = Request<EmptyResponse>(
                 path: "/v1/client/sessions/\(sessionId)/remove",
@@ -36,7 +50,8 @@ struct ClerkService {
         }
     }
 
-    var setActive: @MainActor (_ sessionId: String, _ organizationId: String?) async throws -> Void = { sessionId, organizationId in
+    @MainActor
+    func setActive(sessionId: String, organizationId: String?) async throws {
         let request = Request<EmptyResponse>(
             path: "/v1/client/sessions/\(sessionId)/touch",
             method: .post,
@@ -44,35 +59,6 @@ struct ClerkService {
         )
         
         try await Container.shared.apiClient().send(request)
-    }
-
-    // MARK: - Keychain Utilities
-
-    var saveClientToKeychain: (_ client: Client) throws -> Void = { client in
-        let clientData = try JSONEncoder.clerkEncoder.encode(client)
-        try Container.shared.keychain().set(clientData, forKey: "cachedClient")
-    }
-
-    var loadClientFromKeychain: () throws -> Client? = {
-        guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
-            return nil
-        }
-        let decoder = JSONDecoder.clerkDecoder
-        return try decoder.decode(Client.self, from: clientData)
-    }
-
-    var saveEnvironmentToKeychain: (_ environment: Clerk.Environment) throws -> Void = { environment in
-        let encoder = JSONEncoder.clerkEncoder
-        let environmentData = try encoder.encode(environment)
-        try Container.shared.keychain().set(environmentData, forKey: "cachedEnvironment")
-    }
-
-    var loadEnvironmentFromKeychain: () throws -> Clerk.Environment? = {
-        guard let environmentData = try? Container.shared.keychain().data(forKey: "cachedEnvironment") else {
-            return nil
-        }
-        let decoder = JSONDecoder.clerkDecoder
-        return try decoder.decode(Clerk.Environment.self, from: environmentData)
     }
 
 }

@@ -163,6 +163,10 @@ struct AppAttestHelper {
     /// the app wont have a client yet
     @MainActor
     static var clientId: String? {
-        try? Container.shared.clerkService().loadClientFromKeychain()?.id
+        guard let clientData = try? Container.shared.keychain().data(forKey: "cachedClient") else {
+            return nil
+        }
+        let decoder = JSONDecoder.clerkDecoder
+        return try? decoder.decode(Client.self, from: clientData).id
     }
 }

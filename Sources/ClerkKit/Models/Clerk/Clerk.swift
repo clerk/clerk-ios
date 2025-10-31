@@ -8,10 +8,6 @@
 import FactoryKit
 import Foundation
 
-#if canImport(UIKit)
-import UIKit
-#endif
-
 /**
  This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
  */
@@ -173,10 +169,7 @@ extension Clerk {
         
         // Set up cache manager and load cached data asynchronously
         initializationState = .loadingCachedData
-        let cacheManager = CacheManager(
-            coordinator: self,
-            clerkService: Container.shared.clerkService()
-        )
+        let cacheManager = CacheManager(coordinator: self)
         self.cacheManager = cacheManager
         
         // Load cached data asynchronously (don't block on this)
@@ -349,7 +342,7 @@ extension Clerk {
     /// try await clerk.signOut()
     /// ```
     public func signOut(sessionId: String? = nil) async throws {
-        try await Container.shared.clerkService().signOut(sessionId)
+        try await Container.shared.clerkService().signOut(sessionId: sessionId)
     }
 
     /// A method used to set the active session.
@@ -359,7 +352,7 @@ extension Clerk {
     /// - Parameter sessionId: The session ID to be set as active.
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
     public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-        try await Container.shared.clerkService().setActive(sessionId, organizationId)
+        try await Container.shared.clerkService().setActive(sessionId: sessionId, organizationId: organizationId)
     }
 }
 
