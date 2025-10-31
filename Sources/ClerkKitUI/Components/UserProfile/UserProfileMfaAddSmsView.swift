@@ -12,10 +12,10 @@ import PhoneNumberKit
 import SwiftUI
 
 struct UserProfileMfaAddSmsView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
 
     @State private var selectedPhoneNumber: ClerkKit.PhoneNumber?
     @State private var addPhoneNumberIsPresented = false
@@ -229,7 +229,7 @@ struct AddMfaSmsRow: View {
 
 #Preview {
     UserProfileMfaAddSmsView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

@@ -11,7 +11,7 @@ import FactoryKit
 import SwiftUI
 
 struct UserProfileAddConnectedAccountView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -116,7 +116,7 @@ extension UserProfileAddConnectedAccountView {
 //    }
 
     UserProfileAddConnectedAccountView(contentHeight: .constant(300))
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

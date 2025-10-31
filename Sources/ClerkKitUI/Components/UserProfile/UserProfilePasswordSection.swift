@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 struct UserProfilePasswordSection: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     enum PasswordAction: Hashable, Identifiable {
