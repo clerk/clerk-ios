@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct UserProfileExternalAccountRow: View {
@@ -31,20 +31,21 @@ struct UserProfileExternalAccountRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 WrappingHStack(alignment: .leading) {
                     HStack(spacing: 8) {
-                        KFImage(
-                            externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)
-                        )
-                        .resizable()
-                        .placeholder {
-                            #if DEBUG
-                            Image(systemName: "globe")
-                                .resizable()
-                                .scaledToFit()
-                            #endif
+                        LazyImage(url: externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+                            if let image = state.image {
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            } else {
+                                #if DEBUG
+                                Image(systemName: "globe")
+                                    .resizable()
+                                    .scaledToFit()
+                                #endif
+                            }
                         }
-                        .fade(duration: 0.25)
-                        .scaledToFit()
                         .frame(width: 20, height: 20)
+                        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
 
                         Text(externalAccount.oauthProvider.name)
                             .font(theme.fonts.subheadline)

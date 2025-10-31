@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct SocialButton: View {
@@ -21,17 +21,19 @@ struct SocialButton: View {
     var onError: ((Error) -> Void)? = nil
 
     private var iconImage: some View {
-        KFImage(provider.iconImageUrl(darkMode: colorScheme == .dark))
-            .resizable()
-            .placeholder {
+        LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+            if let image = state.image {
+                image
+                    .resizable()
+                    .scaledToFit()
+            } else {
                 Image(systemName: "globe")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 21, height: 21)
             }
-            .fade(duration: 0.25)
-            .scaledToFit()
-            .frame(width: 21, height: 21)
+        }
+        .frame(width: 21, height: 21)
+        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
     }
 
     init(
