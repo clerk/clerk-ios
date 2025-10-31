@@ -11,7 +11,7 @@ import NukeUI
 import SwiftUI
 
 struct UserProfileExternalAccountRow: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
 

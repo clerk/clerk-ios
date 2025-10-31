@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFactorOneForgotPasswordView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @State private var error: Error?
 
@@ -192,7 +192,7 @@ extension SignInFactorOneForgotPasswordView {
 
 #Preview {
     SignInFactorOneForgotPasswordView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

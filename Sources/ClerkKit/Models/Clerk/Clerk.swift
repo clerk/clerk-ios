@@ -107,8 +107,14 @@ final public class Clerk {
     
     /// Task that coordinates cached data loading during initialization.
     /// This is set during `configure()` and awaited during `load()`.
-    /// Stored as nonisolated to allow cancellation from deinit.
-    nonisolated private var cachedDataLoadingTask: Task<Void, Never>?
+    /// Automatically tracked via TaskCoordinator for cleanup.
+    private var cachedDataLoadingTask: Task<Void, Never>? {
+        didSet {
+            if let task = cachedDataLoadingTask {
+                taskCoordinator?.track(task)
+            }
+        }
+    }
     
     /// Frontend API URL.
     internal var frontendApiUrl: String {
@@ -133,19 +139,6 @@ final public class Clerk {
     /// Proxy configuration derived from `proxyUrl`, if present.
     internal var proxyConfiguration: ProxyConfiguration? {
         configurationManager.proxyConfiguration
-    }
-    
-    /// Cancels all tracked tasks and cleans up resources.
-    ///
-    /// This ensures proper cleanup when the Clerk instance is deallocated.
-    /// Managers handle their own cleanup in their deinit methods.
-    deinit {
-        // Cancel cached data loading task if still running
-        cachedDataLoadingTask?.cancel()
-        
-        // Managers will clean up themselves when deallocated
-        // taskCoordinator, lifecycleManager, and sessionPollingManager
-        // all have deinit methods that handle cleanup
     }
 
 }
@@ -264,11 +257,7 @@ extension Clerk {
         // Ensure Clerk has been configured
         guard cachedDataLoadingTask != nil else {
             throw ClerkInitializationError.initializationFailed(
-                underlyingError: NSError(
-                    domain: "ClerkError",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "Clerk must be configured before calling load(). Call Clerk.configure() first."]
-                )
+                underlyingError: ClerkClientError(message: "Clerk must be configured before calling load(). Call Clerk.configure() first.")
             )
         }
         

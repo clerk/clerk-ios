@@ -12,7 +12,7 @@ import PhotosUI
 import SwiftUI
 
 struct UserProfileUpdateProfileView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -242,7 +242,7 @@ extension UserProfileUpdateProfileView {
 
 #Preview {
     UserProfileUpdateProfileView(user: .mock)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

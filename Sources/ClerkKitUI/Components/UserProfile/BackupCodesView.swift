@@ -11,7 +11,7 @@ import SwiftUI
 
 struct BackupCodesView: View {
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
     @Environment(\.dismiss) private var dismiss
 
     enum MfaType {

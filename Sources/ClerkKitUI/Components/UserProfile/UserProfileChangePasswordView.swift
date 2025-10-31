@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileChangePasswordView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -221,13 +221,13 @@ extension UserProfileChangePasswordView {
 
 #Preview("Reset") {
     UserProfileChangePasswordView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Adding") {
     UserProfileChangePasswordView(isAddingPassword: true)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

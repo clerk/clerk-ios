@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct UserProfileMfaSection: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
 
     @State private var addMfaHeight: CGFloat = 400
 
@@ -82,9 +82,8 @@ struct UserProfileMfaSection: View {
 
 #Preview {
     UserProfileMfaSection()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
-        .environment(\.userProfileSharedState, .init())
 }
 
 #endif

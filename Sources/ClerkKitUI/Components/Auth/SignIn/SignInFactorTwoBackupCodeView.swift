@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFactorTwoBackupCodeView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @FocusState private var isFocused: Bool
     @State private var fieldError: Error?

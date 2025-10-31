@@ -11,9 +11,9 @@ import FactoryKit
 import SwiftUI
 
 struct UserProfileSecurityView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
 
     @State private var error: Error?
 
@@ -91,7 +91,7 @@ struct UserProfileSecurityView: View {
     NavigationStack {
         UserProfileSecurityView()
     }
-    .environment(\.clerk, .mock)
+    .clerkPreviewMocks()
     .environment(\.clerkTheme, .clerk)
 }
 

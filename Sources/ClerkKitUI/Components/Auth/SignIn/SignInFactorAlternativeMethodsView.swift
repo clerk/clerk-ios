@@ -11,9 +11,9 @@ import FactoryKit
 import SwiftUI
 
 struct SignInFactorAlternativeMethodsView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @State private var error: Error?
 
@@ -196,7 +196,7 @@ extension SignInFactorAlternativeMethodsView {
     SignInFactorAlternativeMethodsView(
         currentFactor: .mockEmailCode
     )
-    .environment(\.clerk, .mock)
+    .clerkPreviewMocks()
 }
 
 #endif

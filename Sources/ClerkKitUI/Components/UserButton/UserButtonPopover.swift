@@ -11,7 +11,7 @@ import FactoryKit
 import SwiftUI
 
 struct UserButtonPopover: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -133,7 +133,7 @@ extension UserButtonPopover {
 
 #Preview {
     UserButtonPopover()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #endif

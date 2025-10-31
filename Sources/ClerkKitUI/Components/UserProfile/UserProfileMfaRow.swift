@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileMfaRow: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     @State private var isConfirmingRemoval = false

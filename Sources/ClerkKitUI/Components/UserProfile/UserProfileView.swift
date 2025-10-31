@@ -21,7 +21,7 @@ import SwiftUI
 ///
 /// ```swift
 /// struct ProfileView: View {
-///   @Environment(\.clerk) private var clerk
+///   @Environment(Clerk.self) private var clerk
 ///
 ///   var body: some View {
 ///     Group {
@@ -52,7 +52,7 @@ import SwiftUI
 /// }
 /// ```
 public struct UserProfileView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -274,7 +274,7 @@ public struct UserProfileView: View {
                     )
                 )
             }
-            .environment(\.userProfileSharedState, sharedState)
+            .environment(sharedState)
         }
     }
 }
@@ -339,19 +339,15 @@ extension UserProfileView {
     }
 }
 
-extension EnvironmentValues {
-    @Entry var userProfileSharedState = UserProfileView.SharedState()
-}
-
 #Preview("Dismissable") {
     UserProfileView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Not dismissable") {
     UserProfileView(isDismissable: false)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

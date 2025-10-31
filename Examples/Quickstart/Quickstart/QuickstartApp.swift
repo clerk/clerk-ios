@@ -22,6 +22,7 @@ struct QuickstartApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(Clerk.shared)
                 .task {
                     try? await Clerk.shared.load()
                 }

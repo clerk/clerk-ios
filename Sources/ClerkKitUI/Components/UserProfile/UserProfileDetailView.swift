@@ -12,9 +12,9 @@ import NukeUI
 import SwiftUI
 
 struct UserProfileDetailView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
 
     @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
     @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
@@ -165,7 +165,7 @@ struct UserProfileDetailView: View {
 
     NavigationStack {
         UserProfileDetailView()
-            .environment(\.clerk, .mock)
+            .clerkPreviewMocks()
             .environment(\.clerkTheme, .clerk)
     }
 }

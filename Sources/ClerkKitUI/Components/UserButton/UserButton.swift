@@ -22,7 +22,7 @@ import SwiftUI
 ///
 /// ```swift
 /// struct HomeView: View {
-///   @Environment(\.clerk) private var clerk
+///   @Environment(Clerk.self) private var clerk
 ///   @State private var authIsPresented = false
 ///
 ///   var body: some View {
@@ -58,7 +58,7 @@ import SwiftUI
 /// }
 /// ```
 public struct UserButton: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     @State private var userProfileIsPresented: Bool = false
@@ -111,7 +111,7 @@ public struct UserButton: View {
 #Preview {
     UserButton()
         .frame(width: 36, height: 36)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
