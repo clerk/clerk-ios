@@ -93,7 +93,7 @@ final class UserService: UserServiceProtocol {
     func createExternalAccount(_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount {
         var bodyParams: [String: String] = [
             "strategy": provider.strategy,
-            "redirect_url": redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+            "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         ]
 
         if let additionalScopes {

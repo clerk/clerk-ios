@@ -133,7 +133,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
 
   @MainActor
   private func logRetry(reason: String, request: URLRequest?, delay: UInt64) {
-    guard Clerk.shared.settings.debugMode else { return }
+    guard Clerk.shared.options.debugMode else { return }
 
     let url = request?.url?.absoluteString ?? "<unknown url>"
     let delayMs = Double(delay) / 1_000_000
