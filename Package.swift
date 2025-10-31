@@ -16,9 +16,7 @@ let package = Package(
   ],
   products: [
     .library(name: "ClerkKit", targets: ["ClerkKit"]),
-    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
-    // Legacy product retained temporarily while the new modules are rolled out.
-    .library(name: "Clerk", targets: ["Clerk"])
+    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"])
   ],
   dependencies: [
     .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
@@ -51,20 +49,10 @@ let package = Package(
         .enableExperimentalFeature("StrictConcurrency")
       ]
     ),
-    .target(
-      name: "Clerk",
-      dependencies: [
-        "ClerkKit",
-        "ClerkKitUI"
-      ],
-      swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
-      ]
-    ),
     .testTarget(
       name: "PlaceholderTests",
       dependencies: [
-        "Clerk"
+        "ClerkKit"
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
