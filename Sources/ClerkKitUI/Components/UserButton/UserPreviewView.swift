@@ -7,7 +7,7 @@
 
 #if os(iOS)
 
-import Kingfisher
+import NukeUI
 import SwiftUI
 
 struct UserPreviewView: View {
@@ -17,13 +17,18 @@ struct UserPreviewView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            KFImage(URL(string: user.imageUrl))
-                .placeholder { Rectangle().fill(theme.colors.primary.gradient) }
-                .resizable()
-                .fade(duration: 0.2)
-                .scaledToFill()
-                .clipShape(.circle)
-                .frame(width: 48, height: 48)
+            LazyImage(url: URL(string: user.imageUrl)) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Rectangle().fill(theme.colors.primary.gradient)
+                }
+            }
+            .frame(width: 48, height: 48)
+            .clipShape(.circle)
+            .transition(.opacity.animation(.easeInOut(duration: 0.2)))
 
             VStack(alignment: .leading, spacing: 4) {
                 if let fullName = user.fullName {

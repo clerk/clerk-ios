@@ -16,7 +16,7 @@ struct QuickstartApp: App {
         WindowGroup {
             ContentView()
                 .task {
-                    clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+                    clerk.configure(publishableKey: "pk_test_YW11c2luZy1iYXJuYWNsZS0yNi5jbGVyay5hY2NvdW50cy5kZXYk")
                     try? await clerk.load()
                 }
         }
