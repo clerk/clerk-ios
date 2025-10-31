@@ -23,7 +23,7 @@ import SwiftUI
 ///
 /// ```swift
 /// struct HomeView: View {
-///   @Environment(\.clerk) private var clerk
+///   @Environment(Clerk.self) private var clerk
 ///   @State private var authIsPresented = false
 ///
 ///   var body: some View {
@@ -50,7 +50,7 @@ import SwiftUI
 ///
 /// ```swift
 /// struct ProfileView: View {
-///   @Environment(\.clerk) private var clerk
+///   @Environment(Clerk.self) private var clerk
 ///
 ///   var body: some View {
 ///     Group {
@@ -64,7 +64,7 @@ import SwiftUI
 /// }
 /// ```
 public struct AuthView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @State var authState: AuthState
@@ -128,7 +128,7 @@ public struct AuthView: View {
         .background(theme.colors.background)
         .presentationBackground(theme.colors.background)
         .tint(theme.colors.primary)
-        .environment(\.authState, authState)
+        .environment(authState)
         .task {
             _ = try? await Clerk.Environment.get()
         }
@@ -215,13 +215,13 @@ extension AuthView {
     Color.clear
         .sheet(isPresented: .constant(true)) {
             AuthView()
-                .environment(\.clerk, .mock)
+                .clerkPreviewMocks()
         }
 }
 
 #Preview("Not in sheet") {
     AuthView(isDismissable: false)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #endif

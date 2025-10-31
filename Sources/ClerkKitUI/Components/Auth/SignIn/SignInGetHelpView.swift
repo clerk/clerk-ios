@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInGetHelpView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     var body: some View {
         ScrollView {
@@ -57,7 +57,7 @@ extension SignInGetHelpView {
 
 #Preview {
     SignInGetHelpView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
