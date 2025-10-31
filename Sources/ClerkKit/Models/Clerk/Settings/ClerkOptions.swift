@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 6/30/25.
 //
 
+import FactoryKit
 import Foundation
 
 extension Clerk {
@@ -49,4 +50,13 @@ extension Clerk {
         }
     }
 
+}
+
+extension Container {
+    
+    var clerkOptions: Factory<Clerk.ClerkOptions> {
+        self { .init() }
+            .cached
+    }
+    
 }
