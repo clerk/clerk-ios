@@ -96,7 +96,7 @@ extension SignIn {
             case .oauth(let provider, let redirectUrl):
                 return .init(
                     strategy: provider.strategy,
-                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
                 )
 
             case .passkey:
@@ -105,7 +105,7 @@ extension SignIn {
             case .enterpriseSSO(let redirectUrl):
                 return .init(
                     strategy: strategy,
-                    redirectUrl: redirectUrl ?? Clerk.shared.settings.redirectConfig.redirectUrl
+                    redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
                 )
 
             case .resetPasswordEmailCode(let emailAddressId):
