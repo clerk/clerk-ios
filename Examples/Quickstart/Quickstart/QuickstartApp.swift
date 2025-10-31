@@ -5,11 +5,7 @@
 //  Created by Mike Pitre on 7/30/25.
 //
 
-#if DEBUG
-import Atlantis
-#endif
-
-import Clerk
+import ClerkKit
 import SwiftUI
 
 @main
