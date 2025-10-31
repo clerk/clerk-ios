@@ -131,6 +131,11 @@ final public class Clerk {
     /// Manages periodic polling of session tokens to keep them refreshed.
     private var sessionPollingManager: SessionPollingManager?
     
+    /// Clerk service for handling sign out and session management operations.
+    private var clerkService: any ClerkServiceProtocol {
+        Container.shared.clerkService()
+    }
+    
     /// Manages logging of session status changes.
     private var sessionStatusLogger = SessionStatusLogger()
 
@@ -172,6 +177,14 @@ extension Clerk {
         // Configure using ConfigurationManager
         try configurationManager.configure(publishableKey: publishableKey, options: options)
         
+        // Set up session polling manager
+        sessionPollingManager = SessionPollingManager(sessionProvider: self)
+        sessionPollingManager?.startPolling()
+        
+        // Set up lifecycle manager for foreground/background transitions
+        lifecycleManager = LifecycleManager(handler: self)
+        lifecycleManager?.startObserving()
+        
         // Set up cache manager and load cached data asynchronously
         let cacheManager = CacheManager(coordinator: self)
         self.cacheManager = cacheManager
@@ -184,12 +197,14 @@ extension Clerk {
 
     /// Configures the shared Clerk instance.
     /// 
-    /// This method must be called before accessing `Clerk.shared`. It can only be called once.
+    /// This method must be called before accessing `Clerk.shared`. If called multiple times, 
+    /// a warning will be logged and subsequent calls will be ignored.
     /// 
     /// This method:
     /// 1. Sets up configuration (API client, options, etc.)
-    /// 2. Starts loading cached client and environment data from keychain (asynchronously)
-    /// 3. Sets the shared instance
+    /// 2. Sets up lifecycle and session polling managers
+    /// 3. Starts loading cached client and environment data from keychain (asynchronously)
+    /// 4. Sets the shared instance
     /// 
     /// - Parameters:
     ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -199,7 +214,10 @@ extension Clerk {
         publishableKey: String,
         options: Clerk.ClerkOptions = .init()
     ) {
-        precondition(_shared == nil, "Clerk has already been configured. Configure can only be called once.")
+        if _shared != nil {
+            ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
+            return
+        }
         
         let clerk = Clerk()
         
@@ -217,9 +235,11 @@ extension Clerk {
     /// This allows reconfiguration of the Clerk instance during debugging.
     /// 
     /// This method:
-    /// 1. Sets up configuration (API client, options, etc.)
-    /// 2. Starts loading cached client and environment data from keychain (asynchronously)
-    /// 3. Sets the shared instance
+    /// 1. Cleans up existing managers from the previous instance
+    /// 2. Sets up configuration (API client, options, etc.)
+    /// 3. Sets up lifecycle and session polling managers
+    /// 4. Starts loading cached client and environment data from keychain (asynchronously)
+    /// 5. Sets the shared instance
     /// 
     /// - Parameters:
     ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -229,6 +249,9 @@ extension Clerk {
         publishableKey: String,
         options: Clerk.ClerkOptions = .init()
     ) {
+        // Clean up managers from existing instance before creating new one
+        _shared?.cleanupManagers()
+        
         let clerk = Clerk()
         
         do {
@@ -263,14 +286,6 @@ extension Clerk {
         try validatePublishableKey(publishableKey)
         
         do {
-            // Set up session polling manager
-            sessionPollingManager = SessionPollingManager(getSession: { [weak self] in self?.session })
-            sessionPollingManager?.startPolling()
-            
-            // Set up lifecycle manager for foreground/background transitions
-            lifecycleManager = LifecycleManager(handler: self)
-            lifecycleManager?.startObserving()
-
             // Fetch client and environment concurrently
             // Both of these are automatically applied to the shared instance:
             async let client = Client.get()  // via middleware
@@ -294,8 +309,6 @@ extension Clerk {
             // Refresh telemetry collector after successful load
             telemetry = TelemetryCollector()
         } catch {
-            cleanupManagers()
-            
             // Wrap errors in appropriate ClerkInitializationError
             if let error = error as? ClerkInitializationError {
                 throw error
@@ -324,7 +337,7 @@ extension Clerk {
     /// try await clerk.signOut()
     /// ```
     public func signOut(sessionId: String? = nil) async throws {
-        try await Container.shared.clerkService().signOut(sessionId: sessionId)
+        try await clerkService.signOut(sessionId: sessionId)
     }
 
     /// A method used to set the active session.
@@ -334,7 +347,7 @@ extension Clerk {
     /// - Parameter sessionId: The session ID to be set as active.
     /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
     public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-        try await Container.shared.clerkService().setActive(sessionId: sessionId, organizationId: organizationId)
+        try await clerkService.setActive(sessionId: sessionId, organizationId: organizationId)
     }
 }
 
@@ -357,6 +370,10 @@ extension Clerk: CacheCoordinator {
     var isEnvironmentEmpty: Bool {
         environment.isEmpty
     }
+}
+
+extension Clerk: SessionProviding {
+    // Conformance provided by existing `session` property
 }
 
 extension Clerk: LifecycleEventHandling {
@@ -407,7 +424,8 @@ extension Clerk {
         }
     }
     
-    /// Cleans up managers that were started during load() if initialization fails.
+    /// Cleans up managers that were started during configuration.
+    /// Used during reconfiguration to ensure old managers are properly cleaned up.
     private func cleanupManagers() {
         sessionPollingManager?.stopPolling()
         lifecycleManager?.stopObserving()
