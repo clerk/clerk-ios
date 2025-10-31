@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* Clerk */; };
-		8F9023522E3A648E00831B13 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* Clerk */; };
+		8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
+		8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,8 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8F692CC02E3D008D00E6E7ED /* Clerk in Frameworks */,
-				8F9023522E3A648E00831B13 /* Clerk in Frameworks */,
+				8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */,
+				8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,8 +72,8 @@
 			);
 			name = Quickstart;
 			packageProductDependencies = (
-				8F9023512E3A648E00831B13 /* Clerk */,
-				8F692CBF2E3D008D00E6E7ED /* Clerk */,
+				8F9023512E3A648E00831B13 /* ClerkKitUI */,
+				8F692CBF2E3D008D00E6E7ED /* ClerkKit */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -347,13 +347,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8F692CBF2E3D008D00E6E7ED /* Clerk */ = {
+		8F692CBF2E3D008D00E6E7ED /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Clerk;
+			productName = ClerkKit;
 		};
-		8F9023512E3A648E00831B13 /* Clerk */ = {
+		8F9023512E3A648E00831B13 /* ClerkKitUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Clerk;
+			productName = ClerkKitUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

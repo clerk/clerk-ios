@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 6/10/25.
 //
 
+import ClerkKit
 import SwiftUI
 
 #if os(iOS)

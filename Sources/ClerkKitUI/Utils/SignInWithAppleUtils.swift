@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import AuthenticationServices
+import ClerkKit
 import Foundation
 
 enum SignInWithAppleUtils {
