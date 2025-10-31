@@ -122,8 +122,4 @@ final class AuthState {
     }
 }
 
-extension EnvironmentValues {
-    @Entry var authState = AuthState()
-}
-
 #endif

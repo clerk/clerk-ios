@@ -10,10 +10,10 @@
 import SwiftUI
 
 struct UserProfileDeleteAccountConfirmationView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
 
     @State private var deleteAccount = ""
     @State private var error: Error?

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct SecuredByClerkView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {
@@ -29,7 +29,7 @@ struct SecuredByClerkView: View {
 }
 
 struct SecuredByClerkFooter: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     var body: some View {

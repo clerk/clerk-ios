@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct UserProfileVerifyView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
     @Environment(\.dismiss) private var environmentDismiss
 
     @State private var code = ""
