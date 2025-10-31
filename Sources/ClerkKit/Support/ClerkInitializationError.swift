@@ -8,7 +8,7 @@
 import Foundation
 
 /// Errors that can occur during Clerk initialization and configuration.
-public enum ClerkInitializationError: Error, LocalizedError {
+public enum ClerkInitializationError: Error, LocalizedError, ClerkError {
     
     /// The publishable key is missing or empty.
     case missingPublishableKey
@@ -37,6 +37,35 @@ public enum ClerkInitializationError: Error, LocalizedError {
     ///
     /// - Parameter underlyingError: The underlying error that caused the failure.
     case initializationFailed(underlyingError: Error)
+    
+    /// A human-readable error message describing what went wrong.
+    public var message: String? {
+        errorDescription
+    }
+    
+    /// The underlying error that caused this initialization error, if any.
+    public var underlyingError: Error? {
+        switch self {
+        case .clientLoadFailed(let error),
+             .environmentLoadFailed(let error),
+             .initializationFailed(let error):
+            return error
+        default:
+            return nil
+        }
+    }
+    
+    /// Additional context about the error, such as the invalid key or failure reason.
+    public var context: [String: String]? {
+        switch self {
+        case .invalidPublishableKeyFormat(let key):
+            return ["key": key]
+        case .apiClientInitializationFailed(let reason):
+            return ["reason": reason]
+        default:
+            return nil
+        }
+    }
     
     public var errorDescription: String? {
         switch self {

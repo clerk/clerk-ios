@@ -18,7 +18,7 @@ final public class Clerk {
     /// The shared Clerk instance.
     /// 
     /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will result in a precondition failure.
-    public nonisolated static var shared: Clerk {
+    public static var shared: Clerk {
         guard let instance = _shared else {
             preconditionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
         }
@@ -26,7 +26,7 @@ final public class Clerk {
     }
     
     /// Private shared instance that is set during configuration.
-    nonisolated(unsafe) internal static var _shared: Clerk?
+    internal static var _shared: Clerk?
 
     /// A getter to see if the Clerk object is ready for use or not.
     private(set) public var isLoaded: Bool = false
@@ -107,7 +107,8 @@ final public class Clerk {
     
     /// Task that coordinates cached data loading during initialization.
     /// This is set during `configure()` and awaited during `load()`.
-    nonisolated(unsafe) private var cachedDataLoadingTask: Task<Void, Never>?
+    /// Stored as nonisolated to allow cancellation from deinit.
+    nonisolated private var cachedDataLoadingTask: Task<Void, Never>?
     
     /// Frontend API URL.
     internal var frontendApiUrl: String {
@@ -430,6 +431,7 @@ extension Clerk {
 
 extension Container {
 
+    @MainActor
     var clerk: Factory<Clerk> {
         self { @MainActor in
             Clerk._shared ?? Clerk()
@@ -458,11 +460,3 @@ extension Clerk {
     }
 
 }
-
-#if canImport(SwiftUI)
-import SwiftUI
-
-extension EnvironmentValues {
-    @Entry public var clerk = Clerk.shared
-}
-#endif
