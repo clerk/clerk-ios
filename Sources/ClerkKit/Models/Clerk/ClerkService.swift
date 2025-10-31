@@ -31,6 +31,8 @@ extension Container {
 
 struct ClerkService: ClerkServiceProtocol {
 
+    private var apiClient: APIClient { Container.shared.apiClient() }
+
     @MainActor
     func signOut(sessionId: String?) async throws {
         if let sessionId {
@@ -39,14 +41,14 @@ struct ClerkService: ClerkServiceProtocol {
                 method: .post
             )
             
-            try await Container.shared.apiClient().send(request)
+            try await apiClient.send(request)
         } else {
             let request = Request<EmptyResponse>(
                 path: "/v1/client/sessions",
                 method: .delete
             )
             
-            try await Container.shared.apiClient().send(request)
+            try await apiClient.send(request)
         }
     }
 
@@ -58,7 +60,7 @@ struct ClerkService: ClerkServiceProtocol {
             body: ["active_organization_id": organizationId ?? ""]
         )
         
-        try await Container.shared.apiClient().send(request)
+        try await apiClient.send(request)
     }
 
 }
