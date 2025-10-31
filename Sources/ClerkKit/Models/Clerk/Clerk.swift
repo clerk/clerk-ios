@@ -21,7 +21,17 @@ import UIKit
 final public class Clerk {
 
     /// The shared Clerk instance.
-    public nonisolated static let shared = Container.shared.clerk()
+    /// 
+    /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will result in a precondition failure.
+    public nonisolated static var shared: Clerk {
+        guard let instance = _shared else {
+            preconditionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
+        }
+        return instance
+    }
+    
+    /// Private shared instance that is set during configuration.
+    nonisolated(unsafe) internal static var _shared: Clerk?
 
     /// A getter to see if the Clerk object is ready for use or not.
     private(set) public var isLoaded: Bool = false
@@ -123,21 +133,21 @@ final public class Clerk {
         }
     }
 
-    /// The configuration settings for this Clerk instance.
-    var settings: Settings = .init() {
+    /// The configuration options for this Clerk instance.
+    var options: Clerk.ClerkOptions = .init() {
         didSet {
-            Container.shared.clerkSettings.register { [settings] in
-                settings
+            Container.shared.clerkOptions.register { [options] in
+                options
             }
 
-            Container.shared.keychain.register { [keychainConfig = settings.keychainConfig] in
+            Container.shared.keychain.register { [keychainConfig = options.keychainConfig] in
                 SystemKeychain(
                     service: keychainConfig.service,
                     accessGroup: keychainConfig.accessGroup
                 ) as any KeychainStorage
             }
 
-            proxyUrl = settings.proxyUrl
+            proxyUrl = options.proxyUrl
         }
     }
 
@@ -161,15 +171,43 @@ final public class Clerk {
 
 extension Clerk {
 
-    /// Configures the shared clerk instance.
+    /// Configures the shared Clerk instance.
+    /// 
+    /// This method must be called before accessing `Clerk.shared`. It can only be called once.
+    /// For internal debugging purposes, use `_reconfigure()`.
+    /// 
     /// - Parameters:
     ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-    public func configure(
+    ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
+    @MainActor
+    public static func configure(
         publishableKey: String,
-        settings: Settings = .init()
+        options: Clerk.ClerkOptions = .init()
     ) {
-        self.publishableKey = publishableKey
-        self.settings = settings
+        precondition(_shared == nil, "Clerk has already been configured. Configure can only be called once.")
+        
+        let clerk = Clerk()
+        clerk.publishableKey = publishableKey
+        clerk.options = options
+        _shared = clerk
+    }
+    
+    /// Internal method for reconfiguring Clerk instance (for debugging purposes).
+    /// 
+    /// This allows reconfiguration of the Clerk instance during debugging.
+    /// 
+    /// - Parameters:
+    ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
+    ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
+    @MainActor
+    package static func _reconfigure(
+        publishableKey: String,
+        options: Clerk.ClerkOptions = .init()
+    ) {
+        let clerk = Clerk()
+        clerk.publishableKey = publishableKey
+        clerk.options = options
+        _shared = clerk
     }
 
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
@@ -399,8 +437,10 @@ extension Clerk {
 extension Container {
 
     var clerk: Factory<Clerk> {
-        self { Clerk() }
-            .singleton
+        self { 
+            Clerk._shared ?? Clerk()
+        }
+        .singleton
     }
 
     var keychain: Factory<any KeychainStorage> {
@@ -412,7 +452,7 @@ extension Container {
         .cached
     }
 
-    var clerkSettings: Factory<Clerk.Settings> {
+    var clerkOptions: Factory<Clerk.ClerkOptions> {
         self { .init() }
             .cached
     }
