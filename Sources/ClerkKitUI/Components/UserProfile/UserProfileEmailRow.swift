@@ -10,7 +10,7 @@ import SwiftUI
 #if os(iOS)
 
 struct UserProfileEmailRow: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?

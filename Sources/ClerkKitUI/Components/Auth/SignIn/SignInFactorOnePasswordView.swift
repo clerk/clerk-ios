@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @FocusState private var isFocused: Bool
     @State private var fieldError: Error?
@@ -169,12 +169,12 @@ extension SignInFactorOnePasswordView {
 
 #Preview {
     SignInFactorOnePasswordView(factor: .mockPassword)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("Localized") {
     SignInFactorOnePasswordView(factor: .mockPassword)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.locale, .init(identifier: "es"))
 }
 

@@ -11,9 +11,9 @@ import FactoryKit
 import SwiftUI
 
 struct UserProfileAddMfaView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
     @Environment(\.dismiss) private var dismiss
 
     @State private var error: Error?
@@ -155,7 +155,7 @@ extension UserProfileAddMfaView {
 //    }
 
     UserProfileAddMfaView()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

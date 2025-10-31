@@ -11,9 +11,9 @@ import FactoryKit
 import SwiftUI
 
 struct SignInFactorCodeView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @State private var code = ""
     @State private var error: Error?
@@ -405,7 +405,7 @@ extension SignInFactorCodeView {
 //    }
 
     SignInFactorCodeView(factor: .mockEmailCode)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("Phone Code") {
@@ -423,7 +423,7 @@ extension SignInFactorCodeView {
 //    }
 
     SignInFactorCodeView(factor: .mockPhoneCode)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("Client Trust - Email Code") {
@@ -477,7 +477,7 @@ extension SignInFactorCodeView {
 //    }
 
     SignInFactorCodeView(factor: .mockResetPasswordEmailCode)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("Reset Password Phone Code") {
@@ -495,7 +495,7 @@ extension SignInFactorCodeView {
 //    }
 
     SignInFactorCodeView(factor: .mockResetPasswordPhoneCode)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #Preview("TOTP Code") {
@@ -509,7 +509,7 @@ extension SignInFactorCodeView {
 //    }
 
     SignInFactorCodeView(factor: .mockTotp)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #endif

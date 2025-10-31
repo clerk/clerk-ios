@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignInFactorOnePasskeyView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @State private var passkeyInProgress = true
     @State private var animateSymbol = false
@@ -143,13 +143,13 @@ extension SignInFactorOnePasskeyView {
 
 #Preview {
     SignInFactorOnePasskeyView(factor: .mockPasskey)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
     SignInFactorOnePasskeyView(factor: .mockPasskey)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.locale, .init(identifier: "fr"))
 }
 

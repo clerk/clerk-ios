@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct SignUpCodeView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.authState) private var authState
+    @Environment(AuthState.self) private var authState
 
     @State private var code = ""
     @State private var remainingSeconds: Int = 30

@@ -10,9 +10,9 @@
 import SwiftUI
 
 struct UserButtonAccountSwitcher: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
-    @Environment(\.userProfileSharedState) private var sharedState
+    @Environment(UserProfileView.SharedState.self) private var sharedState
     @Environment(\.dismiss) private var dismiss
 
     @Binding private var contentHeight: CGFloat
@@ -170,7 +170,7 @@ struct UserButtonAccountSwitcher: View {
 
 #Preview {
     UserButtonAccountSwitcher()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 
