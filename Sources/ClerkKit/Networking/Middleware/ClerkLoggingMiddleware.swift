@@ -11,7 +11,7 @@ import Foundation
 /// Logs outgoing requests when debug mode is enabled.
 struct ClerkRequestLoggingMiddleware: NetworkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
-    let debugEnabled = await Task { @MainActor in Clerk.shared.settings.debugMode }.value
+    let debugEnabled = await Task { @MainActor in Clerk.shared.options.debugMode }.value
     guard debugEnabled else { return }
 
     let method = request.httpMethod ?? "GET"
@@ -61,7 +61,7 @@ struct ClerkResponseLoggingMiddleware: NetworkResponseMiddleware {
     }
 
     Task { @MainActor in
-      guard Clerk.shared.settings.debugMode else { return }
+      guard Clerk.shared.options.debugMode else { return }
       ClerkLogger.debug(message, debugMode: true)
     }
   }

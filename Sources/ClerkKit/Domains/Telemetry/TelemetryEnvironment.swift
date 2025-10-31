@@ -33,11 +33,11 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
     }
 
     func isTelemetryEnabled() async -> Bool {
-        await Clerk.shared.settings.telemetryEnabled
+        await Clerk.shared.options.telemetryEnabled
     }
 
     func isDebugModeEnabled() async -> Bool {
-        await Clerk.shared.settings.debugMode
+        await Clerk.shared.options.debugMode
     }
 
     func publishableKey() async -> String? {

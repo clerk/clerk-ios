@@ -1,5 +1,5 @@
 //
-//  ClerkSettings.swift
+//  ClerkOptions.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 6/30/25.
@@ -10,7 +10,7 @@ import Foundation
 extension Clerk {
 
     /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
-    public struct Settings: Sendable {
+    public struct ClerkOptions: Sendable {
 
         /// Enable additional debugging signals and logging. Defaults to false.
         public let debugMode: Bool
@@ -27,7 +27,7 @@ extension Clerk {
         /// Configuration for OAuth redirect URLs and callback handling.
         public let redirectConfig: RedirectConfig
 
-        /// Initializes a ``Settings`` instance.
+        /// Initializes a ``ClerkOptions`` instance.
         /// - Parameters:
         ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
         ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
