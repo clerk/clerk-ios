@@ -30,9 +30,6 @@ final public class Clerk {
 
     /// A getter to see if the Clerk object is ready for use or not.
     private(set) public var isLoaded: Bool = false
-    
-    /// The current initialization state of the Clerk instance.
-    private var initializationState: ClerkInitializationState = .uninitialized
 
     /// A getter to see if a Clerk instance is running in production or development mode.
     public var instanceType: InstanceEnvironmentType {
@@ -140,27 +137,43 @@ final public class Clerk {
     /// Cancels all tracked tasks and cleans up resources.
     ///
     /// This ensures proper cleanup when the Clerk instance is deallocated.
+    /// Managers handle their own cleanup in their deinit methods.
     deinit {
         // Cancel cached data loading task if still running
         cachedDataLoadingTask?.cancel()
         
-        // Stop lifecycle manager (this will cancel its tasks)
-        // Note: We need to call this on MainActor
-        Task { @MainActor in
-            lifecycleManager?.stopObserving()
-            sessionPollingManager?.stopPolling()
-            taskCoordinator?.cancelAll()
-        }
+        // Managers will clean up themselves when deallocated
+        // taskCoordinator, lifecycleManager, and sessionPollingManager
+        // all have deinit methods that handle cleanup
     }
 
 }
 
 extension Clerk {
     
+    /// Validates the publishable key format and throws an error if invalid.
+    ///
+    /// - Parameter key: The publishable key to validate.
+    /// - Throws: `ClerkInitializationError` if the key is empty or has an invalid format.
+    private func validatePublishableKey(_ key: String) throws {
+        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedKey.isEmpty else {
+            throw ClerkInitializationError.missingPublishableKey
+        }
+        
+        guard trimmedKey.starts(with: "pk_test_") || trimmedKey.starts(with: "pk_live_") else {
+            throw ClerkInitializationError.invalidPublishableKeyFormat(key: trimmedKey)
+        }
+    }
+    
     /// Internal helper method that performs the actual configuration work.
     /// This is shared between `configure()` and `_reconfigure()`.
     @MainActor
     private func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
+        // Validate publishable key early for fail-fast behavior
+        try validatePublishableKey(publishableKey)
+        
         // Initialize task coordinator
         taskCoordinator = TaskCoordinator()
         
@@ -168,22 +181,13 @@ extension Clerk {
         try configurationManager.configure(publishableKey: publishableKey, options: options)
         
         // Set up cache manager and load cached data asynchronously
-        initializationState = .loadingCachedData
         let cacheManager = CacheManager(coordinator: self)
         self.cacheManager = cacheManager
         
         // Load cached data asynchronously (don't block on this)
         cachedDataLoadingTask = Task { @MainActor in
             await cacheManager.loadCachedData()
-            // Only update state if we're still in loadingCachedData state
-            // (don't overwrite if configure was called again)
-            if initializationState == .loadingCachedData {
-                initializationState = .cachedDataLoaded
-            }
         }
-        
-        // Mark as configured immediately (cache loading happens in background)
-        initializationState = .configured
     }
 
     /// Configures the shared Clerk instance.
@@ -256,8 +260,8 @@ extension Clerk {
         // Ensure cached data loading has completed
         await cachedDataLoadingTask?.value
         
-        // Ensure we're in the configured state
-        guard initializationState == .configured || initializationState == .cachedDataLoaded else {
+        // Ensure Clerk has been configured
+        guard cachedDataLoadingTask != nil else {
             throw ClerkInitializationError.initializationFailed(
                 underlyingError: NSError(
                     domain: "ClerkError",
@@ -267,19 +271,8 @@ extension Clerk {
             )
         }
         
-        let trimmedKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Validate publishable key
-        guard !trimmedKey.isEmpty else {
-            throw ClerkInitializationError.missingPublishableKey
-        }
-        
-        // Validate publishable key format
-        guard trimmedKey.starts(with: "pk_test_") || trimmedKey.starts(with: "pk_live_") else {
-            throw ClerkInitializationError.invalidPublishableKeyFormat(key: trimmedKey)
-        }
-
-        initializationState = .loadingFreshData
+        // Validate publishable key (should already be validated in configure, but double-check)
+        try validatePublishableKey(publishableKey)
         
         do {
             // Set up session polling manager
@@ -290,38 +283,40 @@ extension Clerk {
             lifecycleManager = LifecycleManager(handler: self)
             lifecycleManager?.startObserving()
 
+            // Fetch client and environment concurrently
             // Both of these are automatically applied to the shared instance:
             async let client = Client.get()  // via middleware
             async let environment = Environment.get()  // via the function itself
-
-            do {
-                _ = try await client
-            } catch {
-                throw ClerkInitializationError.clientLoadFailed(underlyingError: error)
-            }
             
+            // Wait for both to complete - if either fails, we exit early
+            // since both are required for the SDK to work properly
             do {
                 let env = try await environment
+                _ = try await client
                 attestDeviceIfNeeded(environment: env)
             } catch {
-                throw ClerkInitializationError.environmentLoadFailed(underlyingError: error)
+                // If client fails, environment will be cancelled automatically
+                // If environment fails, we catch it here
+                // Wrap in appropriate error type
+                throw ClerkInitializationError.initializationFailed(underlyingError: error)
             }
 
             isLoaded = true
-            initializationState = .loaded
 
             // Refresh telemetry collector after successful load
             telemetry = TelemetryCollector()
-        } catch let error as ClerkInitializationError {
-            // Reset state on error
-            initializationState = .configured
-            // Re-throw initialization errors as-is
-            throw error
         } catch {
-            // Reset state on error
-            initializationState = .configured
-            // Wrap unexpected errors in a generic initialization error
-            throw ClerkInitializationError.initializationFailed(underlyingError: error)
+            cleanupManagers()
+            
+            // Wrap errors in appropriate ClerkInitializationError
+            if let error = error as? ClerkInitializationError {
+                throw error
+            } else {
+                // Try to determine which operation failed by checking error context
+                // Since we're fetching concurrently, we can't easily tell which one failed
+                // So we'll use a generic initialization error
+                throw ClerkInitializationError.initializationFailed(underlyingError: error)
+            }
         }
     }
 
@@ -383,12 +378,20 @@ extension Clerk: LifecycleEventHandling {
         sessionPollingManager?.startPolling()
 
         // Refresh client and environment concurrently
-        taskCoordinator?.task(priority: .userInitiated) {
-            try? await Client.get()
+        taskCoordinator?.task {
+            do {
+                try await Client.get()
+            } catch {
+                ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
+            }
         }
         
-        taskCoordinator?.task(priority: .userInitiated) {
-            try? await Environment.get()
+        taskCoordinator?.task {
+            do {
+                _ = try await Environment.get()
+            } catch {
+                ClerkLogger.logError(error, message: "Failed to refresh environment on foreground")
+            }
         }
     }
     
@@ -414,6 +417,14 @@ extension Clerk {
                 }
             }
         }
+    }
+    
+    /// Cleans up managers that were started during load() if initialization fails.
+    private func cleanupManagers() {
+        sessionPollingManager?.stopPolling()
+        lifecycleManager?.stopObserving()
+        sessionPollingManager = nil
+        lifecycleManager = nil
     }
 }
 
