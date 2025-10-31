@@ -65,6 +65,8 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
 
 extension OrganizationMembership {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Deletes the membership from the organization it belongs to.
     ///
     /// - Returns: ``OrganizationMembership``
@@ -75,7 +77,7 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to delete membership: missing userId")
         }
 
-        return try await Container.shared.organizationService().destroyOrganizationMembership(organization.id, userId)
+        return try await organizationService.destroyOrganizationMembership(organization.id, userId)
     }
 
     /// Updates the member's role in the organization.
@@ -89,7 +91,7 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
 
-        return try await Container.shared.organizationService().updateOrganizationMember(organization.id, userId, role)
+        return try await organizationService.updateOrganizationMember(organization.id, userId, role)
     }
 
 }
