@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import ClerkKit
 
 struct SignInFactorOnePasswordView: View {
     @Environment(Clerk.self) private var clerk

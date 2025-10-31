@@ -7,6 +7,7 @@
 
 #if os(iOS)
 
+import ClerkKit
 import FactoryKit
 import PhoneNumberKit
 import SwiftUI

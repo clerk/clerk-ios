@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 5/9/25.
 //
 
+import ClerkKit
 import Foundation
 
 extension ExternalAccount {

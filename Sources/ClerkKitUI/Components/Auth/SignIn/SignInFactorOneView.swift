@@ -8,6 +8,7 @@
 #if os(iOS)
 
 import SwiftUI
+import ClerkKit
 
 struct SignInFactorOneView: View {
     @Environment(\.clerkTheme) private var theme
