@@ -1,3 +1,4 @@
+import FactoryKit
 import Foundation
 import Security
 
@@ -112,5 +113,16 @@ struct SystemKeychain: KeychainStorage {
     }
 
     return query
+  }
+}
+
+extension Container {
+  var keychain: Factory<any KeychainStorage> {
+    self {
+      SystemKeychain(
+        service: Bundle.main.bundleIdentifier ?? ""
+      ) as any KeychainStorage
+    }
+    .cached
   }
 }
