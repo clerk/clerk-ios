@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileDeviceRow: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     @State private var isLoading = false
@@ -108,7 +108,7 @@ extension UserProfileDeviceRow {
 
 #Preview {
     UserProfileDeviceRow(session: .mock)
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
 }
 
 #endif

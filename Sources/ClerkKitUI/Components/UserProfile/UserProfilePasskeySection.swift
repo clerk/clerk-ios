@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfilePasskeySection: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
 
     @State private var error: Error?
@@ -61,7 +61,7 @@ extension UserProfilePasskeySection {
 
 #Preview {
     UserProfilePasskeySection()
-        .environment(\.clerk, .mock)
+        .clerkPreviewMocks()
         .environment(\.clerkTheme, .clerk)
 }
 

@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct UserProfileAddPhoneView: View {
-    @Environment(\.clerk) private var clerk
+    @Environment(Clerk.self) private var clerk
     @Environment(\.clerkTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
