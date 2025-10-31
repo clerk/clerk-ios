@@ -81,6 +81,8 @@ public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable
 
 extension Organization {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Updates an organization's attributes. Returns an Organization object.
     ///
     /// - Parameters:
@@ -91,7 +93,7 @@ extension Organization {
         name: String,
         slug: String? = nil
     ) async throws -> Organization {
-        try await Container.shared.organizationService().updateOrganization(id, name, slug)
+        try await organizationService.updateOrganization(id, name, slug)
     }
 
     /// Deletes the organization. Only administrators can delete an organization.
@@ -99,7 +101,7 @@ extension Organization {
     /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await Container.shared.organizationService().destroyOrganization(id)
+        try await organizationService.destroyOrganization(id)
     }
 
     /// Sets or replaces an organization's logo.
@@ -108,7 +110,7 @@ extension Organization {
     /// - Returns: ``Organization``
     @discardableResult @MainActor
     public func setLogo(imageData: Data) async throws -> Organization {
-        try await Container.shared.organizationService().setOrganizationLogo(id, imageData)
+        try await organizationService.setOrganizationLogo(id, imageData)
     }
 
     /// Returns a ClerkPaginatedResponse of RoleResource objects.
@@ -123,7 +125,7 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<RoleResource> {
-        try await Container.shared.organizationService().getOrganizationRoles(id, initialPage, pageSize)
+        try await organizationService.getOrganizationRoles(id, initialPage, pageSize)
     }
 
     /// Retrieves the list of memberships for the currently active organization.
@@ -143,7 +145,7 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        try await Container.shared.organizationService().getOrganizationMemberships(id, query, role, initialPage, pageSize)
+        try await organizationService.getOrganizationMemberships(id, query, role, initialPage, pageSize)
     }
 
     /// Adds a user as a member to an organization.
@@ -164,7 +166,7 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        try await Container.shared.organizationService().addOrganizationMember(id, userId, role)
+        try await organizationService.addOrganizationMember(id, userId, role)
     }
 
     /// Updates a member of an organization.
@@ -182,7 +184,7 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        try await Container.shared.organizationService().updateOrganizationMember(id, userId, role)
+        try await organizationService.updateOrganizationMember(id, userId, role)
     }
 
     /// Removes a member from the organization based on the user ID.
@@ -194,7 +196,7 @@ extension Organization {
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
     public func removeMember(userId: String) async throws -> OrganizationMembership {
-        try await Container.shared.organizationService().removeOrganizationMember(id, userId)
+        try await organizationService.removeOrganizationMember(id, userId)
     }
 
     /// Retrieves the list of invitations for the currently active organization.
@@ -213,7 +215,7 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-        try await Container.shared.organizationService().getOrganizationInvitations(id, initialPage, pageSize, status)
+        try await organizationService.getOrganizationInvitations(id, initialPage, pageSize, status)
     }
 
     /// Creates and sends an invitation to the target email address to become a member with the specified role.
@@ -229,7 +231,7 @@ extension Organization {
         emailAddress: String,
         role: String
     ) async throws -> OrganizationInvitation {
-        try await Container.shared.organizationService().inviteOrganizationMember(id, emailAddress, role)
+        try await organizationService.inviteOrganizationMember(id, emailAddress, role)
     }
 
     //    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
@@ -257,7 +259,7 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @discardableResult @MainActor
     public func createDomain(domainName: String) async throws -> OrganizationDomain {
-        try await Container.shared.organizationService().createOrganizationDomain(id, domainName)
+        try await organizationService.createOrganizationDomain(id, domainName)
     }
 
     /// Retrieves the list of domains for the currently active organization.
@@ -276,7 +278,7 @@ extension Organization {
         pageSize: Int = 20,
         enrollmentMode: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-        try await Container.shared.organizationService().getOrganizationDomains(id, initialPage, pageSize, enrollmentMode)
+        try await organizationService.getOrganizationDomains(id, initialPage, pageSize, enrollmentMode)
     }
 
     /// Retrieves a domain for an organization based on the given domain ID.
@@ -286,7 +288,7 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @MainActor
     public func getDomain(domainId: String) async throws -> OrganizationDomain {
-        try await Container.shared.organizationService().getOrganizationDomain(id, domainId)
+        try await organizationService.getOrganizationDomain(id, domainId)
     }
 
     /// Retrieves the list of membership requests for the currently active organization.
@@ -303,7 +305,7 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-        try await Container.shared.organizationService().getOrganizationMembershipRequests(id, initialPage, pageSize, status)
+        try await organizationService.getOrganizationMembershipRequests(id, initialPage, pageSize, status)
     }
 }
 
