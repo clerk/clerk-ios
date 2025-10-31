@@ -48,16 +48,18 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
 
 extension OrganizationMembershipRequest {
 
+    private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+
     /// Accepts the request of a user to join the organization the request refers to.
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationMembershipRequest {
-        try await Container.shared.organizationService().acceptOrganizationMembershipRequest(organizationId, id)
+        try await organizationService.acceptOrganizationMembershipRequest(organizationId, id)
     }
 
     /// Rejects the request of a user to join the organization the request refers to.
     @discardableResult @MainActor
     public func reject() async throws -> OrganizationMembershipRequest {
-        try await Container.shared.organizationService().rejectOrganizationMembershipRequest(organizationId, id)
+        try await organizationService.rejectOrganizationMembershipRequest(organizationId, id)
     }
 }
 
