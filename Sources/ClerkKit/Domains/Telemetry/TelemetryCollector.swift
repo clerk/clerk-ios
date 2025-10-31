@@ -5,6 +5,7 @@
 //  Created by Mike Pitre on 8/8/25.
 //
 
+import FactoryKit
 import Foundation
 
 /// Protocol for making network requests - allows for easy testing
@@ -16,10 +17,32 @@ extension URLSession: NetworkRequester {
     // URLSession already conforms to this signature
 }
 
+/// Protocol defining the telemetry collector interface for dependency injection.
+package protocol TelemetryCollectorProtocol: Sendable {
+    /// Record an event to be sampled, throttled, buffered and sent.
+    ///
+    /// - Parameter raw: The raw event description to record.
+    func record(_ raw: TelemetryEventRaw) async
+    
+    /// Flush buffered events to the telemetry endpoint.
+    func flush() async
+}
+
+/// A no-op implementation of TelemetryCollectorProtocol used as a default.
+package actor NoOpTelemetryCollector: TelemetryCollectorProtocol {
+    package func record(_ raw: TelemetryEventRaw) async {
+        // No-op: do nothing
+    }
+    
+    package func flush() async {
+        // No-op: do nothing
+    }
+}
+
 /// A development-only telemetry collector for the Clerk iOS SDK.
 ///
 /// The collector is automatically disabled in production instances.
-package actor TelemetryCollector {
+package actor TelemetryCollector: TelemetryCollectorProtocol {
     // MARK: Types
 
     private struct RecordResult {
@@ -54,6 +77,7 @@ package actor TelemetryCollector {
     private var flushTask: Task<Void, Never>? = nil
     private var flushTimer: Task<Void, Never>? = nil
     private let environment: TelemetryEnvironmentProviding
+    private var isPeriodicFlushingStarted = false
 
     // MARK: Init
 
@@ -82,9 +106,6 @@ package actor TelemetryCollector {
             sdk: environment.sdkName,
             sdkVersion: environment.sdkVersion
         )
-        
-        // Start periodic flushing after initialization
-        Task { await self.startPeriodicFlushing() }
     }
     
     deinit {
@@ -96,6 +117,12 @@ package actor TelemetryCollector {
     ///
     /// - Parameter raw: The raw event description to record.
     package func record(_ raw: TelemetryEventRaw) async {
+        // Start periodic flushing lazily on first event
+        if !isPeriodicFlushingStarted {
+            isPeriodicFlushingStarted = true
+            startPeriodicFlushing()
+        }
+        
         let prepared = await preparePayload(event: raw.event, payload: raw.payload)
         let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
         
@@ -186,7 +213,7 @@ package actor TelemetryCollector {
     }
 
     /// Flush buffered events to the telemetry endpoint.
-    func flush() async {
+    package func flush() async {
         let eventsToSend = buffer
         buffer.removeAll(keepingCapacity: true)
 
@@ -246,4 +273,12 @@ package actor TelemetryCollector {
     func debugResetBuffer() async {
         buffer.removeAll(keepingCapacity: true)
     }
+}
+
+extension Container {
+    
+    var telemetryCollector: Factory<any TelemetryCollectorProtocol> {
+        self { NoOpTelemetryCollector() }.cached
+    }
+    
 }

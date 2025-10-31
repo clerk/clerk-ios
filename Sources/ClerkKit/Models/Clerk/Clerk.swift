@@ -33,10 +33,7 @@ final public class Clerk {
 
     /// A getter to see if a Clerk instance is running in production or development mode.
     public var instanceType: InstanceEnvironmentType {
-        if publishableKey.starts(with: "pk_live_") {
-            return .production
-        }
-        return .development
+        configurationManager.instanceType
     }
 
     /// The Client object for the current device.
@@ -52,9 +49,12 @@ final public class Clerk {
     }
     /// The telemetry collector for development diagnostics.
     ///
-    /// Initialized with a default collector and refreshed during `load()`.
+    /// Uses FactoryKit with a no-op default that is replaced with a real collector
+    /// during configuration if telemetry is enabled.
     /// Used to record non-blocking telemetry events when running in development
-    package private(set) var telemetry: TelemetryCollector = TelemetryCollector()
+    package var telemetry: any TelemetryCollectorProtocol {
+        Container.shared.telemetryCollector()
+    }
 
     /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
     public private(set) var proxyUrl: URL? {
@@ -148,29 +148,10 @@ final public class Clerk {
 
 extension Clerk {
     
-    /// Validates the publishable key format and throws an error if invalid.
-    ///
-    /// - Parameter key: The publishable key to validate.
-    /// - Throws: `ClerkInitializationError` if the key is empty or has an invalid format.
-    private func validatePublishableKey(_ key: String) throws {
-        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard !trimmedKey.isEmpty else {
-            throw ClerkInitializationError.missingPublishableKey
-        }
-        
-        guard trimmedKey.starts(with: "pk_test_") || trimmedKey.starts(with: "pk_live_") else {
-            throw ClerkInitializationError.invalidPublishableKeyFormat(key: trimmedKey)
-        }
-    }
-    
     /// Internal helper method that performs the actual configuration work.
     /// This is shared between `configure()` and `_reconfigure()`.
     @MainActor
     private func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
-        // Validate publishable key early for fail-fast behavior
-        try validatePublishableKey(publishableKey)
-        
         // Initialize task coordinator
         taskCoordinator = TaskCoordinator()
         
@@ -265,12 +246,6 @@ extension Clerk {
 
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
     /// It is absolutely necessary to call this method before using the Clerk object in your code.
-    ///
-    /// - Throws: `ClerkInitializationError` if initialization fails, or errors from network operations.
-    ///
-    /// - Note: This method validates the publishable key format and throws an error if it's invalid.
-    ///   Keychain errors are logged but do not prevent initialization from proceeding.
-    ///   This method waits for cached data loading to complete before loading fresh data.
     public func load() async throws {
         // Ensure cached data loading has completed
         await cachedDataLoadingTask?.value
@@ -281,9 +256,6 @@ extension Clerk {
                 underlyingError: ClerkClientError(message: "Clerk must be configured before calling load(). Call Clerk.configure() first.")
             )
         }
-        
-        // Validate publishable key (should already be validated in configure, but double-check)
-        try validatePublishableKey(publishableKey)
         
         do {
             // Fetch client and environment concurrently
@@ -305,9 +277,6 @@ extension Clerk {
             }
 
             isLoaded = true
-
-            // Refresh telemetry collector after successful load
-            telemetry = TelemetryCollector()
         } catch {
             // Wrap errors in appropriate ClerkInitializationError
             if let error = error as? ClerkInitializationError {
