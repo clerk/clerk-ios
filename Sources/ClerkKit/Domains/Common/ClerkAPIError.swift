@@ -8,7 +8,7 @@
 import Foundation
 
 /// An object that represents an error returned by the Clerk API.
-public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable {
+public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable, ClerkError {
 
     /// A string code that represents the error, such as `username_exists_code`.
     public let code: String
@@ -24,6 +24,18 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
 
     /// A unique identifier for tracing the specific request, useful for debugging.
     public var clerkTraceId: String?
+    
+    /// Additional context about the error, including trace ID and parameter name if available.
+    public var context: [String: String]? {
+        var ctx: [String: String] = [:]
+        if let clerkTraceId {
+            ctx["traceId"] = clerkTraceId
+        }
+        if let paramName = meta?["param_name"]?.stringValue {
+            ctx["paramName"] = paramName
+        }
+        return ctx.isEmpty ? nil : ctx
+    }
 }
 
 extension ClerkAPIError {
