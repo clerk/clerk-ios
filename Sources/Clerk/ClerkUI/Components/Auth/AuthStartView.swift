@@ -163,9 +163,7 @@ struct AuthStartView: View {
                                     .id(fieldError.localizedDescription)
                             }
                         }
-                    }
 
-                    if showIdentifierField {
                         AsyncButton {
                             await startAuth()
                         } label: { isRunning in
