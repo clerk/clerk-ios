@@ -165,23 +165,25 @@ struct AuthStartView: View {
                         }
                     }
 
-                    AsyncButton {
-                        await startAuth()
-                    } label: { isRunning in
-                        HStack(spacing: 4) {
-                            Text("Continue", bundle: .module)
-                            Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.primaryForeground)
-                                .opacity(0.6)
+                    if showIdentifierField {
+                        AsyncButton {
+                            await startAuth()
+                        } label: { isRunning in
+                            HStack(spacing: 4) {
+                                Text("Continue", bundle: .module)
+                                Image("icon-triangle-right", bundle: .module)
+                                    .foregroundStyle(theme.colors.primaryForeground)
+                                    .opacity(0.6)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .overlayProgressView(isActive: isRunning) {
+                                SpinnerView(color: theme.colors.primaryForeground)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.primaryForeground)
-                        }
+                        .buttonStyle(.primary())
+                        .disabled(continueIsDisabled)
+                        .simultaneousGesture(TapGesture())
                     }
-                    .buttonStyle(.primary())
-                    .disabled(continueIsDisabled)
-                    .simultaneousGesture(TapGesture())
 
                     if showIdentifierSwitcher {
                         Button {
