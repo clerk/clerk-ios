@@ -152,7 +152,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil, locale: String? = nil) async throws -> SignUp {
-        try await Self.signUpService.create(strategy, legalAccepted: legalAccepted, locale: locale)
+        try await Self.signUpService.create(strategy: strategy, legalAccepted: legalAccepted, locale: locale)
     }
 
     /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
@@ -174,7 +174,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-        try await Self.signUpService.createWithParams(params)
+        try await Self.signUpService.createWithParams(params: params)
     }
 
     /// This method is used to update the current sign-up.
@@ -191,7 +191,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the changes.
     @discardableResult @MainActor
     public func update(params: UpdateParams) async throws -> SignUp {
-        try await signUpService.update(id, params: params)
+        try await signUpService.update(signUpId: id, params: params)
     }
 
     /// The `prepareVerification` method is used to initiate the verification process for a field that requires it.
@@ -208,7 +208,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification initiation.
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
-        try await signUpService.prepareVerification(id, strategy: strategy)
+        try await signUpService.prepareVerification(signUpId: id, strategy: strategy)
     }
 
     /// Attempts to complete the in-flight verification process that corresponds to the given strategy. In order to use this method, you should first initiate a verification process by calling SignUp.prepareVerification.
@@ -223,7 +223,7 @@ extension SignUp {
     /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
-        try await signUpService.attemptVerification(id, strategy: strategy)
+        try await signUpService.attemptVerification(signUpId: id, strategy: strategy)
     }
 
     #if !os(tvOS) && !os(watchOS)
@@ -252,7 +252,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-        try await Self.signUpService.authenticateWithRedirectStatic(strategy, prefersEphemeralWebBrowserSession)
+        try await Self.signUpService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
     }
     #endif
 
@@ -281,7 +281,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-        try await signUpService.authenticateWithRedirect(self, prefersEphemeralWebBrowserSession)
+        try await signUpService.authenticateWithRedirect(signUp: self, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
     }
     #endif
 
@@ -307,7 +307,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-        try await Self.signUpService.authenticateWithIdTokenStatic(provider, idToken)
+        try await Self.signUpService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
     }
 
     /// Authenticates the user using an ID Token and a specified provider.
@@ -326,7 +326,7 @@ extension SignUp {
     /// ```
     @discardableResult @MainActor
     public func authenticateWithIdToken() async throws -> TransferFlowResult {
-        try await signUpService.authenticateWithIdToken(self)
+        try await signUpService.authenticateWithIdToken(signUp: self)
     }
 }
 
@@ -364,7 +364,7 @@ extension SignUp {
     /// Returns the current sign up.
     @discardableResult @MainActor
     func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-        try await signUpService.get(id, rotatingTokenNonce: rotatingTokenNonce)
+        try await signUpService.get(signUpId: id, rotatingTokenNonce: rotatingTokenNonce)
     }
 
 }

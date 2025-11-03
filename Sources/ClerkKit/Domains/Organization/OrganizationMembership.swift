@@ -77,7 +77,7 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to delete membership: missing userId")
         }
 
-        return try await organizationService.destroyOrganizationMembership(organization.id, userId)
+        return try await organizationService.destroyOrganizationMembership(organizationId: organization.id, userId: userId)
     }
 
     /// Updates the member's role in the organization.
@@ -91,7 +91,7 @@ extension OrganizationMembership {
             throw ClerkClientError(message: "Unable to update membership: missing userId")
         }
 
-        return try await organizationService.updateOrganizationMember(organization.id, userId, role)
+        return try await organizationService.updateOrganizationMember(organizationId: organization.id, userId: userId, role: role)
     }
 
 }

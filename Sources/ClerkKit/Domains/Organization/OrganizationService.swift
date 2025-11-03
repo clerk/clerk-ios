@@ -17,29 +17,29 @@ extension Container {
 }
 
 protocol OrganizationServiceProtocol: Sendable {
-    @MainActor func updateOrganization(_ organizationId: String, _ name: String, _ slug: String?) async throws -> Organization
-    @MainActor func destroyOrganization(_ organizationId: String) async throws -> DeletedObject
-    @MainActor func setOrganizationLogo(_ organizationId: String, _ imageData: Data) async throws -> Organization
-    @MainActor func getOrganizationRoles(_ organizationId: String, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource>
-    @MainActor func getOrganizationMemberships(_ organizationId: String, _ query: String?, _ role: [String]?, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-    @MainActor func addOrganizationMember(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership
-    @MainActor func updateOrganizationMember(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership
-    @MainActor func removeOrganizationMember(_ organizationId: String, _ userId: String) async throws -> OrganizationMembership
-    @MainActor func getOrganizationInvitations(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
-    @MainActor func inviteOrganizationMember(_ organizationId: String, _ emailAddress: String, _ role: String) async throws -> OrganizationInvitation
-    @MainActor func createOrganizationDomain(_ organizationId: String, _ domainName: String) async throws -> OrganizationDomain
-    @MainActor func getOrganizationDomains(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain>
-    @MainActor func getOrganizationDomain(_ organizationId: String, _ domainId: String) async throws -> OrganizationDomain
-    @MainActor func getOrganizationMembershipRequests(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>
-    @MainActor func deleteOrganizationDomain(_ organizationId: String, _ domainId: String) async throws -> DeletedObject
-    @MainActor func prepareOrganizationDomainAffiliationVerification(_ organizationId: String, _ domainId: String, _ affiliationEmailAddress: String) async throws -> OrganizationDomain
-    @MainActor func attemptOrganizationDomainAffiliationVerification(_ organizationId: String, _ domainId: String, _ code: String) async throws -> OrganizationDomain
-    @MainActor func revokeOrganizationInvitation(_ organizationId: String, _ invitationId: String) async throws -> OrganizationInvitation
-    @MainActor func destroyOrganizationMembership(_ organizationId: String, _ userId: String) async throws -> OrganizationMembership
-    @MainActor func acceptUserOrganizationInvitation(_ invitationId: String) async throws -> UserOrganizationInvitation
-    @MainActor func acceptOrganizationSuggestion(_ suggestionId: String) async throws -> OrganizationSuggestion
-    @MainActor func acceptOrganizationMembershipRequest(_ organizationId: String, _ requestId: String) async throws -> OrganizationMembershipRequest
-    @MainActor func rejectOrganizationMembershipRequest(_ organizationId: String, _ requestId: String) async throws -> OrganizationMembershipRequest
+    @MainActor func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization
+    @MainActor func destroyOrganization(organizationId: String) async throws -> DeletedObject
+    @MainActor func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization
+    @MainActor func getOrganizationRoles(organizationId: String, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource>
+    @MainActor func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+    @MainActor func addOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership
+    @MainActor func updateOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership
+    @MainActor func removeOrganizationMember(organizationId: String, userId: String) async throws -> OrganizationMembership
+    @MainActor func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
+    @MainActor func inviteOrganizationMember(organizationId: String, emailAddress: String, role: String) async throws -> OrganizationInvitation
+    @MainActor func createOrganizationDomain(organizationId: String, domainName: String) async throws -> OrganizationDomain
+    @MainActor func getOrganizationDomains(organizationId: String, initialPage: Int, pageSize: Int, enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain>
+    @MainActor func getOrganizationDomain(organizationId: String, domainId: String) async throws -> OrganizationDomain
+    @MainActor func getOrganizationMembershipRequests(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>
+    @MainActor func deleteOrganizationDomain(organizationId: String, domainId: String) async throws -> DeletedObject
+    @MainActor func prepareOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, affiliationEmailAddress: String) async throws -> OrganizationDomain
+    @MainActor func attemptOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, code: String) async throws -> OrganizationDomain
+    @MainActor func revokeOrganizationInvitation(organizationId: String, invitationId: String) async throws -> OrganizationInvitation
+    @MainActor func destroyOrganizationMembership(organizationId: String, userId: String) async throws -> OrganizationMembership
+    @MainActor func acceptUserOrganizationInvitation(invitationId: String) async throws -> UserOrganizationInvitation
+    @MainActor func acceptOrganizationSuggestion(suggestionId: String) async throws -> OrganizationSuggestion
+    @MainActor func acceptOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest
+    @MainActor func rejectOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest
 }
 
 final class OrganizationService: OrganizationServiceProtocol {
@@ -47,7 +47,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func updateOrganization(_ organizationId: String, _ name: String, _ slug: String?) async throws -> Organization {
+    func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization {
         let request = Request<ClientResponse<Organization>>(
             path: "/v1/organizations/\(organizationId)",
             method: .patch,
@@ -62,7 +62,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func destroyOrganization(_ organizationId: String) async throws -> DeletedObject {
+    func destroyOrganization(organizationId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/organizations/\(organizationId)",
             method: .delete,
@@ -73,7 +73,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func setOrganizationLogo(_ organizationId: String, _ imageData: Data) async throws -> Organization {
+    func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization {
         let boundary = UUID().uuidString
         var data = Data()
         data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
@@ -93,7 +93,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationRoles(_ organizationId: String, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource> {
+    func getOrganizationRoles(organizationId: String, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource> {
         let request = Request<ClientResponse<ClerkPaginatedResponse<RoleResource>>>(
             path: "/v1/organizations/\(organizationId)/roles",
             method: .get,
@@ -108,7 +108,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationMemberships(_ organizationId: String, _ query: String?, _ role: [String]?, _ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
         var queryParams: [(String, String?)] = [
             ("_clerk_session_id", value: Clerk.shared.session?.id),
             ("offset", value: String(initialPage)),
@@ -134,7 +134,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func addOrganizationMember(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership {
+    func addOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(organizationId)/memberships",
             method: .post,
@@ -149,7 +149,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func updateOrganizationMember(_ organizationId: String, _ userId: String, _ role: String) async throws -> OrganizationMembership {
+    func updateOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
             method: .patch,
@@ -161,7 +161,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func removeOrganizationMember(_ organizationId: String, _ userId: String) async throws -> OrganizationMembership {
+    func removeOrganizationMember(organizationId: String, userId: String) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
             method: .delete,
@@ -172,7 +172,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationInvitations(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+    func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
         var queryParams: [(String, String?)] = [
             ("_clerk_session_id", value: Clerk.shared.session?.id),
             ("offset", value: String(initialPage)),
@@ -194,7 +194,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func inviteOrganizationMember(_ organizationId: String, _ emailAddress: String, _ role: String) async throws -> OrganizationInvitation {
+    func inviteOrganizationMember(organizationId: String, emailAddress: String, role: String) async throws -> OrganizationInvitation {
         let request = Request<ClientResponse<OrganizationInvitation>>(
             path: "/v1/organizations/\(organizationId)/invitations",
             method: .post,
@@ -209,7 +209,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func createOrganizationDomain(_ organizationId: String, _ domainName: String) async throws -> OrganizationDomain {
+    func createOrganizationDomain(organizationId: String, domainName: String) async throws -> OrganizationDomain {
         let request = Request<ClientResponse<OrganizationDomain>>(
             path: "/v1/organizations/\(organizationId)/domains",
             method: .post,
@@ -221,7 +221,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationDomains(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+    func getOrganizationDomains(organizationId: String, initialPage: Int, pageSize: Int, enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
         var queryParams: [(String, String?)] = [
             ("_clerk_session_id", value: Clerk.shared.session?.id),
             ("offset", value: String(initialPage)),
@@ -242,7 +242,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationDomain(_ organizationId: String, _ domainId: String) async throws -> OrganizationDomain {
+    func getOrganizationDomain(organizationId: String, domainId: String) async throws -> OrganizationDomain {
         let request = Request<ClientResponse<OrganizationDomain>>(
             path: "/v1/organizations/\(organizationId)/domains/\(domainId)",
             method: .get,
@@ -253,7 +253,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationMembershipRequests(_ organizationId: String, _ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+    func getOrganizationMembershipRequests(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
         var queryParams: [(String, String?)] = [
             ("_clerk_session_id", value: Clerk.shared.session?.id),
             ("offset", value: String(initialPage)),
@@ -274,7 +274,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func deleteOrganizationDomain(_ organizationId: String, _ domainId: String) async throws -> DeletedObject {
+    func deleteOrganizationDomain(organizationId: String, domainId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/organizations/\(organizationId)/domains/\(domainId)",
             method: .delete
@@ -284,7 +284,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func prepareOrganizationDomainAffiliationVerification(_ organizationId: String, _ domainId: String, _ affiliationEmailAddress: String) async throws -> OrganizationDomain {
+    func prepareOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, affiliationEmailAddress: String) async throws -> OrganizationDomain {
         let request = Request<ClientResponse<OrganizationDomain>>(
             path: "/v1/organizations/\(organizationId)/domains/\(domainId)/prepare_affiliation_verification",
             method: .post,
@@ -295,7 +295,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func attemptOrganizationDomainAffiliationVerification(_ organizationId: String, _ domainId: String, _ code: String) async throws -> OrganizationDomain {
+    func attemptOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, code: String) async throws -> OrganizationDomain {
         let request = Request<ClientResponse<OrganizationDomain>>(
             path: "/v1/organizations/\(organizationId)/domains/\(domainId)/attempt_affiliation_verification",
             method: .post,
@@ -306,7 +306,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func revokeOrganizationInvitation(_ organizationId: String, _ invitationId: String) async throws -> OrganizationInvitation {
+    func revokeOrganizationInvitation(organizationId: String, invitationId: String) async throws -> OrganizationInvitation {
         let request = Request<ClientResponse<OrganizationInvitation>>(
             path: "/v1/organizations/\(organizationId)/invitations/\(invitationId)/revoke",
             method: .post
@@ -316,7 +316,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func destroyOrganizationMembership(_ organizationId: String, _ userId: String) async throws -> OrganizationMembership {
+    func destroyOrganizationMembership(organizationId: String, userId: String) async throws -> OrganizationMembership {
         let request = Request<ClientResponse<OrganizationMembership>>(
             path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
             method: .delete
@@ -326,7 +326,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func acceptUserOrganizationInvitation(_ invitationId: String) async throws -> UserOrganizationInvitation {
+    func acceptUserOrganizationInvitation(invitationId: String) async throws -> UserOrganizationInvitation {
         let request = Request<ClientResponse<UserOrganizationInvitation>>(
             path: "/v1/me/organization_invitations/\(invitationId)/accept",
             method: .post,
@@ -337,7 +337,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func acceptOrganizationSuggestion(_ suggestionId: String) async throws -> OrganizationSuggestion {
+    func acceptOrganizationSuggestion(suggestionId: String) async throws -> OrganizationSuggestion {
         let request = Request<ClientResponse<OrganizationSuggestion>>(
             path: "/v1/me/organization_suggestions/\(suggestionId)/accept",
             method: .post,
@@ -348,7 +348,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func acceptOrganizationMembershipRequest(_ organizationId: String, _ requestId: String) async throws -> OrganizationMembershipRequest {
+    func acceptOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest {
         let request = Request<ClientResponse<OrganizationMembershipRequest>>(
             path: "/v1/organizations/\(organizationId)/membership_requests/\(requestId)/accept",
             method: .post
@@ -358,7 +358,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     }
 
     @MainActor
-    func rejectOrganizationMembershipRequest(_ organizationId: String, _ requestId: String) async throws -> OrganizationMembershipRequest {
+    func rejectOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest {
         let request = Request<ClientResponse<OrganizationMembershipRequest>>(
             path: "/v1/organizations/\(organizationId)/membership_requests/\(requestId)/reject",
             method: .post

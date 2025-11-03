@@ -223,7 +223,7 @@ extension User {
     /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
     @discardableResult @MainActor
     public func update(_ params: User.UpdateParams) async throws -> User {
-        try await userService.update(params)
+        try await userService.update(params: params)
     }
 
     /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
@@ -238,14 +238,14 @@ extension User {
     /// - Parameter email: The value of the email address.
     @discardableResult @MainActor
     public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
-        try await userService.createEmailAddress(emailAddress)
+        try await userService.createEmailAddress(emailAddress: emailAddress)
     }
 
     /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
     /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
     @discardableResult @MainActor
     public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-        try await userService.createPhoneNumber(phoneNumber)
+        try await userService.createPhoneNumber(phoneNumber: phoneNumber)
     }
 
     /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -257,7 +257,7 @@ extension User {
     ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
     @discardableResult @MainActor
     public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-        try await userService.createExternalAccount(provider, redirectUrl, additionalScopes)
+        try await userService.createExternalAccount(provider: provider, redirectUrl: redirectUrl, additionalScopes: additionalScopes)
     }
 
     /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -268,7 +268,7 @@ extension User {
     ///     - idToken: The ID token from the provider.
     @discardableResult @MainActor
     public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-        try await userService.createExternalAccountToken(provider, idToken)
+        try await userService.createExternalAccountToken(provider: provider, idToken: idToken)
     }
 
     #if canImport(AuthenticationServices) && !os(watchOS)
@@ -296,7 +296,7 @@ extension User {
     /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
     @discardableResult @MainActor
     public func verifyTOTP(code: String) async throws -> TOTPResource {
-        try await userService.verifyTotp(code)
+        try await userService.verifyTotp(code: code)
     }
 
     /// Disables TOTP by deleting the user's TOTP secret.
@@ -315,7 +315,7 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-        return try await userService.getOrganizationInvitations(initialPage, pageSize)
+        return try await userService.getOrganizationInvitations(initialPage: initialPage, pageSize: pageSize)
     }
 
     /// Retrieves a list of organization memberships for the user.
@@ -328,7 +328,7 @@ extension User {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        try await userService.getOrganizationMemberships(initialPage, pageSize)
+        try await userService.getOrganizationMemberships(initialPage: initialPage, pageSize: pageSize)
     }
 
     /// Retrieves a list of organization suggestions for the user.
@@ -343,7 +343,7 @@ extension User {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-        try await userService.getOrganizationSuggestions(initialPage, pageSize, status)
+        try await userService.getOrganizationSuggestions(initialPage: initialPage, pageSize: pageSize, status: status)
     }
 
     /// Retrieves all active sessions for this user.
@@ -351,13 +351,13 @@ extension User {
     /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
     @discardableResult @MainActor
     public func getSessions() async throws -> [Session] {
-        try await userService.getSessions(self)
+        try await userService.getSessions(user: self)
     }
 
     /// Updates the user's password. Passwords must be at least 8 characters long.
     @discardableResult @MainActor
     public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-        try await userService.updatePassword(params)
+        try await userService.updatePassword(params: params)
     }
 
     /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -365,7 +365,7 @@ extension User {
     ///     - imageData: The image, in data format, to set as the user's profile image.
     @discardableResult @MainActor
     public func setProfileImage(imageData: Data) async throws -> ImageResource {
-        try await userService.setProfileImage(imageData)
+        try await userService.setProfileImage(imageData: imageData)
     }
 
     /// Deletes the user's profile image.

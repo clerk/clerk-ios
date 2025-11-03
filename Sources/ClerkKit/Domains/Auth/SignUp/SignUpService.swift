@@ -18,21 +18,21 @@ extension Container {
 }
 
 protocol SignUpServiceProtocol: Sendable {
-    @MainActor func create(_ strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp
-    @MainActor func createWithParams(_ params: any Encodable & Sendable) async throws -> SignUp
-    @MainActor func update(_ signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp
-    @MainActor func prepareVerification(_ signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp
-    @MainActor func attemptVerification(_ signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp
-    @MainActor func get(_ signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp
+    @MainActor func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp
+    @MainActor func createWithParams(params: any Encodable & Sendable) async throws -> SignUp
+    @MainActor func update(signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp
+    @MainActor func prepareVerification(signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp
+    @MainActor func attemptVerification(signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp
+    @MainActor func get(signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp
 
     #if !os(tvOS) && !os(watchOS)
-    @MainActor func authenticateWithRedirectStatic(_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
-    @MainActor func authenticateWithRedirect(_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirectStatic(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirect(signUp: SignUp, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
     #endif
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    @MainActor func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
-    @MainActor func authenticateWithIdToken(_ signUp: SignUp) async throws -> TransferFlowResult
+    @MainActor func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
+    @MainActor func authenticateWithIdToken(signUp: SignUp) async throws -> TransferFlowResult
     #endif
 }
 
@@ -41,7 +41,7 @@ final class SignUpService: SignUpServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func create(_ strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp {
+    func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp {
         var params = strategy.params
         params.legalAccepted = legalAccepted
         params.locale = locale ?? LocaleUtils.userLocale()
@@ -56,7 +56,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func createWithParams(_ params: any Encodable & Sendable) async throws -> SignUp {
+    func createWithParams(params: any Encodable & Sendable) async throws -> SignUp {
         var body: any Encodable & Sendable = params
         if var json = try? JSON(encodable: params), case .object(var object) = json {
             if object["locale"] == nil || object["locale"] == .null {
@@ -76,7 +76,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func update(_ signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp {
+    func update(signUpId: String, params: SignUp.UpdateParams) async throws -> SignUp {
         let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)",
             method: .patch,
@@ -87,7 +87,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func prepareVerification(_ signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp {
+    func prepareVerification(signUpId: String, strategy: SignUp.PrepareStrategy) async throws -> SignUp {
         let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)/prepare_verification",
             method: .post,
@@ -98,7 +98,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func attemptVerification(_ signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp {
+    func attemptVerification(signUpId: String, strategy: SignUp.AttemptStrategy) async throws -> SignUp {
         let request = Request<ClientResponse<SignUp>>(
             path: "/v1/client/sign_ups/\(signUpId)/attempt_verification",
             method: .post,
@@ -109,7 +109,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func get(_ signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp {
+    func get(signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp {
         var queryParams: [(String, String?)] = []
         if let rotatingTokenNonce {
             queryParams.append((
@@ -129,7 +129,7 @@ final class SignUpService: SignUpServiceProtocol {
 
     #if !os(tvOS) && !os(watchOS)
     @MainActor
-    func authenticateWithRedirectStatic(_ strategy: SignUp.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    func authenticateWithRedirectStatic(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
 
         guard
@@ -150,7 +150,7 @@ final class SignUpService: SignUpServiceProtocol {
     }
 
     @MainActor
-    func authenticateWithRedirect(_ signUp: SignUp, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    func authenticateWithRedirect(signUp: SignUp, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         guard
             let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
             let redirectUrl = verification.externalVerificationRedirectUrl,
@@ -171,13 +171,13 @@ final class SignUpService: SignUpServiceProtocol {
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
     @MainActor
-    func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult {
+    func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
         let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
         return try await signUp.handleTransferFlow()
     }
 
     @MainActor
-    func authenticateWithIdToken(_ signUp: SignUp) async throws -> TransferFlowResult {
+    func authenticateWithIdToken(signUp: SignUp) async throws -> TransferFlowResult {
         try await signUp.handleTransferFlow()
     }
     #endif

@@ -84,19 +84,19 @@ extension Passkey {
     /// Updates the name of the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func update(name: String) async throws -> Passkey {
-        try await passkeyService.update(id, name)
+        try await passkeyService.update(passkeyId: id, name: name)
     }
 
     /// Attempts to verify the passkey with a credential.
     @discardableResult @MainActor
     public func attemptVerification(credential: String) async throws -> Passkey {
-        try await passkeyService.attemptVerification(id, credential)
+        try await passkeyService.attemptVerification(passkeyId: id, credential: credential)
     }
 
     /// Deletes the associated passkey for the signed-in user.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        try await passkeyService.delete(id)
+        try await passkeyService.delete(passkeyId: id)
     }
 
 }

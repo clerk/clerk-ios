@@ -17,7 +17,7 @@ extension Container {
 }
 
 protocol SessionServiceProtocol: Sendable {
-    @MainActor func revoke(_ sessionId: String) async throws -> Session
+    @MainActor func revoke(sessionId: String) async throws -> Session
 }
 
 final class SessionService: SessionServiceProtocol {
@@ -25,7 +25,7 @@ final class SessionService: SessionServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func revoke(_ sessionId: String) async throws -> Session {
+    func revoke(sessionId: String) async throws -> Session {
         let request = Request<ClientResponse<Session>>(
             path: "/v1/me/sessions/\(sessionId)/revoke",
             method: .post,

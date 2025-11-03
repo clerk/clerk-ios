@@ -19,24 +19,24 @@ extension Container {
 
 protocol UserServiceProtocol: Sendable {
     @MainActor func reload() async throws -> User
-    @MainActor func update(_ params: User.UpdateParams) async throws -> User
+    @MainActor func update(params: User.UpdateParams) async throws -> User
     @MainActor func createBackupCodes() async throws -> BackupCodeResource
-    @MainActor func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress
-    @MainActor func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber
-    @MainActor func createExternalAccount(_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount
-    @MainActor func createExternalAccountToken(_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount
+    @MainActor func createEmailAddress(emailAddress: String) async throws -> EmailAddress
+    @MainActor func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber
+    @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount
+    @MainActor func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount
     #if canImport(AuthenticationServices) && !os(watchOS)
     @MainActor func createPasskey() async throws -> Passkey
     #endif
     @MainActor func createTotp() async throws -> TOTPResource
-    @MainActor func verifyTotp(_ code: String) async throws -> TOTPResource
+    @MainActor func verifyTotp(code: String) async throws -> TOTPResource
     @MainActor func disableTotp() async throws -> DeletedObject
-    @MainActor func getOrganizationInvitations(_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
-    @MainActor func getOrganizationMemberships(_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-    @MainActor func getOrganizationSuggestions(_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
-    @MainActor func getSessions(_ user: User) async throws -> [Session]
-    @MainActor func updatePassword(_ params: User.UpdatePasswordParams) async throws -> User
-    @MainActor func setProfileImage(_ imageData: Data) async throws -> ImageResource
+    @MainActor func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+    @MainActor func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+    @MainActor func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+    @MainActor func getSessions(user: User) async throws -> [Session]
+    @MainActor func updatePassword(params: User.UpdatePasswordParams) async throws -> User
+    @MainActor func setProfileImage(imageData: Data) async throws -> ImageResource
     @MainActor func deleteProfileImage() async throws -> DeletedObject
     @MainActor func delete() async throws -> DeletedObject
 }
@@ -57,7 +57,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func update(_ params: User.UpdateParams) async throws -> User {
+    func update(params: User.UpdateParams) async throws -> User {
         let request = Request<ClientResponse<User>>(
             path: "/v1/me",
             method: .patch,
@@ -80,17 +80,17 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
+    func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
         try await EmailAddress.create(emailAddress)
     }
 
     @MainActor
-    func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
+    func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
         try await PhoneNumber.create(phoneNumber)
     }
 
     @MainActor
-    func createExternalAccount(_ provider: OAuthProvider, _ redirectUrl: String?, _ additionalScopes: [String]?) async throws -> ExternalAccount {
+    func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount {
         var bodyParams: [String: String] = [
             "strategy": provider.strategy,
             "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
@@ -111,7 +111,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func createExternalAccountToken(_ provider: IDTokenProvider, _ idToken: String) async throws -> ExternalAccount {
+    func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
         let request = Request<ClientResponse<ExternalAccount>>(
             path: "/v1/me/external_accounts",
             method: .post,
@@ -183,7 +183,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func verifyTotp(_ code: String) async throws -> TOTPResource {
+    func verifyTotp(code: String) async throws -> TOTPResource {
         let request = Request<ClientResponse<TOTPResource>>(
             path: "/v1/me/totp/attempt_verification",
             method: .post,
@@ -206,7 +206,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationInvitations(_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+    func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
         let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
             path: "/v1/me/organization_invitations",
             method: .get,
@@ -221,7 +221,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationMemberships(_ initialPage: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
         let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
             path: "/v1/me/organization_memberships",
             method: .get,
@@ -237,7 +237,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func getOrganizationSuggestions(_ initialPage: Int, _ pageSize: Int, _ status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+    func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
         var queryParams: [(String, String?)] = [
             ("_clerk_session_id", value: Clerk.shared.session?.id),
             ("offset", value: String(initialPage)),
@@ -258,7 +258,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func getSessions(_ user: User) async throws -> [Session] {
+    func getSessions(user: User) async throws -> [Session] {
         let request = Request<[Session]>(
             path: "/v1/me/sessions/active",
             method: .get,
@@ -271,7 +271,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func updatePassword(_ params: User.UpdatePasswordParams) async throws -> User {
+    func updatePassword(params: User.UpdatePasswordParams) async throws -> User {
         let request = Request<ClientResponse<User>>(
             path: "/v1/me/change_password",
             method: .post,
@@ -283,7 +283,7 @@ final class UserService: UserServiceProtocol {
     }
 
     @MainActor
-    func setProfileImage(_ imageData: Data) async throws -> ImageResource {
+    func setProfileImage(imageData: Data) async throws -> ImageResource {
         let boundary = UUID().uuidString
         var data = Data()
         data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)

@@ -19,9 +19,9 @@ extension Container {
 
 protocol PasskeyServiceProtocol: Sendable {
     @MainActor func create() async throws -> Passkey
-    @MainActor func update(_ passkeyId: String, _ name: String) async throws -> Passkey
-    @MainActor func attemptVerification(_ passkeyId: String, _ credential: String) async throws -> Passkey
-    @MainActor func delete(_ passkeyId: String) async throws -> DeletedObject
+    @MainActor func update(passkeyId: String, name: String) async throws -> Passkey
+    @MainActor func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey
+    @MainActor func delete(passkeyId: String) async throws -> DeletedObject
 }
 
 final class PasskeyService: PasskeyServiceProtocol {
@@ -40,7 +40,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     }
 
     @MainActor
-    func update(_ passkeyId: String, _ name: String) async throws -> Passkey {
+    func update(passkeyId: String, name: String) async throws -> Passkey {
         let request = Request<ClientResponse<Passkey>>(
             path: "/v1/me/passkeys/\(passkeyId)",
             method: .patch,
@@ -52,7 +52,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     }
 
     @MainActor
-    func attemptVerification(_ passkeyId: String, _ credential: String) async throws -> Passkey {
+    func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey {
         let request = Request<ClientResponse<Passkey>>(
             path: "/v1/me/passkeys/\(passkeyId)/attempt_verification",
             method: .post,
@@ -67,7 +67,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     }
 
     @MainActor
-    func delete(_ passkeyId: String) async throws -> DeletedObject {
+    func delete(passkeyId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/me/passkeys/\(passkeyId)",
             method: .delete,

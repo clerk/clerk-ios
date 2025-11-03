@@ -83,7 +83,7 @@ extension OrganizationSuggestion {
     /// - Returns: The accepted ``OrganizationSuggestion``.
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationSuggestion {
-        try await organizationService.acceptOrganizationSuggestion(id)
+        try await organizationService.acceptOrganizationSuggestion(suggestionId: id)
     }
 
 }

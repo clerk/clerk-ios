@@ -17,12 +17,12 @@ extension Container {
 }
 
 protocol PhoneNumberServiceProtocol: Sendable {
-    @MainActor func create(_ phoneNumber: String) async throws -> PhoneNumber
-    @MainActor func delete(_ phoneNumberId: String) async throws -> DeletedObject
-    @MainActor func prepareVerification(_ phoneNumberId: String) async throws -> PhoneNumber
-    @MainActor func attemptVerification(_ phoneNumberId: String, _ code: String) async throws -> PhoneNumber
-    @MainActor func makeDefaultSecondFactor(_ phoneNumberId: String) async throws -> PhoneNumber
-    @MainActor func setReservedForSecondFactor(_ phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber
+    @MainActor func create(phoneNumber: String) async throws -> PhoneNumber
+    @MainActor func delete(phoneNumberId: String) async throws -> DeletedObject
+    @MainActor func prepareVerification(phoneNumberId: String) async throws -> PhoneNumber
+    @MainActor func attemptVerification(phoneNumberId: String, code: String) async throws -> PhoneNumber
+    @MainActor func makeDefaultSecondFactor(phoneNumberId: String) async throws -> PhoneNumber
+    @MainActor func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber
 }
 
 final class PhoneNumberService: PhoneNumberServiceProtocol {
@@ -30,7 +30,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func create(_ phoneNumber: String) async throws -> PhoneNumber {
+    func create(phoneNumber: String) async throws -> PhoneNumber {
         let request = Request<ClientResponse<PhoneNumber>>(
             path: "/v1/me/phone_numbers",
             method: .post,
@@ -42,7 +42,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     }
 
     @MainActor
-    func delete(_ phoneNumberId: String) async throws -> DeletedObject {
+    func delete(phoneNumberId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/me/phone_numbers/\(phoneNumberId)",
             method: .delete,
@@ -53,7 +53,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     }
 
     @MainActor
-    func prepareVerification(_ phoneNumberId: String) async throws -> PhoneNumber {
+    func prepareVerification(phoneNumberId: String) async throws -> PhoneNumber {
         let request = Request<ClientResponse<PhoneNumber>>(
             path: "/v1/me/phone_numbers/\(phoneNumberId)/prepare_verification",
             method: .post,
@@ -65,7 +65,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     }
 
     @MainActor
-    func attemptVerification(_ phoneNumberId: String, _ code: String) async throws -> PhoneNumber {
+    func attemptVerification(phoneNumberId: String, code: String) async throws -> PhoneNumber {
         let request = Request<ClientResponse<PhoneNumber>>(
             path: "/v1/me/phone_numbers/\(phoneNumberId)/attempt_verification",
             method: .post,
@@ -77,7 +77,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     }
 
     @MainActor
-    func makeDefaultSecondFactor(_ phoneNumberId: String) async throws -> PhoneNumber {
+    func makeDefaultSecondFactor(phoneNumberId: String) async throws -> PhoneNumber {
         let request = Request<ClientResponse<PhoneNumber>>(
             path: "/v1/me/phone_numbers/\(phoneNumberId)",
             method: .patch,
@@ -89,7 +89,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     }
 
     @MainActor
-    func setReservedForSecondFactor(_ phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber {
+    func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber {
         let request = Request<ClientResponse<PhoneNumber>>(
             path: "/v1/me/phone_numbers/\(phoneNumberId)",
             method: .patch,

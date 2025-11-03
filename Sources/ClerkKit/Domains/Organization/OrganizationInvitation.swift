@@ -65,7 +65,7 @@ extension OrganizationInvitation {
     /// Revokes the invitation for the email it corresponds to.
     @discardableResult @MainActor
     public func revoke() async throws -> OrganizationInvitation {
-        try await organizationService.revokeOrganizationInvitation(organizationId, id)
+        try await organizationService.revokeOrganizationInvitation(organizationId: organizationId, invitationId: id)
     }
 
 }
