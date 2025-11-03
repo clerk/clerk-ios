@@ -26,11 +26,11 @@ import Foundation
 /// }
 /// ```
 public enum TransferFlowResult: Sendable {
-    /// The authentication flow resulted in a sign-in instance. This case indicates that the user is
-    /// being signed in, although further steps may be required to complete the process.
-    case signIn(SignIn)
+  /// The authentication flow resulted in a sign-in instance. This case indicates that the user is
+  /// being signed in, although further steps may be required to complete the process.
+  case signIn(SignIn)
 
-    /// The authentication flow resulted in a sign-up instance. This case indicates that the user is
-    /// being signed up, although further steps may be required to complete the process.
-    case signUp(SignUp)
+  /// The authentication flow resulted in a sign-up instance. This case indicates that the user is
+  /// being signed up, although further steps may be required to complete the process.
+  case signUp(SignUp)
 }
