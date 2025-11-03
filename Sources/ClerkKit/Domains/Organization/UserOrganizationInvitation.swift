@@ -99,7 +99,7 @@ extension UserOrganizationInvitation {
     /// - Returns: The accepted ``UserOrganizationInvitation``.
     @discardableResult @MainActor
     public func accept() async throws -> UserOrganizationInvitation {
-        try await organizationService.acceptUserOrganizationInvitation(id)
+        try await organizationService.acceptUserOrganizationInvitation(invitationId: id)
     }
 
 }
