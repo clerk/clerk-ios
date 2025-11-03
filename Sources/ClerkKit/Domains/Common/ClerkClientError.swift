@@ -10,35 +10,35 @@ import SwiftUI
 
 /// An object that represents an error created by Clerk on the client.
 public struct ClerkClientError: Error, LocalizedError, ClerkError {
-    /// A message that describes the error.
-    public let messageLocalizationValue: String.LocalizationValue?
-    
-    /// Additional context about the error.
-    public var context: [String: String]? {
-        nil
-    }
-    
-    /// A human-readable error message.
-    public var message: String? {
-        guard let messageLocalizationValue else { return nil }
-        return String(localized: messageLocalizationValue)
-    }
+  /// A message that describes the error.
+  public let messageLocalizationValue: String.LocalizationValue?
+  
+  /// Additional context about the error.
+  public var context: [String: String]? {
+    nil
+  }
+  
+  /// A human-readable error message.
+  public var message: String? {
+    guard let messageLocalizationValue else { return nil }
+    return String(localized: messageLocalizationValue)
+  }
 
-    public init(message: String.LocalizationValue? = nil) {
-        self.messageLocalizationValue = message
-    }
+  public init(message: String.LocalizationValue? = nil) {
+    self.messageLocalizationValue = message
+  }
 }
 
 extension ClerkClientError {
-    public var errorDescription: String? {
-        message
-    }
+  public var errorDescription: String? {
+    message
+  }
 }
 
 extension ClerkClientError {
 
-    package static var mock: ClerkClientError {
-        .init(message: "An unknown error occurred.")
-    }
+  package static var mock: ClerkClientError {
+    .init(message: "An unknown error occurred.")
+  }
 
 }

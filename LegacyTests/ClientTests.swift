@@ -12,16 +12,16 @@ import Testing
 struct ClientTests {
 
   @Test func testActiveSessions() {
-    let client = Client(
-      id: "1",
-      signIn: nil,
-      signUp: nil,
-      sessions: [.mock, .mock, .mockExpired],
-      lastActiveSessionId: "1",
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
-    )
+  let client = Client(
+    id: "1",
+    signIn: nil,
+    signUp: nil,
+    sessions: [.mock, .mock, .mockExpired],
+    lastActiveSessionId: "1",
+    updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+  )
 
-    #expect(client.activeSessions.count == 2)
+  #expect(client.activeSessions.count == 2)
   }
 
 }
@@ -29,23 +29,23 @@ struct ClientTests {
 @Suite(.serialized) struct ClientSerializedTests {
 
   init() {
-    TestContainer.reset()
+  TestContainer.reset()
   }
 
   @Test func testGet() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalUrl = mockBaseUrl.appending(path: "/v1/client")
-    var mock = Mock(
-      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
-      ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-    try await Client.get()
-    #expect(requestHandled.value)
+  let requestHandled = LockIsolated(false)
+  let originalUrl = mockBaseUrl.appending(path: "/v1/client")
+  var mock = Mock(
+    url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+    data: [
+    .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client>(response: .mock, client: .mock))
+    ])
+  mock.onRequestHandler = OnRequestHandler { request in
+    #expect(request.httpMethod == "GET")
+    requestHandled.setValue(true)
+  }
+  mock.register()
+  try await Client.get()
+  #expect(requestHandled.value)
   }
 }

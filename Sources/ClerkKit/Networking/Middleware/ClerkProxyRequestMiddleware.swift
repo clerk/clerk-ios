@@ -10,28 +10,28 @@ import Foundation
 struct ClerkProxyRequestMiddleware: NetworkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    let proxyConfiguration = Clerk.shared.proxyConfiguration
+  let proxyConfiguration = Clerk.shared.proxyConfiguration
 
-    guard
-      let proxyConfiguration,
-      !proxyConfiguration.pathSegments.isEmpty,
-      let url = request.url,
-      var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-    else {
-      return
-    }
+  guard
+    let proxyConfiguration,
+    !proxyConfiguration.pathSegments.isEmpty,
+    let url = request.url,
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+  else {
+    return
+  }
 
-    let currentPath = components.path
-    let updatedPath = proxyConfiguration.prefixedPath(for: currentPath)
+  let currentPath = components.path
+  let updatedPath = proxyConfiguration.prefixedPath(for: currentPath)
 
-    guard currentPath != updatedPath else {
-      return
-    }
+  guard currentPath != updatedPath else {
+    return
+  }
 
-    components.path = updatedPath
+  components.path = updatedPath
 
-    if let updatedURL = components.url {
-      request.url = updatedURL
-    }
+  if let updatedURL = components.url {
+    request.url = updatedURL
+  }
   }
 }

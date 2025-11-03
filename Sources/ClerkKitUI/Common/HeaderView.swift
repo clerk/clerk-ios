@@ -10,65 +10,65 @@
 import SwiftUI
 
 struct HeaderView: View {
-    @Environment(\.clerkTheme) private var theme
+  @Environment(\.clerkTheme) private var theme
 
-    let style: Style
-    let text: LocalizedStringKey
+  let style: Style
+  let text: LocalizedStringKey
 
-    enum Style {
-        case title
-        case subtitle
+  enum Style {
+    case title
+    case subtitle
+  }
+
+  var font: Font {
+    switch style {
+    case .title:
+      theme.fonts.title2
+    case .subtitle:
+      theme.fonts.subheadline
     }
+  }
 
-    var font: Font {
-        switch style {
-        case .title:
-            theme.fonts.title2
-        case .subtitle:
-            theme.fonts.subheadline
-        }
+  var fontWeight: Font.Weight {
+    switch style {
+    case .title:
+      .bold
+    case .subtitle:
+      .regular
     }
+  }
 
-    var fontWeight: Font.Weight {
-        switch style {
-        case .title:
-            .bold
-        case .subtitle:
-            .regular
-        }
+  var minHeight: CGFloat {
+    switch style {
+    case .title:
+      28
+    case .subtitle:
+      20
     }
+  }
 
-    var minHeight: CGFloat {
-        switch style {
-        case .title:
-            28
-        case .subtitle:
-            20
-        }
+  var foregroundStyle: Color {
+    switch style {
+    case .title:
+      theme.colors.foreground
+    case .subtitle:
+      theme.colors.mutedForeground
     }
+  }
 
-    var foregroundStyle: Color {
-        switch style {
-        case .title:
-            theme.colors.foreground
-        case .subtitle:
-            theme.colors.mutedForeground
-        }
-    }
-
-    var body: some View {
-        Text(text, bundle: .module)
-            .font(font)
-            .fontWeight(fontWeight)
-            .foregroundStyle(foregroundStyle)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: minHeight)
-    }
+  var body: some View {
+    Text(text, bundle: .module)
+      .font(font)
+      .fontWeight(fontWeight)
+      .foregroundStyle(foregroundStyle)
+      .multilineTextAlignment(.center)
+      .frame(minHeight: minHeight)
+  }
 }
 
 #Preview {
-    HeaderView(style: .title, text: "Hello, World!")
-    HeaderView(style: .subtitle, text: "Hello, World!")
+  HeaderView(style: .title, text: "Hello, World!")
+  HeaderView(style: .subtitle, text: "Hello, World!")
 }
 
 #endif

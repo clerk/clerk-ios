@@ -13,9 +13,9 @@ import UIKit
 
 @MainActor
 var deviceID: String {
-    #if !os(watchOS) && !os(macOS)
-    UIDevice.current.identifierForVendor?.uuidString ?? "none"
-    #else
-    "uidevice-unsupported"
-    #endif
+  #if !os(watchOS) && !os(macOS)
+  UIDevice.current.identifierForVendor?.uuidString ?? "none"
+  #else
+  "uidevice-unsupported"
+  #endif
 }

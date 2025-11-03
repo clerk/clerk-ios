@@ -11,244 +11,201 @@ import SwiftUI
 import ClerkKit
 
 struct SignUpCompleteProfileView: View {
-    @Environment(Clerk.self) private var clerk
-    @Environment(\.clerkTheme) private var theme
-    @Environment(AuthState.self) private var authState
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthState.self) private var authState
 
-    @State private var error: Error?
-    @State private var safariSheetItem: SafariSheetItem?
+  @State private var error: Error?
 
-    @FocusState private var focused: Field?
+  @FocusState private var focused: Field?
 
-    enum Field: CaseIterable {
-        case firstName
-        case lastName
+  enum Field: CaseIterable {
+    case firstName
+    case lastName
+  }
+
+  func fieldIsEnabled(_ field: Field) -> Bool {
+    switch field {
+    case .firstName:
+      clerk.environment.firstNameIsEnabled
+    case .lastName:
+      clerk.environment.lastNameIsEnabled
+    }
+  }
+
+  // Get the text for each field
+  func textForField(_ field: Field) -> String {
+    switch field {
+    case .firstName:
+      return authState.signUpFirstName
+    case .lastName:
+      return authState.signUpLastName
+    }
+  }
+
+  // Find the first enabled field that's empty
+  func firstEmptyEnabledField() -> Field? {
+    return Field.allCases.first { field in
+      fieldIsEnabled(field) && textForField(field).isEmptyTrimmed
+    }
+  }
+
+  // Get the first enabled field (fallback)
+  func firstEnabledField() -> Field? {
+    return Field.allCases.first { fieldIsEnabled($0) }
+  }
+
+  // Get the last enabled field
+  func lastEnabledField() -> Field? {
+    return Field.allCases.last { fieldIsEnabled($0) }
+  }
+
+  // Determine the submit label for each field
+  func submitLabelFor(_ field: Field) -> SubmitLabel {
+    return field == lastEnabledField() ? .done : .next
+  }
+
+  func nextEnabledField(after currentField: Field) -> Field? {
+    guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
+      return nil
     }
 
-    func fieldIsMissing(_ field: Field) -> Bool {
-        guard let signUp else { return false }
-        switch field {
-        case .firstName:
-            return signUp.missingFields.contains("first_name")
-        case .lastName:
-            return signUp.missingFields.contains("last_name")
+    let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
+    return fieldsAfterCurrent.first { fieldIsEnabled($0) }
+  }
+
+  func handleReturnKey() {
+    guard let currentField = focused else { return }
+
+    if let nextField = nextEnabledField(after: currentField) {
+      focused = nextField
+    } else {
+      focused = nil
+    }
+  }
+
+  // Dynamically update focus when text changes
+  func updateFocusIfNeeded() {
+    // Only update focus if we're not currently focused on a field
+    // or if the current field is now filled and there's an empty field to focus on
+    if focused == nil, let firstEmpty = firstEmptyEnabledField() {
+      focused = firstEmpty
+    }
+  }
+
+  var signUp: SignUp? {
+    clerk.client?.signUp
+  }
+
+  var firstOrLastNameIsEnabled: Bool {
+    fieldIsEnabled(.firstName) || fieldIsEnabled(.lastName)
+  }
+
+  var continueIsDisabled: Bool {
+    authState.signUpFirstName.isEmptyTrimmed || authState.signUpLastName.isEmptyTrimmed
+  }
+
+  var body: some View {
+    @Bindable var authState = authState
+
+    ScrollView {
+      VStack(spacing: 32) {
+        VStack(spacing: 8) {
+          HeaderView(style: .title, text: "Profile Details")
+          HeaderView(style: .subtitle, text: "Complete your profile")
         }
-    }
 
-    // Get the text for each field
-    func textForField(_ field: Field) -> String {
-        switch field {
-        case .firstName:
-            return authState.signUpFirstName
-        case .lastName:
-            return authState.signUpLastName
-        }
-    }
-
-    // Find the first missing field that's empty
-    func firstEmptyMissingField() -> Field? {
-        Field.allCases.first { field in
-            fieldIsMissing(field) && textForField(field).isEmptyTrimmed
-        }
-    }
-
-    // Get the first missing field (fallback)
-    func firstMissingField() -> Field? {
-        Field.allCases.first { fieldIsMissing($0) }
-    }
-
-    // Get the last missing field
-    func lastMissingField() -> Field? {
-        Field.allCases.last { fieldIsMissing($0) }
-    }
-
-    // Determine the submit label for each field
-    func submitLabelFor(_ field: Field) -> SubmitLabel {
-        field == lastMissingField() ? .done : .next
-    }
-
-    func nextMissingField(after currentField: Field) -> Field? {
-        guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
-            return nil
-        }
-
-        let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
-        return fieldsAfterCurrent.first { fieldIsMissing($0) }
-    }
-
-    func handleReturnKey() {
-        guard let currentField = focused else { return }
-
-        if let nextField = nextMissingField(after: currentField) {
-            focused = nextField
-        } else {
-            focused = nil
-        }
-    }
-
-    // Dynamically update focus when text changes
-    func updateFocusIfNeeded() {
-        // Only update focus if we're not currently focused on a field
-        // or if the current field is now filled and there's an empty field to focus on
-        if focused == nil, let firstEmpty = firstEmptyMissingField() {
-            focused = firstEmpty
-        }
-    }
-
-    var signUp: SignUp? {
-        clerk.client?.signUp
-    }
-
-    var firstOrLastNameIsMissing: Bool {
-        fieldIsMissing(.firstName) || fieldIsMissing(.lastName)
-    }
-
-    var legalConsentMissing: Bool {
-        signUp?.missingFields.contains("legal_accepted") ?? false
-    }
-
-    var termsUrl: URL? {
-        clerk.environment.displayConfig?.termsUrl.flatMap { URL(string: $0) }
-    }
-
-    var privacyPolicyUrl: URL? {
-        clerk.environment.displayConfig?.privacyPolicyUrl.flatMap { URL(string: $0) }
-    }
-
-    var continueIsDisabled: Bool {
-        let hasMissingNameFields = (fieldIsMissing(.firstName) && authState.signUpFirstName.isEmptyTrimmed) ||
-            (fieldIsMissing(.lastName) && authState.signUpLastName.isEmptyTrimmed)
-
-        let isMissingLegalConsent = legalConsentMissing && !authState.signUpLegalAccepted
-
-        return hasMissingNameFields || isMissingLegalConsent
-    }
-
-    var body: some View {
-        @Bindable var authState = authState
-
-        ScrollView {
-            VStack(spacing: 32) {
-                VStack(spacing: 8) {
-                    HeaderView(style: .title, text: "Profile Details")
-                    HeaderView(style: .subtitle, text: "Complete your profile")
-                }
-
-                VStack(spacing: 24) {
-                    if firstOrLastNameIsMissing {
-                        HStack(spacing: 24) {
-                            if fieldIsMissing(.firstName) {
-                                ClerkTextField("First name", text: $authState.signUpFirstName)
-                                    .textContentType(.givenName)
-                                    .focused($focused, equals: .firstName)
-                                    .submitLabel(submitLabelFor(.firstName))
-                                    .onChange(of: authState.signUpFirstName) {
-                                        updateFocusIfNeeded()
-                                    }
-                            }
-                            if fieldIsMissing(.lastName) {
-                                ClerkTextField("Last name", text: $authState.signUpLastName)
-                                    .textContentType(.familyName)
-                                    .focused($focused, equals: .lastName)
-                                    .submitLabel(submitLabelFor(.lastName))
-                                    .onChange(of: authState.signUpLastName) {
-                                        updateFocusIfNeeded()
-                                    }
-                            }
-                        }
-                        .autocorrectionDisabled()
-                        .onSubmit { handleReturnKey() }
-                    }
-
-                    if legalConsentMissing {
-                        LegalConsentView(
-                            isAccepted: $authState.signUpLegalAccepted,
-                            onTermsTap: termsUrl != nil ? {
-                                safariSheetItem = SafariSheetItem(url: termsUrl!)
-                            } : nil,
-                            onPrivacyTap: privacyPolicyUrl != nil ? {
-                                safariSheetItem = SafariSheetItem(url: privacyPolicyUrl!)
-                            } : nil
-                        )
-                    }
-
-                    AsyncButton {
-                        await updateSignUp()
-                    } label: { isRunning in
-                        HStack(spacing: 4) {
-                            Text("Continue", bundle: .module)
-                            Image("icon-triangle-right", bundle: .module)
-                                .foregroundStyle(theme.colors.primaryForeground)
-                                .opacity(0.6)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .overlayProgressView(isActive: isRunning) {
-                            SpinnerView(color: theme.colors.primaryForeground)
-                        }
-                    }
-                    .buttonStyle(.primary())
-                    .disabled(continueIsDisabled)
-                    .simultaneousGesture(TapGesture())
-                }
-
-                SecuredByClerkView()
+        VStack(spacing: 24) {
+          if firstOrLastNameIsEnabled {
+            HStack(spacing: 24) {
+              if fieldIsEnabled(.firstName) {
+                ClerkTextField("First name", text: $authState.signUpFirstName)
+                  .textContentType(.givenName)
+                  .focused($focused, equals: .firstName)
+                  .submitLabel(submitLabelFor(.firstName))
+                  .onChange(of: authState.signUpFirstName) {
+                    updateFocusIfNeeded()
+                  }
+              }
+              if fieldIsEnabled(.lastName) {
+                ClerkTextField("Last name", text: $authState.signUpLastName)
+                  .textContentType(.familyName)
+                  .focused($focused, equals: .lastName)
+                  .submitLabel(submitLabelFor(.lastName))
+                  .onChange(of: authState.signUpLastName) {
+                    updateFocusIfNeeded()
+                  }
+              }
             }
-            .padding(16)
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .clerkErrorPresenting($error)
-        .sheet(item: $safariSheetItem) { item in
-            SafariView(url: item.url)
-        }
-        .background(theme.colors.background)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Sign up", bundle: .module)
-                    .font(theme.fonts.headline)
-                    .foregroundStyle(theme.colors.foreground)
+            .autocorrectionDisabled()
+            .onSubmit { handleReturnKey() }
+          }
+
+          AsyncButton {
+            await updateSignUp()
+          } label: { isRunning in
+            HStack(spacing: 4) {
+              Text("Continue", bundle: .module)
+              Image("icon-triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.primaryForeground)
+                .opacity(0.6)
             }
+            .frame(maxWidth: .infinity)
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.primaryForeground)
+            }
+          }
+          .buttonStyle(.primary())
+          .disabled(continueIsDisabled)
+          .simultaneousGesture(TapGesture())
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .onFirstAppear {
-            focused = firstEmptyMissingField() ?? firstMissingField()
-        }
+
+        SecuredByClerkView()
+      }
+      .padding(16)
     }
+    .scrollDismissesKeyboard(.interactively)
+    .clerkErrorPresenting($error)
+    .background(theme.colors.background)
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Sign up", bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
+      }
+    }
+    .navigationBarTitleDisplayMode(.inline)
+    .onFirstAppear {
+      focused = firstEmptyEnabledField() ?? firstEnabledField()
+    }
+  }
 }
 
 extension SignUpCompleteProfileView {
 
-    func updateSignUp() async {
-        guard var signUp else { return }
+  func updateSignUp() async {
+    guard var signUp else { return }
 
-        do {
-            var params = SignUp.UpdateParams()
-
-            if fieldIsMissing(.firstName) {
-                params.firstName = authState.signUpFirstName
-            }
-
-            if fieldIsMissing(.lastName) {
-                params.lastName = authState.signUpLastName
-            }
-
-            if legalConsentMissing {
-                params.legalAccepted = authState.signUpLegalAccepted
-            }
-
-            signUp = try await signUp.update(params: params)
-            authState.setToStepForStatus(signUp: signUp)
-        } catch {
-            self.error = error
-            ClerkLogger.error("Failed to update sign up with profile data", error: error)
-        }
+    do {
+      signUp = try await signUp.update(
+        params: .init(
+          firstName: authState.signUpFirstName,
+          lastName: authState.signUpLastName
+        )
+      )
+      authState.setToStepForStatus(signUp: signUp)
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to update sign up with profile data", error: error)
     }
+  }
 
 }
 
 #Preview {
-    SignUpCompleteProfileView()
-        .clerkPreviewMocks()
-        .environment(\.clerkTheme, .clerk)
+  SignUpCompleteProfileView()
+    .clerkPreviewMocks()
+    .environment(\.clerkTheme, .clerk)
 }
 
 #endif

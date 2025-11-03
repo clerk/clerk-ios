@@ -59,61 +59,61 @@ import SwiftUI
 /// }
 /// ```
 public struct UserButton: View {
-    @Environment(Clerk.self) private var clerk
-    @Environment(\.clerkTheme) private var theme
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
-    @State private var userProfileIsPresented: Bool = false
+  @State private var userProfileIsPresented: Bool = false
 
-    /// Creates a new user button.
-    ///
-    /// The button will automatically display the current user's profile image
-    /// and handle presenting the user profile sheet when tapped.
-    public init() {}
+  /// Creates a new user button.
+  ///
+  /// The button will automatically display the current user's profile image
+  /// and handle presenting the user profile sheet when tapped.
+  public init() {}
 
-    public var body: some View {
-        ZStack {
-            if let user = clerk.user {
-                Button {
-                    userProfileIsPresented = true
-                } label: {
-                    LazyImage(url: URL(string: user.imageUrl)) { state in
-                        if let image = state.image {
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            Image("icon-profile", bundle: .module)
-                                .resizable()
-                                .scaledToFit()
-                                .foregroundStyle(theme.colors.primary.gradient)
-                                .opacity(0.5)
-                        }
-                    }
-                    .clipShape(.circle)
-                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
-                }
+  public var body: some View {
+    ZStack {
+      if let user = clerk.user {
+        Button {
+          userProfileIsPresented = true
+        } label: {
+          LazyImage(url: URL(string: user.imageUrl)) { state in
+            if let image = state.image {
+              image
+                .resizable()
+                .scaledToFill()
+            } else {
+              Image("icon-profile", bundle: .module)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(theme.colors.primary.gradient)
+                .opacity(0.5)
             }
+          }
+          .clipShape(.circle)
+          .transition(.opacity.animation(.easeInOut(duration: 0.2)))
         }
-        .sheet(isPresented: $userProfileIsPresented) {
-            UserProfileView()
-                .presentationDragIndicator(.visible)
-        }
-        .onChange(of: clerk.user) { _, newValue in
-            if newValue == nil {
-                userProfileIsPresented = false
-            }
-        }
-        .taskOnce {
-            await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
-        }
+      }
     }
+    .sheet(isPresented: $userProfileIsPresented) {
+      UserProfileView()
+        .presentationDragIndicator(.visible)
+    }
+    .onChange(of: clerk.user) { _, newValue in
+      if newValue == nil {
+        userProfileIsPresented = false
+      }
+    }
+    .taskOnce {
+      await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+    }
+  }
 }
 
 #Preview {
-    UserButton()
-        .frame(width: 36, height: 36)
-        .clerkPreviewMocks()
-        .environment(\.clerkTheme, .clerk)
+  UserButton()
+    .frame(width: 36, height: 36)
+    .clerkPreviewMocks()
+    .environment(\.clerkTheme, .clerk)
 }
 
 #endif

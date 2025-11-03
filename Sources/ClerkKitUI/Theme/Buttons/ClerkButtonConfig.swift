@@ -10,19 +10,19 @@
 import Foundation
 
 struct ClerkButtonConfig {
-    var emphasis: Emphasis = .high
-    var size: Size = .large
+  var emphasis: Emphasis = .high
+  var size: Size = .large
 
-    enum Emphasis {
-        case none
-        case low
-        case high
-    }
+  enum Emphasis {
+    case none
+    case low
+    case high
+  }
 
-    enum Size {
-        case small
-        case large
-    }
+  enum Size {
+    case small
+    case large
+  }
 
 }
 
