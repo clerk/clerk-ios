@@ -209,6 +209,7 @@ extension Clerk {
         }
         
         _shared = clerk
+        Container.shared.clerk.register { @MainActor in clerk }
     }
     
     /// Internal method for reconfiguring Clerk instance (for debugging purposes).
@@ -242,6 +243,7 @@ extension Clerk {
         }
         
         _shared = clerk
+        Container.shared.clerk.register { @MainActor in clerk }
     }
 
     /// Loads all necessary environment configuration and instance settings from the Frontend API.
