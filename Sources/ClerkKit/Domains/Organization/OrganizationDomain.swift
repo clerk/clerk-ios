@@ -105,7 +105,7 @@ extension OrganizationDomain {
     /// Deletes the organization domain and removes it from the organization.
     @discardableResult @MainActor
     public func delete() async throws -> DeletedObject {
-        try await organizationService.deleteOrganizationDomain(organizationId, id)
+        try await organizationService.deleteOrganizationDomain(organizationId: organizationId, domainId: id)
     }
 
     /// Begins the verification process of a created organization domain.
@@ -117,7 +117,7 @@ extension OrganizationDomain {
     /// - Throws: An error if the verification process cannot be initiated.
     @discardableResult @MainActor
     public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-        try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId, id, affiliationEmailAddress)
+        try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
     }
 
     /// Attempts to complete the domain verification process.
@@ -131,7 +131,7 @@ extension OrganizationDomain {
     /// - Throws: An error if the verification process cannot be completed.
     @discardableResult @MainActor
     public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
-        try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId, id, code)
+        try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
     }
 
 }
