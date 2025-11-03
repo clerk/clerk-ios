@@ -53,13 +53,13 @@ extension OrganizationMembershipRequest {
     /// Accepts the request of a user to join the organization the request refers to.
     @discardableResult @MainActor
     public func accept() async throws -> OrganizationMembershipRequest {
-        try await organizationService.acceptOrganizationMembershipRequest(organizationId, id)
+        try await organizationService.acceptOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
     }
 
     /// Rejects the request of a user to join the organization the request refers to.
     @discardableResult @MainActor
     public func reject() async throws -> OrganizationMembershipRequest {
-        try await organizationService.rejectOrganizationMembershipRequest(organizationId, id)
+        try await organizationService.rejectOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
     }
 }
 
