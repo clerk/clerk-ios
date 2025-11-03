@@ -52,7 +52,8 @@ let package = Package(
     .testTarget(
       name: "Tests",
       dependencies: [
-        "ClerkKit"
+        "ClerkKit",
+        .product(name: "FactoryTesting", package: "Factory")
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")

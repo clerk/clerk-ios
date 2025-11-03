@@ -263,7 +263,7 @@ struct SignUpTests {
   func testUpdate() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     let params = SignUp.UpdateParams(firstName: "John", lastName: "Doe")
     _ = try? await signUp.update(params: params)
 
@@ -291,7 +291,7 @@ struct SignUpTests {
   func testPrepareVerificationEmailCode() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.prepareVerification(strategy: .emailCode)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -311,7 +311,7 @@ struct SignUpTests {
   func testPrepareVerificationPhoneCode() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.prepareVerification(strategy: .phoneCode)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -333,7 +333,7 @@ struct SignUpTests {
   func testAttemptVerificationEmailCode() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.attemptVerification(strategy: .emailCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -354,7 +354,7 @@ struct SignUpTests {
   func testAttemptVerificationPhoneCode() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.attemptVerification(strategy: .phoneCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -377,7 +377,7 @@ struct SignUpTests {
   func testGet() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.get(rotatingTokenNonce: nil)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -398,7 +398,7 @@ struct SignUpTests {
   func testGetWithRotatingTokenNonce() async throws {
     TestContainer.reset()
 
-    var signUp = SignUp.mock
+    let signUp = SignUp.mock
     _ = try? await signUp.get(rotatingTokenNonce: "token_nonce_123")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
