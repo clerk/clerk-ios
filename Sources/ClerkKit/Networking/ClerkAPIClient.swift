@@ -3,34 +3,34 @@ import Foundation
 
 extension Container {
   var networkingPipeline: Factory<NetworkingPipeline> {
-    self { .clerkDefault }.cached
+  self { .clerkDefault }.cached
   }
 
   var apiClient: Factory<APIClient> {
-    self {
-      APIClient(baseURL: nil) { configuration in
-        configuration.pipeline = Container.shared.networkingPipeline()
-        configuration.decoder = .clerkDecoder
-        configuration.encoder = .clerkEncoder
-      }
-    }.cached
+  self {
+    APIClient(baseURL: nil) { configuration in
+    configuration.pipeline = Container.shared.networkingPipeline()
+    configuration.decoder = .clerkDecoder
+    configuration.encoder = .clerkEncoder
+    }
+  }.cached
   }
 }
 
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
   struct Configuration {
-    var sessionConfiguration: URLSessionConfiguration = {
-      let configuration = URLSessionConfiguration.default
-      configuration.httpAdditionalHeaders = [
-        "Accept": "application/json"
-      ]
-      return configuration
-    }()
+  var sessionConfiguration: URLSessionConfiguration = {
+    let configuration = URLSessionConfiguration.default
+    configuration.httpAdditionalHeaders = [
+    "Accept": "application/json"
+    ]
+    return configuration
+  }()
 
-    var encoder: JSONEncoder = .clerkEncoder
-    var decoder: JSONDecoder = .clerkDecoder
-    var pipeline: NetworkingPipeline = .clerkDefault
+  var encoder: JSONEncoder = .clerkEncoder
+  var decoder: JSONDecoder = .clerkDecoder
+  var pipeline: NetworkingPipeline = .clerkDefault
   }
 
   private let baseURL: URL?
@@ -40,83 +40,83 @@ actor APIClient {
   private let pipeline: NetworkingPipeline
 
   init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
-    var configuration = Configuration()
-    configure(&configuration)
+  var configuration = Configuration()
+  configure(&configuration)
 
-    self.baseURL = baseURL
-    self.encoder = configuration.encoder
-    self.decoder = configuration.decoder
-    self.pipeline = configuration.pipeline
-    self.session = URLSession(configuration: configuration.sessionConfiguration)
+  self.baseURL = baseURL
+  self.encoder = configuration.encoder
+  self.decoder = configuration.decoder
+  self.pipeline = configuration.pipeline
+  self.session = URLSession(configuration: configuration.sessionConfiguration)
   }
 
   @discardableResult
   func send<Value: Decodable & Sendable>(_ request: Request<Value>) async throws -> APIResponse<Value> {
-    try await execute(request, uploadBody: nil)
+  try await execute(request, uploadBody: nil)
   }
 
   @discardableResult
   func upload<Value: Decodable & Sendable>(
-    for request: Request<Value>,
-    from body: Data
+  for request: Request<Value>,
+  from body: Data
   ) async throws -> APIResponse<Value> {
-    try await execute(request, uploadBody: body)
+  try await execute(request, uploadBody: body)
   }
 
   private func execute<Value: Decodable & Sendable>(
-    _ request: Request<Value>,
-    uploadBody: Data?
+  _ request: Request<Value>,
+  uploadBody: Data?
   ) async throws -> APIResponse<Value> {
-    var attempts = 0
+  var attempts = 0
 
-    while true {
-      attempts += 1
+  while true {
+    attempts += 1
 
-      var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
-      try await pipeline.prepare(&urlRequest)
+    var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
+    try await pipeline.prepare(&urlRequest)
 
-      do {
-        let data: Data
-        let response: URLResponse
+    do {
+    let data: Data
+    let response: URLResponse
 
-        if let uploadBody {
-          (data, response) = try await session.upload(for: urlRequest, from: uploadBody)
-        } else {
-          (data, response) = try await session.data(for: urlRequest)
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-          throw APIClientError.invalidHTTPResponse
-        }
-
-        do {
-          try pipeline.validate(httpResponse, data: data, for: urlRequest)
-        } catch {
-          if try await pipeline.shouldRetry(
-            request: urlRequest,
-            response: httpResponse,
-            error: error,
-            attempts: attempts
-          ) {
-            continue
-          }
-          throw error
-        }
-
-        let value = try request.decode(data, using: decoder)
-        return APIResponse(value: value)
-      } catch {
-        if try await pipeline.shouldRetry(
-          request: urlRequest,
-          response: nil,
-          error: error,
-          attempts: attempts
-        ) {
-          continue
-        }
-        throw error
-      }
+    if let uploadBody {
+      (data, response) = try await session.upload(for: urlRequest, from: uploadBody)
+    } else {
+      (data, response) = try await session.data(for: urlRequest)
     }
+
+    guard let httpResponse = response as? HTTPURLResponse else {
+      throw APIClientError.invalidHTTPResponse
+    }
+
+    do {
+      try pipeline.validate(httpResponse, data: data, for: urlRequest)
+    } catch {
+      if try await pipeline.shouldRetry(
+      request: urlRequest,
+      response: httpResponse,
+      error: error,
+      attempts: attempts
+      ) {
+      continue
+      }
+      throw error
+    }
+
+    let value = try request.decode(data, using: decoder)
+    return APIResponse(value: value)
+    } catch {
+    if try await pipeline.shouldRetry(
+      request: urlRequest,
+      response: nil,
+      error: error,
+      attempts: attempts
+    ) {
+      continue
+    }
+    throw error
+    }
+  }
   }
 }
 

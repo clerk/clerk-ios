@@ -15,6 +15,6 @@ import Foundation
 /// func post(_ params: SignUp.CreateParams) -> Request<ClientResponse<SignUp>>
 /// ```
 struct ClientResponse<Response: Codable & Sendable>: Codable, Sendable {
-    let response: Response
-    let client: Client?
+  let response: Response
+  let client: Client?
 }
