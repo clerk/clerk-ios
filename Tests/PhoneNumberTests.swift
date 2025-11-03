@@ -44,7 +44,7 @@ struct PhoneNumberTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var phoneNumber = PhoneNumber.mock
+    let phoneNumber = PhoneNumber.mock
     _ = try? await phoneNumber.delete()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -67,7 +67,7 @@ struct PhoneNumberTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var phoneNumber = PhoneNumber.mock
+    let phoneNumber = PhoneNumber.mock
     _ = try? await phoneNumber.prepareVerification()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -92,7 +92,7 @@ struct PhoneNumberTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var phoneNumber = PhoneNumber.mock
+    let phoneNumber = PhoneNumber.mock
     _ = try? await phoneNumber.attemptVerification(code: "123456")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -117,7 +117,7 @@ struct PhoneNumberTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var phoneNumber = PhoneNumber.mock
+    let phoneNumber = PhoneNumber.mock
     _ = try? await phoneNumber.makeDefaultSecondFactor()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -142,7 +142,7 @@ struct PhoneNumberTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var phoneNumber = PhoneNumber.mock
+    let phoneNumber = PhoneNumber.mock
     _ = try? await phoneNumber.setReservedForSecondFactor(reserved: true)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
