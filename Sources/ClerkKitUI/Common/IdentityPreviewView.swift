@@ -10,27 +10,27 @@
 import SwiftUI
 
 struct IdentityPreviewView: View {
-    @Environment(\.clerkTheme) private var theme
+  @Environment(\.clerkTheme) private var theme
 
-    let label: String
+  let label: String
 
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(label)
-                .font(theme.fonts.subheadline)
-                .foregroundStyle(theme.colors.foreground)
-                .frame(minHeight: 20)
-            Image("icon-edit", bundle: .module)
-                .resizable()
-                .frame(width: 16, height: 16)
-                .scaledToFit()
-                .foregroundStyle(theme.colors.mutedForeground)
-        }
+  var body: some View {
+    HStack(spacing: 4) {
+      Text(label)
+        .font(theme.fonts.subheadline)
+        .foregroundStyle(theme.colors.foreground)
+        .frame(minHeight: 20)
+      Image("icon-edit", bundle: .module)
+        .resizable()
+        .frame(width: 16, height: 16)
+        .scaledToFit()
+        .foregroundStyle(theme.colors.mutedForeground)
     }
+  }
 }
 
 #Preview {
-    IdentityPreviewView(label: "example@email.com")
+  IdentityPreviewView(label: "example@email.com")
 }
 
 #endif

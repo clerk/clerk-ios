@@ -10,25 +10,25 @@
 import Foundation
 
 extension ClerkTheme {
-    public struct Design {
+  public struct Design {
 
-        public var borderRadius: CGFloat
+    public var borderRadius: CGFloat
 
-        public init(
-            borderRadius: CGFloat = Self.default.borderRadius
-        ) {
-            self.borderRadius = borderRadius
-        }
+    public init(
+      borderRadius: CGFloat = Self.default.borderRadius
+    ) {
+      self.borderRadius = borderRadius
     }
+  }
 }
 
 extension ClerkTheme.Design {
 
-    public nonisolated static var `default`: Self {
-        .init(
-            borderRadius: 6.0
-        )
-    }
+  public nonisolated static var `default`: Self {
+    .init(
+      borderRadius: 6.0
+    )
+  }
 
 }
 

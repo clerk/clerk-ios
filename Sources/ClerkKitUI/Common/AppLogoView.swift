@@ -11,29 +11,29 @@ import NukeUI
 import SwiftUI
 
 struct AppLogoView: View {
-    @Environment(Clerk.self) private var clerk
+  @Environment(Clerk.self) private var clerk
 
-    var body: some View {
-        LazyImage(url: URL(string: clerk.environment.displayConfig?.logoImageUrl ?? "")) { state in
-            if let image = state.image {
-                image
-                    .resizable()
-                    .scaledToFit()
-            }
-            //      #if DEBUG
-            //      else {
-            //        Image(systemName: "circle.square.fill")
-            //          .resizable()
-            //          .scaledToFit()
-            //      }
-            //      #endif
-        }
+  var body: some View {
+    LazyImage(url: URL(string: clerk.environment.displayConfig?.logoImageUrl ?? "")) { state in
+      if let image = state.image {
+        image
+          .resizable()
+          .scaledToFit()
+      }
+      //      #if DEBUG
+      //      else {
+      //        Image(systemName: "circle.square.fill")
+      //          .resizable()
+      //          .scaledToFit()
+      //      }
+      //      #endif
     }
+  }
 }
 
 #Preview {
-    AppLogoView()
-        .padding()
+  AppLogoView()
+    .padding()
 }
 
 #endif
