@@ -19,7 +19,7 @@ struct SessionTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var session = Session.mock
+    let session = Session.mock
     _ = try? await session.revoke()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()

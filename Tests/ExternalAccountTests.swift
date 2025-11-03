@@ -19,7 +19,7 @@ struct ExternalAccountTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var externalAccount = ExternalAccount.mockVerified
+    let externalAccount = ExternalAccount.mockVerified
     _ = try? await externalAccount.destroy()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
