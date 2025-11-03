@@ -17,10 +17,10 @@ extension Container {
 }
 
 protocol EmailAddressServiceProtocol: Sendable {
-    @MainActor func create(_ email: String) async throws -> EmailAddress
-    @MainActor func prepareVerification(_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress
-    @MainActor func attemptVerification(_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress
-    @MainActor func destroy(_ emailAddressId: String) async throws -> DeletedObject
+    @MainActor func create(email: String) async throws -> EmailAddress
+    @MainActor func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress
+    @MainActor func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress
+    @MainActor func destroy(emailAddressId: String) async throws -> DeletedObject
 }
 
 final class EmailAddressService: EmailAddressServiceProtocol {
@@ -28,7 +28,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func create(_ email: String) async throws -> EmailAddress {
+    func create(email: String) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "v1/me/email_addresses",
             method: .post,
@@ -40,7 +40,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     }
 
     @MainActor
-    func prepareVerification(_ emailAddressId: String, _ strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress {
+    func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification",
             method: .post,
@@ -52,7 +52,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     }
 
     @MainActor
-    func attemptVerification(_ emailAddressId: String, _ strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress {
+    func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress {
         let request = Request<ClientResponse<EmailAddress>>(
             path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification",
             method: .post,
@@ -64,7 +64,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     }
 
     @MainActor
-    func destroy(_ emailAddressId: String) async throws -> DeletedObject {
+    func destroy(emailAddressId: String) async throws -> DeletedObject {
         let request = Request<ClientResponse<DeletedObject>>(
             path: "/v1/me/email_addresses/\(emailAddressId)",
             method: .delete,

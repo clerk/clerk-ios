@@ -93,7 +93,7 @@ extension Organization {
         name: String,
         slug: String? = nil
     ) async throws -> Organization {
-        try await organizationService.updateOrganization(id, name, slug)
+        try await organizationService.updateOrganization(organizationId: id, name: name, slug: slug)
     }
 
     /// Deletes the organization. Only administrators can delete an organization.
@@ -101,7 +101,7 @@ extension Organization {
     /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await organizationService.destroyOrganization(id)
+        try await organizationService.destroyOrganization(organizationId: id)
     }
 
     /// Sets or replaces an organization's logo.
@@ -110,7 +110,7 @@ extension Organization {
     /// - Returns: ``Organization``
     @discardableResult @MainActor
     public func setLogo(imageData: Data) async throws -> Organization {
-        try await organizationService.setOrganizationLogo(id, imageData)
+        try await organizationService.setOrganizationLogo(organizationId: id, imageData: imageData)
     }
 
     /// Returns a ClerkPaginatedResponse of RoleResource objects.
@@ -125,7 +125,7 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<RoleResource> {
-        try await organizationService.getOrganizationRoles(id, initialPage, pageSize)
+        try await organizationService.getOrganizationRoles(organizationId: id, initialPage: initialPage, pageSize: pageSize)
     }
 
     /// Retrieves the list of memberships for the currently active organization.
@@ -145,7 +145,7 @@ extension Organization {
         initialPage: Int = 0,
         pageSize: Int = 20
     ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-        try await organizationService.getOrganizationMemberships(id, query, role, initialPage, pageSize)
+        try await organizationService.getOrganizationMemberships(organizationId: id, query: query, role: role, initialPage: initialPage, pageSize: pageSize)
     }
 
     /// Adds a user as a member to an organization.
@@ -166,7 +166,7 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        try await organizationService.addOrganizationMember(id, userId, role)
+        try await organizationService.addOrganizationMember(organizationId: id, userId: userId, role: role)
     }
 
     /// Updates a member of an organization.
@@ -184,7 +184,7 @@ extension Organization {
         userId: String,
         role: String
     ) async throws -> OrganizationMembership {
-        try await organizationService.updateOrganizationMember(id, userId, role)
+        try await organizationService.updateOrganizationMember(organizationId: id, userId: userId, role: role)
     }
 
     /// Removes a member from the organization based on the user ID.
@@ -196,7 +196,7 @@ extension Organization {
     ///   An ``OrganizationMembership`` object.
     @discardableResult @MainActor
     public func removeMember(userId: String) async throws -> OrganizationMembership {
-        try await organizationService.removeOrganizationMember(id, userId)
+        try await organizationService.removeOrganizationMember(organizationId: id, userId: userId)
     }
 
     /// Retrieves the list of invitations for the currently active organization.
@@ -215,7 +215,7 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-        try await organizationService.getOrganizationInvitations(id, initialPage, pageSize, status)
+        try await organizationService.getOrganizationInvitations(organizationId: id, initialPage: initialPage, pageSize: pageSize, status: status)
     }
 
     /// Creates and sends an invitation to the target email address to become a member with the specified role.
@@ -231,7 +231,7 @@ extension Organization {
         emailAddress: String,
         role: String
     ) async throws -> OrganizationInvitation {
-        try await organizationService.inviteOrganizationMember(id, emailAddress, role)
+        try await organizationService.inviteOrganizationMember(organizationId: id, emailAddress: emailAddress, role: role)
     }
 
     //    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
@@ -259,7 +259,7 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @discardableResult @MainActor
     public func createDomain(domainName: String) async throws -> OrganizationDomain {
-        try await organizationService.createOrganizationDomain(id, domainName)
+        try await organizationService.createOrganizationDomain(organizationId: id, domainName: domainName)
     }
 
     /// Retrieves the list of domains for the currently active organization.
@@ -278,7 +278,7 @@ extension Organization {
         pageSize: Int = 20,
         enrollmentMode: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-        try await organizationService.getOrganizationDomains(id, initialPage, pageSize, enrollmentMode)
+        try await organizationService.getOrganizationDomains(organizationId: id, initialPage: initialPage, pageSize: pageSize, enrollmentMode: enrollmentMode)
     }
 
     /// Retrieves a domain for an organization based on the given domain ID.
@@ -288,7 +288,7 @@ extension Organization {
     /// - Returns: An ``OrganizationDomain`` object.
     @MainActor
     public func getDomain(domainId: String) async throws -> OrganizationDomain {
-        try await organizationService.getOrganizationDomain(id, domainId)
+        try await organizationService.getOrganizationDomain(organizationId: id, domainId: domainId)
     }
 
     /// Retrieves the list of membership requests for the currently active organization.
@@ -305,7 +305,7 @@ extension Organization {
         pageSize: Int = 20,
         status: String? = nil
     ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-        try await organizationService.getOrganizationMembershipRequests(id, initialPage, pageSize, status)
+        try await organizationService.getOrganizationMembershipRequests(organizationId: id, initialPage: initialPage, pageSize: pageSize, status: status)
     }
 }
 
