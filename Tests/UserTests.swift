@@ -19,7 +19,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.reload()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -42,7 +42,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     let params = User.UpdateParams(firstName: "John", lastName: "Doe")
     _ = try? await user.update(params)
 
@@ -69,7 +69,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createBackupCodes()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -91,7 +91,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createEmailAddress("test@example.com")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -113,7 +113,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createPhoneNumber("+15551234567")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -135,7 +135,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createExternalAccount(provider: .google, redirectUrl: nil, additionalScopes: nil)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -160,7 +160,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createExternalAccount(provider: .apple, idToken: "token123")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -186,7 +186,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.createTOTP()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -208,7 +208,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.verifyTOTP(code: "123456")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -233,7 +233,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.disableTOTP()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -255,7 +255,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.getOrganizationInvitations(initialPage: 0, pageSize: 10)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -279,7 +279,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.getOrganizationMemberships(initialPage: 0, pageSize: 10)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -302,7 +302,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: "pending")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -325,7 +325,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.getSessions()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -347,7 +347,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     let params = User.UpdatePasswordParams(currentPassword: "oldpass", newPassword: "newpass123")
     _ = try? await user.updatePassword(params)
 
@@ -374,7 +374,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     let imageData = Data("image data".utf8)
     _ = try? await user.setProfileImage(imageData: imageData)
 
@@ -400,7 +400,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.deleteProfileImage()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -422,7 +422,7 @@ struct UserTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var user = User.mock
+    let user = User.mock
     _ = try? await user.delete()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()

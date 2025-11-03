@@ -19,7 +19,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.update(name: "Test Org", slug: "test-org")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -45,7 +45,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.destroy()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -67,7 +67,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     let imageData = Data("image data".utf8)
     _ = try? await organization.setLogo(imageData: imageData)
 
@@ -92,7 +92,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getRoles(initialPage: 0, pageSize: 10)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -116,7 +116,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getMemberships(query: "test", role: ["admin"], initialPage: 0, pageSize: 10)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -140,7 +140,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.addMember(userId: "user_123", role: "admin")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -166,7 +166,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.updateMember(userId: "user_123", role: "member")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -191,7 +191,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.removeMember(userId: "user_123")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -213,7 +213,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getInvitations(initialPage: 0, pageSize: 10, status: "pending")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -236,7 +236,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.inviteMember(emailAddress: "test@example.com", role: "admin")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -262,7 +262,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.createDomain(domainName: "example.com")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -287,7 +287,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getDomains(initialPage: 0, pageSize: 10, enrollmentMode: "automatic")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -310,7 +310,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getDomain(domainId: "domain_123")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -332,7 +332,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
+    let organization = Organization.mock
     _ = try? await organization.getMembershipRequests(initialPage: 0, pageSize: 10, status: "pending")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -355,8 +355,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var domain = OrganizationDomain.mock
+    let domain = OrganizationDomain.mock
     _ = try? await domain.delete()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -378,8 +377,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var domain = OrganizationDomain.mock
+    let domain = OrganizationDomain.mock
     _ = try? await domain.prepareAffiliationVerification(affiliationEmailAddress: "admin@example.com")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -404,8 +402,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var domain = OrganizationDomain.mock
+    let domain = OrganizationDomain.mock
     _ = try? await domain.attemptAffiliationVerification(code: "123456")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -430,8 +427,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var invitation = OrganizationInvitation.mock
+    let invitation = OrganizationInvitation.mock
     _ = try? await invitation.revoke()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -453,7 +449,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var membership = OrganizationMembership.mockWithUserData
+    let membership = OrganizationMembership.mockWithUserData
     guard let userId = membership.publicUserData?.userId else {
       Issue.record("membership.publicUserData.userId is nil")
       return
@@ -480,7 +476,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var invitation = UserOrganizationInvitation.mock
+    let invitation = UserOrganizationInvitation.mock
     _ = try? await invitation.accept()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -502,7 +498,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var suggestion = OrganizationSuggestion.mock
+    let suggestion = OrganizationSuggestion.mock
     _ = try? await suggestion.accept()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -524,8 +520,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var membershipRequest = OrganizationMembershipRequest.mock
+    let membershipRequest = OrganizationMembershipRequest.mock
     _ = try? await membershipRequest.accept()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -547,8 +542,7 @@ struct OrganizationTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var organization = Organization.mock
-    var membershipRequest = OrganizationMembershipRequest.mock
+    let membershipRequest = OrganizationMembershipRequest.mock
     _ = try? await membershipRequest.reject()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()

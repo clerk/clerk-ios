@@ -11,10 +11,13 @@ import Foundation
 final class RequestCaptureURLProtocol: URLProtocol {
 
   /// Thread-safe storage for captured requests
+  /// Marked as nonisolated(unsafe) since it's protected by locks and only used in tests
+  nonisolated(unsafe) private static var capturedRequests: [URLRequest] = []
   private static let lock = NSLock()
-  private static var capturedRequests: [URLRequest] = []
 
   /// Reset captured requests (call before each test)
+  /// Clears all captured requests to ensure test isolation
+  /// Note: Since tests are serialized within suites, this should work for most cases
   static func reset() {
     lock.lock()
     defer { lock.unlock() }
@@ -28,11 +31,10 @@ final class RequestCaptureURLProtocol: URLProtocol {
     return capturedRequests
   }
 
-  /// Get the last captured request
+  /// Get the last captured request since the last reset for this test
   static func getLastRequest() -> URLRequest? {
-    lock.lock()
-    defer { lock.unlock() }
-    return capturedRequests.last
+    let requests = getCapturedRequests()
+    return requests.last
   }
 
   override class func canInit(with request: URLRequest) -> Bool {
