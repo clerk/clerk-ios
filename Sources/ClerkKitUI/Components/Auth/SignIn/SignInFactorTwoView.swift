@@ -11,33 +11,33 @@ import SwiftUI
 import ClerkKit
 
 struct SignInFactorTwoView: View {
-    @Environment(\.clerkTheme) private var theme
+  @Environment(\.clerkTheme) private var theme
 
-    let factor: Factor
+  let factor: Factor
 
-    @ViewBuilder
-    var viewForFactor: some View {
-        switch factor.strategy {
-        case "totp", "phone_code", "email_code":
-            SignInFactorCodeView(factor: factor, mode: .secondFactor)
-        case "backup_code":
-            SignInFactorTwoBackupCodeView(factor: factor)
-        default:
-            SignInGetHelpView()
-        }
+  @ViewBuilder
+  var viewForFactor: some View {
+    switch factor.strategy {
+    case "totp", "phone_code", "email_code":
+      SignInFactorCodeView(factor: factor, isSecondFactor: true)
+    case "backup_code":
+      SignInFactorTwoBackupCodeView(factor: factor)
+    default:
+      SignInGetHelpView()
     }
+  }
 
-    var body: some View {
-        viewForFactor
-    }
+  var body: some View {
+    viewForFactor
+  }
 }
 
 #Preview {
-    SignInFactorOneView(
-        factor: .init(
-            strategy: "totp"
-        )
+  SignInFactorOneView(
+    factor: .init(
+      strategy: "totp"
     )
+  )
 }
 
 #endif
