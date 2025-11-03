@@ -242,7 +242,7 @@ struct SignInTests {
   func testResetPassword() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     let params = SignIn.ResetPasswordParams(password: "newpassword123")
     _ = try? await signIn.resetPassword(params)
 
@@ -269,7 +269,7 @@ struct SignInTests {
   func testPrepareFirstFactorEmailCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .emailCode(emailAddressId: "email_123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -290,7 +290,7 @@ struct SignInTests {
   func testPrepareFirstFactorPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .phoneCode(phoneNumberId: "phone_123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -311,7 +311,7 @@ struct SignInTests {
   func testPrepareFirstFactorPasskey() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .passkey)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -331,7 +331,7 @@ struct SignInTests {
   func testPrepareFirstFactorResetPasswordEmailCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .resetPasswordEmailCode(emailAddressId: "email_123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -352,7 +352,7 @@ struct SignInTests {
   func testPrepareFirstFactorResetPasswordPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .resetPasswordPhoneCode(phoneNumberId: "phone_123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -373,7 +373,7 @@ struct SignInTests {
   func testPrepareFirstFactorOAuth(provider: OAuthProvider) async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .oauth(provider: provider, redirectUrl: "https://example.com/callback"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -394,7 +394,7 @@ struct SignInTests {
   func testPrepareFirstFactorEnterpriseSSO() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareFirstFactor(strategy: .enterpriseSSO(redirectUrl: "https://example.com/callback"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -417,7 +417,7 @@ struct SignInTests {
   func testAttemptFirstFactorPassword() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .password(password: "password123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -438,7 +438,7 @@ struct SignInTests {
   func testAttemptFirstFactorEmailCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .emailCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -459,7 +459,7 @@ struct SignInTests {
   func testAttemptFirstFactorPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .phoneCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -480,7 +480,7 @@ struct SignInTests {
   func testAttemptFirstFactorPasskey() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .passkey(publicKeyCredential: "credential_123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -501,7 +501,7 @@ struct SignInTests {
   func testAttemptFirstFactorResetPasswordEmailCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -522,7 +522,7 @@ struct SignInTests {
   func testAttemptFirstFactorResetPasswordPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -545,7 +545,7 @@ struct SignInTests {
   func testPrepareSecondFactorPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.prepareSecondFactor(strategy: .phoneCode)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -567,7 +567,7 @@ struct SignInTests {
   func testAttemptSecondFactorPhoneCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptSecondFactor(strategy: .phoneCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -588,7 +588,7 @@ struct SignInTests {
   func testAttemptSecondFactorTotp() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptSecondFactor(strategy: .totp(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -609,7 +609,7 @@ struct SignInTests {
   func testAttemptSecondFactorBackupCode() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.attemptSecondFactor(strategy: .backupCode(code: "backup123"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -632,7 +632,7 @@ struct SignInTests {
   func testGet() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.get(rotatingTokenNonce: nil)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -653,7 +653,7 @@ struct SignInTests {
   func testGetWithRotatingTokenNonce() async throws {
     TestContainer.reset()
 
-    var signIn = SignIn.mock
+    let signIn = SignIn.mock
     _ = try? await signIn.get(rotatingTokenNonce: "token_nonce_123")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()

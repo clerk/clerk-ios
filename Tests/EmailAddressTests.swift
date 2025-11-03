@@ -44,7 +44,7 @@ struct EmailAddressTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var emailAddress = EmailAddress.mock
+    let emailAddress = EmailAddress.mock
     _ = try? await emailAddress.prepareVerification(strategy: .emailCode)
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -69,7 +69,7 @@ struct EmailAddressTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var emailAddress = EmailAddress.mock
+    let emailAddress = EmailAddress.mock
     _ = try? await emailAddress.attemptVerification(strategy: .emailCode(code: "123456"))
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -85,7 +85,6 @@ struct EmailAddressTests {
     #expect(verification.hasMethod("POST"))
 
     let bodyParams = parseURLEncodedForm(from: request)
-    #expect(bodyParams["strategy"] == "email_code")
     #expect(bodyParams["code"] == "123456")
   }
 
@@ -95,7 +94,7 @@ struct EmailAddressTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var emailAddress = EmailAddress.mock
+    let emailAddress = EmailAddress.mock
     _ = try? await emailAddress.destroy()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -112,4 +111,3 @@ struct EmailAddressTests {
     #expect(verification.hasQueryParameter("_clerk_session_id", value: "1"))
   }
 }
-

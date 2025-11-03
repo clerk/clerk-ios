@@ -43,7 +43,7 @@ struct PasskeyTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var passkey = Passkey.mock
+    let passkey = Passkey.mock
     _ = try? await passkey.update(name: "My Passkey")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -68,7 +68,7 @@ struct PasskeyTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var passkey = Passkey.mock
+    let passkey = Passkey.mock
     _ = try? await passkey.attemptVerification(credential: "credential_data")
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
@@ -94,7 +94,7 @@ struct PasskeyTests {
     TestContainer.reset()
     Clerk.shared.client = .mock
 
-    var passkey = Passkey.mock
+    let passkey = Passkey.mock
     _ = try? await passkey.delete()
 
     let requests = RequestCaptureURLProtocol.getCapturedRequests()
