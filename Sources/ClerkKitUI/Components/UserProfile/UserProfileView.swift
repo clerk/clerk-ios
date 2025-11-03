@@ -53,303 +53,303 @@ import SwiftUI
 /// }
 /// ```
 public struct UserProfileView: View {
-    @Environment(Clerk.self) private var clerk
-    @Environment(\.clerkTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
 
-    @State private var updateProfileIsPresented = false
-    @State private var accountSwitcherHeight: CGFloat = 400
-    @State private var sharedState = SharedState()
-    @State private var error: Error?
+  @State private var updateProfileIsPresented = false
+  @State private var accountSwitcherHeight: CGFloat = 400
+  @State private var sharedState = SharedState()
+  @State private var error: Error?
 
-    let isDismissable: Bool
+  let isDismissable: Bool
 
-    /// Creates a new user profile view.
-    ///
-    /// - Parameter isDismissable: Whether the view can be dismissed by the user.
-    ///   When `true`, a dismiss button appears in the navigation bar and the view
-    ///   can be used in sheets or other dismissable contexts. When `false`, no
-    ///   dismiss button is shown, making it suitable for full-screen usage.
-    ///   Defaults to `true`.
-    public init(isDismissable: Bool = true) {
-        self.isDismissable = isDismissable
-    }
+  /// Creates a new user profile view.
+  ///
+  /// - Parameter isDismissable: Whether the view can be dismissed by the user.
+  ///   When `true`, a dismiss button appears in the navigation bar and the view
+  ///   can be used in sheets or other dismissable contexts. When `false`, no
+  ///   dismiss button is shown, making it suitable for full-screen usage.
+  ///   Defaults to `true`.
+  public init(isDismissable: Bool = true) {
+    self.isDismissable = isDismissable
+  }
 
-    var user: User? {
-        clerk.user
-    }
+  var user: User? {
+    clerk.user
+  }
 
-    @ViewBuilder
-    private func userProfileHeader(_ user: User) -> some View {
-        let fullName = user.fullName
-        let hasFullName = fullName != nil
+  @ViewBuilder
+  private func userProfileHeader(_ user: User) -> some View {
+    let fullName = user.fullName
+    let hasFullName = fullName != nil
 
-        VStack(spacing: 12) {
-            LazyImage(url: URL(string: user.imageUrl)) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Image("icon-profile", bundle: .module)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(theme.colors.primary.gradient)
-                        .opacity(0.5)
-                }
-            }
-            .frame(width: 96, height: 96)
-            .clipShape(.circle)
-            .transition(.opacity.animation(.easeInOut(duration: 0.25)))
-
-            VStack(spacing: 0) {
-                if let fullName {
-                    Text(fullName)
-                        .font(theme.fonts.title2)
-                        .fontWeight(.bold)
-                        .frame(minHeight: 28)
-                        .foregroundStyle(theme.colors.foreground)
-                }
-
-                if let username = user.username, !username.isEmptyTrimmed {
-                    Text(username)
-                        .font(
-                            hasFullName
-                                ? theme.fonts.subheadline
-                                : theme.fonts.title2
-                        )
-                        .fontWeight(hasFullName ? .regular : .bold)
-                        .frame(minHeight: hasFullName ? nil : 28)
-                        .foregroundStyle(hasFullName ? theme.colors.mutedForeground : theme.colors.foreground)
-                }
-            }
-
-            Button {
-                updateProfileIsPresented = true
-            } label: {
-                Text("Update profile", bundle: .module)
-            }
-            .buttonStyle(.secondary(config: .init(size: .small)))
-            .simultaneousGesture(TapGesture())
+    VStack(spacing: 12) {
+      LazyImage(url: URL(string: user.imageUrl)) { state in
+        if let image = state.image {
+          image
+            .resizable()
+            .scaledToFill()
+        } else {
+          Image("icon-profile", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(theme.colors.primary.gradient)
+            .opacity(0.5)
         }
-        .padding(32)
-        .frame(maxWidth: .infinity)
-    }
+      }
+      .frame(width: 96, height: 96)
+      .clipShape(.circle)
+      .transition(.opacity.animation(.easeInOut(duration: 0.25)))
 
-    @ViewBuilder
-    private func row(
-        icon: String,
-        text: LocalizedStringKey,
-        action: @escaping () async -> Void
-    ) -> some View {
-        AsyncButton {
-            await action()
-        } label: { isRunning in
-            UserProfileRowView(icon: icon, text: text)
-                .overlayProgressView(isActive: isRunning)
+      VStack(spacing: 0) {
+        if let fullName {
+          Text(fullName)
+            .font(theme.fonts.title2)
+            .fontWeight(.bold)
+            .frame(minHeight: 28)
+            .foregroundStyle(theme.colors.foreground)
         }
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
-        }
-        .buttonStyle(.pressedBackground)
-        .simultaneousGesture(TapGesture())
-    }
 
-    public var body: some View {
-        if let user {
-            NavigationStack(path: $sharedState.path) {
+        if let username = user.username, !username.isEmptyTrimmed {
+          Text(username)
+            .font(
+              hasFullName
+                ? theme.fonts.subheadline
+                : theme.fonts.title2
+            )
+            .fontWeight(hasFullName ? .regular : .bold)
+            .frame(minHeight: hasFullName ? nil : 28)
+            .foregroundStyle(hasFullName ? theme.colors.mutedForeground : theme.colors.foreground)
+        }
+      }
+
+      Button {
+        updateProfileIsPresented = true
+      } label: {
+        Text("Update profile", bundle: .module)
+      }
+      .buttonStyle(.secondary(config: .init(size: .small)))
+      .simultaneousGesture(TapGesture())
+    }
+    .padding(32)
+    .frame(maxWidth: .infinity)
+  }
+
+  @ViewBuilder
+  private func row(
+    icon: String,
+    text: LocalizedStringKey,
+    action: @escaping () async -> Void
+  ) -> some View {
+    AsyncButton {
+      await action()
+    } label: { isRunning in
+      UserProfileRowView(icon: icon, text: text)
+        .overlayProgressView(isActive: isRunning)
+    }
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .frame(height: 1)
+        .foregroundStyle(theme.colors.border)
+    }
+    .buttonStyle(.pressedBackground)
+    .simultaneousGesture(TapGesture())
+  }
+
+  public var body: some View {
+    if let user {
+      NavigationStack(path: $sharedState.path) {
+        VStack(spacing: 0) {
+          ScrollView {
+            LazyVStack(spacing: 0) {
+              userProfileHeader(user)
+
+              VStack(spacing: 48) {
                 VStack(spacing: 0) {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            userProfileHeader(user)
+                  row(icon: "icon-profile", text: "Profile") {
+                    sharedState.path.append(Destination.profileDetail)
+                  }
 
-                            VStack(spacing: 48) {
-                                VStack(spacing: 0) {
-                                    row(icon: "icon-profile", text: "Profile") {
-                                        sharedState.path.append(Destination.profileDetail)
-                                    }
-
-                                    row(icon: "icon-security", text: "Security") {
-                                        sharedState.path.append(Destination.security)
-                                    }
-                                }
-                                .background(theme.colors.background)
-                                .overlay(alignment: .top) {
-                                    Rectangle()
-                                        .frame(height: 1)
-                                        .foregroundStyle(theme.colors.border)
-                                }
-
-                                VStack(spacing: 0) {
-                                    if clerk.environment.mutliSessionModeIsEnabled {
-                                        if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
-                                            row(icon: "icon-switch", text: "Switch account") {
-                                                sharedState.accountSwitcherIsPresented = true
-                                            }
-                                        }
-
-                                        row(icon: "icon-plus", text: "Add account") {
-                                            sharedState.authViewIsPresented = true
-                                        }
-                                    }
-
-                                    row(icon: "icon-sign-out", text: "Sign out") {
-                                        guard let sessionId = clerk.session?.id else { return }
-                                        await signOut(sessionId: sessionId)
-                                    }
-                                }
-                                .background(theme.colors.background)
-                                .overlay(alignment: .top) {
-                                    Rectangle()
-                                        .frame(height: 1)
-                                        .foregroundStyle(theme.colors.border)
-                                }
-                            }
-                        }
-                    }
-                    .background(theme.colors.muted)
-
-                    SecuredByClerkFooter()
+                  row(icon: "icon-security", text: "Security") {
+                    sharedState.path.append(Destination.security)
+                  }
                 }
-                .animation(.default, value: user)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text("Account", bundle: .module)
-                            .font(theme.fonts.headline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(theme.colors.foreground)
+                .background(theme.colors.background)
+                .overlay(alignment: .top) {
+                  Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(theme.colors.border)
+                }
+
+                VStack(spacing: 0) {
+                  if clerk.environment.mutliSessionModeIsEnabled {
+                    if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
+                      row(icon: "icon-switch", text: "Switch account") {
+                        sharedState.accountSwitcherIsPresented = true
+                      }
                     }
 
-                    if isDismissable {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            DismissButton()
-                        }
+                    row(icon: "icon-plus", text: "Add account") {
+                      sharedState.authViewIsPresented = true
                     }
+                  }
+
+                  row(icon: "icon-sign-out", text: "Sign out") {
+                    guard let sessionId = clerk.session?.id else { return }
+                    await signOut(sessionId: sessionId)
+                  }
                 }
-                .navigationDestination(for: Destination.self) {
-                    $0.view
+                .background(theme.colors.background)
+                .overlay(alignment: .top) {
+                  Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(theme.colors.border)
                 }
+              }
             }
-            .tint(theme.colors.primary)
-            .presentationBackground(theme.colors.background)
-            .background(theme.colors.background)
-            .clerkErrorPresenting($error)
-            .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {
-                UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
-                    .presentationDetents([.height(accountSwitcherHeight)])
-            }
-            .sheet(isPresented: $updateProfileIsPresented) {
-                UserProfileUpdateProfileView(user: user)
-            }
-            .sheet(isPresented: $sharedState.authViewIsPresented) {
-                AuthView()
-                    .interactiveDismissDisabled()
-            }
-            .task {
-                for await event in clerk.authEventEmitter.events {
-                    switch event {
-                    case .signInCompleted, .signUpCompleted:
-                        sharedState.authViewIsPresented = false
-                    default:
-                        break
-                    }
-                }
-            }
-            .task(id: user) {
-                await getSessionsOnAllDevices()
-            }
-            .task {
-                _ = try? await Clerk.Environment.get()
-            }
-            .task {
-                _ = try? await Client.get()
-            }
-            .taskOnce {
-                await clerk.telemetry.record(
-                    TelemetryEvents.viewDidAppear(
-                        "UserProfileView",
-                        payload: ["isDismissable": .bool(isDismissable)]
-                    )
-                )
-            }
-            .environment(sharedState)
+          }
+          .background(theme.colors.muted)
+
+          SecuredByClerkFooter()
         }
+        .animation(.default, value: user)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .principal) {
+            Text("Account", bundle: .module)
+              .font(theme.fonts.headline)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.foreground)
+          }
+
+          if isDismissable {
+            ToolbarItem(placement: .topBarTrailing) {
+              DismissButton()
+            }
+          }
+        }
+        .navigationDestination(for: Destination.self) {
+          $0.view
+        }
+      }
+      .tint(theme.colors.primary)
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
+      .clerkErrorPresenting($error)
+      .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {
+        UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
+          .presentationDetents([.height(accountSwitcherHeight)])
+      }
+      .sheet(isPresented: $updateProfileIsPresented) {
+        UserProfileUpdateProfileView(user: user)
+      }
+      .sheet(isPresented: $sharedState.authViewIsPresented) {
+        AuthView()
+          .interactiveDismissDisabled()
+      }
+      .task {
+        for await event in clerk.authEventEmitter.events {
+          switch event {
+          case .signInCompleted, .signUpCompleted:
+            sharedState.authViewIsPresented = false
+          default:
+            break
+          }
+        }
+      }
+      .task(id: user) {
+        await getSessionsOnAllDevices()
+      }
+      .task {
+        _ = try? await Clerk.Environment.get()
+      }
+      .task {
+        _ = try? await Client.get()
+      }
+      .taskOnce {
+        await clerk.telemetry.record(
+          TelemetryEvents.viewDidAppear(
+            "UserProfileView",
+            payload: ["isDismissable": .bool(isDismissable)]
+          )
+        )
+      }
+      .environment(sharedState)
     }
+  }
 }
 
 extension UserProfileView {
 
-    func signOut(sessionId: String) async {
-        do {
-            try await clerk.signOut(sessionId: sessionId)
-            if clerk.session == nil {
-                dismiss()
-            }
-        } catch {
-            self.error = error
-            ClerkLogger.error("Failed to sign out", error: error)
-        }
+  func signOut(sessionId: String) async {
+    do {
+      try await clerk.signOut(sessionId: sessionId)
+      if clerk.session == nil {
+        dismiss()
+      }
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to sign out", error: error)
     }
+  }
 
-    func getSessionsOnAllDevices() async {
-        guard let user else { return }
-        do {
-            try await user.getSessions()
-        } catch {
-            if error.isCancellationError {
-                ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
-            } else {
-                self.error = error
-                ClerkLogger.error("Failed to get sessions on all devices", error: error)
-            }
-        }
+  func getSessionsOnAllDevices() async {
+    guard let user else { return }
+    do {
+      try await user.getSessions()
+    } catch {
+      if error.isCancellationError {
+        ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
+      } else {
+        self.error = error
+        ClerkLogger.error("Failed to get sessions on all devices", error: error)
+      }
     }
+  }
 
 }
 
 extension UserProfileView {
-    enum Destination: Hashable {
-        case profileDetail
-        case security
+  enum Destination: Hashable {
+    case profileDetail
+    case security
 
-        @MainActor
-        @ViewBuilder
-        var view: some View {
-            switch self {
-            case .profileDetail:
-                UserProfileDetailView()
-            case .security:
-                UserProfileSecurityView()
-            }
-        }
+    @MainActor
+    @ViewBuilder
+    var view: some View {
+      switch self {
+      case .profileDetail:
+        UserProfileDetailView()
+      case .security:
+        UserProfileSecurityView()
+      }
     }
+  }
 }
 
 extension UserProfileView {
-    @Observable
-    class SharedState {
-        var path = NavigationPath()
-        var lastCodeSentAt: [String: Date] = [:]
-        var accountSwitcherIsPresented = false
-        var authViewIsPresented = false
-        var chooseMfaTypeIsPresented = false
-        var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
-    }
+  @Observable
+  class SharedState {
+    var path = NavigationPath()
+    var lastCodeSentAt: [String: Date] = [:]
+    var accountSwitcherIsPresented = false
+    var authViewIsPresented = false
+    var chooseMfaTypeIsPresented = false
+    var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
+  }
 }
 
 #Preview("Dismissable") {
-    UserProfileView()
-        .clerkPreviewMocks()
-        .environment(\.clerkTheme, .clerk)
+  UserProfileView()
+    .clerkPreviewMocks()
+    .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Not dismissable") {
-    UserProfileView(isDismissable: false)
-        .clerkPreviewMocks()
-        .environment(\.clerkTheme, .clerk)
+  UserProfileView(isDismissable: false)
+    .clerkPreviewMocks()
+    .environment(\.clerkTheme, .clerk)
 }
 
 #endif

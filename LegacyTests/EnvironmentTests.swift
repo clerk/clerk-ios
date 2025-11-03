@@ -9,24 +9,24 @@ import Testing
 @Suite(.serialized) struct EnvironmentSerializedTests {
 
   init() {
-    TestContainer.reset()
+  TestContainer.reset()
   }
 
   @Test func testGet() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalUrl = mockBaseUrl.appending(path: "/v1/environment")
-    var mock = Mock(
-      url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(Clerk.Environment())
-      ])
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-    _ = try await Clerk.Environment.get()
-    #expect(requestHandled.value)
+  let requestHandled = LockIsolated(false)
+  let originalUrl = mockBaseUrl.appending(path: "/v1/environment")
+  var mock = Mock(
+    url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
+    data: [
+    .get: try! JSONEncoder.clerkEncoder.encode(Clerk.Environment())
+    ])
+  mock.onRequestHandler = OnRequestHandler { request in
+    #expect(request.httpMethod == "GET")
+    requestHandled.setValue(true)
+  }
+  mock.register()
+  _ = try await Clerk.Environment.get()
+  #expect(requestHandled.value)
   }
 
 }

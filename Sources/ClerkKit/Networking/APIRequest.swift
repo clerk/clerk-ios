@@ -14,13 +14,13 @@ struct AnyEncodable: Encodable, @unchecked Sendable {
   private let encodeClosure: @Sendable (Encoder) throws -> Void
 
   init(_ base: some Encodable & Sendable) {
-    self.encodeClosure = { encoder in
-      try base.encode(to: encoder)
-    }
+  self.encodeClosure = { encoder in
+    try base.encode(to: encoder)
+  }
   }
 
   func encode(to encoder: Encoder) throws {
-    try encodeClosure(encoder)
+  try encodeClosure(encoder)
   }
 }
 
@@ -30,12 +30,12 @@ enum RequestBody: @unchecked Sendable {
   case encodable(AnyEncodable)
 
   func encoded(using encoder: JSONEncoder) throws -> Data {
-    switch self {
-    case let .data(data):
-      return data
-    case let .encodable(value):
-      return try encoder.encode(value)
-    }
+  switch self {
+  case let .data(data):
+    return data
+  case let .encodable(value):
+    return try encoder.encode(value)
+  }
   }
 }
 
@@ -55,73 +55,73 @@ struct Request<Response: Decodable & Sendable>: Sendable {
   private let decodeClosure: @Sendable (Data, JSONDecoder) throws -> Response
 
   init(
-    path: String,
-    method: HTTPMethod = .get,
-    headers: [String: String] = [:],
-    query: [(String, String?)] = [],
-    body: (any Encodable & Sendable)? = nil,
-    decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
-      if Response.self == EmptyResponse.self {
-        return EmptyResponse() as! Response
-      }
-      return try decoder.decode(Response.self, from: data)
+  path: String,
+  method: HTTPMethod = .get,
+  headers: [String: String] = [:],
+  query: [(String, String?)] = [],
+  body: (any Encodable & Sendable)? = nil,
+  decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
+    if Response.self == EmptyResponse.self {
+    return EmptyResponse() as! Response
     }
+    return try decoder.decode(Response.self, from: data)
+  }
   ) {
-    self.path = path
-    self.method = method
-    self.headers = headers
-    self.queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
-    self.body = body.map { .encodable(AnyEncodable($0)) }
-    self.decodeClosure = decode
+  self.path = path
+  self.method = method
+  self.headers = headers
+  self.queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
+  self.body = body.map { .encodable(AnyEncodable($0)) }
+  self.decodeClosure = decode
   }
 
   func makeURLRequest(baseURL: URL?, encoder: JSONEncoder) throws -> URLRequest {
-    let resolvedURL: URL
+  let resolvedURL: URL
 
-    if let absoluteURL = URL(string: path), absoluteURL.scheme != nil {
-      resolvedURL = absoluteURL
-    } else {
-      guard let baseURL else {
-        throw RequestError.missingBaseURL(path: path)
-      }
-
-      let trimmedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
-      resolvedURL = baseURL.appendingPathComponent(trimmedPath)
+  if let absoluteURL = URL(string: path), absoluteURL.scheme != nil {
+    resolvedURL = absoluteURL
+  } else {
+    guard let baseURL else {
+    throw RequestError.missingBaseURL(path: path)
     }
 
-    guard var components = URLComponents(url: resolvedURL, resolvingAgainstBaseURL: false) else {
-      throw RequestError.invalidURL(path: resolvedURL.absoluteString)
-    }
+    let trimmedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
+    resolvedURL = baseURL.appendingPathComponent(trimmedPath)
+  }
 
-    if !queryItems.isEmpty {
-      let existing = components.queryItems ?? []
-      components.queryItems = existing + queryItems
-    }
+  guard var components = URLComponents(url: resolvedURL, resolvingAgainstBaseURL: false) else {
+    throw RequestError.invalidURL(path: resolvedURL.absoluteString)
+  }
 
-    guard let finalURL = components.url else {
-      throw RequestError.invalidURL(path: resolvedURL.absoluteString)
-    }
+  if !queryItems.isEmpty {
+    let existing = components.queryItems ?? []
+    components.queryItems = existing + queryItems
+  }
 
-    var urlRequest = URLRequest(url: finalURL)
-    urlRequest.httpMethod = method.rawValue
-    if !headers.isEmpty {
-      var headerFields = urlRequest.allHTTPHeaderFields ?? [:]
-      headers.forEach { headerFields[$0.key] = $0.value }
-      urlRequest.allHTTPHeaderFields = headerFields
-    }
+  guard let finalURL = components.url else {
+    throw RequestError.invalidURL(path: resolvedURL.absoluteString)
+  }
 
-    if let bodyData = try body?.encoded(using: encoder) {
-      urlRequest.httpBody = bodyData
-    }
+  var urlRequest = URLRequest(url: finalURL)
+  urlRequest.httpMethod = method.rawValue
+  if !headers.isEmpty {
+    var headerFields = urlRequest.allHTTPHeaderFields ?? [:]
+    headers.forEach { headerFields[$0.key] = $0.value }
+    urlRequest.allHTTPHeaderFields = headerFields
+  }
 
-    return urlRequest
+  if let bodyData = try body?.encoded(using: encoder) {
+    urlRequest.httpBody = bodyData
+  }
+
+  return urlRequest
   }
 
   func decode(_ data: Data, using decoder: JSONDecoder) throws -> Response {
-    if Response.self == EmptyResponse.self {
-      return EmptyResponse() as! Response
-    }
-    return try decodeClosure(data, decoder)
+  if Response.self == EmptyResponse.self {
+    return EmptyResponse() as! Response
+  }
+  return try decodeClosure(data, decoder)
   }
 }
 
