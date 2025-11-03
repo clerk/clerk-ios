@@ -215,7 +215,7 @@ extension Session {
     /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
     @discardableResult @MainActor
     public func revoke() async throws -> Session {
-        try await sessionService.revoke(id)
+        try await sessionService.revoke(sessionId: id)
     }
 
     /**

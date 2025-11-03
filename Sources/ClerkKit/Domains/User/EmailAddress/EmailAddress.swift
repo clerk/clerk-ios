@@ -64,7 +64,7 @@ extension EmailAddress {
     ///     - email: The email address to add to the current user.
     @discardableResult @MainActor
     public static func create(_ email: String) async throws -> EmailAddress {
-        try await Self.emailAddressService.create(email)
+        try await Self.emailAddressService.create(email: email)
     }
 
     /// Prepares the verification process for this email address.
@@ -82,7 +82,7 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-        try await emailAddressService.prepareVerification(id, strategy)
+        try await emailAddressService.prepareVerification(emailAddressId: id, strategy: strategy)
     }
 
     /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -99,13 +99,13 @@ extension EmailAddress {
     /// ```
     @discardableResult @MainActor
     public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-        try await emailAddressService.attemptVerification(id, strategy)
+        try await emailAddressService.attemptVerification(emailAddressId: id, strategy: strategy)
     }
 
     /// Deletes this email address.
     @discardableResult @MainActor
     public func destroy() async throws -> DeletedObject {
-        try await emailAddressService.destroy(id)
+        try await emailAddressService.destroy(emailAddressId: id)
     }
 
 }

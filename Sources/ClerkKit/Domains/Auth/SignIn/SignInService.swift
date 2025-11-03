@@ -18,24 +18,24 @@ extension Container {
 }
 
 protocol SignInServiceProtocol: Sendable {
-    @MainActor func create(_ strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn
-    @MainActor func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn
-    @MainActor func resetPassword(_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn
-    @MainActor func prepareFirstFactor(_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn
-    @MainActor func attemptFirstFactor(_ signInId: String, _ strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
-    @MainActor func prepareSecondFactor(_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
-    @MainActor func attemptSecondFactor(_ signInId: String, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
-    @MainActor func get(_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn
+    @MainActor func create(strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn
+    @MainActor func createWithParams(params: any Encodable & Sendable) async throws -> SignIn
+    @MainActor func resetPassword(signInId: String, params: SignIn.ResetPasswordParams) async throws -> SignIn
+    @MainActor func prepareFirstFactor(signInId: String, strategy: SignIn.PrepareFirstFactorStrategy, signIn: SignIn) async throws -> SignIn
+    @MainActor func attemptFirstFactor(signInId: String, strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn
+    @MainActor func prepareSecondFactor(signInId: String, strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn
+    @MainActor func attemptSecondFactor(signInId: String, strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn
+    @MainActor func get(signInId: String, rotatingTokenNonce: String?) async throws -> SignIn
 
     #if !os(tvOS) && !os(watchOS)
-    @MainActor func authenticateWithRedirectStatic(_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
-    @MainActor func authenticateWithRedirect(_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirectStatic(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+    @MainActor func authenticateWithRedirect(signIn: SignIn, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
     #endif
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    @MainActor func getCredentialForPasskey(_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String
-    @MainActor func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult
-    @MainActor func authenticateWithIdToken(_ signIn: SignIn) async throws -> TransferFlowResult
+    @MainActor func getCredentialForPasskey(signIn: SignIn, autofill: Bool, preferImmediatelyAvailableCredentials: Bool) async throws -> String
+    @MainActor func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
+    @MainActor func authenticateWithIdToken(signIn: SignIn) async throws -> TransferFlowResult
     #endif
 }
 
@@ -44,7 +44,7 @@ final class SignInService: SignInServiceProtocol {
     private var apiClient: APIClient { Container.shared.apiClient() }
 
     @MainActor
-    func create(_ strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn {
+    func create(strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn {
         var params = strategy.params
         params.locale = locale ?? LocaleUtils.userLocale()
 
@@ -58,7 +58,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func createWithParams(_ params: any Encodable & Sendable) async throws -> SignIn {
+    func createWithParams(params: any Encodable & Sendable) async throws -> SignIn {
         var body: any Encodable & Sendable = params
         if var json = try? JSON(encodable: params), case .object(var object) = json {
             if object["locale"] == nil || object["locale"] == .null {
@@ -78,7 +78,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func resetPassword(_ signInId: String, _ params: SignIn.ResetPasswordParams) async throws -> SignIn {
+    func resetPassword(signInId: String, params: SignIn.ResetPasswordParams) async throws -> SignIn {
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/reset_password",
             method: .post,
@@ -89,7 +89,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func prepareFirstFactor(_ signInId: String, _ strategy: SignIn.PrepareFirstFactorStrategy, _ signIn: SignIn) async throws -> SignIn {
+    func prepareFirstFactor(signInId: String, strategy: SignIn.PrepareFirstFactorStrategy, signIn: SignIn) async throws -> SignIn {
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/prepare_first_factor",
             method: .post,
@@ -100,7 +100,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func attemptFirstFactor(_ signInId: String, _ strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn {
+    func attemptFirstFactor(signInId: String, strategy: SignIn.AttemptFirstFactorStrategy) async throws -> SignIn {
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/attempt_first_factor",
             method: .post,
@@ -111,7 +111,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func prepareSecondFactor(_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn {
+    func prepareSecondFactor(signInId: String, strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn {
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/prepare_second_factor",
             method: .post,
@@ -122,7 +122,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func attemptSecondFactor(_ signInId: String, _ strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn {
+    func attemptSecondFactor(signInId: String, strategy: SignIn.AttemptSecondFactorStrategy) async throws -> SignIn {
         let request = Request<ClientResponse<SignIn>>(
             path: "/v1/client/sign_ins/\(signInId)/attempt_second_factor",
             method: .post,
@@ -133,7 +133,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func get(_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn {
+    func get(signInId: String, rotatingTokenNonce: String?) async throws -> SignIn {
         var queryParams: [(String, String?)] = []
         if let rotatingTokenNonce {
             queryParams.append((
@@ -153,7 +153,7 @@ final class SignInService: SignInServiceProtocol {
 
     #if !os(tvOS) && !os(watchOS)
     @MainActor
-    func authenticateWithRedirectStatic(_ strategy: SignIn.AuthenticateWithRedirectStrategy, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    func authenticateWithRedirectStatic(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
 
         guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
@@ -168,7 +168,7 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func authenticateWithRedirect(_ signIn: SignIn, _ prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    func authenticateWithRedirect(signIn: SignIn, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
         guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
               let url = URL(string: externalVerificationRedirectUrl)
         else {
@@ -183,7 +183,7 @@ final class SignInService: SignInServiceProtocol {
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
     @MainActor
-    func getCredentialForPasskey(_ signIn: SignIn, _ autofill: Bool, _ preferImmediatelyAvailableCredentials: Bool) async throws -> String {
+    func getCredentialForPasskey(signIn: SignIn, autofill: Bool, preferImmediatelyAvailableCredentials: Bool) async throws -> String {
         guard
             let nonceJSON = signIn.firstFactorVerification?.nonce?.toJSON(),
             let challengeString = nonceJSON["challenge"]?.stringValue,
@@ -234,13 +234,13 @@ final class SignInService: SignInServiceProtocol {
     }
 
     @MainActor
-    func authenticateWithIdTokenStatic(_ provider: IDTokenProvider, _ idToken: String) async throws -> TransferFlowResult {
+    func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
         let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))
         return try await signIn.handleTransferFlow()
     }
 
     @MainActor
-    func authenticateWithIdToken(_ signIn: SignIn) async throws -> TransferFlowResult {
+    func authenticateWithIdToken(signIn: SignIn) async throws -> TransferFlowResult {
         try await signIn.handleTransferFlow()
     }
     #endif
