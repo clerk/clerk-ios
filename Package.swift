@@ -21,7 +21,8 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
-    .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0"))
+    .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
+    .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0")
   ],
   targets: [
     .target(
@@ -53,7 +54,8 @@ let package = Package(
       name: "Tests",
       dependencies: [
         "ClerkKit",
-        .product(name: "FactoryTesting", package: "Factory")
+        .product(name: "FactoryTesting", package: "Factory"),
+        .product(name: "Mocker", package: "Mocker")
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
