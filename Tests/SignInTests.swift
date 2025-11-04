@@ -25,10 +25,9 @@ struct SignInTests {
       ])
 
     mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
-      #expect(request.allHTTPHeaderFields?["clerk-api-version"] == "2025-04-10")
-      #expect(request.allHTTPHeaderFields?["x-ios-sdk-version"] == Clerk.version)
-      #expect(request.allHTTPHeaderFields?["x-mobile"] == "1")
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["identifier"] == "test@example.com")
+      #expect(request.urlEncodedFormBody!["locale"] != nil)
       requestHandled.setValue(true)
     }
     mock.register()
