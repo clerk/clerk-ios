@@ -34,4 +34,5 @@ struct ExternalAccountTests {
     _ = try await externalAccount.destroy()
     #expect(requestHandled.value)
   }
+
 }
