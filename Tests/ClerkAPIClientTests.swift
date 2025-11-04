@@ -7,7 +7,7 @@ import Testing
 @testable import ClerkKit
 
 @MainActor
-@Suite
+@Suite(.serialized)
 struct ClerkAPIClientTests {
 
   init() {
