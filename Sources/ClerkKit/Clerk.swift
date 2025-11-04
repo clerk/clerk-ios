@@ -399,9 +399,36 @@ extension Clerk {
   /// Used during reconfiguration to ensure old managers are properly cleaned up.
   private func cleanupManagers() {
     sessionPollingManager?.stopPolling()
-    lifecycleManager?.stopObserving()
     sessionPollingManager = nil
+
+    lifecycleManager?.stopObserving()
     lifecycleManager = nil
+
+    taskCoordinator?.cancelAll()
+    taskCoordinator = nil
+
+    cachedDataLoadingTask?.cancel()
+    cachedDataLoadingTask = nil
+
+    cacheManager = nil
+  }
+
+  /// Resets the shared Clerk instance for test environments.
+  /// Stops background tasks, clears cached state, and releases the shared singleton.
+  @MainActor
+  package static func _resetForTesting() {
+    guard let shared = _shared else {
+      return
+    }
+
+    shared.client = nil
+    shared.sessionsByUserId = [:]
+    shared.environment = Environment()
+
+    shared.cleanupManagers()
+
+    shared.configurationManager = ConfigurationManager()
+    _shared = nil
   }
 }
 

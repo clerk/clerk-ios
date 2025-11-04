@@ -24,6 +24,8 @@ enum TestContainer {
     resetLock.lock()
     defer { resetLock.unlock() }
 
+    Clerk._resetForTesting()
+
     // Always reset captured requests first
     // This marks the start of this test's capture period without clearing other tests' requests
     RequestCaptureURLProtocol.reset()
