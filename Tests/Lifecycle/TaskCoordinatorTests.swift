@@ -14,9 +14,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct TaskCoordinatorTests {
-
   @Test
-  func testTracksTask() async {
+  func tracksTask() async {
     let coordinator = TaskCoordinator()
     let taskCompleted = LockIsolated(false)
 
@@ -33,7 +32,7 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func testCreatesAndTracksTask() async {
+  func createsAndTracksTask() async {
     let coordinator = TaskCoordinator()
     let operationExecuted = LockIsolated(false)
 
@@ -47,7 +46,7 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func testCancelAllTasks() async {
+  func cancelAllTasks() async {
     let coordinator = TaskCoordinator()
     let task1Completed = LockIsolated(false)
     let task2Completed = LockIsolated(false)
@@ -57,7 +56,7 @@ struct TaskCoordinatorTests {
     _ = coordinator.task {
       // Loop until cancelled
       while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms - minimal delay for cancellation check
+        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay for cancellation check
       }
       task1Cancelled.setValue(true)
       task1Completed.setValue(true)
@@ -65,7 +64,7 @@ struct TaskCoordinatorTests {
 
     _ = coordinator.task {
       while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms
+        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
       }
       task2Cancelled.setValue(true)
       task2Completed.setValue(true)
@@ -75,7 +74,7 @@ struct TaskCoordinatorTests {
     coordinator.cancelAll()
 
     // Give cancellation a tiny moment to propagate (cancellation is cooperative)
-    try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms - minimal wait for cancellation to propagate
+    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms - minimal wait for cancellation to propagate
 
     // Verify tasks detected cancellation
     #expect(task1Cancelled.value == true || task1Completed.value == false)
@@ -83,7 +82,7 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func testTracksMultipleTasks() async {
+  func tracksMultipleTasks() async {
     let coordinator = TaskCoordinator()
     let completedCount = LockIsolated(0)
 
@@ -107,7 +106,7 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func testTaskWithCustomPriority() async {
+  func taskWithCustomPriority() async {
     let coordinator = TaskCoordinator()
     let operationExecuted = LockIsolated(false)
 
@@ -121,7 +120,7 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func testDeinitCancelsAllTasks() async {
+  func deinitCancelsAllTasks() async {
     let taskCompleted = LockIsolated(false)
     let taskCancelled = LockIsolated(false)
 
@@ -130,7 +129,7 @@ struct TaskCoordinatorTests {
       let task = coordinator.task {
         // Loop until cancelled
         while !Task.isCancelled {
-          try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms - minimal delay
+          try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay
         }
         taskCancelled.setValue(true)
         taskCompleted.setValue(true)
@@ -143,7 +142,7 @@ struct TaskCoordinatorTests {
     }
 
     // Give cancellation a tiny moment to propagate
-    try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
+    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
 
     // Verify task detected cancellation
     #expect(taskCancelled.value == true || taskCompleted.value == false)

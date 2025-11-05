@@ -60,4 +60,3 @@ protocol Dependencies: AnyObject {
   /// Service for external account operations.
   var externalAccountService: ExternalAccountServiceProtocol { get }
 }
-

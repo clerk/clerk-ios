@@ -16,7 +16,7 @@ struct OTPField: View {
   var numberOfInputs: Int = 6
   @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
-  var onCodeEntry: ((String) async -> Void)
+  var onCodeEntry: (String) async -> Void
 
   enum FieldState {
     case `default`
@@ -29,7 +29,7 @@ struct OTPField: View {
 
   var body: some View {
     HStack(spacing: 12) {
-      ForEach(0..<numberOfInputs, id: \.self) { index in
+      ForEach(0 ..< numberOfInputs, id: \.self) { index in
         otpFieldInput(index: index)
       }
     }
@@ -55,7 +55,7 @@ struct OTPField: View {
     }
     .onChange(of: code) { oldValue, newValue in
       let previousCode = String(oldValue.prefix(numberOfInputs))
-      self.code = String(newValue.prefix(numberOfInputs))
+      code = String(newValue.prefix(numberOfInputs))
       if previousCode == code { return }
 
       if code.count == numberOfInputs {
@@ -67,7 +67,7 @@ struct OTPField: View {
     }
     .onChange(
       of: fieldState,
-      { oldValue, newValue in
+      { _, newValue in
         if newValue == .error {
           DispatchQueue.main.async {
             errorTrigger.toggle()
@@ -147,11 +147,11 @@ struct OTPField: View {
   @Previewable @FocusState var isFocused: Bool
 
   VStack(spacing: 20) {
-    OTPField(code: $code, fieldState: $fieldState1, isFocused: $isFocused) { code in
+    OTPField(code: $code, fieldState: $fieldState1, isFocused: $isFocused) { _ in
       fieldState1 = .default
     }
 
-    OTPField(code: $code, fieldState: $fieldState2, isFocused: $isFocused) { code in
+    OTPField(code: $code, fieldState: $fieldState2, isFocused: $isFocused) { _ in
       fieldState2 = .error
     }
   }

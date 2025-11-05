@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorOneForgotPasswordView: View {
   @Environment(Clerk.self) private var clerk
@@ -23,7 +23,7 @@ struct SignInFactorOneForgotPasswordView: View {
 
   var alternativeFactors: [Factor] {
     let factors = signIn?.alternativeFirstFactors(currentFactor: nil) ?? []
-    return factors.filter({ $0.strategy != "password" })
+    return factors.filter { $0.strategy != "password" }
   }
 
   var socialProviders: [OAuthProvider] {
@@ -54,15 +54,15 @@ struct SignInFactorOneForgotPasswordView: View {
   func iconName(factor: Factor) -> String? {
     switch factor.strategy {
     case "password":
-      return "icon-lock"
+      "icon-lock"
     case "phone_code":
-      return "icon-sms"
+      "icon-sms"
     case "email_code":
-      return "icon-email"
+      "icon-email"
     case "passkey":
-      return "icon-fingerprint"
+      "icon-fingerprint"
     default:
-      return nil
+      nil
     }
   }
 
@@ -136,7 +136,6 @@ struct SignInFactorOneForgotPasswordView: View {
 }
 
 extension SignInFactorOneForgotPasswordView {
-
   func resetPassword() async {
     guard let signIn, let resetFactor = signIn.resetPasswordFactor else {
       authState.path = []
@@ -155,29 +154,30 @@ extension SignInFactorOneForgotPasswordView {
         return
       }
 
-      var result: TransferFlowResult
-
-          switch result {
-          case .signIn(let signIn):
-            if let error = signIn.firstFactorVerification?.error {
-              self.error = error
-            } else {
-              authState.setToStepForStatus(signIn: signIn)
-            }
-          case .signUp(let signUp):
-            if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-               let error = verification.error {
-              self.error = error
-            } else {
-              authState.setToStepForStatus(signUp: signUp)
-            }
-          }
+      let result: TransferFlowResult =
+        if provider == .apple {
+          try await SignInWithAppleUtils.signIn()
+        } else {
+          try await signIn
+            .prepareFirstFactor(strategy: .oauth(provider: provider))
+            .authenticateWithRedirect()
+        }
 
       switch result {
       case .signIn(let signIn):
-        authState.setToStepForStatus(signIn: signIn)
+        if let error = signIn.firstFactorVerification?.error {
+          self.error = error
+        } else {
+          authState.setToStepForStatus(signIn: signIn)
+        }
       case .signUp(let signUp):
-        authState.setToStepForStatus(signUp: signUp)
+        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+          let error = verification.error
+        {
+          self.error = error
+        } else {
+          authState.setToStepForStatus(signUp: signUp)
+        }
       }
 
     } catch {
@@ -186,7 +186,6 @@ extension SignInFactorOneForgotPasswordView {
       ClerkLogger.error("Failed to sign in with OAuth provider in forgot password flow", error: error)
     }
   }
-
 }
 
 #Preview {

@@ -106,29 +106,29 @@ public final class MockOrganizationService: OrganizationServiceProtocol {
     acceptOrganizationMembershipRequest: ((String, String) async throws -> OrganizationMembershipRequest)? = nil,
     rejectOrganizationMembershipRequest: ((String, String) async throws -> OrganizationMembershipRequest)? = nil
   ) {
-    self.updateOrganizationHandler = updateOrganization
-    self.destroyOrganizationHandler = destroyOrganization
-    self.setOrganizationLogoHandler = setOrganizationLogo
-    self.getOrganizationRolesHandler = getOrganizationRoles
-    self.getOrganizationMembershipsHandler = getOrganizationMemberships
-    self.addOrganizationMemberHandler = addOrganizationMember
-    self.updateOrganizationMemberHandler = updateOrganizationMember
-    self.removeOrganizationMemberHandler = removeOrganizationMember
-    self.getOrganizationInvitationsHandler = getOrganizationInvitations
-    self.inviteOrganizationMemberHandler = inviteOrganizationMember
-    self.createOrganizationDomainHandler = createOrganizationDomain
-    self.getOrganizationDomainsHandler = getOrganizationDomains
-    self.getOrganizationDomainHandler = getOrganizationDomain
-    self.getOrganizationMembershipRequestsHandler = getOrganizationMembershipRequests
-    self.deleteOrganizationDomainHandler = deleteOrganizationDomain
-    self.prepareOrganizationDomainAffiliationVerificationHandler = prepareOrganizationDomainAffiliationVerification
-    self.attemptOrganizationDomainAffiliationVerificationHandler = attemptOrganizationDomainAffiliationVerification
-    self.revokeOrganizationInvitationHandler = revokeOrganizationInvitation
-    self.destroyOrganizationMembershipHandler = destroyOrganizationMembership
-    self.acceptUserOrganizationInvitationHandler = acceptUserOrganizationInvitation
-    self.acceptOrganizationSuggestionHandler = acceptOrganizationSuggestion
-    self.acceptOrganizationMembershipRequestHandler = acceptOrganizationMembershipRequest
-    self.rejectOrganizationMembershipRequestHandler = rejectOrganizationMembershipRequest
+    updateOrganizationHandler = updateOrganization
+    destroyOrganizationHandler = destroyOrganization
+    setOrganizationLogoHandler = setOrganizationLogo
+    getOrganizationRolesHandler = getOrganizationRoles
+    getOrganizationMembershipsHandler = getOrganizationMemberships
+    addOrganizationMemberHandler = addOrganizationMember
+    updateOrganizationMemberHandler = updateOrganizationMember
+    removeOrganizationMemberHandler = removeOrganizationMember
+    getOrganizationInvitationsHandler = getOrganizationInvitations
+    inviteOrganizationMemberHandler = inviteOrganizationMember
+    createOrganizationDomainHandler = createOrganizationDomain
+    getOrganizationDomainsHandler = getOrganizationDomains
+    getOrganizationDomainHandler = getOrganizationDomain
+    getOrganizationMembershipRequestsHandler = getOrganizationMembershipRequests
+    deleteOrganizationDomainHandler = deleteOrganizationDomain
+    prepareOrganizationDomainAffiliationVerificationHandler = prepareOrganizationDomainAffiliationVerification
+    attemptOrganizationDomainAffiliationVerificationHandler = attemptOrganizationDomainAffiliationVerification
+    revokeOrganizationInvitationHandler = revokeOrganizationInvitation
+    destroyOrganizationMembershipHandler = destroyOrganizationMembership
+    acceptUserOrganizationInvitationHandler = acceptUserOrganizationInvitation
+    acceptOrganizationSuggestionHandler = acceptOrganizationSuggestion
+    acceptOrganizationMembershipRequestHandler = acceptOrganizationMembershipRequest
+    rejectOrganizationMembershipRequestHandler = rejectOrganizationMembershipRequest
   }
 
   @MainActor

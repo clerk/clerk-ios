@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorTwoBackupCodeView: View {
   @Environment(Clerk.self) private var clerk
@@ -36,7 +36,6 @@ struct SignInFactorTwoBackupCodeView: View {
         .padding(.bottom, 32)
 
         VStack(spacing: 24) {
-
           VStack(spacing: 8) {
             ClerkTextField(
               "Backup code",
@@ -101,7 +100,6 @@ struct SignInFactorTwoBackupCodeView: View {
 }
 
 extension SignInFactorTwoBackupCodeView {
-
   func submit() async {
     isFocused = false
 
@@ -118,10 +116,9 @@ extension SignInFactorTwoBackupCodeView {
       fieldError = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
-      self.fieldError = error
+      fieldError = error
     }
   }
-
 }
 
 #Preview {

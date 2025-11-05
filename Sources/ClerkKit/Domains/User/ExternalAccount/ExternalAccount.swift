@@ -7,11 +7,10 @@
 
 import Foundation
 
-///The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
+/// The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
 ///
-///External account must be verified, so that you can make sure they can be assigned to their rightful owners. The `ExternalAccount` object holds all necessary state around the verification process.
+/// External account must be verified, so that you can make sure they can be assigned to their rightful owners. The `ExternalAccount` object holds all necessary state around the verification process.
 public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equatable {
-
   /// The unique identifier for this external account.
   public var id: String
 
@@ -87,8 +86,7 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
   }
 }
 
-extension ExternalAccount {
-
+public extension ExternalAccount {
   @MainActor
   private var externalAccountService: any ExternalAccountServiceProtocol { Clerk.shared.dependencies.externalAccountService }
 
@@ -100,7 +98,7 @@ extension ExternalAccount {
   ///                                         does not persist cookies or other data between sessions, ensuring
   ///                                         a private browsing experience.
   @discardableResult @MainActor
-  public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
+  func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
     guard
       let redirectUrl = verification?.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
@@ -121,8 +119,7 @@ extension ExternalAccount {
 
   /// Deletes this external account.
   @discardableResult @MainActor
-  public func destroy() async throws -> DeletedObject {
+  func destroy() async throws -> DeletedObject {
     try await externalAccountService.destroy(id)
   }
 }
-

@@ -10,8 +10,7 @@ import DeviceCheck
 import Foundation
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
-struct AppAttestHelper {
-
+enum AppAttestHelper {
   /// The key used to store the attestation key ID in the keychain.
   private static let keychainKey = "AttestKeyId"
 
@@ -35,7 +34,7 @@ struct AppAttestHelper {
   /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
   @MainActor
   private static func getChallenge() async throws -> String {
-    let request = Request<[String: String]>.init(
+    let request = Request<[String: String]>(
       path: "/v1/client/device_attestation/challenges",
       method: .post
     )
@@ -86,7 +85,7 @@ struct AppAttestHelper {
       "key_id": keyId,
       "challenge": challenge,
       "attestation": attestation.base64EncodedString(),
-      "bundle_id": Bundle.main.bundleIdentifier
+      "bundle_id": Bundle.main.bundleIdentifier,
     ]
 
     let request = Request<EmptyResponse>(
@@ -104,11 +103,10 @@ struct AppAttestHelper {
   /// - Throws: An error if assertion generation fails.
   @MainActor
   private static func createAssertion(payload: Data) async throws -> String {
-    let keyId: String
-    if let existingKeyId = Self.keyId {
-      keyId = existingKeyId
+    let keyId: String = if let existingKeyId = Self.keyId {
+      existingKeyId
     } else {
-      keyId = try await performDeviceAttestation()
+      try await performDeviceAttestation()
     }
 
     let hash = Data(SHA256.hash(data: payload))
@@ -125,7 +123,7 @@ struct AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId = clientId else {
+    guard let clientId else {
       throw ClerkClientError(message: "Client ID is unavailble.")
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
@@ -136,7 +134,7 @@ struct AppAttestHelper {
       "assertion": assertion,
       "challenge": challenge,
       "platform": "ios",
-      "bundle_id": Bundle.main.bundleIdentifier
+      "bundle_id": Bundle.main.bundleIdentifier,
     ]
 
     let request = Request<EmptyResponse>(

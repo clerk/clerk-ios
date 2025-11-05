@@ -32,4 +32,3 @@ final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
     return items[key] != nil
   }
 }
-

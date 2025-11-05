@@ -1,5 +1,5 @@
 //
-//  TaskOnce.swift
+//  View+TaskOnce.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/18/25.
@@ -25,7 +25,7 @@ private struct TaskOnce: ViewModifier {
 }
 
 extension View {
-  func taskOnce(_ task: @escaping () async -> ()) -> some View {
+  func taskOnce(_ task: @escaping () async -> Void) -> some View {
     modifier(TaskOnce(task: task))
   }
 }

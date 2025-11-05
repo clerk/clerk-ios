@@ -12,9 +12,8 @@ import Testing
 
 @Suite(.serialized)
 struct ClerkOptionsTests {
-
   @Test
-  func testDefaultInitialization() {
+  func defaultInitialization() {
     let options = Clerk.ClerkOptions()
 
     #expect(options.debugMode == false)
@@ -27,7 +26,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testInitializationWithAllParameters() {
+  func initializationWithAllParameters() {
     let keychainConfig = KeychainConfig(service: "test.service", accessGroup: "test.group")
     let redirectConfig = RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
@@ -49,7 +48,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testProxyUrlConversionValidURL() {
+  func proxyUrlConversionValidURL() {
     let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk")
 
     #expect(options.proxyUrl != nil)
@@ -59,7 +58,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testProxyUrlConversionInvalidURL() {
+  func proxyUrlConversionInvalidURL() {
     // URL(string:) can be lenient, so use a string that definitely won't create a valid URL
     // Using a string without a scheme should work
     let options = Clerk.ClerkOptions(proxyUrl: "://invalid")
@@ -75,14 +74,14 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testProxyUrlConversionNil() {
+  func proxyUrlConversionNil() {
     let options = Clerk.ClerkOptions(proxyUrl: nil)
 
     #expect(options.proxyUrl == nil)
   }
 
   @Test
-  func testProxyUrlConversionWithPort() {
+  func proxyUrlConversionWithPort() {
     let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com:8080/__clerk")
 
     #expect(options.proxyUrl != nil)
@@ -90,7 +89,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testProxyUrlConversionWithQueryParams() {
+  func proxyUrlConversionWithQueryParams() {
     let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk?param=value")
 
     #expect(options.proxyUrl != nil)
@@ -98,7 +97,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testPartialInitialization() {
+  func partialInitialization() {
     // Test with only some parameters
     let options = Clerk.ClerkOptions(debugMode: true)
 
@@ -108,7 +107,7 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func testPropertyAccess() {
+  func propertyAccess() {
     let options = Clerk.ClerkOptions(
       debugMode: true,
       telemetryEnabled: false,
@@ -116,14 +115,13 @@ struct ClerkOptionsTests {
     )
 
     // Verify all properties are accessible
-    let _ = options.debugMode
-    let _ = options.telemetryEnabled
-    let _ = options.keychainConfig
-    let _ = options.proxyUrl
-    let _ = options.redirectConfig
+    _ = options.debugMode
+    _ = options.telemetryEnabled
+    _ = options.keychainConfig
+    _ = options.proxyUrl
+    _ = options.redirectConfig
 
     #expect(options.debugMode == true)
     #expect(options.telemetryEnabled == false)
   }
 }
-

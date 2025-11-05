@@ -281,7 +281,6 @@ public struct UserProfileView: View {
 }
 
 extension UserProfileView {
-
   func signOut(sessionId: String) async {
     do {
       try await clerk.signOut(sessionId: sessionId)
@@ -307,7 +306,6 @@ extension UserProfileView {
       }
     }
   }
-
 }
 
 extension UserProfileView {
@@ -358,7 +356,7 @@ extension UserProfileView {
       )
 
       builder.userService = MockUserService(
-        getSessions: { user in
+        getSessions: { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -385,7 +383,7 @@ extension UserProfileView {
       )
 
       builder.userService = MockUserService(
-        getSessions: { user in
+        getSessions: { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }

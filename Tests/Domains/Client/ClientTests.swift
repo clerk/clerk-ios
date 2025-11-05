@@ -7,7 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClientTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -20,8 +19,9 @@ struct ClientTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock))
-      ])
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -33,4 +33,3 @@ struct ClientTests {
     #expect(requestHandled.value)
   }
 }
-

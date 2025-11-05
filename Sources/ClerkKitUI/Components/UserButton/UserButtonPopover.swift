@@ -116,7 +116,6 @@ struct UserButtonPopover: View {
 }
 
 extension UserButtonPopover {
-
   func signOut(sessionId: String) async {
     do {
       try await clerk.signOut(sessionId: sessionId)
@@ -128,7 +127,6 @@ extension UserButtonPopover {
       ClerkLogger.error("Failed to sign out from popover", error: error)
     }
   }
-
 }
 
 #Preview {

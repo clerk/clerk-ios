@@ -8,24 +8,23 @@
 import Foundation
 
 /**
-The Session object is an abstraction over an HTTP session. It models the period of information exchange between a user and the server.
+ The Session object is an abstraction over an HTTP session. It models the period of information exchange between a user and the server.
 
-The Session object includes methods for recording session activity and ending the session client-side. For security reasons, sessions can also expire server-side.
+ The Session object includes methods for recording session activity and ending the session client-side. For security reasons, sessions can also expire server-side.
 
-As soon as a User signs in, Clerk creates a Session for the current Client. Clients can have more than one sessions at any point in time, but only one of those sessions will be active.
+ As soon as a User signs in, Clerk creates a Session for the current Client. Clients can have more than one sessions at any point in time, but only one of those sessions will be active.
 
-In certain scenarios, a session might be replaced by another one. This is often the case with mutli-session applications.
+ In certain scenarios, a session might be replaced by another one. This is often the case with mutli-session applications.
 
-All sessions that are expired, removed, replaced, ended or abandoned are not considered valid.
+ All sessions that are expired, removed, replaced, ended or abandoned are not considered valid.
 
-The SessionWithActivities object is a modified Session object. It contains most of the information that the Session object stores, adding extra information about the current session's latest activity.
+ The SessionWithActivities object is a modified Session object. It contains most of the information that the Session object stores, adding extra information about the current session's latest activity.
 
-The additional data included in the latest activity are useful for analytics purposes. A SessionActivity object will provide information about the user's location, device and browser.
+ The additional data included in the latest activity are useful for analytics purposes. A SessionActivity object will provide information about the user's location, device and browser.
 
-While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
-*/
+ While the SessionWithActivities object wraps the most important information around a Session object, the two objects have entirely different methods.
+ */
 public struct Session: Codable, Identifiable, Equatable, Sendable {
-
   /// A unique identifier for the session.
   public var id: String
 
@@ -134,7 +133,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   }
 
   public struct Task: Codable, Equatable, Sendable {
-
     /// The key of the task.
     public var key: String
 
@@ -146,7 +144,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
 public struct SessionActivity: Codable, Equatable, Sendable {
-
   /// A unique identifier for the session activity record.
   let id: String
 
@@ -200,37 +197,35 @@ extension Session {
   /// - If the template is 'supabase', the key will be 'sess_abc12345-supabase'
   func tokenCacheKey(template: String?) -> String {
     var tokenCacheKey = id
-    if let template = template {
+    if let template {
       tokenCacheKey += "-\(template)"
     }
     return tokenCacheKey
   }
 }
 
-extension Session {
-
+public extension Session {
   @MainActor
   private var sessionService: any SessionServiceProtocol { Clerk.shared.dependencies.sessionService }
 
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
-  public func revoke() async throws -> Session {
+  func revoke() async throws -> Session {
     try await sessionService.revoke(sessionId: id)
   }
 
   /**
-  Retrieves the user's session token for the given template or the default clerk token.
-  This method uses a cache so a network request will only be made if the token in memory is expired.
-  The TTL for clerk token is one minute.
-  */
+   Retrieves the user's session token for the given template or the default clerk token.
+   This method uses a cache so a network request will only be made if the token in memory is expired.
+   The TTL for clerk token is one minute.
+   */
   @discardableResult
-  public func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
-    return try await SessionTokenFetcher.shared.getToken(self, options: options)
+  func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
+    try await SessionTokenFetcher.shared.getToken(self, options: options)
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.
-  public struct GetTokenOptions: Hashable, Sendable {
-
+  struct GetTokenOptions: Hashable, Sendable {
     /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
     public var template: String?
 
@@ -250,6 +245,4 @@ extension Session {
       self.skipCache = skipCache
     }
   }
-
 }
-

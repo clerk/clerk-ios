@@ -13,10 +13,10 @@ protocol NetworkResponseMiddleware: Sendable {
 /// Allows middleware to influence retry decisions.
 protocol NetworkRetryMiddleware: Sendable {
   func shouldRetry(
-  request: URLRequest,
-  response: HTTPURLResponse?,
-  error: any Error,
-  attempts: Int
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
   ) async throws -> Bool
 }
 
@@ -27,65 +27,65 @@ struct NetworkingPipeline: Sendable {
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
-  requestMiddleware: [any NetworkRequestMiddleware] = [],
-  responseMiddleware: [any NetworkResponseMiddleware] = [],
-  retryMiddleware: [any NetworkRetryMiddleware] = []
+    requestMiddleware: [any NetworkRequestMiddleware] = [],
+    responseMiddleware: [any NetworkResponseMiddleware] = [],
+    retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
-  self.requestMiddleware = requestMiddleware
-  self.responseMiddleware = responseMiddleware
-  self.retryMiddleware = retryMiddleware
+    self.requestMiddleware = requestMiddleware
+    self.responseMiddleware = responseMiddleware
+    self.retryMiddleware = retryMiddleware
   }
 
   func prepare(_ request: inout URLRequest) async throws {
-  for middleware in requestMiddleware {
-    try await middleware.prepare(&request)
-  }
+    for middleware in requestMiddleware {
+      try await middleware.prepare(&request)
+    }
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
-  for middleware in responseMiddleware {
-    try middleware.validate(response, data: data, for: request)
-  }
+    for middleware in responseMiddleware {
+      try middleware.validate(response, data: data, for: request)
+    }
   }
 
   func shouldRetry(
-  request: URLRequest,
-  response: HTTPURLResponse?,
-  error: any Error,
-  attempts: Int
+    request: URLRequest,
+    response: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
   ) async throws -> Bool {
-  for middleware in retryMiddleware {
-    if try await middleware.shouldRetry(request: request, response: response, error: error, attempts: attempts) {
-    return true
+    for middleware in retryMiddleware {
+      if try await middleware.shouldRetry(request: request, response: response, error: error, attempts: attempts) {
+        return true
+      }
     }
-  }
-  return false
+    return false
   }
 }
 
 extension NetworkingPipeline {
   static var clerkDefault: NetworkingPipeline {
-  NetworkingPipeline(
-    requestMiddleware: [
-    ClerkProxyRequestMiddleware(),
-    ClerkHeaderRequestMiddleware(),
-    ClerkQueryItemsRequestMiddleware(),
-    ClerkURLEncodedFormEncoderMiddleware(),
-    ClerkRequestLoggingMiddleware()
-    ],
-    responseMiddleware: [
-    ClerkResponseLoggingMiddleware(),
-    ClerkDeviceTokenResponseMiddleware(),
-    ClerkClientSyncResponseMiddleware(),
-    ClerkAuthEventEmitterResponseMiddleware(),
-    ClerkInvalidAuthResponseMiddleware(),
-    ClerkErrorThrowingResponseMiddleware()
-    ],
-    retryMiddleware: [
-    ClerkDeviceAssertionRetryMiddleware(),
-    ClerkRateLimitRetryMiddleware()
-    ]
-  )
+    NetworkingPipeline(
+      requestMiddleware: [
+        ClerkProxyRequestMiddleware(),
+        ClerkHeaderRequestMiddleware(),
+        ClerkQueryItemsRequestMiddleware(),
+        ClerkURLEncodedFormEncoderMiddleware(),
+        ClerkRequestLoggingMiddleware(),
+      ],
+      responseMiddleware: [
+        ClerkResponseLoggingMiddleware(),
+        ClerkDeviceTokenResponseMiddleware(),
+        ClerkClientSyncResponseMiddleware(),
+        ClerkAuthEventEmitterResponseMiddleware(),
+        ClerkInvalidAuthResponseMiddleware(),
+        ClerkErrorThrowingResponseMiddleware(),
+      ],
+      retryMiddleware: [
+        ClerkDeviceAssertionRetryMiddleware(),
+        ClerkRateLimitRetryMiddleware(),
+      ]
+    )
   }
 }
 

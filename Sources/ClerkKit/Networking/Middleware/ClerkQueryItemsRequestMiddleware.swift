@@ -9,6 +9,6 @@ import Foundation
 
 struct ClerkQueryItemsRequestMiddleware: NetworkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
-  request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
+    request.url?.append(queryItems: [.init(name: "_is_native", value: "true")])
   }
 }

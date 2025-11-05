@@ -8,12 +8,11 @@
 import Foundation
 
 /**
-This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
-*/
+ This is the main entrypoint class for the clerk package. It contains a number of methods and properties for interacting with the Clerk API.
+ */
 @MainActor
 @Observable
-final public class Clerk {
-
+public final class Clerk {
   /// The shared Clerk instance.
   ///
   /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will result in a precondition failure.
@@ -25,10 +24,10 @@ final public class Clerk {
   }
 
   /// Private shared instance that is set during configuration.
-  internal static var _shared: Clerk?
+  static var _shared: Clerk?
 
   /// A getter to see if the Clerk object is ready for use or not.
-  private(set) public var isLoaded: Bool = false
+  public private(set) var isLoaded: Bool = false
 
   /// A getter to see if a Clerk instance is running in production or development mode.
   public var instanceType: InstanceEnvironmentType {
@@ -36,9 +35,9 @@ final public class Clerk {
   }
 
   /// The Client object for the current device.
-  internal(set) public var client: Client? {
+  public internal(set) var client: Client? {
     didSet {
-      if let client = client {
+      if let client {
         cacheManager?.saveClient(client)
         sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
       } else {
@@ -46,6 +45,7 @@ final public class Clerk {
       }
     }
   }
+
   /// The telemetry collector for development diagnostics.
   ///
   /// Uses dependency injection with a no-op default that is replaced with a real collector
@@ -77,7 +77,7 @@ final public class Clerk {
   }
 
   /// A dictionary of a user's active sessions on all devices.
-  internal(set) public var sessionsByUserId: [String: [Session]] = [:]
+  public internal(set) var sessionsByUserId: [String: [Session]] = [:]
 
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
@@ -156,11 +156,9 @@ final public class Clerk {
       baseURL: tempBaseURL
     )
   }
-
 }
 
-extension Clerk {
-
+public extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   /// This is shared between `configure()` and `_reconfigure()`.
   @MainActor
@@ -214,7 +212,7 @@ extension Clerk {
   /// - Returns: The configured Clerk instance.
   @MainActor
   @discardableResult
-  public static func configure(
+  static func configure(
     publishableKey: String,
     options: Clerk.ClerkOptions = .init()
   ) -> Clerk {
@@ -270,7 +268,7 @@ extension Clerk {
 
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
-  public func load() async throws {
+  func load() async throws {
     // Ensure cached data loading has completed
     await cachedDataLoadingTask?.value
 
@@ -284,8 +282,8 @@ extension Clerk {
     do {
       // Fetch client and environment concurrently
       // Both of these are automatically applied to the shared instance:
-      async let client = Client.get()  // via middleware
-      async let environment = Environment.get()  // via the function itself
+      async let client = Client.get() // via middleware
+      async let environment = Environment.get() // via the function itself
 
       // Wait for both to complete - if either fails, we exit early
       // since both are required for the SDK to work properly
@@ -321,7 +319,7 @@ extension Clerk {
   /// ```swift
   /// try await clerk.signOut()
   /// ```
-  public func signOut(sessionId: String? = nil) async throws {
+  func signOut(sessionId: String? = nil) async throws {
     try await clerkService.signOut(sessionId: sessionId)
   }
 
@@ -331,13 +329,12 @@ extension Clerk {
   ///
   /// - Parameter sessionId: The session ID to be set as active.
   /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
-  public func setActive(sessionId: String, organizationId: String? = nil) async throws {
+  func setActive(sessionId: String, organizationId: String? = nil) async throws {
     try await clerkService.setActive(sessionId: sessionId, organizationId: organizationId)
   }
 }
 
 extension Clerk: CacheCoordinator {
-
   func setClientIfNeeded(_ client: Client?) {
     guard self.client == nil else { return }
     self.client = client
@@ -362,7 +359,6 @@ extension Clerk: SessionProviding {
 }
 
 extension Clerk: LifecycleEventHandling {
-
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
@@ -396,7 +392,6 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
-
   private func attestDeviceIfNeeded(environment: Environment) {
     if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
       taskCoordinator?.task(priority: .background) {
@@ -418,4 +413,3 @@ extension Clerk {
     lifecycleManager = nil
   }
 }
-

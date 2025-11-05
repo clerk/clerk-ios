@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInGetHelpView: View {
   @Environment(Clerk.self) private var clerk
@@ -45,7 +45,6 @@ struct SignInGetHelpView: View {
 }
 
 extension SignInGetHelpView {
-
   func openEmail(to: String) {
     let urlString = "mailto:\(to)"
 
@@ -53,7 +52,6 @@ extension SignInGetHelpView {
       UIApplication.shared.open(url)
     }
   }
-
 }
 
 #Preview {

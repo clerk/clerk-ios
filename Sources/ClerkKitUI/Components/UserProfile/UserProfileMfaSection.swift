@@ -28,11 +28,11 @@ struct UserProfileMfaSection: View {
       }
       .sorted { lhs, rhs in
         if lhs.defaultSecondFactor {
-          return true
+          true
         } else if rhs.defaultSecondFactor {
-          return false
+          false
         } else {
-          return lhs.createdAt < rhs.createdAt
+          lhs.createdAt < rhs.createdAt
         }
       }
   }

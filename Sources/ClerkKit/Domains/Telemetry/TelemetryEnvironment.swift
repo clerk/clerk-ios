@@ -73,5 +73,3 @@ struct StandaloneTelemetryEnvironment: TelemetryEnvironmentProviding {
     publishableKey.isEmpty ? nil : publishableKey
   }
 }
-
-

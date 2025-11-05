@@ -7,8 +7,8 @@
 
 #if canImport(UIKit)
 import Foundation
-import UIKit
 import Testing
+import UIKit
 
 @testable import ClerkKit
 
@@ -31,9 +31,8 @@ final class MockLifecycleHandler: LifecycleEventHandling {
 @MainActor
 @Suite(.serialized)
 struct LifecycleManagerTests {
-
   @Test
-  func testStartsObserving() {
+  func startsObserving() {
     let handler = MockLifecycleHandler()
     let manager = LifecycleManager(handler: handler)
 
@@ -56,30 +55,30 @@ struct LifecycleManagerTests {
   }
 
   @Test
-  func testMultipleStartObserving() {
+  func multipleStartObserving() {
     let handler = MockLifecycleHandler()
     let manager = LifecycleManager(handler: handler)
 
     manager.startObserving()
-    manager.startObserving()  // Should be safe to call multiple times
+    manager.startObserving() // Should be safe to call multiple times
     manager.startObserving()
 
     manager.stopObserving()
   }
 
   @Test
-  func testStopObservingMultipleTimes() {
+  func stopObservingMultipleTimes() {
     let handler = MockLifecycleHandler()
     let manager = LifecycleManager(handler: handler)
 
     manager.startObserving()
     manager.stopObserving()
-    manager.stopObserving()  // Should be safe to call multiple times
+    manager.stopObserving() // Should be safe to call multiple times
     manager.stopObserving()
   }
 
   @Test
-  func testDeinitStopsObserving() {
+  func deinitStopsObserving() {
     let handler = MockLifecycleHandler()
 
     do {
