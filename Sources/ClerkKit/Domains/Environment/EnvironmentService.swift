@@ -18,11 +18,6 @@ final class EnvironmentService: EnvironmentServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func get() async throws -> Clerk.Environment {
     let request = Request<Clerk.Environment>(path: "/v1/environment")

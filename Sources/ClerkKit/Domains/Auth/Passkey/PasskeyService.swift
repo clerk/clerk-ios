@@ -22,11 +22,6 @@ final class PasskeyService: PasskeyServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func create() async throws -> Passkey {
     let request = Request<ClientResponse<Passkey>>(

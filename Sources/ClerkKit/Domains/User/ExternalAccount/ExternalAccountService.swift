@@ -18,11 +18,6 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func destroy(_ externalAccountId: String) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(

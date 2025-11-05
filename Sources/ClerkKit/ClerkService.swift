@@ -27,11 +27,6 @@ struct ClerkService: ClerkServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func signOut(sessionId: String?) async throws {
     if let sessionId {
