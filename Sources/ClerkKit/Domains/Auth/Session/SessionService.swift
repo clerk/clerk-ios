@@ -18,11 +18,6 @@ final class SessionService: SessionServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func revoke(sessionId: String) async throws -> Session {
     let request = Request<ClientResponse<Session>>(

@@ -39,11 +39,6 @@ final class UserService: UserServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func reload() async throws -> User {
     let request = Request<ClientResponse<User>>(
