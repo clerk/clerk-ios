@@ -28,10 +28,22 @@ func setupMockAPIClient() {
   let mockAPIClient = createMockAPIClient()
 
   // Replace the container with a mock container that uses the mock API client
-  // InMemoryKeychain is now the default, so we don't need to pass it explicitly
+  // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: mockAPIClient,
-    telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
+    clientService: ClientService(apiClient: mockAPIClient),
+    userService: UserService(apiClient: mockAPIClient),
+    signInService: SignInService(apiClient: mockAPIClient),
+    signUpService: SignUpService(apiClient: mockAPIClient),
+    sessionService: SessionService(apiClient: mockAPIClient),
+    passkeyService: PasskeyService(apiClient: mockAPIClient),
+    organizationService: OrganizationService(apiClient: mockAPIClient),
+    environmentService: EnvironmentService(apiClient: mockAPIClient),
+    clerkService: ClerkService(apiClient: mockAPIClient),
+    emailAddressService: EmailAddressService(apiClient: mockAPIClient),
+    phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
+    externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
   )
 }
 

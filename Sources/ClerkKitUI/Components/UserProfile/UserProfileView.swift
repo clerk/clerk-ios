@@ -394,10 +394,4 @@ extension UserProfileView {
     .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("Not dismissable") {
-  UserProfileView(isDismissable: false)
-    .clerkPreviewMocks()
-    .environment(\.clerkTheme, .clerk)
-}
-
 #endif
