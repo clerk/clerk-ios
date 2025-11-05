@@ -10,15 +10,15 @@ import Foundation
 extension Clerk.Environment {
 
   public struct DisplayConfig: Codable, Sendable, Equatable {
-    public let instanceEnvironmentType: InstanceEnvironmentType
-    public let applicationName: String
-    public let preferredSignInStrategy: PreferredSignInStrategy
-    public let supportEmail: String?
-    public let branded: Bool
-    public let logoImageUrl: String
-    public let homeUrl: String
-    public let privacyPolicyUrl: String?
-    public let termsUrl: String?
+    public var instanceEnvironmentType: InstanceEnvironmentType
+    public var applicationName: String
+    public var preferredSignInStrategy: PreferredSignInStrategy
+    public var supportEmail: String?
+    public var branded: Bool
+    public var logoImageUrl: String
+    public var homeUrl: String
+    public var privacyPolicyUrl: String?
+    public var termsUrl: String?
 
     public enum PreferredSignInStrategy: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
       case password
@@ -33,20 +33,3 @@ extension Clerk.Environment {
 
 }
 
-extension Clerk.Environment.DisplayConfig {
-
-  package static var mock: Self {
-    .init(
-      instanceEnvironmentType: .development,
-      applicationName: "Acme Co",
-      preferredSignInStrategy: .otp,
-      supportEmail: "support@example.com",
-      branded: true,
-      logoImageUrl: "",
-      homeUrl: "",
-      privacyPolicyUrl: "privacy",
-      termsUrl: "terms"
-    )
-  }
-
-}

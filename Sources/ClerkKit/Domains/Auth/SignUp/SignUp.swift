@@ -26,62 +26,62 @@ import Foundation
 public struct SignUp: Codable, Sendable, Equatable, Hashable {
 
   /// The unique identifier of the current sign-up.
-  public let id: String
+  public var id: String
 
   /// The status of the current sign-up.
   ///
   /// See ``SignUp/Status-swift.enum`` for supported values.
-  public let status: Status
+  public var status: Status
 
   /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
-  public let requiredFields: [String]
+  public var requiredFields: [String]
 
   /// An array of all the fields that can be supplied to the sign-up, but their absence does not prevent the sign-up from being marked as complete.
-  public let optionalFields: [String]
+  public var optionalFields: [String]
 
   /// An array of all the fields whose values are not supplied yet but they are mandatory in order for a sign-up to be marked as complete.
-  public let missingFields: [String]
+  public var missingFields: [String]
 
   /// An array of all the fields whose values have been supplied, but they need additional verification in order for them to be accepted.
   ///
   /// Examples of such fields are `email_address` and `phone_number`.
-  public let unverifiedFields: [String]
+  public var unverifiedFields: [String]
 
   /// An object that contains information about all the verifications that are in-flight.
-  public let verifications: [String: Verification?]
+  public var verifications: [String: Verification?]
 
   /// The username supplied to the current sign-up. Only supported if username is enabled in the instance settings.
-  public let username: String?
+  public var username: String?
 
   /// The email address supplied to the current sign-up. Only supported if email address is enabled in the instance settings.
-  public let emailAddress: String?
+  public var emailAddress: String?
 
   /// The user's phone number in E.164 format. Only supported if phone number is enabled in the instance settings.
-  public let phoneNumber: String?
+  public var phoneNumber: String?
 
   /// The Web3 wallet address, made up of 0x + 40 hexadecimal characters. Only supported if Web3 authentication is enabled in the instance settings.
-  public let web3Wallet: String?
+  public var web3Wallet: String?
 
   /// The value of this attribute is true if a password was supplied to the current sign-up. Only supported if password is enabled in the instance settings.
-  public let passwordEnabled: Bool
+  public var passwordEnabled: Bool
 
   /// The first name supplied to the current sign-up. Only supported if name is enabled in the instance settings.
-  public let firstName: String?
+  public var firstName: String?
 
   /// The last name supplied to the current sign-up. Only supported if name is enabled in the instance settings.
-  public let lastName: String?
+  public var lastName: String?
 
   /// Metadata that can be read and set from the frontend. Once the sign-up is complete, the value of this field will be automatically copied to the newly created user's unsafe metadata. One common use case for this attribute is to use it to implement custom fields that can be collected during sign-up and will automatically be attached to the created User object.
-  public let unsafeMetadata: JSON?
+  public var unsafeMetadata: JSON?
 
   /// The identifier of the newly-created session. This attribute is populated only when the sign-up is complete.
-  public let createdSessionId: String?
+  public var createdSessionId: String?
 
   /// The identifier of the newly-created user. This attribute is populated only when the sign-up is complete.
-  public let createdUserId: String?
+  public var createdUserId: String?
 
   /// The date when the sign-up was abandoned by the user.
-  public let abandonAt: Date
+  public var abandonAt: Date
 
   public init(
     id: String,
@@ -370,29 +370,3 @@ extension SignUp {
 
 }
 
-extension SignUp {
-
-  package static var mock: SignUp {
-    SignUp(
-      id: "1",
-      status: .missingRequirements,
-      requiredFields: [],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [],
-      verifications: ["email_address": .mockPhoneCodeVerifiedVerification],
-      username: User.mock.username,
-      emailAddress: User.mock.emailAddresses.first?.emailAddress,
-      phoneNumber: User.mock.phoneNumbers.first?.phoneNumber,
-      web3Wallet: nil,
-      passwordEnabled: User.mock.passwordEnabled,
-      firstName: User.mock.firstName,
-      lastName: User.mock.lastName,
-      unsafeMetadata: nil,
-      createdSessionId: nil,
-      createdUserId: nil,
-      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890)
-    )
-  }
-
-}
