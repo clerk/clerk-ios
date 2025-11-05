@@ -15,7 +15,6 @@ protocol EmailAddressServiceProtocol: Sendable {
 }
 
 final class EmailAddressService: EmailAddressServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -24,7 +23,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor

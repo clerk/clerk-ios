@@ -9,9 +9,8 @@
 
 import SwiftUI
 
-extension ClerkTheme {
-  public struct Fonts {
-
+public extension ClerkTheme {
+  struct Fonts {
     // Text styles matching iOS system font styles
     public var largeTitle: Font
     public var title: Font
@@ -54,24 +53,23 @@ extension ClerkTheme {
 
     // Convenience initializer with just a font family
     public init(fontFamily: String) {
-      self.largeTitle = .custom(fontFamily, size: 34, relativeTo: .largeTitle)
-      self.title = .custom(fontFamily, size: 28, relativeTo: .title)
-      self.title2 = .custom(fontFamily, size: 22, relativeTo: .title2)
-      self.title3 = .custom(fontFamily, size: 20, relativeTo: .title3)
-      self.headline = .custom(fontFamily, size: 17, relativeTo: .headline).weight(.semibold)
-      self.subheadline = .custom(fontFamily, size: 15, relativeTo: .subheadline)
-      self.body = .custom(fontFamily, size: 17, relativeTo: .body)
-      self.callout = .custom(fontFamily, size: 16, relativeTo: .callout)
-      self.footnote = .custom(fontFamily, size: 13, relativeTo: .footnote)
-      self.caption = .custom(fontFamily, size: 12, relativeTo: .caption)
-      self.caption2 = .custom(fontFamily, size: 11, relativeTo: .caption2)
+      largeTitle = .custom(fontFamily, size: 34, relativeTo: .largeTitle)
+      title = .custom(fontFamily, size: 28, relativeTo: .title)
+      title2 = .custom(fontFamily, size: 22, relativeTo: .title2)
+      title3 = .custom(fontFamily, size: 20, relativeTo: .title3)
+      headline = .custom(fontFamily, size: 17, relativeTo: .headline).weight(.semibold)
+      subheadline = .custom(fontFamily, size: 15, relativeTo: .subheadline)
+      body = .custom(fontFamily, size: 17, relativeTo: .body)
+      callout = .custom(fontFamily, size: 16, relativeTo: .callout)
+      footnote = .custom(fontFamily, size: 13, relativeTo: .footnote)
+      caption = .custom(fontFamily, size: 12, relativeTo: .caption)
+      caption2 = .custom(fontFamily, size: 11, relativeTo: .caption2)
     }
-
   }
 }
 
-extension ClerkTheme.Fonts {
-  public nonisolated static var `default`: Self {
+public extension ClerkTheme.Fonts {
+  nonisolated static var `default`: Self {
     .init(
       largeTitle: .system(.largeTitle),
       title: .system(.title),

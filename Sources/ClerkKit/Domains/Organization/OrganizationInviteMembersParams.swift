@@ -5,9 +5,9 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
-//import Foundation
+// import Foundation
 //
-//extension Organization {
+// extension Organization {
 //
 //  /// Parameters for inviting members to an organization.
 //  public struct InviteMembersParams: Encodable {
@@ -27,4 +27,4 @@
 //    public let role: String
 //  }
 //
-//}
+// }

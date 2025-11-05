@@ -1,15 +1,13 @@
 //
-//  AttemptFirstFactorStrategy.swift
+//  SignInAttemptFirstFactorParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
 //
 
-extension SignIn {
-
+public extension SignIn {
   /// A parameter object for attempting the first factor verification process.
-  public struct AttemptFirstFactorParams: Encodable, Sendable {
-
+  struct AttemptFirstFactorParams: Encodable, Sendable {
     /// The verification strategy being used.
     public let strategy: String
 
@@ -26,8 +24,7 @@ extension SignIn {
   /// Defines the available strategies for completing the first factor verification process.
   ///
   /// Each strategy specifies a method of verifying the user during the sign-in process. The selected strategy determines how the verification will be carried out and which parameters are required.
-  public enum AttemptFirstFactorStrategy: Sendable {
-
+  enum AttemptFirstFactorStrategy: Sendable {
     /// Verification using the user's password.
     /// - Parameter password: The user's password string to be verified.
     case password(password: String)
@@ -55,18 +52,18 @@ extension SignIn {
     /// The parameters for the selected strategy.
     var params: AttemptFirstFactorParams {
       switch self {
-      case .password(let password):
-        return .init(strategy: "password", password: password)
-      case .emailCode(let code):
-        return .init(strategy: "email_code", code: code)
-      case .phoneCode(let code):
-        return .init(strategy: "phone_code", code: code)
-      case .passkey(let publicKeyCredential):
-        return .init(strategy: "passkey", publicKeyCredential: publicKeyCredential)
-      case .resetPasswordEmailCode(let code):
-        return .init(strategy: "reset_password_email_code", code: code)
-      case .resetPasswordPhoneCode(let code):
-        return .init(strategy: "reset_password_phone_code", code: code)
+      case let .password(password):
+        .init(strategy: "password", password: password)
+      case let .emailCode(code):
+        .init(strategy: "email_code", code: code)
+      case let .phoneCode(code):
+        .init(strategy: "phone_code", code: code)
+      case let .passkey(publicKeyCredential):
+        .init(strategy: "passkey", publicKeyCredential: publicKeyCredential)
+      case let .resetPasswordEmailCode(code):
+        .init(strategy: "reset_password_email_code", code: code)
+      case let .resetPasswordPhoneCode(code):
+        .init(strategy: "reset_password_phone_code", code: code)
       }
     }
   }

@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorOnePasskeyView: View {
   @Environment(Clerk.self) private var clerk
@@ -60,7 +60,7 @@ struct SignInFactorOnePasskeyView: View {
 
           AsyncButton {
             await authWithPasskey()
-          } label: { isRunning in
+          } label: { _ in
             HStack(spacing: 4) {
               Text("Continue", bundle: .module)
               Image("icon-triangle-right", bundle: .module)
@@ -114,7 +114,6 @@ struct SignInFactorOnePasskeyView: View {
 }
 
 extension SignInFactorOnePasskeyView {
-
   func authWithPasskey() async {
     guard var signIn else {
       authState.path = []
@@ -131,7 +130,7 @@ extension SignInFactorOnePasskeyView {
         strategy: .passkey(publicKeyCredential: credential)
       )
 
-      self.error = nil
+      error = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
       if error.isUserCancelledError { return }
@@ -139,7 +138,6 @@ extension SignInFactorOnePasskeyView {
       ClerkLogger.error("Failed to authenticate with passkey", error: error)
     }
   }
-
 }
 
 #Preview {

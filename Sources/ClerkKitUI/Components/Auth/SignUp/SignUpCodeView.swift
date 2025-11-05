@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignUpCodeView: View {
   @Environment(Clerk.self) private var clerk
@@ -43,9 +43,9 @@ struct SignUpCodeView: View {
 
     var identityPreviewString: String {
       switch self {
-      case .email(let emailAddress):
+      case let .email(emailAddress):
         emailAddress
-      case .phone(let phoneNumber):
+      case let .phone(phoneNumber):
         phoneNumber.formattedAsPhoneNumberIfPossible
       }
     }
@@ -96,7 +96,7 @@ struct SignUpCodeView: View {
         }
 
         VStack(spacing: 24) {
-          OTPField(code: $code, fieldState: $otpFieldState, isFocused: $otpFieldIsFocused) { code in
+          OTPField(code: $code, fieldState: $otpFieldState, isFocused: $otpFieldIsFocused) { _ in
             await attempt()
           }
           .onAppear {
@@ -120,7 +120,7 @@ struct SignUpCodeView: View {
                 Text("Success", bundle: .module)
                   .foregroundStyle(theme.colors.mutedForeground)
               }
-            case .error(let error):
+            case let .error(error):
               ErrorText(error: error)
             default:
               EmptyView()
@@ -195,10 +195,9 @@ struct SignUpCodeView: View {
 }
 
 extension SignUpCodeView {
-
   func startTimer() {
     updateRemainingSeconds()
-    self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
       Task { @MainActor in
         updateRemainingSeconds()
       }
@@ -272,7 +271,6 @@ extension SignUpCodeView {
       }
     }
   }
-
 }
 
 #Preview("Email") {

@@ -41,7 +41,6 @@ import Foundation
 ///    Attempt to verify the user's second factor authentication details if MFA is required.
 
 public struct SignIn: Codable, Sendable, Equatable, Hashable {
-
   /// Unique identifier for this sign in.
   public var id: String
 
@@ -111,8 +110,7 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
   }
 }
 
-extension SignIn {
-
+public extension SignIn {
   @MainActor
   private static var signInService: any SignInServiceProtocol { Clerk.shared.dependencies.signInService }
 
@@ -132,15 +130,15 @@ extension SignIn {
   /// - Returns: A new `SignIn` object.
   /// - Throws: An error if the sign-in request fails.
   ///
-  ///### Example Usage:
+  /// ### Example Usage:
   /// ```swift
   /// let signIn = try await SignIn.create(
   ///     strategy: .identifier("user@email.com", password: "••••••••"))
   /// )
   /// ```
   @discardableResult @MainActor
-  public static func create(strategy: SignIn.CreateStrategy, locale: String? = nil) async throws -> SignIn {
-    try await Self.signInService.create(strategy: strategy, locale: locale)
+  static func create(strategy: SignIn.CreateStrategy, locale: String? = nil) async throws -> SignIn {
+    try await signInService.create(strategy: strategy, locale: locale)
   }
 
   /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
@@ -153,15 +151,15 @@ extension SignIn {
   /// - Returns: A new `SignIn` object.
   /// - Throws: An error if the sign-in request fails.
   ///
-  ///### Example Usage:
+  /// ### Example Usage:
   /// ```swift
   /// let signIn = try await SignIn.create(
   ///     ["identifier": "user@email.com", "password": "••••••••"]
   /// )
   /// ```
   @discardableResult @MainActor
-  public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignIn {
-    try await Self.signInService.createWithParams(params: params)
+  static func create(_ params: some Encodable & Sendable) async throws -> SignIn {
+    try await signInService.createWithParams(params: params)
   }
 
   /// Resets a user's password.
@@ -173,7 +171,7 @@ extension SignIn {
   /// - Returns: A `SignIn` object reflecting the updated user session after the password reset.
   /// - Throws: An error if the password reset attempt fails.
   @discardableResult @MainActor
-  public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
+  func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
     try await signInService.resetPassword(signInId: id, params: params)
   }
 
@@ -188,7 +186,7 @@ extension SignIn {
   /// - Returns: A `SignIn` object reflecting the current state of the sign-in process, including the status of the first factor verification.
   /// - Throws: An error if the first factor preparation fails.
   @discardableResult @MainActor
-  public func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
+  func prepareFirstFactor(strategy: PrepareFirstFactorStrategy) async throws -> SignIn {
     try await signInService.prepareFirstFactor(signInId: id, strategy: strategy, signIn: self)
   }
 
@@ -204,7 +202,7 @@ extension SignIn {
   /// - Important: Call this method after preparing the verification process using one of the available strategies.
   /// - Important: Ensure that a `SignIn` object already exists before calling this method,  by first calling `SignIn.create` and then `SignIn.prepareFirstFactor`. The only strategy that does not require a prior verification is the `password` strategy.
   @discardableResult @MainActor
-  public func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
+  func attemptFirstFactor(strategy: AttemptFirstFactorStrategy) async throws -> SignIn {
     try await signInService.attemptFirstFactor(signInId: id, strategy: strategy)
   }
 
@@ -221,7 +219,7 @@ extension SignIn {
   ///
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
-  public func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
+  func prepareSecondFactor(strategy: PrepareSecondFactorStrategy) async throws -> SignIn {
     try await signInService.prepareSecondFactor(signInId: id, strategy: strategy, signIn: self)
   }
 
@@ -240,7 +238,7 @@ extension SignIn {
   ///
   /// - Throws: An error if the second factor verification fails.
   @discardableResult @MainActor
-  public func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
+  func attemptSecondFactor(strategy: AttemptSecondFactorStrategy) async throws -> SignIn {
     try await signInService.attemptSecondFactor(signInId: id, strategy: strategy)
   }
 
@@ -269,8 +267,8 @@ extension SignIn {
   /// let result = try await SignIn.authenticateWithRedirect(strategy: .oauth(provider: .google))
   /// ```
   @discardableResult @MainActor
-  public static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    try await Self.signInService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+  static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await signInService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
   }
   #endif
 
@@ -298,7 +296,7 @@ extension SignIn {
   /// let result = try await signIn.authenticateWithRedirect()
   /// ```
   @discardableResult @MainActor
-  public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     try await signInService.authenticateWithRedirect(signIn: self, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
   }
 
@@ -329,7 +327,7 @@ extension SignIn {
   /// - Note: This method uses `ASAuthorizationPlatformPublicKeyCredentialAssertion` to retrieve the passkey credentials
   ///         and formats them according to the WebAuthn standard.
   @MainActor
-  public func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
+  func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
     try await signInService.getCredentialForPasskey(signIn: self, autofill: autofill, preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials)
   }
   #endif
@@ -355,8 +353,8 @@ extension SignIn {
   /// )
   /// ```
   @discardableResult @MainActor
-  public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await Self.signInService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
+  static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+    try await signInService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -374,19 +372,18 @@ extension SignIn {
   /// let result = try await signIn.authenticateWithIdToken()
   /// ```
   @discardableResult @MainActor
-  public func authenticateWithIdToken() async throws -> TransferFlowResult {
+  func authenticateWithIdToken() async throws -> TransferFlowResult {
     try await signInService.authenticateWithIdToken(signIn: self)
   }
 
   /// Returns the current sign-in.
   @discardableResult @MainActor
-  public func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
+  func get(rotatingTokenNonce: String? = nil) async throws -> SignIn {
     try await signInService.get(signInId: id, rotatingTokenNonce: rotatingTokenNonce)
   }
 }
 
 extension SignIn {
-
   // MARK: - Internal Helpers
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
@@ -431,5 +428,4 @@ extension SignIn {
       factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
     })
   }
-
 }

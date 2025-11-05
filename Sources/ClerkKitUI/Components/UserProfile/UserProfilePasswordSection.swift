@@ -1,5 +1,5 @@
 //
-//  UserProfilePasswordRow.swift
+//  UserProfilePasswordSection.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 5/12/25.
@@ -81,7 +81,6 @@ struct UserProfilePasswordSection: View {
       }
     }
   }
-
 }
 
 #Preview {

@@ -1,5 +1,5 @@
 //
-//  SignInPrepareSecondFactor.swift
+//  SignInPrepareSecondFactorParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -8,7 +8,6 @@
 import Foundation
 
 extension SignIn {
-
   /// A parameter object for preparing the second factor verification.
   struct PrepareSecondFactorParams: Encodable, Sendable {
     /// The strategy used for second factor verification..
@@ -20,7 +19,6 @@ extension SignIn {
 
   /// A strategy for preparing the second factor verification process.
   public enum PrepareSecondFactorStrategy: Sendable {
-
     /// The user will receive a one-time authentication code via SMS. At least one phone number should be on file for the user.
     case phoneCode
 
@@ -42,9 +40,9 @@ extension SignIn {
     func params(signIn: SignIn) -> PrepareSecondFactorParams {
       switch self {
       case .phoneCode:
-        return .init(strategy: strategy)
-      case .emailCode(let emailAddressId):
-        return .init(
+        .init(strategy: strategy)
+      case let .emailCode(emailAddressId):
+        .init(
           strategy: strategy,
           emailAddressId: emailAddressId ?? signIn.identifyingSecondFactor(strategy: self)?.emailAddressId
         )

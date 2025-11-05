@@ -29,11 +29,11 @@ struct UserProfileDetailView: View {
     (user?.emailAddresses ?? [])
       .sorted { lhs, rhs in
         if lhs == user?.primaryEmailAddress {
-          return true
+          true
         } else if rhs == user?.primaryEmailAddress {
-          return false
+          false
         } else {
-          return lhs.createdAt < rhs.createdAt
+          lhs.createdAt < rhs.createdAt
         }
       }
   }
@@ -42,22 +42,22 @@ struct UserProfileDetailView: View {
     (user?.phoneNumbers ?? [])
       .sorted { lhs, rhs in
         if lhs == user?.primaryPhoneNumber {
-          return true
+          true
         } else if rhs == user?.primaryPhoneNumber {
-          return false
+          false
         } else {
-          return lhs.createdAt < rhs.createdAt
+          lhs.createdAt < rhs.createdAt
         }
       }
   }
 
   var sortedExternalAccounts: [ExternalAccount] {
-    (user?.externalAccounts.filter({
+    (user?.externalAccounts.filter {
       $0.verification?.status == .verified || $0.verification?.error != nil
-    }) ?? [])
-    .sorted { lhs, rhs in
-      lhs.createdAt < rhs.createdAt
-    }
+    } ?? [])
+      .sorted { lhs, rhs in
+        lhs.createdAt < rhs.createdAt
+      }
   }
 
   var body: some View {
@@ -66,7 +66,6 @@ struct UserProfileDetailView: View {
         VStack(spacing: 0) {
           ScrollView {
             LazyVStack(spacing: 0) {
-
               if clerk.environment.emailIsEnabled {
                 Section {
                   Group {

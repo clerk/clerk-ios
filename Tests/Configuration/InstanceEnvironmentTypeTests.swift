@@ -12,9 +12,8 @@ import Testing
 
 @Suite(.serialized)
 struct InstanceEnvironmentTypeTests {
-
   @Test
-  func testEnumCases() {
+  func enumCases() {
     #expect(InstanceEnvironmentType.production.rawValue == "production")
     #expect(InstanceEnvironmentType.development.rawValue == "development")
     #expect(InstanceEnvironmentType.unknown.rawValue == "unknown")
@@ -38,7 +37,7 @@ struct InstanceEnvironmentTypeTests {
   }
 
   @Test
-  func testDecoding() throws {
+  func decoding() throws {
     let decoder = JSONDecoder()
 
     let productionData = "\"production\"".data(using: .utf8)!
@@ -55,7 +54,7 @@ struct InstanceEnvironmentTypeTests {
   }
 
   @Test
-  func testDecodingInvalidValue() throws {
+  func decodingInvalidValue() throws {
     let decoder = JSONDecoder()
 
     // Invalid value should decode to unknown
@@ -65,18 +64,17 @@ struct InstanceEnvironmentTypeTests {
   }
 
   @Test
-  func testRawValueAccess() {
+  func rawValueAccess() {
     #expect(InstanceEnvironmentType.production.rawValue == "production")
     #expect(InstanceEnvironmentType.development.rawValue == "development")
     #expect(InstanceEnvironmentType.unknown.rawValue == "unknown")
   }
 
   @Test
-  func testEquatable() {
+  func equatable() {
     #expect(InstanceEnvironmentType.production == .production)
     #expect(InstanceEnvironmentType.development == .development)
     #expect(InstanceEnvironmentType.unknown == .unknown)
     #expect(InstanceEnvironmentType.production != .development)
   }
 }
-

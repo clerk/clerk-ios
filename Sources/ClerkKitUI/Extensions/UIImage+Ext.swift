@@ -15,11 +15,10 @@ extension UIImage {
     let aspectRatio = size.width / size.height
     let targetAspectRatio = targetSize.width / targetSize.height
 
-    let newSize: CGSize
-    if aspectRatio > targetAspectRatio {
-      newSize = CGSize(width: targetSize.width, height: targetSize.width / aspectRatio)
+    let newSize = if aspectRatio > targetAspectRatio {
+      CGSize(width: targetSize.width, height: targetSize.width / aspectRatio)
     } else {
-      newSize = CGSize(width: targetSize.height * aspectRatio, height: targetSize.height)
+      CGSize(width: targetSize.height * aspectRatio, height: targetSize.height)
     }
 
     let renderer = UIGraphicsImageRenderer(size: newSize)

@@ -83,7 +83,7 @@ public final class MockServicesBuilder {
   public init() {}
 }
 
-extension Clerk {
+public extension Clerk {
   /// Configures Clerk.shared with mock services.
   ///
   /// This function allows you to inject custom mock services (like `MockClientService`) to control
@@ -117,12 +117,12 @@ extension Clerk {
   /// ```
   @MainActor
   @discardableResult
-  public static func configureWithMocks(
+  static func configureWithMocks(
     publishableKey: String = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
     configureServices: ((MockServicesBuilder) -> Void)? = nil
   ) -> Clerk {
     // Configure Clerk.shared if not already configured
-    var clerk = Clerk.configure(publishableKey: publishableKey)
+    let clerk = Clerk.configure(publishableKey: publishableKey)
 
     // Create a minimal API client (won't be used if services are mocked)
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
@@ -157,4 +157,3 @@ extension Clerk {
     return clerk
   }
 }
-
