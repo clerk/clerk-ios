@@ -51,7 +51,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldRetryForServerError500() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
 
     let request = URLRequest(url: URL(string: "https://example.com")!)
     let response = HTTPURLResponse(
@@ -73,7 +73,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldRetryForRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
     let retryableCodes = [408, 425, 429, 500, 502, 503, 504]
@@ -99,7 +99,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldNotRetryForNonRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
     let nonRetryableCodes = [400, 401, 403, 404, 422]
@@ -125,7 +125,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldNotRetryOnSecondAttempt() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
     let response = HTTPURLResponse(
       url: request.url!,
@@ -244,7 +244,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldRetryForRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
     let retryableErrors: [URLError.Code] = [
@@ -271,7 +271,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func testShouldNotRetryForNonRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware()
+    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
     let nonRetryableErrors: [URLError.Code] = [
