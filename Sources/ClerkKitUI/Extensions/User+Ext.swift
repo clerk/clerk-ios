@@ -20,15 +20,6 @@ extension User {
     return fullName.isEmptyTrimmed ? nil : fullName
   }
 
-  var intials: String? {
-    let initials = [firstName ?? "", lastName ?? ""]
-      .compactMap(\.self)
-      .joined(separator: " ")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-
-    return initials.isEmptyTrimmed ? nil : initials
-  }
-
   var identifier: String? {
     if let username, !username.isEmptyTrimmed {
       return username
