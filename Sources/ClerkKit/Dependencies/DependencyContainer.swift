@@ -62,8 +62,8 @@ final class DependencyContainer: Dependencies {
       configuration.encoder = .clerkEncoder
       configuration.sessionConfiguration.httpAdditionalHeaders = [
         "Content-Type": "application/x-www-form-urlencoded",
-        "clerk-api-version": "2025-04-10",
-        "x-ios-sdk-version": Clerk.version,
+        "clerk-api-version": Clerk.apiVersion,
+        "x-ios-sdk-version": Clerk.sdkVersion,
         "x-mobile": "1"
       ]
     }
