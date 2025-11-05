@@ -84,9 +84,9 @@ public final class LockIsolated<Value>: @unchecked Sendable {
   }
 }
 
-extension LockIsolated where Value: Sendable {
+public extension LockIsolated where Value: Sendable {
   /// The lock-isolated value.
-  public var value: Value {
+  var value: Value {
     self.lock.sync {
       self._value
     }
@@ -94,27 +94,26 @@ extension LockIsolated where Value: Sendable {
 }
 
 #if swift(<6)
-  @available(*, deprecated, message: "Lock isolated values should not be equatable")
-  extension LockIsolated: Equatable where Value: Equatable {
-    public static func == (lhs: LockIsolated, rhs: LockIsolated) -> Bool {
-      lhs.value == rhs.value
-    }
+@available(*, deprecated, message: "Lock isolated values should not be equatable")
+extension LockIsolated: Equatable where Value: Equatable {
+  public static func == (lhs: LockIsolated, rhs: LockIsolated) -> Bool {
+    lhs.value == rhs.value
   }
+}
 
-  @available(*, deprecated, message: "Lock isolated values should not be hashable")
-  extension LockIsolated: Hashable where Value: Hashable {
-    public func hash(into hasher: inout Hasher) {
-      hasher.combine(self.value)
-    }
+@available(*, deprecated, message: "Lock isolated values should not be hashable")
+extension LockIsolated: Hashable where Value: Hashable {
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(value)
   }
+}
 #endif
 
 extension NSRecursiveLock {
   @inlinable @discardableResult
   func sync<R>(work: () throws -> R) rethrows -> R {
-    self.lock()
+    lock()
     defer { self.unlock() }
     return try work()
   }
 }
-

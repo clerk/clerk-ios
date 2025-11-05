@@ -14,13 +14,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkRateLimitRetryMiddlewareTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testShouldRetryForRateLimit429() async throws {
+  func shouldRetryForRateLimit429() async throws {
     let sleepCalled = LockIsolated(false)
     let sleepDelay = LockIsolated<UInt64?>(nil)
 
@@ -50,7 +49,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldRetryForServerError500() async throws {
+  func shouldRetryForServerError500() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
 
     let request = URLRequest(url: URL(string: "https://example.com")!)
@@ -72,7 +71,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldRetryForRetryableStatusCodes() async throws {
+  func shouldRetryForRetryableStatusCodes() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
@@ -98,7 +97,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldNotRetryForNonRetryableStatusCodes() async throws {
+  func shouldNotRetryForNonRetryableStatusCodes() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
@@ -124,7 +123,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldNotRetryOnSecondAttempt() async throws {
+  func shouldNotRetryOnSecondAttempt() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
     let response = HTTPURLResponse(
@@ -145,7 +144,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testRetryDelayFromRetryAfterHeader() async throws {
+  func retryDelayFromRetryAfterHeader() async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
 
     let middleware = ClerkRateLimitRetryMiddleware { delay in
@@ -177,7 +176,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testRetryDelayFromXRateLimitResetHeader() async throws {
+  func retryDelayFromXRateLimitResetHeader() async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
 
     let middleware = ClerkRateLimitRetryMiddleware { delay in
@@ -213,7 +212,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testRetryDelayDefaultsToHalfSecond() async throws {
+  func retryDelayDefaultsToHalfSecond() async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
 
     let middleware = ClerkRateLimitRetryMiddleware { delay in
@@ -243,7 +242,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldRetryForRetryableURLErrors() async throws {
+  func shouldRetryForRetryableURLErrors() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
@@ -253,7 +252,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
       .cannotConnectToHost,
       .networkConnectionLost,
       .dnsLookupFailed,
-      .notConnectedToInternet
+      .notConnectedToInternet,
     ]
 
     for errorCode in retryableErrors {
@@ -270,7 +269,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   }
 
   @Test
-  func testShouldNotRetryForNonRetryableURLErrors() async throws {
+  func shouldNotRetryForNonRetryableURLErrors() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
     let request = URLRequest(url: URL(string: "https://example.com")!)
 
@@ -278,7 +277,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
       .badURL,
       .badServerResponse,
       .cancelled,
-      .fileDoesNotExist
+      .fileDoesNotExist,
     ]
 
     for errorCode in nonRetryableErrors {

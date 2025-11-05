@@ -55,7 +55,7 @@ struct UserProfilePhoneRow: View {
         if user?.primaryPhoneNumber != phoneNumber, phoneNumber.verification?.status == .verified {
           AsyncButton {
             await setPhoneAsPrimary(phoneNumber)
-          } label: { isRunning in
+          } label: { _ in
             Text("Set as primary", bundle: .module)
           }
           .onIsRunningChanged { isLoading = $0 }
@@ -108,7 +108,7 @@ struct UserProfilePhoneRow: View {
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource(removeResource)
-        } label: { isRunning in
+        } label: { _ in
           Text(removeResource?.title ?? "", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
@@ -125,7 +125,6 @@ struct UserProfilePhoneRow: View {
 }
 
 extension UserProfilePhoneRow {
-
   private func setPhoneAsPrimary(_ phone: PhoneNumber) async {
     do {
       try await user?.update(.init(primaryPhoneNumberId: phone.id))
@@ -145,7 +144,6 @@ extension UserProfilePhoneRow {
       ClerkLogger.error("Failed to remove phone resource", error: error)
     }
   }
-
 }
 
 #Preview {

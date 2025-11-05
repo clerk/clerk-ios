@@ -92,7 +92,6 @@ struct UserProfileDeleteAccountConfirmationView: View {
 }
 
 extension UserProfileDeleteAccountConfirmationView {
-
   func deleteAccount() async {
     guard let user else { return }
 
@@ -100,7 +99,7 @@ extension UserProfileDeleteAccountConfirmationView {
       try await user.delete()
       dismiss()
       sharedState.path = NavigationPath()
-      if clerk.session != nil && (clerk.client?.activeSessions ?? []).count > 1 {
+      if clerk.session != nil, (clerk.client?.activeSessions ?? []).count > 1 {
         sharedState.accountSwitcherIsPresented = true
       }
     } catch {
@@ -108,7 +107,6 @@ extension UserProfileDeleteAccountConfirmationView {
       ClerkLogger.error("Failed to delete account", error: error)
     }
   }
-
 }
 
 #Preview {

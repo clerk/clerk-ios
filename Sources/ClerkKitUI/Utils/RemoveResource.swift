@@ -22,49 +22,49 @@ enum RemoveResource: Hashable {
   var title: LocalizedStringKey {
     switch self {
     case .email:
-      return "Remove email address"
+      "Remove email address"
     case .phoneNumber:
-      return "Remove phone number"
+      "Remove phone number"
     case .externalAccount:
-      return "Remove connected account"
+      "Remove connected account"
     case .passkey:
-      return "Remove passkey"
+      "Remove passkey"
     case .totp, .secondFactorPhoneNumber:
-      return "Remove two-step verification"
+      "Remove two-step verification"
     }
   }
 
   @MainActor
   var messageLine1: LocalizedStringKey {
     switch self {
-    case .email(let emailAddress):
-      return "\(emailAddress.emailAddress) will be removed from this account. You will no longer be able to sign in using this email address."
-    case .phoneNumber(let phoneNumber):
-      return "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will be removed from this account. You will no longer be able to sign in using this phone number."
-    case .externalAccount(let externalAccount):
-      return "\(externalAccount.oauthProvider.name) will be removed from this account. You will no longer be able to sign in using this connected account."
-    case .passkey(let passkey):
-      return "\(passkey.name) will be removed from this account. You will no longer be able to sign in using this passkey."
+    case let .email(emailAddress):
+      "\(emailAddress.emailAddress) will be removed from this account. You will no longer be able to sign in using this email address."
+    case let .phoneNumber(phoneNumber):
+      "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will be removed from this account. You will no longer be able to sign in using this phone number."
+    case let .externalAccount(externalAccount):
+      "\(externalAccount.oauthProvider.name) will be removed from this account. You will no longer be able to sign in using this connected account."
+    case let .passkey(passkey):
+      "\(passkey.name) will be removed from this account. You will no longer be able to sign in using this passkey."
     case .totp:
-      return "Verification codes from this authenticator will no longer be required when signing in."
-    case .secondFactorPhoneNumber(let phoneNumber):
-      return "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will no longer be receiving verification codes when signing in."
+      "Verification codes from this authenticator will no longer be required when signing in."
+    case let .secondFactorPhoneNumber(phoneNumber):
+      "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will no longer be receiving verification codes when signing in."
     }
   }
 
   func deleteAction() async throws {
     switch self {
-    case .email(let emailAddress):
+    case let .email(emailAddress):
       try await emailAddress.destroy()
-    case .phoneNumber(let phoneNumber):
+    case let .phoneNumber(phoneNumber):
       try await phoneNumber.delete()
-    case .externalAccount(let externalAccount):
+    case let .externalAccount(externalAccount):
       try await externalAccount.destroy()
-    case .passkey(let passkey):
+    case let .passkey(passkey):
       try await passkey.delete()
     case .totp:
       try await Clerk.shared.user?.disableTOTP()
-    case .secondFactorPhoneNumber(let phoneNumber):
+    case let .secondFactorPhoneNumber(phoneNumber):
       try await phoneNumber.setReservedForSecondFactor(reserved: false)
     }
   }

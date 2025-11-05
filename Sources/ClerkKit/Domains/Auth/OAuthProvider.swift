@@ -44,7 +44,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   // (.custom SHOULD NOT be included)
   // **
 
-  static public var allCases: [OAuthProvider] {
+  public static var allCases: [OAuthProvider] {
     [
       .facebook,
       .google,
@@ -90,10 +90,10 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   /// Returns the string value of strategy for the OAuth provider.
   public var strategy: String {
     switch self {
-    case .custom(let strategy):
-      return strategy
+    case let .custom(strategy):
+      strategy
     default:
-      return providerData.strategy
+      providerData.strategy
     }
   }
 
@@ -101,7 +101,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   @MainActor
   public var name: String {
     switch self {
-    case .custom(let strategy):
+    case let .custom(strategy):
       if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
         socialConfig.value.strategy == strategy
       }) {
@@ -121,7 +121,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   @MainActor
   public func iconImageUrl(darkMode: Bool = false) -> URL? {
     switch self {
-    case .custom(let strategy):
+    case let .custom(strategy):
       if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
         socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
       }) {
@@ -131,7 +131,6 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
       return nil
 
     default:
-
       if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
         socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
       }) {
@@ -156,164 +155,164 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
 
   private var providerData: OAuthProviderData {
     switch self {
-    case .custom(let strategy):
-      return .init(
+    case let .custom(strategy):
+      .init(
         provider: "",
         strategy: strategy,
         name: ""
       )
     case .facebook:
-      return .init(
+      .init(
         provider: "facebook",
         strategy: "oauth_facebook",
         name: "Facebook"
       )
     case .google:
-      return .init(
+      .init(
         provider: "google",
         strategy: "oauth_google",
         name: "Google"
       )
     case .hubspot:
-      return .init(
+      .init(
         provider: "hubspot",
         strategy: "oauth_hubspot",
         name: "HubSpot"
       )
     case .github:
-      return .init(
+      .init(
         provider: "github",
         strategy: "oauth_github",
         name: "GitHub"
       )
     case .tiktok:
-      return .init(
+      .init(
         provider: "tiktok",
         strategy: "oauth_tiktok",
         name: "TikTok"
       )
     case .gitlab:
-      return .init(
+      .init(
         provider: "gitlab",
         strategy: "oauth_gitlab",
         name: "GitLab"
       )
     case .discord:
-      return .init(
+      .init(
         provider: "discord",
         strategy: "oauth_discord",
         name: "Discord"
       )
     case .twitter:
-      return .init(
+      .init(
         provider: "twitter",
         strategy: "oauth_twitter",
         name: "Twitter"
       )
     case .twitch:
-      return .init(
+      .init(
         provider: "twitch",
         strategy: "oauth_twitch",
         name: "Twitch"
       )
     case .linkedin:
-      return .init(
+      .init(
         provider: "linkedin",
         strategy: "oauth_linkedin",
         name: "LinkedIn"
       )
     case .linkedin_oidc:
-      return .init(
+      .init(
         provider: "linkedin_oidc",
         strategy: "oauth_linkedin_oidc",
         name: "LinkedIn"
       )
     case .dropbox:
-      return .init(
+      .init(
         provider: "dropbox",
         strategy: "oauth_dropbox",
         name: "Dropbox"
       )
     case .atlassian:
-      return .init(
+      .init(
         provider: "atlassian",
         strategy: "oauth_atlassian",
         name: "Atlassian"
       )
     case .bitbucket:
-      return .init(
+      .init(
         provider: "bitbucket",
         strategy: "oauth_bitbucket",
         name: "Bitbucket"
       )
     case .microsoft:
-      return .init(
+      .init(
         provider: "microsoft",
         strategy: "oauth_microsoft",
         name: "Microsoft"
       )
     case .notion:
-      return .init(
+      .init(
         provider: "notion",
         strategy: "oauth_notion",
         name: "Notion"
       )
     case .apple:
-      return .init(
+      .init(
         provider: "apple",
         strategy: "oauth_apple",
         name: "Apple"
       )
     case .line:
-      return .init(
+      .init(
         provider: "line",
         strategy: "oauth_line",
         name: "LINE"
       )
     case .instagram:
-      return .init(
+      .init(
         provider: "instagram",
         strategy: "oauth_instagram",
         name: "Instagram"
       )
     case .coinbase:
-      return .init(
+      .init(
         provider: "coinbase",
         strategy: "oauth_coinbase",
         name: "Coinbase"
       )
     case .spotify:
-      return .init(
+      .init(
         provider: "spotify",
         strategy: "oauth_spotify",
         name: "Spotify"
       )
     case .xero:
-      return .init(
+      .init(
         provider: "xero",
         strategy: "oauth_xero",
         name: "Xero"
       )
     case .box:
-      return .init(
+      .init(
         provider: "box",
         strategy: "oauth_box",
         name: "Box"
       )
     case .slack:
-      return .init(
+      .init(
         provider: "slack",
         strategy: "oauth_slack",
         name: "Slack"
       )
     case .linear:
-      return .init(
+      .init(
         provider: "linear",
         strategy: "oauth_linear",
         name: "Linear"
       )
     case .huggingFace:
-      return .init(
+      .init(
         provider: "huggingface",
         strategy: "oauth_huggingface",
         name: "Hugging Face"
@@ -333,7 +332,7 @@ extension OAuthProvider: Comparable {
     let lhsName = lhs.providerData.name
     let rhsName = rhs.providerData.name
 
-    if lhsName.isEmpty && rhsName.isEmpty {
+    if lhsName.isEmpty, rhsName.isEmpty {
       return false
     } else if lhsName.isEmpty {
       return false
@@ -343,6 +342,5 @@ extension OAuthProvider: Comparable {
 
     return lhsName < rhsName
   }
-
 }
 

@@ -35,7 +35,6 @@ protocol CacheCoordinator: AnyObject, Sendable {
 /// to ensure cached data doesn't overwrite fresh data loaded from the API.
 @MainActor
 final class CacheManager {
-
   /// The coordinator that manages the actual property updates.
   private weak var coordinator: (any CacheCoordinator)?
 
@@ -72,7 +71,7 @@ final class CacheManager {
 
       // Only set cached client if we don't already have one
       // This prevents overwriting fresh data during load()
-      guard let coordinator = coordinator else { return }
+      guard let coordinator else { return }
       if coordinator.hasClient == false {
         coordinator.setClientIfNeeded(cachedClient)
       }
@@ -97,7 +96,7 @@ final class CacheManager {
 
       // Only set cached environment if we don't already have fresh data
       // This prevents overwriting fresh data during load()
-      guard let coordinator = coordinator else { return }
+      guard let coordinator else { return }
       if coordinator.isEnvironmentEmpty == true {
         coordinator.setEnvironmentIfNeeded(cachedEnvironment)
       }
@@ -186,5 +185,3 @@ final class CacheManager {
     return try decoder.decode(Clerk.Environment.self, from: environmentData)
   }
 }
-
-

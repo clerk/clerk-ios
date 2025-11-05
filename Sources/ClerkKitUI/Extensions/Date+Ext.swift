@@ -10,13 +10,11 @@
 import Foundation
 
 extension Date {
-
   var relativeNamedFormat: String {
     var formatStyle = Date.RelativeFormatStyle()
     formatStyle.presentation = .named
-    return self.formatted(formatStyle)
+    return formatted(formatStyle)
   }
-
 }
 
 #endif

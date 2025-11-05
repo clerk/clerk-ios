@@ -5,13 +5,11 @@
 //  Created by Mike Pitre on 1/24/25.
 //
 
-extension EmailAddress {
-
+public extension EmailAddress {
   /// Represents the strategy for preparing the verification process for an email address.
   ///
   /// Use this enum to specify how the verification email will be sent to the user.
-  public enum PrepareStrategy: Sendable {
-
+  enum PrepareStrategy: Sendable {
     /// User will receive a one-time authentication code via email.
     case emailCode
 
@@ -19,16 +17,14 @@ extension EmailAddress {
     var requestBody: RequestBody {
       switch self {
       case .emailCode:
-        return .init(strategy: "email_code")
+        .init(strategy: "email_code")
       }
     }
 
     /// Represents the body of the request used to prepare the email address verification.
     struct RequestBody: Encodable {
-
       /// The verification strategy.
       let strategy: String
     }
   }
-
 }

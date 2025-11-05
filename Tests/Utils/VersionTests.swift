@@ -13,9 +13,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct VersionTests {
-
   @Test
-  func testClerkVersion() {
+  func clerkVersion() {
     // Version should be a non-empty string
     #expect(!Clerk.sdkVersion.isEmpty)
 
@@ -46,4 +45,3 @@ struct VersionTests {
     #expect(isUUID || isUnsupported || isNone)
   }
 }
-

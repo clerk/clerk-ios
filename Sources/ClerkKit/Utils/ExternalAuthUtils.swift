@@ -9,7 +9,6 @@ import AuthenticationServices
 import Foundation
 
 enum ExternalAuthUtils {
-
   static func nonceFromCallbackUrl(url: URL) -> String? {
     guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
       return nil
@@ -25,5 +24,4 @@ enum ExternalAuthUtils {
 
     return nonceQueryItem.value
   }
-
 }

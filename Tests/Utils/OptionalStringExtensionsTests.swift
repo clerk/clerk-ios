@@ -3,8 +3,7 @@ import Testing
 @testable import ClerkKit
 
 struct OptionalStringExtensionsTests {
-
-  @Test func testNilIfEmptyTrimsWhitespaceAndFiltersEmptyResults() {
+  @Test func nilIfEmptyTrimsWhitespaceAndFiltersEmptyResults() {
     let nilValue: String? = nil
     let emptyValue: String? = ""
     let whitespaceValue: String? = "   \n  "

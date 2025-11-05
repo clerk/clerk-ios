@@ -49,9 +49,9 @@ struct SignInFactorCodeView: View {
   var showResend: Bool {
     switch factor.strategy {
     case "totp":
-      return false
+      false
     default:
-      return verificationState.showResend
+      verificationState.showResend
     }
   }
 
@@ -132,7 +132,7 @@ struct SignInFactorCodeView: View {
             code: $code,
             fieldState: $otpFieldState,
             isFocused: $otpFieldIsFocused
-          ) { code in
+          ) { _ in
             await attempt()
           }
           .onAppear {
@@ -156,7 +156,7 @@ struct SignInFactorCodeView: View {
                 Text("Success", bundle: .module)
                   .foregroundStyle(theme.colors.mutedForeground)
               }
-            case .error(let error):
+            case let .error(error):
               ErrorText(error: error)
             default:
               EmptyView()
@@ -243,10 +243,9 @@ struct SignInFactorCodeView: View {
 }
 
 extension SignInFactorCodeView {
-
   func startTimer() {
     updateRemainingSeconds()
-    self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
       Task { @MainActor in
         updateRemainingSeconds()
       }
@@ -304,6 +303,7 @@ extension SignInFactorCodeView {
         try await signIn.prepareFirstFactor(
           strategy: .resetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
         )
+
       default:
         break
       }
@@ -364,7 +364,6 @@ extension SignInFactorCodeView {
       }
     }
   }
-
 }
 
 #Preview("Email Code") {

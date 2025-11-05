@@ -10,35 +10,34 @@
 import ClerkKit
 import Foundation
 
-extension Clerk.Environment {
-
-  public var authenticatableSocialProviders: [OAuthProvider] {
+public extension Clerk.Environment {
+  var authenticatableSocialProviders: [OAuthProvider] {
     guard let social = userSettings?.social else {
       return []
     }
 
-    let authenticatables = social.filter { key, value in
+    let authenticatables = social.filter { _, value in
       value.authenticatable && value.enabled
     }
 
-    return authenticatables.map({
+    return authenticatables.map {
       OAuthProvider(strategy: $0.value.strategy)
-    }).sorted()
+    }.sorted()
   }
 
-  public var allSocialProviders: [OAuthProvider] {
+  var allSocialProviders: [OAuthProvider] {
     guard let social = userSettings?.social else {
       return []
     }
 
     let enabledProviders = social.filter(\.value.enabled)
 
-    return enabledProviders.map({
+    return enabledProviders.map {
       OAuthProvider(strategy: $0.value.strategy)
-    }).sorted()
+    }.sorted()
   }
 
-  public var enabledFirstFactorAttributes: [String] {
+  var enabledFirstFactorAttributes: [String] {
     guard let userSettings else { return [] }
 
     return userSettings.attributes
@@ -48,7 +47,7 @@ extension Clerk.Environment {
       .map(\.key)
   }
 
-  public var mutliSessionModeIsEnabled: Bool {
+  var mutliSessionModeIsEnabled: Bool {
     guard let authConfig else { return false }
     return authConfig.singleSessionMode == false
   }
@@ -60,86 +59,85 @@ extension Clerk.Environment {
     }
   }
 
-  public var passkeyIsEnabled: Bool {
+  var passkeyIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "passkey" && value.enabled
     }
   }
 
-  public var mfaIsEnabled: Bool {
+  var mfaIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { _, value in
       value.enabled && value.usedForSecondFactor
     }
   }
 
-  public var mfaAuthenticatorAppIsEnabled: Bool {
+  var mfaAuthenticatorAppIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "authenticator_app" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  public var mfaPhoneCodeIsEnabled: Bool {
+  var mfaPhoneCodeIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "phone_number" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  public var mfaBackupCodeIsEnabled: Bool {
+  var mfaBackupCodeIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "backup_code" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  public var deleteSelfIsEnabled: Bool {
+  var deleteSelfIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.actions.deleteSelf
   }
 
-  public var emailIsEnabled: Bool {
+  var emailIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled
     }
   }
 
-  public var phoneNumberIsEnabled: Bool {
+  var phoneNumberIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "phone_number" && value.enabled
     }
   }
 
-  public var usernameIsEnabled: Bool {
+  var usernameIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "username" && value.enabled
     }
   }
 
-  public var firstNameIsEnabled: Bool {
+  var firstNameIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "first_name" && value.enabled
     }
   }
 
-  public var lastNameIsEnabled: Bool {
+  var lastNameIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "last_name" && value.enabled
     }
   }
 
-  var signUpIsPublic: Bool {
+  internal var signUpIsPublic: Bool {
     guard let userSettings else { return true }
     return userSettings.signUp.mode == "public"
   }
-
 }
 
 #endif

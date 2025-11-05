@@ -1,5 +1,5 @@
 //
-//  SignInResetPassword.swift
+//  SignInResetPasswordParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -7,15 +7,13 @@
 
 import Foundation
 
-extension SignIn {
-
+public extension SignIn {
   /// A parameter object for resetting a user's password.
   ///
   /// - Parameters:
   ///   - password: The user's current password.
   ///   - signOutOfOtherSessions: If true, log the user out of all other authenticated sessions.
-  public struct ResetPasswordParams: Encodable, Sendable {
-
+  struct ResetPasswordParams: Encodable, Sendable {
     /// Creates a new `ResetPasswordParams` object.
     ///
     /// - Parameters:
@@ -32,5 +30,4 @@ extension SignIn {
     /// If true, log the user out of all other authenticated sessions.
     public let signOutOfOtherSessions: Bool?
   }
-
 }

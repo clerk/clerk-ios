@@ -12,9 +12,8 @@ import Testing
 
 @Suite(.serialized)
 struct RedirectConfigTests {
-
   @Test
-  func testDefaultInitialization() {
+  func defaultInitialization() {
     let config = RedirectConfig()
     let bundleId = Bundle.main.bundleIdentifier ?? ""
 
@@ -23,7 +22,7 @@ struct RedirectConfigTests {
   }
 
   @Test
-  func testInitializationWithRedirectUrl() {
+  func initializationWithRedirectUrl() {
     let config = RedirectConfig(redirectUrl: "test://redirect")
 
     #expect(config.redirectUrl == "test://redirect")
@@ -31,7 +30,7 @@ struct RedirectConfigTests {
   }
 
   @Test
-  func testInitializationWithCallbackUrlScheme() {
+  func initializationWithCallbackUrlScheme() {
     let config = RedirectConfig(callbackUrlScheme: "test")
 
     #expect(config.redirectUrl == "\(Bundle.main.bundleIdentifier ?? "")://callback")
@@ -39,7 +38,7 @@ struct RedirectConfigTests {
   }
 
   @Test
-  func testInitializationWithAllParameters() {
+  func initializationWithAllParameters() {
     let config = RedirectConfig(
       redirectUrl: "test://redirect",
       callbackUrlScheme: "test"
@@ -50,14 +49,13 @@ struct RedirectConfigTests {
   }
 
   @Test
-  func testPropertyAccess() {
+  func propertyAccess() {
     let config = RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
-    let _ = config.redirectUrl
-    let _ = config.callbackUrlScheme
+    _ = config.redirectUrl
+    _ = config.callbackUrlScheme
 
     #expect(config.redirectUrl == "test://redirect")
     #expect(config.callbackUrlScheme == "test")
   }
 }
-

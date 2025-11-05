@@ -117,7 +117,7 @@ struct UserProfileExternalAccountRow: View {
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource(removeResource)
-        } label: { isRunning in
+        } label: { _ in
           Text(removeResource?.title ?? "", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
@@ -134,7 +134,6 @@ struct UserProfileExternalAccountRow: View {
 }
 
 extension UserProfileExternalAccountRow {
-
   private func reconnect() async {
     guard let user else { return }
 
@@ -157,7 +156,6 @@ extension UserProfileExternalAccountRow {
       ClerkLogger.error("Failed to remove external account resource", error: error)
     }
   }
-
 }
 
 #Preview {
