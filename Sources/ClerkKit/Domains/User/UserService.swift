@@ -6,16 +6,7 @@
 //
 
 import AuthenticationServices
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var userService: Factory<UserServiceProtocol> {
-    self { UserService() }
-  }
-
-}
 
 protocol UserServiceProtocol: Sendable {
   @MainActor func reload() async throws -> User
@@ -43,7 +34,16 @@ protocol UserServiceProtocol: Sendable {
 
 final class UserService: UserServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func reload() async throws -> User {

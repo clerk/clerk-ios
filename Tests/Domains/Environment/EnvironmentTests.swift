@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct EnvironmentTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testGet() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!

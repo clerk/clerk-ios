@@ -6,16 +6,7 @@
 //
 
 import AuthenticationServices
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var passkeyService: Factory<PasskeyServiceProtocol> {
-    self { PasskeyService() }
-  }
-
-}
 
 protocol PasskeyServiceProtocol: Sendable {
   @MainActor func create() async throws -> Passkey
@@ -26,7 +17,16 @@ protocol PasskeyServiceProtocol: Sendable {
 
 final class PasskeyService: PasskeyServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func create() async throws -> Passkey {

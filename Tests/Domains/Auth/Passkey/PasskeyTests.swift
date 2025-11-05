@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct PasskeyTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys")!
@@ -34,7 +33,7 @@ struct PasskeyTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testUpdate() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)
@@ -57,7 +56,7 @@ struct PasskeyTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptVerification() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)
@@ -81,7 +80,7 @@ struct PasskeyTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDelete() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)

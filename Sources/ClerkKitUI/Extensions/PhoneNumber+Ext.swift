@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import Foundation
 import PhoneNumberKit
 
@@ -22,14 +21,6 @@ extension PhoneNumberKit.PhoneNumberUtility {
       .sorted(by: {
         $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
       })
-  }
-
-}
-
-extension Container {
-
-  var phoneNumberUtility: Factory<PhoneNumberUtility> {
-    self { PhoneNumberUtility() }
   }
 
 }
