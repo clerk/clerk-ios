@@ -34,11 +34,6 @@ final class SignUpService: SignUpServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp {
     var params = strategy.params

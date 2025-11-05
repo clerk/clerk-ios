@@ -21,11 +21,6 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func create(email: String) async throws -> EmailAddress {
     let request = Request<ClientResponse<EmailAddress>>(

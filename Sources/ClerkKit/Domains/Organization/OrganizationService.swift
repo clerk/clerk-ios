@@ -40,11 +40,6 @@ final class OrganizationService: OrganizationServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization {
     let request = Request<ClientResponse<Organization>>(
