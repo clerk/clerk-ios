@@ -1,5 +1,3 @@
-import FactoryKit
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -14,7 +12,7 @@ struct ClerkAPIClientTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testRequestHeaders() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -39,11 +37,11 @@ struct ClerkAPIClientTests {
       method: .post
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testIsNativeQueryParameter() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -67,11 +65,11 @@ struct ClerkAPIClientTests {
       method: .get
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -93,11 +91,11 @@ struct ClerkAPIClientTests {
       method: .get
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPostRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -121,11 +119,11 @@ struct ClerkAPIClientTests {
       body: ["key": "value"]
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPatchRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -149,11 +147,11 @@ struct ClerkAPIClientTests {
       body: ["key": "value"]
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDeleteRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -175,11 +173,11 @@ struct ClerkAPIClientTests {
       method: .delete
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testQueryParameters() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -205,11 +203,11 @@ struct ClerkAPIClientTests {
       query: [("param1", "value1"), ("param2", "value2")]
     )
 
-    _ = try await Container.shared.apiClient().send(request)
+    _ = try await Clerk.shared.container.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testMultipartUpload() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -240,11 +238,11 @@ struct ClerkAPIClientTests {
       headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
     )
 
-    _ = try await Container.shared.apiClient().upload(for: request, from: data)
+    _ = try await Clerk.shared.container.apiClient.upload(for: request, from: data)
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testErrorHandling() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -271,7 +269,7 @@ struct ClerkAPIClientTests {
     )
 
     do {
-      _ = try await Container.shared.apiClient().send(request)
+      _ = try await Clerk.shared.container.apiClient.send(request)
       #expect(Bool(false), "Expected error to be thrown")
     } catch {
       #expect(requestHandled.value)

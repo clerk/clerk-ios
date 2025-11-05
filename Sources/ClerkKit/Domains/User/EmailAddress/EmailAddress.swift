@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import FactoryKit
 import Foundation
 
 /// The `EmailAddress` object is a model around an email address.
@@ -55,9 +54,11 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 
 extension EmailAddress {
 
-  private static var emailAddressService: any EmailAddressServiceProtocol { Container.shared.emailAddressService() }
+  @MainActor
+  private static var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.container.emailAddressService }
 
-  private var emailAddressService: any EmailAddressServiceProtocol { Container.shared.emailAddressService() }
+  @MainActor
+  private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.container.emailAddressService }
 
   /// Creates a new email address for the current user.
   /// - Parameters:

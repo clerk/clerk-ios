@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import FactoryKit
 import Foundation
 
 /// The `PhoneNumber` object describes a phone number.
@@ -72,9 +71,11 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 
 extension PhoneNumber {
 
-  private static var phoneNumberService: any PhoneNumberServiceProtocol { Container.shared.phoneNumberService() }
+  @MainActor
+  private static var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.container.phoneNumberService }
 
-  private var phoneNumberService: any PhoneNumberServiceProtocol { Container.shared.phoneNumberService() }
+  @MainActor
+  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.container.phoneNumberService }
 
   /// Creates a new phone number for the current user.
   /// - Parameters:

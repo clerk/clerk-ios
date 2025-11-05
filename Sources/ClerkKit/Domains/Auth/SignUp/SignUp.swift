@@ -6,7 +6,6 @@
 //
 
 import AuthenticationServices
-import FactoryKit
 import Foundation
 
 /// The `SignUp` object holds the state of the current sign-up and provides helper methods to navigate and complete the sign-up process.
@@ -127,9 +126,11 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
 
 extension SignUp {
 
-  private static var signUpService: any SignUpServiceProtocol { Container.shared.signUpService() }
+  @MainActor
+  private static var signUpService: any SignUpServiceProtocol { Clerk.shared.container.signUpService }
 
-  private var signUpService: any SignUpServiceProtocol { Container.shared.signUpService() }
+  @MainActor
+  private var signUpService: any SignUpServiceProtocol { Clerk.shared.container.signUpService }
 
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
   ///
