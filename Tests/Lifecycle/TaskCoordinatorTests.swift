@@ -54,18 +54,18 @@ struct TaskCoordinatorTests {
     let task1Cancelled = LockIsolated(false)
     let task2Cancelled = LockIsolated(false)
 
-    let task1 = coordinator.task {
+    _ = coordinator.task {
       // Loop until cancelled
       while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay for cancellation check
+        try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms - minimal delay for cancellation check
       }
       task1Cancelled.setValue(true)
       task1Completed.setValue(true)
     }
 
-    let task2 = coordinator.task {
+    _ = coordinator.task {
       while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+        try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms
       }
       task2Cancelled.setValue(true)
       task2Completed.setValue(true)
@@ -75,7 +75,7 @@ struct TaskCoordinatorTests {
     coordinator.cancelAll()
 
     // Give cancellation a tiny moment to propagate (cancellation is cooperative)
-    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms - minimal wait for cancellation to propagate
+    try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms - minimal wait for cancellation to propagate
 
     // Verify tasks detected cancellation
     #expect(task1Cancelled.value == true || task1Completed.value == false)
@@ -130,7 +130,7 @@ struct TaskCoordinatorTests {
       let task = coordinator.task {
         // Loop until cancelled
         while !Task.isCancelled {
-          try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay
+          try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms - minimal delay
         }
         taskCancelled.setValue(true)
         taskCompleted.setValue(true)
@@ -143,10 +143,9 @@ struct TaskCoordinatorTests {
     }
 
     // Give cancellation a tiny moment to propagate
-    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+    try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
 
     // Verify task detected cancellation
     #expect(taskCancelled.value == true || taskCompleted.value == false)
   }
 }
-
