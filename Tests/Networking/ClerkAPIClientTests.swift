@@ -25,8 +25,8 @@ struct ClerkAPIClientTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
-      #expect(request.allHTTPHeaderFields?["clerk-api-version"] == "2025-04-10")
-      #expect(request.allHTTPHeaderFields?["x-ios-sdk-version"] == Clerk.version)
+      #expect(request.allHTTPHeaderFields?["clerk-api-version"] == Clerk.apiVersion)
+      #expect(request.allHTTPHeaderFields?["x-ios-sdk-version"] == Clerk.sdkVersion)
       #expect(request.allHTTPHeaderFields?["x-mobile"] == "1")
       requestHandled.setValue(true)
     }

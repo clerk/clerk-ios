@@ -28,9 +28,9 @@ func setupMockAPIClient() {
   let mockAPIClient = createMockAPIClient()
 
   // Replace the container with a mock container that uses the mock API client
+  // InMemoryKeychain is now the default, so we don't need to pass it explicitly
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: mockAPIClient,
-    keychain: Clerk.shared.dependencies.keychain,
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector
   )
 }
@@ -45,11 +45,89 @@ func createMockAPIClient() -> APIClient {
     configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
     configuration.sessionConfiguration.httpAdditionalHeaders = [
       "Content-Type": "application/x-www-form-urlencoded",
-      "clerk-api-version": "2025-04-10",
-      "x-ios-sdk-version": Clerk.version,
+      "clerk-api-version": Clerk.apiVersion,
+      "x-ios-sdk-version": Clerk.sdkVersion,
       "x-mobile": "1"
     ]
   }
+}
+
+/// Configures Clerk for testing with custom mock services.
+///
+/// This function allows you to inject custom mock services (like `MockClientService`) to control
+/// the behavior of service methods during testing. This is useful for testing specific scenarios
+/// such as delays, errors, or custom return values.
+///
+/// Example:
+/// ```swift
+/// @Test
+/// func testWithMockService() async throws {
+///   let mockClientService = MockClientService()
+///   mockClientService.getHandler = {
+///     try? await Task.sleep(for: .seconds(1))
+///     return Client.mock
+///   }
+///
+///   configureClerkWithMockServices(clientService: mockClientService)
+///   // ... test code
+/// }
+/// ```
+///
+/// - Parameters:
+///   - clientService: Optional custom client service (defaults to real ClientService with mock API client).
+///   - userService: Optional custom user service (defaults to real UserService with mock API client).
+///   - signInService: Optional custom sign-in service (defaults to real SignInService with mock API client).
+///   - signUpService: Optional custom sign-up service (defaults to real SignUpService with mock API client).
+///   - sessionService: Optional custom session service (defaults to real SessionService with mock API client).
+///   - passkeyService: Optional custom passkey service (defaults to real PasskeyService with mock API client).
+///   - organizationService: Optional custom organization service (defaults to real OrganizationService with mock API client).
+///   - environmentService: Optional custom environment service (defaults to real EnvironmentService with mock API client).
+///   - clerkService: Optional custom clerk service (defaults to real ClerkService with mock API client).
+///   - emailAddressService: Optional custom email address service (defaults to real EmailAddressService with mock API client).
+///   - phoneNumberService: Optional custom phone number service (defaults to real PhoneNumberService with mock API client).
+///   - externalAccountService: Optional custom external account service (defaults to real ExternalAccountService with mock API client).
+@MainActor
+func configureClerkWithMockServices(
+  clientService: (any ClientServiceProtocol)? = nil,
+  userService: (any UserServiceProtocol)? = nil,
+  signInService: (any SignInServiceProtocol)? = nil,
+  signUpService: (any SignUpServiceProtocol)? = nil,
+  sessionService: (any SessionServiceProtocol)? = nil,
+  passkeyService: (any PasskeyServiceProtocol)? = nil,
+  organizationService: (any OrganizationServiceProtocol)? = nil,
+  environmentService: (any EnvironmentServiceProtocol)? = nil,
+  clerkService: (any ClerkServiceProtocol)? = nil,
+  emailAddressService: (any EmailAddressServiceProtocol)? = nil,
+  phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
+  externalAccountService: (any ExternalAccountServiceProtocol)? = nil
+) {
+  // Configure Clerk with test publishable key (this creates initial dependencies)
+  Clerk.configure(publishableKey: testPublishableKey)
+
+  // Create mock API client
+  let mockAPIClient = createMockAPIClient()
+
+  // Get existing dependencies to preserve keychain and telemetry
+  let existingDependencies = Clerk.shared.dependencies
+
+  // Replace the container with a mock container that uses the mock API client and custom services
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: mockAPIClient,
+    keychain: existingDependencies.keychain,
+    telemetryCollector: existingDependencies.telemetryCollector,
+    clientService: clientService,
+    userService: userService,
+    signInService: signInService,
+    signUpService: signUpService,
+    sessionService: sessionService,
+    passkeyService: passkeyService,
+    organizationService: organizationService,
+    environmentService: environmentService,
+    clerkService: clerkService,
+    emailAddressService: emailAddressService,
+    phoneNumberService: phoneNumberService,
+    externalAccountService: externalAccountService
+  )
 }
 
 extension URLRequest {
