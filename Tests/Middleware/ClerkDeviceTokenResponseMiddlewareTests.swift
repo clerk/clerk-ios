@@ -101,4 +101,3 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     #expect(savedToken == "new-token-456")
   }
 }
-
