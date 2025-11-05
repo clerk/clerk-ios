@@ -1,6 +1,6 @@
 import Testing
 
-@testable import Clerk
+@testable import ClerkKit
 
 struct OptionalStringExtensionsTests {
 
