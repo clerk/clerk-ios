@@ -17,7 +17,7 @@ struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
-    if Clerk.shared.options.debugMode, let clientId = Clerk.shared.client?.id {
+    if let clientId = Clerk.shared.client?.id {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 
