@@ -12,13 +12,12 @@ import Testing
 
 @Suite(.serialized)
 struct ErrorTests {
-
   // MARK: - ClerkError Protocol
 
   @Test
-  func testClerkErrorProtocol() {
+  func clerkErrorProtocol() {
     let error = ClerkClientError(message: "Test error")
-    
+
     #expect(error.message != nil)
     #expect(error.message == "Test error")
     #expect(error.underlyingError == nil)
@@ -28,7 +27,7 @@ struct ErrorTests {
   // MARK: - ClerkAPIError Tests
 
   @Test
-  func testClerkAPIErrorBasic() {
+  func clerkAPIErrorBasic() {
     let error = ClerkAPIError(
       code: "test_error",
       message: "Test message",
@@ -36,7 +35,7 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: "trace123"
     )
-    
+
     #expect(error.code == "test_error")
     #expect(error.message == "Test message")
     #expect(error.longMessage == "Long test message")
@@ -44,7 +43,7 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkAPIErrorContext() {
+  func clerkAPIErrorContext() {
     let error = ClerkAPIError(
       code: "test_error",
       message: "Test message",
@@ -52,7 +51,7 @@ struct ErrorTests {
       meta: JSON.object(["param_name": .string("email")]),
       clerkTraceId: "trace123"
     )
-    
+
     let context = error.context
     #expect(context != nil)
     #expect(context?["traceId"] == "trace123")
@@ -60,7 +59,7 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkAPIErrorErrorDescription() {
+  func clerkAPIErrorErrorDescription() {
     let error1 = ClerkAPIError(
       code: "test_error",
       message: "Short message",
@@ -68,9 +67,9 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: nil
     )
-    
+
     #expect(error1.errorDescription == "Long message")
-    
+
     let error2 = ClerkAPIError(
       code: "test_error",
       message: "Short message",
@@ -78,12 +77,12 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: nil
     )
-    
+
     #expect(error2.errorDescription == "Short message")
   }
 
   @Test
-  func testClerkAPIErrorCodable() throws {
+  func clerkAPIErrorCodable() throws {
     let error = ClerkAPIError(
       code: "test_error",
       message: "Test message",
@@ -91,13 +90,13 @@ struct ErrorTests {
       meta: JSON.object(["key": .string("value")]),
       clerkTraceId: "trace123"
     )
-    
+
     let encoder = JSONEncoder()
     let data = try encoder.encode(error)
-    
+
     let decoder = JSONDecoder()
     let decoded = try decoder.decode(ClerkAPIError.self, from: data)
-    
+
     #expect(decoded.code == error.code)
     #expect(decoded.message == error.message)
     #expect(decoded.longMessage == error.longMessage)
@@ -105,7 +104,7 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkAPIErrorEquatable() {
+  func clerkAPIErrorEquatable() {
     let error1 = ClerkAPIError(
       code: "test_error",
       message: "Test message",
@@ -113,7 +112,7 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: nil
     )
-    
+
     let error2 = ClerkAPIError(
       code: "test_error",
       message: "Test message",
@@ -121,9 +120,9 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: nil
     )
-    
+
     #expect(error1 == error2)
-    
+
     let error3 = ClerkAPIError(
       code: "different_error",
       message: "Test message",
@@ -131,30 +130,30 @@ struct ErrorTests {
       meta: nil,
       clerkTraceId: nil
     )
-    
+
     #expect(error1 != error3)
   }
 
   @Test
-  func testClerkErrorResponse() throws {
+  func clerkErrorResponse() throws {
     let response = ClerkErrorResponse(
       errors: [
         ClerkAPIError(code: "error1", message: "Message 1", longMessage: nil, meta: nil, clerkTraceId: nil),
-        ClerkAPIError(code: "error2", message: "Message 2", longMessage: nil, meta: nil, clerkTraceId: nil)
+        ClerkAPIError(code: "error2", message: "Message 2", longMessage: nil, meta: nil, clerkTraceId: nil),
       ],
       clerkTraceId: "trace123"
     )
-    
+
     #expect(response.errors.count == 2)
     #expect(response.clerkTraceId == "trace123")
-    
+
     // Test Codable
     let encoder = JSONEncoder()
     let data = try encoder.encode(response)
-    
+
     let decoder = JSONDecoder()
     let decoded = try decoder.decode(ClerkErrorResponse.self, from: data)
-    
+
     #expect(decoded.errors.count == 2)
     #expect(decoded.clerkTraceId == "trace123")
   }
@@ -162,25 +161,25 @@ struct ErrorTests {
   // MARK: - ClerkClientError Tests
 
   @Test
-  func testClerkClientError() {
+  func clerkClientError() {
     let error = ClerkClientError(message: "Test error")
-    
+
     #expect(error.messageLocalizationValue != nil)
     #expect(error.message == "Test error")
     #expect(error.context == nil)
   }
 
   @Test
-  func testClerkClientErrorErrorDescription() {
+  func clerkClientErrorErrorDescription() {
     let error = ClerkClientError(message: "Test error")
-    
+
     #expect(error.errorDescription == "Test error")
   }
 
   @Test
-  func testClerkClientErrorNilMessage() {
+  func clerkClientErrorNilMessage() {
     let error = ClerkClientError(message: nil)
-    
+
     #expect(error.message == nil)
     #expect(error.errorDescription == nil)
   }
@@ -188,9 +187,9 @@ struct ErrorTests {
   // MARK: - ClerkInitializationError Tests
 
   @Test
-  func testClerkInitializationErrorMissingPublishableKey() {
+  func clerkInitializationErrorMissingPublishableKey() {
     let error = ClerkInitializationError.missingPublishableKey
-    
+
     #expect(error.message != nil)
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
@@ -199,9 +198,9 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkInitializationErrorInvalidPublishableKeyFormat() {
+  func clerkInitializationErrorInvalidPublishableKeyFormat() {
     let error = ClerkInitializationError.invalidPublishableKeyFormat(key: "invalid_key")
-    
+
     #expect(error.message != nil)
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
@@ -210,29 +209,29 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkInitializationErrorClientLoadFailed() {
+  func clerkInitializationErrorClientLoadFailed() {
     let underlyingError = NSError(domain: "test", code: 1)
     let error = ClerkInitializationError.clientLoadFailed(underlyingError: underlyingError)
-    
+
     #expect(error.message != nil)
     #expect(error.underlyingError != nil)
     #expect(error.context == nil)
   }
 
   @Test
-  func testClerkInitializationErrorEnvironmentLoadFailed() {
+  func clerkInitializationErrorEnvironmentLoadFailed() {
     let underlyingError = NSError(domain: "test", code: 1)
     let error = ClerkInitializationError.environmentLoadFailed(underlyingError: underlyingError)
-    
+
     #expect(error.message != nil)
     #expect(error.underlyingError != nil)
     #expect(error.context == nil)
   }
 
   @Test
-  func testClerkInitializationErrorAPIClientInitializationFailed() {
+  func clerkInitializationErrorAPIClientInitializationFailed() {
     let error = ClerkInitializationError.apiClientInitializationFailed(reason: "Network error")
-    
+
     #expect(error.message != nil)
     #expect(error.underlyingError == nil)
     #expect(error.context != nil)
@@ -240,22 +239,21 @@ struct ErrorTests {
   }
 
   @Test
-  func testClerkInitializationErrorInitializationFailed() {
+  func clerkInitializationErrorInitializationFailed() {
     let underlyingError = NSError(domain: "test", code: 1)
     let error = ClerkInitializationError.initializationFailed(underlyingError: underlyingError)
-    
+
     #expect(error.message != nil)
     #expect(error.underlyingError != nil)
     #expect(error.context == nil)
   }
 
   @Test
-  func testClerkInitializationErrorLocalizedError() {
+  func clerkInitializationErrorLocalizedError() {
     let error = ClerkInitializationError.missingPublishableKey
-    
+
     #expect(error.errorDescription != nil)
     #expect(error.failureReason != nil)
     #expect(error.localizedDescription == error.errorDescription)
   }
 }
-

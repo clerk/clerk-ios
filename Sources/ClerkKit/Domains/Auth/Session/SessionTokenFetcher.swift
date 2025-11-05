@@ -16,7 +16,6 @@ actor SessionTokenFetcher {
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
-
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if let inProgressTask = tokenTasks[cacheKey] {
@@ -24,7 +23,7 @@ actor SessionTokenFetcher {
     }
 
     let task: Task<TokenResource?, Error> = Task {
-      return try await fetchToken(session, options: options)
+      try await fetchToken(session, options: options)
     }
 
     tokenTasks[cacheKey] = task
@@ -38,16 +37,16 @@ actor SessionTokenFetcher {
   }
 
   /**
-    Internal function to get the session token. Checks the cache first.
-    */
+   Internal function to get the session token. Checks the cache first.
+   */
   @discardableResult @MainActor
   func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if options.skipCache == false,
-      let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
-      let expiresAt = token.decodedJWT?.expiresAt,
-      Date.now.distance(to: expiresAt) > options.expirationBuffer
+       let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
+       let expiresAt = token.decodedJWT?.expiresAt,
+       Date.now.distance(to: expiresAt) > options.expirationBuffer
     {
       return token
     }
@@ -55,13 +54,13 @@ actor SessionTokenFetcher {
     var token: TokenResource?
 
     if let template = options.template {
-      let request = Request<TokenResource?>.init(
+      let request = Request<TokenResource?>(
         path: "/v1/client/sessions/\(session.id)/tokens/\(template)",
         method: .post
       )
       token = try await Clerk.shared.dependencies.apiClient.send(request).value
     } else {
-      let request = Request<TokenResource?>.init(
+      let request = Request<TokenResource?>(
         path: "/v1/client/sessions/\(session.id)/tokens",
         method: .post
       )
@@ -74,7 +73,6 @@ actor SessionTokenFetcher {
 
     return token
   }
-
 }
 
 actor SessionTokensCache {

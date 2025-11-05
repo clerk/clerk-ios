@@ -11,7 +11,6 @@ import Foundation
 ///
 /// This enum provides different identity providers that can be used for ID token authentication.
 public enum IDTokenProvider: CaseIterable, Codable, Sendable {
-
   /// The identity provider for Sign in with Apple.
   case apple
 
@@ -22,7 +21,7 @@ public enum IDTokenProvider: CaseIterable, Codable, Sendable {
   var strategy: String {
     switch self {
     case .apple:
-      return "oauth_token_apple"
+      "oauth_token_apple"
     }
   }
 

@@ -31,7 +31,7 @@ struct UserProfileMfaRow: View {
   }
 
   private var icon: Image {
-    return switch style {
+    switch style {
     case .authenticatorApp:
       Image("icon-key", bundle: .module)
     case .sms:
@@ -42,7 +42,7 @@ struct UserProfileMfaRow: View {
   }
 
   private var text: Text {
-    return switch style {
+    switch style {
     case .authenticatorApp:
       Text("Authenticator app", bundle: .module)
     case .sms:
@@ -59,8 +59,8 @@ struct UserProfileMfaRow: View {
       Button("Remove", role: .destructive) {
         removeResource = .totp
       }
-    case .sms(let phoneNumber):
-      if user?.totpEnabled != true && !phoneNumber.defaultSecondFactor {
+    case let .sms(phoneNumber):
+      if user?.totpEnabled != true, !phoneNumber.defaultSecondFactor {
         AsyncButton {
           await makeDefaultSecondFactor(phoneNumber: phoneNumber)
         } label: { _ in
@@ -76,7 +76,7 @@ struct UserProfileMfaRow: View {
     case .backupCodes:
       AsyncButton {
         await regenerateBackupCodes()
-      } label: { isRunning in
+      } label: { _ in
         Text("Regenerate", bundle: .module)
       }
       .onIsRunningChanged { isLoading = $0 }
@@ -101,7 +101,7 @@ struct UserProfileMfaRow: View {
 
           HStack(spacing: 4) {
             text
-            if case .sms(let phoneNumber) = style {
+            if case let .sms(phoneNumber) = style {
               Text(verbatim: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
             }
           }
@@ -144,7 +144,7 @@ struct UserProfileMfaRow: View {
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource()
-        } label: { isRunning in
+        } label: { _ in
           Text(removeResource?.title ?? "", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
@@ -166,7 +166,6 @@ struct UserProfileMfaRow: View {
 }
 
 extension UserProfileMfaRow {
-
   private func removeResource() async {
     defer { removeResource = nil }
 
@@ -191,7 +190,7 @@ extension UserProfileMfaRow {
     guard let user else { return }
 
     do {
-      self.backupCodes = try await user.createBackupCodes()
+      backupCodes = try await user.createBackupCodes()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to regenerate backup codes", error: error)

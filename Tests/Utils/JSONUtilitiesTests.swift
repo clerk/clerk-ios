@@ -12,11 +12,10 @@ import Testing
 
 @Suite(.serialized)
 struct JSONUtilitiesTests {
-
   // MARK: - JSON Enum Cases
 
   @Test
-  func testJSONCases() {
+  func jSONCases() {
     let stringJSON: JSON = .string("hello")
     let numberJSON: JSON = .number(42.0)
     let boolJSON: JSON = .bool(true)
@@ -35,37 +34,37 @@ struct JSONUtilitiesTests {
   // MARK: - ExpressibleBy Protocols
 
   @Test
-  func testExpressibleByStringLiteral() {
+  func expressibleByStringLiteral() {
     let json: JSON = "hello"
     #expect(json.stringValue == "hello")
   }
 
   @Test
-  func testExpressibleByIntegerLiteral() {
+  func expressibleByIntegerLiteral() {
     let json: JSON = 42
     #expect(json.doubleValue == 42.0)
   }
 
   @Test
-  func testExpressibleByFloatLiteral() {
+  func expressibleByFloatLiteral() {
     let json: JSON = 3.14
     #expect(json.doubleValue == 3.14)
   }
 
   @Test
-  func testExpressibleByBooleanLiteral() {
+  func expressibleByBooleanLiteral() {
     let json: JSON = true
     #expect(json.boolValue == true)
   }
 
   @Test
-  func testExpressibleByNilLiteral() {
+  func expressibleByNilLiteral() {
     let json: JSON = nil
     #expect(json.isNull == true)
   }
 
   @Test
-  func testExpressibleByArrayLiteral() {
+  func expressibleByArrayLiteral() {
     let json: JSON = ["a", "b", "c"]
     #expect(json.arrayValue?.count == 3)
     #expect(json[0]?.stringValue == "a")
@@ -74,7 +73,7 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testExpressibleByDictionaryLiteral() {
+  func expressibleByDictionaryLiteral() {
     let json: JSON = ["key1": "value1", "key2": "value2"]
     #expect(json.objectValue?["key1"]?.stringValue == "value1")
     #expect(json.objectValue?["key2"]?.stringValue == "value2")
@@ -129,17 +128,17 @@ struct JSONUtilitiesTests {
   // MARK: - Subscript Access
 
   @Test
-  func testArraySubscript() {
+  func arraySubscript() {
     let json: JSON = ["a", "b", "c"]
     #expect(json[0]?.stringValue == "a")
     #expect(json[1]?.stringValue == "b")
     #expect(json[2]?.stringValue == "c")
-    #expect(json[3] == nil)  // Out of bounds
-    #expect(json[-1] == nil)  // Invalid index
+    #expect(json[3] == nil) // Out of bounds
+    #expect(json[-1] == nil) // Invalid index
   }
 
   @Test
-  func testObjectSubscript() {
+  func objectSubscript() {
     let json: JSON = ["key1": "value1", "key2": "value2"]
     #expect(json["key1"]?.stringValue == "value1")
     #expect(json["key2"]?.stringValue == "value2")
@@ -147,14 +146,14 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testDynamicMemberLookup() {
+  func dynamicMemberLookup() {
     let json: JSON = ["key1": "value1"]
     #expect(json.key1?.stringValue == "value1")
     #expect(json.nonexistent == nil)
   }
 
   @Test
-  func testKeyPathSubscript() {
+  func keyPathSubscript() {
     let json: JSON = ["parent": ["child": ["grandchild": "value"]]]
     #expect(json[keyPath: "parent.child.grandchild"]?.stringValue == "value")
     #expect(json[keyPath: "parent.child"]?.objectValue?["grandchild"]?.stringValue == "value")
@@ -177,19 +176,19 @@ struct JSONUtilitiesTests {
   // MARK: - Merging
 
   @Test
-  func testMergingObjects() {
+  func mergingObjects() {
     let old: JSON = ["a": "old", "b": "unchanged"]
     let new: JSON = ["a": "new", "c": "added"]
 
     let merged = old.merging(with: new)
 
-    #expect(merged["a"]?.stringValue == "new")  // Updated
-    #expect(merged["b"]?.stringValue == "unchanged")  // Preserved
-    #expect(merged["c"]?.stringValue == "added")  // Added
+    #expect(merged["a"]?.stringValue == "new") // Updated
+    #expect(merged["b"]?.stringValue == "unchanged") // Preserved
+    #expect(merged["c"]?.stringValue == "added") // Added
   }
 
   @Test
-  func testMergingNestedObjects() {
+  func mergingNestedObjects() {
     let old: JSON = ["parent": ["child": "old"]]
     let new: JSON = ["parent": ["child": "new", "sibling": "added"]]
 
@@ -200,18 +199,18 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testMergingNonObjects() {
+  func mergingNonObjects() {
     let old: JSON = "old"
     let new: JSON = "new"
 
     let merged = old.merging(with: new)
-    #expect(merged.stringValue == "new")  // Returns new when not objects
+    #expect(merged.stringValue == "new") // Returns new when not objects
   }
 
   // MARK: - Codable
 
   @Test
-  func testJSONEncoding() throws {
+  func jSONEncoding() throws {
     let json: JSON = ["key": "value", "number": 42, "bool": true, "null": nil]
     let encoder = JSONEncoder()
     let data = try encoder.encode(json)
@@ -228,10 +227,10 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testJSONDecoding() throws {
+  func jSONDecoding() throws {
     let jsonString = """
-      {"key":"value","number":42,"bool":true,"null":null}
-      """
+    {"key":"value","number":42,"bool":true,"null":null}
+    """
     let data = jsonString.data(using: .utf8)!
     let decoder = JSONDecoder()
     let json = try decoder.decode(JSON.self, from: data)
@@ -243,7 +242,7 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testJSONEquatable() {
+  func jSONEquatable() {
     #expect(JSON.string("hello") == JSON.string("hello"))
     #expect(JSON.string("hello") != JSON.string("world"))
     #expect(JSON.number(42.0) == JSON.number(42.0))
@@ -273,15 +272,15 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testClerkDecoderSnakeCase() throws {
+  func clerkDecoderSnakeCase() throws {
     struct TestStruct: Codable {
       let firstName: String
       let lastName: String
     }
 
     let jsonString = """
-      {"first_name":"John","last_name":"Doe"}
-      """
+    {"first_name":"John","last_name":"Doe"}
+    """
     let data = jsonString.data(using: .utf8)!
     let decoder = JSONDecoder.clerkDecoder
     let result = try decoder.decode(TestStruct.self, from: data)
@@ -291,21 +290,21 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testClerkDecoderDate() throws {
+  func clerkDecoderDate() throws {
     struct TestStruct: Codable {
       let timestamp: Date
     }
 
     // Milliseconds since 1970
     let jsonString = """
-      {"timestamp":1609459200000}
-      """
+    {"timestamp":1609459200000}
+    """
     let data = jsonString.data(using: .utf8)!
     let decoder = JSONDecoder.clerkDecoder
     let result = try decoder.decode(TestStruct.self, from: data)
 
     // 1609459200000 ms = 2021-01-01 00:00:00 UTC
-    let expectedDate = Date(timeIntervalSince1970: 1609459200)
+    let expectedDate = Date(timeIntervalSince1970: 1_609_459_200)
     let timeDiff = abs(result.timestamp.timeIntervalSince1970 - expectedDate.timeIntervalSince1970)
     #expect(timeDiff < 1.0)
   }
@@ -332,7 +331,7 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testClerkEncoderSnakeCase() throws {
+  func clerkEncoderSnakeCase() throws {
     struct TestStruct: Codable {
       let firstName: String
       let lastName: String
@@ -348,12 +347,12 @@ struct JSONUtilitiesTests {
   }
 
   @Test
-  func testClerkEncoderDate() throws {
+  func clerkEncoderDate() throws {
     struct TestStruct: Codable {
       let timestamp: Date
     }
 
-    let date = Date(timeIntervalSince1970: 1609459200)  // 2021-01-01 00:00:00 UTC
+    let date = Date(timeIntervalSince1970: 1_609_459_200) // 2021-01-01 00:00:00 UTC
     let value = TestStruct(timestamp: date)
     let encoder = JSONEncoder.clerkEncoder
     let data = try encoder.encode(value)
@@ -361,6 +360,6 @@ struct JSONUtilitiesTests {
 
     // Should be encoded as milliseconds
     let timestamp = json["timestamp"] as! Double
-    #expect(timestamp == 1609459200000.0)
+    #expect(timestamp == 1_609_459_200_000.0)
   }
 }

@@ -59,7 +59,7 @@ func createMockAPIClient() -> APIClient {
       "Content-Type": "application/x-www-form-urlencoded",
       "clerk-api-version": Clerk.apiVersion,
       "x-ios-sdk-version": Clerk.sdkVersion,
-      "x-mobile": "1"
+      "x-mobile": "1",
     ]
   }
 }
@@ -172,8 +172,8 @@ extension URLRequest {
       bodyData = nil
     }
 
-    guard let bodyData = bodyData,
-      let bodyString = String(data: bodyData, encoding: .utf8)
+    guard let bodyData,
+          let bodyString = String(data: bodyData, encoding: .utf8)
     else {
       return nil
     }

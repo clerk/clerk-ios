@@ -8,14 +8,12 @@
 import Foundation
 
 extension Clerk {
-
   static func handleUrl(_ url: URL) async {
     guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
       return
     }
 
     switch components {
-
     case let x where x.path.contains("oauth_callback"):
       await handleOAuthCallback(urlComponents: components)
 
@@ -40,5 +38,4 @@ extension Clerk {
 
     WebAuthentication.finishWithDeeplinkUrl(url: url)
   }
-
 }

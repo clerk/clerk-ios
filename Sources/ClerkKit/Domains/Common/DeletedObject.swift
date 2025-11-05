@@ -1,5 +1,5 @@
 //
-//  Deletion.swift
+//  DeletedObject.swift
 //
 //
 //  Created by Mike Pitre on 7/5/24.
@@ -9,7 +9,6 @@ import Foundation
 
 /// The DeletedObject class represents an item that has been deleted from the database.
 public struct DeletedObject: Codable, Sendable {
-
   /// The object type that has been deleted.
   public var object: String?
 
@@ -29,4 +28,3 @@ public struct DeletedObject: Codable, Sendable {
     self.deleted = deleted
   }
 }
-

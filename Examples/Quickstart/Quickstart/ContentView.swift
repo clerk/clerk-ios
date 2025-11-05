@@ -12,7 +12,7 @@ import SwiftUI
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
   @State private var authViewIsPresented = false
-  
+
   var body: some View {
     VStack {
       if clerk.user != nil {

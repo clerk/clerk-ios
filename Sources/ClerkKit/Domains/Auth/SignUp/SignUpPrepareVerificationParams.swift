@@ -7,10 +7,9 @@
 
 import Foundation
 
-extension SignUp {
-
+public extension SignUp {
   /// Defines the strategies for preparing a verification step during the sign-up process.
-  public enum PrepareStrategy: Sendable {
+  enum PrepareStrategy: Sendable {
     /// Send an email with a unique token to input.
     case emailCode
 
@@ -26,13 +25,11 @@ extension SignUp {
         .init(strategy: "phone_code")
       }
     }
-
   }
 
   /// Parameters used to prepare the verification process for the sign-up flow.
-  public struct PrepareVerificationParams: Encodable, Sendable {
+  struct PrepareVerificationParams: Encodable, Sendable {
     /// The verification strategy to use.
     public let strategy: String
   }
-
 }

@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  String+Base64.swift
 //
 //
 //  Created by Mike Pitre on 2/28/24.
@@ -8,9 +8,8 @@
 import Foundation
 
 extension String {
-
   func base64String() -> String? {
-    if let data = self.dataFromBase64URL() {
+    if let data = dataFromBase64URL() {
       return String(data: data, encoding: .utf8)
     }
     return nil
@@ -37,5 +36,4 @@ extension String {
 
     return Data(base64Encoded: base64)
   }
-
 }

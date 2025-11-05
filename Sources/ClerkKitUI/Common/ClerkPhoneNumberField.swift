@@ -14,7 +14,6 @@ extension ClerkPhoneNumberField {
   @Observable
   @MainActor
   final class PhoneNumberModel {
-
     private let utility = PhoneNumberUtility()
     let textField: PhoneNumberTextField
     let partialFormatter: PartialFormatter
@@ -27,10 +26,10 @@ extension ClerkPhoneNumberField {
     }
 
     init() {
-      self.textField = .init(utility: utility)
-      self.defaultCountry = .init(for: textField.defaultRegion, with: utility)!
-      self.currentCountry = .init(for: textField.defaultRegion, with: utility)!
-      self.partialFormatter = .init(
+      textField = .init(utility: utility)
+      defaultCountry = .init(for: textField.defaultRegion, with: utility)!
+      currentCountry = .init(for: textField.defaultRegion, with: utility)!
+      partialFormatter = .init(
         utility: utility,
         defaultRegion: defaultCountry.code,
         withPrefix: false
@@ -57,17 +56,17 @@ extension ClerkPhoneNumberField {
 
     func phoneNumberFormattedForDisplay(text: String) -> String {
       if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
-        return utility.format(phoneNumber, toType: .national)
+        utility.format(phoneNumber, toType: .national)
       } else {
-        return partialFormatter.formatPartial(text)
+        partialFormatter.formatPartial(text)
       }
     }
 
     func phoneNumberFormattedForData(text: String) -> String {
       if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
-        return utility.format(phoneNumber, toType: .e164)
+        utility.format(phoneNumber, toType: .e164)
       } else {
-        return text
+        text
       }
     }
   }
@@ -94,7 +93,7 @@ struct ClerkPhoneNumberField: View {
     fieldState: FieldState = .default
   ) {
     self.titleKey = titleKey
-    self._text = text
+    _text = text
     self.fieldState = fieldState
   }
 
@@ -109,7 +108,7 @@ struct ClerkPhoneNumberField: View {
 
   private func textDidUpdate(text: String) {
     let rawText = text.filter(\.isWholeNumber)
-    self.displayText = phoneNumberModel.phoneNumberFormattedForDisplay(text: rawText)
+    displayText = phoneNumberModel.phoneNumberFormattedForDisplay(text: rawText)
     self.text = phoneNumberModel.phoneNumberFormattedForData(text: rawText)
   }
 
@@ -236,8 +235,8 @@ struct ClerkPhoneNumberField: View {
 }
 
 #Preview {
-  @Previewable @State var emptyEmail: String = ""
-  @Previewable @State var filledEmail: String = "5555550100"
+  @Previewable @State var emptyEmail = ""
+  @Previewable @State var filledEmail = "5555550100"
 
   VStack(spacing: 20) {
     ClerkPhoneNumberField("Enter your phone number", text: $emptyEmail)

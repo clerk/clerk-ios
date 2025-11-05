@@ -14,13 +14,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkHeaderRequestMiddlewareTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testAddsDeviceTokenHeaderWhenPresent() async throws {
+  func addsDeviceTokenHeaderWhenPresent() async throws {
     let keychain = InMemoryKeychain()
     try keychain.set("test-device-token", forKey: "clerkDeviceToken")
 
@@ -39,7 +38,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func testDoesNotAddDeviceTokenHeaderWhenMissing() async throws {
+  func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -57,7 +56,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func testAddsClientIdHeaderInDebugMode() async throws {
+  func addsClientIdHeaderInDebugMode() async throws {
     // Configure Clerk with debug mode
     Clerk._reconfigure(
       publishableKey: testPublishableKey,
@@ -78,7 +77,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func testDoesNotAddClientIdHeaderWhenNotInDebugMode() async throws {
+  func doesNotAddClientIdHeaderWhenNotInDebugMode() async throws {
     // Configure Clerk without debug mode
     Clerk._reconfigure(
       publishableKey: testPublishableKey,
@@ -98,7 +97,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func testAddsNativeDeviceIdHeader() async throws {
+  func addsNativeDeviceIdHeader() async throws {
     let middleware = ClerkHeaderRequestMiddleware()
     var request = URLRequest(url: URL(string: "https://example.com")!)
 
@@ -109,4 +108,3 @@ struct ClerkHeaderRequestMiddlewareTests {
     #expect(deviceId?.isEmpty == false)
   }
 }
-

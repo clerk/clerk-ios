@@ -20,7 +20,7 @@ struct WrappingHStack: Layout {
     self.lineSpacing = lineSpacing
   }
 
-  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
     let rows = calculateRows(proposal: proposal, subviews: subviews)
 
     let maxWidth = rows.map { $0.width }.max() ?? 0
@@ -32,7 +32,7 @@ struct WrappingHStack: Layout {
     return CGSize(width: maxWidth, height: totalHeight)
   }
 
-  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
     let rows = calculateRows(proposal: proposal, subviews: subviews)
     var currentY = bounds.minY
 
@@ -90,14 +90,13 @@ struct WrappingHStack: Layout {
 
     // Calculate horizontal alignment
     let totalRowWidth = row.width
-    let startX: CGFloat
-    switch alignment.horizontal {
+    let startX: CGFloat = switch alignment.horizontal {
     case .leading:
-      startX = bounds.minX
+      bounds.minX
     case .trailing:
-      startX = bounds.maxX - totalRowWidth
-    default:  // center
-      startX = bounds.minX + (bounds.width - totalRowWidth) / 2
+      bounds.maxX - totalRowWidth
+    default: // center
+      bounds.minX + (bounds.width - totalRowWidth) / 2
     }
 
     var currentX = startX
@@ -107,14 +106,13 @@ struct WrappingHStack: Layout {
       let size = subviewData.size
 
       // Calculate vertical alignment
-      let yPosition: CGFloat
-      switch alignment.vertical {
+      let yPosition: CGFloat = switch alignment.vertical {
       case .top:
-        yPosition = bounds.minY
+        bounds.minY
       case .bottom:
-        yPosition = bounds.minY + rowHeight - size.height
-      default:  // center
-        yPosition = bounds.minY + (rowHeight - size.height) / 2
+        bounds.minY + rowHeight - size.height
+      default: // center
+        bounds.minY + (rowHeight - size.height) / 2
       }
 
       let position = CGPoint(x: currentX, y: yPosition)

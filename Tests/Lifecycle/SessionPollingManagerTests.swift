@@ -20,7 +20,7 @@ final class MockSessionProvider: SessionProviding {
   }
 
   init(session: Session? = nil) {
-    self.sessionToReturn = session
+    sessionToReturn = session
   }
 }
 
@@ -28,9 +28,8 @@ final class MockSessionProvider: SessionProviding {
 @MainActor
 @Suite(.serialized)
 struct SessionPollingManagerTests {
-
   @Test
-  func testStopPollingMultipleTimes() {
+  func stopPollingMultipleTimes() {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(
       sessionProvider: provider,
@@ -53,7 +52,7 @@ struct SessionPollingManagerTests {
   }
 
   @Test
-  func testStartPollingMultipleTimes() {
+  func startPollingMultipleTimes() {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(
       sessionProvider: provider,
@@ -70,5 +69,3 @@ struct SessionPollingManagerTests {
     manager.stopPolling()
   }
 }
-
-

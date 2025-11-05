@@ -20,14 +20,14 @@ struct UserProfileDevicesSection: View {
 
   var sortedSessions: [Session] {
     guard let user else { return [] }
-    let sessions = (clerk.sessionsByUserId[user.id] ?? []).filter({ $0.latestActivity != nil })
+    let sessions = (clerk.sessionsByUserId[user.id] ?? []).filter { $0.latestActivity != nil }
     return sessions.sorted { lhs, rhs in
       if lhs.isThisDevice {
-        return true
+        true
       } else if rhs.isThisDevice {
-        return false
+        false
       } else {
-        return lhs.lastActiveAt > rhs.lastActiveAt
+        lhs.lastActiveAt > rhs.lastActiveAt
       }
     }
   }

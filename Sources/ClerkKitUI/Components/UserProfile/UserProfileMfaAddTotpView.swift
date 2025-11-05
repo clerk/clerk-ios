@@ -37,7 +37,7 @@ struct UserProfileMfaAddTotpView: View {
           sharedState.presentedAddMfaType = nil
         }
       }
-    case .backupCodes(let backupCodes):
+    case let .backupCodes(backupCodes):
       BackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp)
     }
   }
@@ -151,7 +151,6 @@ struct UserProfileMfaAddTotpView: View {
 }
 
 extension UserProfileMfaAddTotpView {
-
   private func copyToClipboard(_ text: String) {
     #if os(iOS)
     UIPasteboard.general.string = text

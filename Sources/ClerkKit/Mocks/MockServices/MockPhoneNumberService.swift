@@ -38,12 +38,12 @@ public final class MockPhoneNumberService: PhoneNumberServiceProtocol {
     makeDefaultSecondFactor: ((String) async throws -> PhoneNumber)? = nil,
     setReservedForSecondFactor: ((String, Bool) async throws -> PhoneNumber)? = nil
   ) {
-    self.createHandler = create
-    self.deleteHandler = delete
-    self.prepareVerificationHandler = prepareVerification
-    self.attemptVerificationHandler = attemptVerification
-    self.makeDefaultSecondFactorHandler = makeDefaultSecondFactor
-    self.setReservedForSecondFactorHandler = setReservedForSecondFactor
+    createHandler = create
+    deleteHandler = delete
+    prepareVerificationHandler = prepareVerification
+    attemptVerificationHandler = attemptVerification
+    makeDefaultSecondFactorHandler = makeDefaultSecondFactor
+    setReservedForSecondFactorHandler = setReservedForSecondFactor
   }
 
   @MainActor
@@ -94,4 +94,3 @@ public final class MockPhoneNumberService: PhoneNumberServiceProtocol {
     return .mock
   }
 }
-

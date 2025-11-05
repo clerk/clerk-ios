@@ -7,7 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ExternalAccountTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -21,8 +20,9 @@ struct ExternalAccountTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -33,5 +33,4 @@ struct ExternalAccountTests {
     _ = try await externalAccount.destroy()
     #expect(requestHandled.value)
   }
-
 }

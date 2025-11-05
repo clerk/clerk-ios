@@ -1,5 +1,5 @@
 //
-//  Mocks.swift
+//  MockModels.swift
 //  Clerk
 //
 //  Created on 2025-01-27.
@@ -9,9 +9,8 @@ import Foundation
 
 // MARK: - Clerk
 
-extension Clerk {
-
-  public static var mock: Clerk {
+public extension Clerk {
+  static var mock: Clerk {
     let clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
@@ -19,57 +18,53 @@ extension Clerk {
     return clerk
   }
 
-  public static var mockSignedOut: Clerk {
+  static var mockSignedOut: Clerk {
     let clerk = Clerk()
     clerk.client = .mockSignedOut
     clerk.environment = .mock
     clerk.sessionsByUserId = [:]
     return clerk
   }
-
 }
 
 // MARK: - Client
 
-extension Client {
-
-  public static var mock: Client {
-    return Client(
+public extension Client {
+  static var mock: Client {
+    Client(
       id: "1",
       signIn: .mock,
       signUp: .mock,
       sessions: [.mock, .mock2],
       lastActiveSessionId: "1",
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }
 
-  public static var mockSignedOut: Client {
-    return Client(
+  static var mockSignedOut: Client {
+    Client(
       id: "2",
       signIn: .mock,
       signUp: .mock,
       sessions: [],
       lastActiveSessionId: nil,
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }
-
 }
 
 // MARK: - Auth
 
 // MARK: Session
 
-extension Session {
-
-  public static var mock: Session {
+public extension Session {
+  static var mock: Session {
     Session(
       id: "1",
       status: .active,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      abandonAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       latestActivity: .init(
         id: "1",
         browserName: "Safari",
@@ -84,20 +79,20 @@ extension Session {
       actor: nil,
       user: .mock,
       publicUserData: nil,
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       tasks: [],
       lastActiveToken: nil
     )
   }
 
-  public static var mock2: Session {
+  static var mock2: Session {
     Session(
       id: "2",
       status: .active,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      abandonAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       latestActivity: .init(
         id: "2",
         browserName: "Chrome",
@@ -112,39 +107,37 @@ extension Session {
       actor: nil,
       user: .mock2,
       publicUserData: nil,
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       tasks: [],
       lastActiveToken: nil
     )
   }
 
-  public static var mockExpired: Session {
+  static var mockExpired: Session {
     Session(
       id: "1",
       status: .expired,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      abandonAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      lastActiveAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       latestActivity: nil,
       lastActiveOrganizationId: nil,
       actor: nil,
       user: .mock,
       publicUserData: nil,
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       tasks: [],
       lastActiveToken: nil
     )
   }
-
 }
 
 // MARK: SignIn
 
-extension SignIn {
-
-  public static var mock: SignIn {
+public extension SignIn {
+  static var mock: SignIn {
     SignIn(
       id: "1",
       status: .needsIdentifier,
@@ -156,7 +149,7 @@ extension SignIn {
         .mockGoogle,
         .mockApple,
         .mockPasskey,
-        .mockPassword
+        .mockPassword,
       ],
       supportedSecondFactors: nil,
       firstFactorVerification: .mockEmailCodeUnverifiedVerification,
@@ -165,14 +158,12 @@ extension SignIn {
       createdSessionId: nil
     )
   }
-
 }
 
 // MARK: SignUp
 
-extension SignUp {
-
-  public static var mock: SignUp {
+public extension SignUp {
+  static var mock: SignUp {
     SignUp(
       id: "1",
       status: .missingRequirements,
@@ -191,192 +182,182 @@ extension SignUp {
       unsafeMetadata: nil,
       createdSessionId: nil,
       createdUserId: nil,
-      abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+      abandonAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }
-
 }
 
 // MARK: Verification
 
-extension Verification {
-
-  public static var mockEmailCodeVerifiedVerification: Verification {
+public extension Verification {
+  static var mockEmailCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: "email_code",
       attempts: nil,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
 
-  public static var mockEmailCodeUnverifiedVerification: Verification {
+  static var mockEmailCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "email_code",
       attempts: nil,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
 
-  public static var mockPhoneCodeVerifiedVerification: Verification {
+  static var mockPhoneCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: "phone_code",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
 
-  public static var mockPhoneCodeUnverifiedVerification: Verification {
+  static var mockPhoneCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "phone_code",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
 
-  public static var mockPasskeyVerifiedVerification: Verification {
+  static var mockPasskeyVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: "passkey",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: "12345"
     )
   }
 
-  public static var mockPasskeyUnverifiedVerification: Verification {
+  static var mockPasskeyUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "passkey",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: "12345"
     )
   }
 
-  public static var mockExternalAccountVerifiedVerification: Verification {
+  static var mockExternalAccountVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: "oauth_google",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: nil,
       nonce: nil
     )
   }
 
-  public static var mockExternalAccountUnverifiedVerification: Verification {
+  static var mockExternalAccountUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: "oauth_google",
       attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
+      expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
       externalVerificationRedirectUrl: "https://accounts.google.com",
       nonce: nil
     )
   }
-
 }
 
 // MARK: Factor
 
-extension Factor {
-
-  public static var mockEmailCode: Factor {
+public extension Factor {
+  static var mockEmailCode: Factor {
     Factor(strategy: "email_code")
   }
 
-  public static var mockPhoneCode: Factor {
+  static var mockPhoneCode: Factor {
     Factor(strategy: "phone_code")
   }
 
-  public static var mockGoogle: Factor {
+  static var mockGoogle: Factor {
     Factor(strategy: "oauth_google")
   }
 
-  public static var mockApple: Factor {
+  static var mockApple: Factor {
     Factor(strategy: "oauth_apple")
   }
 
-  public static var mockPassword: Factor {
+  static var mockPassword: Factor {
     Factor(strategy: "password")
   }
 
-  public static var mockPasskey: Factor {
+  static var mockPasskey: Factor {
     Factor(strategy: "passkey")
   }
 
-  public static var mockResetPasswordEmailCode: Factor {
+  static var mockResetPasswordEmailCode: Factor {
     Factor(strategy: "reset_password_email_code")
   }
 
-  public static var mockResetPasswordPhoneCode: Factor {
+  static var mockResetPasswordPhoneCode: Factor {
     Factor(strategy: "reset_password_phone_code")
   }
 
-  public static var mockTotp: Factor {
+  static var mockTotp: Factor {
     Factor(strategy: "totp")
   }
 
-  public static var mockBackupCode: Factor {
+  static var mockBackupCode: Factor {
     Factor(strategy: "backup_code")
   }
-
 }
 
 // MARK: Passkey
 
-extension Passkey {
-
-  public static var mock: Passkey {
+public extension Passkey {
+  static var mock: Passkey {
     Passkey(
       id: "1",
       name: "iCloud Keychain",
       verification: .mockPasskeyVerifiedVerification,
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastUsedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      lastUsedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }
-
 }
 
 // MARK: TokenResource
 
-extension TokenResource {
-
-  public static var mock: TokenResource {
+public extension TokenResource {
+  static var mock: TokenResource {
     .init(jwt: "jwt")
   }
-
 }
 
 // MARK: TOTPResource
 
-extension TOTPResource {
-
-  public static var mock: TOTPResource {
+public extension TOTPResource {
+  static var mock: TOTPResource {
     .init(
       id: "1",
       secret: "1234567890",
@@ -387,14 +368,12 @@ extension TOTPResource {
       updatedAt: .distantPast
     )
   }
-
 }
 
 // MARK: BackupCodeResource
 
-extension BackupCodeResource {
-
-  public static var mock: Self {
+public extension BackupCodeResource {
+  static var mock: Self {
     .init(
       id: "1",
       codes: [
@@ -404,20 +383,18 @@ extension BackupCodeResource {
         "mnop",
         "qrst",
         "uvwx",
-        "yz"
+        "yz",
       ],
       createdAt: .distantPast,
       updatedAt: .distantPast
     )
   }
-
 }
 
 // MARK: - User
 
-extension User {
-
-  public static var mock: Self {
+public extension User {
+  static var mock: Self {
     .init(
       backupCodeEnabled: true,
       createdAt: .distantPast,
@@ -449,7 +426,7 @@ extension User {
     )
   }
 
-  public static var mock2: Self {
+  static var mock2: Self {
     .init(
       backupCodeEnabled: true,
       createdAt: .distantPast,
@@ -480,14 +457,12 @@ extension User {
       username: "username2"
     )
   }
-
 }
 
 // MARK: EmailAddress
 
-extension EmailAddress {
-
-  public static var mock: EmailAddress {
+public extension EmailAddress {
+  static var mock: EmailAddress {
     EmailAddress(
       id: "1",
       emailAddress: "user@email.com",
@@ -496,7 +471,7 @@ extension EmailAddress {
     )
   }
 
-  public static var mock2: EmailAddress {
+  static var mock2: EmailAddress {
     EmailAddress(
       id: "12",
       emailAddress: "user2@email.com",
@@ -504,14 +479,12 @@ extension EmailAddress {
       linkedTo: nil
     )
   }
-
 }
 
 // MARK: PhoneNumber
 
-extension PhoneNumber {
-
-  public static var mock: PhoneNumber {
+public extension PhoneNumber {
+  static var mock: PhoneNumber {
     PhoneNumber(
       id: "1",
       phoneNumber: "+15555550100",
@@ -523,7 +496,7 @@ extension PhoneNumber {
     )
   }
 
-  public static var mock2: PhoneNumber {
+  static var mock2: PhoneNumber {
     PhoneNumber(
       id: "2",
       phoneNumber: "+15555550101",
@@ -535,7 +508,7 @@ extension PhoneNumber {
     )
   }
 
-  public static var mockMfa: PhoneNumber {
+  static var mockMfa: PhoneNumber {
     PhoneNumber(
       id: "3",
       phoneNumber: "+15555550102",
@@ -546,14 +519,12 @@ extension PhoneNumber {
       backupCodes: nil
     )
   }
-
 }
 
 // MARK: ExternalAccount
 
-extension ExternalAccount {
-
-  public static var mockVerified: ExternalAccount {
+public extension ExternalAccount {
+  static var mockVerified: ExternalAccount {
     .init(
       id: "1",
       identificationId: "1",
@@ -571,7 +542,7 @@ extension ExternalAccount {
     )
   }
 
-  public static var mockUnverified: ExternalAccount {
+  static var mockUnverified: ExternalAccount {
     .init(
       id: "1",
       identificationId: "1",
@@ -588,14 +559,12 @@ extension ExternalAccount {
       verification: .mockExternalAccountUnverifiedVerification
     )
   }
-
 }
 
 // MARK: - Organization
 
-extension Organization {
-
-  public static var mock: Self {
+public extension Organization {
+  static var mock: Self {
     .init(
       id: "1",
       name: "Organization Name",
@@ -611,14 +580,12 @@ extension Organization {
       publicMetadata: nil
     )
   }
-
 }
 
 // MARK: OrganizationMembership
 
-extension OrganizationMembership {
-
-  public static var mockWithUserData: Self {
+public extension OrganizationMembership {
+  static var mockWithUserData: Self {
     .init(
       id: "1",
       publicMetadata: "{}",
@@ -639,7 +606,7 @@ extension OrganizationMembership {
     )
   }
 
-  public static var mockWithoutUserData: Self {
+  static var mockWithoutUserData: Self {
     .init(
       id: "1",
       publicMetadata: "{}",
@@ -652,14 +619,12 @@ extension OrganizationMembership {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: OrganizationInvitation
 
-extension OrganizationInvitation {
-
-  public static var mock: Self {
+public extension OrganizationInvitation {
+  static var mock: Self {
     .init(
       id: "1",
       emailAddress: EmailAddress.mock.emailAddress,
@@ -671,14 +636,12 @@ extension OrganizationInvitation {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: OrganizationDomain
 
-extension OrganizationDomain {
-
-  public static var mock: Self {
+public extension OrganizationDomain {
+  static var mock: Self {
     .init(
       id: "1",
       name: "name",
@@ -697,14 +660,12 @@ extension OrganizationDomain {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: OrganizationMembershipRequest
 
-extension OrganizationMembershipRequest {
-
-  public static var mock: Self {
+public extension OrganizationMembershipRequest {
+  static var mock: Self {
     .init(
       id: "1",
       organizationId: "1",
@@ -714,14 +675,12 @@ extension OrganizationMembershipRequest {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: OrganizationSuggestion
 
-extension OrganizationSuggestion {
-
-  public static var mock: Self {
+public extension OrganizationSuggestion {
+  static var mock: Self {
     .init(
       id: "1",
       publicOrganizationData: .init(
@@ -736,14 +695,12 @@ extension OrganizationSuggestion {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: UserOrganizationInvitation
 
-extension UserOrganizationInvitation {
-
-  public static var mock: Self {
+public extension UserOrganizationInvitation {
+  static var mock: Self {
     .init(
       id: "1",
       emailAddress: "user@email.com",
@@ -761,14 +718,12 @@ extension UserOrganizationInvitation {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: RoleResource
 
-extension RoleResource {
-
-  public static var mock: Self {
+public extension RoleResource {
+  static var mock: Self {
     .init(
       id: "1",
       key: "key",
@@ -779,14 +734,12 @@ extension RoleResource {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: PermissionResource
 
-extension PermissionResource {
-
-  public static var mock: Self {
+public extension PermissionResource {
+  static var mock: Self {
     .init(
       id: "1",
       key: "key",
@@ -797,14 +750,12 @@ extension PermissionResource {
       updatedAt: .now
     )
   }
-
 }
 
 // MARK: - Environment
 
-extension Clerk.Environment {
-
-  public static var mock: Self {
+public extension Clerk.Environment {
+  static var mock: Self {
     .init(
       authConfig: .mock,
       userSettings: .mock,
@@ -813,26 +764,22 @@ extension Clerk.Environment {
       commerceSettings: .mock
     )
   }
-
 }
 
 // MARK: AuthConfig
 
-extension Clerk.Environment.AuthConfig {
-
-  public static var mock: Self {
+public extension Clerk.Environment.AuthConfig {
+  static var mock: Self {
     .init(
       singleSessionMode: false
     )
   }
-
 }
 
 // MARK: UserSettings
 
-extension Clerk.Environment.UserSettings {
-
-  public static var mock: Self {
+public extension Clerk.Environment.UserSettings {
+  static var mock: Self {
     .init(
       attributes: [
         "email_address": .init(
@@ -924,7 +871,7 @@ extension Clerk.Environment.UserSettings {
           secondFactors: nil,
           verifications: nil,
           verifyAtSignUp: false
-        )
+        ),
       ],
       signUp: .init(
         customActionRequired: false,
@@ -959,7 +906,7 @@ extension Clerk.Environment.UserSettings {
           notSelectable: false,
           name: "Slack",
           logoUrl: ""
-        )
+        ),
       ],
       actions: .init(
         deleteSelf: true,
@@ -971,14 +918,12 @@ extension Clerk.Environment.UserSettings {
       )
     )
   }
-
 }
 
 // MARK: DisplayConfig
 
-extension Clerk.Environment.DisplayConfig {
-
-  public static var mock: Self {
+public extension Clerk.Environment.DisplayConfig {
+  static var mock: Self {
     .init(
       instanceEnvironmentType: .development,
       applicationName: "Acme Co",
@@ -991,14 +936,12 @@ extension Clerk.Environment.DisplayConfig {
       termsUrl: "terms"
     )
   }
-
 }
 
 // MARK: CommerceSettings
 
-extension CommerceSettings {
-
-  public static var mock: Self {
+public extension CommerceSettings {
+  static var mock: Self {
     .init(
       billing: .init(
         enabled: true,
@@ -1007,40 +950,34 @@ extension CommerceSettings {
       )
     )
   }
-
 }
 
 // MARK: - Common
 
 // MARK: DeletedObject
 
-extension DeletedObject {
-
-  public static var mock: DeletedObject {
+public extension DeletedObject {
+  static var mock: DeletedObject {
     .init(
       object: "object",
       id: "1",
       deleted: true
     )
   }
-
 }
 
 // MARK: ClerkClientError
 
-extension ClerkClientError {
-
-  public static var mock: ClerkClientError {
+public extension ClerkClientError {
+  static var mock: ClerkClientError {
     .init(message: "An unknown error occurred.")
   }
-
 }
 
 // MARK: ClerkAPIError
 
-extension ClerkAPIError {
-
-  public static var mock: ClerkAPIError {
+public extension ClerkAPIError {
+  static var mock: ClerkAPIError {
     .init(
       code: "error",
       message: "An unknown error occurred.",
@@ -1049,6 +986,4 @@ extension ClerkAPIError {
       clerkTraceId: "1"
     )
   }
-
 }
-

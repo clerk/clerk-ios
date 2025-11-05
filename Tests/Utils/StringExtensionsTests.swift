@@ -12,7 +12,6 @@ import Testing
 
 @Suite(.serialized)
 struct StringExtensionsTests {
-
   // MARK: - String+Ext.swift Tests
 
   @Test
@@ -129,7 +128,7 @@ struct StringExtensionsTests {
     let data = base64URL.dataFromBase64URL()
 
     #expect(data != nil)
-    if let data = data {
+    if let data {
       let string = String(data: data, encoding: .utf8)
       #expect(string == "Hello World")
     }
@@ -174,14 +173,14 @@ struct StringExtensionsTests {
     let validJSON = "{\"key\":\"value\"}"
     let json = validJSON.toJSON()
     #expect(json != nil)
-    if let json = json {
+    if let json {
       #expect(json["key"]?.stringValue == "value")
     }
 
     let arrayJSON = "[1,2,3]"
     let arrayResult = arrayJSON.toJSON()
     #expect(arrayResult != nil)
-    if let arrayResult = arrayResult {
+    if let arrayResult {
       #expect(arrayResult.arrayValue?.count == 3)
     }
 
@@ -190,7 +189,7 @@ struct StringExtensionsTests {
     let objectJSON = "{\"number\":42}"
     let objectResult = objectJSON.toJSON()
     #expect(objectResult != nil)
-    if let objectResult = objectResult {
+    if let objectResult {
       #expect(objectResult["number"]?.doubleValue == 42.0)
     }
 
@@ -206,4 +205,3 @@ struct StringExtensionsTests {
     #expect(emptyResult == nil || emptyResult?.isNull == true)
   }
 }
-

@@ -16,7 +16,7 @@ public final class MockExternalAccountService: ExternalAccountServiceProtocol {
   public nonisolated(unsafe) var destroyHandler: ((String) async throws -> DeletedObject)?
 
   public init(destroy: ((String) async throws -> DeletedObject)? = nil) {
-    self.destroyHandler = destroy
+    destroyHandler = destroy
   }
 
   @MainActor
@@ -27,4 +27,3 @@ public final class MockExternalAccountService: ExternalAccountServiceProtocol {
     return .mock
   }
 }
-
