@@ -11,22 +11,22 @@ import Foundation
 public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
 
   /// The unique identifier of the passkey.
-  public let id: String
+  public var id: String
 
   /// The passkey's name.
-  public let name: String
+  public var name: String
 
   /// The verification details for the passkey.
-  public let verification: Verification?
+  public var verification: Verification?
 
   /// The date when the passkey was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the passkey was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   /// The date when the passkey was last used.
-  public let lastUsedAt: Date?
+  public var lastUsedAt: Date?
 
   public init(
     id: String,
@@ -102,17 +102,3 @@ extension Passkey {
 
 }
 
-extension Passkey {
-
-  package static var mock: Passkey {
-    Passkey(
-      id: "1",
-      name: "iCloud Keychain",
-      verification: .mockPasskeyVerifiedVerification,
-      createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      lastUsedAt: Date(timeIntervalSinceReferenceDate: 1234567890)
-    )
-  }
-
-}

@@ -11,43 +11,43 @@ import Foundation
 public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable {
 
   /// The unique identifier of the related organization.
-  public let id: String
+  public var id: String
 
   /// The name of the related organization.
-  public let name: String
+  public var name: String
 
   /// The organization slug. If supplied, it must be unique for the instance.
-  public let slug: String?
+  public var slug: String?
 
   /// Holds the organization logo or default logo. Compatible with Clerk's Image Optimization.
-  public let imageUrl: String
+  public var imageUrl: String
 
   /// A getter boolean to check if the organization has an uploaded image.
   ///
   /// Returns false if Clerk is displaying an avatar for the organization.
-  public let hasImage: Bool
+  public var hasImage: Bool
 
   /// The number of members the associated organization contains.
-  public let membersCount: Int?
+  public var membersCount: Int?
 
   /// The number of pending invitations to users to join the organization.
-  public let pendingInvitationsCount: Int?
+  public var pendingInvitationsCount: Int?
 
   /// The maximum number of memberships allowed for the organization.
-  public let maxAllowedMemberships: Int
+  public var maxAllowedMemberships: Int
 
   /// A getter boolean to check if the admin of the organization can delete it.
-  public let adminDeleteEnabled: Bool
+  public var adminDeleteEnabled: Bool
 
   /// The date when the organization was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the organization was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   /// Metadata that can be read from the Frontend API and Backend API
   /// and can be set only from the Backend API.
-  public let publicMetadata: JSON?
+  public var publicMetadata: JSON?
 
   public init(
     id: String,
@@ -308,23 +308,3 @@ extension Organization {
   }
 }
 
-extension Organization {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      name: "Organization Name",
-      slug: "org-slug",
-      imageUrl: "",
-      hasImage: false,
-      membersCount: 3,
-      pendingInvitationsCount: 1,
-      maxAllowedMemberships: 100,
-      adminDeleteEnabled: true,
-      createdAt: Date.distantPast,
-      updatedAt: .now,
-      publicMetadata: nil
-    )
-  }
-
-}
