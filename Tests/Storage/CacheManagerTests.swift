@@ -25,7 +25,7 @@ final class MockCacheCoordinator: CacheCoordinator {
     }
   }
 
-  func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
+  func setEnvironmentIfNeeded(_: Clerk.Environment) {
     environmentSet.setValue(true)
     isEnvironmentEmptyValue.setValue(false)
   }
@@ -43,7 +43,6 @@ final class MockCacheCoordinator: CacheCoordinator {
 @MainActor
 @Suite(.serialized)
 struct CacheManagerTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -97,7 +96,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testLoadCachedClient() async throws {
+  func loadCachedClient() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -121,7 +120,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testLoadCachedEnvironment() async throws {
+  func loadCachedEnvironment() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -145,7 +144,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testDoesNotLoadClientWhenAlreadyExists() async throws {
+  func doesNotLoadClientWhenAlreadyExists() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -171,7 +170,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testDoesNotLoadEnvironmentWhenAlreadyExists() async throws {
+  func doesNotLoadEnvironmentWhenAlreadyExists() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -222,7 +221,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testHandlesMissingCachedData() async throws {
+  func handlesMissingCachedData() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -241,4 +240,3 @@ struct CacheManagerTests {
     #expect(coordinator.environmentSet.value == false)
   }
 }
-

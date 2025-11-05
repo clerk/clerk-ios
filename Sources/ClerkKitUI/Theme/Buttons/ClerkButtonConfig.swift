@@ -23,7 +23,6 @@ struct ClerkButtonConfig {
     case small
     case large
   }
-
 }
 
 #endif

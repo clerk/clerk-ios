@@ -14,9 +14,8 @@ import Testing
 /// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
 @Suite(.serialized)
 struct SystemKeychainTests {
-
   @Test
-  func testSetAndGetData() throws {
+  func setAndGetData() throws {
     let keychain = InMemoryKeychain()
 
     let testData = "test-value".data(using: .utf8)!
@@ -27,7 +26,7 @@ struct SystemKeychainTests {
   }
 
   @Test
-  func testUpdateExistingKey() throws {
+  func updateExistingKey() throws {
     let keychain = InMemoryKeychain()
 
     let initialData = "initial-value".data(using: .utf8)!
@@ -66,7 +65,7 @@ struct SystemKeychainTests {
   }
 
   @Test
-  func testGetNonExistentKeyReturnsNil() throws {
+  func getNonExistentKeyReturnsNil() throws {
     let keychain = InMemoryKeychain()
 
     let data = try keychain.data(forKey: "non-existent-key")
@@ -74,7 +73,7 @@ struct SystemKeychainTests {
   }
 
   @Test
-  func testDeleteNonExistentKeyDoesNotThrow() throws {
+  func deleteNonExistentKeyDoesNotThrow() throws {
     let keychain = InMemoryKeychain()
 
     // Should not throw when deleting non-existent key
@@ -82,7 +81,7 @@ struct SystemKeychainTests {
   }
 
   @Test
-  func testIsolationBetweenInstances() throws {
+  func isolationBetweenInstances() throws {
     let keychain1 = InMemoryKeychain()
     let keychain2 = InMemoryKeychain()
 
@@ -94,4 +93,3 @@ struct SystemKeychainTests {
     #expect(data == nil)
   }
 }
-

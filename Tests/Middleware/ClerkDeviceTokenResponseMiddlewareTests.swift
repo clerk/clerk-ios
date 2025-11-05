@@ -14,13 +14,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkDeviceTokenResponseMiddlewareTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testSavesDeviceTokenFromResponseHeader() async throws {
+  func savesDeviceTokenFromResponseHeader() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -45,7 +44,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
   }
 
   @Test
-  func testDoesNotSaveTokenWhenHeaderMissing() async throws {
+  func doesNotSaveTokenWhenHeaderMissing() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -74,7 +73,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
   }
 
   @Test
-  func testUpdatesExistingToken() async throws {
+  func updatesExistingToken() async throws {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(

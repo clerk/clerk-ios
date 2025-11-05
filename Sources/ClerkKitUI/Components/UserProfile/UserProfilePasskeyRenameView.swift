@@ -22,7 +22,7 @@ struct UserProfilePasskeyRenameView: View {
 
   init(passkey: Passkey) {
     self.passkey = passkey
-    self._passkeyName = State(initialValue: passkey.name)
+    _passkeyName = State(initialValue: passkey.name)
   }
 
   var body: some View {
@@ -85,7 +85,6 @@ struct UserProfilePasskeyRenameView: View {
 }
 
 extension UserProfilePasskeyRenameView {
-
   func renamePasskey() async {
     do {
       try await passkey.update(name: passkeyName)
@@ -95,7 +94,6 @@ extension UserProfilePasskeyRenameView {
       ClerkLogger.error("Failed to rename passkey", error: error)
     }
   }
-
 }
 
 #Preview {

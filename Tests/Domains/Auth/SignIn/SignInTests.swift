@@ -7,21 +7,21 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SignInTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testCreateWithIdentifier() async throws {
+  func createWithIdentifier() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -36,7 +36,7 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithOAuth() async throws {
+  func createWithOAuth() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
     let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
@@ -44,8 +44,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -61,7 +62,7 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithOAuthExplicitRedirectUrl() async throws {
+  func createWithOAuthExplicitRedirectUrl() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
     let explicitRedirectUrl = "custom://redirect"
@@ -69,8 +70,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -86,7 +88,7 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithEnterpriseSSO() async throws {
+  func createWithEnterpriseSSO() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
     let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
@@ -94,8 +96,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -112,7 +115,7 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithEnterpriseSSOExplicitRedirectUrl() async throws {
+  func createWithEnterpriseSSOExplicitRedirectUrl() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
     let explicitRedirectUrl = "custom://enterprise-redirect"
@@ -120,8 +123,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -138,15 +142,16 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithIdToken() async throws {
+  func createWithIdToken() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -162,15 +167,16 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithPasskey() async throws {
+  func createWithPasskey() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -185,15 +191,16 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithTicket() async throws {
+  func createWithTicket() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -209,15 +216,16 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithTransfer() async throws {
+  func createWithTransfer() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -232,15 +240,16 @@ struct SignInTests {
   }
 
   @Test
-  func testCreateWithNone() async throws {
+  func createWithNone() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -262,8 +271,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -278,7 +288,7 @@ struct SignInTests {
   }
 
   @Test
-  func testPrepareFirstFactorEmailCode() async throws {
+  func prepareFirstFactorEmailCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
@@ -286,8 +296,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -301,7 +312,7 @@ struct SignInTests {
   }
 
   @Test
-  func testPrepareFirstFactorPhoneCode() async throws {
+  func prepareFirstFactorPhoneCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
@@ -309,8 +320,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -324,7 +336,7 @@ struct SignInTests {
   }
 
   @Test
-  func testPrepareFirstFactorPasskey() async throws {
+  func prepareFirstFactorPasskey() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
@@ -332,8 +344,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -347,7 +360,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptFirstFactorPassword() async throws {
+  func attemptFirstFactorPassword() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
@@ -355,8 +368,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -371,7 +385,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptFirstFactorEmailCode() async throws {
+  func attemptFirstFactorEmailCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
@@ -379,8 +393,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -395,7 +410,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptFirstFactorPhoneCode() async throws {
+  func attemptFirstFactorPhoneCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
@@ -403,8 +418,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -419,7 +435,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptFirstFactorPasskey() async throws {
+  func attemptFirstFactorPasskey() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
@@ -427,8 +443,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -451,8 +468,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -466,7 +484,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptSecondFactorPhoneCode() async throws {
+  func attemptSecondFactorPhoneCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
@@ -474,8 +492,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -490,7 +509,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptSecondFactorTotp() async throws {
+  func attemptSecondFactorTotp() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
@@ -498,8 +517,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -514,7 +534,7 @@ struct SignInTests {
   }
 
   @Test
-  func testAttemptSecondFactorBackupCode() async throws {
+  func attemptSecondFactorBackupCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
@@ -522,8 +542,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -546,8 +567,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -560,7 +582,7 @@ struct SignInTests {
   }
 
   @Test
-  func testGetWithRotatingTokenNonce() async throws {
+  func getWithRotatingTokenNonce() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)")!
@@ -568,8 +590,9 @@ struct SignInTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
-      ])
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")

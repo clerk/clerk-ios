@@ -7,9 +7,8 @@
 
 import Foundation
 
-extension Clerk.Environment {
-
-  public struct DisplayConfig: Codable, Sendable, Equatable {
+public extension Clerk.Environment {
+  struct DisplayConfig: Codable, Sendable, Equatable {
     public var instanceEnvironmentType: InstanceEnvironmentType
     public var applicationName: String
     public var preferredSignInStrategy: PreferredSignInStrategy
@@ -30,6 +29,4 @@ extension Clerk.Environment {
       }
     }
   }
-
 }
-

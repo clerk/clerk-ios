@@ -35,7 +35,7 @@ struct ClerkTextField: View {
     fieldState: FieldState = .default
   ) {
     self.titleKey = titleKey
-    self._text = text
+    _text = text
     self.isSecure = isSecure
     self.fieldState = fieldState
   }
@@ -85,12 +85,12 @@ struct ClerkTextField: View {
           .animation(.default.delay(0.2)) {
             $0.opacity(isFocusedOrFilled ? 1 : 0.0001)
           }
-          .onChange(of: focused) { oldValue, newValue in
+          .onChange(of: focused) { _, newValue in
             if newValue != nil {
               focused = revealText ? .regular : .secure
             }
           }
-          .onChange(of: revealText) { oldValue, newValue in
+          .onChange(of: revealText) { _, _ in
             if focused == .regular {
               focused = .secure
             } else if focused == .secure {
@@ -153,8 +153,8 @@ struct ClerkTextField: View {
 }
 
 #Preview {
-  @Previewable @State var emptyEmail: String = ""
-  @Previewable @State var filledEmail: String = "user@example.com"
+  @Previewable @State var emptyEmail = ""
+  @Previewable @State var filledEmail = "user@example.com"
 
   VStack(spacing: 20) {
     ClerkTextField("Enter your email", text: $emptyEmail)

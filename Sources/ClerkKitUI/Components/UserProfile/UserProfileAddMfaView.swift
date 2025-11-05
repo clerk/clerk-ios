@@ -31,7 +31,7 @@ struct UserProfileAddMfaView: View {
       switch self {
       case .sms:
         UserProfileMfaAddSmsView()
-      case .authApp(let totp):
+      case let .authApp(totp):
         UserProfileMfaAddTotpView(totp: totp)
       }
     }
@@ -39,9 +39,9 @@ struct UserProfileAddMfaView: View {
 
   var extraContentHeight: CGFloat {
     if #available(iOS 26.0, *) {
-      return 0
+      0
     } else {
-      return 7
+      7
     }
   }
 
@@ -51,7 +51,7 @@ struct UserProfileAddMfaView: View {
   init(
     contentHeight: Binding<CGFloat> = .constant(0)
   ) {
-    self._contentHeight = contentHeight
+    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -130,7 +130,6 @@ struct UserProfileAddMfaView: View {
 }
 
 extension UserProfileAddMfaView {
-
   private func createTotp() async {
     guard let user else { return }
 
@@ -143,7 +142,6 @@ extension UserProfileAddMfaView {
       ClerkLogger.error("Failed to create TOTP", error: error)
     }
   }
-
 }
 
 #Preview {

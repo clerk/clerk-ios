@@ -55,7 +55,7 @@ struct UserProfilePasskeyRow: View {
 
         AsyncButton(role: .destructive) {
           removeResource = .passkey(passkey)
-        } label: { isRunning in
+        } label: { _ in
           Text("Remove", bundle: .module)
         }
 
@@ -88,7 +88,7 @@ struct UserProfilePasskeyRow: View {
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource()
-        } label: { isRunning in
+        } label: { _ in
           Text(removeResource?.title ?? "", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
@@ -102,7 +102,6 @@ struct UserProfilePasskeyRow: View {
 }
 
 extension UserProfilePasskeyRow {
-
   private func removeResource() async {
     defer { removeResource = nil }
 
@@ -113,7 +112,6 @@ extension UserProfilePasskeyRow {
       ClerkLogger.error("Failed to remove passkey resource", error: error)
     }
   }
-
 }
 
 #Preview {

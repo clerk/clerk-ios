@@ -50,9 +50,9 @@ struct UserProfileVerifyView: View {
 
   private var instructionsText: Text {
     switch mode {
-    case .email(let emailAddress):
+    case let .email(emailAddress):
       Text("Enter the verification code sent to \(emailAddress.emailAddress)", bundle: .module)
-    case .phone(let phoneNumber):
+    case let .phone(phoneNumber):
       Text("Enter the verification code sent to \(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)", bundle: .module)
     case .totp:
       Text("Enter the verification code from your authenticator application.", bundle: .module)
@@ -78,12 +78,12 @@ struct UserProfileVerifyView: View {
 
   private var lastCodeSentAtKey: String {
     switch mode {
-    case .email(let emailAddress):
-      return emailAddress.emailAddress
-    case .phone(let phoneNumber):
-      return phoneNumber.phoneNumber
+    case let .email(emailAddress):
+      emailAddress.emailAddress
+    case let .phone(phoneNumber):
+      phoneNumber.phoneNumber
     case .totp:
-      return ""
+      ""
     }
   }
 
@@ -125,7 +125,7 @@ struct UserProfileVerifyView: View {
     onCompletion: @escaping (_ backupCodes: [String]?) -> Void,
     customDismiss: (() -> Void)? = nil
   ) {
-    self._mode = .init(initialValue: mode)
+    _mode = .init(initialValue: mode)
     self.onCompletion = onCompletion
     self.customDismiss = customDismiss
   }
@@ -143,7 +143,7 @@ struct UserProfileVerifyView: View {
           code: $code,
           fieldState: $otpFieldState,
           isFocused: $otpFieldIsFocused
-        ) { code in
+        ) { _ in
           await attempt()
         }
         .onAppear {
@@ -167,7 +167,7 @@ struct UserProfileVerifyView: View {
               Text("Success", bundle: .module)
                 .foregroundStyle(theme.colors.mutedForeground)
             }
-          case .error(let error):
+          case let .error(error):
             ErrorText(error: error)
           default:
             EmptyView()
@@ -242,10 +242,9 @@ struct UserProfileVerifyView: View {
 }
 
 extension UserProfileVerifyView {
-
   func startTimer() {
     updateRemainingSeconds()
-    self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
       Task { @MainActor in
         updateRemainingSeconds()
       }
@@ -268,9 +267,9 @@ extension UserProfileVerifyView {
 
     do {
       switch mode {
-      case .email(let emailAddress):
+      case let .email(emailAddress):
         try await emailAddress.prepareVerification(strategy: .emailCode)
-      case .phone(let phoneNumber):
+      case let .phone(phoneNumber):
         try await phoneNumber.prepareVerification()
       case .totp:
         return
@@ -290,12 +289,12 @@ extension UserProfileVerifyView {
 
     do {
       switch mode {
-      case .email(let emailAddress):
+      case let .email(emailAddress):
         try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
         sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
         verificationState = .success
         onCompletion(nil)
-      case .phone(let phoneNumber):
+      case let .phone(phoneNumber):
         try await phoneNumber.attemptVerification(code: code)
         sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
         verificationState = .success
@@ -316,7 +315,6 @@ extension UserProfileVerifyView {
       }
     }
   }
-
 }
 
 #Preview("Email") {

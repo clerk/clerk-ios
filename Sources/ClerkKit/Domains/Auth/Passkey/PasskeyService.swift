@@ -16,7 +16,6 @@ protocol PasskeyServiceProtocol: Sendable {
 }
 
 final class PasskeyService: PasskeyServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -25,7 +24,7 @@ final class PasskeyService: PasskeyServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor
@@ -59,7 +58,7 @@ final class PasskeyService: PasskeyServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [
         "strategy": "passkey",
-        "public_key_credential": credential
+        "public_key_credential": credential,
       ]
     )
 

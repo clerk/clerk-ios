@@ -21,7 +21,7 @@ struct UserProfileAddEmailView: View {
   @FocusState private var isFocused: Bool
 
   enum Destination: Hashable, Identifiable {
-    case add  // should never be added to the path
+    case add // should never be added to the path
     case verify(EmailAddress)
 
     var id: Self { self }
@@ -32,7 +32,7 @@ struct UserProfileAddEmailView: View {
   }
 
   init(desintation: Destination? = nil) {
-    if case .verify(let email) = desintation {
+    if case let .verify(email) = desintation {
       var path = NavigationPath()
       path.append(Destination.verify(email))
       _path = State(initialValue: path)
@@ -104,7 +104,7 @@ struct UserProfileAddEmailView: View {
       }
       .navigationDestination(for: Destination.self) {
         switch $0 {
-        case .verify(let email):
+        case let .verify(email):
           UserProfileVerifyView(
             mode: .email(email)
           ) { _ in
@@ -113,7 +113,7 @@ struct UserProfileAddEmailView: View {
             dismiss()
           }
         case .add:
-          EmptyView()  // should never be hit, .add should never be added to path
+          EmptyView() // should never be hit, .add should never be added to path
             .task { dismiss() }
         }
       }
@@ -122,7 +122,6 @@ struct UserProfileAddEmailView: View {
 }
 
 extension UserProfileAddEmailView {
-
   func addEmailAddress() async {
     guard let user else { return }
 
@@ -134,7 +133,6 @@ extension UserProfileAddEmailView {
       ClerkLogger.error("Failed to add email address", error: error)
     }
   }
-
 }
 
 #Preview {

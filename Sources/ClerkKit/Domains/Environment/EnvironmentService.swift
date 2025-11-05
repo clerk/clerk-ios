@@ -12,7 +12,6 @@ protocol EnvironmentServiceProtocol: Sendable {
 }
 
 final class EnvironmentService: EnvironmentServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -21,7 +20,7 @@ final class EnvironmentService: EnvironmentServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor

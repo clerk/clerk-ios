@@ -12,32 +12,31 @@ import Testing
 
 @Suite(.serialized)
 struct URLEncodedFormEncoderTests {
-
   // MARK: - ArrayEncoding Tests
 
   @Test
-  func testArrayEncodingBrackets() {
+  func arrayEncodingBrackets() {
     let encoding = URLEncodedFormEncoder.ArrayEncoding.brackets
     #expect(encoding.encode("items", atIndex: 0) == "items[]")
     #expect(encoding.encode("items", atIndex: 5) == "items[]")
   }
 
   @Test
-  func testArrayEncodingNoBrackets() {
+  func arrayEncodingNoBrackets() {
     let encoding = URLEncodedFormEncoder.ArrayEncoding.noBrackets
     #expect(encoding.encode("items", atIndex: 0) == "items")
     #expect(encoding.encode("items", atIndex: 5) == "items")
   }
 
   @Test
-  func testArrayEncodingIndexInBrackets() {
+  func arrayEncodingIndexInBrackets() {
     let encoding = URLEncodedFormEncoder.ArrayEncoding.indexInBrackets
     #expect(encoding.encode("items", atIndex: 0) == "items[0]")
     #expect(encoding.encode("items", atIndex: 5) == "items[5]")
   }
 
   @Test
-  func testArrayEncodingCustom() {
+  func arrayEncodingCustom() {
     let encoding = URLEncodedFormEncoder.ArrayEncoding.custom { key, index in
       "\(key)_\(index)"
     }
@@ -48,14 +47,14 @@ struct URLEncodedFormEncoderTests {
   // MARK: - BoolEncoding Tests
 
   @Test
-  func testBoolEncodingNumeric() {
+  func boolEncodingNumeric() {
     let encoding = URLEncodedFormEncoder.BoolEncoding.numeric
     #expect(encoding.encode(true) == "1")
     #expect(encoding.encode(false) == "0")
   }
 
   @Test
-  func testBoolEncodingLiteral() {
+  func boolEncodingLiteral() {
     let encoding = URLEncodedFormEncoder.BoolEncoding.literal
     #expect(encoding.encode(true) == "true")
     #expect(encoding.encode(false) == "false")
@@ -64,7 +63,7 @@ struct URLEncodedFormEncoderTests {
   // MARK: - DataEncoding Tests
 
   @Test
-  func testDataEncodingBase64() throws {
+  func dataEncodingBase64() throws {
     let encoding = URLEncodedFormEncoder.DataEncoding.base64
     let data = "Hello World".data(using: .utf8)!
     let result = try encoding.encode(data)
@@ -73,7 +72,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testDataEncodingDeferredToData() throws {
+  func dataEncodingDeferredToData() throws {
     let encoding = URLEncodedFormEncoder.DataEncoding.deferredToData
     let data = "Hello World".data(using: .utf8)!
     let result = try encoding.encode(data)
@@ -81,7 +80,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testDataEncodingCustom() throws {
+  func dataEncodingCustom() throws {
     let encoding = URLEncodedFormEncoder.DataEncoding.custom { data in
       String(data: data, encoding: .utf8) ?? ""
     }
@@ -93,55 +92,55 @@ struct URLEncodedFormEncoderTests {
   // MARK: - DateEncoding Tests
 
   @Test
-  func testDateEncodingDeferredToDate() throws {
+  func dateEncodingDeferredToDate() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.deferredToDate
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result == nil)
   }
 
   @Test
-  func testDateEncodingSecondsSince1970() throws {
+  func dateEncodingSecondsSince1970() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.secondsSince1970
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result == "1609459200.0")
   }
 
   @Test
-  func testDateEncodingMillisecondsSince1970() throws {
+  func dateEncodingMillisecondsSince1970() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.millisecondsSince1970
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result == "1609459200000.0")
   }
 
   @Test
-  func testDateEncodingISO8601() throws {
+  func dateEncodingISO8601() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.iso8601
-    let date = Date(timeIntervalSince1970: 1609459200) // 2021-01-01 00:00:00 UTC
+    let date = Date(timeIntervalSince1970: 1_609_459_200) // 2021-01-01 00:00:00 UTC
     let result = try encoding.encode(date)
     #expect(result != nil)
     #expect(result?.contains("2021") == true)
   }
 
   @Test
-  func testDateEncodingFormatted() throws {
+  func dateEncodingFormatted() throws {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd"
     formatter.timeZone = TimeZone(identifier: "UTC")
     let encoding = URLEncodedFormEncoder.DateEncoding.formatted(formatter)
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result == "2021-01-01")
   }
 
   @Test
-  func testDateEncodingCustom() throws {
+  func dateEncodingCustom() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.custom { date in
       "custom_\(date.timeIntervalSince1970)"
     }
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result == "custom_1609459200.0")
   }
@@ -149,13 +148,13 @@ struct URLEncodedFormEncoderTests {
   // MARK: - KeyEncoding Tests
 
   @Test
-  func testKeyEncodingUseDefaultKeys() {
+  func keyEncodingUseDefaultKeys() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.useDefaultKeys
     #expect(encoding.encode("testKey") == "testKey")
   }
 
   @Test
-  func testKeyEncodingConvertToSnakeCase() {
+  func keyEncodingConvertToSnakeCase() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.convertToSnakeCase
     #expect(encoding.encode("testKey") == "test_key")
     #expect(encoding.encode("oneTwoThree") == "one_two_three")
@@ -164,35 +163,35 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testKeyEncodingConvertToKebabCase() {
+  func keyEncodingConvertToKebabCase() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.convertToKebabCase
     #expect(encoding.encode("testKey") == "test-key")
     #expect(encoding.encode("oneTwoThree") == "one-two-three")
   }
 
   @Test
-  func testKeyEncodingCapitalized() {
+  func keyEncodingCapitalized() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.capitalized
     #expect(encoding.encode("testKey") == "TestKey")
     #expect(encoding.encode("hello") == "Hello")
   }
 
   @Test
-  func testKeyEncodingUppercased() {
+  func keyEncodingUppercased() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.uppercased
     #expect(encoding.encode("testKey") == "TESTKEY")
     #expect(encoding.encode("hello") == "HELLO")
   }
 
   @Test
-  func testKeyEncodingLowercased() {
+  func keyEncodingLowercased() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.lowercased
     #expect(encoding.encode("TestKey") == "testkey")
     #expect(encoding.encode("HELLO") == "hello")
   }
 
   @Test
-  func testKeyEncodingCustom() {
+  func keyEncodingCustom() {
     let encoding = URLEncodedFormEncoder.KeyEncoding.custom { key in
       "prefix_\(key)_suffix"
     }
@@ -202,21 +201,21 @@ struct URLEncodedFormEncoderTests {
   // MARK: - KeyPathEncoding Tests
 
   @Test
-  func testKeyPathEncodingBrackets() {
+  func keyPathEncodingBrackets() {
     let encoding = URLEncodedFormEncoder.KeyPathEncoding.brackets
     #expect(encoding.encodeKeyPath("child") == "[child]")
     #expect(encoding.encodeKeyPath("grandchild") == "[grandchild]")
   }
 
   @Test
-  func testKeyPathEncodingDots() {
+  func keyPathEncodingDots() {
     let encoding = URLEncodedFormEncoder.KeyPathEncoding.dots
     #expect(encoding.encodeKeyPath("child") == ".child")
     #expect(encoding.encodeKeyPath("grandchild") == ".grandchild")
   }
 
   @Test
-  func testKeyPathEncodingCustom() {
+  func keyPathEncodingCustom() {
     let encoding = URLEncodedFormEncoder.KeyPathEncoding { subkey in
       "->\(subkey)"
     }
@@ -226,25 +225,25 @@ struct URLEncodedFormEncoderTests {
   // MARK: - NilEncoding Tests
 
   @Test
-  func testNilEncodingDropKey() {
+  func nilEncodingDropKey() {
     let encoding = URLEncodedFormEncoder.NilEncoding.dropKey
     #expect(encoding.encodeNil() == nil)
   }
 
   @Test
-  func testNilEncodingDropValue() {
+  func nilEncodingDropValue() {
     let encoding = URLEncodedFormEncoder.NilEncoding.dropValue
     #expect(encoding.encodeNil() == "")
   }
 
   @Test
-  func testNilEncodingNull() {
+  func nilEncodingNull() {
     let encoding = URLEncodedFormEncoder.NilEncoding.null
     #expect(encoding.encodeNil() == "null")
   }
 
   @Test
-  func testNilEncodingCustom() {
+  func nilEncodingCustom() {
     let encoding = URLEncodedFormEncoder.NilEncoding { "custom_null" }
     #expect(encoding.encodeNil() == "custom_null")
   }
@@ -252,14 +251,14 @@ struct URLEncodedFormEncoderTests {
   // MARK: - SpaceEncoding Tests
 
   @Test
-  func testSpaceEncodingPercentEscaped() {
+  func spaceEncodingPercentEscaped() {
     let encoding = URLEncodedFormEncoder.SpaceEncoding.percentEscaped
     #expect(encoding.encode("hello world") == "hello%20world")
     #expect(encoding.encode("test  spaces") == "test%20%20spaces")
   }
 
   @Test
-  func testSpaceEncodingPlusReplaced() {
+  func spaceEncodingPlusReplaced() {
     let encoding = URLEncodedFormEncoder.SpaceEncoding.plusReplaced
     #expect(encoding.encode("hello world") == "hello+world")
     #expect(encoding.encode("test  spaces") == "test++spaces")
@@ -268,7 +267,7 @@ struct URLEncodedFormEncoderTests {
   // MARK: - Full Encoding Tests
 
   @Test
-  func testEncodeSimpleStruct() throws {
+  func encodeSimpleStruct() throws {
     struct TestStruct: Encodable {
       let name: String
       let age: Int
@@ -283,7 +282,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithArrays() throws {
+  func encodeWithArrays() throws {
     struct TestStruct: Encodable {
       let items: [String]
     }
@@ -299,7 +298,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithNestedObjects() throws {
+  func encodeWithNestedObjects() throws {
     struct Nested: Encodable {
       let value: String
     }
@@ -316,7 +315,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithBoolNumeric() throws {
+  func encodeWithBoolNumeric() throws {
     struct TestStruct: Encodable {
       let flag: Bool
     }
@@ -333,7 +332,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithBoolLiteral() throws {
+  func encodeWithBoolLiteral() throws {
     struct TestStruct: Encodable {
       let flag: Bool
     }
@@ -346,7 +345,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithOptionalNilDropKey() throws {
+  func encodeWithOptionalNilDropKey() throws {
     struct TestStruct: Encodable {
       let name: String?
     }
@@ -359,7 +358,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithOptionalNilDropValue() throws {
+  func encodeWithOptionalNilDropValue() throws {
     struct TestStruct: Encodable {
       let name: String?
     }
@@ -372,13 +371,13 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithDateSeconds() throws {
+  func encodeWithDateSeconds() throws {
     struct TestStruct: Encodable {
       let date: Date
     }
 
     let encoder = URLEncodedFormEncoder(dateEncoding: .secondsSince1970)
-    let date = Date(timeIntervalSince1970: 1609459200)
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let value = TestStruct(date: date)
     let result: String = try encoder.encode(value)
 
@@ -386,7 +385,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeWithKeyEncodingSnakeCase() throws {
+  func encodeWithKeyEncodingSnakeCase() throws {
     struct TestStruct: Encodable {
       let firstName: String
       let lastName: String
@@ -401,7 +400,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeErrorInvalidRootObject() throws {
+  func encodeErrorInvalidRootObject() throws {
     // Encoding a single value (not a keyed object) should throw an error
     let encoder = URLEncodedFormEncoder()
 
@@ -439,7 +438,7 @@ struct URLEncodedFormEncoderTests {
   }
 
   @Test
-  func testEncodeAsData() throws {
+  func encodeAsData() throws {
     struct TestStruct: Encodable {
       let name: String
       let age: Int
@@ -454,4 +453,3 @@ struct URLEncodedFormEncoderTests {
     #expect(string?.contains("name=John") == true)
   }
 }
-

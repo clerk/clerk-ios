@@ -5,13 +5,11 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
-extension SignIn {
-
+public extension SignIn {
   /// Represents the authentication identifiers supported for signing in.
   ///
   /// The `Identifier` enum defines the types of identifiers that can be used during the sign-in process. Each identifier corresponds to a specific authentication method.
-  public enum Identifier: String, Codable, Sendable, Equatable, Hashable {
-
+  enum Identifier: String, Codable, Sendable, Equatable, Hashable {
     /// Represents an email address identifier.
     case emailAddress = "email_address"
 
@@ -40,5 +38,4 @@ extension SignIn {
       self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
     }
   }
-
 }

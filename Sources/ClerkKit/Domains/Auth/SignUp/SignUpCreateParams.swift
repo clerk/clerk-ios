@@ -7,14 +7,12 @@
 
 import Foundation
 
-extension SignUp {
-
+public extension SignUp {
   /// Parameters used to create and configure a new sign-up process.
   ///
   /// The `CreateParams` struct defines all the parameters that can be passed when initiating a sign-up process.
   /// These parameters provide flexibility to support various authentication strategies, user details, and custom configurations.
-  public struct CreateParams: Encodable, Sendable {
-
+  struct CreateParams: Encodable, Sendable {
     /// The strategy to use for the sign-up flow.
     public var strategy: String?
 
@@ -115,8 +113,7 @@ extension SignUp {
   }
 
   /// Represents the various strategies for initiating a `SignUp` request.
-  public enum CreateStrategy: Sendable {
-
+  enum CreateStrategy: Sendable {
     /// Standard sign-up strategy, allowing the user to provide common details such as email, password, and personal information.
     ///
     /// - Parameters:
@@ -178,7 +175,7 @@ extension SignUp {
     @MainActor
     var params: CreateParams {
       switch self {
-      case .standard(let emailAddress, let password, let firstName, let lastName, let username, let phoneNumber):
+      case let .standard(emailAddress, password, firstName, lastName, username, phoneNumber):
         .init(
           firstName: firstName,
           lastName: lastName,
@@ -187,23 +184,23 @@ extension SignUp {
           phoneNumber: phoneNumber,
           username: username
         )
-      case .oauth(let provider, let redirectUrl):
+      case let .oauth(provider, redirectUrl):
         .init(
           strategy: provider.strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
-      case .enterpriseSSO(let identifier, let redirectUrl):
+      case let .enterpriseSSO(identifier, redirectUrl):
         .init(
           strategy: "enterprise_sso",
           emailAddress: identifier,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
-      case .ticket(let ticket):
+      case let .ticket(ticket):
         .init(
           strategy: "ticket",
           ticket: ticket
         )
-      case .idToken(let provider, let idToken, let firstName, let lastName):
+      case let .idToken(provider, idToken, firstName, lastName):
         .init(
           strategy: provider.strategy,
           firstName: firstName,
@@ -219,6 +216,5 @@ extension SignUp {
   }
 
   /// UpdateParams is a mirror of CreateParams with the same fields and types.
-  public typealias UpdateParams = CreateParams
-
+  typealias UpdateParams = CreateParams
 }

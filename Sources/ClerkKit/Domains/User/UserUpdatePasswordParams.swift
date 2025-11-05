@@ -5,10 +5,8 @@
 //  Created by Mike Pitre on 1/24/25.
 //
 
-extension User {
-
-  public struct UpdatePasswordParams: Encodable, Sendable {
-
+public extension User {
+  struct UpdatePasswordParams: Encodable, Sendable {
     public init(
       currentPassword: String? = nil,
       newPassword: String,
@@ -26,5 +24,4 @@ extension User {
     /// If set to true, all sessions will be signed out.
     public let signOutOfOtherSessions: Bool
   }
-
 }

@@ -9,7 +9,6 @@ import Foundation
 
 /// The model that describes the request of a user to join an organization.
 public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {
-
   /// The unique identifier for this membership request.
   public var id: String
 
@@ -45,21 +44,19 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
   }
 }
 
-extension OrganizationMembershipRequest {
-
+public extension OrganizationMembershipRequest {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
-  public func accept() async throws -> OrganizationMembershipRequest {
+  func accept() async throws -> OrganizationMembershipRequest {
     try await organizationService.acceptOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
   }
 
   /// Rejects the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
-  public func reject() async throws -> OrganizationMembershipRequest {
+  func reject() async throws -> OrganizationMembershipRequest {
     try await organizationService.rejectOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
   }
 }
-

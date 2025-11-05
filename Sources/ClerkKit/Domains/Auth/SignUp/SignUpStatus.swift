@@ -5,12 +5,11 @@
 //  Created by Mike Pitre on 1/22/25.
 //
 
-extension SignUp {
-
+public extension SignUp {
   /// Represents the current status of the sign-up process.
   ///
   /// The `Status` enum defines the possible states of a sign-up flow. Each state indicates a specific requirement or completion level in the sign-up process.
-  public enum Status: String, Codable, Sendable, Equatable {
+  enum Status: String, Codable, Sendable, Equatable {
     /// The sign-up has been inactive for over 24 hours.
     case abandoned
 
@@ -27,5 +26,4 @@ extension SignUp {
       self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
     }
   }
-
 }

@@ -82,7 +82,8 @@ struct ErrorView: View {
       text: "Call to action",
       action: {
         try! await Task.sleep(for: .seconds(2))
-      })
+      }
+    )
   )
   .padding()
   .environment(\.clerkTheme, .clerk)

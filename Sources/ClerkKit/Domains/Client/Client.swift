@@ -11,7 +11,6 @@ import Foundation
 ///
 /// The Client object also holds information about any sign in or sign up attempts that might be in progress, tracking the sign in or sign up progress.
 public struct Client: Codable, Sendable, Equatable {
-
   /// Unique identifier for this client.
   public var id: String
 
@@ -53,7 +52,6 @@ public struct Client: Codable, Sendable, Equatable {
 }
 
 extension Client {
-
   @MainActor
   private static var clientService: any ClientServiceProtocol { Clerk.shared.dependencies.clientService }
 
@@ -62,6 +60,4 @@ extension Client {
   public static func get() async throws -> Client? {
     try await clientService.get()
   }
-
 }
-

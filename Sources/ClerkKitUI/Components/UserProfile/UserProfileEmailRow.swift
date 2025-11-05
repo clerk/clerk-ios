@@ -55,7 +55,7 @@ struct UserProfileEmailRow: View {
         if user?.primaryEmailAddress != emailAddress, emailAddress.verification?.status == .verified {
           AsyncButton {
             await setEmailAsPrimary(emailAddress)
-          } label: { isRunning in
+          } label: { _ in
             Text("Set as primary", bundle: .module)
           }
           .onIsRunningChanged { isLoading = $0 }
@@ -108,7 +108,7 @@ struct UserProfileEmailRow: View {
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource(removeResource)
-        } label: { isRunning in
+        } label: { _ in
           Text(removeResource?.title ?? "", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
@@ -125,7 +125,6 @@ struct UserProfileEmailRow: View {
 }
 
 extension UserProfileEmailRow {
-
   private func setEmailAsPrimary(_ email: EmailAddress) async {
     do {
       try await user?.update(.init(primaryEmailAddressId: email.id))
@@ -145,7 +144,6 @@ extension UserProfileEmailRow {
       ClerkLogger.error("Failed to remove email resource", error: error)
     }
   }
-
 }
 
 #Preview {

@@ -9,7 +9,6 @@ import Foundation
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
 public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
-
   /// The unique identifier for this organization invitation.
   public var id: String
 
@@ -58,7 +57,6 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 
   /// The public data of the organization.
   public struct PublicOrganizationData: Codable, Sendable {
-
     /// Whether the organization has an image.
     public var hasImage: Bool
 
@@ -91,7 +89,6 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 }
 
 extension UserOrganizationInvitation {
-
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -101,6 +98,4 @@ extension UserOrganizationInvitation {
   public func accept() async throws -> UserOrganizationInvitation {
     try await organizationService.acceptUserOrganizationInvitation(invitationId: id)
   }
-
 }
-

@@ -1,5 +1,5 @@
 //
-//  SignInResetPasswordView.swift
+//  SignInSetNewPasswordView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 5/7/25.
@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInSetNewPasswordView: View {
   @Environment(Clerk.self) private var clerk
@@ -119,7 +119,6 @@ struct SignInSetNewPasswordView: View {
 }
 
 extension SignInSetNewPasswordView {
-
   func setNewPassword() async {
     fieldError = nil
     focusedField = nil
@@ -138,14 +137,14 @@ extension SignInSetNewPasswordView {
         .init(
           password: authState.signInNewPassword,
           signOutOfOtherSessions: signOutOfOtherDevices
-        ))
+        )
+      )
 
       authState.setToStepForStatus(signIn: signIn)
     } catch {
       fieldError = error
     }
   }
-
 }
 
 #Preview {

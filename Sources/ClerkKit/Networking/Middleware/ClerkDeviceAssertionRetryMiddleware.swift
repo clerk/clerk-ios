@@ -11,26 +11,26 @@ struct ClerkDeviceAssertionRetryMiddleware: NetworkRetryMiddleware {
   private let assertionHandler: @Sendable () async throws -> Void
 
   init(
-  assertionHandler: @escaping @Sendable () async throws -> Void = {
-    try await AssertionManager.shared.performDeviceAssertion()
-  }
+    assertionHandler: @escaping @Sendable () async throws -> Void = {
+      try await AssertionManager.shared.performDeviceAssertion()
+    }
   ) {
-  self.assertionHandler = assertionHandler
+    self.assertionHandler = assertionHandler
   }
 
   func shouldRetry(
-  request: URLRequest,
-  response: HTTPURLResponse?,
-  error: any Error,
-  attempts: Int
+    request _: URLRequest,
+    response _: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
   ) async throws -> Bool {
-  guard attempts == 1 else { return false }
-  guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
-    return false
-  }
+    guard attempts == 1 else { return false }
+    guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
+      return false
+    }
 
-  try await assertionHandler()
-  return true
+    try await assertionHandler()
+    return true
   }
 }
 
@@ -40,23 +40,23 @@ private actor AssertionManager {
   private var inFlightTask: Task<Void, Error>?
 
   func performDeviceAssertion() async throws {
-  if let inFlightTask {
-    return try await inFlightTask.value
-  }
-
-  let newTask = Task<Void, Error> {
-    defer { inFlightTask = nil }
-
-    do {
-    try await AppAttestHelper.performAssertion()
-    } catch let error as ClerkAPIError where error.code == "requires_device_attestation" {
-    try await AppAttestHelper.performDeviceAttestation()
-    try await AppAttestHelper.performAssertion()
+    if let inFlightTask {
+      return try await inFlightTask.value
     }
-  }
 
-  inFlightTask = newTask
+    let newTask = Task<Void, Error> {
+      defer { inFlightTask = nil }
 
-  try await newTask.value
+      do {
+        try await AppAttestHelper.performAssertion()
+      } catch let error as ClerkAPIError where error.code == "requires_device_attestation" {
+        try await AppAttestHelper.performDeviceAttestation()
+        try await AppAttestHelper.performAssertion()
+      }
+    }
+
+    inFlightTask = newTask
+
+    try await newTask.value
   }
 }

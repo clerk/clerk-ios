@@ -22,8 +22,8 @@ public final class MockClerkService: ClerkServiceProtocol {
     signOut: ((String?) async throws -> Void)? = nil,
     setActive: ((String, String?) async throws -> Void)? = nil
   ) {
-    self.signOutHandler = signOut
-    self.setActiveHandler = setActive
+    signOutHandler = signOut
+    setActiveHandler = setActive
   }
 
   @MainActor
@@ -42,4 +42,3 @@ public final class MockClerkService: ClerkServiceProtocol {
     }
   }
 }
-

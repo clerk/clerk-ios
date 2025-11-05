@@ -1,5 +1,5 @@
 //
-//  SignInViewState.swift
+//  AuthState.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/15/25.
@@ -13,7 +13,6 @@ import SwiftUI
 
 @Observable
 final class AuthState {
-
   init(mode: AuthView.Mode = .signInOrUp) {
     self.mode = mode
   }

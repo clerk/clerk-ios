@@ -7,13 +7,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct OrganizationTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testUpdateOrganization() async throws {
+  func updateOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
@@ -21,8 +20,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock))
-      ])
+        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -37,7 +37,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testDestroyOrganization() async throws {
+  func destroyOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
@@ -45,8 +45,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -59,7 +60,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testSetOrganizationLogo() async throws {
+  func setOrganizationLogo() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/logo")!
@@ -68,8 +69,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .put: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock))
-      ])
+        .put: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PUT")
@@ -83,7 +85,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationRoles() async throws {
+  func getOrganizationRoles() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/roles")!
@@ -95,8 +97,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<RoleResource>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -111,7 +115,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationMemberships() async throws {
+  func getOrganizationMemberships() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
@@ -123,8 +127,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
             response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -140,7 +146,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationMembershipsWithQuery() async throws {
+  func getOrganizationMembershipsWithQuery() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
@@ -152,8 +158,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
             response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -167,7 +175,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationMembershipsWithRole() async throws {
+  func getOrganizationMembershipsWithRole() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
@@ -179,8 +187,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
             response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -195,7 +205,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testAddOrganizationMember() async throws {
+  func addOrganizationMember() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
@@ -203,8 +213,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -219,7 +230,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testUpdateOrganizationMember() async throws {
+  func updateOrganizationMember() async throws {
     let organization = Organization.mock
     let membership = OrganizationMembership.mockWithUserData
     let userId = membership.publicUserData!.userId!
@@ -229,8 +240,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
-      ])
+        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -244,7 +256,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testRemoveOrganizationMember() async throws {
+  func removeOrganizationMember() async throws {
     let organization = Organization.mock
     let membership = OrganizationMembership.mockWithUserData
     let userId = membership.publicUserData!.userId!
@@ -254,8 +266,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -268,7 +281,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationInvitations() async throws {
+  func getOrganizationInvitations() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
@@ -280,8 +293,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -297,7 +312,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationInvitationsWithStatus() async throws {
+  func getOrganizationInvitationsWithStatus() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
@@ -309,8 +324,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -324,7 +341,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testInviteOrganizationMember() async throws {
+  func inviteOrganizationMember() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
@@ -332,8 +349,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -348,7 +366,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testCreateOrganizationDomain() async throws {
+  func createOrganizationDomain() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
@@ -356,8 +374,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -371,7 +390,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationDomains() async throws {
+  func getOrganizationDomains() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
@@ -383,8 +402,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -399,7 +420,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationDomainsWithEnrollmentMode() async throws {
+  func getOrganizationDomainsWithEnrollmentMode() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
@@ -411,8 +432,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -426,7 +449,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationDomain() async throws {
+  func getOrganizationDomain() async throws {
     let organization = Organization.mock
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
@@ -435,8 +458,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock))
-      ])
+        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -449,7 +473,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationMembershipRequests() async throws {
+  func getOrganizationMembershipRequests() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/membership_requests")!
@@ -461,8 +485,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -477,7 +503,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testGetOrganizationMembershipRequestsWithStatus() async throws {
+  func getOrganizationMembershipRequestsWithStatus() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/membership_requests")!
@@ -489,8 +515,10 @@ struct OrganizationTests {
           ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -504,7 +532,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testDeleteOrganizationDomain() async throws {
+  func deleteOrganizationDomain() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)")!
@@ -512,8 +540,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -526,7 +555,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testPrepareOrganizationDomainAffiliationVerification() async throws {
+  func prepareOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/prepare_affiliation_verification")!
@@ -534,8 +563,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -549,7 +579,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testAttemptOrganizationDomainAffiliationVerification() async throws {
+  func attemptOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/attempt_affiliation_verification")!
@@ -557,8 +587,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -572,7 +603,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testRevokeOrganizationInvitation() async throws {
+  func revokeOrganizationInvitation() async throws {
     let invitation = OrganizationInvitation.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(invitation.organizationId)/invitations/\(invitation.id)/revoke")!
@@ -580,8 +611,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -594,7 +626,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testDestroyOrganizationMembership() async throws {
+  func destroyOrganizationMembership() async throws {
     let membership = OrganizationMembership.mockWithUserData
     let userId = membership.publicUserData!.userId!
     let requestHandled = LockIsolated(false)
@@ -603,8 +635,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -617,7 +650,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testAcceptUserOrganizationInvitation() async throws {
+  func acceptUserOrganizationInvitation() async throws {
     let invitation = UserOrganizationInvitation.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_invitations/\(invitation.id)/accept")!
@@ -625,8 +658,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<UserOrganizationInvitation>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<UserOrganizationInvitation>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -639,7 +673,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testAcceptOrganizationSuggestion() async throws {
+  func acceptOrganizationSuggestion() async throws {
     let suggestion = OrganizationSuggestion.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions/\(suggestion.id)/accept")!
@@ -647,8 +681,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationSuggestion>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationSuggestion>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -661,7 +696,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testAcceptOrganizationMembershipRequest() async throws {
+  func acceptOrganizationMembershipRequest() async throws {
     let request = OrganizationMembershipRequest.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/accept")!
@@ -669,8 +704,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -683,7 +719,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func testRejectOrganizationMembershipRequest() async throws {
+  func rejectOrganizationMembershipRequest() async throws {
     let request = OrganizationMembershipRequest.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/reject")!
@@ -691,8 +727,9 @@ struct OrganizationTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")

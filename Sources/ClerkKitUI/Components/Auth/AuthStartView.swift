@@ -25,12 +25,12 @@ struct AuthStartView: View {
     switch authState.mode {
     case .signIn, .signInOrUp:
       if let appName = clerk.environment.displayConfig?.applicationName {
-        return "Continue to \(appName)"
+        "Continue to \(appName)"
       } else {
-        return "Continue"
+        "Continue"
       }
     case .signUp:
-      return "Create your account"
+      "Create your account"
     }
   }
 
@@ -68,7 +68,7 @@ struct AuthStartView: View {
 
   var identifierSwitcherString: LocalizedStringKey {
     if phoneNumberFieldIsActive {
-      if emailIsEnabled && usernameIsEnabled {
+      if emailIsEnabled, usernameIsEnabled {
         "Use email address or username"
       } else if emailIsEnabled {
         "Use email address"
@@ -89,7 +89,7 @@ struct AuthStartView: View {
       return true
     }
 
-    if !authState.authStartPhoneNumber.isEmpty && authState.authStartIdentifier.isEmpty {
+    if !authState.authStartPhoneNumber.isEmpty, authState.authStartIdentifier.isEmpty {
       return true
     }
 
@@ -137,7 +137,7 @@ struct AuthStartView: View {
         VStack(spacing: 24) {
           if showIdentifierField {
             VStack(spacing: 4) {
-              if phoneNumberFieldIsActive && phoneNumberIsEnabled {
+              if phoneNumberFieldIsActive, phoneNumberIsEnabled {
                 ClerkPhoneNumberField(
                   "Enter your phone number",
                   text: $authState.authStartPhoneNumber,
@@ -203,106 +203,11 @@ struct AuthStartView: View {
           SocialButtonLayout {
             ForEach(clerk.environment.authenticatableSocialProviders) { provider in
               SocialButton(provider: provider) { result in
-                switch result {
-                case .signIn(let signIn):
-                  authState.setToStepForStatus(signIn: signIn)
-                case .signUp(let signUp):
-                  authState.setToStepForStatus(signUp: signUp)
-                }
-                .padding(.bottom, 32)
-
-                VStack(spacing: 24) {
-                    if showIdentifierField {
-                        VStack(spacing: 4) {
-                            if phoneNumberFieldIsActive && phoneNumberIsEnabled {
-                                ClerkPhoneNumberField(
-                                    "Enter your phone number",
-                                    text: $authState.authStartPhoneNumber,
-                                    fieldState: fieldError != nil ? .error : .default
-                                )
-                                .transition(.blurReplace)
-                            } else {
-                                ClerkTextField(
-                                    emailOrUsernamePlaceholder,
-                                    text: $authState.authStartIdentifier,
-                                    fieldState: fieldError != nil ? .error : .default
-                                )
-                                .textContentType(.username)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .transition(.blurReplace)
-                            }
-
-                            if let fieldError {
-                                ErrorText(error: fieldError, alignment: .leading)
-                                    .font(theme.fonts.subheadline)
-                                    .transition(.blurReplace.animation(.default.speed(2)))
-                                    .id(fieldError.localizedDescription)
-                            }
-                        }
-
-                        AsyncButton {
-                            await startAuth()
-                        } label: { isRunning in
-                            HStack(spacing: 4) {
-                                Text("Continue", bundle: .module)
-                                Image("icon-triangle-right", bundle: .module)
-                                    .foregroundStyle(theme.colors.primaryForeground)
-                                    .opacity(0.6)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .overlayProgressView(isActive: isRunning) {
-                                SpinnerView(color: theme.colors.primaryForeground)
-                            }
-                        }
-                        .buttonStyle(.primary())
-                        .disabled(continueIsDisabled)
-                        .simultaneousGesture(TapGesture())
-                    }
-
-                    if showIdentifierSwitcher {
-                        Button {
-                            withAnimation(.default.speed(2)) {
-                                phoneNumberFieldIsActive.toggle()
-                            }
-                        } label: {
-                            Text(identifierSwitcherString, bundle: .module)
-                                .id(phoneNumberFieldIsActive)
-                        }
-                        .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
-                        .simultaneousGesture(TapGesture())
-                    }
-
-                    if showOrDivider {
-                        TextDivider(string: "or")
-                    }
-
-                    SocialButtonLayout {
-                        ForEach(clerk.environment.authenticatableSocialProviders) { provider in
-                            SocialButton(provider: provider) { result in
-                              handleTransferFlowResult(result)
-                            } onError: { error in
-                              self.generalError = error
-                            }
-                            .simultaneousGesture(TapGesture())
-                        }
-                    }
-                }
-                .padding(.bottom, 32)
-
-                SecuredByClerkView()
-            }
-            .padding(16)
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .clerkErrorPresenting($generalError)
-        .background(theme.colors.background)
-        .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
-            $1 != nil
-        }
-        .taskOnce {
-            if shouldStartOnPhoneNumber {
-                phoneNumberFieldIsActive = true
+                handleTransferFlowResult(result)
+              } onError: { error in
+                generalError = error
+              }
+              .simultaneousGesture(TapGesture())
             }
           }
         }
@@ -327,7 +232,6 @@ struct AuthStartView: View {
 }
 
 extension AuthStartView {
-
   func startAuth() async {
     dismissKeyboard()
 
@@ -365,7 +269,7 @@ extension AuthStartView {
       if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
         await signUp()
       } else {
-        self.fieldError = error
+        fieldError = error
       }
     }
   }
@@ -373,33 +277,22 @@ extension AuthStartView {
   private func signUp() async {
     fieldError = nil
 
-    private func handleTransferFlowResult(_ result: TransferFlowResult) {
-      switch result {
-      case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.error {
-          generalError = error
-        } else {
-          authState.setToStepForStatus(signIn: signIn)
-        }
-      case .signUp(let signUp):
-        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-           let error = verification.error {
-          generalError = error
-        } else {
-          authState.setToStepForStatus(signUp: signUp)
-        }
-      }
+    do {
+      let signUp = try await SignUp.create(strategy: signUpParams)
+      authState.setToStepForStatus(signUp: signUp)
+    } catch {
+      fieldError = error
     }
   }
 
   private var signUpParams: SignUp.CreateStrategy {
     if phoneNumberFieldIsActive {
-      return .standard(phoneNumber: authState.authStartPhoneNumber)
+      .standard(phoneNumber: authState.authStartPhoneNumber)
     } else {
       if authState.authStartIdentifier.isEmailAddress {
-        return .standard(emailAddress: authState.authStartIdentifier)
+        .standard(emailAddress: authState.authStartIdentifier)
       } else {
-        return .standard(username: authState.authStartIdentifier)
+        .standard(username: authState.authStartIdentifier)
       }
     }
   }
@@ -407,12 +300,21 @@ extension AuthStartView {
   private func handleTransferFlowResult(_ result: TransferFlowResult) {
     switch result {
     case .signIn(let signIn):
-      authState.setToStepForStatus(signIn: signIn)
+      if let error = signIn.firstFactorVerification?.error {
+        generalError = error
+      } else {
+        authState.setToStepForStatus(signIn: signIn)
+      }
     case .signUp(let signUp):
-      authState.setToStepForStatus(signUp: signUp)
+      if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+        let error = verification.error
+      {
+        generalError = error
+      } else {
+        authState.setToStepForStatus(signUp: signUp)
+      }
     }
   }
-
 }
 
 #Preview {

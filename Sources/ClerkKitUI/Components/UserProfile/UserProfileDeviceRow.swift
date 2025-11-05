@@ -33,7 +33,6 @@ struct UserProfileDeviceRow: View {
             .frame(width: 24, height: 24)
 
           VStack(alignment: .leading, spacing: 8) {
-
             if session.isThisDevice {
               Badge(key: "This device", style: .secondary)
             }
@@ -94,7 +93,6 @@ struct UserProfileDeviceRow: View {
 }
 
 extension UserProfileDeviceRow {
-
   func signOutOfDevice() async {
     do {
       try await session.revoke()
@@ -104,7 +102,6 @@ extension UserProfileDeviceRow {
       ClerkLogger.error("Failed to sign out of device", error: error)
     }
   }
-
 }
 
 #Preview {

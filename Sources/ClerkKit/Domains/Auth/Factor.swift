@@ -1,5 +1,5 @@
 //
-//  SignInFactor.swift
+//  Factor.swift
 //
 //
 //  Created by Mike Pitre on 2/9/24.
@@ -9,7 +9,6 @@ import Foundation
 
 /// The Factor type represents the factor verification strategy that can be used in the sign-in process.
 public struct Factor: Codable, Equatable, Hashable, Sendable {
-
   /// The strategy of the factor.
   public var strategy: String
 
@@ -44,4 +43,3 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     self.primary = primary
   }
 }
-

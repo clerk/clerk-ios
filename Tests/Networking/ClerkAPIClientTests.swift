@@ -7,21 +7,21 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkAPIClientTests {
-
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func testRequestHeaders() async throws {
+  func requestHeaders() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true])
-      ])
+        .post: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
@@ -42,15 +42,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testIsNativeQueryParameter() async throws {
+  func isNativeQueryParameter() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true])
-      ])
+        .get: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -70,15 +71,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testGetRequest() async throws {
+  func getRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true])
-      ])
+        .get: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -96,15 +98,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testPostRequest() async throws {
+  func postRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true])
-      ])
+        .post: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -124,15 +127,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testPatchRequest() async throws {
+  func patchRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .patch: try! JSONEncoder().encode(["success": true])
-      ])
+        .patch: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
@@ -152,15 +156,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testDeleteRequest() async throws {
+  func deleteRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder().encode(["success": true])
-      ])
+        .delete: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -178,15 +183,16 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testQueryParameters() async throws {
+  func queryParameters() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true])
-      ])
+        .get: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
@@ -208,7 +214,7 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testMultipartUpload() async throws {
+  func multipartUpload() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
     let boundary = UUID().uuidString
@@ -222,8 +228,9 @@ struct ClerkAPIClientTests {
     var mock = Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true])
-      ])
+        .post: try! JSONEncoder().encode(["success": true]),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -243,7 +250,7 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func testErrorHandling() async throws {
+  func errorHandling() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
@@ -254,8 +261,10 @@ struct ClerkAPIClientTests {
           ClerkErrorResponse(
             errors: [.mock],
             clerkTraceId: nil
-          ))
-      ])
+          )
+        ),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")

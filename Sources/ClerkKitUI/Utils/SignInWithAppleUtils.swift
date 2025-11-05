@@ -12,7 +12,6 @@ import ClerkKit
 import Foundation
 
 enum SignInWithAppleUtils {
-
   @discardableResult @MainActor
   static func signIn(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
@@ -21,15 +20,12 @@ enum SignInWithAppleUtils {
     }
     return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
   }
-
 }
 
 extension ASAuthorizationAppleIDCredential {
-
   var tokenString: String {
-    identityToken.flatMap({ String(data: $0, encoding: .utf8) }) ?? ""
+    identityToken.flatMap { String(data: $0, encoding: .utf8) } ?? ""
   }
-
 }
 
 #endif

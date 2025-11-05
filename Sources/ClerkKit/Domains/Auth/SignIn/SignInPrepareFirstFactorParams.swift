@@ -1,5 +1,5 @@
 //
-//  SignInPrepareFirstFactor.swift
+//  SignInPrepareFirstFactorParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -8,7 +8,6 @@
 import Foundation
 
 extension SignIn {
-
   /// A parameter object for preparing the first factor verification.
   struct PrepareFirstFactorParams: Encodable, Sendable {
     /// The strategy value depends on the object's identifier value. Each authentication identifier supports different verification strategies.
@@ -28,7 +27,6 @@ extension SignIn {
   ///
   /// The `PrepareFirstFactorStrategy` enum defines the different methods available for verifying the first factor in the sign-in process. Each strategy corresponds to a specific type of authentication.
   public enum PrepareFirstFactorStrategy: Sendable {
-
     /// The user will receive a one-time authentication code via email.
     /// - Parameters:
     ///   - emailAddressId: ID to specify a particular email address.
@@ -64,7 +62,7 @@ extension SignIn {
         "email_code"
       case .phoneCode:
         "phone_code"
-      case .oauth(let provider, _):
+      case let .oauth(provider, _):
         provider.strategy
       case .enterpriseSSO:
         "enterprise_sso"
@@ -80,42 +78,41 @@ extension SignIn {
     @MainActor
     func params(signIn: SignIn) -> PrepareFirstFactorParams {
       switch self {
-
-      case .emailCode(let emailAddressId):
-        return .init(
+      case let .emailCode(emailAddressId):
+        .init(
           strategy: strategy,
           emailAddressId: emailAddressId ?? signIn.identifyingFirstFactor(strategy: self)?.emailAddressId
         )
 
-      case .phoneCode(let phoneNumberId):
-        return .init(
+      case let .phoneCode(phoneNumberId):
+        .init(
           strategy: strategy,
           phoneNumberId: phoneNumberId ?? signIn.identifyingFirstFactor(strategy: self)?.phoneNumberId
         )
 
-      case .oauth(let provider, let redirectUrl):
-        return .init(
+      case let .oauth(provider, redirectUrl):
+        .init(
           strategy: provider.strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
 
       case .passkey:
-        return .init(strategy: strategy)
+        .init(strategy: strategy)
 
-      case .enterpriseSSO(let redirectUrl):
-        return .init(
+      case let .enterpriseSSO(redirectUrl):
+        .init(
           strategy: strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
 
-      case .resetPasswordEmailCode(let emailAddressId):
-        return .init(
+      case let .resetPasswordEmailCode(emailAddressId):
+        .init(
           strategy: strategy,
           emailAddressId: emailAddressId ?? signIn.identifyingFirstFactor(strategy: self)?.emailAddressId
         )
 
-      case .resetPasswordPhoneCode(let phoneNumberId):
-        return .init(
+      case let .resetPasswordPhoneCode(phoneNumberId):
+        .init(
           strategy: strategy,
           phoneNumberId: phoneNumberId ?? signIn.identifyingFirstFactor(strategy: self)?.phoneNumberId
         )

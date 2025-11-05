@@ -10,7 +10,6 @@
 /// This is used to distinguish between production and development environments, allowing for
 /// environment-specific behavior or configurations.
 public enum InstanceEnvironmentType: String, Codable, CodingKeyRepresentable, Sendable {
-
   /// Represents a production environment.
   case production
 

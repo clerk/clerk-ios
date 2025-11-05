@@ -9,7 +9,6 @@ import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
 public struct Verification: Codable, Equatable, Hashable, Sendable {
-
   /// The state of the verification.
   public var status: Status?
 
@@ -64,4 +63,3 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
     }
   }
 }
-

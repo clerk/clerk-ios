@@ -1,5 +1,5 @@
 //
-//  PasskeyManager.swift
+//  PasskeyHelper.swift
 //
 //
 //  Created by Mike Pitre on 9/5/24.
@@ -7,14 +7,13 @@
 
 #if canImport(AuthenticationServices) && !os(watchOS)
 
-import Foundation
 import AuthenticationServices
+import Foundation
 import os
 
 final class PasskeyHelper: NSObject {
-
   @MainActor
-  public static var controller: ASAuthorizationController?
+  static var controller: ASAuthorizationController?
 
   @MainActor
   var domain: String {
@@ -30,7 +29,7 @@ final class PasskeyHelper: NSObject {
 
   @MainActor
   func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
-    return try await withCheckedThrowingContinuation { continuation in
+    try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
@@ -69,7 +68,7 @@ final class PasskeyHelper: NSObject {
   #if os(iOS) && !targetEnvironment(macCatalyst)
   @MainActor
   func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
-    return try await withCheckedThrowingContinuation { continuation in
+    try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
@@ -89,7 +88,7 @@ final class PasskeyHelper: NSObject {
 
   @MainActor
   func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
-    return try await withCheckedThrowingContinuation { continuation in
+    try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
@@ -110,12 +109,10 @@ final class PasskeyHelper: NSObject {
       authController.performRequests()
     }
   }
-
 }
 
 extension PasskeyHelper: ASAuthorizationControllerDelegate {
-
-  public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+  func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
     let logger = Logger()
     switch authorization.credential {
     case let credentialRegistration as ASAuthorizationPlatformPublicKeyCredentialRegistration:
@@ -147,18 +144,16 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
     default:
       fatalError("Received unknown authorization type.")
     }
-
   }
 
-  public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
+  func authorizationController(controller _: ASAuthorizationController, didCompleteWithError error: any Error) {
     continuation?.resume(throwing: error)
   }
-
 }
 
 extension PasskeyHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
-  public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+  func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
     #if os(iOS)
     UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     #else

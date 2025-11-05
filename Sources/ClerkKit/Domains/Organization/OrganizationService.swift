@@ -34,7 +34,6 @@ protocol OrganizationServiceProtocol: Sendable {
 }
 
 final class OrganizationService: OrganizationServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -43,7 +42,7 @@ final class OrganizationService: OrganizationServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor
@@ -54,7 +53,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [
         "name": name,
-        "slug": slug
+        "slug": slug,
       ]
     )
 
@@ -100,7 +99,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       query: [
         ("_clerk_session_id", value: Clerk.shared.session?.id),
         ("offset", value: String(initialPage)),
-        ("limit", value: String(pageSize))
+        ("limit", value: String(pageSize)),
       ]
     )
 
@@ -113,7 +112,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
-      ("paginated", value: String(true))
+      ("paginated", value: String(true)),
     ]
 
     if let query {
@@ -141,7 +140,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [
         "user_id": userId,
-        "role": role
+        "role": role,
       ]
     )
 
@@ -177,7 +176,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
-      ("paginated", value: String(true))
+      ("paginated", value: String(true)),
     ]
 
     if let status {
@@ -201,7 +200,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [
         "email_address": emailAddress,
-        "role": role
+        "role": role,
       ]
     )
 
@@ -225,7 +224,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
+      ("limit", value: String(pageSize)),
     ]
 
     if let enrollmentMode {
@@ -257,7 +256,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
+      ("limit", value: String(pageSize)),
     ]
 
     if let status {

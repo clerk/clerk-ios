@@ -9,7 +9,6 @@ import Foundation
 
 /// An experimental interface that includes information about a user's permission.
 public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
-
   /// The unique identifier of the permission.
   public var id: String
 
@@ -49,4 +48,3 @@ public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
     self.updatedAt = updatedAt
   }
 }
-

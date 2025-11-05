@@ -9,16 +9,15 @@ import ClerkKit
 import Foundation
 
 extension ExternalAccount {
-
   var oauthProvider: OAuthProvider {
     .init(strategy: provider)
   }
 
   var displayName: String {
     if let username, !username.isEmptyTrimmed {
-      return username
+      username
     } else {
-      return emailAddress
+      emailAddress
     }
   }
 
@@ -30,5 +29,4 @@ extension ExternalAccount {
 
     return fullName.isEmptyTrimmed ? nil : fullName
   }
-
 }

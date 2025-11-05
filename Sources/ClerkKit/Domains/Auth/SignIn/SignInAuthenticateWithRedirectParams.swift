@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SignInAuthenticateWithRedirectParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -8,14 +8,12 @@
 import Foundation
 
 extension SignIn {
-
   /// Represents the parameters used for authenticating with a redirect.
   ///
   /// This structure is used to authenticate a user with various strategies, including OAuth, SAML, and enterprise SSO. It defines the necessary parameters for the authentication process, such as the redirect URLs and legal acceptance.
   ///
   /// - SeeAlso: `AuthenticateWithRedirect` function for initiating authentication with these parameters.
   struct AuthenticateWithRedirectParams: Encodable {
-
     /// The strategy to use for authentication.
     let strategy: String
 
@@ -43,18 +41,17 @@ extension SignIn {
     @MainActor
     var signInStrategy: SignIn.CreateStrategy {
       switch self {
-      case .oauth(let provider, let redirectUrl):
-        return .oauth(
+      case let .oauth(provider, redirectUrl):
+        .oauth(
           provider: provider,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
-      case .enterpriseSSO(let identifier, let redirectUrl):
-        return .enterpriseSSO(
+      case let .enterpriseSSO(identifier, redirectUrl):
+        .enterpriseSSO(
           identifier: identifier,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
       }
     }
   }
-
 }

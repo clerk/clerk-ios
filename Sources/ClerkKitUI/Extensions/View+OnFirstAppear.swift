@@ -1,5 +1,5 @@
 //
-//  OnFirstAppear.swift
+//  View+OnFirstAppear.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/18/25.
@@ -25,7 +25,7 @@ private struct FirstAppear: ViewModifier {
 }
 
 extension View {
-  func onFirstAppear(_ action: @escaping () -> ()) -> some View {
+  func onFirstAppear(_ action: @escaping () -> Void) -> some View {
     modifier(FirstAppear(action: action))
   }
 }

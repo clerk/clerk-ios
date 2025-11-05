@@ -13,14 +13,14 @@ struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-  if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
-    request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
-  }
+    if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
+      request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
+    }
 
-  if Clerk.shared.options.debugMode, let clientId = Clerk.shared.client?.id {
-    request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
-  }
+    if Clerk.shared.options.debugMode, let clientId = Clerk.shared.client?.id {
+      request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
+    }
 
-  request.setValue(deviceID, forHTTPHeaderField: "x-native-device-id")
+    request.setValue(deviceID, forHTTPHeaderField: "x-native-device-id")
   }
 }

@@ -25,13 +25,12 @@ public struct ClerkClientError: Error, LocalizedError, ClerkError {
   }
 
   public init(message: String.LocalizationValue? = nil) {
-    self.messageLocalizationValue = message
+    messageLocalizationValue = message
   }
 }
 
-extension ClerkClientError {
-  public var errorDescription: String? {
+public extension ClerkClientError {
+  var errorDescription: String? {
     message
   }
 }
-

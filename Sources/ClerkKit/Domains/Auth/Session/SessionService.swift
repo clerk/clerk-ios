@@ -12,7 +12,6 @@ protocol SessionServiceProtocol: Sendable {
 }
 
 final class SessionService: SessionServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -21,7 +20,7 @@ final class SessionService: SessionServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor

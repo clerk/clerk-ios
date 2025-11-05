@@ -16,8 +16,8 @@ actor TelemetryEventThrottler {
   private let userDefaults: UserDefaults
   private let storageKey = "clerk_telemetry_throttler"
   private let cacheTtl: TimeInterval = 24 * 60 * 60 // 24 hours
-  private var memoryCache: [String: TimeInterval]? = nil
-  
+  private var memoryCache: [String: TimeInterval]?
+
   init(userDefaults: UserDefaults = .standard) {
     self.userDefaults = userDefaults
   }
@@ -47,7 +47,7 @@ actor TelemetryEventThrottler {
 
     // Invalidate if TTL expired
     if now - lastSeen > cacheTtl {
-      cache[key] = now  // Record new timestamp
+      cache[key] = now // Record new timestamp
       memoryCache = cache
       saveCache(cache)
       return false
@@ -61,15 +61,15 @@ actor TelemetryEventThrottler {
 
   private func cleanupExpiredEntries() {
     guard var cache = memoryCache else { return }
-    
+
     let now = Date().timeIntervalSince1970
     let originalCount = cache.count
-    
+
     // Remove expired entries
     cache = cache.filter { _, timestamp in
       now - timestamp <= cacheTtl
     }
-    
+
     // Update cache if any entries were removed
     if cache.count < originalCount {
       memoryCache = cache
@@ -110,22 +110,26 @@ actor TelemetryEventThrottler {
     // Convert to a stable JSON string with sorted keys
     func encodeJSON(_ value: JSON) -> Any {
       switch value {
-      case .string(let s): return s
-      case .number(let n): return n
-      case .bool(let b): return b
+      case let .string(s): return s
+      case let .number(n): return n
+      case let .bool(b): return b
       case .null: return NSNull()
-      case .array(let arr): return arr.map(encodeJSON)
-      case .object(let obj):
+      case let .array(arr): return arr.map(encodeJSON)
+      case let .object(obj):
         let sorted = obj.sorted { $0.key < $1.key }
         var dict: [String: Any] = [:]
-        for (k, v) in sorted { dict[k] = encodeJSON(v) }
+        for (k, v) in sorted {
+          dict[k] = encodeJSON(v)
+        }
         return dict
       }
     }
 
     let sorted = value.sorted { $0.key < $1.key }
     var dict: [String: Any] = [:]
-    for (k, v) in sorted { dict[k] = encodeJSON(v) }
+    for (k, v) in sorted {
+      dict[k] = encodeJSON(v)
+    }
 
     guard let data = try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys]) else {
       return "{}"
@@ -133,4 +137,3 @@ actor TelemetryEventThrottler {
     return String(data: data, encoding: .utf8) ?? "{}"
   }
 }
-

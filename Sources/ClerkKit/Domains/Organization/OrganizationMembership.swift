@@ -10,7 +10,6 @@ import Foundation
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
 public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Identifiable {
-
   /// The unique identifier for this organization membership.
   public var id: String
 
@@ -62,8 +61,7 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
   }
 }
 
-extension OrganizationMembership {
-
+public extension OrganizationMembership {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -72,7 +70,7 @@ extension OrganizationMembership {
   /// - Returns: ``OrganizationMembership``
   /// - Throws: An error if the membership deletion fails.
   @discardableResult @MainActor
-  public func destroy() async throws -> OrganizationMembership {
+  func destroy() async throws -> OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to delete membership: missing userId")
     }
@@ -86,13 +84,11 @@ extension OrganizationMembership {
   /// - Throws: An error if the membership update fails.
   /// - Returns: ``OrganizationMembership``
   @discardableResult @MainActor
-  public func update(role: String) async throws -> OrganizationMembership {
+  func update(role: String) async throws -> OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to update membership: missing userId")
     }
 
     return try await organizationService.updateOrganizationMember(organizationId: organization.id, userId: userId, role: role)
   }
-
 }
-

@@ -43,7 +43,6 @@ struct TelemetryCollectorOptions: Sendable {
   }
 }
 
-
 /// A telemetry event as sent to the Clerk telemetry backend.
 ///
 /// iOS does not include `cv` (Clerk version) or `sk` (secret key).

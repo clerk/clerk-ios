@@ -66,7 +66,7 @@ final class MockDependencyContainer: Dependencies {
     phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
     externalAccountService: (any ExternalAccountServiceProtocol)? = nil
   ) {
-    self.networkingPipeline = .clerkDefault
+    networkingPipeline = .clerkDefault
     self.keychain = keychain ?? InMemoryKeychain()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()

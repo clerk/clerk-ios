@@ -47,13 +47,11 @@ struct AsyncButton<Label: View>: View {
 }
 
 extension AsyncButton {
-
   func onIsRunningChanged(_ action: @escaping (Bool) -> Void) -> Self {
     var view = self
     view.onIsRunningChanged = action
     return view
   }
-
 }
 
 #Preview {

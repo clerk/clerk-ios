@@ -23,7 +23,6 @@ import Foundation
 /// verification step where they will receive an SMS message with a one-time code. This code must be entered to complete
 /// the sign-in process.
 public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable {
-
   /// The unique identifier for this phone number.
   public var id: String
 
@@ -69,8 +68,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
   }
 }
 
-extension PhoneNumber {
-
+public extension PhoneNumber {
   @MainActor
   private static var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
 
@@ -81,13 +79,13 @@ extension PhoneNumber {
   /// - Parameters:
   ///     - phoneNumber: The phone number to add to the current user.
   @discardableResult @MainActor
-  public static func create(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await Self.phoneNumberService.create(phoneNumber: phoneNumber)
+  static func create(_ phoneNumber: String) async throws -> PhoneNumber {
+    try await phoneNumberService.create(phoneNumber: phoneNumber)
   }
 
   /// Deletes this phone number.
   @discardableResult @MainActor
-  public func delete() async throws -> DeletedObject {
+  func delete() async throws -> DeletedObject {
     try await phoneNumberService.delete(phoneNumberId: id)
   }
 
@@ -95,7 +93,7 @@ extension PhoneNumber {
   ///
   /// An SMS message with a one-time code will be sent to the phone number value.
   @discardableResult @MainActor
-  public func prepareVerification() async throws -> PhoneNumber {
+  func prepareVerification() async throws -> PhoneNumber {
     try await phoneNumberService.prepareVerification(phoneNumberId: id)
   }
 
@@ -103,22 +101,20 @@ extension PhoneNumber {
   ///
   /// The code will be sent when calling the ``PhoneNumber/prepareVerification()`` method.
   @discardableResult @MainActor
-  public func attemptVerification(code: String) async throws -> PhoneNumber {
+  func attemptVerification(code: String) async throws -> PhoneNumber {
     try await phoneNumberService.attemptVerification(phoneNumberId: id, code: code)
   }
 
   /// Marks this phone number as the default second factor for multi-factor authentication(2FA). A user can have exactly one default second factor.
   @discardableResult @MainActor
-  public func makeDefaultSecondFactor() async throws -> PhoneNumber {
+  func makeDefaultSecondFactor() async throws -> PhoneNumber {
     try await phoneNumberService.makeDefaultSecondFactor(phoneNumberId: id)
   }
 
   /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
   /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
   @discardableResult @MainActor
-  public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
+  func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
     try await phoneNumberService.setReservedForSecondFactor(phoneNumberId: id, reserved: reserved)
   }
-
 }
-

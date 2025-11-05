@@ -30,10 +30,10 @@ public final class MockEmailAddressService: EmailAddressServiceProtocol {
     attemptVerification: ((String, EmailAddress.AttemptStrategy) async throws -> EmailAddress)? = nil,
     destroy: ((String) async throws -> DeletedObject)? = nil
   ) {
-    self.createHandler = create
-    self.prepareVerificationHandler = prepareVerification
-    self.attemptVerificationHandler = attemptVerification
-    self.destroyHandler = destroy
+    createHandler = create
+    prepareVerificationHandler = prepareVerification
+    attemptVerificationHandler = attemptVerification
+    destroyHandler = destroy
   }
 
   @MainActor
@@ -68,4 +68,3 @@ public final class MockEmailAddressService: EmailAddressServiceProtocol {
     return .mock
   }
 }
-

@@ -20,7 +20,6 @@ import Foundation
 /// The second and final step involves an attempt to complete the verification by calling the ``EmailAddress/attemptVerification(strategy:)`` method,
 /// passing the one-time code as a parameter.
 public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
-
   /// The unique identifier for this email address.
   public var id: String
 
@@ -52,8 +51,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
   }
 }
 
-extension EmailAddress {
-
+public extension EmailAddress {
   @MainActor
   private static var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
 
@@ -64,8 +62,8 @@ extension EmailAddress {
   /// - Parameters:
   ///     - email: The email address to add to the current user.
   @discardableResult @MainActor
-  public static func create(_ email: String) async throws -> EmailAddress {
-    try await Self.emailAddressService.create(email: email)
+  static func create(_ email: String) async throws -> EmailAddress {
+    try await emailAddressService.create(email: email)
   }
 
   /// Prepares the verification process for this email address.
@@ -82,7 +80,7 @@ extension EmailAddress {
   /// let emailAddress = try await emailAddress.prepareVerification(strategy: .emailCode)
   /// ```
   @discardableResult @MainActor
-  public func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
+  func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
     try await emailAddressService.prepareVerification(emailAddressId: id, strategy: strategy)
   }
 
@@ -99,15 +97,13 @@ extension EmailAddress {
   /// let emailAddress = try await emailAddress.attemptVerification(strategy: .emailCode(code: "123456"))
   /// ```
   @discardableResult @MainActor
-  public func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
+  func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
     try await emailAddressService.attemptVerification(emailAddressId: id, strategy: strategy)
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
-  public func destroy() async throws -> DeletedObject {
+  func destroy() async throws -> DeletedObject {
     try await emailAddressService.destroy(emailAddressId: id)
   }
-
 }
-

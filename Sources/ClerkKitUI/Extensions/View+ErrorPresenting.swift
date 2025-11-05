@@ -20,9 +20,9 @@ struct ClerkErrorViewModifier: ViewModifier {
 
   var detents: Set<PresentationDetent> {
     if let sheetHeight {
-      return [PresentationDetent.height(sheetHeight)]
+      [PresentationDetent.height(sheetHeight)]
     } else {
-      return [.medium]
+      [.medium]
     }
   }
 
@@ -61,7 +61,6 @@ struct ClerkErrorViewModifier: ViewModifier {
 }
 
 extension View {
-
   func clerkErrorPresenting(
     _ error: Binding<Error?>,
     onDismiss: ((Error?) -> Void)? = nil,
@@ -79,16 +78,18 @@ extension View {
   }
   .clerkErrorPresenting(
     $error,
-    onDismiss: { error in
+    onDismiss: { _ in
       print("dismissed")
     },
-    action: { error in
+    action: { _ in
       .init(
         text: "Call to action",
         action: {
           try! await Task.sleep(for: .seconds(1))
-        })
-    })
+        }
+      )
+    }
+  )
 }
 
 #endif

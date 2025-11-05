@@ -32,8 +32,7 @@ import Foundation
 /// emitter.send(.signInCompleted(signIn: signIn))
 /// ```
 @MainActor
-final public class EventEmitter<Event: Sendable> {
-
+public final class EventEmitter<Event: Sendable> {
   /// A dictionary of active AsyncStream continuations keyed by UUID.
   private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
 

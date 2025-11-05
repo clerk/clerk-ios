@@ -5,13 +5,11 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
-extension SignIn {
-
+public extension SignIn {
   /// Represents the current status of the sign-in process.
   ///
   /// The `Status` enum defines the possible states of a sign-in flow. Each state indicates a specific requirement or completion level in the sign-in process.
-  public enum Status: String, Codable, Sendable, Equatable {
-
+  enum Status: String, Codable, Sendable, Equatable {
     /// The user is signed in.
     case complete
 
@@ -40,5 +38,4 @@ extension SignIn {
       self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
     }
   }
-
 }

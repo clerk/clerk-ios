@@ -16,4 +16,3 @@ public struct CommerceSettings: Codable, Sendable, Equatable {
     public var hasPaidOrgPlans: Bool
   }
 }
-

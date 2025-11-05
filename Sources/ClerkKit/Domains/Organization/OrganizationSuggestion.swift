@@ -9,7 +9,6 @@ import Foundation
 
 /// An interface representing an organization suggestion.
 public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
-
   /// An interface representing an organization suggestion.
   /// The ID of the organization suggestion.
   public var id: String
@@ -42,7 +41,6 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 
   /// The public data of the organization.
   public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
-
     /// Whether the organization has an image.
     public var hasImage: Bool
 
@@ -75,7 +73,6 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 }
 
 extension OrganizationSuggestion {
-
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -85,6 +82,4 @@ extension OrganizationSuggestion {
   public func accept() async throws -> OrganizationSuggestion {
     try await organizationService.acceptOrganizationSuggestion(suggestionId: id)
   }
-
 }
-

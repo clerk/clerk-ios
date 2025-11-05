@@ -7,7 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -20,8 +19,9 @@ struct ClerkTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(EmptyResponse())
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -34,7 +34,7 @@ struct ClerkTests {
   }
 
   @Test
-  func testSignOutWithSessionId() async throws {
+  func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
@@ -42,8 +42,9 @@ struct ClerkTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse())
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -64,13 +65,14 @@ struct ClerkTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse())
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody
-      if let body = body {
+      if let body {
         #expect(body["active_organization_id"] == "")
       }
       requestHandled.setValue(true)
@@ -82,7 +84,7 @@ struct ClerkTests {
   }
 
   @Test
-  func testSetActiveWithOrganizationId() async throws {
+  func setActiveWithOrganizationId() async throws {
     let sessionId = "sess_test123"
     let organizationId = "org_test456"
     let requestHandled = LockIsolated(false)
@@ -91,13 +93,14 @@ struct ClerkTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse())
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody
-      if let body = body {
+      if let body {
         #expect(body["active_organization_id"] == organizationId)
       }
       requestHandled.setValue(true)

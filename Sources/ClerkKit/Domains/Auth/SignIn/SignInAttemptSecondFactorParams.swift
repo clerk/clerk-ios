@@ -1,5 +1,5 @@
 //
-//  SignInAttemptSecondFactor.swift
+//  SignInAttemptSecondFactorParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -7,10 +7,9 @@
 
 import Foundation
 
-extension SignIn {
-
+public extension SignIn {
   /// A parameter object for attempting the second factor verification process.
-  public struct AttemptSecondFactorParams: Encodable, Sendable {
+  struct AttemptSecondFactorParams: Encodable, Sendable {
     /// The strategy used for second factor verification.
     public let strategy: String
 
@@ -19,7 +18,7 @@ extension SignIn {
   }
 
   /// A strategy for attempting the second factor verification process.
-  public enum AttemptSecondFactorStrategy: Sendable {
+  enum AttemptSecondFactorStrategy: Sendable {
     /// User will receive a one-time authentication code via SMS. The code should be provided as part of the verification process.
     case phoneCode(code: String)
 
@@ -37,14 +36,14 @@ extension SignIn {
     /// - Returns: An `AttemptSecondFactorParams` object containing the strategy and the verification code.
     var params: AttemptSecondFactorParams {
       switch self {
-      case .phoneCode(let code):
-        return .init(strategy: "phone_code", code: code)
-      case .emailCode(let code):
-        return .init(strategy: "email_code", code: code)
-      case .totp(let code):
-        return .init(strategy: "totp", code: code)
-      case .backupCode(let code):
-        return .init(strategy: "backup_code", code: code)
+      case let .phoneCode(code):
+        .init(strategy: "phone_code", code: code)
+      case let .emailCode(code):
+        .init(strategy: "email_code", code: code)
+      case let .totp(code):
+        .init(strategy: "totp", code: code)
+      case let .backupCode(code):
+        .init(strategy: "backup_code", code: code)
       }
     }
   }

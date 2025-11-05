@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
   @Environment(Clerk.self) private var clerk
@@ -46,7 +46,6 @@ struct SignInFactorOnePasswordView: View {
         .padding(.bottom, 32)
 
         VStack(spacing: 24) {
-
           VStack(spacing: 8) {
             ClerkTextField(
               "Enter your password",
@@ -145,7 +144,6 @@ struct SignInFactorOnePasswordView: View {
 }
 
 extension SignInFactorOnePasswordView {
-
   func submitPassword() async {
     isFocused = false
 
@@ -162,10 +160,9 @@ extension SignInFactorOnePasswordView {
       fieldError = nil
       authState.setToStepForStatus(signIn: signIn)
     } catch {
-      self.fieldError = error
+      fieldError = error
     }
   }
-
 }
 
 #Preview {

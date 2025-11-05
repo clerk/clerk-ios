@@ -21,7 +21,7 @@ struct UserProfileAddPhoneView: View {
   @FocusState private var isFocused: Bool
 
   enum Destination: Hashable, Identifiable {
-    case add  // should never be added to the path
+    case add // should never be added to the path
     case verify(PhoneNumber)
 
     var id: Self { self }
@@ -32,7 +32,7 @@ struct UserProfileAddPhoneView: View {
   }
 
   init(desintation: Destination? = nil) {
-    if case .verify(let phoneNumber) = desintation {
+    if case let .verify(phoneNumber) = desintation {
       var path = NavigationPath()
       path.append(Destination.verify(phoneNumber))
       _path = State(initialValue: path)
@@ -102,7 +102,7 @@ struct UserProfileAddPhoneView: View {
       }
       .navigationDestination(for: Destination.self) {
         switch $0 {
-        case .verify(let phoneNumber):
+        case let .verify(phoneNumber):
           UserProfileVerifyView(
             mode: .phone(phoneNumber)
           ) { _ in
@@ -111,7 +111,7 @@ struct UserProfileAddPhoneView: View {
             dismiss()
           }
         case .add:
-          EmptyView()  // should never be hit, .add should never be added to path
+          EmptyView() // should never be hit, .add should never be added to path
             .task { dismiss() }
         }
       }
@@ -120,7 +120,6 @@ struct UserProfileAddPhoneView: View {
 }
 
 extension UserProfileAddPhoneView {
-
   func addPhoneNumber() async {
     guard let user else { return }
 
@@ -132,7 +131,6 @@ extension UserProfileAddPhoneView {
       ClerkLogger.error("Failed to add phone number", error: error)
     }
   }
-
 }
 
 #Preview {

@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorOneView: View {
   @Environment(\.clerkTheme) private var theme
@@ -23,9 +23,9 @@ struct SignInFactorOneView: View {
     case "password":
       SignInFactorOnePasswordView(factor: factor)
     case "email_code",
-      "phone_code",
-      "reset_password_email_code",
-      "reset_password_phone_code":
+         "phone_code",
+         "reset_password_email_code",
+         "reset_password_phone_code":
       SignInFactorCodeView(factor: factor)
     default:
       SignInGetHelpView()

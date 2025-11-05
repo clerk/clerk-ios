@@ -11,7 +11,6 @@ import Foundation
 ///
 /// `EnterpriseAccount` encapsulates the details of a user's enterprise account.
 public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
-
   // MARK: - Properties
 
   /// The unique identifier for the enterprise account.
@@ -53,7 +52,7 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
   public init(
     id: String,
     object: String,
-    `protocol`: String,
+    protocol: String,
     provider: String,
     active: Bool,
     emailAddress: String,
@@ -66,7 +65,7 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
   ) {
     self.id = id
     self.object = object
-    self.`protocol` = `protocol`
+    self.protocol = `protocol`
     self.provider = provider
     self.active = active
     self.emailAddress = emailAddress
@@ -83,7 +82,6 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
   /// `EnterpriseConnection` contains the configuration and metadata for the connection
   /// between the enterprise account and the identity provider.
   public struct EnterpriseConnection: Codable, Hashable, Equatable, Sendable {
-
     /// The unique identifier for the enterprise connection.
     public let id: String
 
@@ -125,7 +123,7 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
 
     public init(
       id: String,
-      `protocol`: String,
+      protocol: String,
       provider: String,
       name: String,
       logoPublicUrl: String,
@@ -139,7 +137,7 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
       allowIdpInitiated: Bool
     ) {
       self.id = id
-      self.`protocol` = `protocol`
+      self.protocol = `protocol`
       self.provider = provider
       self.name = name
       self.logoPublicUrl = logoPublicUrl

@@ -16,7 +16,6 @@ struct PressedBackgroundButtonStyle: ButtonStyle {
     configuration.label
       .background(configuration.isPressed ? theme.colors.muted : nil)
   }
-
 }
 
 extension ButtonStyle where Self == PressedBackgroundButtonStyle {

@@ -64,7 +64,7 @@ final class DependencyContainer: Dependencies {
         "Content-Type": "application/x-www-form-urlencoded",
         "clerk-api-version": Clerk.apiVersion,
         "x-ios-sdk-version": Clerk.sdkVersion,
-        "x-mobile": "1"
+        "x-mobile": "1",
       ]
     }
 

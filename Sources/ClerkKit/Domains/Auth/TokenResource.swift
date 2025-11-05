@@ -11,7 +11,6 @@ import Foundation
 ///
 /// The `TokenResource` structure encapsulates a token, such as a JWT.
 public struct TokenResource: Codable, Equatable, Sendable {
-
   /// The jwt represented as a `String`.
   public var jwt: String
 
@@ -33,4 +32,3 @@ extension TokenResource {
     }
   }
 }
-

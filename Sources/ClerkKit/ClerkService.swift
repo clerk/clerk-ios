@@ -21,7 +21,6 @@ protocol ClerkServiceProtocol: Sendable {
 }
 
 struct ClerkService: ClerkServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -30,7 +29,7 @@ struct ClerkService: ClerkServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor
@@ -62,5 +61,4 @@ struct ClerkService: ClerkServiceProtocol {
 
     try await apiClient.send(request)
   }
-
 }

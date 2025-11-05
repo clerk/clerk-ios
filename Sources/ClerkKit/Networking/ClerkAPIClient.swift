@@ -6,7 +6,7 @@ actor APIClient {
     var sessionConfiguration: URLSessionConfiguration = {
       let configuration = URLSessionConfiguration.default
       configuration.httpAdditionalHeaders = [
-        "Accept": "application/json"
+        "Accept": "application/json",
       ]
       return configuration
     }()
@@ -27,10 +27,10 @@ actor APIClient {
     configure(&configuration)
 
     self.baseURL = baseURL
-    self.encoder = configuration.encoder
-    self.decoder = configuration.decoder
-    self.pipeline = configuration.pipeline
-    self.session = URLSession(configuration: configuration.sessionConfiguration)
+    encoder = configuration.encoder
+    decoder = configuration.decoder
+    pipeline = configuration.pipeline
+    session = URLSession(configuration: configuration.sessionConfiguration)
   }
 
   @discardableResult

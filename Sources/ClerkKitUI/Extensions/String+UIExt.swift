@@ -1,5 +1,5 @@
 //
-//  String+UIExt.swift.swift
+//  String+UIExt.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/29/25.

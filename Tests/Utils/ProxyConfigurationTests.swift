@@ -12,156 +12,154 @@ import Testing
 
 @Suite(.serialized)
 struct ProxyConfigurationTests {
-
   @Test
-  func testInitWithValidURL() {
+  func initWithValidURL() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)
-    
+
     #expect(config != nil)
-    if let config = config {
+    if let config {
       #expect(config.baseURL.absoluteString == "https://proxy.example.com")
       #expect(config.pathSegments == ["__clerk"])
     }
   }
 
   @Test
-  func testInitWithNilURL() {
+  func initWithNilURL() {
     let config = ProxyConfiguration(url: nil)
     #expect(config == nil)
   }
 
   @Test
-  func testInitWithURLWithoutScheme() {
+  func initWithURLWithoutScheme() {
     let url = URL(string: "proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)
     #expect(config == nil)
   }
 
   @Test
-  func testInitWithURLWithoutHost() {
+  func initWithURLWithoutHost() {
     let url = URL(string: "https:///__clerk")!
     let config = ProxyConfiguration(url: url)
     #expect(config == nil)
   }
 
   @Test
-  func testInitWithURLWithPort() {
+  func initWithURLWithPort() {
     let url = URL(string: "https://proxy.example.com:8080/__clerk")!
     let config = ProxyConfiguration(url: url)
-    
+
     #expect(config != nil)
-    if let config = config {
+    if let config {
       #expect(config.baseURL.port == 8080)
       #expect(config.pathSegments == ["__clerk"])
     }
   }
 
   @Test
-  func testInitWithURLWithoutPath() {
+  func initWithURLWithoutPath() {
     let url = URL(string: "https://proxy.example.com")!
     let config = ProxyConfiguration(url: url)
-    
+
     #expect(config != nil)
-    if let config = config {
+    if let config {
       #expect(config.pathSegments == [])
     }
   }
 
   @Test
-  func testInitWithURLWithRootPath() {
+  func initWithURLWithRootPath() {
     let url = URL(string: "https://proxy.example.com/")!
     let config = ProxyConfiguration(url: url)
-    
+
     #expect(config != nil)
-    if let config = config {
+    if let config {
       #expect(config.pathSegments == [])
     }
   }
 
   @Test
-  func testInitWithURLWithMultiplePathSegments() {
+  func initWithURLWithMultiplePathSegments() {
     let url = URL(string: "https://proxy.example.com/__clerk/v1/api")!
     let config = ProxyConfiguration(url: url)
-    
+
     #expect(config != nil)
-    if let config = config {
+    if let config {
       #expect(config.pathSegments == ["__clerk", "v1", "api"])
     }
   }
 
   @Test
-  func testPrefixedPathWithEmptyPathSegments() {
+  func prefixedPathWithEmptyPathSegments() {
     let url = URL(string: "https://proxy.example.com")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "/v1/client")
     #expect(result == "/v1/client")
   }
 
   @Test
-  func testPrefixedPathWithSimplePath() {
+  func prefixedPathWithSimplePath() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "/v1/client")
     #expect(result == "/__clerk/v1/client")
   }
 
   @Test
-  func testPrefixedPathWithPathAlreadyPrefixed() {
+  func prefixedPathWithPathAlreadyPrefixed() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)!
-    
+
     // Path already starts with proxy segments
     let result = config.prefixedPath(for: "/__clerk/v1/client")
     #expect(result == "/__clerk/v1/client")
   }
 
   @Test
-  func testPrefixedPathWithPathWithoutLeadingSlash() {
+  func prefixedPathWithPathWithoutLeadingSlash() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "v1/client")
     #expect(result == "/__clerk/v1/client")
   }
 
   @Test
-  func testPrefixedPathWithMultipleProxySegments() {
+  func prefixedPathWithMultipleProxySegments() {
     let url = URL(string: "https://proxy.example.com/__clerk/v1")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "/client")
     #expect(result == "/__clerk/v1/client")
   }
 
   @Test
-  func testPrefixedPathWithEmptyOriginalPath() {
+  func prefixedPathWithEmptyOriginalPath() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "")
     #expect(result == "/__clerk")
   }
 
   @Test
-  func testPrefixedPathWithRootPath() {
+  func prefixedPathWithRootPath() {
     let url = URL(string: "https://proxy.example.com/__clerk")!
     let config = ProxyConfiguration(url: url)!
-    
+
     let result = config.prefixedPath(for: "/")
     #expect(result == "/__clerk")
   }
 
   @Test
-  func testPrefixedPathWithPartialMatch() {
+  func prefixedPathWithPartialMatch() {
     let url = URL(string: "https://proxy.example.com/__clerk/v1")!
     let config = ProxyConfiguration(url: url)!
-    
+
     // Path doesn't start with all proxy segments
     let result = config.prefixedPath(for: "/v1/client")
     #expect(result == "/__clerk/v1/v1/client")
   }
 }
-

@@ -14,7 +14,6 @@ import RegexBuilder
 /// a single point for configuring the Clerk SDK.
 @MainActor
 final class ConfigurationManager {
-
   /// Configuration state for the Clerk instance.
   struct ConfigurationState {
     var publishableKey: String = ""
@@ -139,7 +138,7 @@ final class ConfigurationManager {
     }
 
     guard let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-        let apiUrl = String(match).base64String()
+          let apiUrl = String(match).base64String()
     else {
       throw ClerkInitializationError.invalidPublishableKeyFormat(key: publishableKey)
     }
@@ -147,4 +146,3 @@ final class ConfigurationManager {
     return "https://\(apiUrl.dropLast())"
   }
 }
-

@@ -24,7 +24,6 @@ import Foundation
 /// 4. **Sign Up Complete**:
 ///    If the verification is successful, the newly created session is set as the active session.
 public struct SignUp: Codable, Sendable, Equatable, Hashable {
-
   /// The unique identifier of the current sign-up.
   public var id: String
 
@@ -124,8 +123,7 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
   }
 }
 
-extension SignUp {
-
+public extension SignUp {
   @MainActor
   private static var signUpService: any SignUpServiceProtocol { Clerk.shared.dependencies.signUpService }
 
@@ -152,8 +150,8 @@ extension SignUp {
   /// let signUp = try await SignUp.create(strategy: .standard(emailAddress: "user@email.com", password: "••••••••"))
   /// ```
   @discardableResult @MainActor
-  public static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil, locale: String? = nil) async throws -> SignUp {
-    try await Self.signUpService.create(strategy: strategy, legalAccepted: legalAccepted, locale: locale)
+  static func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool? = nil, locale: String? = nil) async throws -> SignUp {
+    try await signUpService.create(strategy: strategy, legalAccepted: legalAccepted, locale: locale)
   }
 
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
@@ -174,8 +172,8 @@ extension SignUp {
   /// let signUp = try await SignUp.create(["email_address": "user@email.com", "password": "••••••••"])
   /// ```
   @discardableResult @MainActor
-  public static func create<T: Encodable & Sendable>(_ params: T) async throws -> SignUp {
-    try await Self.signUpService.createWithParams(params: params)
+  static func create(_ params: some Encodable & Sendable) async throws -> SignUp {
+    try await signUpService.createWithParams(params: params)
   }
 
   /// This method is used to update the current sign-up.
@@ -191,7 +189,7 @@ extension SignUp {
   ///
   /// - Returns: The updated `SignUp` object reflecting the changes.
   @discardableResult @MainActor
-  public func update(params: UpdateParams) async throws -> SignUp {
+  func update(params: UpdateParams) async throws -> SignUp {
     try await signUpService.update(signUpId: id, params: params)
   }
 
@@ -208,7 +206,7 @@ extension SignUp {
   /// - Throws: An error if the request to prepare verification fails.
   /// - Returns: The updated `SignUp` object reflecting the verification initiation.
   @discardableResult @MainActor
-  public func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
+  func prepareVerification(strategy: PrepareStrategy) async throws -> SignUp {
     try await signUpService.prepareVerification(signUpId: id, strategy: strategy)
   }
 
@@ -223,7 +221,7 @@ extension SignUp {
   ///
   /// - Returns: The updated `SignUp` object reflecting the verification attempt's result.
   @discardableResult @MainActor
-  public func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
+  func attemptVerification(strategy: AttemptStrategy) async throws -> SignUp {
     try await signUpService.attemptVerification(signUpId: id, strategy: strategy)
   }
 
@@ -252,8 +250,8 @@ extension SignUp {
   /// let result = try await SignUp.authenticateWithRedirect(strategy: .oauth(provider: .google))
   /// ```
   @discardableResult @MainActor
-  public static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    try await Self.signUpService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+  static func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    try await signUpService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
   }
   #endif
 
@@ -281,7 +279,7 @@ extension SignUp {
   /// let result = try await signUp.authenticateWithRedirect()
   /// ```
   @discardableResult @MainActor
-  public func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  func authenticateWithRedirect(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     try await signUpService.authenticateWithRedirect(signUp: self, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
   }
   #endif
@@ -307,8 +305,8 @@ extension SignUp {
   /// )
   /// ```
   @discardableResult @MainActor
-  public static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await Self.signUpService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
+  static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+    try await signUpService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
@@ -326,13 +324,12 @@ extension SignUp {
   /// let result = try await signUp.authenticateWithIdToken()
   /// ```
   @discardableResult @MainActor
-  public func authenticateWithIdToken() async throws -> TransferFlowResult {
+  func authenticateWithIdToken() async throws -> TransferFlowResult {
     try await signUpService.authenticateWithIdToken(signUp: self)
   }
 }
 
 extension SignUp {
-
   // MARK: - Internal Helpers
 
   private var needsTransferToSignIn: Bool {
@@ -367,6 +364,4 @@ extension SignUp {
   func get(rotatingTokenNonce: String? = nil) async throws -> SignUp {
     try await signUpService.get(signUpId: id, rotatingTokenNonce: rotatingTokenNonce)
   }
-
 }
-

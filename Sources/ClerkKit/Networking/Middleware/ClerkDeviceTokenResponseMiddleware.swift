@@ -8,7 +8,7 @@
 import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+  func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
       // If we're on the main thread (e.g., in tests), execute synchronously using assumeIsolated
       // Otherwise, use Task to hop to MainActor

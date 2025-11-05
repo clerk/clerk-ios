@@ -146,9 +146,7 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
   }
 
   return VStack(spacing: 20) {
-
-    Button {
-    } label: {
+    Button {} label: {
       Content()
     }
     .buttonStyle(
@@ -160,8 +158,7 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
       )
     )
 
-    Button {
-    } label: {
+    Button {} label: {
       Content()
     }
     .buttonStyle(
@@ -173,8 +170,7 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
       )
     )
 
-    Button {
-    } label: {
+    Button {} label: {
       Content()
     }
     .buttonStyle(
@@ -186,8 +182,7 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
       )
     )
 
-    Button {
-    } label: {
+    Button {} label: {
       Content()
     }
     .buttonStyle(

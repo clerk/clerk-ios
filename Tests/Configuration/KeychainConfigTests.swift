@@ -12,9 +12,8 @@ import Testing
 
 @Suite(.serialized)
 struct KeychainConfigTests {
-
   @Test
-  func testDefaultInitialization() {
+  func defaultInitialization() {
     let config = KeychainConfig()
 
     #expect(config.service == Bundle.main.bundleIdentifier ?? "")
@@ -22,7 +21,7 @@ struct KeychainConfigTests {
   }
 
   @Test
-  func testInitializationWithService() {
+  func initializationWithService() {
     let config = KeychainConfig(service: "com.example.service")
 
     #expect(config.service == "com.example.service")
@@ -30,7 +29,7 @@ struct KeychainConfigTests {
   }
 
   @Test
-  func testInitializationWithAccessGroup() {
+  func initializationWithAccessGroup() {
     let config = KeychainConfig(accessGroup: "group.com.example")
 
     #expect(config.service == Bundle.main.bundleIdentifier ?? "")
@@ -38,7 +37,7 @@ struct KeychainConfigTests {
   }
 
   @Test
-  func testInitializationWithAllParameters() {
+  func initializationWithAllParameters() {
     let config = KeychainConfig(
       service: "com.example.service",
       accessGroup: "group.com.example"
@@ -49,14 +48,13 @@ struct KeychainConfigTests {
   }
 
   @Test
-  func testPropertyAccess() {
+  func propertyAccess() {
     let config = KeychainConfig(service: "test", accessGroup: "group")
 
-    let _ = config.service
-    let _ = config.accessGroup
+    _ = config.service
+    _ = config.accessGroup
 
     #expect(config.service == "test")
     #expect(config.accessGroup == "group")
   }
 }
-

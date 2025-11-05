@@ -16,14 +16,14 @@ protocol KeychainStorage: Sendable {
 
 extension KeychainStorage {
   func set(_ value: String, forKey key: String) throws {
-  try set(Data(value.utf8), forKey: key)
+    try set(Data(value.utf8), forKey: key)
   }
 
   func string(forKey key: String) throws -> String? {
-  guard let data = try data(forKey: key) else { return nil }
-  guard let string = String(data: data, encoding: .utf8) else {
-    throw KeychainError.invalidStringEncoding
-  }
-  return string
+    guard let data = try data(forKey: key) else { return nil }
+    guard let string = String(data: data, encoding: .utf8) else {
+      throw KeychainError.invalidStringEncoding
+    }
+    return string
   }
 }

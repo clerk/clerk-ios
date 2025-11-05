@@ -64,19 +64,19 @@ struct SignInFactorAlternativeMethodsView: View {
   func iconName(factor: Factor) -> String? {
     switch factor.strategy {
     case "password":
-      return "icon-lock"
+      "icon-lock"
     case "phone_code":
-      return "icon-sms"
+      "icon-sms"
     case "email_code":
-      return "icon-email"
+      "icon-email"
     case "passkey":
-      return "icon-fingerprint"
+      "icon-fingerprint"
     case "totp":
-      return "icon-key"
+      "icon-key"
     case "backup_code":
-      return "icon-lock"
+      "icon-lock"
     default:
-      return nil
+      nil
     }
   }
 
@@ -99,7 +99,7 @@ struct SignInFactorAlternativeMethodsView: View {
             }
           }
 
-          if !socialProviders.isEmpty && !alternativeFactors.isEmpty {
+          if !socialProviders.isEmpty, !alternativeFactors.isEmpty {
             TextDivider(string: "or")
           }
 
@@ -149,7 +149,6 @@ struct SignInFactorAlternativeMethodsView: View {
 }
 
 extension SignInFactorAlternativeMethodsView {
-
   func signInWithProvider(_ provider: OAuthProvider) async {
     do {
       guard let signIn else {
@@ -157,13 +156,10 @@ extension SignInFactorAlternativeMethodsView {
         return
       }
 
-      var result: TransferFlowResult
-
-      if provider == .apple {
-        result = try await SignInWithAppleUtils.signIn()
+      var result: TransferFlowResult = if provider == .apple {
+        try await SignInWithAppleUtils.signIn()
       } else {
-        result =
-          try await signIn
+        try await signIn
           .prepareFirstFactor(strategy: .oauth(provider: provider))
           .authenticateWithRedirect()
       }
@@ -190,7 +186,6 @@ extension SignInFactorAlternativeMethodsView {
         }
     }
   }
-
 }
 
 #Preview {

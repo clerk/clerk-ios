@@ -11,7 +11,6 @@ import ClerkKit
 import Foundation
 
 extension User {
-
   var fullName: String? {
     let fullName = [firstName, lastName]
       .compactMap(\.self)
@@ -51,19 +50,19 @@ extension User {
     guard let userSettings = Clerk.shared.environment.userSettings else { return "" }
 
     if userSettings.attributes.contains(where: { $0 == "username" && $1.enabled && $1.usedForFirstFactor }),
-      let username
+       let username
     {
       return username
     }
 
     if userSettings.attributes.contains(where: { $0 == "email_address" && $1.enabled && $1.usedForFirstFactor }),
-      let email = primaryEmailAddress?.emailAddress
+       let email = primaryEmailAddress?.emailAddress
     {
       return email
     }
 
     if userSettings.attributes.contains(where: { $0 == "phone_number" && $1.enabled && $1.usedForFirstFactor }),
-      let phone = primaryPhoneNumber?.phoneNumber
+       let phone = primaryPhoneNumber?.phoneNumber
     {
       return phone
     }
@@ -85,7 +84,6 @@ extension User {
   var phoneNumbersReservedForMfa: [PhoneNumber] {
     phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
   }
-
 }
 
 #endif

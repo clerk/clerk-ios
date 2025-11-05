@@ -9,7 +9,6 @@ import Foundation
 
 /// The model representing an organization domain.
 public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
-
   /// The unique identifier for this organization domain.
   public var id: String
 
@@ -66,7 +65,6 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
 
   /// The model representing the verification details of an organization domain.
   public struct Verification: Codable, Sendable, Hashable {
-
     /// The status of the verification process.
     public var status: String
 
@@ -97,14 +95,13 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   }
 }
 
-extension OrganizationDomain {
-
+public extension OrganizationDomain {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor
-  public func delete() async throws -> DeletedObject {
+  func delete() async throws -> DeletedObject {
     try await organizationService.deleteOrganizationDomain(organizationId: organizationId, domainId: id)
   }
 
@@ -116,7 +113,7 @@ extension OrganizationDomain {
   /// - Returns: The unverified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
-  public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
+  func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
     try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
   }
 
@@ -130,9 +127,7 @@ extension OrganizationDomain {
   /// - Returns: The verified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
-  public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
+  func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
     try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
   }
-
 }
-

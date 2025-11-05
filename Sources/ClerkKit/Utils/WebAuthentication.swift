@@ -1,5 +1,5 @@
 //
-//  WebAuthSession.swift
+//  WebAuthentication.swift
 //
 //
 //  Created by Mike Pitre on 10/19/23.
@@ -19,7 +19,7 @@ actor WebAuthContinuationManager {
       continuation = nil
     }
 
-    guard let continuation = continuation else {
+    guard let continuation else {
       ClerkLogger.warning("Continuation already completed. Ignoring.")
       return
     }
@@ -94,7 +94,7 @@ final class WebAuthentication: NSObject {
 #if !os(watchOS) && !os(tvOS)
 extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
   @MainActor
-  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+  func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
     #if os(iOS)
     UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     #else

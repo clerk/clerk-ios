@@ -10,14 +10,12 @@
 import Foundation
 
 extension Factor {
-
   var isResetFactor: Bool {
-    return [
+    [
       "reset_password_email_code",
-      "reset_password_phone_code"
+      "reset_password_phone_code",
     ].contains(strategy)
   }
-
 }
 
 #endif

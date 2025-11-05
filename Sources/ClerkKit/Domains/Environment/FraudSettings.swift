@@ -7,14 +7,11 @@
 
 import Foundation
 
-extension Clerk.Environment {
-
-  public struct FraudSettings: Codable, Sendable, Equatable {
-
+public extension Clerk.Environment {
+  struct FraudSettings: Codable, Sendable, Equatable {
     public let native: Native
 
     public struct Native: Codable, Sendable, Equatable {
-
       public let deviceAttestationMode: DeviceAttestationMode
 
       public enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {

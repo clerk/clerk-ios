@@ -7,10 +7,8 @@
 
 import Foundation
 
-extension Clerk.Environment {
-
-  public struct UserSettings: Codable, Equatable, Sendable {
-
+public extension Clerk.Environment {
+  struct UserSettings: Codable, Equatable, Sendable {
     public var attributes: [String: AttributesConfig]
     public var signUp: SignUp
     public var social: [String: SocialConfig]
@@ -55,6 +53,4 @@ extension Clerk.Environment {
       public var showSignInButton: Bool
     }
   }
-
 }
-

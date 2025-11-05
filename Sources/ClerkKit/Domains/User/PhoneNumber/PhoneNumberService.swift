@@ -17,7 +17,6 @@ protocol PhoneNumberServiceProtocol: Sendable {
 }
 
 final class PhoneNumberService: PhoneNumberServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -26,7 +25,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor

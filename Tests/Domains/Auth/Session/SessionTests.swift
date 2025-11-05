@@ -7,7 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SessionTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -21,8 +20,9 @@ struct SessionTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -43,8 +43,9 @@ struct SessionTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock)
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -57,7 +58,7 @@ struct SessionTests {
   }
 
   @Test
-  func testGetTokenWithTemplate() async throws {
+  func getTokenWithTemplate() async throws {
     let session = Session.mock
     let template = "firebase"
     let requestHandled = LockIsolated(false)
@@ -66,8 +67,9 @@ struct SessionTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock)
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -80,7 +82,7 @@ struct SessionTests {
   }
 
   @Test
-  func testGetTokenWithSkipCache() async throws {
+  func getTokenWithSkipCache() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
@@ -88,8 +90,9 @@ struct SessionTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock)
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")

@@ -13,7 +13,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ConfigurationManagerTests {
-
   // Helper to create a valid test publishable key
   // Format: pk_test_{base64_encoded_url_with_$}
   func createTestPublishableKey(for url: String) -> String {
@@ -38,7 +37,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithValidTestKey() throws {
+  func configureWithValidTestKey() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.ClerkOptions()
@@ -52,7 +51,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithValidLiveKey() throws {
+  func configureWithValidLiveKey() throws {
     let manager = ConfigurationManager()
     let liveKey = createLivePublishableKey(for: "clerk.production.com")
     let options = Clerk.ClerkOptions()
@@ -65,7 +64,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithEmptyKey() {
+  func configureWithEmptyKey() {
     let manager = ConfigurationManager()
     let options = Clerk.ClerkOptions()
 
@@ -84,7 +83,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithWhitespaceOnlyKey() {
+  func configureWithWhitespaceOnlyKey() {
     let manager = ConfigurationManager()
     let options = Clerk.ClerkOptions()
 
@@ -103,7 +102,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithInvalidFormatKey() {
+  func configureWithInvalidFormatKey() {
     let manager = ConfigurationManager()
     let options = Clerk.ClerkOptions()
 
@@ -122,7 +121,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithKeyStartingWithWrongPrefix() {
+  func configureWithKeyStartingWithWrongPrefix() {
     let manager = ConfigurationManager()
     let options = Clerk.ClerkOptions()
 
@@ -141,7 +140,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithInvalidBase64InKey() {
+  func configureWithInvalidBase64InKey() {
     let manager = ConfigurationManager()
     let options = Clerk.ClerkOptions()
 
@@ -160,7 +159,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testInstanceTypeDevelopment() throws {
+  func instanceTypeDevelopment() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.ClerkOptions()
@@ -171,7 +170,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testInstanceTypeProduction() throws {
+  func instanceTypeProduction() throws {
     let manager = ConfigurationManager()
     let liveKey = createLivePublishableKey(for: "clerk.production.com")
     let options = Clerk.ClerkOptions()
@@ -182,7 +181,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testFrontendApiUrlExtraction() throws {
+  func frontendApiUrlExtraction() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.ClerkOptions()
@@ -209,7 +208,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testUpdateProxyUrlToNil() throws {
+  func updateProxyUrlToNil() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk")
@@ -239,7 +238,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithCustomOptions() throws {
+  func configureWithCustomOptions() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let customOptions = Clerk.ClerkOptions(
@@ -256,7 +255,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testPropertyAccessors() throws {
+  func propertyAccessors() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.ClerkOptions()
@@ -271,7 +270,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testProxyConfigurationFromOptions() throws {
+  func proxyConfigurationFromOptions() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let proxyURL = URL(string: "https://proxy.example.com/__clerk")
@@ -285,7 +284,7 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func testConfigureWithKeyContainingWhitespace() {
+  func configureWithKeyContainingWhitespace() {
     let manager = ConfigurationManager()
     // Key with leading/trailing whitespace will pass validation (trims internally)
     // but will fail extraction because extraction uses the original key
@@ -308,4 +307,3 @@ struct ConfigurationManagerTests {
     }
   }
 }
-

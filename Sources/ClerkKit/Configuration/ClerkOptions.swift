@@ -7,11 +7,9 @@
 
 import Foundation
 
-extension Clerk {
-
+public extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
-  public struct ClerkOptions: Sendable {
-
+  struct ClerkOptions: Sendable {
     /// Enable additional debugging signals and logging. Defaults to false.
     public let debugMode: Bool
 
@@ -48,12 +46,10 @@ extension Clerk {
       self.redirectConfig = redirectConfig
     }
   }
-
 }
 
 /// A configuration object that can be passed to `Clerk.configure()` to customize keychain behavior.
 public struct KeychainConfig: Sendable {
-
   /// Name of the service under which to save items. Defaults to the bundle identifier.
   public let service: String
 
@@ -75,7 +71,6 @@ public struct KeychainConfig: Sendable {
 
 /// A configuration object that can be passed to `Clerk.configure()` to customize redirect behavior for OAuth flows and deep linking.
 public struct RedirectConfig: Sendable {
-
   /// The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
   public let redirectUrl: String
 
@@ -94,4 +89,3 @@ public struct RedirectConfig: Sendable {
     self.callbackUrlScheme = callbackUrlScheme
   }
 }
-

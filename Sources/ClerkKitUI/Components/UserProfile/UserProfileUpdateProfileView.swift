@@ -116,7 +116,7 @@ struct UserProfileUpdateProfileView: View {
               let data = try await item.loadTransferable(type: Data.self),
               let uiImage = UIImage(data: data),
               let resizedData =
-                uiImage
+              uiImage
                 .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
                 .jpegData(compressionQuality: 0.8)
             else {
@@ -222,7 +222,6 @@ struct UserProfileUpdateProfileView: View {
 }
 
 extension UserProfileUpdateProfileView {
-
   func save() async {
     do {
       try await user.update(
@@ -230,7 +229,8 @@ extension UserProfileUpdateProfileView {
           username: environment.usernameIsEnabled ? username : nil,
           firstName: environment.firstNameIsEnabled ? firstName : nil,
           lastName: environment.lastNameIsEnabled ? lastName : nil
-        ))
+        )
+      )
 
       dismiss()
     } catch {
@@ -238,7 +238,6 @@ extension UserProfileUpdateProfileView {
       ClerkLogger.error("Failed to update user profile", error: error)
     }
   }
-
 }
 
 #Preview {

@@ -199,7 +199,6 @@ struct UserProfileChangePasswordView: View {
 }
 
 extension UserProfileChangePasswordView {
-
   func resetPassword() async {
     guard let user else { return }
 
@@ -217,7 +216,6 @@ extension UserProfileChangePasswordView {
       ClerkLogger.error("Failed to reset password", error: error)
     }
   }
-
 }
 
 #Preview("Reset") {

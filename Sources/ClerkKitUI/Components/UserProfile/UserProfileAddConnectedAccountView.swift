@@ -28,14 +28,14 @@ struct UserProfileAddConnectedAccountView: View {
 
   var extraContentHeight: CGFloat {
     if #available(iOS 26.0, *) {
-      return 0
+      0
     } else {
-      return 7
+      7
     }
   }
 
   init(contentHeight: Binding<CGFloat> = .constant(0)) {
-    self._contentHeight = contentHeight
+    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -87,7 +87,6 @@ struct UserProfileAddConnectedAccountView: View {
 }
 
 extension UserProfileAddConnectedAccountView {
-
   func connectExternalAccount(provider: OAuthProvider) async {
     guard let user else { return }
 
@@ -107,7 +106,6 @@ extension UserProfileAddConnectedAccountView {
       ClerkLogger.error("Failed to connect external account", error: error)
     }
   }
-
 }
 
 #Preview {

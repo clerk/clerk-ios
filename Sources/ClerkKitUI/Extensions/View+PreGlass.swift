@@ -24,11 +24,10 @@ struct PreGlassSolidNavBarModifier: ViewModifier {
         .toolbarBackground(theme.colors.background, for: .navigationBar)
     }
   }
-
 }
 
-extension View {
-  public func preGlassSolidNavBar() -> some View {
+public extension View {
+  func preGlassSolidNavBar() -> some View {
     modifier(PreGlassSolidNavBarModifier())
   }
 }
@@ -47,11 +46,10 @@ struct PreGlassDetentSheetBackgroundModifier: ViewModifier {
         .presentationBackground(theme.colors.background)
     }
   }
-
 }
 
-extension View {
-  public func preGlassDetentSheetBackground() -> some View {
+public extension View {
+  func preGlassDetentSheetBackground() -> some View {
     modifier(PreGlassDetentSheetBackgroundModifier())
   }
 }

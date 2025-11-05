@@ -69,12 +69,12 @@ struct Badge: View {
   private let style: Style
 
   init(key: LocalizedStringKey, style: Style = .primary) {
-    self.text = Text(key, bundle: .module)
+    text = Text(key, bundle: .module)
     self.style = style
   }
 
   init(string: String, style: Style = .primary) {
-    self.text = Text(string)
+    text = Text(string)
     self.style = style
   }
 
@@ -91,7 +91,7 @@ struct Badge: View {
           LinearGradient(
             colors: [
               theme.colors.background,
-              theme.colors.backgroundTransparent
+              theme.colors.backgroundTransparent,
             ],
             startPoint: .top,
             endPoint: .bottom

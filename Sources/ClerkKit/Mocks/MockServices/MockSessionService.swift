@@ -16,7 +16,7 @@ public final class MockSessionService: SessionServiceProtocol {
   public nonisolated(unsafe) var revokeHandler: ((String) async throws -> Session)?
 
   public init(revoke: ((String) async throws -> Session)? = nil) {
-    self.revokeHandler = revoke
+    revokeHandler = revoke
   }
 
   @MainActor
@@ -27,4 +27,3 @@ public final class MockSessionService: SessionServiceProtocol {
     return .mock
   }
 }
-

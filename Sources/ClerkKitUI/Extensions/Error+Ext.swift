@@ -11,7 +11,6 @@ import AuthenticationServices
 import Foundation
 
 extension Error {
-
   var isUserCancelledError: Bool {
     if case ASWebAuthenticationSessionError.canceledLogin = self { return true }
 
@@ -27,13 +26,12 @@ extension Error {
       return true
     }
 
-    if let nsError = self as NSError?, nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
+    if let nsError = self as NSError?, nsError.domain == NSURLErrorDomain, nsError.code == NSURLErrorCancelled {
       return true
     }
 
     return false
   }
-
 }
 
 #endif

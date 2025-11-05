@@ -9,9 +9,9 @@
 
 import Foundation
 
-extension Array where Element == String {
+extension [String] {
   func sortedByPriority(_ priorityOrder: [String]) -> [String] {
-    return self.sorted { first, second in
+    sorted { first, second in
       let firstPriority = priorityOrder.firstIndex(of: first) ?? Int.max
       let secondPriority = priorityOrder.firstIndex(of: second) ?? Int.max
       return firstPriority < secondPriority

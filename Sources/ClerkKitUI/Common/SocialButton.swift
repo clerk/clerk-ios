@@ -16,10 +16,10 @@ struct SocialButton: View {
   @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
-  var action: (() async -> Void)? = nil
+  var action: (() async -> Void)?
   var result: Result<Void, Error>?
-  var onSuccess: ((TransferFlowResult) -> Void)? = nil
-  var onError: ((Error) -> Void)? = nil
+  var onSuccess: ((TransferFlowResult) -> Void)?
+  var onError: ((Error) -> Void)?
 
   private var iconImage: some View {
     LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
@@ -64,7 +64,7 @@ struct SocialButton: View {
   var body: some View {
     AsyncButton {
       do {
-        if let action = action {
+        if let action {
           await action()
         } else {
           try await defaultAction()
@@ -95,14 +95,11 @@ struct SocialButton: View {
 }
 
 extension SocialButton {
-
   func defaultAction() async throws {
-    let result: TransferFlowResult
-
-    if provider == .apple {
-      result = try await SignInWithAppleUtils.signIn()
+    let result: TransferFlowResult = if provider == .apple {
+      try await SignInWithAppleUtils.signIn()
     } else {
-      result = try await SignIn.authenticateWithRedirect(
+      try await SignIn.authenticateWithRedirect(
         strategy: .oauth(provider: provider)
       )
     }
@@ -111,7 +108,6 @@ extension SocialButton {
 }
 
 #Preview {
-
   VStack {
     SocialButton(provider: .google)
 

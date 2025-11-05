@@ -55,31 +55,31 @@ public final class MockSignUpService: SignUpServiceProtocol {
     attemptVerification: ((String, SignUp.AttemptStrategy) async throws -> SignUp)? = nil,
     get: ((String, String?) async throws -> SignUp)? = nil
   ) {
-    self.createHandler = create
-    self.createWithParamsHandler = createWithParams
-    self.updateHandler = update
-    self.prepareVerificationHandler = prepareVerification
-    self.attemptVerificationHandler = attemptVerification
-    self.getHandler = get
+    createHandler = create
+    createWithParamsHandler = createWithParams
+    updateHandler = update
+    prepareVerificationHandler = prepareVerification
+    attemptVerificationHandler = attemptVerification
+    getHandler = get
   }
 
   #if !os(tvOS) && !os(watchOS)
   public func setAuthenticateWithRedirectStatic(_ handler: @escaping (SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
-    self.authenticateWithRedirectStaticHandler = handler
+    authenticateWithRedirectStaticHandler = handler
   }
 
   public func setAuthenticateWithRedirect(_ handler: @escaping (SignUp, Bool) async throws -> TransferFlowResult) {
-    self.authenticateWithRedirectHandler = handler
+    authenticateWithRedirectHandler = handler
   }
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   public func setAuthenticateWithIdTokenStatic(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
-    self.authenticateWithIdTokenStaticHandler = handler
+    authenticateWithIdTokenStaticHandler = handler
   }
 
   public func setAuthenticateWithIdToken(_ handler: @escaping (SignUp) async throws -> TransferFlowResult) {
-    self.authenticateWithIdTokenHandler = handler
+    authenticateWithIdTokenHandler = handler
   }
   #endif
 

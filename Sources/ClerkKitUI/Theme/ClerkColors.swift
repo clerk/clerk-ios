@@ -9,9 +9,8 @@
 
 import SwiftUI
 
-extension ClerkTheme {
-  public struct Colors {
-
+public extension ClerkTheme {
+  struct Colors {
     public var primary: Color
     public var background: Color
     public var input: Color
@@ -26,7 +25,7 @@ extension ClerkTheme {
     public var ring: Color
     public var muted: Color
     public var shadow: Color
-    
+
     // Generated Colors
     public var primaryPressed: Color
     public var border: Color
@@ -74,46 +73,45 @@ extension ClerkTheme {
       self.ring = ring
       self.muted = muted
       self.shadow = shadow
-      
+
       // Generated Colors
-      self.primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
+      primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
       self.border = border.opacity(0.06)
-      self.buttonBorder = border.opacity(0.08)
-      self.inputBorder = border.opacity(0.11)
-      self.inputBorderFocused = ring.opacity(0.28)
-      self.dangerInputBorder = danger.opacity(0.53)
-      self.dangerInputBorderFocused = danger.opacity(0.15)
-      self.backgroundTransparent = background.opacity(0.5)
-      self.backgroundSuccess = success.opacity(0.12)
-      self.borderSuccess = success.opacity(0.77)
-      self.backgroundDanger = danger.opacity(0.12)
-      self.borderDanger = danger.opacity(0.77)
-      self.backgroundWarning = warning.opacity(0.12)
-      self.borderWarning = warning.opacity(0.77)
+      buttonBorder = border.opacity(0.08)
+      inputBorder = border.opacity(0.11)
+      inputBorderFocused = ring.opacity(0.28)
+      dangerInputBorder = danger.opacity(0.53)
+      dangerInputBorderFocused = danger.opacity(0.15)
+      backgroundTransparent = background.opacity(0.5)
+      backgroundSuccess = success.opacity(0.12)
+      borderSuccess = success.opacity(0.77)
+      backgroundDanger = danger.opacity(0.12)
+      borderDanger = danger.opacity(0.77)
+      backgroundWarning = warning.opacity(0.12)
+      borderWarning = warning.opacity(0.77)
     }
   }
 }
 
-extension ClerkTheme.Colors {
-  
+public extension ClerkTheme.Colors {
   // Static properties for default colors to avoid circular reference
-  public static let defaultPrimaryColor = Color(.primary)
-  public static let defaultBackgroundColor = Color(.background)
-  public static let defaultInputColor = Color(.input)
-  public static let defaultDangerColor = Color(.danger)
-  public static let defaultSuccessColor = Color(.success)
-  public static let defaultWarningColor = Color(.warning)
-  public static let defaultForegroundColor = Color(.foreground)
-  public static let defaultMutedForegroundColor = Color(.mutedForeground)
-  public static let defaultPrimaryForegroundColor = Color(.primaryForeground)
-  public static let defaultInputForegroundColor = Color(.inputForeground)
-  public static let defaultNeutralColor = Color(.neutral)
-  public static let defaultRingColor = Color(.neutral)
-  public static let defaultMutedColor = Color(.muted)
-  public static let defaultShadowColor = Color(.neutral)
-  public static let defaultBorderColor = Color(.neutral)
+  static let defaultPrimaryColor = Color(.primary)
+  static let defaultBackgroundColor = Color(.background)
+  static let defaultInputColor = Color(.input)
+  static let defaultDangerColor = Color(.danger)
+  static let defaultSuccessColor = Color(.success)
+  static let defaultWarningColor = Color(.warning)
+  static let defaultForegroundColor = Color(.foreground)
+  static let defaultMutedForegroundColor = Color(.mutedForeground)
+  static let defaultPrimaryForegroundColor = Color(.primaryForeground)
+  static let defaultInputForegroundColor = Color(.inputForeground)
+  static let defaultNeutralColor = Color(.neutral)
+  static let defaultRingColor = Color(.neutral)
+  static let defaultMutedColor = Color(.muted)
+  static let defaultShadowColor = Color(.neutral)
+  static let defaultBorderColor = Color(.neutral)
 
-  public nonisolated static var `default`: Self {
+  nonisolated static var `default`: Self {
     .init(
       primary: defaultPrimaryColor,
       background: defaultBackgroundColor,
@@ -132,7 +130,6 @@ extension ClerkTheme.Colors {
       border: defaultBorderColor
     )
   }
-
 }
 
 #endif

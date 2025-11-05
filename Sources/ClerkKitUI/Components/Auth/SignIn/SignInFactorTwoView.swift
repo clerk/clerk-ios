@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  SignInFactorTwoView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 5/13/25.
@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignInFactorTwoView: View {
   @Environment(\.clerkTheme) private var theme

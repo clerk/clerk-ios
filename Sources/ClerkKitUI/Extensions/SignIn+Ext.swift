@@ -11,7 +11,6 @@ import ClerkKit
 import Foundation
 
 extension SignIn {
-
   @MainActor
   var startingFirstFactor: Factor? {
     let preferredSignInStrategy = Clerk.shared.environment.displayConfig?.preferredSignInStrategy
@@ -24,7 +23,6 @@ extension SignIn {
   }
 
   var factorWhenPasswordIsPreferred: Factor? {
-
     // email links are not supported on iOS
     let availableFirstFactors = supportedFirstFactors?.filter { factor in
       factor.strategy != "email_link"
@@ -50,7 +48,6 @@ extension SignIn {
   }
 
   var factorWhenOtpIsPreferred: Factor? {
-
     // email links are not supported on iOS
     let availableFirstFactors = supportedFirstFactors?.filter { factor in
       factor.strategy != "email_link"
@@ -67,7 +64,6 @@ extension SignIn {
     return sortedFactors?.first { factor in
       factor.safeIdentifier == identifier
     } ?? sortedFactors?.first
-
   }
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
@@ -102,14 +98,13 @@ extension SignIn {
 
   var resetPasswordFactor: Factor? {
     if let resetPasswordEmailFactor = identifyingFirstFactor(strategy: .resetPasswordEmailCode()) {
-      return resetPasswordEmailFactor
+      resetPasswordEmailFactor
     } else if let resetPasswordPhoneFactor = identifyingFirstFactor(strategy: .resetPasswordPhoneCode()) {
-      return resetPasswordPhoneFactor
+      resetPasswordPhoneFactor
     } else {
-      return supportedFirstFactors?.first(where: \.isResetFactor)
+      supportedFirstFactors?.first(where: \.isResetFactor)
     }
   }
-
 }
 
 #endif

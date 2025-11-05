@@ -9,7 +9,6 @@ import Foundation
 
 /// Represents a role with associated permissions and metadata about its creation and updates.
 public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
-
   /// The unique identifier of the role.
   public var id: String
 
@@ -49,4 +48,3 @@ public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
     self.updatedAt = updatedAt
   }
 }
-
