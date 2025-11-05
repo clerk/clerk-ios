@@ -8,13 +8,19 @@
 import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
-  @MainActor
-  private var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
-
-  @MainActor
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
-  if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-    try? keychain.set(deviceToken, forKey: "clerkDeviceToken")
-  }
+    if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
+      // If we're on the main thread (e.g., in tests), execute synchronously using assumeIsolated
+      // Otherwise, use Task to hop to MainActor
+      if Thread.isMainThread {
+        MainActor.assumeIsolated {
+          try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
+        }
+      } else {
+        Task { @MainActor in
+          try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
+        }
+      }
+    }
   }
 }
