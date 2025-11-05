@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// The model that describes the request of a user to join an organization.
@@ -48,7 +47,8 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
 
 extension OrganizationMembershipRequest {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor

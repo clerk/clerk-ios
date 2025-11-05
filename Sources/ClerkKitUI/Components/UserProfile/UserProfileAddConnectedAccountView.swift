@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import ClerkKit
-import FactoryKit
 import SwiftUI
 
 struct UserProfileAddConnectedAccountView: View {
@@ -112,10 +111,6 @@ extension UserProfileAddConnectedAccountView {
 }
 
 #Preview {
-//    Container.shared.clerk.preview { @MainActor in
-//        .mock
-//    }
-
   UserProfileAddConnectedAccountView(contentHeight: .constant(300))
     .clerkPreviewMocks()
     .environment(\.clerkTheme, .clerk)

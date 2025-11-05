@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct OrganizationTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testUpdateOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -37,7 +36,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDestroyOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -59,7 +58,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSetOrganizationLogo() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -83,7 +82,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationRoles() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -111,7 +110,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMemberships() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -140,7 +139,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMembershipsWithQuery() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -167,7 +166,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMembershipsWithRole() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -195,7 +194,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAddOrganizationMember() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -219,7 +218,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testUpdateOrganizationMember() async throws {
     let organization = Organization.mock
     let membership = OrganizationMembership.mockWithUserData
@@ -244,7 +243,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testRemoveOrganizationMember() async throws {
     let organization = Organization.mock
     let membership = OrganizationMembership.mockWithUserData
@@ -268,7 +267,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationInvitations() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -297,7 +296,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationInvitationsWithStatus() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -324,7 +323,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testInviteOrganizationMember() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -348,7 +347,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateOrganizationDomain() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -371,7 +370,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationDomains() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -399,7 +398,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationDomainsWithEnrollmentMode() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -426,7 +425,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationDomain() async throws {
     let organization = Organization.mock
     let domain = OrganizationDomain.mock
@@ -449,7 +448,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMembershipRequests() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -477,7 +476,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMembershipRequestsWithStatus() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -504,7 +503,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDeleteOrganizationDomain() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
@@ -526,7 +525,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPrepareOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
@@ -549,7 +548,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let requestHandled = LockIsolated(false)
@@ -572,7 +571,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testRevokeOrganizationInvitation() async throws {
     let invitation = OrganizationInvitation.mock
     let requestHandled = LockIsolated(false)
@@ -594,7 +593,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDestroyOrganizationMembership() async throws {
     let membership = OrganizationMembership.mockWithUserData
     let userId = membership.publicUserData!.userId!
@@ -617,7 +616,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAcceptUserOrganizationInvitation() async throws {
     let invitation = UserOrganizationInvitation.mock
     let requestHandled = LockIsolated(false)
@@ -639,7 +638,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAcceptOrganizationSuggestion() async throws {
     let suggestion = OrganizationSuggestion.mock
     let requestHandled = LockIsolated(false)
@@ -661,7 +660,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAcceptOrganizationMembershipRequest() async throws {
     let request = OrganizationMembershipRequest.mock
     let requestHandled = LockIsolated(false)
@@ -683,7 +682,7 @@ struct OrganizationTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testRejectOrganizationMembershipRequest() async throws {
     let request = OrganizationMembershipRequest.mock
     let requestHandled = LockIsolated(false)

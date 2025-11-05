@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 1/19/25.
 //
 
-import FactoryKit
 import Foundation
 
 // The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
@@ -15,8 +14,6 @@ actor SessionTokenFetcher {
 
   // Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
-  
-  private var apiClient: APIClient { Container.shared.apiClient() }
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
 
@@ -56,19 +53,19 @@ actor SessionTokenFetcher {
     }
 
     var token: TokenResource?
-    
+
     if let template = options.template {
       let request = Request<TokenResource?>.init(
         path: "/v1/client/sessions/\(session.id)/tokens/\(template)",
         method: .post
       )
-      token = try await apiClient.send(request).value
+      token = try await Clerk.shared.container.apiClient.send(request).value
     } else {
       let request = Request<TokenResource?>.init(
         path: "/v1/client/sessions/\(session.id)/tokens",
         method: .post
       )
-      token = try await apiClient.send(request).value
+      token = try await Clerk.shared.container.apiClient.send(request).value
     }
 
     if let token {

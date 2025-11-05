@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/16/23.
 //
 
-import FactoryKit
 import Foundation
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
@@ -207,7 +206,8 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 
 extension User {
 
-  private var userService: any UserServiceProtocol { Container.shared.userService() }
+  @MainActor
+  private var userService: any UserServiceProtocol { Clerk.shared.container.userService }
 
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor

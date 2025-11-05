@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 8/8/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// Protocol for making network requests - allows for easy testing
@@ -23,7 +22,7 @@ package protocol TelemetryCollectorProtocol: Sendable {
   ///
   /// - Parameter raw: The raw event description to record.
   func record(_ raw: TelemetryEventRaw) async
-  
+
   /// Flush buffered events to the telemetry endpoint.
   func flush() async
 }
@@ -33,7 +32,7 @@ package actor NoOpTelemetryCollector: TelemetryCollectorProtocol {
   package func record(_ raw: TelemetryEventRaw) async {
     // No-op: do nothing
   }
-  
+
   package func flush() async {
     // No-op: do nothing
   }
@@ -107,7 +106,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       sdkVersion: environment.sdkVersion
     )
   }
-  
+
   deinit {
     flushTimer?.cancel()
     flushTask?.cancel()
@@ -122,17 +121,17 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       isPeriodicFlushingStarted = true
       startPeriodicFlushing()
     }
-    
+
     let prepared = await preparePayload(event: raw.event, payload: raw.payload)
     let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
-    
+
     // Log exactly once in debug: either as normal or as [skipped] with reason
     if recordResult.shouldRecord {
       await logEventIfDebug(name: prepared.event, prepared)
     } else {
       await logEventIfDebug(name: "[skipped - \(recordResult.reason)] \(prepared.event)", prepared)
     }
-    
+
     if !recordResult.shouldRecord { return }
     buffer.append(prepared)
     await scheduleFlushIfNeeded()
@@ -141,13 +140,13 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   // MARK: Private helpers
 
   private func shouldRecord(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> RecordResult {
-    guard await environment.isTelemetryEnabled() else { 
+    guard await environment.isTelemetryEnabled() else {
       return RecordResult(shouldRecord: false, reason: "telemetry disabled")
     }
-    guard await environment.instanceTypeString() == "development" else { 
+    guard await environment.instanceTypeString() == "development" else {
       return RecordResult(shouldRecord: false, reason: "production instance")
     }
-    
+
     let samplingResult = await shouldBeSampled(prepared, eventSamplingRate: eventSamplingRate)
     return RecordResult(shouldRecord: samplingResult.shouldRecord, reason: samplingResult.reason)
   }
@@ -157,24 +156,24 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     if config.disableThrottling {
       return RecordResult(shouldRecord: true, reason: "throttling disabled")
     }
-    
+
     let randomSeed = Double.random(in: 0...1)
     let globalOk = randomSeed <= config.samplingRate
     let eventOk = eventSamplingRate.map { randomSeed <= $0 } ?? true
-    
+
     if !globalOk {
       return RecordResult(shouldRecord: false, reason: "global sampling (\(Int(config.samplingRate * 100))%)")
     }
-    
+
     if !eventOk, let eventRate = eventSamplingRate {
       return RecordResult(shouldRecord: false, reason: "event sampling (\(Int(eventRate * 100))%)")
     }
-    
+
     let isThrottled = await throttler.isEventThrottled(prepared)
     if isThrottled {
       return RecordResult(shouldRecord: false, reason: "throttled")
     }
-    
+
     return RecordResult(shouldRecord: true, reason: "accepted")
   }
 
@@ -182,10 +181,10 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   private func startPeriodicFlushing() {
     flushTimer = Task { [weak self] in
       guard let self else { return }
-      
+
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(config.flushInterval))
-        
+
         let hasEvents = await self.hasBufferedEvents()
         if hasEvents {
           await self.flush()
@@ -193,11 +192,11 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       }
     }
   }
-  
+
   private func hasBufferedEvents() -> Bool {
     !buffer.isEmpty
   }
-  
+
   private func scheduleFlushIfNeeded() async {
     let isBufferFull = buffer.count >= config.maxBufferSize
     if isBufferFull {
@@ -273,12 +272,4 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   func debugResetBuffer() async {
     buffer.removeAll(keepingCapacity: true)
   }
-}
-
-extension Container {
-  
-  var telemetryCollector: Factory<any TelemetryCollectorProtocol> {
-    self { NoOpTelemetryCollector() }.cached
-  }
-  
 }
