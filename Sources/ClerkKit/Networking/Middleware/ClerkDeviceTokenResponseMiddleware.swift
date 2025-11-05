@@ -9,7 +9,7 @@ import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
   @MainActor
-  private var keychain: any KeychainStorage { Clerk.shared.container.keychain }
+  private var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
 
   @MainActor
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {

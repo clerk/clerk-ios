@@ -37,7 +37,7 @@ struct ClerkAPIClientTests {
       method: .post
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -65,7 +65,7 @@ struct ClerkAPIClientTests {
       method: .get
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -91,7 +91,7 @@ struct ClerkAPIClientTests {
       method: .get
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -119,7 +119,7 @@ struct ClerkAPIClientTests {
       body: ["key": "value"]
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -147,7 +147,7 @@ struct ClerkAPIClientTests {
       body: ["key": "value"]
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -173,7 +173,7 @@ struct ClerkAPIClientTests {
       method: .delete
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -203,7 +203,7 @@ struct ClerkAPIClientTests {
       query: [("param1", "value1"), ("param2", "value2")]
     )
 
-    _ = try await Clerk.shared.container.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
   }
 
@@ -238,7 +238,7 @@ struct ClerkAPIClientTests {
       headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
     )
 
-    _ = try await Clerk.shared.container.apiClient.upload(for: request, from: data)
+    _ = try await Clerk.shared.dependencies.apiClient.upload(for: request, from: data)
     #expect(requestHandled.value)
   }
 
@@ -269,7 +269,7 @@ struct ClerkAPIClientTests {
     )
 
     do {
-      _ = try await Clerk.shared.container.apiClient.send(request)
+      _ = try await Clerk.shared.dependencies.apiClient.send(request)
       #expect(Bool(false), "Expected error to be thrown")
     } catch {
       #expect(requestHandled.value)

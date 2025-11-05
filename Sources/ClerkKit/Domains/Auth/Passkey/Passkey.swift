@@ -71,10 +71,10 @@ extension Passkey {
 extension Passkey {
 
   @MainActor
-  private static var passkeyService: any PasskeyServiceProtocol { Clerk.shared.container.passkeyService }
+  private static var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
 
   @MainActor
-  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.container.passkeyService }
+  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
 
   /// Creates a new passkey
   @discardableResult @MainActor

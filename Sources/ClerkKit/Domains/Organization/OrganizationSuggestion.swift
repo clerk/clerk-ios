@@ -77,7 +77,7 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 extension OrganizationSuggestion {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Accepts the organization suggestion.
   /// - Returns: The accepted ``OrganizationSuggestion``.

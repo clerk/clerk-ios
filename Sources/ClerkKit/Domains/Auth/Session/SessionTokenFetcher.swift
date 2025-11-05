@@ -59,13 +59,13 @@ actor SessionTokenFetcher {
         path: "/v1/client/sessions/\(session.id)/tokens/\(template)",
         method: .post
       )
-      token = try await Clerk.shared.container.apiClient.send(request).value
+      token = try await Clerk.shared.dependencies.apiClient.send(request).value
     } else {
       let request = Request<TokenResource?>.init(
         path: "/v1/client/sessions/\(session.id)/tokens",
         method: .post
       )
-      token = try await Clerk.shared.container.apiClient.send(request).value
+      token = try await Clerk.shared.dependencies.apiClient.send(request).value
     }
 
     if let token {

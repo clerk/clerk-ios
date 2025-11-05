@@ -127,10 +127,10 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
 extension SignUp {
 
   @MainActor
-  private static var signUpService: any SignUpServiceProtocol { Clerk.shared.container.signUpService }
+  private static var signUpService: any SignUpServiceProtocol { Clerk.shared.dependencies.signUpService }
 
   @MainActor
-  private var signUpService: any SignUpServiceProtocol { Clerk.shared.container.signUpService }
+  private var signUpService: any SignUpServiceProtocol { Clerk.shared.dependencies.signUpService }
 
   /// Initiates a new sign-up process and returns a `SignUp` object based on the provided strategy and optional parameters.
   ///

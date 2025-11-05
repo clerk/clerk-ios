@@ -48,7 +48,7 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identi
 extension OrganizationMembershipRequest {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor

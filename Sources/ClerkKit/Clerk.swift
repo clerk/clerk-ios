@@ -52,7 +52,7 @@ final public class Clerk {
   /// during configuration if telemetry is enabled.
   /// Used to record non-blocking telemetry events when running in development
   package var telemetry: any TelemetryCollectorProtocol {
-    container.telemetryCollector
+    dependencies.telemetryCollector
   }
 
   /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
@@ -131,11 +131,11 @@ final public class Clerk {
   private var sessionPollingManager: SessionPollingManager?
 
   /// Dependency container holding all SDK dependencies.
-  var container: any Dependencies
+  var dependencies: any Dependencies
 
   /// Clerk service for handling sign out and session management operations.
   private var clerkService: any ClerkServiceProtocol {
-    container.clerkService
+    dependencies.clerkService
   }
 
   /// Manages logging of session status changes.
@@ -150,7 +150,7 @@ final public class Clerk {
     // Create temporary container - will be replaced during configure with proper values
     let tempOptions = Clerk.ClerkOptions()
     let tempBaseURL = URL(string: "https://clerk.clerk.dev")!
-    container = DependencyContainer(
+    dependencies = DependencyContainer(
       publishableKey: "",
       options: tempOptions,
       baseURL: tempBaseURL
@@ -173,7 +173,7 @@ extension Clerk {
 
     // Create dependency container with proper configuration
     let baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
-    container = DependencyContainer(
+    dependencies = DependencyContainer(
       publishableKey: publishableKey,
       options: options,
       baseURL: baseURL

@@ -55,7 +55,7 @@ public struct Client: Codable, Sendable, Equatable {
 extension Client {
 
   @MainActor
-  private static var clientService: any ClientServiceProtocol { Clerk.shared.container.clientService }
+  private static var clientService: any ClientServiceProtocol { Clerk.shared.dependencies.clientService }
 
   /// Retrieves the current client.
   @discardableResult @MainActor

@@ -72,10 +72,10 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 extension PhoneNumber {
 
   @MainActor
-  private static var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.container.phoneNumberService }
+  private static var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
 
   @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.container.phoneNumberService }
+  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
 
   /// Creates a new phone number for the current user.
   /// - Parameters:

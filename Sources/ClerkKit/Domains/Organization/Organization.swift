@@ -81,7 +81,7 @@ public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable
 extension Organization {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Updates an organization's attributes. Returns an Organization object.
   ///
