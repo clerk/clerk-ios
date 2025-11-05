@@ -11,25 +11,25 @@ import Foundation
 public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
 
   /// The unique identifier of the permission.
-  public let id: String
+  public var id: String
 
   /// The unique key of the permission.
-  public let key: String
+  public var key: String
 
   /// The name of the permission.
-  public let name: String
+  public var name: String
 
   /// The type of the permission.
-  public let type: String
+  public var type: String
 
   /// A description of the permission.
-  public let description: String
+  public var description: String
 
   /// The date when the permission was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the permission was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -50,18 +50,3 @@ public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
   }
 }
 
-extension PermissionResource {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      key: "key",
-      name: "name",
-      type: "type",
-      description: "description",
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

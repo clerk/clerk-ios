@@ -43,48 +43,48 @@ import Foundation
 public struct SignIn: Codable, Sendable, Equatable, Hashable {
 
   /// Unique identifier for this sign in.
-  public let id: String
+  public var id: String
 
   /// The status of the current sign-in.
   ///
   /// See ``SignIn/Status-swift.enum`` for supported values.
-  public let status: Status
+  public var status: Status
 
   /// Array of all the authentication identifiers that are supported for this sign in.
-  public let supportedIdentifiers: [Identifier]?
+  public var supportedIdentifiers: [Identifier]?
 
   /// The authentication identifier value for the current sign-in.
-  public let identifier: String?
+  public var identifier: String?
 
   /// Array of the first factors that are supported in the current sign-in.
   ///
   ///  Each factor contains information about the verification strategy that can be used. See the `SignInFirstFactor` type reference for more information.
-  public let supportedFirstFactors: [Factor]?
+  public var supportedFirstFactors: [Factor]?
 
   /// Array of the second factors that are supported in the current sign-in.
   ///
   /// Each factor contains information about the verification strategy that can be used. This property is populated only when the first factor is verified. See the `SignInSecondFactor` type reference for more information.
-  public let supportedSecondFactors: [Factor]?
+  public var supportedSecondFactors: [Factor]?
 
   /// The state of the verification process for the selected first factor.
   ///
   /// Initially, this property contains an empty verification object, since there is no first factor selected. You need to call the `prepareFirstFactor` method in order to start the verification process.
-  public let firstFactorVerification: Verification?
+  public var firstFactorVerification: Verification?
 
   /// The state of the verification process for the selected second factor.
   ///
   /// Initially, this property contains an empty verification object, since there is no second factor selected. For the `phone_code` strategy, you need to call the `prepareSecondFactor` method in order to start the verification process. For the `totp` strategy, you can directly attempt.
-  public let secondFactorVerification: Verification?
+  public var secondFactorVerification: Verification?
 
   /// An object containing information about the user of the current sign-in.
   ///
   /// This property is populated only once an identifier is given to the SignIn object.
-  public let userData: UserData?
+  public var userData: UserData?
 
   /// The identifier of the session that was created upon completion of the current sign-in.
   ///
   /// The value of this property is `nil` if the sign-in status is not `complete`.
-  public let createdSessionId: String?
+  public var createdSessionId: String?
 
   public init(
     id: String,
@@ -430,32 +430,6 @@ extension SignIn {
     supportedSecondFactors?.first(where: { factor in
       factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
     })
-  }
-
-}
-
-extension SignIn {
-
-  package static var mock: SignIn {
-    SignIn(
-      id: "1",
-      status: .needsIdentifier,
-      supportedIdentifiers: [.emailAddress, .phoneNumber],
-      identifier: User.mock.emailAddresses.first?.emailAddress,
-      supportedFirstFactors: [
-        .mockEmailCode,
-        .mockPhoneCode,
-        .mockGoogle,
-        .mockApple,
-        .mockPasskey,
-        .mockPassword
-      ],
-      supportedSecondFactors: nil,
-      firstFactorVerification: .mockEmailCodeUnverifiedVerification,
-      secondFactorVerification: nil,
-      userData: nil,
-      createdSessionId: nil
-    )
   }
 
 }
