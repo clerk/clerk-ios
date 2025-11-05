@@ -10,6 +10,10 @@
 import ClerkKit
 import SwiftUI
 
+/// Preview test publishable key that decodes to mock.clerk.accounts.dev
+/// Used for configuring Clerk.shared in SwiftUI previews.
+private let previewTestPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
+
 extension View {
   /// Injects mock environment values for previews.
   ///
@@ -29,7 +33,10 @@ extension View {
   /// ```
   @MainActor
   public func clerkPreviewMocks() -> some View {
-    self
+    // Configure Clerk.shared so views that access it directly don't fail
+    Clerk.configure(publishableKey: previewTestPublishableKey)
+
+    return self
       .environment(Clerk.mock)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
@@ -48,6 +55,9 @@ extension View {
   /// ```
   @MainActor
   public func clerkPreviewMocks(signedOut: Bool) -> some View {
+    // Configure Clerk.shared so views that access it directly don't fail
+    Clerk.configure(publishableKey: previewTestPublishableKey)
+
     let clerk = signedOut ? Clerk.mockSignedOut : Clerk.mock
     return
       self
@@ -71,6 +81,9 @@ extension View {
   /// ```
   @MainActor
   public func clerkPreviewMocks(customize: @escaping (inout Clerk) -> Void) -> some View {
+    // Configure Clerk.shared so views that access it directly don't fail
+    Clerk.configure(publishableKey: previewTestPublishableKey)
+
     var clerk = Clerk.mock
     customize(&clerk)
     return
@@ -96,7 +109,10 @@ extension View {
   /// ```
   @MainActor
   public func clerkPreviewMocks(_ clerk: Clerk) -> some View {
-    self
+    // Configure Clerk.shared so views that access it directly don't fail
+    Clerk.configure(publishableKey: previewTestPublishableKey)
+
+    return self
       .environment(clerk)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
