@@ -32,85 +32,12 @@ extension View {
   /// }
   /// ```
   @MainActor
-  public func clerkPreviewMocks() -> some View {
+  public func clerkPreviewMocks(signedIn: Bool = true) -> some View {
     // Configure Clerk.shared so views that access it directly don't fail
-    Clerk.configure(publishableKey: previewTestPublishableKey)
-
-    return self
-      .environment(Clerk.mock)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
-  }
-
-  /// Preview with signed-out state.
-  ///
-  /// - Parameter signedOut: If `true`, injects `Clerk.mockSignedOut` instead of `Clerk.mock`.
-  ///
-  /// Usage:
-  /// ```swift
-  /// #Preview("Signed Out") {
-  ///     AuthView()
-  ///         .clerkPreviewMocks(signedOut: true)
-  /// }
-  /// ```
-  @MainActor
-  public func clerkPreviewMocks(signedOut: Bool) -> some View {
-    // Configure Clerk.shared so views that access it directly don't fail
-    Clerk.configure(publishableKey: previewTestPublishableKey)
-
-    let clerk = signedOut ? Clerk.mockSignedOut : Clerk.mock
-    return
-      self
-      .environment(clerk)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
-  }
-
-  /// Preview with custom Clerk instance.
-  ///
-  /// - Parameter customize: A closure that customizes the Clerk instance.
-  ///
-  /// Usage:
-  /// ```swift
-  /// #Preview {
-  ///     AuthView()
-  ///         .clerkPreviewMocks { clerk in
-  ///             // Customize clerk properties that are accessible from ClerkKitUI
-  ///         }
-  /// }
-  /// ```
-  // @MainActor
-  // public func clerkPreviewMocks(customize: @escaping (inout Clerk) -> Void) -> some View {
-  //   // Configure Clerk.shared so views that access it directly don't fail
-  //   Clerk.configure(publishableKey: previewTestPublishableKey)
-
-  //   var clerk = Clerk.mock
-  //   customize(&clerk)
-  //   return
-  //     self
-  //     .environment(clerk)
-  //     .environment(AuthState())
-  //     .environment(UserProfileView.SharedState())
-  // }
-
-  /// Preview with custom Clerk instance.
-  ///
-  /// - Parameter clerk: The Clerk instance to inject into the preview environment.
-  ///
-  /// Usage:
-  /// ```swift
-  /// #Preview {
-  ///     let customClerk = Clerk.mock
-  ///     // customize clerk...
-  ///
-  ///     MyView()
-  ///         .clerkPreviewMocks(customClerk)
-  /// }
-  /// ```
-  @MainActor
-  public func clerkPreviewMocks(_ clerk: Clerk) -> some View {
-    // Configure Clerk.shared so views that access it directly don't fail
-    Clerk.configure(publishableKey: previewTestPublishableKey)
+    let clerk = Clerk.configureWithMocks()
+    if !signedIn {
+      Task { try? await clerk.signOut() }
+    }
 
     return self
       .environment(clerk)
