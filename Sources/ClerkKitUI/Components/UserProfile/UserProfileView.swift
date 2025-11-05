@@ -343,20 +343,24 @@ extension UserProfileView {
 #Preview("Dismissable") {
   UserProfileView()
     .clerkPreviewMocks { builder in
-      builder.clientService = MockClientService {
-        try? await Task.sleep(for: .seconds(1))
-        return Client.mock
-      }
+      builder.clientService = MockClientService(
+        get: {
+          try? await Task.sleep(for: .seconds(1))
+          return Client.mock
+        }
+      )
 
-      builder.environmentService = MockEnvironmentService {
-        try? await Task.sleep(for: .seconds(1))
-        return Clerk.Environment.mock
-      }
+      builder.environmentService = MockEnvironmentService(
+        get: {
+          try? await Task.sleep(for: .seconds(1))
+          return Clerk.Environment.mock
+        }
+      )
 
       builder.userService = MockUserService(
         getSessions: { user in
           try? await Task.sleep(for: .seconds(1))
-          return Clerk.mock.sessionsByUserId[user.id] ?? [Session.mock, Session.mock2]
+          return [Session.mock, Session.mock2]
         }
       )
     }
@@ -366,23 +370,33 @@ extension UserProfileView {
 #Preview("Not dismissable") {
   UserProfileView(isDismissable: false)
     .clerkPreviewMocks { builder in
-      builder.clientService = MockClientService {
-        try? await Task.sleep(for: .seconds(1))
-        return Client.mock
-      }
+      builder.clientService = MockClientService(
+        get: {
+          try? await Task.sleep(for: .seconds(1))
+          return Client.mock
+        }
+      )
 
-      builder.environmentService = MockEnvironmentService {
-        try? await Task.sleep(for: .seconds(1))
-        return Clerk.Environment.mock
-      }
+      builder.environmentService = MockEnvironmentService(
+        get: {
+          try? await Task.sleep(for: .seconds(1))
+          return Clerk.Environment.mock
+        }
+      )
 
       builder.userService = MockUserService(
         getSessions: { user in
           try? await Task.sleep(for: .seconds(1))
-          return Clerk.mock.sessionsByUserId[user.id] ?? [Session.mock, Session.mock2]
+          return [Session.mock, Session.mock2]
         }
       )
     }
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Not dismissable") {
+  UserProfileView(isDismissable: false)
+    .clerkPreviewMocks()
     .environment(\.clerkTheme, .clerk)
 }
 
