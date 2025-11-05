@@ -26,8 +26,8 @@ let package = Package(
   targets: [
     .target(
       name: "ClerkKit",
-      dependencies: [
-      ],
+      dependencies: [],
+      path: "Sources/ClerkKit",
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
       ]
@@ -40,6 +40,7 @@ let package = Package(
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
       ],
+      path: "Sources/ClerkKitUI",
       resources: [
         .process("Resources")
       ],
