@@ -11,25 +11,25 @@ import Foundation
 public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
 
   /// The unique identifier of the role.
-  public let id: String
+  public var id: String
 
   /// The unique key of the role.
-  public let key: String
+  public var key: String
 
   /// The name of the role.
-  public let name: String
+  public var name: String
 
   /// The description of the role.
-  public let description: String
+  public var description: String
 
   /// The permissions associated with the role.
-  public let permissions: [PermissionResource]
+  public var permissions: [PermissionResource]
 
   /// The date when the role was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the role was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -50,18 +50,3 @@ public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
   }
 }
 
-extension RoleResource {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      key: "key",
-      name: "name",
-      description: "description",
-      permissions: [.mock],
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

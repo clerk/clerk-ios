@@ -11,20 +11,20 @@ import Foundation
 public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable, ClerkError {
 
   /// A string code that represents the error, such as `username_exists_code`.
-  public let code: String
+  public var code: String
 
   /// A message that describes the error.
-  public let message: String?
+  public var message: String?
 
   /// A more detailed message that describes the error.
-  public let longMessage: String?
+  public var longMessage: String?
 
   /// Additional information about the error.
-  public let meta: JSON?
+  public var meta: JSON?
 
   /// A unique identifier for tracing the specific request, useful for debugging.
   public var clerkTraceId: String?
-  
+
   /// Additional context about the error, including trace ID and parameter name if available.
   public var context: [String: String]? {
     var ctx: [String: String] = [:]
@@ -49,22 +49,9 @@ extension ClerkAPIError {
 public struct ClerkErrorResponse: Codable, Equatable {
 
   /// An array of `ClerkAPIError` objects, each describing an individual error.
-  public let errors: [ClerkAPIError]
+  public var errors: [ClerkAPIError]
 
   /// A unique identifier for tracing the specific request, useful for debugging.
-  public let clerkTraceId: String?
+  public var clerkTraceId: String?
 }
 
-extension ClerkAPIError {
-
-  package static var mock: ClerkAPIError {
-    .init(
-      code: "error",
-      message: "An unknown error occurred.",
-      longMessage: "An unknown error occurred. Please try again or contact support.",
-      meta: nil,
-      clerkTraceId: "1"
-    )
-  }
-
-}

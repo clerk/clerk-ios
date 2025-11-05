@@ -13,46 +13,46 @@ import Foundation
 public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equatable {
 
   /// The unique identifier for this external account.
-  public let id: String
+  public var id: String
 
   /// The identification with which this external account is associated.
-  public let identificationId: String
+  public var identificationId: String
 
   /// The provider name e.g. google
-  public let provider: String
+  public var provider: String
 
   /// The unique ID of the user in the provider.
-  public let providerUserId: String
+  public var providerUserId: String
 
   /// The provided email address of the user.
-  public let emailAddress: String
+  public var emailAddress: String
 
   /// The scopes that the user has granted access to.
-  public let approvedScopes: String
+  public var approvedScopes: String
 
   /// The user's first name.
-  public let firstName: String?
+  public var firstName: String?
 
   /// The user's last name.
-  public let lastName: String?
+  public var lastName: String?
 
   /// The user's image URL.
-  public let imageUrl: String?
+  public var imageUrl: String?
 
   /// The user's username.
-  public let username: String?
+  public var username: String?
 
   /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API.
-  public let publicMetadata: JSON
+  public var publicMetadata: JSON
 
   /// A descriptive label to differentiate multiple external accounts of the same user for the same provider.
-  public let label: String?
+  public var label: String?
 
   /// An object holding information on the verification of this external account.
-  public let verification: Verification?
+  public var verification: Verification?
 
   /// The date when the external account was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   public init(
     id: String,
@@ -126,42 +126,3 @@ extension ExternalAccount {
   }
 }
 
-extension ExternalAccount {
-
-  package static var mockVerified: ExternalAccount {
-    .init(
-      id: "1",
-      identificationId: "1",
-      provider: "oauth_google",
-      providerUserId: "1",
-      emailAddress: "user@gmail.com",
-      approvedScopes: "email openid profile",
-      firstName: "First",
-      lastName: "Last",
-      imageUrl: nil,
-      username: "username",
-      publicMetadata: "{}",
-      label: nil,
-      verification: .mockExternalAccountVerifiedVerification
-    )
-  }
-
-  package static var mockUnverified: ExternalAccount {
-    .init(
-      id: "1",
-      identificationId: "1",
-      provider: "oauth_google",
-      providerUserId: "1",
-      emailAddress: "user@gmail.com",
-      approvedScopes: "email openid profile",
-      firstName: "First",
-      lastName: "Last",
-      imageUrl: nil,
-      username: "username",
-      publicMetadata: "{}",
-      label: nil,
-      verification: .mockExternalAccountUnverifiedVerification
-    )
-  }
-
-}

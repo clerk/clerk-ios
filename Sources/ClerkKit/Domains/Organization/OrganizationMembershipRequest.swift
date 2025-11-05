@@ -11,22 +11,22 @@ import Foundation
 public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {
 
   /// The unique identifier for this membership request.
-  public let id: String
+  public var id: String
 
   /// The organization ID of the organization this request is for.
-  public let organizationId: String
+  public var organizationId: String
 
   /// The status of the request.
-  public let status: String
+  public var status: String
 
   /// Public information about the user that this request belongs to.
-  public let publicUserData: PublicUserData?
+  public var publicUserData: PublicUserData?
 
   /// The date when the membership request was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the membership request was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -63,17 +63,3 @@ extension OrganizationMembershipRequest {
   }
 }
 
-extension OrganizationMembershipRequest {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      organizationId: "1",
-      status: "pending",
-      publicUserData: nil,
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

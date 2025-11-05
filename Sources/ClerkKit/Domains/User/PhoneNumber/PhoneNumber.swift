@@ -25,28 +25,28 @@ import Foundation
 public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable {
 
   /// The unique identifier for this phone number.
-  public let id: String
+  public var id: String
 
   /// The value of this phone number, in E.164 format.
-  public let phoneNumber: String
+  public var phoneNumber: String
 
   /// Set to true if this phone number is reserved for multi-factor authentication (2FA). Set to false otherwise.
-  public let reservedForSecondFactor: Bool
+  public var reservedForSecondFactor: Bool
 
   /// Set to true if this phone number is the default second factor. Set to false otherwise. A user must have exactly one default second factor, if multi-factor authentication (2FA) is enabled.
-  public let defaultSecondFactor: Bool
+  public var defaultSecondFactor: Bool
 
   /// An object holding information on the verification of this phone number.
-  public let verification: Verification?
+  public var verification: Verification?
 
   /// An object containing information about any other identification that might be linked to this phone number.
-  public let linkedTo: JSON?
+  public var linkedTo: JSON?
 
   /// A list of backup codes in case of lost phone number access.
-  public let backupCodes: [String]?
+  public var backupCodes: [String]?
 
   /// The date when the phone number was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   public init(
     id: String,
@@ -122,42 +122,3 @@ extension PhoneNumber {
 
 }
 
-extension PhoneNumber {
-
-  package static var mock: PhoneNumber {
-    PhoneNumber(
-      id: "1",
-      phoneNumber: "+15555550100",
-      reservedForSecondFactor: false,
-      defaultSecondFactor: false,
-      verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
-      backupCodes: nil
-    )
-  }
-
-  package static var mock2: PhoneNumber {
-    PhoneNumber(
-      id: "2",
-      phoneNumber: "+15555550101",
-      reservedForSecondFactor: false,
-      defaultSecondFactor: false,
-      verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
-      backupCodes: nil
-    )
-  }
-
-  package static var mockMfa: PhoneNumber {
-    PhoneNumber(
-      id: "3",
-      phoneNumber: "+15555550102",
-      reservedForSecondFactor: true,
-      defaultSecondFactor: true,
-      verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
-      backupCodes: nil
-    )
-  }
-
-}

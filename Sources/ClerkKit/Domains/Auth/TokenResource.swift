@@ -13,7 +13,7 @@ import Foundation
 public struct TokenResource: Codable, Equatable, Sendable {
 
   /// The jwt represented as a `String`.
-  public let jwt: String
+  public var jwt: String
 
   public init(jwt: String) {
     self.jwt = jwt
@@ -34,10 +34,3 @@ extension TokenResource {
   }
 }
 
-extension TokenResource {
-
-  package static var mock: TokenResource {
-    .init(jwt: "jwt")
-  }
-
-}

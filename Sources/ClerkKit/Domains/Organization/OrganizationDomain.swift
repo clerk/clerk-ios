@@ -11,34 +11,34 @@ import Foundation
 public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
 
   /// The unique identifier for this organization domain.
-  public let id: String
+  public var id: String
 
   /// The name for this organization domain (e.g. example.com).
-  public let name: String
+  public var name: String
 
   /// The organization ID of the organization this domain is for.
-  public let organizationId: String
+  public var organizationId: String
 
   /// The enrollment mode for new users joining the organization.
-  public let enrollmentMode: String
+  public var enrollmentMode: String
 
   /// The object that describes the status of the verification process of the domain.
-  public let verification: Verification
+  public var verification: Verification
 
   /// The email address that was used to verify this organization domain, or `nil` if not available.
-  public let affiliationEmailAddress: String?
+  public var affiliationEmailAddress: String?
 
   /// The number of total pending invitations sent to emails that match the domain name.
-  public let totalPendingInvitations: Int
+  public var totalPendingInvitations: Int
 
   /// The number of total pending suggestions sent to emails that match the domain name.
-  public let totalPendingSuggestions: Int
+  public var totalPendingSuggestions: Int
 
   /// The date when the organization domain was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the organization domain was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -68,20 +68,20 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   public struct Verification: Codable, Sendable, Hashable {
 
     /// The status of the verification process.
-    public let status: String
+    public var status: String
 
     /// The strategy used for the verification process.
-    public let strategy: String
+    public var strategy: String
 
     /// The number of attempts that have occurred to verify the domain.
     ///
     /// This value tracks how many verification attempts have been made for this domain.
-    public let attempts: Int
+    public var attempts: Int
 
     /// The expiration date and time of the verification.
     ///
     /// Once the expiration date has passed, the verification process may need to be restarted.
-    public let expireAt: Date?
+    public var expireAt: Date?
 
     public init(
       status: String,
@@ -136,26 +136,3 @@ extension OrganizationDomain {
 
 }
 
-extension OrganizationDomain {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      name: "name",
-      organizationId: "1",
-      enrollmentMode: "enrollment_mode",
-      verification: .init(
-        status: "status",
-        strategy: "strategy",
-        attempts: 1,
-        expireAt: .distantFuture
-      ),
-      affiliationEmailAddress: nil,
-      totalPendingInvitations: 3,
-      totalPendingSuggestions: 3,
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

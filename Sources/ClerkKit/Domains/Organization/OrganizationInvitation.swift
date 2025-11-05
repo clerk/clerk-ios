@@ -11,30 +11,30 @@ import Foundation
 public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable {
 
   /// The unique identifier for this organization invitation.
-  public let id: String
+  public var id: String
 
   /// The email address the invitation has been sent to.
-  public let emailAddress: String
+  public var emailAddress: String
 
   /// The organization ID of the organization this invitation is for.
-  public let organizationId: String
+  public var organizationId: String
 
   /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API.
-  public let publicMetadata: JSON
+  public var publicMetadata: JSON
 
   /// The role of the user in the organization.
   ///
   /// Clerk provides the default roles org:admin and org:member. However, you can create custom roles as well.
-  public let role: String
+  public var role: String
 
   /// The status of the invitation.
-  public let status: String
+  public var status: String
 
   /// The date when the invitation was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the invitation was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -70,19 +70,3 @@ extension OrganizationInvitation {
 
 }
 
-extension OrganizationInvitation {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      emailAddress: EmailAddress.mock.emailAddress,
-      organizationId: "1",
-      publicMetadata: "{}",
-      role: "org:member",
-      status: "pending",
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

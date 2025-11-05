@@ -11,35 +11,15 @@ import Foundation
 public struct BackupCodeResource: Identifiable, Codable, Hashable, Equatable, Sendable {
 
   /// The unique identifier for the set of backup codes.
-  public let id: String
+  public var id: String
 
   /// The generated set of backup codes.
-  public let codes: [String]
+  public var codes: [String]
 
   /// The date when the backup codes were created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the backup codes were last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 }
 
-extension BackupCodeResource {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      codes: [
-        "abcd",
-        "efgh",
-        "ijkl",
-        "mnop",
-        "qrst",
-        "uvwx",
-        "yz"
-      ],
-      createdAt: .distantPast,
-      updatedAt: .distantPast
-    )
-  }
-
-}

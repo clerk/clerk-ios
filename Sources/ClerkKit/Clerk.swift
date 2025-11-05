@@ -146,7 +146,7 @@ final public class Clerk {
     configurationManager.proxyConfiguration
   }
 
-  private init() {
+  package init() {
     // Create temporary container - will be replaced during configure with proper values
     let tempOptions = Clerk.ClerkOptions()
     let tempBaseURL = URL(string: "https://clerk.clerk.dev")!
@@ -416,22 +416,3 @@ extension Clerk {
   }
 }
 
-extension Clerk {
-
-  package static var mock: Clerk {
-    let clerk = Clerk()
-    clerk.client = .mock
-    clerk.environment = .mock
-    clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
-    return clerk
-  }
-
-  package static var mockSignedOut: Clerk {
-    let clerk = Clerk()
-    clerk.client = .mockSignedOut
-    clerk.environment = .mock
-    clerk.sessionsByUserId = [:]
-    return clerk
-  }
-
-}

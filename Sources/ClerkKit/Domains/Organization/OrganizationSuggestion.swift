@@ -12,19 +12,19 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 
   /// An interface representing an organization suggestion.
   /// The ID of the organization suggestion.
-  public let id: String
+  public var id: String
 
   /// The public data of the organization.
-  public let publicOrganizationData: PublicOrganizationData
+  public var publicOrganizationData: PublicOrganizationData
 
   /// The status of the organization suggestion.
-  public let status: String
+  public var status: String
 
   /// The date and time when the organization suggestion was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date and time when the organization suggestion was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -44,19 +44,19 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
   public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
 
     /// Whether the organization has an image.
-    public let hasImage: Bool
+    public var hasImage: Bool
 
     /// Holds the organization logo. Compatible with Clerk's Image Optimization.
-    public let imageUrl: String
+    public var imageUrl: String
 
     /// The name of the organization.
-    public let name: String
+    public var name: String
 
     /// The ID of the organization.
-    public let id: String
+    public var id: String
 
     /// The slug of the organization.
-    public let slug: String?
+    public var slug: String?
 
     public init(
       hasImage: Bool,
@@ -88,22 +88,3 @@ extension OrganizationSuggestion {
 
 }
 
-extension OrganizationSuggestion {
-
-  package static var mock: Self {
-    .init(
-      id: "1",
-      publicOrganizationData: .init(
-        hasImage: false,
-        imageUrl: "",
-        name: "name",
-        id: "1",
-        slug: "slug"
-      ),
-      status: "pending",
-      createdAt: .distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

@@ -11,25 +11,25 @@ import Foundation
 public struct Verification: Codable, Equatable, Hashable, Sendable {
 
   /// The state of the verification.
-  public let status: Status?
+  public var status: Status?
 
   /// The strategy pertaining to the parent sign-up or sign-in attempt.
-  public let strategy: String?
+  public var strategy: String?
 
   /// The number of attempts related to the verification.
-  public let attempts: Int?
+  public var attempts: Int?
 
   /// The time the verification will expire at.
-  public let expireAt: Date?
+  public var expireAt: Date?
 
   /// The last error the verification attempt ran into.
-  public let error: ClerkAPIError?
+  public var error: ClerkAPIError?
 
   /// The redirect URL for an external verification.
-  public let externalVerificationRedirectUrl: String?
+  public var externalVerificationRedirectUrl: String?
 
   /// The nonce pertaining to the verification.
-  public let nonce: String?
+  public var nonce: String?
 
   public init(
     status: Verification.Status? = nil,
@@ -65,102 +65,3 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
   }
 }
 
-extension Verification {
-
-  package static var mockEmailCodeVerifiedVerification: Verification {
-    Verification(
-      status: .verified,
-      strategy: "email_code",
-      attempts: nil,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: nil
-    )
-  }
-
-  package static var mockEmailCodeUnverifiedVerification: Verification {
-    Verification(
-      status: .unverified,
-      strategy: "email_code",
-      attempts: nil,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: nil
-    )
-  }
-
-  package static var mockPhoneCodeVerifiedVerification: Verification {
-    Verification(
-      status: .verified,
-      strategy: "phone_code",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: nil
-    )
-  }
-
-  package static var mockPhoneCodeUnverifiedVerification: Verification {
-    Verification(
-      status: .unverified,
-      strategy: "phone_code",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: nil
-    )
-  }
-
-  package static var mockPasskeyVerifiedVerification: Verification {
-    Verification(
-      status: .verified,
-      strategy: "passkey",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: "12345"
-    )
-  }
-
-  package static var mockPasskeyUnverifiedVerification: Verification {
-    Verification(
-      status: .unverified,
-      strategy: "passkey",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: "12345"
-    )
-  }
-
-  package static var mockExternalAccountVerifiedVerification: Verification {
-    Verification(
-      status: .verified,
-      strategy: "oauth_google",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: nil,
-      nonce: nil
-    )
-  }
-
-  package static var mockExternalAccountUnverifiedVerification: Verification {
-    Verification(
-      status: .unverified,
-      strategy: "oauth_google",
-      attempts: 0,
-      expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-      error: nil,
-      externalVerificationRedirectUrl: "https://accounts.google.com",
-      nonce: nil
-    )
-  }
-
-}

@@ -23,35 +23,34 @@ import Foundation
 /// The Clerk iOS SDK provides some helper methods on the User object to help retrieve and update user information and authentication status.
 public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 
-  /// A boolean indicating whether the user has enabled Backup codes.
-  public let backupCodeEnabled: Bool
+  public var backupCodeEnabled: Bool
 
   /// Date when the user was first created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// A boolean indicating whether the organization creation is enabled for the user or not.
-  public let createOrganizationEnabled: Bool
+  public var createOrganizationEnabled: Bool
 
   /// An integer indicating the number of organizations that can be created by the user. If the value is 0, then the user can create unlimited organizations. Default is null.
-  public let createOrganizationsLimit: Int?
+  public var createOrganizationsLimit: Int?
 
   /// A boolean indicating whether the user is able to delete their own account or not.
-  public let deleteSelfEnabled: Bool
+  public var deleteSelfEnabled: Bool
 
   /// An array of all the EmailAddress objects associated with the user. Includes the primary.
-  public let emailAddresses: [EmailAddress]
+  public var emailAddresses: [EmailAddress]
 
   /// A list of enterprise accounts associated with the user.
-  public let enterpriseAccounts: [EnterpriseAccount]?
+  public var enterpriseAccounts: [EnterpriseAccount]?
 
   /// An array of all the ExternalAccount objects associated with the user via OAuth. Note: This includes both verified & unverified external accounts.
-  public let externalAccounts: [ExternalAccount]
+  public var externalAccounts: [ExternalAccount]
 
   /// The user's first name.
-  public let firstName: String?
+  public var firstName: String?
 
   /// A getter boolean to check if the user has uploaded an image or one was copied from OAuth. Returns false if Clerk is displaying an avatar for the user.
-  public let hasImage: Bool
+  public var hasImage: Bool
 
   /// A getter boolean to check if the user has verified an email address.
   public var hasVerifiedEmailAddress: Bool {
@@ -68,31 +67,31 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
   }
 
   /// The unique identifier for the user.
-  public let id: String
+  public var id: String
 
   /// Holds the default avatar or user's uploaded profile image
-  public let imageUrl: String
+  public var imageUrl: String
 
   /// Date when the user last signed in. May be empty if the user has never signed in.
-  public let lastSignInAt: Date?
+  public var lastSignInAt: Date?
 
   /// The user's last name.
-  public let lastName: String?
+  public var lastName: String?
 
   /// The date on which the user accepted the legal requirements if required.
-  public let legalAcceptedAt: Date?
+  public var legalAcceptedAt: Date?
 
   /// A list of OrganizationMemberships representing the list of organizations the user is member with.
-  public let organizationMemberships: [OrganizationMembership]?
+  public var organizationMemberships: [OrganizationMembership]?
 
   /// An array of all the Passkey objects associated with the user.
-  public let passkeys: [Passkey]
+  public var passkeys: [Passkey]
 
   /// A boolean indicating whether the user has a password on their account.
-  public let passwordEnabled: Bool
+  public var passwordEnabled: Bool
 
   /// An array of all the PhoneNumber objects associated with the user. Includes the primary.
-  public let phoneNumbers: [PhoneNumber]
+  public var phoneNumbers: [PhoneNumber]
 
   /// Information about the user's primary email address.
   public var primaryEmailAddress: EmailAddress? {
@@ -100,7 +99,7 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
   }
 
   /// The unique identifier for the EmailAddress that the user has set as primary.
-  public let primaryEmailAddressId: String?
+  public var primaryEmailAddressId: String?
 
   /// Information about the user's primary phone number.
   public var primaryPhoneNumber: PhoneNumber? {
@@ -108,25 +107,25 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
   }
 
   /// The unique identifier for the PhoneNumber that the user has set as primary.
-  public let primaryPhoneNumberId: String?
+  public var primaryPhoneNumberId: String?
 
   /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API .
-  public let publicMetadata: JSON?
+  public var publicMetadata: JSON?
 
   /// A boolean indicating whether the user has enabled TOTP by generating a TOTP secret and verifying it via an authenticator app.
-  public let totpEnabled: Bool
+  public var totpEnabled: Bool
 
   /// A boolean indicating whether the user has enabled two-factor authentication.
-  public let twoFactorEnabled: Bool
+  public var twoFactorEnabled: Bool
 
   /// Date of the last time the user was updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   /**
   Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
   Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
   */
-  public let unsafeMetadata: JSON?
+  public var unsafeMetadata: JSON?
 
   /// A getter for the user's list of unverified external accounts.
   public var unverifiedExternalAccounts: [ExternalAccount] {
@@ -136,7 +135,7 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
   }
 
   /// The user's username.
-  public let username: String?
+  public var username: String?
 
   /// A getter for the user's list of verified external accounts.
   public var verifiedExternalAccounts: [ExternalAccount] {
@@ -382,70 +381,3 @@ extension User {
 
 }
 
-extension User {
-
-  package static var mock: Self {
-    .init(
-      backupCodeEnabled: true,
-      createdAt: .distantPast,
-      createOrganizationEnabled: true,
-      createOrganizationsLimit: 0,
-      deleteSelfEnabled: true,
-      emailAddresses: [.mock, .mock2],
-      enterpriseAccounts: [],
-      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
-      firstName: "First",
-      hasImage: false,
-      id: "1",
-      imageUrl: "",
-      lastSignInAt: .now,
-      lastName: "Last",
-      legalAcceptedAt: .now,
-      organizationMemberships: [.mockWithUserData],
-      passkeys: [.mock],
-      passwordEnabled: true,
-      phoneNumbers: [.mock, .mock2, .mockMfa],
-      primaryEmailAddressId: "1",
-      primaryPhoneNumberId: "1",
-      publicMetadata: nil,
-      totpEnabled: false,
-      twoFactorEnabled: true,
-      updatedAt: .now,
-      unsafeMetadata: nil,
-      username: "username"
-    )
-  }
-
-  package static var mock2: Self {
-    .init(
-      backupCodeEnabled: true,
-      createdAt: .distantPast,
-      createOrganizationEnabled: true,
-      createOrganizationsLimit: 0,
-      deleteSelfEnabled: true,
-      emailAddresses: [.mock],
-      enterpriseAccounts: [],
-      externalAccounts: [.mockVerified, .mockVerified, .mockUnverified],
-      firstName: nil,
-      hasImage: false,
-      id: "2",
-      imageUrl: "",
-      lastSignInAt: .now,
-      lastName: nil,
-      legalAcceptedAt: .now,
-      organizationMemberships: [.mockWithUserData],
-      passkeys: [.mock],
-      passwordEnabled: true,
-      phoneNumbers: [.mock],
-      primaryEmailAddressId: "1",
-      primaryPhoneNumberId: "1",
-      publicMetadata: nil,
-      totpEnabled: true,
-      twoFactorEnabled: true,
-      updatedAt: .now,
-      unsafeMetadata: nil,
-      username: "username2"
-    )
-  }
-
-}

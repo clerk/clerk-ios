@@ -151,25 +151,25 @@ public struct SessionActivity: Codable, Equatable, Sendable {
   let id: String
 
   /// The name of the browser from which this session activity occurred.
-  public let browserName: String?
+  public var browserName: String?
 
   /// The version of the browser from which this session activity occurred.
-  public let browserVersion: String?
+  public var browserVersion: String?
 
   /// The type of the device which was used in this session activity.
-  public let deviceType: String?
+  public var deviceType: String?
 
   /// The IP address from which this session activity originated.
-  public let ipAddress: String?
+  public var ipAddress: String?
 
   /// The city from which this session activity occurred. Resolved by IP address geo-location.
-  public let city: String?
+  public var city: String?
 
   /// The country from which this session activity occurred. Resolved by IP address geo-location.
-  public let country: String?
+  public var country: String?
 
   /// Will be set to true if the session activity came from a mobile device. Set to false otherwise.
-  public let isMobile: Bool?
+  public var isMobile: Bool?
 
   public init(
     id: String,
@@ -232,13 +232,13 @@ extension Session {
   public struct GetTokenOptions: Hashable, Sendable {
 
     /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
-    public let template: String?
+    public var template: String?
 
     /// If the cached token will expire within X seconds (the buffer), fetch a new token instead. Max is 60 seconds.
-    public let expirationBuffer: Double
+    public var expirationBuffer: Double
 
     /// Whether to skip the cache lookup and force a call to the server instead, even within the TTL. Useful if the token claims are time-sensitive or depend on data that can be updated (e.g. user fields). Defaults to false.
-    public let skipCache: Bool
+    public var skipCache: Bool
 
     public init(
       template: String? = nil,
@@ -253,75 +253,3 @@ extension Session {
 
 }
 
-extension Session {
-
-  package static let mock = Session(
-    id: "1",
-    status: .active,
-    expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    latestActivity: .init(
-      id: "1",
-      browserName: "Safari",
-      browserVersion: "17.1.1",
-      deviceType: "iPhone",
-      ipAddress: "196.172.122.88",
-      city: "Detroit",
-      country: "US",
-      isMobile: true
-    ),
-    lastActiveOrganizationId: nil,
-    actor: nil,
-    user: .mock,
-    publicUserData: nil,
-    createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    tasks: [],
-    lastActiveToken: nil
-  )
-
-  package static let mock2 = Session(
-    id: "2",
-    status: .active,
-    expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    latestActivity: .init(
-      id: "2",
-      browserName: "Chrome",
-      browserVersion: "119.0.0",
-      deviceType: "Macintosh",
-      ipAddress: "196.172.122.88",
-      city: "Detroit",
-      country: "US",
-      isMobile: false
-    ),
-    lastActiveOrganizationId: nil,
-    actor: nil,
-    user: .mock2,
-    publicUserData: nil,
-    createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    tasks: [],
-    lastActiveToken: nil
-  )
-
-  package static let mockExpired = Session(
-    id: "1",
-    status: .expired,
-    expireAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    abandonAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    lastActiveAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    latestActivity: nil,
-    lastActiveOrganizationId: nil,
-    actor: nil,
-    user: .mock,
-    publicUserData: nil,
-    createdAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    updatedAt: Date(timeIntervalSinceReferenceDate: 1234567890),
-    tasks: [],
-    lastActiveToken: nil
-  )
-
-}

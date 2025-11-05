@@ -11,13 +11,13 @@ import Foundation
 public struct DeletedObject: Codable, Sendable {
 
   /// The object type that has been deleted.
-  public let object: String?
+  public var object: String?
 
   /// The ID of the deleted item.
-  public let id: String?
+  public var id: String?
 
   /// A boolean checking if the item has been deleted or not.
-  public let deleted: Bool?
+  public var deleted: Bool?
 
   public init(
     object: String? = nil,
@@ -30,14 +30,3 @@ public struct DeletedObject: Codable, Sendable {
   }
 }
 
-extension DeletedObject {
-
-  package static var mock: DeletedObject {
-    .init(
-      object: "object",
-      id: "1",
-      deleted: true
-    )
-  }
-
-}
