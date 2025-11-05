@@ -10,7 +10,7 @@ import Foundation
 /// Mock implementation of `UserServiceProtocol` for testing and previews.
 ///
 /// Allows customizing the behavior of service methods through handler closures.
-/// All methods must be explicitly configured in the initializer or they will fatalError if called.
+/// All methods return default mock values if handlers are not provided.
 public final class MockUserService: UserServiceProtocol {
 
   /// Custom handler for the `getSessions(user:)` method.
@@ -75,7 +75,7 @@ public final class MockUserService: UserServiceProtocol {
   /// Creates a new mock user service with named closure parameters matching protocol method names.
   ///
   /// This initializer allows you to configure specific methods inline.
-  /// Methods not configured will fatalError if called.
+  /// Methods not configured will return default mock values.
   ///
   /// - Parameters:
   ///   - getSessions: Optional implementation of the `getSessions(user:)` method.
@@ -162,156 +162,156 @@ public final class MockUserService: UserServiceProtocol {
 
   @MainActor
   public func reload() async throws -> User {
-    guard let handler = reloadHandler else {
-      fatalError("MockUserService.reload() was called but not configured. Provide a reload: parameter in the initializer.")
+    if let handler = reloadHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 
   @MainActor
   public func update(params: User.UpdateParams) async throws -> User {
-    guard let handler = updateHandler else {
-      fatalError("MockUserService.update(params:) was called but not configured. Provide an update: parameter in the initializer.")
+    if let handler = updateHandler {
+      return try await handler(params)
     }
-    return try await handler(params)
+    return .mock
   }
 
   @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    guard let handler = createBackupCodesHandler else {
-      fatalError("MockUserService.createBackupCodes() was called but not configured. Provide a createBackupCodes: parameter in the initializer.")
+    if let handler = createBackupCodesHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 
   @MainActor
   public func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
-    guard let handler = createEmailAddressHandler else {
-      fatalError("MockUserService.createEmailAddress(emailAddress:) was called but not configured. Provide a createEmailAddress: parameter in the initializer.")
+    if let handler = createEmailAddressHandler {
+      return try await handler(emailAddress)
     }
-    return try await handler(emailAddress)
+    return .mock
   }
 
   @MainActor
   public func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
-    guard let handler = createPhoneNumberHandler else {
-      fatalError("MockUserService.createPhoneNumber(phoneNumber:) was called but not configured. Provide a createPhoneNumber: parameter in the initializer.")
+    if let handler = createPhoneNumberHandler {
+      return try await handler(phoneNumber)
     }
-    return try await handler(phoneNumber)
+    return .mock
   }
 
   @MainActor
   public func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount {
-    guard let handler = createExternalAccountHandler else {
-      fatalError("MockUserService.createExternalAccount(provider:redirectUrl:additionalScopes:) was called but not configured. Provide a createExternalAccount: parameter in the initializer.")
+    if let handler = createExternalAccountHandler {
+      return try await handler(provider, redirectUrl, additionalScopes)
     }
-    return try await handler(provider, redirectUrl, additionalScopes)
+    return .mockVerified
   }
 
   @MainActor
   public func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    guard let handler = createExternalAccountTokenHandler else {
-      fatalError("MockUserService.createExternalAccountToken(provider:idToken:) was called but not configured. Provide a createExternalAccountToken: parameter in the initializer.")
+    if let handler = createExternalAccountTokenHandler {
+      return try await handler(provider, idToken)
     }
-    return try await handler(provider, idToken)
+    return .mockVerified
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
   public func createPasskey() async throws -> Passkey {
-    guard let handler = createPasskeyHandler else {
-      fatalError("MockUserService.createPasskey() was called but not configured. Provide a createPasskey: parameter in the initializer.")
+    if let handler = createPasskeyHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
   #endif
 
   @MainActor
   public func createTotp() async throws -> TOTPResource {
-    guard let handler = createTotpHandler else {
-      fatalError("MockUserService.createTotp() was called but not configured. Provide a createTotp: parameter in the initializer.")
+    if let handler = createTotpHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 
   @MainActor
   public func verifyTotp(code: String) async throws -> TOTPResource {
-    guard let handler = verifyTotpHandler else {
-      fatalError("MockUserService.verifyTotp(code:) was called but not configured. Provide a verifyTotp: parameter in the initializer.")
+    if let handler = verifyTotpHandler {
+      return try await handler(code)
     }
-    return try await handler(code)
+    return .mock
   }
 
   @MainActor
   public func disableTotp() async throws -> DeletedObject {
-    guard let handler = disableTotpHandler else {
-      fatalError("MockUserService.disableTotp() was called but not configured. Provide a disableTotp: parameter in the initializer.")
+    if let handler = disableTotpHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 
   @MainActor
   public func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    guard let handler = getOrganizationInvitationsHandler else {
-      fatalError("MockUserService.getOrganizationInvitations(initialPage:pageSize:) was called but not configured. Provide a getOrganizationInvitations: parameter in the initializer.")
+    if let handler = getOrganizationInvitationsHandler {
+      return try await handler(initialPage, pageSize)
     }
-    return try await handler(initialPage, pageSize)
+    return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
   public func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    guard let handler = getOrganizationMembershipsHandler else {
-      fatalError("MockUserService.getOrganizationMemberships(initialPage:pageSize:) was called but not configured. Provide a getOrganizationMemberships: parameter in the initializer.")
+    if let handler = getOrganizationMembershipsHandler {
+      return try await handler(initialPage, pageSize)
     }
-    return try await handler(initialPage, pageSize)
+    return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
   }
 
   @MainActor
   public func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    guard let handler = getOrganizationSuggestionsHandler else {
-      fatalError("MockUserService.getOrganizationSuggestions(initialPage:pageSize:status:) was called but not configured. Provide a getOrganizationSuggestions: parameter in the initializer.")
+    if let handler = getOrganizationSuggestionsHandler {
+      return try await handler(initialPage, pageSize, status)
     }
-    return try await handler(initialPage, pageSize, status)
+    return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
   public func getSessions(user: User) async throws -> [Session] {
-    guard let handler = getSessionsHandler else {
-      fatalError("MockUserService.getSessions(user:) was called but not configured. Provide a getSessions: parameter in the initializer.")
+    if let handler = getSessionsHandler {
+      return try await handler(user)
     }
-    return try await handler(user)
+    return [.mock, .mock2]
   }
 
   @MainActor
   public func updatePassword(params: User.UpdatePasswordParams) async throws -> User {
-    guard let handler = updatePasswordHandler else {
-      fatalError("MockUserService.updatePassword(params:) was called but not configured. Provide an updatePassword: parameter in the initializer.")
+    if let handler = updatePasswordHandler {
+      return try await handler(params)
     }
-    return try await handler(params)
+    return .mock
   }
 
   @MainActor
   public func setProfileImage(imageData: Data) async throws -> ImageResource {
-    guard let handler = setProfileImageHandler else {
-      fatalError("MockUserService.setProfileImage(imageData:) was called but not configured. Provide a setProfileImage: parameter in the initializer.")
+    if let handler = setProfileImageHandler {
+      return try await handler(imageData)
     }
-    return try await handler(imageData)
+    return ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil)
   }
 
   @MainActor
   public func deleteProfileImage() async throws -> DeletedObject {
-    guard let handler = deleteProfileImageHandler else {
-      fatalError("MockUserService.deleteProfileImage() was called but not configured. Provide a deleteProfileImage: parameter in the initializer.")
+    if let handler = deleteProfileImageHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 
   @MainActor
   public func delete() async throws -> DeletedObject {
-    guard let handler = deleteHandler else {
-      fatalError("MockUserService.delete() was called but not configured. Provide a delete: parameter in the initializer.")
+    if let handler = deleteHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 }
 

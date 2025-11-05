@@ -10,7 +10,7 @@ import Foundation
 /// Mock implementation of `EnvironmentServiceProtocol` for testing and previews.
 ///
 /// Allows customizing the behavior of `get()` through a handler closure.
-/// If no handler is provided, returns `Clerk.Environment.mock` by default.
+/// Returns default mock values if handler is not provided.
 public final class MockEnvironmentService: EnvironmentServiceProtocol {
 
   /// Custom handler for the `get()` method.
@@ -19,9 +19,9 @@ public final class MockEnvironmentService: EnvironmentServiceProtocol {
   /// The handler can include delays, custom logic, or return different values.
   public nonisolated(unsafe) var getHandler: (() async throws -> Clerk.Environment)?
 
-  /// Creates a new mock environment service with a direct implementation of the `get()` method.
+  /// Creates a new mock environment service with an optional implementation of the `get()` method.
   ///
-  /// - Parameter get: The implementation of the `get()` method.
+  /// - Parameter get: Optional implementation of the `get()` method. If not provided, returns `Clerk.Environment.mock`.
   ///
   /// Example:
   /// ```swift
@@ -30,16 +30,16 @@ public final class MockEnvironmentService: EnvironmentServiceProtocol {
   ///   return Clerk.Environment.mock
   /// }
   /// ```
-  public init(get: @escaping () async throws -> Clerk.Environment) {
+  public init(get: (() async throws -> Clerk.Environment)? = nil) {
     self.getHandler = get
   }
 
   @MainActor
   public func get() async throws -> Clerk.Environment {
-    guard let handler = getHandler else {
-      fatalError("MockEnvironmentService.get() was called but not configured. Set a handler in the initializer.")
+    if let handler = getHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 }
 

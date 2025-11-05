@@ -10,7 +10,7 @@ import Foundation
 /// Mock implementation of `ClientServiceProtocol` for testing and previews.
 ///
 /// Allows customizing the behavior of `get()` through a handler closure.
-/// If no handler is provided, returns `Client.mock` by default.
+/// Returns default mock values if handler is not provided.
 public final class MockClientService: ClientServiceProtocol {
 
   /// Custom handler for the `get()` method.
@@ -19,9 +19,9 @@ public final class MockClientService: ClientServiceProtocol {
   /// The handler can include delays, custom logic, or return different values.
   public nonisolated(unsafe) var getHandler: (() async throws -> Client?)?
 
-  /// Creates a new mock client service with a direct implementation of the `get()` method.
+  /// Creates a new mock client service with an optional implementation of the `get()` method.
   ///
-  /// - Parameter get: The implementation of the `get()` method.
+  /// - Parameter get: Optional implementation of the `get()` method. If not provided, returns `Client.mock`.
   ///
   /// Example:
   /// ```swift
@@ -30,16 +30,16 @@ public final class MockClientService: ClientServiceProtocol {
   ///   return Client.mock
   /// }
   /// ```
-  public init(get: @escaping () async throws -> Client?) {
+  public init(get: (() async throws -> Client?)? = nil) {
     self.getHandler = get
   }
 
   @MainActor
   public func get() async throws -> Client? {
-    guard let handler = getHandler else {
-      fatalError("MockClientService.get() was called but not configured. Set a handler in the initializer.")
+    if let handler = getHandler {
+      return try await handler()
     }
-    return try await handler()
+    return .mock
   }
 }
 
