@@ -23,11 +23,6 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func create(phoneNumber: String) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
