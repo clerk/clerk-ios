@@ -211,14 +211,16 @@ extension Clerk {
   /// - Parameters:
   ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
   ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
+  /// - Returns: The configured Clerk instance.
   @MainActor
+  @discardableResult
   public static func configure(
     publishableKey: String,
     options: Clerk.ClerkOptions = .init()
-  ) {
-    if _shared != nil {
+  ) -> Clerk {
+    if let existing = _shared {
       ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
-      return
+      return existing
     }
 
     let clerk = Clerk()
@@ -230,6 +232,7 @@ extension Clerk {
     }
 
     _shared = clerk
+    return clerk
   }
 
   /// Internal method for reconfiguring Clerk instance (for debugging purposes).
