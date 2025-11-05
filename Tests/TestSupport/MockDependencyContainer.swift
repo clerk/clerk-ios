@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 @testable import ClerkKit
 
 /// A mock dependency container for testing that allows injecting custom dependencies.
@@ -32,7 +33,7 @@ final class MockDependencyContainer: Dependencies {
   ///
   /// - Parameters:
   ///   - apiClient: The API client to use (typically a mock for testing).
-  ///   - keychain: Optional keychain storage (defaults to SystemKeychain with default config).
+  ///   - keychain: Optional keychain storage (defaults to InMemoryKeychain for isolated testing).
   ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
   init(
     apiClient: APIClient,
@@ -40,10 +41,7 @@ final class MockDependencyContainer: Dependencies {
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil
   ) {
     self.networkingPipeline = .clerkDefault
-    self.keychain = keychain ?? SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    self.keychain = keychain ?? InMemoryKeychain()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
 
@@ -62,4 +60,3 @@ final class MockDependencyContainer: Dependencies {
     self.externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
 }
-
