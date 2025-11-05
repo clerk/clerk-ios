@@ -286,24 +286,16 @@ extension Clerk {
 
       // Wait for both to complete - if either fails, we exit early
       // since both are required for the SDK to work properly
-      do {
-        let env = try await environment
-        _ = try await client
-        attestDeviceIfNeeded(environment: env)
-      } catch {
-        // If client fails, environment will be cancelled automatically
-        // If environment fails, we catch it here
-        // Wrap in appropriate error type
-        throw ClerkInitializationError.initializationFailed(underlyingError: error)
-      }
-
+      // If client fails, environment will be cancelled automatically
+      let env = try await environment
+      _ = try await client
+      attestDeviceIfNeeded(environment: env)
       isLoaded = true
     } catch {
       // Wrap errors in appropriate ClerkInitializationError
       if let error = error as? ClerkInitializationError {
         throw error
       } else {
-        // Try to determine which operation failed by checking error context
         // Since we're fetching concurrently, we can't easily tell which one failed
         // So we'll use a generic initialization error
         throw ClerkInitializationError.initializationFailed(underlyingError: error)
