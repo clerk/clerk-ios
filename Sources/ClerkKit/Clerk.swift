@@ -320,9 +320,7 @@ extension Clerk: CacheCoordinator {
   }
 }
 
-extension Clerk: SessionProviding {
-  // Conformance provided by existing `session` property
-}
+extension Clerk: SessionProviding {}
 
 extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
