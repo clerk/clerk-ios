@@ -33,16 +33,3 @@ extension Clerk.Environment {
   }
 
 }
-
-extension Clerk.Environment {
-
-  package static var mock: Self {
-    .init(
-      authConfig: .mock,
-      userSettings: .mock,
-      displayConfig: .mock,
-      fraudSettings: nil
-    )
-  }
-
-}
