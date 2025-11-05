@@ -10,16 +10,14 @@ import Testing
 
 @testable import ClerkKit
 
-/// Tests for SystemKeychain keychain operations.
+/// Tests for KeychainStorage protocol operations.
+/// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
 @Suite(.serialized)
 struct SystemKeychainTests {
 
   @Test
   func testSetAndGetData() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     let testData = "test-value".data(using: .utf8)!
     try keychain.set(testData, forKey: "test-key")
@@ -30,10 +28,7 @@ struct SystemKeychainTests {
 
   @Test
   func testUpdateExistingKey() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     let initialData = "initial-value".data(using: .utf8)!
     try keychain.set(initialData, forKey: "test-key")
@@ -47,10 +42,7 @@ struct SystemKeychainTests {
 
   @Test
   func testDeleteItem() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     let testData = "test-value".data(using: .utf8)!
     try keychain.set(testData, forKey: "test-key")
@@ -63,10 +55,7 @@ struct SystemKeychainTests {
 
   @Test
   func testHasItem() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     #expect(try keychain.hasItem(forKey: "non-existent-key") == false)
 
@@ -78,10 +67,7 @@ struct SystemKeychainTests {
 
   @Test
   func testGetNonExistentKeyReturnsNil() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     let data = try keychain.data(forKey: "non-existent-key")
     #expect(data == nil)
@@ -89,31 +75,21 @@ struct SystemKeychainTests {
 
   @Test
   func testDeleteNonExistentKeyDoesNotThrow() throws {
-    let keychain = SystemKeychain(
-      service: "com.clerk.test",
-      accessGroup: nil
-    )
+    let keychain = InMemoryKeychain()
 
     // Should not throw when deleting non-existent key
     try keychain.deleteItem(forKey: "non-existent-key")
   }
 
   @Test
-  func testIsolationBetweenServices() throws {
-    let keychain1 = SystemKeychain(
-      service: "com.clerk.test1",
-      accessGroup: nil
-    )
-
-    let keychain2 = SystemKeychain(
-      service: "com.clerk.test2",
-      accessGroup: nil
-    )
+  func testIsolationBetweenInstances() throws {
+    let keychain1 = InMemoryKeychain()
+    let keychain2 = InMemoryKeychain()
 
     let testData = "test-value".data(using: .utf8)!
     try keychain1.set(testData, forKey: "shared-key")
 
-    // Key should not be visible in different service
+    // Key should not be visible in different instance
     let data = try keychain2.data(forKey: "shared-key")
     #expect(data == nil)
   }

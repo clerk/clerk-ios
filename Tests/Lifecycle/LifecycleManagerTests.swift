@@ -15,15 +15,15 @@ import Testing
 /// Mock lifecycle event handler for testing.
 @MainActor
 final class MockLifecycleHandler: LifecycleEventHandling {
-  var foregroundCallCount = LockIsolated(0)
-  var backgroundCallCount = LockIsolated(0)
+  nonisolated(unsafe) var foregroundCallCount = LockIsolated(0)
+  nonisolated(unsafe) var backgroundCallCount = LockIsolated(0)
 
   func onWillEnterForeground() async {
-    foregroundCallCount.setValue(foregroundCallCount.value + 1)
+    foregroundCallCount.withValue { $0 += 1 }
   }
 
   func onDidEnterBackground() async {
-    backgroundCallCount.setValue(backgroundCallCount.value + 1)
+    backgroundCallCount.withValue { $0 += 1 }
   }
 }
 
