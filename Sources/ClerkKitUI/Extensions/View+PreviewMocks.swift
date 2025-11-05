@@ -32,14 +32,13 @@ extension View {
   /// }
   /// ```
   @MainActor
-  public func clerkPreviewMocks(signedIn: Bool = true) -> some View {
+  public func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
     // Configure Clerk.shared so views that access it directly don't fail
     let clerk = Clerk.configureWithMocks()
-    if !signedIn {
-      Task { try? await clerk.signOut() }
-    }
+    if !isSignedIn { Task { try? await clerk.signOut() } }
 
-    return self
+    return
+      self
       .environment(clerk)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
@@ -69,7 +68,8 @@ extension View {
     // Configure Clerk.shared with mock services (using default preview publishable key)
     Clerk.configureWithMocks(configureServices: configureServices)
 
-    return self
+    return
+      self
       .environment(Clerk.mock)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
