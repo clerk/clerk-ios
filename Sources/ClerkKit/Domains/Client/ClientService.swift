@@ -18,11 +18,6 @@ final class ClientService: ClientServiceProtocol {
     self.apiClient = apiClient
   }
 
-  // Convenience initializer for dependency injection
-  init(dependencies: Dependencies) {
-    apiClient = dependencies.apiClient
-  }
-
   @MainActor
   func get() async throws -> Client? {
     let request = Request<ClientResponse<Client?>>(path: "/v1/client")
