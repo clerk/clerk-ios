@@ -28,10 +28,10 @@ func setupMockAPIClient() {
   let mockAPIClient = createMockAPIClient()
 
   // Replace the container with a mock container that uses the mock API client
-  Clerk.shared.container = MockDependencyContainer(
+  Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: mockAPIClient,
-    keychain: Clerk.shared.container.keychain,
-    telemetryCollector: Clerk.shared.container.telemetryCollector
+    keychain: Clerk.shared.dependencies.keychain,
+    telemetryCollector: Clerk.shared.dependencies.telemetryCollector
   )
 }
 

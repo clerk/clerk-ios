@@ -60,7 +60,7 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
 extension OrganizationInvitation {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Revokes the invitation for the email it corresponds to.
   @discardableResult @MainActor

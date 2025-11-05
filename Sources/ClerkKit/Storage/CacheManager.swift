@@ -40,7 +40,7 @@ final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
 
   /// The keychain storage for persisting cached data.
-  private var keychain: any KeychainStorage { Clerk.shared.container.keychain }
+  private var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
 
   /// Creates a new cache manager.
   ///
