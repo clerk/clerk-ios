@@ -24,7 +24,7 @@ public final class Clerk {
   }
 
   /// Private shared instance that is set during configuration.
-  static var _shared: Clerk?
+  private static var _shared: Clerk?
 
   /// A getter to see if the Clerk object is ready for use or not.
   public private(set) var isLoaded: Bool = false
@@ -160,9 +160,8 @@ public final class Clerk {
 
 public extension Clerk {
   /// Internal helper method that performs the actual configuration work.
-  /// This is shared between `configure()` and `_reconfigure()`.
   @MainActor
-  private func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
+  package func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
@@ -233,39 +232,6 @@ public extension Clerk {
     return clerk
   }
 
-  /// Internal method for reconfiguring Clerk instance (for debugging purposes).
-  ///
-  /// This allows reconfiguration of the Clerk instance during debugging.
-  ///
-  /// This method:
-  /// 1. Cleans up existing managers from the previous instance
-  /// 2. Sets up configuration (API client, options, etc.)
-  /// 3. Sets up lifecycle and session polling managers
-  /// 4. Starts loading cached client and environment data from keychain (asynchronously)
-  /// 5. Sets the shared instance
-  ///
-  /// - Parameters:
-  ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-  ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
-  @MainActor
-  package static func _reconfigure(
-    publishableKey: String,
-    options: Clerk.ClerkOptions = .init()
-  ) {
-    // Clean up managers from existing instance before creating new one
-    _shared?.cleanupManagers()
-
-    let clerk = Clerk()
-
-    do {
-      try clerk.performConfiguration(publishableKey: publishableKey, options: options)
-    } catch {
-      preconditionFailure("Failed to reconfigure Clerk: \(error.localizedDescription)")
-    }
-
-    _shared = clerk
-  }
-
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   func load() async throws {
@@ -282,8 +248,8 @@ public extension Clerk {
     do {
       // Fetch client and environment concurrently
       // Both of these are automatically applied to the shared instance:
-      async let client = Client.get() // via middleware
-      async let environment = Environment.get() // via the function itself
+      async let client = Client.get()  // via middleware
+      async let environment = Environment.get()  // via the function itself
 
       // Wait for both to complete - if either fails, we exit early
       // since both are required for the SDK to work properly
@@ -405,8 +371,8 @@ extension Clerk {
   }
 
   /// Cleans up managers that were started during configuration.
-  /// Used during reconfiguration to ensure old managers are properly cleaned up.
-  private func cleanupManagers() {
+  /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
+  package func cleanupManagers() {
     sessionPollingManager?.stopPolling()
     lifecycleManager?.stopObserving()
     sessionPollingManager = nil

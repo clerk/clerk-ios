@@ -56,15 +56,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func addsClientIdHeaderInDebugMode() async throws {
-    // Configure Clerk with debug mode
-    Clerk._reconfigure(
-      publishableKey: testPublishableKey,
-      options: Clerk.ClerkOptions(debugMode: true)
-    )
-
-    setupMockAPIClient()
-
+  func addsClientIdHeaderWhenAvailable() async throws {
     // Set a mock client
     Clerk.shared.client = .mock
 
@@ -77,16 +69,9 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func doesNotAddClientIdHeaderWhenNotInDebugMode() async throws {
-    // Configure Clerk without debug mode
-    Clerk._reconfigure(
-      publishableKey: testPublishableKey,
-      options: Clerk.ClerkOptions(debugMode: false)
-    )
-
-    setupMockAPIClient()
-
-    Clerk.shared.client = .mock
+  func doesNotAddClientIdHeaderWhenClientMissing() async throws {
+    // Ensure no client is set
+    Clerk.shared.client = nil
 
     let middleware = ClerkHeaderRequestMiddleware()
     var request = URLRequest(url: URL(string: "https://example.com")!)
