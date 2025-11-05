@@ -12,32 +12,32 @@ import Foundation
 public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Identifiable {
 
   /// The unique identifier for this organization membership.
-  public let id: String
+  public var id: String
 
   /// Metadata that can be read from the Frontend API and Backend API
   /// and can be set only from the Backend API.
-  public let publicMetadata: JSON
+  public var publicMetadata: JSON
 
   /// The role of the current user in the organization.
-  public let role: String
+  public var role: String
 
   /// The formatted role name associated with this organization membership.
-  public let roleName: String
+  public var roleName: String
 
   /// The permissions associated with the role.
-  public let permissions: [String]?
+  public var permissions: [String]?
 
   /// Public information about the user that this membership belongs to.
-  public let publicUserData: PublicUserData?
+  public var publicUserData: PublicUserData?
 
   /// The `Organization` object the membership belongs to.
-  public let organization: Organization
+  public var organization: Organization
 
   /// The date when the membership was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   /// The date when the membership was last updated.
-  public let updatedAt: Date
+  public var updatedAt: Date
 
   public init(
     id: String,
@@ -96,41 +96,3 @@ extension OrganizationMembership {
 
 }
 
-extension OrganizationMembership {
-
-  package static var mockWithUserData: Self {
-    .init(
-      id: "1",
-      publicMetadata: "{}",
-      role: "org:role",
-      roleName: "Member",
-      permissions: ["org:sys_memberships:read"],
-      publicUserData: .init(
-        firstName: "First",
-        lastName: "Last",
-        imageUrl: "",
-        hasImage: false,
-        identifier: "identifier",
-        userId: "1"
-      ),
-      organization: .mock,
-      createdAt: Date.distantPast,
-      updatedAt: .now
-    )
-  }
-
-  package static var mockWithoutUserData: Self {
-    .init(
-      id: "1",
-      publicMetadata: "{}",
-      role: "org:role",
-      roleName: "Member",
-      permissions: ["org:sys_memberships:read"],
-      publicUserData: nil,
-      organization: .mock,
-      createdAt: Date.distantPast,
-      updatedAt: .now
-    )
-  }
-
-}

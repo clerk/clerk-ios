@@ -22,20 +22,20 @@ import Foundation
 public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
 
   /// The unique identifier for this email address.
-  public let id: String
+  public var id: String
 
   /// The value of this email address.
-  public let emailAddress: String
+  public var emailAddress: String
 
   /// An object holding information on the verification of this email address.
-  public let verification: Verification?
+  public var verification: Verification?
 
   /// An array of objects containing information about any identifications
   /// that might be linked to this email address.
-  public let linkedTo: [JSON]?
+  public var linkedTo: [JSON]?
 
   /// The date the email was created.
-  public let createdAt: Date
+  public var createdAt: Date
 
   public init(
     id: String,
@@ -111,24 +111,3 @@ extension EmailAddress {
 
 }
 
-extension EmailAddress {
-
-  package static var mock: EmailAddress {
-    EmailAddress(
-      id: "1",
-      emailAddress: "user@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
-      linkedTo: nil
-    )
-  }
-
-  package static var mock2: EmailAddress {
-    EmailAddress(
-      id: "12",
-      emailAddress: "user2@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
-      linkedTo: nil
-    )
-  }
-
-}
