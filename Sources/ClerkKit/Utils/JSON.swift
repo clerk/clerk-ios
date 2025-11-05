@@ -41,9 +41,7 @@ import Foundation
 }
 
 extension JSON: Codable {
-
   public func encode(to encoder: Encoder) throws {
-
     var container = encoder.singleValueContainer()
 
     switch self {
@@ -63,7 +61,6 @@ extension JSON: Codable {
   }
 
   public init(from decoder: Decoder) throws {
-
     let container = try decoder.singleValueContainer()
 
     if let object = try? container.decode([String: JSON].self) {
@@ -87,14 +84,13 @@ extension JSON: Codable {
 }
 
 extension JSON: CustomDebugStringConvertible {
-
   public var debugDescription: String {
     switch self {
-    case .string(let str):
+    case let .string(str):
       return str.debugDescription
-    case .number(let num):
+    case let .number(num):
       return num.debugDescription
-    case .bool(let bool):
+    case let .bool(bool):
       return bool.description
     case .null:
       return "null"
@@ -112,15 +108,14 @@ extension JSON: Hashable {}
 
 private struct InitializationError: Error {}
 
-extension JSON {
-
+public extension JSON {
   /// Create a JSON value from anything.
   ///
   /// Argument has to be a valid JSON structure: A `Double`, `Int`, `String`,
   /// `Bool`, an `Array` of those types or a `Dictionary` of those types.
   ///
   /// You can also pass `nil` or `NSNull`, both will be treated as `.null`.
-  public init(_ value: Any) throws {
+  init(_ value: Any) throws {
     switch value {
     case _ as NSNull:
       self = .null
@@ -137,48 +132,43 @@ extension JSON {
     case let bool as Bool:
       self = .bool(bool)
     case let array as [Any]:
-      self = .array(try array.map(JSON.init))
+      self = try .array(array.map(JSON.init))
     case let dict as [String: Any]:
-      self = .object(try dict.mapValues(JSON.init))
+      self = try .object(dict.mapValues(JSON.init))
     default:
       throw InitializationError()
     }
   }
 }
 
-extension JSON {
-
+public extension JSON {
   /// Create a JSON value from an `Encodable`. This will give you access to the “raw”
   /// encoded JSON value the `Encodable` is serialized into.
-  public init<T: Encodable>(encodable: T) throws {
+  init(encodable: some Encodable) throws {
     let encoded = try JSONEncoder().encode(encodable)
     self = try JSONDecoder().decode(JSON.self, from: encoded)
   }
 }
 
 extension JSON: ExpressibleByBooleanLiteral {
-
   public init(booleanLiteral value: Bool) {
     self = .bool(value)
   }
 }
 
 extension JSON: ExpressibleByNilLiteral {
-
-  public init(nilLiteral: ()) {
+  public init(nilLiteral _: ()) {
     self = .null
   }
 }
 
 extension JSON: ExpressibleByArrayLiteral {
-
   public init(arrayLiteral elements: JSON...) {
     self = .array(elements)
   }
 }
 
 extension JSON: ExpressibleByDictionaryLiteral {
-
   public init(dictionaryLiteral elements: (String, JSON)...) {
     var object: [String: JSON] = [:]
     for (k, v) in elements {
@@ -189,21 +179,18 @@ extension JSON: ExpressibleByDictionaryLiteral {
 }
 
 extension JSON: ExpressibleByFloatLiteral {
-
   public init(floatLiteral value: Double) {
     self = .number(value)
   }
 }
 
 extension JSON: ExpressibleByIntegerLiteral {
-
   public init(integerLiteral value: Int) {
     self = .number(Double(value))
   }
 }
 
 extension JSON: ExpressibleByStringLiteral {
-
   public init(stringLiteral value: String) {
     self = .string(value)
   }
@@ -211,16 +198,15 @@ extension JSON: ExpressibleByStringLiteral {
 
 // MARK: - NSNumber
 
-extension NSNumber {
-
+private extension NSNumber {
   /// Boolean value indicating whether this `NSNumber` wraps a boolean.
   ///
   /// For example, when using `NSJSONSerialization` Bool values are converted into `NSNumber` instances.
   ///
   /// - seealso: https://stackoverflow.com/a/49641315/3589408
-  fileprivate var isBool: Bool {
-    let objCType = String(cString: self.objCType)
-    if (self.compare(trueNumber) == .orderedSame && objCType == trueObjCType) || (self.compare(falseNumber) == .orderedSame && objCType == falseObjCType) {
+  var isBool: Bool {
+    let objCType = String(cString: objCType)
+    if (compare(trueNumber) == .orderedSame && objCType == trueObjCType) || (compare(falseNumber) == .orderedSame && objCType == falseObjCType) {
       return true
     } else {
       return false
@@ -235,8 +221,7 @@ private let falseObjCType = String(cString: falseNumber.objCType)
 
 // MARK: - Merging
 
-extension JSON {
-
+public extension JSON {
   /// Return a new JSON value by merging two other ones
   ///
   /// If we call the current JSON value `old` and the incoming JSON value
@@ -247,10 +232,9 @@ extension JSON {
   ///     1. Add keys from `old` not present in `new` (“no change” case).
   ///     2. Add keys from `new` not present in `old` (“create” case).
   ///     3. For keys present in both `old` and `new`, apply merge recursively to their values (“update” case).
-  public func merging(with new: JSON) -> JSON {
-
+  func merging(with new: JSON) -> JSON {
     // If old or new are anything but an object, return new.
-    guard case .object(let lhs) = self, case .object(let rhs) = new else {
+    guard case let .object(lhs) = self, case let .object(rhs) = new else {
       return new
     }
 
@@ -278,10 +262,9 @@ extension JSON {
 // MARK: - Querying
 
 public extension JSON {
-
   /// Return the string value if this is a `.string`, otherwise `nil`
   var stringValue: String? {
-    if case .string(let value) = self {
+    if case let .string(value) = self {
       return value
     }
     return nil
@@ -289,7 +272,7 @@ public extension JSON {
 
   /// Return the double value if this is a `.number`, otherwise `nil`
   var doubleValue: Double? {
-    if case .number(let value) = self {
+    if case let .number(value) = self {
       return value
     }
     return nil
@@ -297,7 +280,7 @@ public extension JSON {
 
   /// Return the bool value if this is a `.bool`, otherwise `nil`
   var boolValue: Bool? {
-    if case .bool(let value) = self {
+    if case let .bool(value) = self {
       return value
     }
     return nil
@@ -305,7 +288,7 @@ public extension JSON {
 
   /// Return the object value if this is an `.object`, otherwise `nil`
   var objectValue: [String: JSON]? {
-    if case .object(let value) = self {
+    if case let .object(value) = self {
       return value
     }
     return nil
@@ -313,7 +296,7 @@ public extension JSON {
 
   /// Return the array value if this is an `.array`, otherwise `nil`
   var arrayValue: [JSON]? {
-    if case .array(let value) = self {
+    if case let .array(value) = self {
       return value
     }
     return nil
@@ -331,7 +314,7 @@ public extension JSON {
   ///
   /// If this is not an `.array` or the index is out of bounds, returns `nil`.
   subscript(index: Int) -> JSON? {
-    if case .array(let arr) = self, arr.indices.contains(index) {
+    if case let .array(arr) = self, arr.indices.contains(index) {
       return arr[index]
     }
     return nil
@@ -339,7 +322,7 @@ public extension JSON {
 
   /// If this is an `.object`, return item at key
   subscript(key: String) -> JSON? {
-    if case .object(let dict) = self {
+    if case let .object(dict) = self {
       return dict[key]
     }
     return nil
@@ -349,20 +332,19 @@ public extension JSON {
   ///
   /// This lets you write `json.foo` instead of `json["foo"]`.
   subscript(dynamicMember member: String) -> JSON? {
-    return self[member]
+    self[member]
   }
 
   /// Return the JSON type at the keypath if this is an `.object`, otherwise `nil`
   ///
   /// This lets you write `json[keyPath: "foo.bar.jar"]`.
   subscript(keyPath keyPath: String) -> JSON? {
-    return queryKeyPath(keyPath.components(separatedBy: "."))
+    queryKeyPath(keyPath.components(separatedBy: "."))
   }
 
-  func queryKeyPath<T>(_ path: T) -> JSON? where T: Collection, T.Element == String {
-
+  func queryKeyPath(_ path: some Collection<String>) -> JSON? {
     // Only object values may be subscripted
-    guard case .object(let object) = self else {
+    guard case let .object(object) = self else {
       return nil
     }
 
@@ -380,5 +362,4 @@ public extension JSON {
 
     return tail.isEmpty ? value : value.queryKeyPath(tail)
   }
-
 }

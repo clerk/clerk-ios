@@ -12,7 +12,6 @@ protocol ClientServiceProtocol: Sendable {
 }
 
 final class ClientService: ClientServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -21,7 +20,7 @@ final class ClientService: ClientServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor

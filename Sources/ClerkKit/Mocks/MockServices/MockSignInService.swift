@@ -66,37 +66,37 @@ public final class MockSignInService: SignInServiceProtocol {
     attemptSecondFactor: ((String, SignIn.AttemptSecondFactorStrategy) async throws -> SignIn)? = nil,
     get: ((String, String?) async throws -> SignIn)? = nil
   ) {
-    self.createHandler = create
-    self.createWithParamsHandler = createWithParams
-    self.resetPasswordHandler = resetPassword
-    self.prepareFirstFactorHandler = prepareFirstFactor
-    self.attemptFirstFactorHandler = attemptFirstFactor
-    self.prepareSecondFactorHandler = prepareSecondFactor
-    self.attemptSecondFactorHandler = attemptSecondFactor
-    self.getHandler = get
+    createHandler = create
+    createWithParamsHandler = createWithParams
+    resetPasswordHandler = resetPassword
+    prepareFirstFactorHandler = prepareFirstFactor
+    attemptFirstFactorHandler = attemptFirstFactor
+    prepareSecondFactorHandler = prepareSecondFactor
+    attemptSecondFactorHandler = attemptSecondFactor
+    getHandler = get
   }
 
   #if !os(tvOS) && !os(watchOS)
   public func setAuthenticateWithRedirectStatic(_ handler: @escaping (SignIn.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
-    self.authenticateWithRedirectStaticHandler = handler
+    authenticateWithRedirectStaticHandler = handler
   }
 
   public func setAuthenticateWithRedirect(_ handler: @escaping (SignIn, Bool) async throws -> TransferFlowResult) {
-    self.authenticateWithRedirectHandler = handler
+    authenticateWithRedirectHandler = handler
   }
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   public func setGetCredentialForPasskey(_ handler: @escaping (SignIn, Bool, Bool) async throws -> String) {
-    self.getCredentialForPasskeyHandler = handler
+    getCredentialForPasskeyHandler = handler
   }
 
   public func setAuthenticateWithIdTokenStatic(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
-    self.authenticateWithIdTokenStaticHandler = handler
+    authenticateWithIdTokenStaticHandler = handler
   }
 
   public func setAuthenticateWithIdToken(_ handler: @escaping (SignIn) async throws -> TransferFlowResult) {
-    self.authenticateWithIdTokenHandler = handler
+    authenticateWithIdTokenHandler = handler
   }
   #endif
 

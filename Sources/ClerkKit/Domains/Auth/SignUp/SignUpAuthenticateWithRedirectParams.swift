@@ -8,14 +8,12 @@
 import Foundation
 
 extension SignUp {
-
   /// Represents the parameters used for authenticating with a redirect.
   ///
   /// This structure is used to authenticate a user with various strategies, including OAuth, SAML, and enterprise SSO. It defines the necessary parameters for the authentication process, such as the redirect URLs and legal acceptance.
   ///
   /// - SeeAlso: `AuthenticateWithRedirect` function for initiating authentication with these parameters.
   struct AuthenticateWithRedirectParams: Encodable {
-
     /// The strategy to use for authentication.
     let strategy: String
 
@@ -43,12 +41,12 @@ extension SignUp {
     @MainActor
     var signUpStrategy: SignUp.CreateStrategy {
       switch self {
-      case .oauth(let provider, let redirectUrl):
+      case let .oauth(provider, redirectUrl):
         .oauth(
           provider: provider,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
-      case .enterpriseSSO(let identifier, let redirectUrl):
+      case let .enterpriseSSO(identifier, redirectUrl):
         .enterpriseSSO(
           identifier: identifier,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
@@ -59,12 +57,12 @@ extension SignUp {
     @MainActor
     var params: AuthenticateWithRedirectParams {
       switch self {
-      case .oauth(let provider, let redirectUrl):
+      case let .oauth(provider, redirectUrl):
         .init(
           strategy: provider.strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
-      case .enterpriseSSO(let identifier, let redirectUrl):
+      case let .enterpriseSSO(identifier, redirectUrl):
         .init(
           strategy: "enterprise_sso",
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
@@ -73,5 +71,4 @@ extension SignUp {
       }
     }
   }
-
 }

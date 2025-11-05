@@ -1,5 +1,5 @@
 //
-//  SocialButtonStack.swift
+//  SocialButtonLayout.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/23/25.
@@ -18,7 +18,7 @@ struct SocialButtonLayout: Layout {
   var minItemWidth: CGFloat = 112
   var spacing: CGFloat = 8
 
-  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
     let containerWidth = proposal.width ?? 0
     let itemsPerRow = maxFittingItemCount(containerWidth: containerWidth)
     let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
@@ -27,36 +27,34 @@ struct SocialButtonLayout: Layout {
     return CGSize(width: containerWidth, height: totalHeight)
   }
 
-  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+  func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
     let containerWidth = bounds.width
     let itemsPerRow = maxFittingItemCount(containerWidth: containerWidth)
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
     let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
     let useMaxWidth = subviews.count <= itemsPerRow
 
-    for row in 0..<rowCount {
+    for row in 0 ..< rowCount {
       let startIndex = row * itemsPerRow
       let endIndex = min(startIndex + itemsPerRow, subviews.count)
-      let rowSubviews = subviews[startIndex..<endIndex]
+      let rowSubviews = subviews[startIndex ..< endIndex]
       let itemCount = rowSubviews.count
 
-      let buttonWidth: CGFloat
-      if useMaxWidth {
-        buttonWidth = (containerWidth - CGFloat(itemCount - 1) * spacing) / CGFloat(itemCount)
+      let buttonWidth: CGFloat = if useMaxWidth {
+        (containerWidth - CGFloat(itemCount - 1) * spacing) / CGFloat(itemCount)
       } else {
-        buttonWidth = minItemWidth
+        minItemWidth
       }
 
       let totalRowWidth = CGFloat(itemCount) * buttonWidth + CGFloat(itemCount - 1) * spacing
 
-      let xOffset: CGFloat
-      switch alignment {
+      let xOffset: CGFloat = switch alignment {
       case .leading:
-        xOffset = 0
+        0
       case .center:
-        xOffset = (containerWidth - totalRowWidth) / 2
+        (containerWidth - totalRowWidth) / 2
       case .trailing:
-        xOffset = containerWidth - totalRowWidth
+        containerWidth - totalRowWidth
       }
 
       for (column, subview) in rowSubviews.enumerated() {

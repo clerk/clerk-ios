@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignUpCollectFieldView: View {
   @Environment(Clerk.self) private var clerk
@@ -27,8 +27,8 @@ struct SignUpCollectFieldView: View {
   enum Field: String {
     case emailAddress = "email_address"
     case phoneNumber = "phone_number"
-    case password = "password"
-    case username = "username"
+    case password
+    case username
   }
 
   var title: LocalizedStringKey {
@@ -184,7 +184,6 @@ struct SignUpCollectFieldView: View {
 }
 
 extension SignUpCollectFieldView {
-
   func updateSignUp() async {
     guard var signUp else { return }
 
@@ -206,7 +205,6 @@ extension SignUpCollectFieldView {
       ClerkLogger.error("Failed to update sign up with field data", error: error)
     }
   }
-
 }
 
 #Preview {

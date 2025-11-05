@@ -1,5 +1,5 @@
 //
-//  HiddenTextField.swift
+//  View+HiddenTextField.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 5/14/25.
@@ -15,7 +15,6 @@ import SwiftUI
 // This means we often need to "fake" having a certain textfields
 // in the view, in order for the prompt to appear when they disappear.
 struct HiddenTextFieldModifier: ViewModifier {
-
   @Binding var text: String
   let textContentType: UITextContentType
   let isSecure: Bool
@@ -41,11 +40,10 @@ struct HiddenTextFieldModifier: ViewModifier {
       TextField("", text: $text)
     }
   }
-
 }
 
-extension View {
-  public func hiddenTextField(text: Binding<String>, textContentType: UITextContentType, isSecure: Bool = false) -> some View {
+public extension View {
+  func hiddenTextField(text: Binding<String>, textContentType: UITextContentType, isSecure: Bool = false) -> some View {
     modifier(HiddenTextFieldModifier(text: text, textContentType: textContentType, isSecure: isSecure))
   }
 }

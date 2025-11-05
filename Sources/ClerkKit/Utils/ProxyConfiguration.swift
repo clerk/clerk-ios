@@ -26,9 +26,9 @@ struct ProxyConfiguration: Sendable {
 
     let trimmedPath = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     if trimmedPath.isEmpty {
-      self.pathSegments = []
+      pathSegments = []
     } else {
-      self.pathSegments = trimmedPath.split(separator: "/").map { String($0) }
+      pathSegments = trimmedPath.split(separator: "/").map { String($0) }
     }
   }
 

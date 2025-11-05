@@ -31,7 +31,6 @@ protocol SignInServiceProtocol: Sendable {
 }
 
 final class SignInService: SignInServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -40,7 +39,7 @@ final class SignInService: SignInServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor
@@ -60,7 +59,7 @@ final class SignInService: SignInServiceProtocol {
   @MainActor
   func createWithParams(params: any Encodable & Sendable) async throws -> SignIn {
     var body: any Encodable & Sendable = params
-    if var json = try? JSON(encodable: params), case .object(var object) = json {
+    if var json = try? JSON(encodable: params), case var .object(object) = json {
       if object["locale"] == nil || object["locale"] == .null {
         object["locale"] = .string(LocaleUtils.userLocale())
         json = .object(object)

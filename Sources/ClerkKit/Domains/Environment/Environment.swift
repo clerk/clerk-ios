@@ -7,9 +7,8 @@
 
 import Foundation
 
-extension Clerk {
-
-  public struct Environment: Codable, Sendable, Equatable {
+public extension Clerk {
+  struct Environment: Codable, Sendable, Equatable {
     public var authConfig: AuthConfig?
     public var userSettings: UserSettings?
     public var displayConfig: DisplayConfig?
@@ -20,11 +19,9 @@ extension Clerk {
       authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil && commerceSettings == nil
     }
   }
-
 }
 
 extension Clerk.Environment {
-
   @MainActor
   private static var environmentService: any EnvironmentServiceProtocol { Clerk.shared.dependencies.environmentService }
 
@@ -32,6 +29,4 @@ extension Clerk.Environment {
   public static func get() async throws -> Clerk.Environment {
     try await environmentService.get()
   }
-
 }
-

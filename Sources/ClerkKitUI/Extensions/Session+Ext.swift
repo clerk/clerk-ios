@@ -12,23 +12,20 @@ import Foundation
 import SwiftUI
 
 extension Session {
-
   @MainActor
   var isThisDevice: Bool {
     id == Clerk.shared.session?.id
   }
-
 }
 
 extension SessionActivity {
-
   var deviceText: Text {
     if let deviceType {
-      return Text(verbatim: deviceType)
+      Text(verbatim: deviceType)
     } else if let isMobile {
-      return Text(isMobile ? "Mobile device" : "Desktop device", bundle: .module)
+      Text(isMobile ? "Mobile device" : "Desktop device", bundle: .module)
     } else {
-      return Text("Unknown device", bundle: .module)
+      Text("Unknown device", bundle: .module)
     }
   }
 
@@ -47,7 +44,6 @@ extension SessionActivity {
   var ipAndLocationFormatted: String {
     [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
   }
-
 }
 
 #endif

@@ -12,7 +12,6 @@ import Foundation
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
 public final class MockUserService: UserServiceProtocol {
-
   /// Custom handler for the `getSessions(user:)` method.
   public nonisolated(unsafe) var getSessionsHandler: ((User) async throws -> [Session])?
 
@@ -131,24 +130,24 @@ public final class MockUserService: UserServiceProtocol {
     deleteProfileImage: (() async throws -> DeletedObject)? = nil,
     delete: (() async throws -> DeletedObject)? = nil
   ) {
-    self.getSessionsHandler = getSessions
-    self.reloadHandler = reload
-    self.updateHandler = update
-    self.createBackupCodesHandler = createBackupCodes
-    self.createEmailAddressHandler = createEmailAddress
-    self.createPhoneNumberHandler = createPhoneNumber
-    self.createExternalAccountHandler = createExternalAccount
-    self.createExternalAccountTokenHandler = createExternalAccountToken
-    self.createTotpHandler = createTotp
-    self.verifyTotpHandler = verifyTotp
-    self.disableTotpHandler = disableTotp
-    self.getOrganizationInvitationsHandler = getOrganizationInvitations
-    self.getOrganizationMembershipsHandler = getOrganizationMemberships
-    self.getOrganizationSuggestionsHandler = getOrganizationSuggestions
-    self.updatePasswordHandler = updatePassword
-    self.setProfileImageHandler = setProfileImage
-    self.deleteProfileImageHandler = deleteProfileImage
-    self.deleteHandler = delete
+    getSessionsHandler = getSessions
+    reloadHandler = reload
+    updateHandler = update
+    createBackupCodesHandler = createBackupCodes
+    createEmailAddressHandler = createEmailAddress
+    createPhoneNumberHandler = createPhoneNumber
+    createExternalAccountHandler = createExternalAccount
+    createExternalAccountTokenHandler = createExternalAccountToken
+    createTotpHandler = createTotp
+    verifyTotpHandler = verifyTotp
+    disableTotpHandler = disableTotp
+    getOrganizationInvitationsHandler = getOrganizationInvitations
+    getOrganizationMembershipsHandler = getOrganizationMemberships
+    getOrganizationSuggestionsHandler = getOrganizationSuggestions
+    updatePasswordHandler = updatePassword
+    setProfileImageHandler = setProfileImage
+    deleteProfileImageHandler = deleteProfileImage
+    deleteHandler = delete
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
@@ -156,7 +155,7 @@ public final class MockUserService: UserServiceProtocol {
   ///
   /// - Parameter createPasskey: The implementation of the `createPasskey()` method.
   public func setCreatePasskey(_ createPasskey: @escaping () async throws -> Passkey) {
-    self.createPasskeyHandler = createPasskey
+    createPasskeyHandler = createPasskey
   }
   #endif
 
@@ -314,4 +313,3 @@ public final class MockUserService: UserServiceProtocol {
     return .mock
   }
 }
-

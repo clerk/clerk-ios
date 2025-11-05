@@ -20,7 +20,7 @@ protocol LifecycleEventHandling: Sendable {
   ///
   /// Use this to resume background tasks, refresh data, or restart polling.
   @MainActor func onWillEnterForeground() async
-  
+
   /// Called when the app has entered the background.
   ///
   /// Use this to pause background tasks, flush telemetry, or save state.
@@ -33,34 +33,33 @@ protocol LifecycleEventHandling: Sendable {
 /// It ensures proper task cancellation and resource cleanup when the app transitions between states.
 @MainActor
 final class LifecycleManager {
-  
   /// Task that observes foreground notifications.
-  nonisolated(unsafe) private var willEnterForegroundTask: Task<Void, Error>?
-  
+  private nonisolated(unsafe) var willEnterForegroundTask: Task<Void, Error>?
+
   /// Task that observes background notifications.
-  nonisolated(unsafe) private var didEnterBackgroundTask: Task<Void, Error>?
-  
+  private nonisolated(unsafe) var didEnterBackgroundTask: Task<Void, Error>?
+
   /// The handler that responds to lifecycle events.
   private let handler: any LifecycleEventHandling
-  
+
   /// Creates a new lifecycle manager with the provided event handler.
   ///
   /// - Parameter handler: The object that will handle lifecycle events.
   init(handler: any LifecycleEventHandling) {
     self.handler = handler
   }
-  
+
   /// Starts observing app lifecycle notifications.
   ///
   /// This method sets up notification observers for foreground and background transitions.
   /// If observers are already active, existing tasks are cancelled before creating new ones.
   func startObserving() {
     #if !os(watchOS) && !os(macOS)
-    
+
     // Cancel existing tasks if they exist (switching instances)
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
-    
+
     willEnterForegroundTask = Task {
       for await _ in NotificationCenter.default.notifications(
         named: UIApplication.willEnterForegroundNotification
@@ -68,7 +67,7 @@ final class LifecycleManager {
         await handler.onWillEnterForeground()
       }
     }
-    
+
     didEnterBackgroundTask = Task {
       for await _ in NotificationCenter.default.notifications(
         named: UIApplication.didEnterBackgroundNotification
@@ -76,10 +75,10 @@ final class LifecycleManager {
         await handler.onDidEnterBackground()
       }
     }
-    
+
     #endif
   }
-  
+
   /// Stops observing app lifecycle notifications and cancels all active tasks.
   ///
   /// This method should be called when the lifecycle manager is no longer needed
@@ -87,11 +86,11 @@ final class LifecycleManager {
   nonisolated func stopObserving() {
     willEnterForegroundTask?.cancel()
     willEnterForegroundTask = nil
-    
+
     didEnterBackgroundTask?.cancel()
     didEnterBackgroundTask = nil
   }
-  
+
   /// Cancels all active tasks and stops observing.
   ///
   /// This is called automatically when the manager is deallocated.
@@ -99,4 +98,3 @@ final class LifecycleManager {
     stopObserving()
   }
 }
-

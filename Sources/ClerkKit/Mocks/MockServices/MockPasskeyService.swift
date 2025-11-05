@@ -31,10 +31,10 @@ public final class MockPasskeyService: PasskeyServiceProtocol {
     attemptVerification: ((String, String) async throws -> Passkey)? = nil,
     delete: ((String) async throws -> DeletedObject)? = nil
   ) {
-    self.createHandler = create
-    self.updateHandler = update
-    self.attemptVerificationHandler = attemptVerification
-    self.deleteHandler = delete
+    createHandler = create
+    updateHandler = update
+    attemptVerificationHandler = attemptVerification
+    deleteHandler = delete
   }
 
   @MainActor
@@ -69,4 +69,3 @@ public final class MockPasskeyService: PasskeyServiceProtocol {
     return .mock
   }
 }
-

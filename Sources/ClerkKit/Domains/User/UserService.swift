@@ -33,7 +33,6 @@ protocol UserServiceProtocol: Sendable {
 }
 
 final class UserService: UserServiceProtocol {
-
   private let apiClient: APIClient
 
   init(apiClient: APIClient) {
@@ -42,7 +41,7 @@ final class UserService: UserServiceProtocol {
 
   // Convenience initializer for dependency injection
   init(dependencies: Dependencies) {
-    self.apiClient = dependencies.apiClient
+    apiClient = dependencies.apiClient
   }
 
   @MainActor
@@ -93,7 +92,7 @@ final class UserService: UserServiceProtocol {
   func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount {
     var bodyParams: [String: String] = [
       "strategy": provider.strategy,
-      "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
+      "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
     ]
 
     if let additionalScopes {
@@ -118,7 +117,7 @@ final class UserService: UserServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [
         "strategy": provider.strategy,
-        "token": idToken
+        "token": idToken,
       ]
     )
 
@@ -162,8 +161,8 @@ final class UserService: UserServiceProtocol {
       "type": "public-key",
       "response": [
         "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
-        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String()
-      ]
+        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+      ],
     ]
 
     let publicKeyCredentialJSON = try JSON(publicKeyCredential)
@@ -213,7 +212,7 @@ final class UserService: UserServiceProtocol {
       query: [
         ("_clerk_session_id", value: Clerk.shared.session?.id),
         ("offset", value: String(initialPage)),
-        ("limit", value: String(pageSize))
+        ("limit", value: String(pageSize)),
       ]
     )
 
@@ -229,7 +228,7 @@ final class UserService: UserServiceProtocol {
         ("_clerk_session_id", value: Clerk.shared.session?.id),
         ("offset", value: String(initialPage)),
         ("limit", value: String(pageSize)),
-        ("paginated", value: "true")
+        ("paginated", value: "true"),
       ]
     )
 
@@ -241,7 +240,7 @@ final class UserService: UserServiceProtocol {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
-      ("limit", value: String(pageSize))
+      ("limit", value: String(pageSize)),
     ]
 
     if let status {

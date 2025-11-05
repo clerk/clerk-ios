@@ -9,7 +9,6 @@ import Foundation
 
 /// Represents information about a TOTP configuration.
 public struct TOTPResource: Codable, Hashable, Equatable, Sendable {
-
   /// A unique identifier for this TOTP secret.
   public var id: String
 
@@ -49,4 +48,3 @@ public struct TOTPResource: Codable, Hashable, Equatable, Sendable {
     self.updatedAt = updatedAt
   }
 }
-

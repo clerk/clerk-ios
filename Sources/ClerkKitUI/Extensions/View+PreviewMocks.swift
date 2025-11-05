@@ -14,7 +14,7 @@ import SwiftUI
 /// Used for configuring Clerk.shared in SwiftUI previews.
 private let previewTestPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
-extension View {
+public extension View {
   /// Injects mock environment values for previews.
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
@@ -32,16 +32,15 @@ extension View {
   /// }
   /// ```
   @MainActor
-  public func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
+  func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
     // Configure Clerk.shared so views that access it directly don't fail
     let clerk = Clerk.configureWithMocks()
     if !isSignedIn { Task { try? await clerk.signOut() } }
 
     return
-      self
-      .environment(clerk)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
+      environment(clerk)
+        .environment(AuthState())
+        .environment(UserProfileView.SharedState())
   }
 
   /// Preview with custom mock service behaviors.
@@ -64,15 +63,14 @@ extension View {
   /// }
   /// ```
   @MainActor
-  public func clerkPreviewMocks(configureServices: @escaping (MockServicesBuilder) -> Void) -> some View {
+  func clerkPreviewMocks(configureServices: @escaping (MockServicesBuilder) -> Void) -> some View {
     // Configure Clerk.shared with mock services (using default preview publishable key)
     Clerk.configureWithMocks(configureServices: configureServices)
 
     return
-      self
-      .environment(Clerk.mock)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
+      environment(Clerk.mock)
+        .environment(AuthState())
+        .environment(UserProfileView.SharedState())
   }
 }
 

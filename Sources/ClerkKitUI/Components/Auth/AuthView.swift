@@ -1,5 +1,5 @@
 //
-//  SignInView.swift
+//  AuthView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/14/25.
@@ -96,7 +96,7 @@ public struct AuthView: View {
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    self._authState = State(initialValue: .init(mode: mode))
+    _authState = State(initialValue: .init(mode: mode))
     self.isDismissable = isDismissable
   }
 
@@ -150,16 +150,16 @@ public struct AuthView: View {
           "AuthView",
           payload: [
             "mode": .string(authState.mode.rawValue),
-            "isDismissable": .bool(isDismissable)
+            "isDismissable": .bool(isDismissable),
           ]
-        ))
+        )
+      )
     }
   }
 }
 
 extension AuthView {
   enum Destination: Hashable {
-
     // Auth Start
     case authStart
 
@@ -183,13 +183,13 @@ extension AuthView {
       switch self {
       case .authStart:
         AuthStartView()
-      case .signInFactorOne(let factor):
+      case let .signInFactorOne(factor):
         SignInFactorOneView(factor: factor)
-      case .signInFactorOneUseAnotherMethod(let currentFactor):
+      case let .signInFactorOneUseAnotherMethod(currentFactor):
         SignInFactorAlternativeMethodsView(currentFactor: currentFactor)
-      case .signInFactorTwo(let factor):
+      case let .signInFactorTwo(factor):
         SignInFactorTwoView(factor: factor)
-      case .signInFactorTwoUseAnotherMethod(let currentFactor):
+      case let .signInFactorTwoUseAnotherMethod(currentFactor):
         SignInFactorAlternativeMethodsView(
           currentFactor: currentFactor,
           isSecondFactor: true
@@ -200,9 +200,9 @@ extension AuthView {
         SignInSetNewPasswordView()
       case .signInGetHelp:
         SignInGetHelpView()
-      case .signUpCollectField(let field):
+      case let .signUpCollectField(field):
         SignUpCollectFieldView(field: field)
-      case .signUpCode(let field):
+      case let .signUpCode(field):
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()

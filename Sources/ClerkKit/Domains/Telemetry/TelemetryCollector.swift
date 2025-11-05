@@ -29,7 +29,7 @@ package protocol TelemetryCollectorProtocol: Sendable {
 
 /// A no-op implementation of TelemetryCollectorProtocol used as a default.
 package actor NoOpTelemetryCollector: TelemetryCollectorProtocol {
-  package func record(_ raw: TelemetryEventRaw) async {
+  package func record(_: TelemetryEventRaw) async {
     // No-op: do nothing
   }
 
@@ -73,8 +73,8 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   private var throttler = TelemetryEventThrottler()
   private var metadata: Metadata
   private var buffer: [TelemetryEvent] = []
-  private var flushTask: Task<Void, Never>? = nil
-  private var flushTimer: Task<Void, Never>? = nil
+  private var flushTask: Task<Void, Never>?
+  private var flushTimer: Task<Void, Never>?
   private let environment: TelemetryEnvironmentProviding
   private var isPeriodicFlushingStarted = false
 
@@ -91,7 +91,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     networkRequester: NetworkRequester = URLSession.shared,
     environment: TelemetryEnvironmentProviding = ClerkTelemetryEnvironment()
   ) {
-    self.config = Config(
+    config = Config(
       samplingRate: options.samplingRate,
       maxBufferSize: options.maxBufferSize,
       endpoint: Self.defaultEndpoint,
@@ -101,7 +101,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     )
     self.environment = environment
 
-    self.metadata = Metadata(
+    metadata = Metadata(
       sdk: environment.sdkName,
       sdkVersion: environment.sdkVersion
     )
@@ -157,7 +157,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       return RecordResult(shouldRecord: true, reason: "throttling disabled")
     }
 
-    let randomSeed = Double.random(in: 0...1)
+    let randomSeed = Double.random(in: 0 ... 1)
     let globalOk = randomSeed <= config.samplingRate
     let eventOk = eventSamplingRate.map { randomSeed <= $0 } ?? true
 
@@ -185,9 +185,9 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(config.flushInterval))
 
-        let hasEvents = await self.hasBufferedEvents()
+        let hasEvents = await hasBufferedEvents()
         if hasEvents {
-          await self.flush()
+          await flush()
         }
       }
     }
@@ -204,7 +204,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       flushTask?.cancel()
       flushTask = Task { [weak self] in
         guard let self else { return }
-        await self.flush()
+        await flush()
       }
     }
     // Note: Only flush when buffer is full, not on every event
@@ -227,7 +227,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     request.httpBody = requestBody
 
     do {
-      let _ = try await config.networkRequester.data(for: request)
+      _ = try await config.networkRequester.data(for: request)
     } catch {
       if await isDebugModeEnabled() {
         ClerkLogger.logNetworkError(

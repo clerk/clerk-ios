@@ -29,7 +29,7 @@ struct UserProfileMfaAddSmsView: View {
     @ViewBuilder
     var view: some View {
       switch self {
-      case .backupCodes(let backupCodes):
+      case let .backupCodes(backupCodes):
         BackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
       }
     }
@@ -134,7 +134,6 @@ struct UserProfileMfaAddSmsView: View {
 }
 
 extension UserProfileMfaAddSmsView {
-
   private func reserveForSecondFactor(phoneNumber: ClerkKit.PhoneNumber) async {
     do {
       let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
@@ -148,7 +147,6 @@ extension UserProfileMfaAddSmsView {
       ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
     }
   }
-
 }
 
 struct AddMfaSmsRow: View {
@@ -160,7 +158,7 @@ struct AddMfaSmsRow: View {
 
   var country: CountryCodePickerViewController.Country? {
     if let phoneNumber = try? utility.parse(phoneNumber.phoneNumber),
-      let regionId = phoneNumber.regionID
+       let regionId = phoneNumber.regionID
     {
       return CountryCodePickerViewController.Country(
         for: regionId,

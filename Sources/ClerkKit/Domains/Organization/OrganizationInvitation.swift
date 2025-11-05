@@ -9,7 +9,6 @@ import Foundation
 
 /// Represents an organization invitation and its associated details.
 public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable {
-
   /// The unique identifier for this organization invitation.
   public var id: String
 
@@ -58,7 +57,6 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
 }
 
 extension OrganizationInvitation {
-
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -67,6 +65,4 @@ extension OrganizationInvitation {
   public func revoke() async throws -> OrganizationInvitation {
     try await organizationService.revokeOrganizationInvitation(organizationId: organizationId, invitationId: id)
   }
-
 }
-

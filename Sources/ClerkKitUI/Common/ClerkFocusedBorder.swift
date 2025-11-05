@@ -52,7 +52,8 @@ struct ClerkFocusedBorder: ViewModifier {
               RoundedRectangle(cornerRadius: theme.design.borderRadius)
                 .stroke(outerBorderColor, lineWidth: isFocused ? 4 : 0)
             }
-        })
+        }
+      )
   }
 }
 
@@ -66,7 +67,6 @@ extension View {
   @Previewable @Environment(\.clerkTheme) var theme
 
   VStack(spacing: 20) {
-
     RoundedRectangle(cornerRadius: theme.design.borderRadius)
       .fill(theme.colors.background)
       .frame(maxWidth: .infinity, maxHeight: 48)
@@ -86,7 +86,6 @@ extension View {
       .fill(theme.colors.background)
       .frame(maxWidth: .infinity, maxHeight: 48)
       .clerkFocusedBorder(state: .error)
-
   }
   .padding()
 }

@@ -22,25 +22,24 @@ protocol SessionProviding: Sendable {
 /// to ensure they remain valid. The polling interval is configurable and defaults to 5 seconds.
 @MainActor
 final class SessionPollingManager {
-  
   /// The interval between token refresh attempts.
   static let defaultPollInterval: TimeInterval = 5.0
-  
+
   /// The tolerance for the polling interval to allow for system scheduling flexibility.
   static let defaultPollTolerance: TimeInterval = 0.1
-  
+
   /// Task that performs the periodic token polling.
-  nonisolated(unsafe) private var pollingTask: Task<Void, Error>?
-  
+  private nonisolated(unsafe) var pollingTask: Task<Void, Error>?
+
   /// The provider that supplies the current session for token retrieval.
   @MainActor private let sessionProvider: any SessionProviding
-  
+
   /// The interval between polling attempts.
   private let pollInterval: TimeInterval
-  
+
   /// The tolerance for the polling interval.
   private let pollTolerance: TimeInterval
-  
+
   /// Creates a new session polling manager.
   ///
   /// - Parameters:
@@ -56,7 +55,7 @@ final class SessionPollingManager {
     self.pollInterval = pollInterval
     self.pollTolerance = pollTolerance
   }
-  
+
   /// Starts polling for session tokens.
   ///
   /// If polling is already active, this method does nothing. The polling will continue
@@ -65,10 +64,10 @@ final class SessionPollingManager {
     guard pollingTask == nil || pollingTask?.isCancelled == true else {
       return
     }
-    
-    let interval = self.pollInterval
-    let tolerance = self.pollTolerance
-    
+
+    let interval = pollInterval
+    let tolerance = pollTolerance
+
     pollingTask = Task(priority: .background) { [weak self] in
       repeat {
         await self?.refreshTokenIfNeeded()
@@ -76,7 +75,7 @@ final class SessionPollingManager {
       } while !Task.isCancelled
     }
   }
-  
+
   /// Stops polling for session tokens.
   ///
   /// This method cancels the polling task and cleans up resources. It can be called
@@ -85,18 +84,18 @@ final class SessionPollingManager {
     pollingTask?.cancel()
     pollingTask = nil
   }
-  
+
   /// Refreshes the token for the current session if one exists.
   @MainActor
   private func refreshTokenIfNeeded() async {
     guard let session = sessionProvider.session else {
       return
     }
-    
+
     // Silently ignore errors - token refresh failures are non-critical
     _ = try? await session.getToken()
   }
-  
+
   /// Cancels polling and cleans up resources.
   ///
   /// This is called automatically when the manager is deallocated.
@@ -104,4 +103,3 @@ final class SessionPollingManager {
     stopPolling()
   }
 }
-

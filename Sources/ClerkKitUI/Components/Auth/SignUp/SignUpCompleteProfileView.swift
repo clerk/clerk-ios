@@ -7,8 +7,8 @@
 
 #if os(iOS)
 
-import SwiftUI
 import ClerkKit
+import SwiftUI
 
 struct SignUpCompleteProfileView: View {
   @Environment(Clerk.self) private var clerk
@@ -37,32 +37,32 @@ struct SignUpCompleteProfileView: View {
   func textForField(_ field: Field) -> String {
     switch field {
     case .firstName:
-      return authState.signUpFirstName
+      authState.signUpFirstName
     case .lastName:
-      return authState.signUpLastName
+      authState.signUpLastName
     }
   }
 
   // Find the first enabled field that's empty
   func firstEmptyEnabledField() -> Field? {
-    return Field.allCases.first { field in
+    Field.allCases.first { field in
       fieldIsEnabled(field) && textForField(field).isEmptyTrimmed
     }
   }
 
   // Get the first enabled field (fallback)
   func firstEnabledField() -> Field? {
-    return Field.allCases.first { fieldIsEnabled($0) }
+    Field.allCases.first { fieldIsEnabled($0) }
   }
 
   // Get the last enabled field
   func lastEnabledField() -> Field? {
-    return Field.allCases.last { fieldIsEnabled($0) }
+    Field.allCases.last { fieldIsEnabled($0) }
   }
 
   // Determine the submit label for each field
   func submitLabelFor(_ field: Field) -> SubmitLabel {
-    return field == lastEnabledField() ? .done : .next
+    field == lastEnabledField() ? .done : .next
   }
 
   func nextEnabledField(after currentField: Field) -> Field? {
@@ -182,7 +182,6 @@ struct SignUpCompleteProfileView: View {
 }
 
 extension SignUpCompleteProfileView {
-
   func updateSignUp() async {
     guard var signUp else { return }
 
@@ -199,7 +198,6 @@ extension SignUpCompleteProfileView {
       ClerkLogger.error("Failed to update sign up with profile data", error: error)
     }
   }
-
 }
 
 #Preview {

@@ -1,5 +1,5 @@
 //
-//  ASAuth.swift
+//  SignInWithAppleHelper.swift
 //
 //
 //  Created by Mike Pitre on 5/28/24.
@@ -7,9 +7,9 @@
 
 #if canImport(AuthenticationServices) && !os(watchOS)
 
-import Foundation
 import AuthenticationServices
 import CryptoKit
+import Foundation
 
 /// A helper class for managing the Sign in with Apple process.
 ///
@@ -33,8 +33,7 @@ import CryptoKit
 ///     // Handle any errors.
 /// }
 /// ```
-final public class SignInWithAppleHelper: NSObject {
-
+public final class SignInWithAppleHelper: NSObject {
   /// A continuation to handle the result of the authorization process.
   private var continuation: CheckedContinuation<ASAuthorization, Error>?
 
@@ -46,7 +45,7 @@ final public class SignInWithAppleHelper: NSObject {
   /// - Returns: A Base64 URL-safe encoded nonce string.
   private func generateNonce() -> String {
     // Generate 32 bytes (256 bits) of cryptographically secure random data
-    let data = Data((0..<32).map { _ in UInt8.random(in: UInt8.min...UInt8.max) })
+    let data = Data((0 ..< 32).map { _ in UInt8.random(in: UInt8.min ... UInt8.max) })
 
     // Hash the random data using SHA256
     let hashedData = SHA256.hash(data: data)
@@ -55,9 +54,9 @@ final public class SignInWithAppleHelper: NSObject {
     let base64String = Data(hashedData).base64EncodedString()
     return
       base64String
-      .replacingOccurrences(of: "+", with: "-")
-      .replacingOccurrences(of: "/", with: "_")
-      .replacingOccurrences(of: "=", with: "")
+        .replacingOccurrences(of: "+", with: "-")
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: "=", with: "")
   }
 
   /// Starts the Sign in with Apple authorization flow with the requested scopes.
@@ -72,7 +71,7 @@ final public class SignInWithAppleHelper: NSObject {
   /// - Throws: An error if the authorization fails or if the user cancels the process.
   @MainActor
   func start(requestedScopes: [ASAuthorization.Scope]) async throws -> ASAuthorization {
-    return try await withCheckedThrowingContinuation { continuation in
+    try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
 
       let appleIDProvider = ASAuthorizationAppleIDProvider()
@@ -111,22 +110,20 @@ final public class SignInWithAppleHelper: NSObject {
 }
 
 extension SignInWithAppleHelper: ASAuthorizationControllerDelegate {
-
   /// Called when the authorization process completes successfully.
-  public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+  public func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
     continuation?.resume(returning: authorization)
   }
 
   /// Called when the authorization process fails.
-  public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
+  public func authorizationController(controller _: ASAuthorizationController, didCompleteWithError error: any Error) {
     continuation?.resume(throwing: error)
   }
 }
 
 extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
-
   @MainActor
-  public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+  public func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
     #if os(iOS)
     UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     #else

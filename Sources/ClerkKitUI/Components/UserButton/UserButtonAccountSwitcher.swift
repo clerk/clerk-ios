@@ -24,11 +24,11 @@ struct UserButtonAccountSwitcher: View {
     (clerk.client?.sessions ?? [])
       .sorted { lhs, rhs in
         if lhs.id == clerk.session?.id {
-          return true
+          true
         } else if rhs.id == clerk.session?.id {
-          return false
+          false
         } else {
-          return false
+          false
         }
       }
   }
@@ -54,14 +54,14 @@ struct UserButtonAccountSwitcher: View {
 
   var extraContentHeight: CGFloat {
     if #available(iOS 26.0, *) {
-      return 0
+      0
     } else {
-      return 7
+      7
     }
   }
 
   init(contentHeight: Binding<CGFloat> = .constant(0)) {
-    self._contentHeight = contentHeight
+    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -138,7 +138,8 @@ struct UserButtonAccountSwitcher: View {
             },
             action: { newValue in
               contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-            })
+            }
+          )
         }
         .scrollBounceBehavior(.basedOnSize)
       }

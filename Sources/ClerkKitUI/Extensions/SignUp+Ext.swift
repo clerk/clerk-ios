@@ -11,7 +11,6 @@ import ClerkKit
 import Foundation
 
 extension SignUp {
-
   static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
   static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
 
@@ -34,22 +33,21 @@ extension SignUp {
   func fieldWasCollected(field: String) -> Bool {
     switch field {
     case "email_address":
-      return emailAddress != nil
+      emailAddress != nil
     case "phone_number":
-      return phoneNumber != nil
+      phoneNumber != nil
     case "username":
-      return username != nil
+      username != nil
     case "password":
-      return passwordEnabled
+      passwordEnabled
     case "first_name":
-      return firstName != nil
+      firstName != nil
     case "last_name":
-      return lastName != nil
+      lastName != nil
     default:
-      return false
+      false
     }
   }
-
 }
 
 #endif

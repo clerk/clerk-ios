@@ -1,5 +1,5 @@
 //
-//  SignInCreate.swift
+//  SignInCreateParams.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -7,13 +7,11 @@
 
 import Foundation
 
-extension SignIn {
-
+public extension SignIn {
   /// Represents the parameters required to initiate a sign-in flow.
   ///
   /// This structure encapsulates the various options for initiating a sign-in, including the authentication strategy, user identifier, optional passwords, and additional settings for redirect URLs or OAuth-specific parameters.
-  public struct SignInCreateParams: Encodable, Sendable {
-
+  struct SignInCreateParams: Encodable, Sendable {
     /// The first factor verification strategy to use in the sign-in flow.
     ///
     /// Depends on the `identifier` value, and each authentication identifier supports different verification strategies.
@@ -67,8 +65,7 @@ extension SignIn {
   }
 
   /// Represents the various strategies for creating a `SignIn` request.
-  public enum CreateStrategy: Sendable {
-
+  enum CreateStrategy: Sendable {
     /// The user will be authenticated either through SAML or OIDC depending on the configuration of their enterprise SSO account.
     ///
     /// - Parameters:
@@ -119,27 +116,27 @@ extension SignIn {
     @MainActor
     var params: SignInCreateParams {
       switch self {
-      case .identifier(let identifier, let password, let strategy):
+      case let .identifier(identifier, password, strategy):
         .init(
           strategy: strategy?.strategy,
           identifier: identifier,
           password: password
         )
 
-      case .oauth(let oauthProvider, let redirectUrl):
+      case let .oauth(oauthProvider, redirectUrl):
         .init(
           strategy: oauthProvider.strategy,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
 
-      case .enterpriseSSO(let emailAddress, let redirectUrl):
+      case let .enterpriseSSO(emailAddress, redirectUrl):
         .init(
           strategy: "enterprise_sso",
           identifier: emailAddress,
           redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
         )
 
-      case .idToken(let provider, let idToken):
+      case let .idToken(provider, idToken):
         .init(
           strategy: provider.strategy,
           token: idToken
@@ -148,7 +145,7 @@ extension SignIn {
       case .passkey:
         .init(strategy: "passkey")
 
-      case .ticket(let ticket):
+      case let .ticket(ticket):
         .init(
           strategy: "ticket",
           ticket: ticket
@@ -162,5 +159,4 @@ extension SignIn {
       }
     }
   }
-
 }

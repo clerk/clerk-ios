@@ -23,11 +23,11 @@ struct BackupCodesView: View {
     var instructions: LocalizedStringKey {
       switch self {
       case .phoneCode:
-        return "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
+        "When signing in, you will need to enter a verification code sent to this phone number as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
       case .authenticatorApp:
-        return "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
+        "Two-step verification is now enabled. When signing in, you will need to enter a verification code from this authenticator app as an additional step.\n\nSave these backup codes and store them somewhere safe. If you lose access to your authentication device, you can use backup codes to sign in."
       case .backupCodes:
-        return "Backup codes are now enabled. You can use one of these to sign in to your account, if you lose access to your authentication device. Each code can only be used once."
+        "Backup codes are now enabled. You can use one of these to sign in to your account, if you lose access to your authentication device. Each code can only be used once."
       }
     }
   }
@@ -103,7 +103,7 @@ struct BackupCodesGrid: View {
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
-    GridItem(.flexible(), spacing: 10)
+    GridItem(.flexible(), spacing: 10),
   ]
 
   var body: some View {

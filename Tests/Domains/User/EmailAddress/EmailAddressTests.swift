@@ -7,7 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct EmailAddressTests {
-
   init() {
     configureClerkForTesting()
   }
@@ -20,8 +19,9 @@ struct EmailAddressTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -43,8 +43,9 @@ struct EmailAddressTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -66,8 +67,9 @@ struct EmailAddressTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
-      ])
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
@@ -89,8 +91,9 @@ struct EmailAddressTests {
     var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
-      ])
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+      ]
+    )
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
@@ -102,4 +105,3 @@ struct EmailAddressTests {
     #expect(requestHandled.value)
   }
 }
-

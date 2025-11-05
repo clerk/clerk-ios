@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  OverlayProgressView.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 4/15/25.
@@ -25,9 +25,9 @@ struct OverlayProgressModifier<ProgressView: View>: ViewModifier {
 }
 
 extension View {
-  func overlayProgressView<ProgressView: View>(
+  func overlayProgressView(
     isActive: Bool,
-    progressView: @escaping () -> ProgressView
+    progressView: @escaping () -> some View
   ) -> some View {
     modifier(OverlayProgressModifier(isActive: isActive, progressView: progressView))
   }
