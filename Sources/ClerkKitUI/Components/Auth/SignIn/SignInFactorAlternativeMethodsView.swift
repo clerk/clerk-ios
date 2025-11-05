@@ -156,7 +156,7 @@ extension SignInFactorAlternativeMethodsView {
         return
       }
 
-      var result: TransferFlowResult = if provider == .apple {
+      let result: TransferFlowResult = if provider == .apple {
         try await SignInWithAppleUtils.signIn()
       } else {
         try await signIn
