@@ -48,42 +48,9 @@ extension View {
   /// ```
   @MainActor
   public func clerkPreviewMocks(signedOut: Bool) -> some View {
-    if signedOut {
+    let clerk = signedOut ? Clerk.mockSignedOut : Clerk.mock
+    return
       self
-        .environment(Clerk.mockSignedOut)
-        .environment(AuthState())
-        .environment(UserProfileView.SharedState())
-    } else {
-      clerkPreviewMocks()
-    }
-  }
-
-  /// Preview with custom user.
-  ///
-  /// - Parameter user: The user to inject into the preview environment.
-  ///
-  /// Usage:
-  /// ```swift
-  /// #Preview("Custom User") {
-  ///     var user = User.mock
-  ///     user.firstName = "Alice"
-  ///
-  ///     UserProfileView()
-  ///         .clerkPreviewMocks(user: user)
-  /// }
-  /// ```
-  @MainActor
-  public func clerkPreviewMocks(user: User) -> some View {
-    var clerk = Clerk.mock
-    clerk.client = Client.mock
-    if var client = clerk.client {
-      var session = Session.mock
-      session.user = user
-      client.sessions = [session]
-      clerk.client = client
-    }
-
-    self
       .environment(clerk)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
@@ -98,7 +65,7 @@ extension View {
   /// #Preview {
   ///     AuthView()
   ///         .clerkPreviewMocks { clerk in
-  ///             clerk.client = Client.mockSignedOut
+  ///             // Customize clerk properties that are accessible from ClerkKitUI
   ///         }
   /// }
   /// ```
@@ -106,8 +73,8 @@ extension View {
   public func clerkPreviewMocks(customize: @escaping (inout Clerk) -> Void) -> some View {
     var clerk = Clerk.mock
     customize(&clerk)
-
-    self
+    return
+      self
       .environment(clerk)
       .environment(AuthState())
       .environment(UserProfileView.SharedState())
@@ -137,4 +104,3 @@ extension View {
 }
 
 #endif
-
