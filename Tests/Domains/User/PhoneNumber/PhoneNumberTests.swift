@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct PhoneNumberTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
@@ -35,7 +34,7 @@ struct PhoneNumberTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
@@ -57,7 +56,7 @@ struct PhoneNumberTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPrepareVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
@@ -80,7 +79,7 @@ struct PhoneNumberTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
@@ -103,7 +102,7 @@ struct PhoneNumberTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testMakeDefaultSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
@@ -126,7 +125,7 @@ struct PhoneNumberTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSetReservedForSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)

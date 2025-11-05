@@ -6,7 +6,6 @@
 //
 
 import AuthenticationServices
-import FactoryKit
 import Foundation
 
 /// The `SignIn` object holds the state of the current sign-in process and provides helper methods
@@ -114,9 +113,11 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
 
 extension SignIn {
 
-  private static var signInService: any SignInServiceProtocol { Container.shared.signInService() }
+  @MainActor
+  private static var signInService: any SignInServiceProtocol { Clerk.shared.container.signInService }
 
-  private var signInService: any SignInServiceProtocol { Container.shared.signInService() }
+  @MainActor
+  private var signInService: any SignInServiceProtocol { Clerk.shared.container.signInService }
 
   /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
   ///

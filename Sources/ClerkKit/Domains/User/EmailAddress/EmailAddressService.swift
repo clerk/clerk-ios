@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var emailAddressService: Factory<EmailAddressServiceProtocol> {
-    self { EmailAddressService() }
-  }
-
-}
 
 protocol EmailAddressServiceProtocol: Sendable {
   @MainActor func create(email: String) async throws -> EmailAddress
@@ -25,7 +16,16 @@ protocol EmailAddressServiceProtocol: Sendable {
 
 final class EmailAddressService: EmailAddressServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func create(email: String) async throws -> EmailAddress {

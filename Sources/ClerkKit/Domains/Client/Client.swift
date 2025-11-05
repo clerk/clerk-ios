@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import FactoryKit
 import Foundation
 
 /// The Client object keeps track of the authenticated sessions in the current device. The device can be a browser, a native application or any other medium that is usually the requesting part in a request/response architecture.
@@ -55,7 +54,8 @@ public struct Client: Codable, Sendable, Equatable {
 
 extension Client {
 
-  private static var clientService: any ClientServiceProtocol { Container.shared.clientService() }
+  @MainActor
+  private static var clientService: any ClientServiceProtocol { Clerk.shared.container.clientService }
 
   /// Retrieves the current client.
   @discardableResult @MainActor

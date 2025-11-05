@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct ClerkTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testSignOut() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
@@ -34,7 +33,7 @@ struct ClerkTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSignOutWithSessionId() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)
@@ -56,7 +55,7 @@ struct ClerkTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSetActive() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)
@@ -82,7 +81,7 @@ struct ClerkTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSetActiveWithOrganizationId() async throws {
     let sessionId = "sess_test123"
     let organizationId = "org_test456"

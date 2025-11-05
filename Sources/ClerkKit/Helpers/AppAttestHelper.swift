@@ -7,7 +7,6 @@
 
 import CryptoKit
 import DeviceCheck
-import FactoryKit
 import Foundation
 
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
@@ -17,10 +16,12 @@ struct AppAttestHelper {
   private static let keychainKey = "AttestKeyId"
 
   /// The API client for making network requests.
-  private static var apiClient: APIClient { Container.shared.apiClient() }
+  @MainActor
+  private static var apiClient: APIClient { Clerk.shared.container.apiClient }
 
   /// The keychain storage for secure data persistence.
-  private static var keychain: any KeychainStorage { Container.shared.keychain() }
+  @MainActor
+  private static var keychain: any KeychainStorage { Clerk.shared.container.keychain }
 
   /// Errors that can occur during the attestation process.
   enum AttestationError: Error {
@@ -32,6 +33,7 @@ struct AppAttestHelper {
   /// Retrieves a challenge from the server for attestation.
   /// - Returns: A challenge string received from the server.
   /// - Throws: `AttestationError.unableToGetChallengeFromServer` if the challenge cannot be retrieved.
+  @MainActor
   private static func getChallenge() async throws -> String {
     let request = Request<[String: String]>.init(
       path: "/v1/client/device_attestation/challenges",
@@ -51,6 +53,7 @@ struct AppAttestHelper {
   /// - Returns: The generated key ID.
   /// - Throws: An error if attestation fails.
   @discardableResult
+  @MainActor
   static func performDeviceAttestation() async throws -> String {
     guard DCAppAttestService.shared.isSupported else {
       throw AttestationError.unsupportedDevice
@@ -77,6 +80,7 @@ struct AppAttestHelper {
   ///   - challenge: The challenge string used for attestation.
   ///   - attestation: The attestation data.
   /// - Throws: An error if verification fails.
+  @MainActor
   private static func verify(keyId: String, challenge: String, attestation: Data) async throws {
     let body = [
       "key_id": keyId,
@@ -98,6 +102,7 @@ struct AppAttestHelper {
   /// - Parameter payload: The data payload to be signed.
   /// - Returns: A base64-encoded assertion string.
   /// - Throws: An error if assertion generation fails.
+  @MainActor
   private static func createAssertion(payload: Data) async throws -> String {
     let keyId: String
     if let existingKeyId = Self.keyId {
@@ -144,6 +149,7 @@ struct AppAttestHelper {
   }
 
   /// Checks whether a key ID is stored in the keychain.
+  @MainActor
   static var hasKeyId: Bool {
     do {
       return try keychain.hasItem(forKey: keychainKey)
@@ -153,12 +159,14 @@ struct AppAttestHelper {
   }
 
   /// Retrieves the stored attestation key ID from the keychain.
+  @MainActor
   private static var keyId: String? {
     try? keychain.string(forKey: keychainKey)
   }
 
   /// Removes the stored attestation key ID from the keychain.
   /// - Throws: An error if key deletion fails.
+  @MainActor
   static func removeKeyId() throws {
     try keychain.deleteItem(forKey: keychainKey)
   }

@@ -6,16 +6,7 @@
 //
 
 import AuthenticationServices
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var signInService: Factory<SignInServiceProtocol> {
-    self { SignInService() }
-  }
-
-}
 
 protocol SignInServiceProtocol: Sendable {
   @MainActor func create(strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn
@@ -41,7 +32,16 @@ protocol SignInServiceProtocol: Sendable {
 
 final class SignInService: SignInServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func create(strategy: SignIn.CreateStrategy, locale: String?) async throws -> SignIn {

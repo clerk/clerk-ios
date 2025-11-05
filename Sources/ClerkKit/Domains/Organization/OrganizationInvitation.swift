@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// Represents an organization invitation and its associated details.
@@ -60,7 +59,8 @@ public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable 
 
 extension OrganizationInvitation {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Revokes the invitation for the email it corresponds to.
   @discardableResult @MainActor

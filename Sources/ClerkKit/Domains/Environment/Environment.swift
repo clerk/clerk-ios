@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/5/23.
 //
 
-import FactoryKit
 import Foundation
 
 extension Clerk {
@@ -26,7 +25,8 @@ extension Clerk {
 
 extension Clerk.Environment {
 
-  private static var environmentService: any EnvironmentServiceProtocol { Container.shared.environmentService() }
+  @MainActor
+  private static var environmentService: any EnvironmentServiceProtocol { Clerk.shared.container.environmentService }
 
   @MainActor
   public static func get() async throws -> Clerk.Environment {
