@@ -17,10 +17,10 @@ struct VersionTests {
   @Test
   func testClerkVersion() {
     // Version should be a non-empty string
-    #expect(!Clerk.version.isEmpty)
+    #expect(!Clerk.sdkVersion.isEmpty)
 
     // Version should follow semantic versioning format (x.y.z)
-    let parts = Clerk.version.split(separator: ".")
+    let parts = Clerk.sdkVersion.split(separator: ".")
     #expect(parts.count >= 2) // At least major.minor
 
     // Each part should be numeric
