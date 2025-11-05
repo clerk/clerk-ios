@@ -93,7 +93,7 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 extension UserOrganizationInvitation {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Accepts the organization invitation.
   /// - Returns: The accepted ``UserOrganizationInvitation``.
