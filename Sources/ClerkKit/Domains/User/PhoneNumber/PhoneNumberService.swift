@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var phoneNumberService: Factory<PhoneNumberServiceProtocol> {
-    self { PhoneNumberService() }
-  }
-
-}
 
 protocol PhoneNumberServiceProtocol: Sendable {
   @MainActor func create(phoneNumber: String) async throws -> PhoneNumber
@@ -27,7 +18,16 @@ protocol PhoneNumberServiceProtocol: Sendable {
 
 final class PhoneNumberService: PhoneNumberServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func create(phoneNumber: String) async throws -> PhoneNumber {

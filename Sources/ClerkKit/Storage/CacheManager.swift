@@ -5,7 +5,6 @@
 //  Created on 2025-01-27.
 //
 
-import FactoryKit
 import Foundation
 
 /// Protocol defining callbacks for cache loading operations.
@@ -17,15 +16,15 @@ protocol CacheCoordinator: AnyObject, Sendable {
   ///
   /// - Parameter client: The client to set, or nil to clear.
   @MainActor func setClientIfNeeded(_ client: Client?)
-  
+
   /// Sets the environment if the current environment is empty.
   ///
   /// - Parameter environment: The environment to set.
   @MainActor func setEnvironmentIfNeeded(_ environment: Clerk.Environment)
-  
+
   /// Returns whether a client is currently set.
   @MainActor var hasClient: Bool { get }
-  
+
   /// Returns whether the current environment is empty.
   @MainActor var isEnvironmentEmpty: Bool { get }
 }
@@ -36,20 +35,20 @@ protocol CacheCoordinator: AnyObject, Sendable {
 /// to ensure cached data doesn't overwrite fresh data loaded from the API.
 @MainActor
 final class CacheManager {
-  
+
   /// The coordinator that manages the actual property updates.
   private weak var coordinator: (any CacheCoordinator)?
-  
+
   /// The keychain storage for persisting cached data.
-  private var keychain: any KeychainStorage { Container.shared.keychain() }
-  
+  private var keychain: any KeychainStorage { Clerk.shared.container.keychain }
+
   /// Creates a new cache manager.
   ///
   /// - Parameter coordinator: The object that coordinates cache updates with Clerk properties.
   init(coordinator: any CacheCoordinator) {
     self.coordinator = coordinator
   }
-  
+
   /// Loads cached client and environment data from keychain.
   ///
   /// This method loads both cached client and environment if they exist and if
@@ -60,7 +59,7 @@ final class CacheManager {
     await loadCachedClient()
     await loadCachedEnvironment()
   }
-  
+
   /// Loads cached client data from keychain if available.
   ///
   /// The cached client is only set if no client is currently set, preventing
@@ -70,7 +69,7 @@ final class CacheManager {
       guard let cachedClient = try loadClientFromKeychain() else {
         return
       }
-      
+
       // Only set cached client if we don't already have one
       // This prevents overwriting fresh data during load()
       guard let coordinator = coordinator else { return }
@@ -85,7 +84,7 @@ final class CacheManager {
       )
     }
   }
-  
+
   /// Loads cached environment data from keychain if available.
   ///
   /// The cached environment is only set if the current environment is empty, preventing
@@ -95,7 +94,7 @@ final class CacheManager {
       guard let cachedEnvironment = try loadEnvironmentFromKeychain() else {
         return
       }
-      
+
       // Only set cached environment if we don't already have fresh data
       // This prevents overwriting fresh data during load()
       guard let coordinator = coordinator else { return }
@@ -110,7 +109,7 @@ final class CacheManager {
       )
     }
   }
-  
+
   /// Saves client data to keychain.
   ///
   /// - Parameter client: The client to save.
@@ -125,7 +124,7 @@ final class CacheManager {
       )
     }
   }
-  
+
   /// Saves environment data to keychain.
   ///
   /// - Parameter environment: The environment to save.
@@ -140,7 +139,7 @@ final class CacheManager {
       )
     }
   }
-  
+
   /// Deletes cached client data from keychain.
   func deleteClient() {
     do {
@@ -153,15 +152,15 @@ final class CacheManager {
       )
     }
   }
-  
+
   // MARK: - Private Keychain Operations
-  
+
   /// Saves client data to keychain.
   private func saveClientToKeychain(_ client: Client) throws {
     let clientData = try JSONEncoder.clerkEncoder.encode(client)
     try keychain.set(clientData, forKey: "cachedClient")
   }
-  
+
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {
     guard let clientData = try keychain.data(forKey: "cachedClient") else {
@@ -170,14 +169,14 @@ final class CacheManager {
     let decoder = JSONDecoder.clerkDecoder
     return try decoder.decode(Client.self, from: clientData)
   }
-  
+
   /// Saves environment data to keychain.
   private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
     let encoder = JSONEncoder.clerkEncoder
     let environmentData = try encoder.encode(environment)
     try keychain.set(environmentData, forKey: "cachedEnvironment")
   }
-  
+
   /// Loads environment data from keychain.
   private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
     guard let environmentData = try keychain.data(forKey: "cachedEnvironment") else {

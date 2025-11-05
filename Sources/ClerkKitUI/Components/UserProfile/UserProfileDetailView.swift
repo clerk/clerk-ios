@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import ClerkKit
-import FactoryKit
 import NukeUI
 import SwiftUI
 
@@ -160,10 +159,6 @@ struct UserProfileDetailView: View {
 }
 
 #Preview {
-//    Container.shared.clerk.preview { @MainActor in
-//        .mock
-//    }
-
   NavigationStack {
     UserProfileDetailView()
       .clerkPreviewMocks()
