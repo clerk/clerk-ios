@@ -114,10 +114,10 @@ public struct SignIn: Codable, Sendable, Equatable, Hashable {
 extension SignIn {
 
   @MainActor
-  private static var signInService: any SignInServiceProtocol { Clerk.shared.container.signInService }
+  private static var signInService: any SignInServiceProtocol { Clerk.shared.dependencies.signInService }
 
   @MainActor
-  private var signInService: any SignInServiceProtocol { Clerk.shared.container.signInService }
+  private var signInService: any SignInServiceProtocol { Clerk.shared.dependencies.signInService }
 
   /// Returns a new `SignIn` object based on the parameters you pass to it, and stores the sign-in lifecycle state in the status property. Use this method to initiate the sign-in process.
   ///

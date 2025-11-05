@@ -207,7 +207,7 @@ public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
 extension User {
 
   @MainActor
-  private var userService: any UserServiceProtocol { Clerk.shared.container.userService }
+  private var userService: any UserServiceProtocol { Clerk.shared.dependencies.userService }
 
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor

@@ -100,7 +100,7 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
 extension OrganizationDomain {
 
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor
