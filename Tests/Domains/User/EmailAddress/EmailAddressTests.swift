@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct EmailAddressTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
@@ -35,7 +34,7 @@ struct EmailAddressTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)
@@ -58,7 +57,7 @@ struct EmailAddressTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptVerification() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)
@@ -81,7 +80,7 @@ struct EmailAddressTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDestroy() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)

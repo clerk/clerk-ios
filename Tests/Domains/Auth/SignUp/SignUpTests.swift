@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct SignUpTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithStandard() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -37,7 +36,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithOAuth() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -62,7 +61,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithOAuthExplicitRedirectUrl() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -87,7 +86,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithEnterpriseSSO() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -113,7 +112,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithEnterpriseSSOExplicitRedirectUrl() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -139,7 +138,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithIdToken() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -163,7 +162,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithTicket() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -187,7 +186,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithTransfer() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -210,7 +209,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateWithNone() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
@@ -232,7 +231,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testUpdate() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -256,7 +255,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPrepareVerificationEmailCode() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -279,7 +278,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testPrepareVerificationPhoneCode() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -302,7 +301,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptVerificationEmailCode() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -326,7 +325,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testAttemptVerificationPhoneCode() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -350,7 +349,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGet() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -372,7 +371,7 @@ struct SignUpTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetWithRotatingTokenNonce() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)

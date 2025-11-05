@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/13/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// The `UserOrganizationInvitation` object is the model around a user's invitation to an organization.
@@ -93,7 +92,8 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 
 extension UserOrganizationInvitation {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Accepts the organization invitation.
   /// - Returns: The accepted ``UserOrganizationInvitation``.

@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var environmentService: Factory<EnvironmentServiceProtocol> {
-    self { EnvironmentService() }
-  }
-
-}
 
 protocol EnvironmentServiceProtocol: Sendable {
   @MainActor func get() async throws -> Clerk.Environment
@@ -22,7 +13,16 @@ protocol EnvironmentServiceProtocol: Sendable {
 
 final class EnvironmentService: EnvironmentServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func get() async throws -> Clerk.Environment {

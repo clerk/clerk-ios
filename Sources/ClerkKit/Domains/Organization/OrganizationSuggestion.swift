@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 3/14/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// An interface representing an organization suggestion.
@@ -77,7 +76,8 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
 
 extension OrganizationSuggestion {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Accepts the organization suggestion.
   /// - Returns: The accepted ``OrganizationSuggestion``.

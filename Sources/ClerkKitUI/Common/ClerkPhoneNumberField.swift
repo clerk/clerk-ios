@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import PhoneNumberKit
 import SwiftUI
 
@@ -16,7 +15,7 @@ extension ClerkPhoneNumberField {
   @MainActor
   final class PhoneNumberModel {
 
-    private let utility = Container.shared.phoneNumberUtility()
+    private let utility = PhoneNumberUtility()
     let textField: PhoneNumberTextField
     let partialFormatter: PartialFormatter
 

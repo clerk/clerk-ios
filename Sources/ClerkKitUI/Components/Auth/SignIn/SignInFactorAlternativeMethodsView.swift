@@ -7,7 +7,6 @@
 
 #if os(iOS)
 
-import FactoryKit
 import ClerkKit
 import SwiftUI
 

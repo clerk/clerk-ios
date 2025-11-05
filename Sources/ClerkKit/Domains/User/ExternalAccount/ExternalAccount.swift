@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/20/23.
 //
 
-import FactoryKit
 import Foundation
 
 ///The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
@@ -90,7 +89,8 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equata
 
 extension ExternalAccount {
 
-  private var externalAccountService: any ExternalAccountServiceProtocol { Container.shared.externalAccountService() }
+  @MainActor
+  private var externalAccountService: any ExternalAccountServiceProtocol { Clerk.shared.container.externalAccountService }
 
   /// Invokes a re-authorization flow for an existing external account.
   ///

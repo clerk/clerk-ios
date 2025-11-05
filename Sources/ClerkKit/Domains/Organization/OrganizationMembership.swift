@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/6/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
@@ -65,7 +64,8 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Id
 
 extension OrganizationMembership {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Deletes the membership from the organization it belongs to.
   ///

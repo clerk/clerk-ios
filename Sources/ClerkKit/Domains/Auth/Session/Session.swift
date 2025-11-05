@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/5/23.
 //
 
-import FactoryKit
 import Foundation
 
 /**
@@ -210,7 +209,8 @@ extension Session {
 
 extension Session {
 
-  private var sessionService: any SessionServiceProtocol { Container.shared.sessionService() }
+  @MainActor
+  private var sessionService: any SessionServiceProtocol { Clerk.shared.container.sessionService }
 
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor

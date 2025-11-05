@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import ClerkKit
-import FactoryKit
 import SwiftUI
 
 struct UserProfileAddMfaView: View {
@@ -148,13 +147,6 @@ extension UserProfileAddMfaView {
 }
 
 #Preview {
-//    Container.shared.userService.preview { @MainActor in
-//        UserService(createTotp: {
-//            try await Task.sleep(for: .seconds(1))
-//            return .mock
-//        })
-//    }
-
   UserProfileAddMfaView()
     .clerkPreviewMocks()
     .environment(\.clerkTheme, .clerk)

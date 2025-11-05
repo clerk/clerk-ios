@@ -8,7 +8,6 @@
 #if os(iOS)
 
 import ClerkKit
-import FactoryKit
 import SwiftUI
 
 struct AuthStartView: View {

@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var externalAccountService: Factory<ExternalAccountServiceProtocol> {
-    self { ExternalAccountService() }
-  }
-
-}
 
 protocol ExternalAccountServiceProtocol: Sendable {
   @MainActor func destroy(_ externalAccountId: String) async throws -> DeletedObject
@@ -22,7 +13,16 @@ protocol ExternalAccountServiceProtocol: Sendable {
 
 final class ExternalAccountService: ExternalAccountServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func destroy(_ externalAccountId: String) async throws -> DeletedObject {

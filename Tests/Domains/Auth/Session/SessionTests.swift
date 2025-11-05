@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct SessionTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testRevoke() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
@@ -35,7 +34,7 @@ struct SessionTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetToken() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
@@ -57,7 +56,7 @@ struct SessionTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetTokenWithTemplate() async throws {
     let session = Session.mock
     let template = "firebase"
@@ -80,7 +79,7 @@ struct SessionTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetTokenWithSkipCache() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)

@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/6/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
@@ -81,7 +80,8 @@ public struct Organization: Codable, Equatable, Sendable, Hashable, Identifiable
 
 extension Organization {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Updates an organization's attributes. Returns an Organization object.
   ///
@@ -249,7 +249,6 @@ extension Organization {
   //            query: [("_clerk_session_id", Clerk.shared.session?.id)],
   //            body: params
   //        )
-  //        return try await Container.shared.apiClient().send(request).value.response
   //    }
 
   /// Creates a new domain for the currently active organization.

@@ -19,7 +19,6 @@ let package = Package(
     .library(name: "ClerkKitUI", targets: ["ClerkKitUI"])
   ],
   dependencies: [
-    .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0")
@@ -28,7 +27,6 @@ let package = Package(
     .target(
       name: "ClerkKit",
       dependencies: [
-        .product(name: "FactoryKit", package: "Factory")
       ],
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency")
@@ -38,7 +36,6 @@ let package = Package(
       name: "ClerkKitUI",
       dependencies: [
         "ClerkKit",
-        .product(name: "FactoryKit", package: "Factory"),
         .product(name: "Nuke", package: "Nuke"),
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
@@ -54,7 +51,6 @@ let package = Package(
       name: "Tests",
       dependencies: [
         "ClerkKit",
-        .product(name: "FactoryTesting", package: "Factory"),
         .product(name: "Mocker", package: "Mocker")
       ],
       swiftSettings: [

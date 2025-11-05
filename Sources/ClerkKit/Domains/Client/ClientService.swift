@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var clientService: Factory<ClientServiceProtocol> {
-    self { ClientService() }
-  }
-
-}
 
 protocol ClientServiceProtocol: Sendable {
   @MainActor func get() async throws -> Client?
@@ -22,7 +13,16 @@ protocol ClientServiceProtocol: Sendable {
 
 final class ClientService: ClientServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func get() async throws -> Client? {

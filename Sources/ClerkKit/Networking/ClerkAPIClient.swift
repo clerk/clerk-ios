@@ -1,21 +1,4 @@
-import FactoryKit
 import Foundation
-
-extension Container {
-  var networkingPipeline: Factory<NetworkingPipeline> {
-    self { .clerkDefault }.cached
-  }
-
-  var apiClient: Factory<APIClient> {
-    self {
-      APIClient(baseURL: nil) { configuration in
-        configuration.pipeline = Container.shared.networkingPipeline()
-        configuration.decoder = .clerkDecoder
-        configuration.encoder = .clerkEncoder
-      }
-    }.cached
-  }
-}
 
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {

@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 6/30/25.
 //
 
-import FactoryKit
 import Foundation
 
 extension Clerk {
@@ -94,14 +93,5 @@ public struct RedirectConfig: Sendable {
     self.redirectUrl = redirectUrl
     self.callbackUrlScheme = callbackUrlScheme
   }
-}
-
-extension Container {
-  
-  var clerkOptions: Factory<Clerk.ClerkOptions> {
-    self { .init() }
-      .cached
-  }
-  
 }
 

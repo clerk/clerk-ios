@@ -5,16 +5,7 @@
 //  Created by Mike Pitre on 7/28/25.
 //
 
-import FactoryKit
 import Foundation
-
-extension Container {
-
-  var sessionService: Factory<SessionServiceProtocol> {
-    self { SessionService() }
-  }
-
-}
 
 protocol SessionServiceProtocol: Sendable {
   @MainActor func revoke(sessionId: String) async throws -> Session
@@ -22,7 +13,16 @@ protocol SessionServiceProtocol: Sendable {
 
 final class SessionService: SessionServiceProtocol {
 
-  private var apiClient: APIClient { Container.shared.apiClient() }
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // Convenience initializer for dependency injection
+  init(dependencies: Dependencies) {
+    self.apiClient = dependencies.apiClient
+  }
 
   @MainActor
   func revoke(sessionId: String) async throws -> Session {

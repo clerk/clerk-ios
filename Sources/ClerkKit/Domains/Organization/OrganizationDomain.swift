@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 2/11/25.
 //
 
-import FactoryKit
 import Foundation
 
 /// The model representing an organization domain.
@@ -100,7 +99,8 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
 
 extension OrganizationDomain {
 
-  private var organizationService: any OrganizationServiceProtocol { Container.shared.organizationService() }
+  @MainActor
+  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.container.organizationService }
 
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor

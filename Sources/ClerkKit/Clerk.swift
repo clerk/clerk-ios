@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 10/2/23.
 //
 
-import FactoryKit
 import Foundation
 
 /**
@@ -16,7 +15,7 @@ This is the main entrypoint class for the clerk package. It contains a number of
 final public class Clerk {
 
   /// The shared Clerk instance.
-  /// 
+  ///
   /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will result in a precondition failure.
   public static var shared: Clerk {
     guard let instance = _shared else {
@@ -24,7 +23,7 @@ final public class Clerk {
     }
     return instance
   }
-  
+
   /// Private shared instance that is set during configuration.
   internal static var _shared: Clerk?
 
@@ -49,11 +48,11 @@ final public class Clerk {
   }
   /// The telemetry collector for development diagnostics.
   ///
-  /// Uses FactoryKit with a no-op default that is replaced with a real collector
+  /// Uses dependency injection with a no-op default that is replaced with a real collector
   /// during configuration if telemetry is enabled.
   /// Used to record non-blocking telemetry events when running in development
   package var telemetry: any TelemetryCollectorProtocol {
-    Container.shared.telemetryCollector()
+    container.telemetryCollector
   }
 
   /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
@@ -79,7 +78,7 @@ final public class Clerk {
 
   /// A dictionary of a user's active sessions on all devices.
   internal(set) public var sessionsByUserId: [String: [Session]] = [:]
-  
+
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     configurationManager.publishableKey
@@ -87,22 +86,22 @@ final public class Clerk {
 
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
-  
+
   /// The Clerk environment for the instance.
   public internal(set) var environment = Environment() {
     didSet {
       cacheManager?.saveEnvironment(environment)
     }
   }
-  
+
   /// The configuration options for this Clerk instance.
   public var options: Clerk.ClerkOptions {
     configurationManager.options
   }
-  
+
   /// Coordinates task lifecycle and cleanup.
   private var taskCoordinator: TaskCoordinator?
-  
+
   /// Task that coordinates cached data loading during initialization.
   /// This is set during `configure()` and awaited during `load()`.
   /// Automatically tracked via TaskCoordinator for cleanup.
@@ -113,7 +112,7 @@ final public class Clerk {
       }
     }
   }
-  
+
   /// Frontend API URL.
   var frontendApiUrl: String {
     configurationManager.frontendApiUrl
@@ -121,21 +120,24 @@ final public class Clerk {
 
   /// Manages caching of client and environment data.
   private var cacheManager: CacheManager?
-  
+
   /// Manages Clerk configuration including API client setup and options.
   private var configurationManager = ConfigurationManager()
-  
+
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
-  
+
   /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
-  
+
+  /// Dependency container holding all SDK dependencies.
+  var container: any Dependencies
+
   /// Clerk service for handling sign out and session management operations.
   private var clerkService: any ClerkServiceProtocol {
-    Container.shared.clerkService()
+    container.clerkService
   }
-  
+
   /// Manages logging of session status changes.
   private var sessionStatusLogger = SessionStatusLogger()
 
@@ -144,32 +146,51 @@ final public class Clerk {
     configurationManager.proxyConfiguration
   }
 
+  private init() {
+    // Create temporary container - will be replaced during configure with proper values
+    let tempOptions = Clerk.ClerkOptions()
+    let tempBaseURL = URL(string: "https://clerk.clerk.dev")!
+    container = DependencyContainer(
+      publishableKey: "",
+      options: tempOptions,
+      baseURL: tempBaseURL
+    )
+  }
+
 }
 
 extension Clerk {
-  
+
   /// Internal helper method that performs the actual configuration work.
   /// This is shared between `configure()` and `_reconfigure()`.
   @MainActor
   private func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
-    
+
     // Configure using ConfigurationManager
     try configurationManager.configure(publishableKey: publishableKey, options: options)
-    
+
+    // Create dependency container with proper configuration
+    let baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
+    container = DependencyContainer(
+      publishableKey: publishableKey,
+      options: options,
+      baseURL: baseURL
+    )
+
     // Set up session polling manager
     sessionPollingManager = SessionPollingManager(sessionProvider: self)
     sessionPollingManager?.startPolling()
-    
+
     // Set up lifecycle manager for foreground/background transitions
     lifecycleManager = LifecycleManager(handler: self)
     lifecycleManager?.startObserving()
-    
+
     // Set up cache manager and load cached data asynchronously
     let cacheManager = CacheManager(coordinator: self)
     self.cacheManager = cacheManager
-    
+
     // Load cached data asynchronously (don't block on this)
     cachedDataLoadingTask = Task { @MainActor in
       await cacheManager.loadCachedData()
@@ -177,16 +198,16 @@ extension Clerk {
   }
 
   /// Configures the shared Clerk instance.
-  /// 
-  /// This method must be called before accessing `Clerk.shared`. If called multiple times, 
+  ///
+  /// This method must be called before accessing `Clerk.shared`. If called multiple times,
   /// a warning will be logged and subsequent calls will be ignored.
-  /// 
+  ///
   /// This method:
   /// 1. Sets up configuration (API client, options, etc.)
   /// 2. Sets up lifecycle and session polling managers
   /// 3. Starts loading cached client and environment data from keychain (asynchronously)
   /// 4. Sets the shared instance
-  /// 
+  ///
   /// - Parameters:
   ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
   ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
@@ -199,30 +220,29 @@ extension Clerk {
       ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
       return
     }
-    
+
     let clerk = Clerk()
-    
+
     do {
       try clerk.performConfiguration(publishableKey: publishableKey, options: options)
     } catch {
       preconditionFailure("Failed to configure Clerk: \(error.localizedDescription)")
     }
-    
+
     _shared = clerk
-    Container.shared.clerk.register { @MainActor in clerk }
   }
-  
+
   /// Internal method for reconfiguring Clerk instance (for debugging purposes).
-  /// 
+  ///
   /// This allows reconfiguration of the Clerk instance during debugging.
-  /// 
+  ///
   /// This method:
   /// 1. Cleans up existing managers from the previous instance
   /// 2. Sets up configuration (API client, options, etc.)
   /// 3. Sets up lifecycle and session polling managers
   /// 4. Starts loading cached client and environment data from keychain (asynchronously)
   /// 5. Sets the shared instance
-  /// 
+  ///
   /// - Parameters:
   ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
   ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
@@ -233,17 +253,16 @@ extension Clerk {
   ) {
     // Clean up managers from existing instance before creating new one
     _shared?.cleanupManagers()
-    
+
     let clerk = Clerk()
-    
+
     do {
       try clerk.performConfiguration(publishableKey: publishableKey, options: options)
     } catch {
       preconditionFailure("Failed to reconfigure Clerk: \(error.localizedDescription)")
     }
-    
+
     _shared = clerk
-    Container.shared.clerk.register { @MainActor in clerk }
   }
 
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
@@ -251,20 +270,20 @@ extension Clerk {
   public func load() async throws {
     // Ensure cached data loading has completed
     await cachedDataLoadingTask?.value
-    
+
     // Ensure Clerk has been configured
     guard cachedDataLoadingTask != nil else {
       throw ClerkInitializationError.initializationFailed(
         underlyingError: ClerkClientError(message: "Clerk must be configured before calling load(). Call Clerk.configure() first.")
       )
     }
-    
+
     do {
       // Fetch client and environment concurrently
       // Both of these are automatically applied to the shared instance:
       async let client = Client.get()  // via middleware
       async let environment = Environment.get()  // via the function itself
-      
+
       // Wait for both to complete - if either fails, we exit early
       // since both are required for the SDK to work properly
       do {
@@ -323,21 +342,21 @@ extension Clerk {
 }
 
 extension Clerk: CacheCoordinator {
-  
+
   func setClientIfNeeded(_ client: Client?) {
     guard self.client == nil else { return }
     self.client = client
   }
-  
+
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
     guard self.environment.isEmpty else { return }
     self.environment = environment
   }
-  
+
   var hasClient: Bool {
     client != nil
   }
-  
+
   var isEnvironmentEmpty: Bool {
     environment.isEmpty
   }
@@ -348,7 +367,7 @@ extension Clerk: SessionProviding {
 }
 
 extension Clerk: LifecycleEventHandling {
-  
+
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
@@ -361,7 +380,7 @@ extension Clerk: LifecycleEventHandling {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
     }
-    
+
     taskCoordinator?.task {
       do {
         _ = try await Environment.get()
@@ -370,11 +389,11 @@ extension Clerk: LifecycleEventHandling {
       }
     }
   }
-  
+
   /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
     sessionPollingManager?.stopPolling()
-    
+
     taskCoordinator?.task(priority: .utility) { [weak self] in
       await self?.telemetry.flush()
     }
@@ -382,7 +401,7 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
-  
+
   private func attestDeviceIfNeeded(environment: Environment) {
     if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
       taskCoordinator?.task(priority: .background) {
@@ -394,7 +413,7 @@ extension Clerk {
       }
     }
   }
-  
+
   /// Cleans up managers that were started during configuration.
   /// Used during reconfiguration to ensure old managers are properly cleaned up.
   private func cleanupManagers() {
@@ -403,18 +422,6 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager = nil
   }
-}
-
-extension Container {
-
-  @MainActor
-  var clerk: Factory<Clerk> {
-    self { @MainActor in
-      Clerk._shared ?? Clerk()
-    }
-    .singleton
-  }
-
 }
 
 extension Clerk {

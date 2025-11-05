@@ -5,7 +5,6 @@
 //  Created by Mike Pitre on 9/6/24.
 //
 
-import FactoryKit
 import Foundation
 
 /// An object that represents a passkey associated with a user.
@@ -71,9 +70,11 @@ extension Passkey {
 
 extension Passkey {
 
-  private static var passkeyService: any PasskeyServiceProtocol { Container.shared.passkeyService() }
+  @MainActor
+  private static var passkeyService: any PasskeyServiceProtocol { Clerk.shared.container.passkeyService }
 
-  private var passkeyService: any PasskeyServiceProtocol { Container.shared.passkeyService() }
+  @MainActor
+  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.container.passkeyService }
 
   /// Creates a new passkey
   @discardableResult @MainActor

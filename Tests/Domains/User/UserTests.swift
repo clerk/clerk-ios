@@ -1,4 +1,3 @@
-import FactoryTesting
 import Foundation
 import Mocker
 import Testing
@@ -13,7 +12,7 @@ struct UserTests {
     configureClerkForTesting()
   }
 
-  @Test(.container)
+  @Test
   func testReload() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -35,7 +34,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testUpdate() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -59,7 +58,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateBackupCodes() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -81,7 +80,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateEmailAddress() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -104,7 +103,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreatePhoneNumber() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -127,7 +126,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateExternalAccount() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -152,7 +151,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateExternalAccountWithExplicitRedirectUrl() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -177,7 +176,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateExternalAccountWithAdditionalScopes() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -203,7 +202,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateExternalAccountToken() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -227,7 +226,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testCreateTotp() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -249,7 +248,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testVerifyTotp() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -272,7 +271,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDisableTotp() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -294,7 +293,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationInvitations() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -322,7 +321,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationMemberships() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -351,7 +350,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationSuggestions() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -379,7 +378,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetOrganizationSuggestionsWithStatus() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -408,7 +407,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testGetSessions() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -430,7 +429,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testUpdatePassword() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -454,7 +453,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testSetProfileImage() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -482,7 +481,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDeleteProfileImage() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)
@@ -504,7 +503,7 @@ struct UserTests {
     #expect(requestHandled.value)
   }
 
-  @Test(.container)
+  @Test
   func testDelete() async throws {
     let user = User.mock
     let requestHandled = LockIsolated(false)

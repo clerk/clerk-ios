@@ -46,4 +46,32 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
   }
 }
 
+/// Standalone environment provider that doesn't depend on `Clerk.shared`.
+/// Used during dependency container initialization when `Clerk.shared` is not yet available.
+struct StandaloneTelemetryEnvironment: TelemetryEnvironmentProviding {
+  let publishableKey: String
+  let instanceType: InstanceEnvironmentType
+  let telemetryEnabled: Bool
+  let debugMode: Bool
+
+  var sdkName: String { "clerk-ios" }
+  var sdkVersion: String { Clerk.version }
+
+  func instanceTypeString() async -> String {
+    instanceType.rawValue
+  }
+
+  func isTelemetryEnabled() async -> Bool {
+    telemetryEnabled
+  }
+
+  func isDebugModeEnabled() async -> Bool {
+    debugMode
+  }
+
+  func publishableKey() async -> String? {
+    publishableKey.isEmpty ? nil : publishableKey
+  }
+}
+
 

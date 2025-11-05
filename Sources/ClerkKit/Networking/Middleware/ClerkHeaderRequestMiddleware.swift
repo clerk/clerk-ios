@@ -5,11 +5,11 @@
 //  Created by Mike Pitre on 1/8/25.
 //
 
-import FactoryKit
 import Foundation
 
 struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
-  private var keychain: any KeychainStorage { Container.shared.keychain() }
+  @MainActor
+  private var keychain: any KeychainStorage { Clerk.shared.container.keychain }
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
