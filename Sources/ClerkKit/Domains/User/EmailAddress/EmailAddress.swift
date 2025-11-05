@@ -55,10 +55,10 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 extension EmailAddress {
 
   @MainActor
-  private static var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.container.emailAddressService }
+  private static var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
 
   @MainActor
-  private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.container.emailAddressService }
+  private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
 
   /// Creates a new email address for the current user.
   /// - Parameters:

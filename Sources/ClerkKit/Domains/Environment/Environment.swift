@@ -25,7 +25,7 @@ extension Clerk {
 extension Clerk.Environment {
 
   @MainActor
-  private static var environmentService: any EnvironmentServiceProtocol { Clerk.shared.container.environmentService }
+  private static var environmentService: any EnvironmentServiceProtocol { Clerk.shared.dependencies.environmentService }
 
   @MainActor
   public static func get() async throws -> Clerk.Environment {
