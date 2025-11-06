@@ -91,7 +91,7 @@ struct UserProfileSecurityView: View {
   NavigationStack {
     UserProfileSecurityView()
   }
-  .clerkPreviewMocks()
+  .clerkPreview()
   .environment(\.clerkTheme, .clerk)
 }
 

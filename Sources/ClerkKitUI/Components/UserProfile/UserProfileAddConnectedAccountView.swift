@@ -110,7 +110,7 @@ extension UserProfileAddConnectedAccountView {
 
 #Preview {
   UserProfileAddConnectedAccountView(contentHeight: .constant(300))
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
