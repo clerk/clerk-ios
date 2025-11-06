@@ -17,12 +17,12 @@ protocol SignUpServiceProtocol: Sendable {
   @MainActor func get(signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp
 
   #if !os(tvOS) && !os(watchOS)
-  @MainActor func authenticateWithRedirectStatic(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+  @MainActor func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   @MainActor func authenticateWithRedirect(signUp: SignUp, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  @MainActor func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
+  @MainActor func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
   @MainActor func authenticateWithIdToken(signUp: SignUp) async throws -> TransferFlowResult
   #endif
 }
@@ -123,7 +123,7 @@ final class SignUpService: SignUpServiceProtocol {
 
   #if !os(tvOS) && !os(watchOS)
   @MainActor
-  func authenticateWithRedirectStatic(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+  func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
     let signUp = try await SignUp.create(strategy: strategy.signUpStrategy)
 
     guard
@@ -165,7 +165,7 @@ final class SignUpService: SignUpServiceProtocol {
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @MainActor
-  func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+  func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
     let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
     return try await signUp.handleTransferFlow()
   }
