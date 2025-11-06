@@ -104,6 +104,23 @@ public final class MockBuilder {
   /// }
   /// builder.environment = env
   /// ```
+  ///
+  /// You can also create an environment from a real API response JSON:
+  /// ```swift
+  /// builder.environment = try! Clerk.Environment(fromJSON: """
+  /// {
+  ///   "auth_config": {...},
+  ///   "display_config": {...},
+  ///   "user_settings": {...}
+  /// }
+  /// """)
+  /// ```
+  ///
+  /// Or load from a JSON file:
+  /// ```swift
+  /// let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
+  /// builder.environment = try! Clerk.Environment(fromFile: url)
+  /// ```
   public var environment: Clerk.Environment?
 
   /// Custom mock client for configuring client properties like sessions and user data.
