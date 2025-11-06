@@ -48,7 +48,7 @@ struct UserProfileDevicesSection: View {
 
 #Preview {
   UserProfileDevicesSection()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

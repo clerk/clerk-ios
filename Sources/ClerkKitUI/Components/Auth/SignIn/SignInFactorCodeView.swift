@@ -368,27 +368,27 @@ extension SignInFactorCodeView {
 
 #Preview("Email Code") {
   SignInFactorCodeView(factor: .mockEmailCode)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("Phone Code") {
   SignInFactorCodeView(factor: .mockPhoneCode)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("Reset Password Email Code") {
   SignInFactorCodeView(factor: .mockResetPasswordEmailCode)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("Reset Password Phone Code") {
   SignInFactorCodeView(factor: .mockResetPasswordPhoneCode)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("TOTP Code") {
   SignInFactorCodeView(factor: .mockTotp)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #endif
