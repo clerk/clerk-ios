@@ -30,9 +30,8 @@ public final class MockClerkService: ClerkServiceProtocol {
   public func signOut(sessionId: String?) async throws {
     if let handler = signOutHandler {
       try await handler(sessionId)
-    } else {
-      Clerk.shared.client = .mockSignedOut
     }
+    // No-op by default - does not actually sign out
   }
 
   @MainActor
