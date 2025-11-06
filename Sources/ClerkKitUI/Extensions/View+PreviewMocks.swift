@@ -34,7 +34,14 @@ public extension View {
   @MainActor
   func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
     // Configure Clerk.shared so views that access it directly don't fail
-    let clerk = Clerk.configureWithMocks()
+    let clerk = Clerk.configureWithMocks { builder in
+      // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+      if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+        let environment = try? Clerk.Environment(fromFile: url)
+      {
+        builder.environment = environment
+      }
+    }
     if !isSignedIn { Task { try? await clerk.signOut() } }
 
     return
@@ -65,7 +72,17 @@ public extension View {
   @MainActor
   func clerkPreviewMocks(configureServices: @escaping (MockBuilder) -> Void) -> some View {
     // Configure Clerk.shared with mock services (using default preview publishable key)
-    let clerk = Clerk.configureWithMocks(configureServices: configureServices)
+    let clerk = Clerk.configureWithMocks { builder in
+      // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+      if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+        let environment = try? Clerk.Environment(fromFile: url)
+      {
+        builder.environment = environment
+      }
+
+      // Allow user's closure to override or further configure
+      configureServices(builder)
+    }
 
     return
       environment(clerk)
