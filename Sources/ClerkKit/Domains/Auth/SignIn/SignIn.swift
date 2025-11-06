@@ -268,7 +268,7 @@ public extension SignIn {
   /// ```
   @discardableResult @MainActor
   static func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    try await signInService.authenticateWithRedirectStatic(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
+    try await signInService.authenticateWithRedirect(strategy: strategy, prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession)
   }
   #endif
 
@@ -354,7 +354,7 @@ public extension SignIn {
   /// ```
   @discardableResult @MainActor
   static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await signInService.authenticateWithIdTokenStatic(provider: provider, idToken: idToken)
+    try await signInService.authenticateWithIdToken(provider: provider, idToken: idToken)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.

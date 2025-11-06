@@ -32,16 +32,16 @@ public final class MockSignUpService: SignUpServiceProtocol {
   public nonisolated(unsafe) var getHandler: ((String, String?) async throws -> SignUp)?
 
   #if !os(tvOS) && !os(watchOS)
-  /// Custom handler for the `authenticateWithRedirectStatic(strategy:prefersEphemeralWebBrowserSession:)` method.
-  public nonisolated(unsafe) var authenticateWithRedirectStaticHandler: ((SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult)?
+  /// Custom handler for the `authenticateWithRedirect(strategy:prefersEphemeralWebBrowserSession:)` method.
+  public nonisolated(unsafe) var authenticateWithRedirectStrategyHandler: ((SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult)?
 
   /// Custom handler for the `authenticateWithRedirect(signUp:prefersEphemeralWebBrowserSession:)` method.
   public nonisolated(unsafe) var authenticateWithRedirectHandler: ((SignUp, Bool) async throws -> TransferFlowResult)?
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Custom handler for the `authenticateWithIdTokenStatic(provider:idToken:)` method.
-  public nonisolated(unsafe) var authenticateWithIdTokenStaticHandler: ((IDTokenProvider, String) async throws -> TransferFlowResult)?
+  /// Custom handler for the `authenticateWithIdToken(provider:idToken:)` method.
+  public nonisolated(unsafe) var authenticateWithIdTokenProviderHandler: ((IDTokenProvider, String) async throws -> TransferFlowResult)?
 
   /// Custom handler for the `authenticateWithIdToken(signUp:)` method.
   public nonisolated(unsafe) var authenticateWithIdTokenHandler: ((SignUp) async throws -> TransferFlowResult)?
@@ -64,8 +64,8 @@ public final class MockSignUpService: SignUpServiceProtocol {
   }
 
   #if !os(tvOS) && !os(watchOS)
-  public func setAuthenticateWithRedirectStatic(_ handler: @escaping (SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
-    authenticateWithRedirectStaticHandler = handler
+  public func setAuthenticateWithRedirect(_ handler: @escaping (SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
+    authenticateWithRedirectStrategyHandler = handler
   }
 
   public func setAuthenticateWithRedirect(_ handler: @escaping (SignUp, Bool) async throws -> TransferFlowResult) {
@@ -74,8 +74,8 @@ public final class MockSignUpService: SignUpServiceProtocol {
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  public func setAuthenticateWithIdTokenStatic(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
-    authenticateWithIdTokenStaticHandler = handler
+  public func setAuthenticateWithIdToken(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
+    authenticateWithIdTokenProviderHandler = handler
   }
 
   public func setAuthenticateWithIdToken(_ handler: @escaping (SignUp) async throws -> TransferFlowResult) {
@@ -133,8 +133,8 @@ public final class MockSignUpService: SignUpServiceProtocol {
 
   #if !os(tvOS) && !os(watchOS)
   @MainActor
-  public func authenticateWithRedirectStatic(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
-    if let handler = authenticateWithRedirectStaticHandler {
+  public func authenticateWithRedirect(strategy: SignUp.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    if let handler = authenticateWithRedirectStrategyHandler {
       return try await handler(strategy, prefersEphemeralWebBrowserSession)
     }
     return .signUp(.mock)
@@ -151,8 +151,8 @@ public final class MockSignUpService: SignUpServiceProtocol {
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @MainActor
-  public func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    if let handler = authenticateWithIdTokenStaticHandler {
+  public func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+    if let handler = authenticateWithIdTokenProviderHandler {
       return try await handler(provider, idToken)
     }
     return .signUp(.mock)
