@@ -19,7 +19,7 @@ private var isRunningInPreview: Bool {
   ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 }
 
-public extension View {
+package extension View {
   /// Injects mock environment values for previews.
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
@@ -43,8 +43,9 @@ public extension View {
   func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
     if isRunningInPreview {
       // Configure Clerk.shared so views that access it directly don't fail
-      let clerk = Clerk.configureWithMocks()
-      if !isSignedIn { Task { try? await clerk.signOut() } }
+      let clerk = Clerk.preview { builder in
+        builder.isSignedIn = isSignedIn
+      }
 
       return AnyView(
         environment(clerk)
@@ -81,6 +82,7 @@ public extension View {
   func clerkPreviewMocks(configureServices: @escaping (MockBuilder) -> Void) -> some View {
     if isRunningInPreview {
       // Configure Clerk.shared with mock services (using default preview publishable key)
+      // Note: This still uses configureWithMocks internally for advanced customization
       let clerk = Clerk.configureWithMocks { builder in
         // Allow user's closure to override or further configure
         configureServices(builder)

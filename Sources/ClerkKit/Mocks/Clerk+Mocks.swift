@@ -130,6 +130,19 @@ public final class MockBuilder {
   public init() {}
 }
 
+/// Builder for configuring preview-specific settings.
+///
+/// Use this builder to configure preview behavior, such as whether the user is signed in.
+@MainActor
+public final class PreviewBuilder {
+  /// Whether the user should be signed in for the preview.
+  /// Defaults to `true`.
+  public var isSignedIn: Bool = true
+
+  /// Creates a new preview builder.
+  public init() {}
+}
+
 public extension Clerk {
   /// Configures Clerk.shared with mock services and environment.
   ///
@@ -191,7 +204,7 @@ public extension Clerk {
   /// ```
   @MainActor
   @discardableResult
-  static func configureWithMocks(
+  package static func configureWithMocks(
     builder: ((MockBuilder) -> Void)? = nil
   ) -> Clerk {
     #if DEBUG
@@ -267,5 +280,457 @@ public extension Clerk {
     // In release builds, return Clerk.shared
     return Clerk.shared
     #endif
+  }
+
+  /// Configures Clerk for SwiftUI previews with simplified API.
+  ///
+  /// This method provides a simpler API specifically designed for SwiftUI previews.
+  /// It automatically configures all async operations to sleep for 1 second and return mock values,
+  /// and allows you to configure whether the user is signed in.
+  ///
+  /// **Important:** This method only works when running in SwiftUI previews. When used outside of previews,
+  /// it returns `Clerk.shared` if already configured, or configures Clerk with an empty publishable key.
+  ///
+  /// - Parameter builder: An optional closure that receives a `PreviewBuilder` for configuring preview settings.
+  ///
+  /// Example:
+  /// ```swift
+  /// #Preview {
+  ///   ContentView()
+  ///     .environment(Clerk.preview { builder in
+  ///       builder.isSignedIn = false
+  ///     })
+  /// }
+  /// ```
+  @MainActor
+  @discardableResult
+  static func preview(
+    builder: ((PreviewBuilder) -> Void)? = nil
+  ) -> Clerk {
+    // Check if running in SwiftUI preview
+    let isRunningInPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+
+    guard isRunningInPreview else {
+      // If not in preview, configure with empty key (configure will return existing if already configured)
+      return Clerk.configure(publishableKey: "")
+    }
+
+    // Configure Clerk.shared if not already configured
+    let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
+
+    // Create a minimal API client (won't be used if services are mocked)
+    let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
+    let mockAPIClient = APIClient(baseURL: mockBaseURL)
+
+    // Create preview builder
+    let previewBuilder = PreviewBuilder()
+
+    // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+    var environment: Clerk.Environment?
+    if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+      let loadedEnvironment = try? Clerk.Environment(fromFile: url)
+    {
+      environment = loadedEnvironment
+    }
+
+    // Apply builder closure
+    builder?(previewBuilder)
+
+    // Determine which environment to use: loaded from file, or default .mock
+    let mockEnvironment = environment ?? .mock
+
+    // Determine which client to use based on isSignedIn
+    let mockClient = previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut
+
+    // Configure all mock services with 1 second delay and mock return values
+    let clientService = MockClientService {
+      try? await Task.sleep(for: .seconds(1))
+      return mockClient
+    }
+
+    let environmentService = MockEnvironmentService {
+      try? await Task.sleep(for: .seconds(1))
+      return mockEnvironment
+    }
+
+    let userService = MockUserService(
+      getSessions: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return [.mock, .mock2]
+      },
+      reload: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      update: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createBackupCodes: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createEmailAddress: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createPhoneNumber: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createExternalAccount: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockVerified
+      },
+      createExternalAccountToken: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockVerified
+      },
+      createTotp: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      verifyTotp: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      disableTotp: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      getOrganizationInvitations: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      getOrganizationMemberships: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+      },
+      getOrganizationSuggestions: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      updatePassword: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      setProfileImage: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil)
+      },
+      deleteProfileImage: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      delete: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    userService.setCreatePasskey {
+      try? await Task.sleep(for: .seconds(1))
+      return .mock
+    }
+    #endif
+
+    let signInService = MockSignInService(
+      create: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createWithParams: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      resetPassword: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareFirstFactor: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptFirstFactor: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareSecondFactor: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptSecondFactor: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      get: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    #if !os(tvOS) && !os(watchOS)
+    signInService.setAuthenticateWithRedirect { (strategy: SignIn.AuthenticateWithRedirectStrategy, _: Bool) in
+      try? await Task.sleep(for: .seconds(1))
+      return .signIn(.mock)
+    }
+    #endif
+
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    signInService.setGetCredentialForPasskey { _, _, _ in
+      try? await Task.sleep(for: .seconds(1))
+      return "mock-credential"
+    }
+    signInService.setAuthenticateWithIdToken { _, _ in
+      try? await Task.sleep(for: .seconds(1))
+      return .signIn(.mock)
+    }
+    #endif
+
+    let signUpService = MockSignUpService(
+      create: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createWithParams: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      update: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      get: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    #if !os(tvOS) && !os(watchOS)
+    signUpService.setAuthenticateWithRedirect { (strategy: SignUp.AuthenticateWithRedirectStrategy, _: Bool) in
+      try? await Task.sleep(for: .seconds(1))
+      return .signUp(.mock)
+    }
+    #endif
+
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    signUpService.setAuthenticateWithIdToken { _, _ in
+      try? await Task.sleep(for: .seconds(1))
+      return .signUp(.mock)
+    }
+    #endif
+
+    let sessionService = MockSessionService { _ in
+      try? await Task.sleep(for: .seconds(1))
+      return .mock
+    }
+
+    let passkeyService = MockPasskeyService(
+      create: {
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      update: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      delete: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    let organizationService = MockOrganizationService(
+      updateOrganization: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      destroyOrganization: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      setOrganizationLogo: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      getOrganizationRoles: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      getOrganizationMemberships: { _, _, _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+      },
+      addOrganizationMember: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockWithUserData
+      },
+      updateOrganizationMember: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockWithUserData
+      },
+      removeOrganizationMember: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockWithUserData
+      },
+      getOrganizationInvitations: { _, _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      inviteOrganizationMember: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      createOrganizationDomain: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      getOrganizationDomains: { _, _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      getOrganizationDomain: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      getOrganizationMembershipRequests: { _, _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+      },
+      deleteOrganizationDomain: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareOrganizationDomainAffiliationVerification: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptOrganizationDomainAffiliationVerification: { _, _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      revokeOrganizationInvitation: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      destroyOrganizationMembership: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mockWithUserData
+      },
+      acceptUserOrganizationInvitation: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      acceptOrganizationSuggestion: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      acceptOrganizationMembershipRequest: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      rejectOrganizationMembershipRequest: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    let clerkService = MockClerkService(
+      signOut: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        clerk.client = .mockSignedOut
+      },
+      setActive: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+      }
+    )
+
+    let emailAddressService = MockEmailAddressService(
+      create: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      destroy: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    let phoneNumberService = MockPhoneNumberService(
+      create: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      delete: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      prepareVerification: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      attemptVerification: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      makeDefaultSecondFactor: { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      },
+      setReservedForSecondFactor: { _, _ in
+        try? await Task.sleep(for: .seconds(1))
+        return .mock
+      }
+    )
+
+    let externalAccountService = MockExternalAccountService { _ in
+      try? await Task.sleep(for: .seconds(1))
+      return .mock
+    }
+
+    // Create mock dependency container with mock services
+    let container = MockDependencyContainer(
+      apiClient: mockAPIClient,
+      clientService: clientService,
+      userService: userService,
+      signInService: signInService,
+      signUpService: signUpService,
+      sessionService: sessionService,
+      passkeyService: passkeyService,
+      organizationService: organizationService,
+      environmentService: environmentService,
+      clerkService: clerkService,
+      emailAddressService: emailAddressService,
+      phoneNumberService: phoneNumberService,
+      externalAccountService: externalAccountService
+    )
+
+    // Replace dependencies with mock services
+    clerk.dependencies = container
+    clerk.client = mockClient
+    clerk.environment = mockEnvironment
+
+    return clerk
   }
 }
