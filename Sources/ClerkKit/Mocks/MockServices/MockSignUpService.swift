@@ -63,26 +63,6 @@ public final class MockSignUpService: SignUpServiceProtocol {
     getHandler = get
   }
 
-  #if !os(tvOS) && !os(watchOS)
-  public func setAuthenticateWithRedirect(_ handler: @escaping (SignUp.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
-    authenticateWithRedirectStrategyHandler = handler
-  }
-
-  public func setAuthenticateWithRedirect(_ handler: @escaping (SignUp, Bool) async throws -> TransferFlowResult) {
-    authenticateWithRedirectHandler = handler
-  }
-  #endif
-
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  public func setAuthenticateWithIdToken(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
-    authenticateWithIdTokenProviderHandler = handler
-  }
-
-  public func setAuthenticateWithIdToken(_ handler: @escaping (SignUp) async throws -> TransferFlowResult) {
-    authenticateWithIdTokenHandler = handler
-  }
-  #endif
-
   @MainActor
   public func create(strategy: SignUp.CreateStrategy, legalAccepted: Bool?, locale: String?) async throws -> SignUp {
     if let handler = createHandler {
