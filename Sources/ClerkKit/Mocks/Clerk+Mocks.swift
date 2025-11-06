@@ -137,6 +137,9 @@ public extension Clerk {
   /// environment properties to control behavior without making real API calls. This is useful for SwiftUI previews
   /// and testing scenarios.
   ///
+  /// **Important:** This function only works when compiled with DEBUG configuration. In release builds,
+  /// it returns `Clerk.shared` if already configured, or configures Clerk with an empty publishable key.
+  ///
   /// - Parameters:
   ///   - builder: An optional closure that receives a `MockBuilder` for configuring mock services, environment, and client.
   ///                        If not provided, all services, environment, and client will use their default mock implementations.
@@ -191,6 +194,7 @@ public extension Clerk {
   static func configureWithMocks(
     builder: ((MockBuilder) -> Void)? = nil
   ) -> Clerk {
+    #if DEBUG
     // Configure Clerk.shared if not already configured
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
@@ -251,5 +255,12 @@ public extension Clerk {
     clerk.environment = mockEnvironment
 
     return clerk
+    #else
+    // In release builds, return Clerk.shared if configured, otherwise configure with a dummy key
+    if let shared = Clerk.shared {
+      return shared
+    }
+    return Clerk.configure(publishableKey: "")
+    #endif
   }
 }

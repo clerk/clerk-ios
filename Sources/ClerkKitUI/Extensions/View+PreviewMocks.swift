@@ -14,6 +14,11 @@ import SwiftUI
 /// Used for configuring Clerk.shared in SwiftUI previews.
 private let previewTestPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
+/// Checks if the current process is running in a SwiftUI preview.
+private var isRunningInPreview: Bool {
+  ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+}
+
 public extension View {
   /// Injects mock environment values for previews.
   ///
@@ -24,6 +29,9 @@ public extension View {
   ///
   /// Note: `ClerkTheme` has a default value and doesn't need to be injected.
   ///
+  /// **Important:** This modifier only works when running in SwiftUI previews. When used outside of previews,
+  /// it returns the view unchanged without applying any mock configuration.
+  ///
   /// Usage:
   /// ```swift
   /// #Preview {
@@ -33,21 +41,25 @@ public extension View {
   /// ```
   @MainActor
   func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
-    // Configure Clerk.shared so views that access it directly don't fail
-    let clerk = Clerk.configureWithMocks { builder in
-      // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
-      if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
-        let environment = try? Clerk.Environment(fromFile: url)
-      {
-        builder.environment = environment
+    if isRunningInPreview {
+      // Configure Clerk.shared so views that access it directly don't fail
+      let clerk = Clerk.configureWithMocks { builder in
+        // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+        if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+          let environment = try? Clerk.Environment(fromFile: url)
+        {
+          builder.environment = environment
+        }
       }
-    }
-    if !isSignedIn { Task { try? await clerk.signOut() } }
+      if !isSignedIn { Task { try? await clerk.signOut() } }
 
-    return
-      environment(clerk)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
+      return AnyView(
+        environment(clerk)
+          .environment(AuthState())
+          .environment(UserProfileView.SharedState())
+      )
+    }
+    return AnyView(self)
   }
 
   /// Preview with custom mock service behaviors.
@@ -56,6 +68,9 @@ public extension View {
   /// such as delays or custom return values. This is useful for testing loading states and async behavior.
   ///
   /// - Parameter configureServices: A closure that receives a `MockBuilder` for configuring mock services.
+  ///
+  /// **Important:** This modifier only works when running in SwiftUI previews. When used outside of previews,
+  /// it returns the view unchanged without applying any mock configuration.
   ///
   /// Usage:
   /// ```swift
@@ -71,23 +86,27 @@ public extension View {
   /// ```
   @MainActor
   func clerkPreviewMocks(configureServices: @escaping (MockBuilder) -> Void) -> some View {
-    // Configure Clerk.shared with mock services (using default preview publishable key)
-    let clerk = Clerk.configureWithMocks { builder in
-      // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
-      if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
-        let environment = try? Clerk.Environment(fromFile: url)
-      {
-        builder.environment = environment
+    if isRunningInPreview {
+      // Configure Clerk.shared with mock services (using default preview publishable key)
+      let clerk = Clerk.configureWithMocks { builder in
+        // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+        if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+          let environment = try? Clerk.Environment(fromFile: url)
+        {
+          builder.environment = environment
+        }
+
+        // Allow user's closure to override or further configure
+        configureServices(builder)
       }
 
-      // Allow user's closure to override or further configure
-      configureServices(builder)
+      return AnyView(
+        environment(clerk)
+          .environment(AuthState())
+          .environment(UserProfileView.SharedState())
+      )
     }
-
-    return
-      environment(clerk)
-      .environment(AuthState())
-      .environment(UserProfileView.SharedState())
+    return AnyView(self)
   }
 }
 
