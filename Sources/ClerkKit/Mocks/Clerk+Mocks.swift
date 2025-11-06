@@ -138,8 +138,7 @@ public extension Clerk {
   /// and testing scenarios.
   ///
   /// - Parameters:
-  ///   - publishableKey: The publishable key to use for configuration. Defaults to a mock key.
-  ///   - configureServices: An optional closure that receives a `MockBuilder` for configuring mock services, environment, and client.
+  ///   - builder: An optional closure that receives a `MockBuilder` for configuring mock services, environment, and client.
   ///                        If not provided, all services, environment, and client will use their default mock implementations.
   ///
   /// Example:
@@ -190,61 +189,60 @@ public extension Clerk {
   @MainActor
   @discardableResult
   static func configureWithMocks(
-    publishableKey: String = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-    configureServices: ((MockBuilder) -> Void)? = nil
+    builder: ((MockBuilder) -> Void)? = nil
   ) -> Clerk {
     // Configure Clerk.shared if not already configured
-    let clerk = Clerk.configure(publishableKey: publishableKey)
+    let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
     // Create a minimal API client (won't be used if services are mocked)
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL)
 
     // Create mock builder
-    let builder = MockBuilder()
-    configureServices?(builder)
+    let mockBuilder = MockBuilder()
+    builder?(mockBuilder)
 
     // Determine which environment to use: custom from builder, or default .mock
-    let mockEnvironment = builder.environment ?? .mock
+    let mockEnvironment = mockBuilder.environment ?? .mock
 
     // Determine which client to use: custom from builder, or default .mock
-    let mockClient = builder.client ?? .mock
+    let mockClient = mockBuilder.client ?? .mock
 
     // If builder has a custom environment, update the environmentService to return it
     let environmentService: MockEnvironmentService
-    if builder.environment != nil {
+    if mockBuilder.environment != nil {
       environmentService = MockEnvironmentService {
         mockEnvironment
       }
     } else {
-      environmentService = builder.environmentService
+      environmentService = mockBuilder.environmentService
     }
 
     // If builder has a custom client, update the clientService to return it
     let clientService: MockClientService
-    if builder.client != nil {
+    if mockBuilder.client != nil {
       clientService = MockClientService {
         mockClient
       }
     } else {
-      clientService = builder.clientService
+      clientService = mockBuilder.clientService
     }
 
     // Create mock dependency container with mock services
     let container = MockDependencyContainer(
       apiClient: mockAPIClient,
       clientService: clientService,
-      userService: builder.userService,
-      signInService: builder.signInService,
-      signUpService: builder.signUpService,
-      sessionService: builder.sessionService,
-      passkeyService: builder.passkeyService,
-      organizationService: builder.organizationService,
+      userService: mockBuilder.userService,
+      signInService: mockBuilder.signInService,
+      signUpService: mockBuilder.signUpService,
+      sessionService: mockBuilder.sessionService,
+      passkeyService: mockBuilder.passkeyService,
+      organizationService: mockBuilder.organizationService,
       environmentService: environmentService,
-      clerkService: builder.clerkService,
-      emailAddressService: builder.emailAddressService,
-      phoneNumberService: builder.phoneNumberService,
-      externalAccountService: builder.externalAccountService
+      clerkService: mockBuilder.clerkService,
+      emailAddressService: mockBuilder.emailAddressService,
+      phoneNumberService: mockBuilder.phoneNumberService,
+      externalAccountService: mockBuilder.externalAccountService
     )
 
     // Replace dependencies with mock services
