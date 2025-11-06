@@ -10,30 +10,30 @@ import Foundation
 /// Builder for configuring mock services and environment in previews and tests.
 ///
 /// Use this builder to configure custom behaviors for service methods and environment properties.
-/// You can create and assign mock services and customize environment settings inline in the preview closure.
+/// You can modify handler properties directly on the default services or replace entire services.
 ///
 /// Example:
 /// ```swift
+/// // Modify handler properties directly (recommended)
+/// builder.signInService.createHandler = { _, _ in
+///   try? await Task.sleep(for: .seconds(2))
+///   return .mock
+/// }
+///
+/// builder.userService.getSessionsHandler = { user in
+///   try? await Task.sleep(for: .seconds(1))
+///   return [Session.mock, Session.mock2]
+/// }
+///
+/// // Or replace entire services
 /// builder.clientService = MockClientService {
 ///   try? await Task.sleep(for: .seconds(1))
 ///   return Client.mock
 /// }
 ///
-/// builder.userService = MockUserService(
-///   getSessions: { user in
-///     try? await Task.sleep(for: .seconds(1))
-///     return [Session.mock, Session.mock2]
-///   }
-/// )
-///
-/// // Customize environment properties like application name
-/// var env = Clerk.Environment.mock
-/// if var displayConfig = env.displayConfig {
-///   displayConfig.applicationName = "My App"
-///   displayConfig.supportEmail = "support@myapp.com"
-///   env.displayConfig = displayConfig
-/// }
-/// builder.environment = env
+/// // Load environment from JSON file (recommended for previews)
+/// let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
+/// builder.environment = try! Clerk.Environment(fromFile: url)
 ///
 /// // Customize client properties like sessions
 /// var client = Client.mock
@@ -43,69 +43,63 @@ import Foundation
 @MainActor
 public final class MockBuilder {
   /// Mock client service for customizing `Client.get()` behavior.
-  /// Assign a `MockClientService` instance to configure it.
-  public var clientService: MockClientService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var clientService: MockClientService = MockClientService()
 
   /// Mock user service for customizing `User` service methods behavior.
-  /// Assign a `MockUserService` instance to configure it.
-  public var userService: MockUserService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var userService: MockUserService = MockUserService()
 
   /// Mock sign-in service for customizing sign-in behavior.
-  /// Assign a `MockSignInService` instance to configure it.
-  public var signInService: MockSignInService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var signInService: MockSignInService = MockSignInService()
 
   /// Mock sign-up service for customizing sign-up behavior.
-  /// Assign a `MockSignUpService` instance to configure it.
-  public var signUpService: MockSignUpService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var signUpService: MockSignUpService = MockSignUpService()
 
   /// Mock session service for customizing session behavior.
-  /// Assign a `MockSessionService` instance to configure it.
-  public var sessionService: MockSessionService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var sessionService: MockSessionService = MockSessionService()
 
   /// Mock passkey service for customizing passkey behavior.
-  /// Assign a `MockPasskeyService` instance to configure it.
-  public var passkeyService: MockPasskeyService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var passkeyService: MockPasskeyService = MockPasskeyService()
 
   /// Mock organization service for customizing organization behavior.
-  /// Assign a `MockOrganizationService` instance to configure it.
-  public var organizationService: MockOrganizationService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var organizationService: MockOrganizationService = MockOrganizationService()
 
   /// Mock environment service for customizing `Environment.get()` behavior.
-  /// Assign a `MockEnvironmentService` instance to configure it.
-  public var environmentService: MockEnvironmentService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var environmentService: MockEnvironmentService = MockEnvironmentService()
 
   /// Mock clerk service for customizing clerk operations.
-  /// Assign a `MockClerkService` instance to configure it.
-  public var clerkService: MockClerkService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var clerkService: MockClerkService = MockClerkService()
 
   /// Mock email address service for customizing email address behavior.
-  /// Assign a `MockEmailAddressService` instance to configure it.
-  public var emailAddressService: MockEmailAddressService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var emailAddressService: MockEmailAddressService = MockEmailAddressService()
 
   /// Mock phone number service for customizing phone number behavior.
-  /// Assign a `MockPhoneNumberService` instance to configure it.
-  public var phoneNumberService: MockPhoneNumberService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var phoneNumberService: MockPhoneNumberService = MockPhoneNumberService()
 
   /// Mock external account service for customizing external account behavior.
-  /// Assign a `MockExternalAccountService` instance to configure it.
-  public var externalAccountService: MockExternalAccountService?
+  /// You can modify handler properties directly or replace the entire service.
+  public var externalAccountService: MockExternalAccountService = MockExternalAccountService()
 
-  /// Custom mock environment for configuring environment properties like application name.
+  /// Custom mock environment for configuring environment properties.
   /// If set, this environment will be used instead of the default `.mock` environment.
-  /// Assign a `Clerk.Environment` instance to configure it.
   ///
-  /// Example:
+  /// The recommended approach is to load your environment from a JSON file:
   /// ```swift
-  /// var env = Clerk.Environment.mock
-  /// if var displayConfig = env.displayConfig {
-  ///   displayConfig.applicationName = "My App"
-  ///   displayConfig.supportEmail = "support@myapp.com"
-  ///   env.displayConfig = displayConfig
-  /// }
-  /// builder.environment = env
+  /// let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
+  /// builder.environment = try! Clerk.Environment(fromFile: url)
   /// ```
   ///
-  /// You can also create an environment from a real API response JSON:
+  /// You can also create an environment from JSON string:
   /// ```swift
   /// builder.environment = try! Clerk.Environment(fromJSON: """
   /// {
@@ -114,12 +108,6 @@ public final class MockBuilder {
   ///   "user_settings": {...}
   /// }
   /// """)
-  /// ```
-  ///
-  /// Or load from a JSON file:
-  /// ```swift
-  /// let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
-  /// builder.environment = try! Clerk.Environment(fromFile: url)
   /// ```
   public var environment: Clerk.Environment?
 
@@ -137,8 +125,8 @@ public final class MockBuilder {
 
   /// Creates a new mock builder.
   ///
-  /// Services, environment, and client are not pre-initialized. Assign them in the configuration closure
-  /// to only configure what you need.
+  /// All services are pre-initialized with default mock implementations.
+  /// You can modify handler properties directly or replace entire services in the configuration closure.
   public init() {}
 }
 
@@ -159,31 +147,23 @@ public extension Clerk {
   /// // Use default mock services
   /// Clerk.configureWithMocks()
   ///
-  /// // Or customize specific services
+  /// // Or customize specific service handlers
   /// Clerk.configureWithMocks { builder in
-  ///   builder.clientService = MockClientService {
-  ///     try? await Task.sleep(for: .seconds(1))
-  ///     return Client.mock
+  ///   builder.signInService.createHandler = { _, _ in
+  ///     try? await Task.sleep(for: .seconds(2))
+  ///     return .mock
   ///   }
   ///
-  ///   builder.userService = MockUserService(
-  ///     getSessions: { user in
-  ///       try? await Task.sleep(for: .seconds(1))
-  ///       return [Session.mock, Session.mock2]
-  ///     }
-  ///   )
+  ///   builder.userService.getSessionsHandler = { user in
+  ///     try? await Task.sleep(for: .seconds(1))
+  ///     return [Session.mock, Session.mock2]
+  ///   }
   /// }
   ///
-  /// // Customize environment properties for previews
+  /// // Load environment from JSON file for previews
   /// Clerk.configureWithMocks { builder in
-  ///   var env = Clerk.Environment.mock
-  ///   if var displayConfig = env.displayConfig {
-  ///     displayConfig.applicationName = "My App"
-  ///     displayConfig.supportEmail = "support@myapp.com"
-  ///     displayConfig.logoImageUrl = "https://example.com/logo.png"
-  ///     env.displayConfig = displayConfig
-  ///   }
-  ///   builder.environment = env
+  ///   let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
+  ///   builder.environment = try! Clerk.Environment(fromFile: url)
   ///
   ///   // Customize client
   ///   var client = Client.mock
@@ -197,12 +177,8 @@ public extension Clerk {
   /// @MainActor
   /// func createPreviewClerk() -> Clerk {
   ///   Clerk.configureWithMocks { builder in
-  ///     var env = Clerk.Environment.mock
-  ///     if var displayConfig = env.displayConfig {
-  ///       displayConfig.applicationName = "My App"
-  ///       env.displayConfig = displayConfig
-  ///     }
-  ///     builder.environment = env
+  ///     let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
+  ///     builder.environment = try! Clerk.Environment(fromFile: url)
   ///   }
   /// }
   ///
@@ -234,10 +210,9 @@ public extension Clerk {
     // Determine which client to use: custom from builder, or default .mock
     let mockClient = builder.client ?? .mock
 
-    // If builder has a custom environment but no custom environmentService,
-    // create a MockEnvironmentService that returns the custom environment
-    let environmentService: MockEnvironmentService?
-    if builder.environment != nil && builder.environmentService == nil {
+    // If builder has a custom environment, update the environmentService to return it
+    let environmentService: MockEnvironmentService
+    if builder.environment != nil {
       environmentService = MockEnvironmentService {
         mockEnvironment
       }
@@ -245,10 +220,9 @@ public extension Clerk {
       environmentService = builder.environmentService
     }
 
-    // If builder has a custom client but no custom clientService,
-    // create a MockClientService that returns the custom client
-    let clientService: MockClientService?
-    if builder.client != nil && builder.clientService == nil {
+    // If builder has a custom client, update the clientService to return it
+    let clientService: MockClientService
+    if builder.client != nil {
       clientService = MockClientService {
         mockClient
       }
@@ -256,7 +230,7 @@ public extension Clerk {
       clientService = builder.clientService
     }
 
-    // Create mock dependency container with mock services (only pass configured ones)
+    // Create mock dependency container with mock services
     let container = MockDependencyContainer(
       apiClient: mockAPIClient,
       clientService: clientService,
