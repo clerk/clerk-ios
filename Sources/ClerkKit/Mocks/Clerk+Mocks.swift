@@ -204,6 +204,14 @@ public extension Clerk {
 
     // Create mock builder
     let mockBuilder = MockBuilder()
+
+    // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
+    if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+      let environment = try? Clerk.Environment(fromFile: url)
+    {
+      mockBuilder.environment = environment
+    }
+
     builder?(mockBuilder)
 
     // Determine which environment to use: custom from builder, or default .mock
@@ -256,11 +264,8 @@ public extension Clerk {
 
     return clerk
     #else
-    // In release builds, return Clerk.shared if configured, otherwise configure with a dummy key
-    if let shared = Clerk.shared {
-      return shared
-    }
-    return Clerk.configure(publishableKey: "")
+    // In release builds, return Clerk.shared
+    return Clerk.shared
     #endif
   }
 }
