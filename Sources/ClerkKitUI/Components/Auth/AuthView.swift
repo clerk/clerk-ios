@@ -215,13 +215,13 @@ extension AuthView {
   Color.clear
     .sheet(isPresented: .constant(true)) {
       AuthView()
-        .clerkPreviewMocks()
+        .clerkPreview()
     }
 }
 
 #Preview("Not in sheet") {
   AuthView(isDismissable: false)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #endif

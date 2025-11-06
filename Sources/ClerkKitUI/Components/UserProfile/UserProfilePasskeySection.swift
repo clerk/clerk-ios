@@ -62,7 +62,7 @@ extension UserProfilePasskeySection {
 
 #Preview {
   UserProfilePasskeySection()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
