@@ -39,8 +39,8 @@ public extension View {
 
     return
       environment(clerk)
-        .environment(AuthState())
-        .environment(UserProfileView.SharedState())
+      .environment(AuthState())
+      .environment(UserProfileView.SharedState())
   }
 
   /// Preview with custom mock service behaviors.
@@ -48,14 +48,14 @@ public extension View {
   /// This modifier allows you to configure mock services (like `Client.get()`) to have custom behaviors
   /// such as delays or custom return values. This is useful for testing loading states and async behavior.
   ///
-  /// - Parameter configureServices: A closure that receives a `MockServicesBuilder` for configuring mock services.
+  /// - Parameter configureServices: A closure that receives a `MockBuilder` for configuring mock services.
   ///
   /// Usage:
   /// ```swift
   /// #Preview {
   ///     MyView()
   ///         .clerkPreviewMocks { builder in
-  ///             builder.clientService.getHandler = {
+  ///             builder.clientService = MockClientService {
   ///                 try? await Task.sleep(for: .seconds(1))
   ///                 return Client.mock
   ///             }
@@ -63,14 +63,14 @@ public extension View {
   /// }
   /// ```
   @MainActor
-  func clerkPreviewMocks(configureServices: @escaping (MockServicesBuilder) -> Void) -> some View {
+  func clerkPreviewMocks(configureServices: @escaping (MockBuilder) -> Void) -> some View {
     // Configure Clerk.shared with mock services (using default preview publishable key)
-    Clerk.configureWithMocks(configureServices: configureServices)
+    let clerk = Clerk.configureWithMocks(configureServices: configureServices)
 
     return
-      environment(Clerk.mock)
-        .environment(AuthState())
-        .environment(UserProfileView.SharedState())
+      environment(clerk)
+      .environment(AuthState())
+      .environment(UserProfileView.SharedState())
   }
 }
 
