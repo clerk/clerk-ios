@@ -38,8 +38,8 @@ public final class MockSignInService: SignInServiceProtocol {
   public nonisolated(unsafe) var getHandler: ((String, String?) async throws -> SignIn)?
 
   #if !os(tvOS) && !os(watchOS)
-  /// Custom handler for the `authenticateWithRedirectStatic(strategy:prefersEphemeralWebBrowserSession:)` method.
-  public nonisolated(unsafe) var authenticateWithRedirectStaticHandler: ((SignIn.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult)?
+  /// Custom handler for the `authenticateWithRedirect(strategy:prefersEphemeralWebBrowserSession:)` method.
+  public nonisolated(unsafe) var authenticateWithRedirectStrategyHandler: ((SignIn.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult)?
 
   /// Custom handler for the `authenticateWithRedirect(signIn:prefersEphemeralWebBrowserSession:)` method.
   public nonisolated(unsafe) var authenticateWithRedirectHandler: ((SignIn, Bool) async throws -> TransferFlowResult)?
@@ -49,8 +49,8 @@ public final class MockSignInService: SignInServiceProtocol {
   /// Custom handler for the `getCredentialForPasskey(signIn:autofill:preferImmediatelyAvailableCredentials:)` method.
   public nonisolated(unsafe) var getCredentialForPasskeyHandler: ((SignIn, Bool, Bool) async throws -> String)?
 
-  /// Custom handler for the `authenticateWithIdTokenStatic(provider:idToken:)` method.
-  public nonisolated(unsafe) var authenticateWithIdTokenStaticHandler: ((IDTokenProvider, String) async throws -> TransferFlowResult)?
+  /// Custom handler for the `authenticateWithIdToken(provider:idToken:)` method.
+  public nonisolated(unsafe) var authenticateWithIdTokenProviderHandler: ((IDTokenProvider, String) async throws -> TransferFlowResult)?
 
   /// Custom handler for the `authenticateWithIdToken(signIn:)` method.
   public nonisolated(unsafe) var authenticateWithIdTokenHandler: ((SignIn) async throws -> TransferFlowResult)?
@@ -77,8 +77,8 @@ public final class MockSignInService: SignInServiceProtocol {
   }
 
   #if !os(tvOS) && !os(watchOS)
-  public func setAuthenticateWithRedirectStatic(_ handler: @escaping (SignIn.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
-    authenticateWithRedirectStaticHandler = handler
+  public func setAuthenticateWithRedirect(_ handler: @escaping (SignIn.AuthenticateWithRedirectStrategy, Bool) async throws -> TransferFlowResult) {
+    authenticateWithRedirectStrategyHandler = handler
   }
 
   public func setAuthenticateWithRedirect(_ handler: @escaping (SignIn, Bool) async throws -> TransferFlowResult) {
@@ -91,8 +91,8 @@ public final class MockSignInService: SignInServiceProtocol {
     getCredentialForPasskeyHandler = handler
   }
 
-  public func setAuthenticateWithIdTokenStatic(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
-    authenticateWithIdTokenStaticHandler = handler
+  public func setAuthenticateWithIdToken(_ handler: @escaping (IDTokenProvider, String) async throws -> TransferFlowResult) {
+    authenticateWithIdTokenProviderHandler = handler
   }
 
   public func setAuthenticateWithIdToken(_ handler: @escaping (SignIn) async throws -> TransferFlowResult) {
@@ -166,8 +166,8 @@ public final class MockSignInService: SignInServiceProtocol {
 
   #if !os(tvOS) && !os(watchOS)
   @MainActor
-  public func authenticateWithRedirectStatic(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
-    if let handler = authenticateWithRedirectStaticHandler {
+  public func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+    if let handler = authenticateWithRedirectStrategyHandler {
       return try await handler(strategy, prefersEphemeralWebBrowserSession)
     }
     return .signIn(.mock)
@@ -192,8 +192,8 @@ public final class MockSignInService: SignInServiceProtocol {
   }
 
   @MainActor
-  public func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    if let handler = authenticateWithIdTokenStaticHandler {
+  public func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+    if let handler = authenticateWithIdTokenProviderHandler {
       return try await handler(provider, idToken)
     }
     return .signIn(.mock)

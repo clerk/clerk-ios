@@ -19,13 +19,13 @@ protocol SignInServiceProtocol: Sendable {
   @MainActor func get(signInId: String, rotatingTokenNonce: String?) async throws -> SignIn
 
   #if !os(tvOS) && !os(watchOS)
-  @MainActor func authenticateWithRedirectStatic(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
+  @MainActor func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   @MainActor func authenticateWithRedirect(signIn: SignIn, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @MainActor func getCredentialForPasskey(signIn: SignIn, autofill: Bool, preferImmediatelyAvailableCredentials: Bool) async throws -> String
-  @MainActor func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
+  @MainActor func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
   @MainActor func authenticateWithIdToken(signIn: SignIn) async throws -> TransferFlowResult
   #endif
 }
@@ -148,7 +148,7 @@ final class SignInService: SignInServiceProtocol {
 
   #if !os(tvOS) && !os(watchOS)
   @MainActor
-  func authenticateWithRedirectStatic(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
+  func authenticateWithRedirect(strategy: SignIn.AuthenticateWithRedirectStrategy, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
     let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
@@ -229,7 +229,7 @@ final class SignInService: SignInServiceProtocol {
   }
 
   @MainActor
-  func authenticateWithIdTokenStatic(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+  func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
     let signIn = try await SignIn.create(strategy: .idToken(provider: provider, idToken: idToken))
     return try await signIn.handleTransferFlow()
   }
