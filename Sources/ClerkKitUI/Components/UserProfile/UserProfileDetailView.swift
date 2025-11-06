@@ -160,7 +160,7 @@ struct UserProfileDetailView: View {
 #Preview {
   NavigationStack {
     UserProfileDetailView()
-      .clerkPreviewMocks()
+      .clerkPreview()
       .environment(\.clerkTheme, .clerk)
   }
 }

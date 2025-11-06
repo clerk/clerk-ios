@@ -146,7 +146,7 @@ extension UserProfileAddMfaView {
 
 #Preview {
   UserProfileAddMfaView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

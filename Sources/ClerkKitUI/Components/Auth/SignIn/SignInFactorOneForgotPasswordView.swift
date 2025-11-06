@@ -190,7 +190,7 @@ extension SignInFactorOneForgotPasswordView {
 
 #Preview {
   SignInFactorOneForgotPasswordView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
