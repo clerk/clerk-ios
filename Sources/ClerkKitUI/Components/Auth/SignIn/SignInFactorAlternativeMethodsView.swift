@@ -192,7 +192,7 @@ extension SignInFactorAlternativeMethodsView {
   SignInFactorAlternativeMethodsView(
     currentFactor: .mockEmailCode
   )
-  .clerkPreviewMocks()
+  .clerkPreview()
 }
 
 #endif

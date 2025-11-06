@@ -340,7 +340,7 @@ extension UserProfileView {
 
 #Preview("Dismissable") {
   UserProfileView()
-    .clerkPreviewMocks { builder in
+    .clerkPreview { builder in
       builder.clientService = MockClientService(
         get: {
           try? await Task.sleep(for: .seconds(1))
@@ -367,7 +367,7 @@ extension UserProfileView {
 
 #Preview("Not dismissable") {
   UserProfileView(isDismissable: false)
-    .clerkPreviewMocks { builder in
+    .clerkPreview { builder in
       builder.clientService = MockClientService(
         get: {
           try? await Task.sleep(for: .seconds(1))

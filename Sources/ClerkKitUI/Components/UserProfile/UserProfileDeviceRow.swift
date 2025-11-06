@@ -106,7 +106,7 @@ extension UserProfileDeviceRow {
 
 #Preview {
   UserProfileDeviceRow(session: .mock)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #endif

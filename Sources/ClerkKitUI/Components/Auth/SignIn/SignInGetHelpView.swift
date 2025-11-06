@@ -56,7 +56,7 @@ extension SignInGetHelpView {
 
 #Preview {
   SignInGetHelpView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

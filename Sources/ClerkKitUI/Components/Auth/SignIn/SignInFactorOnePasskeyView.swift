@@ -142,13 +142,13 @@ extension SignInFactorOnePasskeyView {
 
 #Preview {
   SignInFactorOnePasskeyView(factor: .mockPasskey)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
   SignInFactorOnePasskeyView(factor: .mockPasskey)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.locale, .init(identifier: "fr"))
 }
 

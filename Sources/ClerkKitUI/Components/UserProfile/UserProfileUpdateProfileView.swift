@@ -242,7 +242,7 @@ extension UserProfileUpdateProfileView {
 
 #Preview {
   UserProfileUpdateProfileView(user: .mock)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

@@ -131,7 +131,7 @@ extension UserButtonPopover {
 
 #Preview {
   UserButtonPopover()
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #endif

@@ -36,11 +36,11 @@ package extension View {
   /// ```swift
   /// #Preview {
   ///     MyView()
-  ///         .clerkPreviewMocks()
+  ///         .clerkPreview()
   /// }
   /// ```
   @MainActor
-  func clerkPreviewMocks(isSignedIn: Bool = true) -> some View {
+  func clerkPreview(isSignedIn: Bool = true) -> some View {
     if isRunningInPreview {
       // Configure Clerk.shared so views that access it directly don't fail
       let clerk = Clerk.preview { builder in
@@ -70,7 +70,7 @@ package extension View {
   /// ```swift
   /// #Preview {
   ///     MyView()
-  ///         .clerkPreviewMocks { builder in
+  ///         .clerkPreview { builder in
   ///             builder.clientService = MockClientService {
   ///                 try? await Task.sleep(for: .seconds(1))
   ///                 return Client.mock
@@ -79,7 +79,7 @@ package extension View {
   /// }
   /// ```
   @MainActor
-  func clerkPreviewMocks(configureServices: @escaping (MockBuilder) -> Void) -> some View {
+  func clerkPreview(configureServices: @escaping (MockBuilder) -> Void) -> some View {
     if isRunningInPreview {
       // Configure Clerk.shared with mock services (using default preview publishable key)
       // Note: This still uses configureWithMocks internally for advanced customization

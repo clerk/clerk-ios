@@ -172,7 +172,7 @@ struct UserButtonAccountSwitcher: View {
 
 #Preview {
   UserButtonAccountSwitcher()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

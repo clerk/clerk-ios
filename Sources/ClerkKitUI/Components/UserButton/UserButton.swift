@@ -112,7 +112,7 @@ public struct UserButton: View {
 #Preview {
   UserButton()
     .frame(width: 36, height: 36)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

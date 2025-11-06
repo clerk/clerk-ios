@@ -319,18 +319,18 @@ extension AuthStartView {
 
 #Preview {
   AuthStartView()
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("Clerk Theme") {
   AuthStartView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
   AuthStartView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
     .environment(\.locale, .init(identifier: "es"))
 }

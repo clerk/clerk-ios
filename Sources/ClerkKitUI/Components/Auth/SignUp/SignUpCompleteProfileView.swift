@@ -202,7 +202,7 @@ extension SignUpCompleteProfileView {
 
 #Preview {
   SignUpCompleteProfileView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

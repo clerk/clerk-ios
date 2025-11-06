@@ -163,7 +163,7 @@ extension UserProfileMfaAddTotpView {
 
 #Preview {
   UserProfileMfaAddTotpView(totp: .mock)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

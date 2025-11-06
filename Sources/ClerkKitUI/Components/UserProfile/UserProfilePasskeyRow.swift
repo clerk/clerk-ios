@@ -116,7 +116,7 @@ extension UserProfilePasskeyRow {
 
 #Preview {
   UserProfilePasskeyRow(passkey: .mock)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

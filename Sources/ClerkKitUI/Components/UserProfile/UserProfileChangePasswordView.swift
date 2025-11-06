@@ -220,13 +220,13 @@ extension UserProfileChangePasswordView {
 
 #Preview("Reset") {
   UserProfileChangePasswordView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Adding") {
   UserProfileChangePasswordView(isAddingPassword: true)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
