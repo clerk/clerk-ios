@@ -460,18 +460,18 @@ public extension Clerk {
     )
 
     #if !os(tvOS) && !os(watchOS)
-    signInService.setAuthenticateWithRedirect { (strategy: SignIn.AuthenticateWithRedirectStrategy, _: Bool) in
+    signInService.authenticateWithRedirectStrategyHandler = { (strategy: SignIn.AuthenticateWithRedirectStrategy, _: Bool) in
       try? await Task.sleep(for: .seconds(1))
       return .signIn(.mock)
     }
     #endif
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    signInService.setGetCredentialForPasskey { _, _, _ in
+    signInService.getCredentialForPasskeyHandler = { _, _, _ in
       try? await Task.sleep(for: .seconds(1))
       return "mock-credential"
     }
-    signInService.setAuthenticateWithIdToken { _, _ in
+    signInService.authenticateWithIdTokenProviderHandler = { _, _ in
       try? await Task.sleep(for: .seconds(1))
       return .signIn(.mock)
     }
@@ -505,14 +505,14 @@ public extension Clerk {
     )
 
     #if !os(tvOS) && !os(watchOS)
-    signUpService.setAuthenticateWithRedirect { (strategy: SignUp.AuthenticateWithRedirectStrategy, _: Bool) in
+    signUpService.authenticateWithRedirectStrategyHandler = { (strategy: SignUp.AuthenticateWithRedirectStrategy, _: Bool) in
       try? await Task.sleep(for: .seconds(1))
       return .signUp(.mock)
     }
     #endif
 
     #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    signUpService.setAuthenticateWithIdToken { _, _ in
+    signUpService.authenticateWithIdTokenProviderHandler = { _, _ in
       try? await Task.sleep(for: .seconds(1))
       return .signUp(.mock)
     }
