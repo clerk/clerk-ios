@@ -30,21 +30,21 @@ public extension Clerk {
   /// **Important:** This method only works when running in SwiftUI previews. When used outside of previews,
   /// it returns `Clerk.shared` if already configured, or configures Clerk with an empty publishable key.
   ///
-  /// - Parameter builder: An optional closure that receives a `PreviewBuilder` for configuring preview settings.
+  /// - Parameter preview: An optional closure that receives a `PreviewBuilder` for configuring preview settings.
   ///
   /// Example:
   /// ```swift
   /// #Preview {
   ///   ContentView()
-  ///     .environment(Clerk.preview { builder in
-  ///       builder.isSignedIn = false
+  ///     .environment(Clerk.preview { preview in
+  ///       preview.isSignedIn = false
   ///     })
   /// }
   /// ```
   @MainActor
   @discardableResult
   static func preview(
-    builder: ((PreviewBuilder) -> Void)? = nil
+    preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
     // Check if running in SwiftUI preview
     let isRunningInPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
@@ -71,8 +71,8 @@ public extension Clerk {
       environment = loadedEnvironment
     }
 
-    // Apply builder closure
-    builder?(previewBuilder)
+    // Apply preview closure
+    preview?(previewBuilder)
 
     // Determine which environment to use: loaded from file, or default .mock
     let mockEnvironment = environment ?? .mock
