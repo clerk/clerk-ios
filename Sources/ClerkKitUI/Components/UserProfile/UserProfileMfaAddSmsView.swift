@@ -227,7 +227,7 @@ struct AddMfaSmsRow: View {
 
 #Preview {
   UserProfileMfaAddSmsView()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

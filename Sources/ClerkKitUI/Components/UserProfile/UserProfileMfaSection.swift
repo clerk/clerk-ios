@@ -83,7 +83,7 @@ struct UserProfileMfaSection: View {
 
 #Preview {
   UserProfileMfaSection()
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

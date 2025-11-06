@@ -167,12 +167,12 @@ extension SignInFactorOnePasswordView {
 
 #Preview {
   SignInFactorOnePasswordView(factor: .mockPassword)
-    .clerkPreviewMocks()
+    .clerkPreview()
 }
 
 #Preview("Localized") {
   SignInFactorOnePasswordView(factor: .mockPassword)
-    .clerkPreviewMocks()
+    .clerkPreview()
     .environment(\.locale, .init(identifier: "es"))
 }
 
