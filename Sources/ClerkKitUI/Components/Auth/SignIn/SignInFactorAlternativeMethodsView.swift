@@ -167,19 +167,9 @@ extension SignInFactorAlternativeMethodsView {
 
       switch result {
       case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.error {
-          self.error = error
-        } else {
-          authState.setToStepForStatus(signIn: signIn)
-        }
+        authState.setToStepForStatus(signIn: signIn)
       case .signUp(let signUp):
-        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-          let error = verification.error
-        {
-          self.error = error
-        } else {
-          authState.setToStepForStatus(signUp: signUp)
-        }
+        authState.setToStepForStatus(signUp: signUp)
       }
 
     } catch {

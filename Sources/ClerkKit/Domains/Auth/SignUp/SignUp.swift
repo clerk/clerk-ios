@@ -354,11 +354,28 @@ extension SignUp {
   func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignUp = try await get(rotatingTokenNonce: nonce)
+      if let verification = updatedSignUp.verifications.first(where: { $0.key == "external_account" })?.value,
+        let error = verification.error
+      {
+        throw error
+      }
       return .signUp(updatedSignUp)
     } else {
       // transfer flow
       let signUp = try await get()
       let result = try await signUp.handleTransferFlow()
+      switch result {
+      case .signIn(let signIn):
+        if let error = signIn.firstFactorVerification?.error {
+          throw error
+        }
+      case .signUp(let signUp):
+        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+          let error = verification.error
+        {
+          throw error
+        }
+      }
       return result
     }
   }
