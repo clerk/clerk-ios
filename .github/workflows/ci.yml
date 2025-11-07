@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: Build on all platforms
-    runs-on: macos-15
+    runs-on: macos-latest
     strategy:
       matrix:
         platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
@@ -26,19 +26,25 @@ jobs:
 
       - name: Build for ${{ matrix.platform }}
         run: |
-          case "${{ matrix.platform }}" in
-            iOS) destination="platform=iOS Simulator,OS=latest" ;;
-            macOS) destination="platform=macOS" ;;
-            macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
-            watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
-            tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
-            visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
-          esac
-          xcodebuild build -scheme Clerk -destination "$destination" | xcpretty
+          set -euo pipefail
+          if [ "${{ matrix.platform }}" = "macOS" ]; then
+            echo "Building for macOS using Swift Package Manager..."
+            swift build -c release
+          else
+            echo "Building for ${{ matrix.platform }} using xcodebuild..."
+            case "${{ matrix.platform }}" in
+              iOS) destination="platform=iOS Simulator,OS=latest" ;;
+              macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
+              watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
+              tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
+              visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
+            esac
+            xcodebuild build -scheme Clerk -destination "$destination"
+          fi
 
   test:
     name: Run tests on macOS
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,12 +54,24 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: List available destinations
-        run: |
-          echo "Available destinations:"
-          xcodebuild -showdestinations -scheme ClerkTests
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-macOS-
 
-      - name: Run tests on macOS
+      - name: Verify tests exist
         run: |
-          set -o pipefail
-          xcodebuild test -scheme ClerkTests -destination "platform=macOS" -disable-concurrent-destination-testing | xcpretty
+          set -euo pipefail
+          if [ ! -d "Tests" ]; then
+            echo "Error: Tests directory not found"
+            exit 1
+          fi
+          echo "Test directory found. Running tests..."
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          echo "Running tests using Swift Package Manager..."
+          swift test
