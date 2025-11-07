@@ -22,7 +22,7 @@ protocol SignUpServiceProtocol: Sendable {
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  @MainActor func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult
+  @MainActor func authenticateWithIdToken(provider: IDTokenProvider, idToken: String, firstName: String?, lastName: String?) async throws -> TransferFlowResult
   @MainActor func authenticateWithIdToken(signUp: SignUp) async throws -> TransferFlowResult
   #endif
 }
@@ -106,10 +106,11 @@ final class SignUpService: SignUpServiceProtocol {
   func get(signUpId: String, rotatingTokenNonce: String?) async throws -> SignUp {
     var queryParams: [(String, String?)] = []
     if let rotatingTokenNonce {
-      queryParams.append((
-        "rotating_token_nonce",
-        rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-      ))
+      queryParams.append(
+        (
+          "rotating_token_nonce",
+          rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        ))
     }
 
     let request = Request<ClientResponse<SignUp>>(
@@ -165,8 +166,8 @@ final class SignUpService: SignUpServiceProtocol {
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @MainActor
-  func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken))
+  func authenticateWithIdToken(provider: IDTokenProvider, idToken: String, firstName: String?, lastName: String?) async throws -> TransferFlowResult {
+    let signUp = try await SignUp.create(strategy: .idToken(provider: provider, idToken: idToken, firstName: firstName, lastName: lastName))
     return try await signUp.handleTransferFlow()
   }
 

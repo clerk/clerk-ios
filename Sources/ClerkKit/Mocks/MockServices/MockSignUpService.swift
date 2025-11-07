@@ -40,8 +40,8 @@ public final class MockSignUpService: SignUpServiceProtocol {
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Custom handler for the `authenticateWithIdToken(provider:idToken:)` method.
-  public nonisolated(unsafe) var authenticateWithIdTokenProviderHandler: ((IDTokenProvider, String) async throws -> TransferFlowResult)?
+  /// Custom handler for the `authenticateWithIdToken(provider:idToken:firstName:lastName:)` method.
+  public nonisolated(unsafe) var authenticateWithIdTokenProviderHandler: ((IDTokenProvider, String, String?, String?) async throws -> TransferFlowResult)?
 
   /// Custom handler for the `authenticateWithIdToken(signUp:)` method.
   public nonisolated(unsafe) var authenticateWithIdTokenHandler: ((SignUp) async throws -> TransferFlowResult)?
@@ -131,9 +131,9 @@ public final class MockSignUpService: SignUpServiceProtocol {
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @MainActor
-  public func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
+  public func authenticateWithIdToken(provider: IDTokenProvider, idToken: String, firstName: String?, lastName: String?) async throws -> TransferFlowResult {
     if let handler = authenticateWithIdTokenProviderHandler {
-      return try await handler(provider, idToken)
+      return try await handler(provider, idToken, firstName, lastName)
     }
     return .signUp(.mock)
   }
