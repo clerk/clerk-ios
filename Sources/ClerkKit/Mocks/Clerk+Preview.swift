@@ -16,6 +16,17 @@ public final class PreviewBuilder {
   /// Defaults to `false`.
   public var isSignedIn: Bool = false
 
+  /// The environment to use for the preview.
+  /// If set, this environment will be used instead of loading from `ClerkEnvironment.json` or the default `.mock` environment.
+  ///
+  /// Example:
+  /// ```swift
+  /// Clerk.preview { builder in
+  ///   builder.environment = Clerk.Environment.mock
+  /// }
+  /// ```
+  public var environment: Clerk.Environment?
+
   /// Creates a new preview builder.
   public init() {}
 }
@@ -26,6 +37,11 @@ public extension Clerk {
   /// This method provides a simpler API specifically designed for SwiftUI previews.
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
+  ///
+  /// **Environment Loading:**
+  /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.
+  /// If found, it loads the environment from that file. If not found, or if you set a custom
+  /// environment via the `PreviewBuilder`, it uses the provided environment or falls back to `.mock`.
   ///
   /// **Important:** This method only works when running in SwiftUI previews. When used outside of previews,
   /// it returns `Clerk.shared` if already configured, or configures Clerk with an empty publishable key.
@@ -38,6 +54,17 @@ public extension Clerk {
   ///   ContentView()
   ///     .environment(Clerk.preview { preview in
   ///       preview.isSignedIn = false
+  ///     })
+  /// }
+  /// ```
+  ///
+  /// You can also set a custom environment:
+  /// ```swift
+  /// #Preview {
+  ///   ContentView()
+  ///     .environment(Clerk.preview { preview in
+  ///       preview.isSignedIn = true
+  ///       preview.environment = Clerk.Environment.mock
   ///     })
   /// }
   /// ```
@@ -74,8 +101,8 @@ public extension Clerk {
     // Apply preview closure
     preview?(previewBuilder)
 
-    // Determine which environment to use: loaded from file, or default .mock
-    let mockEnvironment = environment ?? .mock
+    // Determine which environment to use: from builder, loaded from file, or default .mock
+    let mockEnvironment = previewBuilder.environment ?? environment ?? .mock
 
     // Configure only the services that need custom behavior
     // All other services use their default mock implementations
