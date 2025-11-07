@@ -7,6 +7,7 @@
 
 #if os(iOS)
 
+import ClerkKit
 import NukeUI
 import SwiftUI
 
@@ -19,14 +20,13 @@ struct AppLogoView: View {
         image
           .resizable()
           .scaledToFit()
+      } else {
+        if PreviewUtils.isRunningInPreview {
+          Image(systemName: "circle.square.fill")
+            .resizable()
+            .scaledToFit()
+        }
       }
-      //      #if DEBUG
-      //      else {
-      //        Image(systemName: "circle.square.fill")
-      //          .resizable()
-      //          .scaledToFit()
-      //      }
-      //      #endif
     }
   }
 }
@@ -34,6 +34,7 @@ struct AppLogoView: View {
 #Preview {
   AppLogoView()
     .padding()
+    .clerkPreview()
 }
 
 #endif
