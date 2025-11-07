@@ -14,11 +14,6 @@ import SwiftUI
 /// Used for configuring Clerk.shared in SwiftUI previews.
 private let previewTestPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
-/// Checks if the current process is running in a SwiftUI preview.
-private var isRunningInPreview: Bool {
-  ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-}
-
 package extension View {
   /// Injects mock environment values for previews.
   ///
@@ -41,7 +36,7 @@ package extension View {
   /// ```
   @MainActor
   func clerkPreview(isSignedIn: Bool = true) -> some View {
-    if isRunningInPreview {
+    if PreviewUtils.isRunningInPreview {
       // Configure Clerk.shared so views that access it directly don't fail
       let clerk = Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
@@ -79,13 +74,13 @@ package extension View {
   /// }
   /// ```
   @MainActor
-  func clerkPreview(configureServices: @escaping (MockBuilder) -> Void) -> some View {
-    if isRunningInPreview {
+  func clerkPreview(preview: @escaping (MockBuilder) -> Void) -> some View {
+    if PreviewUtils.isRunningInPreview {
       // Configure Clerk.shared with mock services (using default preview publishable key)
       // Note: This still uses configureWithMocks internally for advanced customization
       let clerk = Clerk.configureWithMocks { builder in
         // Allow user's closure to override or further configure
-        configureServices(builder)
+        preview(builder)
       }
 
       return AnyView(
