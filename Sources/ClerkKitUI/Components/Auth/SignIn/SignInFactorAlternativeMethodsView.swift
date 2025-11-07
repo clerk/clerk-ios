@@ -156,34 +156,36 @@ extension SignInFactorAlternativeMethodsView {
         return
       }
 
-      let result: TransferFlowResult = if provider == .apple {
-        try await SignInWithAppleUtils.signIn()
-      } else {
-        try await signIn
-          .prepareFirstFactor(strategy: .oauth(provider: provider))
-          .authenticateWithRedirect()
+      let result: TransferFlowResult =
+        if provider == .apple {
+          try await SignInWithAppleUtils.signIn()
+        } else {
+          try await signIn
+            .prepareFirstFactor(strategy: .oauth(provider: provider))
+            .authenticateWithRedirect()
+        }
+
+      switch result {
+      case .signIn(let signIn):
+        if let error = signIn.firstFactorVerification?.error {
+          self.error = error
+        } else {
+          authState.setToStepForStatus(signIn: signIn)
+        }
+      case .signUp(let signUp):
+        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
+          let error = verification.error
+        {
+          self.error = error
+        } else {
+          authState.setToStepForStatus(signUp: signUp)
+        }
       }
 
-          switch result {
-          case .signIn(let signIn):
-            if let error = signIn.firstFactorVerification?.error {
-              self.error = error
-            } else {
-              authState.setToStepForStatus(signIn: signIn)
-            }
-          case .signUp(let signUp):
-            if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-               let error = verification.error {
-              self.error = error
-            } else {
-              authState.setToStepForStatus(signUp: signUp)
-            }
-          }
-        } catch {
-            if error.isUserCancelledError { return }
-            self.error = error
-            ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
-        }
+    } catch {
+      if error.isUserCancelledError { return }
+      self.error = error
+      ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
     }
   }
 }
