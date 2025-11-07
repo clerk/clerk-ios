@@ -32,12 +32,12 @@ struct ContentView: View {
 
 #Preview("Signed Out") {
   ContentView()
-    .environment(Clerk.preview())
+    .environment(Clerk.preview { preview in
+      preview.isSignedIn = false
+    })
 }
 
 #Preview("Signed In") {
   ContentView()
-    .environment(Clerk.preview { preview in
-      preview.isSignedIn = true
-    })
+    .environment(Clerk.preview())
 }
