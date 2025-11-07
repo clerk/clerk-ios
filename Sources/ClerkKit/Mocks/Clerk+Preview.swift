@@ -13,8 +13,8 @@ import Foundation
 @MainActor
 public final class PreviewBuilder {
   /// Whether the user should be signed in for the preview.
-  /// Defaults to `false`.
-  public var isSignedIn: Bool = false
+  /// Defaults to `true`.
+  public var isSignedIn: Bool = true
 
   /// The environment to use for the preview.
   /// If set, this environment will be used instead of loading from `ClerkEnvironment.json` or the default `.mock` environment.
@@ -53,7 +53,7 @@ public extension Clerk {
   /// #Preview {
   ///   ContentView()
   ///     .environment(Clerk.preview { preview in
-  ///       preview.isSignedIn = false
+  ///       preview.isSignedIn = true
   ///     })
   /// }
   /// ```
