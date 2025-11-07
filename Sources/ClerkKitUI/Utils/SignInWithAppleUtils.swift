@@ -18,7 +18,14 @@ enum SignInWithAppleUtils {
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
       throw ClerkClientError(message: "Unable to retrieve the apple identity token.")
     }
-    return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
+
+    if Clerk.shared.environment.signUpIsPublic {
+      let firstName = credential.fullName?.givenName.nilIfEmpty
+      let lastName = credential.fullName?.familyName.nilIfEmpty
+      return try await SignUp.authenticateWithIdToken(provider: .apple, idToken: idToken, firstName: firstName, lastName: lastName)
+    } else {
+      return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
+    }
   }
 }
 

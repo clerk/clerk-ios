@@ -292,6 +292,8 @@ public extension SignUp {
   /// - Parameters:
   ///   - provider: The identity provider associated with the ID token. See ``IDTokenProvider`` for supported values.
   ///   - idToken: The ID token to use for authentication, obtained from the provider during the sign-in process.
+  ///   - firstName: The user's first name (optional). Typically extracted from the provider's credential.
+  ///   - lastName: The user's last name (optional). Typically extracted from the provider's credential.
   ///
   /// - Throws:``ClerkClientError``
   ///
@@ -301,12 +303,14 @@ public extension SignUp {
   /// ```swift
   /// let result = try await SignUp.authenticateWithIdToken(
   ///     provider: .apple,
-  ///     idToken: idToken
+  ///     idToken: idToken,
+  ///     firstName: firstName,
+  ///     lastName: lastName
   /// )
   /// ```
   @discardableResult @MainActor
-  static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String) async throws -> TransferFlowResult {
-    try await signUpService.authenticateWithIdToken(provider: provider, idToken: idToken)
+  static func authenticateWithIdToken(provider: IDTokenProvider, idToken: String, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
+    try await signUpService.authenticateWithIdToken(provider: provider, idToken: idToken, firstName: firstName, lastName: lastName)
   }
 
   /// Authenticates the user using an ID Token and a specified provider.
