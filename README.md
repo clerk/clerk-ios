@@ -15,7 +15,7 @@
 [![documentation](https://img.shields.io/badge/documentation-clerk-green.svg)](https://clerk.com/docs)
 [![twitter](https://img.shields.io/twitter/follow/ClerkDev?style=social)](https://twitter.com/intent/follow?screen_name=ClerkDev)
 
-The Clerk iOS SDK gives you access to prebuilt SwiftUI components, observable state management, and helpers to make user management easier.
+The Clerk iOS SDK gives you access to prebuilt SwiftUI views, observable state management, and helpers to make user management easier.
 
 ## 🚀 Get Started with Clerk
 
@@ -45,7 +45,7 @@ dependencies: [
 ## 🎓 Docs
 
 - [Quickstart](https://clerk.com/docs/quickstarts/ios)
-- [Prebuilt Components](https://clerk.com/docs/references/ios/auth-view)
+- [Prebuilt Views](https://clerk.com/docs/references/ios/auth-view)
 - [Custom Flows](https://clerk.com/docs/custom-flows/overview)
 - [iOS SDK Reference](https://swiftpackageindex.com/clerk/clerk-ios/main/documentation/clerk)
 
