@@ -42,10 +42,6 @@ struct UserProfileChangePasswordView: View {
     var user: User? { clerk.user }
 
     var isAddingPassword: Bool = false
-    
-    private var isDefaultTheme: Bool {
-        theme.colors.primary == ClerkTheme.Colors.defaultPrimaryColor
-    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -184,20 +180,10 @@ struct UserProfileChangePasswordView: View {
     @ViewBuilder
     private var signOutOfOtherDevicesView: some View {
         VStack(spacing: 8) {
-            Group {
-                if isDefaultTheme {
-                    Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
-                        .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.foreground)
-                        .frame(minHeight: 22)
-                } else {
-                    Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
-                        .font(theme.fonts.body)
-                        .foregroundStyle(theme.colors.foreground)
-                        .tint(theme.colors.primary)
-                        .frame(minHeight: 22)
-                }
-            }
+            Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
+                .font(theme.fonts.body)
+                .foregroundStyle(theme.colors.foreground)
+                .frame(minHeight: 22)
 
             Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
                 .font(theme.fonts.subheadline)

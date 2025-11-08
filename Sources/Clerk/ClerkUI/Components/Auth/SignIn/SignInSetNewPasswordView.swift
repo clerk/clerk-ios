@@ -26,10 +26,6 @@ struct SignInSetNewPasswordView: View {
     var resetButtonIsDisabled: Bool {
         authState.signInNewPassword.isEmptyTrimmed || authState.signInConfirmNewPassword.isEmptyTrimmed || authState.signInNewPassword != authState.signInConfirmNewPassword
     }
-    
-    private var isDefaultTheme: Bool {
-        theme.colors.primary == ClerkTheme.Colors.defaultPrimaryColor
-    }
 
     enum Field {
         case new, confirm
@@ -83,26 +79,13 @@ struct SignInSetNewPasswordView: View {
                         }
                     }
 
-                    Group {
-                        if isDefaultTheme {
-                            Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
-                                .font(theme.fonts.body)
-                                .foregroundStyle(theme.colors.foreground)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(theme.colors.muted)
-                                .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-                        } else {
-                            Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
-                                .font(theme.fonts.body)
-                                .foregroundStyle(theme.colors.foreground)
-                                .tint(theme.colors.primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(theme.colors.muted)
-                                .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-                        }
-                    }
+                    Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
+                        .font(theme.fonts.body)
+                        .foregroundStyle(theme.colors.foreground)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(theme.colors.muted)
+                        .clipShape(.rect(cornerRadius: theme.design.borderRadius))
 
                     AsyncButton {
                         await setNewPassword()
