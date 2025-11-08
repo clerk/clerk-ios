@@ -82,7 +82,6 @@ struct SignInSetNewPasswordView: View {
                     Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
                         .font(theme.fonts.body)
                         .foregroundStyle(theme.colors.foreground)
-                        .tint(theme.colors.primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(theme.colors.muted)

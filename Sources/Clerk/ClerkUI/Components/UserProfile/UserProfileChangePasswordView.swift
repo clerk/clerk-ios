@@ -183,7 +183,6 @@ struct UserProfileChangePasswordView: View {
             Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
                 .font(theme.fonts.body)
                 .foregroundStyle(theme.colors.foreground)
-                .tint(theme.colors.primary)
                 .frame(minHeight: 22)
 
             Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
