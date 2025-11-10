@@ -28,8 +28,8 @@ public final class MockSignInService: SignInServiceProtocol {
   /// Custom handler for the `attemptFirstFactor(signInId:strategy:)` method.
   public nonisolated(unsafe) var attemptFirstFactorHandler: ((String, SignIn.AttemptFirstFactorStrategy) async throws -> SignIn)?
 
-  /// Custom handler for the `prepareSecondFactor(signInId:strategy:)` method.
-  public nonisolated(unsafe) var prepareSecondFactorHandler: ((String, SignIn.PrepareSecondFactorStrategy) async throws -> SignIn)?
+  /// Custom handler for the `prepareSecondFactor(signInId:strategy:signIn:)` method.
+  public nonisolated(unsafe) var prepareSecondFactorHandler: ((String, SignIn.PrepareSecondFactorStrategy, SignIn) async throws -> SignIn)?
 
   /// Custom handler for the `attemptSecondFactor(signInId:strategy:)` method.
   public nonisolated(unsafe) var attemptSecondFactorHandler: ((String, SignIn.AttemptSecondFactorStrategy) async throws -> SignIn)?
@@ -62,7 +62,7 @@ public final class MockSignInService: SignInServiceProtocol {
     resetPassword: ((String, SignIn.ResetPasswordParams) async throws -> SignIn)? = nil,
     prepareFirstFactor: ((String, SignIn.PrepareFirstFactorStrategy, SignIn) async throws -> SignIn)? = nil,
     attemptFirstFactor: ((String, SignIn.AttemptFirstFactorStrategy) async throws -> SignIn)? = nil,
-    prepareSecondFactor: ((String, SignIn.PrepareSecondFactorStrategy) async throws -> SignIn)? = nil,
+    prepareSecondFactor: ((String, SignIn.PrepareSecondFactorStrategy, SignIn) async throws -> SignIn)? = nil,
     attemptSecondFactor: ((String, SignIn.AttemptSecondFactorStrategy) async throws -> SignIn)? = nil,
     get: ((String, String?) async throws -> SignIn)? = nil
   ) {
@@ -117,9 +117,9 @@ public final class MockSignInService: SignInServiceProtocol {
   }
 
   @MainActor
-  public func prepareSecondFactor(signInId: String, strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn {
+  public func prepareSecondFactor(signInId: String, strategy: SignIn.PrepareSecondFactorStrategy, signIn: SignIn) async throws -> SignIn {
     if let handler = prepareSecondFactorHandler {
-      return try await handler(signInId, strategy)
+      return try await handler(signInId, strategy, signIn)
     }
     return .mock
   }
