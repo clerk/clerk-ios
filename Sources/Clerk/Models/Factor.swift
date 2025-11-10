@@ -28,13 +28,18 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     /// Whether the factor is the primary factor.
     public let primary: Bool?
 
+    /// Whether this factor is the default selection for its strategy.
+    /// Maps to the backend "default" field.
+    public let `default`: Bool?
+
     public init(
         strategy: String,
         emailAddressId: String? = nil,
         phoneNumberId: String? = nil,
         web3WalletId: String? = nil,
         safeIdentifier: String? = nil,
-        primary: Bool? = nil
+        primary: Bool? = nil,
+        `default`: Bool? = nil
     ) {
         self.strategy = strategy
         self.emailAddressId = emailAddressId
@@ -42,6 +47,7 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
         self.web3WalletId = web3WalletId
         self.safeIdentifier = safeIdentifier
         self.primary = primary
+        self.`default` = `default`
     }
 }
 
