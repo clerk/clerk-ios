@@ -97,7 +97,7 @@ extension SignIn {
     /// The default phone number id to use for second-factor SMS when none is explicitly provided.
     /// Prefers the factor flagged as default; falls back to primary; then first available phone_code factor.
     var defaultSecondFactorPhoneNumberId: String? {
-        if let id = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.`default` ?? false) })?.phoneNumberId {
+        if let id = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.`default` == true) })?.phoneNumberId {
             return id
         }
         if let id = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.primary ?? false) })?.phoneNumberId {
