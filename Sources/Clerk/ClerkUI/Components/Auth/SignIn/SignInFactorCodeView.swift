@@ -30,7 +30,7 @@ struct SignInFactorCodeView: View {
         clerk.client?.signIn
     }
 
-    // Removed: helper moved to SignIn extension
+    
 
     enum VerificationState {
         case `default`
