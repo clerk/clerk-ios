@@ -332,6 +332,7 @@ public extension SignIn {
   }
   #endif
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   /// Authenticates the user using an ID Token and a specified provider.
   ///
   /// This method facilitates authentication using an ID token provided by a specific authentication provider.
@@ -375,6 +376,7 @@ public extension SignIn {
   func authenticateWithIdToken() async throws -> TransferFlowResult {
     try await signInService.authenticateWithIdToken(signIn: self)
   }
+  #endif
 
   /// Returns the current sign-in.
   @discardableResult @MainActor
