@@ -94,6 +94,18 @@ extension SignIn {
         return supportedSecondFactors?.first
     }
 
+    /// The default phone number id to use for second-factor SMS when none is explicitly provided.
+    /// Prefers the factor flagged as default; falls back to primary; then first available phone_code factor.
+    var defaultSecondFactorPhoneNumberId: String? {
+        if let id = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.`default` ?? false) })?.phoneNumberId {
+            return id
+        }
+        if let id = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.primary ?? false) })?.phoneNumberId {
+            return id
+        }
+        return supportedSecondFactors?.first(where: { $0.strategy == "phone_code" })?.phoneNumberId
+    }
+
     func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
         (supportedSecondFactors?.filter { $0 != currentFactor } ?? [])
             .sorted(using: Factor.backupCodePrefComparator)

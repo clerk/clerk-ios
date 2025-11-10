@@ -32,6 +32,16 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     /// Maps to the backend "default" field.
     public let `default`: Bool?
 
+    private enum CodingKeys: String, CodingKey {
+        case strategy
+        case emailAddressId
+        case phoneNumberId
+        case web3WalletId
+        case safeIdentifier
+        case primary
+        case `default` = "default"
+    }
+
     public init(
         strategy: String,
         emailAddressId: String? = nil,
