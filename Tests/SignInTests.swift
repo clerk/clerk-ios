@@ -272,11 +272,14 @@ struct SignInTests {
   @Test(
     "All prepare second factor strategies",
     arguments: [
-      SignIn.PrepareSecondFactorStrategy.phoneCode
+      SignIn.PrepareSecondFactorStrategy.phoneCode,
+      SignIn.PrepareSecondFactorStrategy.emailCode()
     ])
+  @MainActor
   func testPrepareFirstFactorRequest(strategy: SignIn.PrepareSecondFactorStrategy) async throws {
     let requestHandled = LockIsolated(false)
     let signIn = SignIn.mock
+    let params = strategy.params(signIn: signIn)
     let originalUrl = mockBaseUrl.appending(path: "/v1/client/sign_ins/\(signIn.id)/prepare_second_factor")
     var mock = Mock(
       url: originalUrl, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -285,7 +288,7 @@ struct SignInTests {
       ])
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody["strategy"] == strategy.params.strategy)
+      #expect(request.urlEncodedFormBody["strategy"] == params.strategy)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -298,6 +301,7 @@ struct SignInTests {
     arguments: [
       SignIn.AttemptSecondFactorStrategy.backupCode(code: "backupcode"),
       .phoneCode(code: "phonecode"),
+      .emailCode(code: "emailcode"),
       .totp(code: "totpcode")
     ])
   func testAttemptSecondFactorRequest(strategy: SignIn.AttemptSecondFactorStrategy) async throws {

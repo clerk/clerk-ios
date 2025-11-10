@@ -82,11 +82,11 @@ struct SignInService {
         return try await Container.shared.apiClient().send(request).value.response
     }
 
-    var prepareSecondFactor: @MainActor (_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy) async throws -> SignIn = { signInId, strategy in
+    var prepareSecondFactor: @MainActor (_ signInId: String, _ strategy: SignIn.PrepareSecondFactorStrategy, _ signIn: SignIn) async throws -> SignIn = { signInId, strategy, signIn in
         let request = Request<ClientResponse<SignIn>>.init(
             path: "/v1/client/sign_ins/\(signInId)/prepare_second_factor",
             method: .post,
-            body: strategy.params
+            body: strategy.params(signIn: signIn)
         )
         
         return try await Container.shared.apiClient().send(request).value.response

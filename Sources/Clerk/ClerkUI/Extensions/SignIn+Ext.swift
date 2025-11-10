@@ -87,6 +87,10 @@ extension SignIn {
             return phoneCode
         }
 
+        if let emailCode = supportedSecondFactors?.first(where: { $0.strategy == "email_code" }) {
+            return emailCode
+        }
+
         return supportedSecondFactors?.first
     }
 
