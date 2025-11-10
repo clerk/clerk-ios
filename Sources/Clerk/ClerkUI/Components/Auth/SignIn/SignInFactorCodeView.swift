@@ -30,6 +30,21 @@ struct SignInFactorCodeView: View {
         clerk.client?.signIn
     }
 
+    // Prefer the explicitly provided factor id; otherwise fall back to the user's default
+    // second-factor phone if available, then the primary supported factor, then first phone factor.
+    private var defaultSecondFactorPhoneNumberId: String? {
+        // 1) User's default second-factor phone (if user is loaded)
+        if let id = clerk.user?.phoneNumbers.first(where: { $0.defaultSecondFactor })?.id {
+            return id
+        }
+        // 2) Primary phone_code factor from supported second factors
+        if let id = signIn?.supportedSecondFactors?.first(where: { $0.strategy == "phone_code" && ($0.primary ?? false) })?.phoneNumberId {
+            return id
+        }
+        // 3) First available phone_code factor
+        return signIn?.supportedSecondFactors?.first(where: { $0.strategy == "phone_code" })?.phoneNumberId
+    }
+
     enum VerificationState {
         case `default`
         case verifying
@@ -286,8 +301,9 @@ extension SignInFactorCodeView {
                 }
             case "phone_code":
                 if isSecondFactor {
+                    let phoneId = factor.phoneNumberId ?? defaultSecondFactorPhoneNumberId
                     try await signIn.prepareSecondFactor(
-                        strategy: .phoneCode(phoneNumberId: factor.phoneNumberId)
+                        strategy: .phoneCode(phoneNumberId: phoneId)
                     )
                 } else {
                     try await signIn.prepareFirstFactor(
