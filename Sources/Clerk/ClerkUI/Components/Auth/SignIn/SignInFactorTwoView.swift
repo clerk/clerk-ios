@@ -17,7 +17,7 @@ struct SignInFactorTwoView: View {
     @ViewBuilder
     var viewForFactor: some View {
         switch factor.strategy {
-        case "totp", "phone_code":
+        case "totp", "phone_code", "email_code":
             SignInFactorCodeView(factor: factor, isSecondFactor: true)
         case "backup_code":
             SignInFactorTwoBackupCodeView(factor: factor)

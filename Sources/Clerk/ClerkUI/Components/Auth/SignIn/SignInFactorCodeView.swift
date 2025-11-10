@@ -275,9 +275,15 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                try await signIn.prepareFirstFactor(
-                    strategy: .emailCode(emailAddressId: factor.emailAddressId)
-                )
+                if isSecondFactor {
+                    try await signIn.prepareSecondFactor(
+                        strategy: .emailCode(emailAddressId: factor.emailAddressId)
+                    )
+                } else {
+                    try await signIn.prepareFirstFactor(
+                        strategy: .emailCode(emailAddressId: factor.emailAddressId)
+                    )
+                }
             case "phone_code":
                 if isSecondFactor {
                     try await signIn.prepareSecondFactor(
@@ -323,7 +329,11 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+                if isSecondFactor {
+                    signIn = try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
+                } else {
+                    signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+                }
             case "phone_code":
                 if isSecondFactor {
                     signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
