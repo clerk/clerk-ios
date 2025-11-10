@@ -287,7 +287,7 @@ extension SignInFactorCodeView {
             case "phone_code":
                 if isSecondFactor {
                     try await signIn.prepareSecondFactor(
-                        strategy: .phoneCode
+                        strategy: .phoneCode(phoneNumberId: factor.phoneNumberId)
                     )
                 } else {
                     try await signIn.prepareFirstFactor(
