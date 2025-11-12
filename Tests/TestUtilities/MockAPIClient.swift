@@ -25,7 +25,7 @@ extension Container: @retroactive AutoRegistering {
             configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
             configuration.sessionConfiguration.httpAdditionalHeaders = [
                 "Content-Type": "application/x-www-form-urlencoded",
-                "clerk-api-version": "2024-10-01",
+                "clerk-api-version": "2025-11-10",
                 "x-ios-sdk-version": Clerk.version,
                 "x-mobile": "1"
             ]
