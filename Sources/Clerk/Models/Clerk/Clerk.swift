@@ -136,7 +136,8 @@ final public class Clerk {
                 SimpleKeychain(
                     service: keychainConfig.service,
                     accessGroup: keychainConfig.accessGroup,
-                    accessibility: .afterFirstUnlockThisDeviceOnly
+                    accessibility: keychainConfig.accessibility,
+                    synchronizable: keychainConfig.synchronizable
                 )
             }
 
