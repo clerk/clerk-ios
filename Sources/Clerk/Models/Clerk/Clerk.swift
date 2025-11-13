@@ -387,7 +387,7 @@ extension Clerk {
                 configuration.encoder = .clerkEncoder
                 configuration.sessionConfiguration.httpAdditionalHeaders = [
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "clerk-api-version": "2025-04-10",
+                    "clerk-api-version": "2025-11-10",
                     "x-ios-sdk-version": Clerk.version,
                     "x-mobile": "1"
                 ]
