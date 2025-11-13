@@ -25,6 +25,9 @@ public extension Clerk {
     /// Configuration for OAuth redirect URLs and callback handling.
     public let redirectConfig: RedirectConfig
 
+    /// Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
+    public let watchConnectivityEnabled: Bool
+
     /// Initializes a ``ClerkOptions`` instance.
     /// - Parameters:
     ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
@@ -32,18 +35,21 @@ public extension Clerk {
     ///   - keychainConfig: Configuration for keychain storage behavior.
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
+    ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     public init(
       debugMode: Bool = false,
       telemetryEnabled: Bool = true,
       keychainConfig: KeychainConfig = .init(),
       proxyUrl: String? = nil,
-      redirectConfig: RedirectConfig = .init()
+      redirectConfig: RedirectConfig = .init(),
+      watchConnectivityEnabled: Bool = false
     ) {
       self.debugMode = debugMode
       self.telemetryEnabled = telemetryEnabled
       self.keychainConfig = keychainConfig
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
       self.redirectConfig = redirectConfig
+      self.watchConnectivityEnabled = watchConnectivityEnabled
     }
   }
 }

@@ -15,10 +15,18 @@ struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
       if Thread.isMainThread {
         MainActor.assumeIsolated {
           try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
+          // Sync authentication state to watch app if enabled
+          #if !os(watchOS)
+          Clerk.shared.watchConnectivityManager?.syncAll()
+          #endif
         }
       } else {
         Task { @MainActor in
           try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
+          // Sync authentication state to watch app if enabled
+          #if !os(watchOS)
+          Clerk.shared.watchConnectivityManager?.syncAll()
+          #endif
         }
       }
     }
