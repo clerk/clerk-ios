@@ -7,4 +7,7 @@
    <FileRef
       location = "group:Examples/Quickstart/Quickstart.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:Examples/WatchExampleApp/WatchExampleApp.xcodeproj">
+   </FileRef>
 </Workspace>

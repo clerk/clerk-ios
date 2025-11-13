@@ -43,6 +43,13 @@ public final class Clerk {
       } else {
         cacheManager?.deleteClient()
       }
+
+      // Sync to watch app if enabled (sync both when client is set and when it's cleared)
+      #if !os(watchOS)
+      if options.watchConnectivityEnabled {
+        watchConnectivityManager?.syncAll()
+      }
+      #endif
     }
   }
 
@@ -91,6 +98,13 @@ public final class Clerk {
   public internal(set) var environment = Environment() {
     didSet {
       cacheManager?.saveEnvironment(environment)
+
+      // Sync to watch app if enabled
+      #if !os(watchOS)
+      if options.watchConnectivityEnabled {
+        watchConnectivityManager?.syncAll()
+      }
+      #endif
     }
   }
 
@@ -129,6 +143,14 @@ public final class Clerk {
 
   /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
+
+  #if !os(watchOS)
+  /// Manages Watch Connectivity for syncing authentication state to watchOS app.
+  package var watchConnectivityManager: (any WatchConnectivitySyncing)?
+  #else
+  /// Manages receiving synced authentication state from the companion iOS app via Watch Connectivity.
+  private var watchSyncReceiver: WatchSyncReceiver?
+  #endif
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -183,6 +205,17 @@ public extension Clerk {
     // Set up lifecycle manager for foreground/background transitions
     lifecycleManager = LifecycleManager(handler: self)
     lifecycleManager?.startObserving()
+
+    // Set up Watch Connectivity manager/receiver if enabled
+    #if !os(watchOS)
+    if options.watchConnectivityEnabled {
+      watchConnectivityManager = createWatchConnectivityManager(keychain: dependencies.keychain)
+    }
+    #else
+    if options.watchConnectivityEnabled {
+      watchSyncReceiver = WatchSyncReceiver(keychain: dependencies.keychain)
+    }
+    #endif
 
     // Set up cache manager and load cached data asynchronously
     let cacheManager = CacheManager(coordinator: self)
@@ -257,6 +290,12 @@ public extension Clerk {
       let env = try await environment
       _ = try await client
       attestDeviceIfNeeded(environment: env)
+
+      // Sync authentication state to watch app after initial load if enabled
+      #if !os(watchOS)
+      watchConnectivityManager?.syncAll()
+      #endif
+
       isLoaded = true
     } catch {
       // Wrap errors in appropriate ClerkInitializationError
@@ -327,6 +366,11 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
+    // Sync authentication state to watch app if enabled
+    #if !os(watchOS)
+    watchConnectivityManager?.syncAll()
+    #endif
+
     // Refresh client and environment concurrently
     taskCoordinator?.task {
       do {
@@ -375,5 +419,10 @@ extension Clerk {
     lifecycleManager?.stopObserving()
     sessionPollingManager = nil
     lifecycleManager = nil
+    #if !os(watchOS)
+    watchConnectivityManager = nil
+    #else
+    watchSyncReceiver = nil
+    #endif
   }
 }
