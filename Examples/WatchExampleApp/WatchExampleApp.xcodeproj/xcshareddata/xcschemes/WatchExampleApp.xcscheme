@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-               BuildableName = "Quickstart.app"
-               BlueprintName = "Quickstart"
-               ReferencedContainer = "container:Quickstart.xcodeproj">
+               BlueprintIdentifier = "8FC2FE082E3A5C32001E5954"
+               BuildableName = "WatchExampleApp.app"
+               BlueprintName = "WatchExampleApp"
+               ReferencedContainer = "container:WatchExampleApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,10 +44,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-            BuildableName = "Quickstart.app"
-            BlueprintName = "Quickstart"
-            ReferencedContainer = "container:Quickstart.xcodeproj">
+            BlueprintIdentifier = "8FC2FE082E3A5C32001E5954"
+            BuildableName = "WatchExampleApp.app"
+            BlueprintName = "WatchExampleApp"
+            ReferencedContainer = "container:WatchExampleApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,10 +61,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8FC2FE072E3A5C32001E5953"
-            BuildableName = "Quickstart.app"
-            BlueprintName = "Quickstart"
-            ReferencedContainer = "container:Quickstart.xcodeproj">
+            BlueprintIdentifier = "8FC2FE082E3A5C32001E5954"
+            BuildableName = "WatchExampleApp.app"
+            BlueprintName = "WatchExampleApp"
+            ReferencedContainer = "container:WatchExampleApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
