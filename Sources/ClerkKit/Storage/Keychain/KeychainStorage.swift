@@ -26,16 +26,4 @@ extension KeychainStorage {
     }
     return string
   }
-
-  func set(_ value: Double, forKey key: String) throws {
-    var doubleValue = value
-    let data = withUnsafeBytes(of: &doubleValue) { Data($0) }
-    try set(data, forKey: key)
-  }
-
-  func double(forKey key: String) throws -> Double? {
-    guard let data = try data(forKey: key) else { return nil }
-    guard data.count == MemoryLayout<Double>.size else { return nil }
-    return data.withUnsafeBytes { $0.load(as: Double.self) }
-  }
 }
