@@ -45,11 +45,9 @@ public final class Clerk {
       }
 
       // Sync to watch app if enabled (sync both when client is set and when it's cleared)
-      #if !os(watchOS)
       if options.watchConnectivityEnabled {
-        watchConnectivityManager?.syncAll()
+        watchConnectivitySync?.syncAll()
       }
-      #endif
     }
   }
 
@@ -100,11 +98,9 @@ public final class Clerk {
       cacheManager?.saveEnvironment(environment)
 
       // Sync to watch app if enabled
-      #if !os(watchOS)
       if options.watchConnectivityEnabled {
-        watchConnectivityManager?.syncAll()
+        watchConnectivitySync?.syncAll()
       }
-      #endif
     }
   }
 
@@ -144,9 +140,19 @@ public final class Clerk {
   /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
 
+  /// Unified Watch Connectivity sync interface for both iOS and watchOS platforms.
+  /// On iOS, this manages syncing to watchOS. On watchOS, this manages syncing to iOS.
+  package var watchConnectivitySync: (any WatchConnectivitySyncing)? {
+    #if !os(watchOS)
+    return watchConnectivityManager
+    #else
+    return watchSyncReceiver
+    #endif
+  }
+
   #if !os(watchOS)
   /// Manages Watch Connectivity for syncing authentication state to watchOS app.
-  package var watchConnectivityManager: (any WatchConnectivitySyncing)?
+  private var watchConnectivityManager: (any WatchConnectivitySyncing)?
   #else
   /// Manages receiving synced authentication state from the companion iOS app via Watch Connectivity.
   private var watchSyncReceiver: WatchSyncReceiver?
@@ -292,9 +298,7 @@ public extension Clerk {
       attestDeviceIfNeeded(environment: env)
 
       // Sync authentication state to watch app after initial load if enabled
-      #if !os(watchOS)
-      watchConnectivityManager?.syncAll()
-      #endif
+      watchConnectivitySync?.syncAll()
 
       isLoaded = true
     } catch {
@@ -367,9 +371,7 @@ extension Clerk: LifecycleEventHandling {
     sessionPollingManager?.startPolling()
 
     // Sync authentication state to watch app if enabled
-    #if !os(watchOS)
-    watchConnectivityManager?.syncAll()
-    #endif
+    watchConnectivitySync?.syncAll()
 
     // Refresh client and environment concurrently
     taskCoordinator?.task {
