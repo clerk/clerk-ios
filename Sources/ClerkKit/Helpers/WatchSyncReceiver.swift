@@ -125,13 +125,8 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   /// Must be called from MainActor context.
   @MainActor
   package func syncAll() {
-    guard !isProcessingSync else {
-      return
-    }
-
-    guard WCSession.isSupported(), session.activationState == .activated, session.isReachable else {
-      return
-    }
+    guard !isProcessingSync else { return }
+    guard session.activationState == .activated, session.isReachable else { return }
 
     var applicationContext: [String: Any] = [:]
 
@@ -158,9 +153,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
       }
     }
 
-    guard !applicationContext.isEmpty else {
-      return
-    }
+    guard !applicationContext.isEmpty else { return }
 
     do {
       try session.updateApplicationContext(applicationContext)
