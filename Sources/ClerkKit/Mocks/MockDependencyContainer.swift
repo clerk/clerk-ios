@@ -15,6 +15,7 @@ import Foundation
 final class MockDependencyContainer: Dependencies {
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
+  let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
@@ -30,6 +31,8 @@ final class MockDependencyContainer: Dependencies {
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
+
+  let sessionStatusLogger: SessionStatusLogger
 
   /// Creates a dependency container with the provided API client and optional custom services.
   ///
@@ -68,8 +71,10 @@ final class MockDependencyContainer: Dependencies {
   ) {
     networkingPipeline = .clerkDefault
     self.keychain = keychain ?? InMemoryKeychain()
+    configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
+    sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services
     self.clientService = clientService ?? MockClientService()
