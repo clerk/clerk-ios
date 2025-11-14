@@ -47,7 +47,7 @@ struct ContentView: View {
 
           Button {
             Task {
-              try? await clerk.signOut()
+              try? await clerk.signOut(sessionId: clerk.session?.id)
             }
           } label: {
             Text("Sign Out")
