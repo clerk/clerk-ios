@@ -16,6 +16,7 @@ final class DependencyContainer: Dependencies {
 
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
+  let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
@@ -34,6 +35,10 @@ final class DependencyContainer: Dependencies {
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
+  // MARK: - Logging
+
+  let sessionStatusLogger: SessionStatusLogger
+
   // MARK: - Initialization
 
   /// Creates a new dependency container with the provided configuration.
@@ -41,13 +46,33 @@ final class DependencyContainer: Dependencies {
   /// - Parameters:
   ///   - publishableKey: The publishable key from Clerk Dashboard.
   ///   - options: Configuration options for the Clerk instance.
-  ///   - baseURL: The base URL for API requests (derived from publishable key or proxy).
+  ///
+  /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
   init(
     publishableKey: String,
-    options: Clerk.ClerkOptions,
-    baseURL: URL
-  ) {
+    options: Clerk.ClerkOptions
+  ) throws {
     // Phase 1: Core infrastructure (no dependencies)
+    // Create and configure ConfigurationManager first (needed to determine baseURL)
+    configurationManager = ConfigurationManager()
+
+    // Only configure if publishableKey is not empty (temporary containers use empty key)
+    // For temporary containers, ConfigurationManager will remain in its default unconfigured state
+    if !publishableKey.isEmpty {
+      try configurationManager.configure(publishableKey: publishableKey, options: options)
+    }
+
+    sessionStatusLogger = SessionStatusLogger()
+
+    // Determine baseURL from configured manager (use default if not configured)
+    let baseURL: URL
+    if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
+      baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
+    } else {
+      // Temporary container fallback
+      baseURL = URL(string: "https://clerk.clerk.dev")!
+    }
+
     networkingPipeline = .clerkDefault
     keychain = SystemKeychain(
       service: options.keychainConfig.service,

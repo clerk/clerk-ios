@@ -59,4 +59,10 @@ protocol Dependencies: AnyObject {
 
   /// Service for external account operations.
   var externalAccountService: ExternalAccountServiceProtocol { get }
+
+  /// Manages Clerk configuration including API client setup and options.
+  var configurationManager: ConfigurationManager { get }
+
+  /// Manages logging of session status changes.
+  var sessionStatusLogger: SessionStatusLogger { get }
 }
