@@ -48,6 +48,7 @@ final class DependencyContainer: Dependencies {
   ///   - options: Configuration options for the Clerk instance.
   ///
   /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
+  @MainActor
   init(
     publishableKey: String,
     options: Clerk.ClerkOptions
@@ -81,7 +82,7 @@ final class DependencyContainer: Dependencies {
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
-    apiClient = APIClient(baseURL: baseURL) { configuration in
+    apiClient = APIClient(baseURL: baseURL) { @Sendable configuration in
       configuration.pipeline = pipeline
       configuration.decoder = .clerkDecoder
       configuration.encoder = .clerkEncoder
