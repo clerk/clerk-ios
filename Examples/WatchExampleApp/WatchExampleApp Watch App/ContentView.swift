@@ -11,6 +11,15 @@ import SwiftUI
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
 
+  var fullName: String? {
+    let name = [clerk.user?.firstName, clerk.user?.lastName]
+      .compactMap(\.self)
+      .joined(separator: " ")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    return name.isEmpty ? nil : name
+  }
+
   var body: some View {
     ScrollView {
       VStack(spacing: 12) {
@@ -21,13 +30,8 @@ struct ContentView: View {
               .font(.headline)
               .fontWeight(.semibold)
 
-            if let firstName = user.firstName {
-              Text("First: \(firstName)")
-                .font(.caption)
-            }
-
-            if let lastName = user.lastName {
-              Text("Last: \(lastName)")
+            if let fullName = fullName {
+              Text(fullName)
                 .font(.caption)
             }
 
@@ -37,21 +41,25 @@ struct ContentView: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1)
             }
-
-            Text("Token synced via Watch Connectivity")
-              .font(.caption2)
-              .foregroundColor(.secondary)
-              .padding(.top, 4)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding()
+
+          Button {
+            Task {
+              try? await clerk.signOut()
+            }
+          } label: {
+            Text("Sign Out")
+          }
+          .buttonStyle(.borderedProminent)
         } else {
           VStack(spacing: 8) {
             Text("Not Signed In")
               .font(.headline)
               .fontWeight(.semibold)
 
-            Text("Sign in on your iPhone to sync authentication state to your Apple Watch.")
+            Text("Sign in on your iPhone to sync your authentication state to your Apple Watch.")
               .font(.caption2)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
@@ -66,13 +74,13 @@ struct ContentView: View {
 
 #Preview("Signed Out") {
   ContentView()
-    .environment(Clerk.preview { preview in
-      preview.isSignedIn = false
-    })
+    .environment(
+      Clerk.preview { preview in
+        preview.isSignedIn = false
+      })
 }
 
 #Preview("Signed In") {
   ContentView()
     .environment(Clerk.preview())
 }
-
