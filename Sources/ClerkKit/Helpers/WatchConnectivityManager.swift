@@ -61,13 +61,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   /// Must be called from MainActor context.
   @MainActor
   func syncAll() {
-    guard !isProcessingSync else {
-      return
-    }
-
-    guard WCSession.isSupported(), isSessionActivated, session.isPaired, session.isWatchAppInstalled else {
-      return
-    }
+    guard !isProcessingSync else { return }
+    guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
 
     var applicationContext: [String: Any] = [:]
 
@@ -94,9 +89,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
       }
     }
 
-    guard !applicationContext.isEmpty else {
-      return
-    }
+    guard !applicationContext.isEmpty else { return }
 
     do {
       try session.updateApplicationContext(applicationContext)
@@ -148,7 +141,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     do {
       let receivedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
       if let currentClient = Clerk.shared.client {
-        // iOS takes priority on tie, so only accept if received is newer
+        // iOS keeps its own on tie, so only accept watch client if it's newer
         if receivedClient.updatedAt > currentClient.updatedAt {
           Clerk.shared.client = receivedClient
         }
