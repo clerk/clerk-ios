@@ -167,6 +167,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 }
 
 #if !os(watchOS)
+@MainActor
 func createWatchConnectivityManager(keychain: any KeychainStorage) -> any WatchConnectivitySyncing {
   WatchConnectivityManager(keychain: keychain)
 }
@@ -205,15 +206,21 @@ extension WatchConnectivityManager: WCSessionDelegate {
   }
 
   nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+    // Extract values before crossing actor boundaries to avoid Sendable warnings
+    // Use string literals instead of static properties to avoid actor isolation issues
+    let deviceToken = applicationContext["clerkDeviceToken"] as? String
+    let clientData = applicationContext["clerkClient"] as? Data
+    let environmentData = applicationContext["clerkEnvironment"] as? Data
+
     Task { @MainActor [weak self] in
       guard let self else { return }
-      if let deviceToken = applicationContext[Self.deviceTokenKey] as? String {
+      if let deviceToken {
         self.processSyncedDeviceToken(deviceToken)
       }
-      if let clientData = applicationContext[Self.clientKey] as? Data {
+      if let clientData {
         self.processSyncedClient(clientData)
       }
-      if let environmentData = applicationContext[Self.environmentKey] as? Data {
+      if let environmentData {
         self.processSyncedEnvironment(environmentData)
       }
     }
