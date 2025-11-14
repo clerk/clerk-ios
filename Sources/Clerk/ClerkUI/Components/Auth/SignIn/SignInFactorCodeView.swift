@@ -30,6 +30,8 @@ struct SignInFactorCodeView: View {
         clerk.client?.signIn
     }
 
+    
+
     enum VerificationState {
         case `default`
         case verifying
@@ -286,8 +288,9 @@ extension SignInFactorCodeView {
                 }
             case "phone_code":
                 if isSecondFactor {
+                    let phoneId = factor.phoneNumberId ?? signIn?.defaultSecondFactorPhoneNumberId
                     try await signIn.prepareSecondFactor(
-                        strategy: .phoneCode
+                        strategy: .phoneCode(phoneNumberId: phoneId)
                     )
                 } else {
                     try await signIn.prepareFirstFactor(

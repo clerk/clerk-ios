@@ -273,7 +273,9 @@ struct SignInTests {
     "All prepare second factor strategies",
     arguments: [
       SignIn.PrepareSecondFactorStrategy.phoneCode,
-      SignIn.PrepareSecondFactorStrategy.emailCode()
+      SignIn.PrepareSecondFactorStrategy.phoneCode(phoneNumberId: "1"),
+      SignIn.PrepareSecondFactorStrategy.emailCode(),
+      SignIn.PrepareSecondFactorStrategy.emailCode(emailAddressId: "1")
     ])
   @MainActor
   func testPrepareFirstFactorRequest(strategy: SignIn.PrepareSecondFactorStrategy) async throws {
@@ -289,6 +291,8 @@ struct SignInTests {
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody["strategy"] == params.strategy)
+      #expect(request.urlEncodedFormBody["email_address_id"] == params.emailAddressId)
+      #expect(request.urlEncodedFormBody["phone_number_id"] == params.phoneNumberId)
       requestHandled.setValue(true)
     }
     mock.register()
