@@ -31,7 +31,7 @@ public final class Clerk {
 
   /// A getter to see if a Clerk instance is running in production or development mode.
   public var instanceType: InstanceEnvironmentType {
-    configurationManager.instanceType
+    dependencies.configurationManager.instanceType
   }
 
   /// The Client object for the current device.
@@ -39,7 +39,7 @@ public final class Clerk {
     didSet {
       if let client {
         cacheManager?.saveClient(client)
-        sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
+        dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
       } else {
         cacheManager?.deleteClient()
       }
@@ -63,10 +63,10 @@ public final class Clerk {
   /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
   public private(set) var proxyUrl: URL? {
     get {
-      configurationManager.proxyUrl
+      dependencies.configurationManager.proxyUrl
     }
     set {
-      configurationManager.updateProxyUrl(newValue)
+      dependencies.configurationManager.updateProxyUrl(newValue)
     }
   }
 
@@ -86,7 +86,7 @@ public final class Clerk {
 
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
-    configurationManager.publishableKey
+    dependencies.configurationManager.publishableKey
   }
 
   /// The event emitter for auth events.
@@ -106,7 +106,7 @@ public final class Clerk {
 
   /// The configuration options for this Clerk instance.
   public var options: Clerk.ClerkOptions {
-    configurationManager.options
+    dependencies.configurationManager.options
   }
 
   /// Coordinates task lifecycle and cleanup.
@@ -125,14 +125,14 @@ public final class Clerk {
 
   /// Frontend API URL.
   var frontendApiUrl: String {
-    configurationManager.frontendApiUrl
+    dependencies.configurationManager.frontendApiUrl
   }
+
+  // MARK: - Lifecycle Managers
+  // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
 
   /// Manages caching of client and environment data.
   private var cacheManager: CacheManager?
-
-  /// Manages Clerk configuration including API client setup and options.
-  private var configurationManager = ConfigurationManager()
 
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
@@ -166,23 +166,24 @@ public final class Clerk {
     dependencies.clerkService
   }
 
-  /// Manages logging of session status changes.
-  private var sessionStatusLogger = SessionStatusLogger()
-
   /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
-    configurationManager.proxyConfiguration
+    dependencies.configurationManager.proxyConfiguration
   }
 
   package init() {
     // Create temporary container - will be replaced during configure with proper values
+    // Empty publishableKey is handled gracefully by DependencyContainer
     let tempOptions = Clerk.ClerkOptions()
-    let tempBaseURL = URL(string: "https://clerk.clerk.dev")!
-    dependencies = DependencyContainer(
-      publishableKey: "",
-      options: tempOptions,
-      baseURL: tempBaseURL
-    )
+    do {
+      dependencies = try DependencyContainer(
+        publishableKey: "",
+        options: tempOptions
+      )
+    } catch {
+      // This should never happen, but handle it just in case
+      preconditionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
+    }
   }
 }
 
@@ -193,15 +194,10 @@ public extension Clerk {
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
-    // Configure using ConfigurationManager
-    try configurationManager.configure(publishableKey: publishableKey, options: options)
-
-    // Create dependency container with proper configuration
-    let baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
-    dependencies = DependencyContainer(
+    // Create dependency container (which creates and configures ConfigurationManager internally)
+    dependencies = try DependencyContainer(
       publishableKey: publishableKey,
-      options: options,
-      baseURL: baseURL
+      options: options
     )
 
     // Set up session polling manager
