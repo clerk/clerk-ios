@@ -54,15 +54,15 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
     defer { isProcessingSync = false }
 
     // Check if this is first sync
-    let hasSyncedBefore = (try? keychain.string(forKey: "clerkDeviceTokenSynced")) == "true"
-    let currentToken = try? keychain.string(forKey: "clerkDeviceToken")
+    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
+    let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
     // First sync: iOS always wins if both have tokens
     if !hasSyncedBefore, currentToken != nil {
       // iOS always wins on first sync
       do {
-        try keychain.set(deviceToken, forKey: "clerkDeviceToken")
-        try keychain.set("true", forKey: "clerkDeviceTokenSynced")
+        try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       } catch {
         ClerkLogger.logError(error, message: "Failed to store deviceToken from iOS app")
       }
@@ -71,9 +71,9 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
 
     // Subsequent syncs: Always accept received value
     do {
-      try keychain.set(deviceToken, forKey: "clerkDeviceToken")
+      try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
       if !hasSyncedBefore {
-        try keychain.set("true", forKey: "clerkDeviceTokenSynced")
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to store deviceToken from iOS app")
@@ -132,7 +132,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
 
     var applicationContext: [String: Any] = [:]
 
-    if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
+    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
       applicationContext[Self.deviceTokenKey] = deviceToken
     }
 

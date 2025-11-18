@@ -66,7 +66,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
     var applicationContext: [String: Any] = [:]
 
-    if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
+    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
       applicationContext[Self.deviceTokenKey] = deviceToken
     }
 
@@ -108,8 +108,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     defer { isProcessingSync = false }
 
     // Check if this is first sync
-    let hasSyncedBefore = (try? keychain.string(forKey: "clerkDeviceTokenSynced")) == "true"
-    let currentToken = try? keychain.string(forKey: "clerkDeviceToken")
+    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
+    let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
     // First sync: iOS always wins if both have tokens
     if !hasSyncedBefore, currentToken != nil {
@@ -119,9 +119,9 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
     // Subsequent syncs: Always accept received value
     do {
-      try keychain.set(deviceToken, forKey: "clerkDeviceToken")
+      try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
       if !hasSyncedBefore {
-        try keychain.set("true", forKey: "clerkDeviceTokenSynced")
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to store deviceToken from watch app")

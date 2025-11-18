@@ -12,7 +12,7 @@ import Foundation
 /// A helper struct for handling Apple's DeviceCheck App Attest API.
 enum AppAttestHelper {
   /// The key used to store the attestation key ID in the keychain.
-  private static let keychainKey = "AttestKeyId"
+  private static let keychainKey = ClerkKeychainKey.attestKeyId.rawValue
 
   /// The API client for making network requests.
   @MainActor
@@ -175,7 +175,7 @@ enum AppAttestHelper {
   /// the app wont have a client yet
   @MainActor
   static var clientId: String? {
-    guard let clientData = try? keychain.data(forKey: "cachedClient") else {
+    guard let clientData = try? keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder
