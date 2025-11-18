@@ -10,8 +10,8 @@ import Foundation
 public extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
   struct ClerkOptions: Sendable {
-    /// Enable additional debugging signals and logging. Defaults to false.
-    public let debugMode: Bool
+    /// The minimum log level for SDK logging. Defaults to `.error` (minimal logging).
+    public let logLevel: LogLevel
 
     /// Enable development telemetry collection. Defaults to true.
     public let telemetryEnabled: Bool
@@ -30,21 +30,21 @@ public extension Clerk {
 
     /// Initializes a ``ClerkOptions`` instance.
     /// - Parameters:
-    ///   - debugMode: Enable additional debugging signals and logging. Defaults to false.
+    ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
     ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
     ///   - keychainConfig: Configuration for keychain storage behavior.
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     public init(
-      debugMode: Bool = false,
+      logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
       keychainConfig: KeychainConfig = .init(),
       proxyUrl: String? = nil,
       redirectConfig: RedirectConfig = .init(),
       watchConnectivityEnabled: Bool = false
     ) {
-      self.debugMode = debugMode
+      self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
       self.keychainConfig = keychainConfig
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
