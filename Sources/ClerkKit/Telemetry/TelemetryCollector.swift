@@ -229,7 +229,13 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     do {
       _ = try await config.networkRequester.data(for: request)
     } catch {
-      if await isDebugModeEnabled() {
+      // Log telemetry flush errors when log level is debug or verbose
+      let shouldLog = await Task { @MainActor in
+        let configuredLevel = Clerk.shared.options.logLevel
+        return configuredLevel <= .debug
+      }.value
+
+      if shouldLog {
         ClerkLogger.logNetworkError(
           error,
           endpoint: request.url?.absoluteString ?? "telemetry"
@@ -240,9 +246,17 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     flushTask = nil
   }
 
+  /// Logs telemetry events and skip reasons when log level is debug or verbose
   private func logEventIfDebug(name: String, _ payload: Any) async {
-    guard await isDebugModeEnabled() else { return }
-    ClerkLogger.debug("[telemetry] \(name): \(payload)", debugMode: true)
+    // Check if we should log based on the configured log level
+    let shouldLog = await Task { @MainActor in
+      let configuredLevel = Clerk.shared.options.logLevel
+      // Log telemetry at debug level or higher (debug, verbose)
+      return configuredLevel <= .debug
+    }.value
+
+    guard shouldLog else { return }
+    ClerkLogger.debug("[telemetry] \(name): \(payload)")
   }
 
   /// Enrich the raw event with SDK metadata and instance information.
@@ -259,9 +273,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     )
   }
 
-  private func isDebugModeEnabled() async -> Bool {
-    await environment.isDebugModeEnabled()
-  }
 
   // MARK: - Testing hooks
 

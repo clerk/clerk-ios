@@ -16,7 +16,7 @@ struct WatchExampleApp: App {
     // Configure Clerk with Watch Connectivity sync enabled
     // This will automatically sync the deviceToken to the companion watch app
     let options = Clerk.ClerkOptions(
-      debugMode: true,
+      logLevel: .debug,
       watchConnectivityEnabled: true
     )
 

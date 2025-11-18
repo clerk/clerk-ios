@@ -19,7 +19,6 @@ protocol TelemetryEnvironmentProviding: Sendable {
   // Dynamic environment signals
   func instanceTypeString() async -> String
   func isTelemetryEnabled() async -> Bool
-  func isDebugModeEnabled() async -> Bool
   func publishableKey() async -> String?
 }
 
@@ -36,10 +35,6 @@ struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
     await Clerk.shared.options.telemetryEnabled
   }
 
-  func isDebugModeEnabled() async -> Bool {
-    await Clerk.shared.options.debugMode
-  }
-
   func publishableKey() async -> String? {
     let key = await Clerk.shared.publishableKey
     return key.isEmpty ? nil : key
@@ -52,7 +47,6 @@ struct StandaloneTelemetryEnvironment: TelemetryEnvironmentProviding {
   let publishableKey: String
   let instanceType: InstanceEnvironmentType
   let telemetryEnabled: Bool
-  let debugMode: Bool
 
   var sdkName: String { "clerk-ios" }
   var sdkVersion: String { Clerk.sdkVersion }
@@ -63,10 +57,6 @@ struct StandaloneTelemetryEnvironment: TelemetryEnvironmentProviding {
 
   func isTelemetryEnabled() async -> Bool {
     telemetryEnabled
-  }
-
-  func isDebugModeEnabled() async -> Bool {
-    debugMode
   }
 
   func publishableKey() async -> String? {

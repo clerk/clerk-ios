@@ -8,41 +8,62 @@
 import Foundation
 import os.log
 
-/// A unified logging system for the Clerk SDK that respects the debugMode setting.
-package enum ClerkLogger {
-  /// Log levels for different types of messages
-  enum LogLevel: String, CaseIterable {
-    case error = "ERROR"
-    case warning = "WARNING"
-    case info = "INFO"
-    case debug = "DEBUG"
+/// Log levels for different types of messages
+public enum LogLevel: String, CaseIterable, Comparable, Sendable {
+  case error = "ERROR"
+  case warning = "WARNING"
+  case info = "INFO"
+  case debug = "DEBUG"
+  case verbose = "VERBOSE"
 
-    var osLogType: OSLogType {
-      switch self {
-      case .error:
-        .error
-      case .warning:
-        .default
-      case .info:
-        .info
-      case .debug:
-        .debug
-      }
-    }
-
-    var emoji: String {
-      switch self {
-      case .error:
-        "❌"
-      case .warning:
-        "⚠️"
-      case .info:
-        "ℹ️"
-      case .debug:
-        "🔍"
-      }
+  var osLogType: OSLogType {
+    switch self {
+    case .error:
+      .error
+    case .warning:
+      .default
+    case .info:
+      .info
+    case .debug:
+      .debug
+    case .verbose:
+      .debug
     }
   }
+
+  var emoji: String {
+    switch self {
+    case .error:
+      "❌"
+    case .warning:
+      "⚠️"
+    case .info:
+      "ℹ️"
+    case .debug:
+      "🔍"
+    case .verbose:
+      "🔬"
+    }
+  }
+
+  /// Raw integer values for comparison (lower = more severe)
+  private var severity: Int {
+    switch self {
+    case .error: 0
+    case .warning: 1
+    case .info: 2
+    case .debug: 3
+    case .verbose: 4
+    }
+  }
+
+  public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
+    lhs.severity < rhs.severity
+  }
+}
+
+/// A unified logging system for the Clerk SDK that respects log level configuration.
+package enum ClerkLogger {
 
   /// The unified logging instance for Clerk
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
@@ -64,64 +85,72 @@ package enum ClerkLogger {
     logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
   }
 
-  /// Log a warning message (only logs when debug mode is enabled)
+  /// Log a warning message (only logs when log level is set to warning or lower)
   /// - Parameters:
   ///   - message: The warning message to log
-  ///   - debugMode: Override debug mode setting (optional)
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
   static func warning(
     _ message: String,
-    debugMode: Bool? = nil,
     file: String = #file,
     function: String = #function,
     line: Int = #line
   ) {
-    logSync(level: .warning, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
+    logSync(level: .warning, message: message, file: file, function: function, line: line)
   }
 
-  /// Log an info message (only logs when debug mode is enabled)
+  /// Log an info message (only logs when log level is set to info or lower)
   /// - Parameters:
   ///   - message: The info message to log
-  ///   - debugMode: Override debug mode setting (optional)
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
   static func info(
     _ message: String,
-    debugMode: Bool? = nil,
     file: String = #file,
     function: String = #function,
     line: Int = #line
   ) {
-    logSync(level: .info, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
+    logSync(level: .info, message: message, file: file, function: function, line: line)
   }
 
-  /// Log a debug message (only logs when debug mode is enabled)
+  /// Log a debug message (only logs when log level is set to debug or lower)
   /// - Parameters:
   ///   - message: The debug message to log
-  ///   - debugMode: Override debug mode setting (optional)
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
   static func debug(
     _ message: String,
-    debugMode: Bool? = nil,
     file: String = #file,
     function: String = #function,
     line: Int = #line
   ) {
-    logSync(level: .debug, message: message, debugModeOverride: debugMode, file: file, function: function, line: line)
+    logSync(level: .debug, message: message, file: file, function: function, line: line)
   }
 
-  /// Synchronous logging function that doesn't require MainActor access
+  /// Log a verbose message (only logs when log level is set to verbose)
+  /// - Parameters:
+  ///   - message: The verbose message to log
+  ///   - file: The file where the log is called (automatically filled)
+  ///   - function: The function where the log is called (automatically filled)
+  ///   - line: The line number where the log is called (automatically filled)
+  static func verbose(
+    _ message: String,
+    file: String = #file,
+    function: String = #function,
+    line: Int = #line
+  ) {
+    logSync(level: .verbose, message: message, file: file, function: function, line: line)
+  }
+
+  /// Synchronous logging function that checks log level asynchronously
   /// - Parameters:
   ///   - level: The log level
   ///   - message: The message to log
   ///   - error: Optional error object
-  ///   - forceLog: Force logging regardless of debug mode (used for errors)
-  ///   - debugModeOverride: Override the debug mode setting
+  ///   - forceLog: Force logging regardless of log level (used for errors)
   ///   - file: The source file
   ///   - function: The source function
   ///   - line: The source line number
@@ -130,22 +159,41 @@ package enum ClerkLogger {
     message: String,
     error: Error? = nil,
     forceLog: Bool = false,
-    debugModeOverride: Bool? = nil,
     file: String,
     function: String,
     line: Int
   ) {
-    // Determine if we should log
-    let shouldLog: Bool = if forceLog {
-      true
-    } else if let override = debugModeOverride {
-      override
-    } else {
-      // No override provided; default to not logging from this sync context
-      false
+    // Errors always log regardless of level
+    if !forceLog {
+      // Check log level asynchronously since Clerk.shared.options requires MainActor
+      let shouldLogTask = Task { @MainActor in
+        ClerkLogger.shouldLog(level: level)
+      }
+      // For non-async context, we'll log by default if we can't check
+      // This ensures errors always log, and other levels will be filtered properly in async contexts
+      Task {
+        guard await shouldLogTask.value else { return }
+        await performLog(level: level, message: message, error: error, file: file, function: function, line: line)
+      }
+      return
     }
 
-    guard shouldLog else { return }
+    // For forceLog (errors), log immediately
+    Task {
+      await performLog(level: level, message: message, error: error, file: file, function: function, line: line)
+    }
+  }
+
+  /// Performs the actual logging
+  @MainActor
+  private static func performLog(
+    level: LogLevel,
+    message: String,
+    error: Error?,
+    file: String,
+    function: String,
+    line: Int
+  ) {
 
     let fileName = URL(fileURLWithPath: file).lastPathComponent
     let timestamp = DateFormatter.logFormatter.string(from: Date())
@@ -172,6 +220,14 @@ package enum ClerkLogger {
 
     // Use unified logging for structured logs only (avoid duplicate console output)
     logger.log(level: level.osLogType, "\(logMessage)")
+  }
+
+  /// Determines if a message at the given level should be logged based on the configured log level
+  @MainActor
+  static func shouldLog(level: LogLevel) -> Bool {
+    let configuredLevel = Clerk.shared.options.logLevel
+    // Log if the message level is >= configured level (lower severity number = higher priority)
+    return level >= configuredLevel
   }
 }
 

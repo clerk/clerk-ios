@@ -15,7 +15,7 @@ struct WatchExampleAppWatchApp: App {
     // Configure Clerk with Watch Connectivity sync enabled
     // This will automatically receive deviceToken from the iOS app and store it in keychain
     let options = Clerk.ClerkOptions(
-      debugMode: true,
+      logLevel: .debug,
       watchConnectivityEnabled: true
     )
 
