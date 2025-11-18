@@ -21,7 +21,7 @@ struct AppLogoView: View {
           .resizable()
           .scaledToFit()
       } else {
-        if PreviewUtils.isRunningInPreview {
+        if EnvironmentDetection.isRunningInPreviews {
           Image(systemName: "circle.square.fill")
             .resizable()
             .scaledToFit()

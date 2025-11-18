@@ -279,8 +279,8 @@ package enum ClerkLogger {
   @MainActor
   static func shouldLog(level: LogLevel) -> Bool {
     let configuredLevel = Clerk.shared.options.logLevel
-    // Log if the message level is >= configured level (lower severity number = higher priority)
-    return level >= configuredLevel
+    // Log if the message level is <= configured level (lower severity number = higher priority)
+    return level <= configuredLevel
   }
 }
 

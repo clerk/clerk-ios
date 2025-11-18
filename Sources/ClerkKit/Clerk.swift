@@ -224,6 +224,8 @@ public extension Clerk {
   /// This method must be called before accessing `Clerk.shared`. If called multiple times,
   /// a warning will be logged and subsequent calls will be ignored.
   ///
+  /// In test environments, reconfiguration is allowed to support test isolation.
+  ///
   /// This method:
   /// 1. Sets up configuration (API client, options, etc.)
   /// 2. Sets up lifecycle and session polling managers
@@ -240,9 +242,15 @@ public extension Clerk {
     publishableKey: String,
     options: Clerk.ClerkOptions = .init()
   ) -> Clerk {
+    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
-      ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
-      return existing
+      if EnvironmentDetection.isRunningInTests {
+        // Reset the shared instance to allow reconfiguration in tests
+        _shared = nil
+      } else {
+        ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
+        return existing
+      }
     }
 
     let clerk = Clerk()
