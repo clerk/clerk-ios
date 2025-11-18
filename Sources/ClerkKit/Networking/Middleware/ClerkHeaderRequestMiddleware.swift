@@ -13,7 +13,7 @@ struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    if let deviceToken = try? keychain.string(forKey: "clerkDeviceToken") {
+    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
