@@ -12,7 +12,10 @@ import SwiftUI
 struct QuickstartApp: App {
 
   init() {
-    Clerk.configure(publishableKey: "pk_test_YW11c2luZy1iYXJuYWNsZS0yNi5jbGVyay5hY2NvdW50cy5kZXYk")
+    Clerk.configure(
+      publishableKey: "pk_test_YW11c2luZy1iYXJuYWNsZS0yNi5jbGVyay5hY2NvdW50cy5kZXYk",
+      options: .init(logLevel: .debug)
+    )
   }
 
   var body: some Scene {
