@@ -47,8 +47,10 @@ struct CacheManagerTests {
     configureClerkForTesting()
   }
 
-  @Test
-  func testSaveClient() async throws {
+  /// Creates a fresh test setup with keychain, coordinator, and cache manager.
+  ///
+  /// - Returns: A tuple containing the keychain, coordinator, and cache manager.
+  private func createTestSetup() -> (keychain: InMemoryKeychain, coordinator: MockCacheCoordinator, cacheManager: CacheManager) {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -58,9 +60,16 @@ struct CacheManagerTests {
     )
 
     let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
+    let cacheManager = CacheManager(coordinator: coordinator, keychain: keychain)
 
-    cacheManager.saveClient(.mock)
+    return (keychain, coordinator, cacheManager)
+  }
+
+  @Test
+  func testSaveClient() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.saveClient(Client.mock)
 
     // Verify client was saved to keychain
     let clientData = try keychain.data(forKey: "cachedClient")
@@ -73,18 +82,9 @@ struct CacheManagerTests {
 
   @Test
   func testSaveEnvironment() async throws {
-    let keychain = InMemoryKeychain()
+    let (keychain, _, cacheManager) = createTestSetup()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-
-    let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
-
-    cacheManager.saveEnvironment(.mock)
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
 
     // Verify environment was saved to keychain
     let envData = try keychain.data(forKey: "cachedEnvironment")
@@ -97,21 +97,12 @@ struct CacheManagerTests {
 
   @Test
   func loadCachedClient() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save a client to keychain
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
-
-    let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
 
     await cacheManager.loadCachedData()
 
@@ -121,21 +112,12 @@ struct CacheManagerTests {
 
   @Test
   func loadCachedEnvironment() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save an environment to keychain
     let encoder = JSONEncoder.clerkEncoder
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
-
-    let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
 
     await cacheManager.loadCachedData()
 
@@ -145,23 +127,14 @@ struct CacheManagerTests {
 
   @Test
   func doesNotLoadClientWhenAlreadyExists() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save a client to keychain
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
-    let coordinator = MockCacheCoordinator()
     coordinator.hasClientValue.setValue(true) // Simulate existing client
-
-    let cacheManager = CacheManager(coordinator: coordinator)
 
     await cacheManager.loadCachedData()
 
@@ -171,23 +144,14 @@ struct CacheManagerTests {
 
   @Test
   func doesNotLoadEnvironmentWhenAlreadyExists() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save an environment to keychain
     let encoder = JSONEncoder.clerkEncoder
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
-    let coordinator = MockCacheCoordinator()
     coordinator.isEnvironmentEmptyValue.setValue(false) // Simulate existing environment
-
-    let cacheManager = CacheManager(coordinator: coordinator)
 
     await cacheManager.loadCachedData()
 
@@ -197,21 +161,12 @@ struct CacheManagerTests {
 
   @Test
   func testDeleteClient() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let (keychain, _, cacheManager) = createTestSetup()
 
     // Save a client first
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
-
-    let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
 
     cacheManager.deleteClient()
 
@@ -222,16 +177,7 @@ struct CacheManagerTests {
 
   @Test
   func handlesMissingCachedData() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-
-    let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
+    let (_, coordinator, cacheManager) = createTestSetup()
 
     // Should not crash when no cached data exists
     await cacheManager.loadCachedData()
