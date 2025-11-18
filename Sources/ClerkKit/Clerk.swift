@@ -428,7 +428,7 @@ extension Clerk {
         if case .deviceTokenReceived(let token) = event {
           // Save device token to keychain
           do {
-            try self.dependencies.keychain.set(token, forKey: "clerkDeviceToken")
+            try self.dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
           } catch {
             ClerkLogger.logError(error, message: "Failed to save device token to keychain")
           }
