@@ -97,14 +97,20 @@ public extension LockIsolated where Value: Sendable {
 @available(*, deprecated, message: "Lock isolated values should not be equatable")
 extension LockIsolated: Equatable where Value: Equatable {
   public static func == (lhs: LockIsolated, rhs: LockIsolated) -> Bool {
-    lhs.value == rhs.value
+    // Access both values within a single lock to avoid deadlock
+    // Since we're comparing, we can safely access _value directly
+    let lhsValue = lhs.lock.sync { lhs._value }
+    let rhsValue = rhs.lock.sync { rhs._value }
+    return lhsValue == rhsValue
   }
 }
 
 @available(*, deprecated, message: "Lock isolated values should not be hashable")
 extension LockIsolated: Hashable where Value: Hashable {
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(value)
+    self.lock.sync {
+      hasher.combine(self._value)
+    }
   }
 }
 #endif
