@@ -75,7 +75,7 @@ package final class WatchConnectivityCoordinator {
 
     eventListenerTask = Task { @MainActor [weak self] in
       guard let self else { return }
-      for await event in Clerk.shared.authEventEmitter.events {
+      for await event in Clerk.shared.clerkEventEmitter.events {
         if case .deviceTokenReceived = event {
           // Sync to watch app if enabled
           self.sync()

@@ -13,11 +13,11 @@ struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
       // Emit event on MainActor - listeners will handle saving and syncing
       if Thread.isMainThread {
         MainActor.assumeIsolated {
-          Clerk.shared.authEventEmitter.send(.deviceTokenReceived(token: deviceToken))
+          Clerk.shared.clerkEventEmitter.send(.deviceTokenReceived(token: deviceToken))
         }
       } else {
         Task { @MainActor in
-          Clerk.shared.authEventEmitter.send(.deviceTokenReceived(token: deviceToken))
+          Clerk.shared.clerkEventEmitter.send(.deviceTokenReceived(token: deviceToken))
         }
       }
     }
