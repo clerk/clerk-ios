@@ -100,7 +100,7 @@ final class DependencyContainer: Dependencies {
         samplingRate: 1.0,
         maxBufferSize: 5,
         flushInterval: 30.0,
-        disableThrottling: options.debugMode
+        disableThrottling: false
       )
 
       // Determine instance type from publishable key
@@ -112,8 +112,7 @@ final class DependencyContainer: Dependencies {
         environment: StandaloneTelemetryEnvironment(
           publishableKey: publishableKey,
           instanceType: instanceType,
-          telemetryEnabled: options.telemetryEnabled,
-          debugMode: options.debugMode
+          telemetryEnabled: options.telemetryEnabled
         )
       )
     } else {
