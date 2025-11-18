@@ -145,7 +145,7 @@ final class CacheManager {
   /// Deletes cached client data from keychain.
   func deleteClient() {
     do {
-      try keychain.deleteItem(forKey: "cachedClient")
+      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
     } catch {
       // Log keychain errors but don't fail - deletion is best-effort
       ClerkLogger.logError(
@@ -160,12 +160,12 @@ final class CacheManager {
   /// Saves client data to keychain.
   private func saveClientToKeychain(_ client: Client) throws {
     let clientData = try JSONEncoder.clerkEncoder.encode(client)
-    try keychain.set(clientData, forKey: "cachedClient")
+    try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
   }
 
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {
-    guard let clientData = try keychain.data(forKey: "cachedClient") else {
+    guard let clientData = try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder
@@ -176,12 +176,12 @@ final class CacheManager {
   private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
     let encoder = JSONEncoder.clerkEncoder
     let environmentData = try encoder.encode(environment)
-    try keychain.set(environmentData, forKey: "cachedEnvironment")
+    try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
   }
 
   /// Loads environment data from keychain.
   private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
-    guard let environmentData = try keychain.data(forKey: "cachedEnvironment") else {
+    guard let environmentData = try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder
