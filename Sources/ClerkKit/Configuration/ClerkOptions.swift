@@ -28,6 +28,13 @@ public extension Clerk {
     /// Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     public let watchConnectivityEnabled: Bool
 
+    /// A closure that receives callbacks when Clerk logs errors.
+    ///
+    /// Set this property to forward Clerk errors to your own logging system.
+    /// The closure is invoked asynchronously and will not block the main thread.
+    /// Only error-level logs will trigger the closure.
+    public let loggerHandler: (@Sendable (LogEntry) -> Void)?
+
     /// Initializes a ``ClerkOptions`` instance.
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
@@ -36,13 +43,15 @@ public extension Clerk {
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
+    ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
       keychainConfig: KeychainConfig = .init(),
       proxyUrl: String? = nil,
       redirectConfig: RedirectConfig = .init(),
-      watchConnectivityEnabled: Bool = false
+      watchConnectivityEnabled: Bool = false,
+      loggerHandler: (@Sendable (LogEntry) -> Void)? = nil
     ) {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
@@ -50,6 +59,7 @@ public extension Clerk {
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
       self.redirectConfig = redirectConfig
       self.watchConnectivityEnabled = watchConnectivityEnabled
+      self.loggerHandler = loggerHandler
     }
   }
 }
