@@ -21,6 +21,15 @@ struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 
-    request.setValue(deviceID, forHTTPHeaderField: "x-native-device-id")
+    if let deviceId = DeviceHelper.deviceID {
+      request.setValue(deviceId, forHTTPHeaderField: "x-native-device-id")
+    }
+
+    request.setValue(DeviceHelper.deviceType, forHTTPHeaderField: "x-device-type")
+    request.setValue(DeviceHelper.deviceModel, forHTTPHeaderField: "x-device-model")
+    request.setValue(DeviceHelper.osVersion, forHTTPHeaderField: "x-os-version")
+    request.setValue(DeviceHelper.appVersion, forHTTPHeaderField: "x-app-version")
+    request.setValue(DeviceHelper.bundleID, forHTTPHeaderField: "x-bundle-id")
+    request.setValue(DeviceHelper.isSandbox, forHTTPHeaderField: "x-is-sandbox")
   }
 }

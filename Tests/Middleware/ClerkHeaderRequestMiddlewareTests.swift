@@ -85,14 +85,46 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func addsNativeDeviceIdHeader() async throws {
+  func addsNativeDeviceIdHeaderWhenAvailable() async throws {
     let middleware = ClerkHeaderRequestMiddleware()
     var request = URLRequest(url: URL(string: "https://example.com")!)
 
     try await middleware.prepare(&request)
 
-    let deviceId = request.value(forHTTPHeaderField: "x-native-device-id")
-    #expect(deviceId != nil, "Should always include device ID header")
-    #expect(deviceId?.isEmpty == false)
+    if let deviceId = DeviceHelper.deviceID {
+      let headerValue = request.value(forHTTPHeaderField: "x-native-device-id")
+      #expect(headerValue != nil, "Should include device ID header when available")
+      #expect(headerValue == deviceId)
+    } else {
+      let headerValue = request.value(forHTTPHeaderField: "x-native-device-id")
+      #expect(headerValue == nil, "Should not include device ID header when unavailable")
+    }
+  }
+
+  @Test
+  func addsDeviceTypeHeader() async throws {
+    let middleware = ClerkHeaderRequestMiddleware()
+    var request = URLRequest(url: URL(string: "https://example.com")!)
+
+    try await middleware.prepare(&request)
+
+    let headerValue = request.value(forHTTPHeaderField: "x-device-type")
+    #expect(headerValue != nil, "Should always include device type header")
+    #expect(["ipad", "iphone", "mac", "carplay", "tv", "vision", "watch", "unspecified"].contains(headerValue ?? ""), "Device type should be one of the expected values")
+  }
+
+  @Test
+  func addsDeviceInfoHeaders() async throws {
+    let middleware = ClerkHeaderRequestMiddleware()
+    var request = URLRequest(url: URL(string: "https://example.com")!)
+
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "x-device-model") != nil, "Should include device model header")
+    #expect(request.value(forHTTPHeaderField: "x-os-version") != nil, "Should include OS version header")
+    #expect(request.value(forHTTPHeaderField: "x-app-version") != nil, "Should include app version header")
+    #expect(request.value(forHTTPHeaderField: "x-bundle-id") != nil, "Should include bundle ID header")
+    #expect(request.value(forHTTPHeaderField: "x-is-sandbox") != nil, "Should include sandbox header")
+    #expect(["true", "false"].contains(request.value(forHTTPHeaderField: "x-is-sandbox") ?? ""), "Sandbox should be true or false")
   }
 }

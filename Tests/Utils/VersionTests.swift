@@ -30,18 +30,13 @@ struct VersionTests {
 
   @Test
   func testDeviceID() {
-    // Device ID should be non-empty
-    // Note: This test may behave differently on different platforms
-    // On watchOS/macOS it returns "uidevice-unsupported"
-    // On iOS it returns a UUID string or "none"
-    let id = deviceID
-    #expect(!id.isEmpty)
-
-    // Should be either a UUID format or the unsupported string
-    let isUUID = id.contains("-") && id.count == 36
-    let isUnsupported = id == "uidevice-unsupported"
-    let isNone = id == "none"
-
-    #expect(isUUID || isUnsupported || isNone)
+    // Device ID may be nil on watchOS/macOS or when unavailable
+    // On iOS it returns a UUID string or nil
+    if let id = DeviceHelper.deviceID {
+      // Should be a UUID format
+      let isUUID = id.contains("-") && id.count == 36
+      #expect(isUUID, "Device ID should be a valid UUID when available")
+    }
+    // It's acceptable for deviceID to be nil on unsupported platforms
   }
 }
