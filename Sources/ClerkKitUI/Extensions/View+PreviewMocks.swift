@@ -36,7 +36,7 @@ package extension View {
   /// ```
   @MainActor
   func clerkPreview(isSignedIn: Bool = true) -> some View {
-    if PreviewUtils.isRunningInPreview {
+    if EnvironmentDetection.isRunningInPreviews {
       // Configure Clerk.shared so views that access it directly don't fail
       let clerk = Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
@@ -75,7 +75,7 @@ package extension View {
   /// ```
   @MainActor
   func clerkPreview(preview: @escaping (MockBuilder) -> Void) -> some View {
-    if PreviewUtils.isRunningInPreview {
+    if EnvironmentDetection.isRunningInPreviews {
       // Configure Clerk.shared with mock services (using default preview publishable key)
       // Note: This still uses configureWithMocks internally for advanced customization
       let clerk = Clerk.configureWithMocks { builder in
