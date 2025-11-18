@@ -90,6 +90,9 @@ public final class Clerk {
   /// The event emitter for auth events.
   public let authEventEmitter = EventEmitter<AuthEvent>()
 
+  /// The event emitter for general Clerk events.
+  let clerkEventEmitter = EventEmitter<ClerkEvent>()
+
   /// The Clerk environment for the instance.
   public internal(set) var environment = Environment() {
     didSet {
@@ -139,8 +142,11 @@ public final class Clerk {
   /// Coordinates watch connectivity syncing.
   package var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
-  /// Task that listens for device token events and handles saving.
-  private var deviceTokenEventListenerTask: Task<Void, Never>?
+  /// Task that listens for auth events and handles them.
+  private var authEventListenerTask: Task<Void, Never>?
+
+  /// Task that listens for general Clerk events and handles them.
+  private var clerkEventListenerTask: Task<Void, Never>?
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -190,8 +196,9 @@ public extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up device token event listener (always needed for saving tokens)
-    startDeviceTokenEventListener()
+    // Set up event listeners
+    startAuthEventListener()
+    startClerkEventListener()
 
     // Set up watch connectivity coordinator only if enabled
     if options.watchConnectivityEnabled {
@@ -393,11 +400,22 @@ extension Clerk {
     }
   }
 
-  /// Starts listening for device token events and handles saving to keychain.
-  private func startDeviceTokenEventListener() {
-    deviceTokenEventListenerTask = Task { @MainActor [weak self] in
+  /// Starts listening for auth events and handles them.
+  private func startAuthEventListener() {
+    authEventListenerTask = Task { @MainActor [weak self] in
       guard let self else { return }
-      for await event in authEventEmitter.events {
+      for await _ in authEventEmitter.events {
+        // Process auth events synchronously since we're already on MainActor
+        // Auth events are handled elsewhere (e.g., by ClerkAuthEventEmitterResponseMiddleware)
+      }
+    }
+  }
+
+  /// Starts listening for general Clerk events and handles them.
+  private func startClerkEventListener() {
+    clerkEventListenerTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      for await event in clerkEventEmitter.events {
         // Process synchronously since we're already on MainActor
         if case .deviceTokenReceived(let token) = event {
           // Save device token to keychain
@@ -410,6 +428,16 @@ extension Clerk {
           // Sync to watch app if enabled
           self.watchConnectivityCoordinator?.sync()
         }
+
+        if case .clientReceived(let client) = event {
+          // Update client from event
+          self.client = client
+        }
+
+        if case .environmentReceived(let environment) = event {
+          // Update environment from event
+          self.environment = environment
+        }
       }
     }
   }
@@ -421,8 +449,10 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    deviceTokenEventListenerTask?.cancel()
-    deviceTokenEventListenerTask = nil
+    authEventListenerTask?.cancel()
+    authEventListenerTask = nil
+    clerkEventListenerTask?.cancel()
+    clerkEventListenerTask = nil
     watchConnectivityCoordinator?.stop()
     watchConnectivityCoordinator = nil
   }
