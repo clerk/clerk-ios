@@ -74,9 +74,7 @@ public extension Clerk {
     preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
     // Check if running in SwiftUI preview
-    let isRunningInPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-
-    guard isRunningInPreview else {
+    guard EnvironmentDetection.isRunningInPreviews else {
       return Clerk.shared
     }
 
