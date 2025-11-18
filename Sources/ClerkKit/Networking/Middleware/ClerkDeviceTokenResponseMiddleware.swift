@@ -10,17 +10,14 @@ import Foundation
 struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-      // If we're on the main thread (e.g., in tests), execute synchronously using assumeIsolated
-      // Otherwise, use Task to hop to MainActor
+      // Emit event on MainActor - listeners will handle saving and syncing
       if Thread.isMainThread {
         MainActor.assumeIsolated {
-          try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
-          Clerk.shared.watchConnectivitySync?.syncAll()
+          Clerk.shared.authEventEmitter.send(.deviceTokenReceived(token: deviceToken))
         }
       } else {
         Task { @MainActor in
-          try? Clerk.shared.dependencies.keychain.set(deviceToken, forKey: "clerkDeviceToken")
-          Clerk.shared.watchConnectivitySync?.syncAll()
+          Clerk.shared.authEventEmitter.send(.deviceTokenReceived(token: deviceToken))
         }
       }
     }
