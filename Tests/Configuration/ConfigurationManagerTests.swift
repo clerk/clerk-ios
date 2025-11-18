@@ -47,7 +47,7 @@ struct ConfigurationManagerTests {
     #expect(manager.publishableKey == testKey)
     #expect(manager.instanceType == .development)
     #expect(manager.frontendApiUrl.contains("clerk.example.com"))
-    #expect(manager.options.debugMode == false)
+    #expect(manager.options.logLevel == .error)
   }
 
   @Test
@@ -242,14 +242,14 @@ struct ConfigurationManagerTests {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let customOptions = Clerk.ClerkOptions(
-      debugMode: true,
+      logLevel: .debug,
       telemetryEnabled: false,
       proxyUrl: "https://proxy.example.com/__clerk"
     )
 
     try manager.configure(publishableKey: testKey, options: customOptions)
 
-    #expect(manager.options.debugMode == true)
+    #expect(manager.options.logLevel == .debug)
     #expect(manager.options.telemetryEnabled == false)
     #expect(manager.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
   }
@@ -265,7 +265,7 @@ struct ConfigurationManagerTests {
     // Test all property accessors
     #expect(!manager.publishableKey.isEmpty)
     #expect(!manager.frontendApiUrl.isEmpty)
-    #expect(manager.options.debugMode == false)
+    #expect(manager.options.logLevel == .error)
     #expect(manager.instanceType == .development)
   }
 

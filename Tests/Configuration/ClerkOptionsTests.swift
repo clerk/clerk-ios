@@ -16,7 +16,7 @@ struct ClerkOptionsTests {
   func defaultInitialization() {
     let options = Clerk.ClerkOptions()
 
-    #expect(options.debugMode == false)
+    #expect(options.logLevel == .error)
     #expect(options.telemetryEnabled == true)
     #expect(options.proxyUrl == nil)
     #expect(options.keychainConfig.service == Bundle.main.bundleIdentifier ?? "")
@@ -31,14 +31,14 @@ struct ClerkOptionsTests {
     let redirectConfig = RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
     let options = Clerk.ClerkOptions(
-      debugMode: true,
+      logLevel: .debug,
       telemetryEnabled: false,
       keychainConfig: keychainConfig,
       proxyUrl: "https://proxy.example.com/__clerk",
       redirectConfig: redirectConfig
     )
 
-    #expect(options.debugMode == true)
+    #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
     #expect(options.keychainConfig.service == "test.service")
     #expect(options.keychainConfig.accessGroup == "test.group")
@@ -99,9 +99,9 @@ struct ClerkOptionsTests {
   @Test
   func partialInitialization() {
     // Test with only some parameters
-    let options = Clerk.ClerkOptions(debugMode: true)
+    let options = Clerk.ClerkOptions(logLevel: .debug)
 
-    #expect(options.debugMode == true)
+    #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == true) // Default
     #expect(options.proxyUrl == nil) // Default
   }
@@ -109,19 +109,19 @@ struct ClerkOptionsTests {
   @Test
   func propertyAccess() {
     let options = Clerk.ClerkOptions(
-      debugMode: true,
+      logLevel: .debug,
       telemetryEnabled: false,
       proxyUrl: "https://proxy.example.com/__clerk"
     )
 
     // Verify all properties are accessible
-    _ = options.debugMode
+    _ = options.logLevel
     _ = options.telemetryEnabled
     _ = options.keychainConfig
     _ = options.proxyUrl
     _ = options.redirectConfig
 
-    #expect(options.debugMode == true)
+    #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
   }
 }

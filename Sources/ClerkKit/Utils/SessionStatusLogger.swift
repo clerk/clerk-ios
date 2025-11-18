@@ -39,7 +39,7 @@ final class SessionStatusLogger {
     }
 
     let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
-    ClerkLogger.info(message, debugMode: true)
+    ClerkLogger.info(message)
   }
 
   /// Determines whether pending session status should be logged.

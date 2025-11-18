@@ -133,14 +133,11 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
 
   @MainActor
   private func logRetry(reason: String, request: URLRequest?, delay: UInt64) {
-    guard Clerk.shared.options.debugMode else { return }
-
     let url = request?.url?.absoluteString ?? "<unknown url>"
     let delayMs = Double(delay) / 1_000_000
     let formattedDelay = String(format: "%.0f", delayMs)
-    ClerkLogger.debug(
-      "Retrying request: \(url) after \(reason). Backing off for \(formattedDelay)ms.",
-      debugMode: true
+    ClerkLogger.info(
+      "Retrying request: \(url) after \(reason). Backing off for \(formattedDelay)ms."
     )
   }
 }
