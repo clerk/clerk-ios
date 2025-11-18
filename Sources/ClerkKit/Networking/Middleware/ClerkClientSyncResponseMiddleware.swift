@@ -11,7 +11,7 @@ struct ClerkClientSyncResponseMiddleware: NetworkResponseMiddleware {
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) throws {
     if let client = Self.decodeClient(from: data) {
       Task { @MainActor in
-        Clerk.shared.client = client
+        Clerk.shared.clerkEventEmitter.send(.clientReceived(client: client))
       }
     }
   }
