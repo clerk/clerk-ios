@@ -18,8 +18,10 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     configureClerkForTesting()
   }
 
-  @Test
-  func savesDeviceTokenFromResponseHeader() async throws {
+  /// Creates a test setup with a fresh keychain and configured dependencies.
+  ///
+  /// - Returns: A fresh InMemoryKeychain instance.
+  private func createTestKeychain() -> InMemoryKeychain {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -27,6 +29,13 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
+
+    return keychain
+  }
+
+  @Test
+  func savesDeviceTokenFromResponseHeader() async throws {
+    let keychain = createTestKeychain()
 
     let middleware = ClerkDeviceTokenResponseMiddleware()
     let request = URLRequest(url: URL(string: "https://example.com")!)
@@ -45,13 +54,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
 
   @Test
   func doesNotSaveTokenWhenHeaderMissing() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let keychain = createTestKeychain()
 
     // Set an initial token
     try keychain.set("original-token", forKey: "clerkDeviceToken")
@@ -74,13 +77,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
 
   @Test
   func updatesExistingToken() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    let keychain = createTestKeychain()
 
     // Set an initial token
     try keychain.set("old-token", forKey: "clerkDeviceToken")

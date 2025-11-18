@@ -7,7 +7,7 @@
 
 import Foundation
 
-#if !os(watchOS)
+#if os(iOS)
 import WatchConnectivity
 
 /// Manages Watch Connectivity session for syncing authentication state to companion watchOS app.
@@ -166,7 +166,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   }
 }
 
-#if !os(watchOS)
+#if os(iOS)
 @MainActor
 func createWatchConnectivityManager(keychain: any KeychainStorage) -> any WatchConnectivitySyncing {
   WatchConnectivityManager(keychain: keychain)
