@@ -45,9 +45,7 @@ public final class Clerk {
       }
 
       // Sync to watch app if enabled (sync both when client is set and when it's cleared)
-      if options.watchConnectivityEnabled {
-        watchConnectivitySync?.syncAll()
-      }
+      watchConnectivityCoordinator?.sync()
     }
   }
 
@@ -98,9 +96,7 @@ public final class Clerk {
       cacheManager?.saveEnvironment(environment)
 
       // Sync to watch app if enabled
-      if options.watchConnectivityEnabled {
-        watchConnectivitySync?.syncAll()
-      }
+      watchConnectivityCoordinator?.sync()
     }
   }
 
@@ -134,26 +130,17 @@ public final class Clerk {
   /// Manages caching of client and environment data.
   private var cacheManager: CacheManager?
 
-  /// Runtime services that manage session polling, lifecycle, and platform-specific features.
-  private var runtimeServices: (any ClerkRuntimeServicesProtocol)?
+  /// Manages periodic polling of session tokens to keep them refreshed.
+  private var sessionPollingManager: SessionPollingManager?
 
-  /// Unified Watch Connectivity sync interface for both iOS and watchOS platforms.
-  /// On iOS, this manages syncing to watchOS. On watchOS, this manages syncing to iOS.
-  package var watchConnectivitySync: (any WatchConnectivitySyncing)? {
-    #if !os(watchOS)
-    return watchConnectivityManager
-    #else
-    return watchSyncReceiver
-    #endif
-  }
+  /// Manages app lifecycle notifications and coordinates foreground/background transitions.
+  private var lifecycleManager: LifecycleManager?
 
-  #if !os(watchOS)
-  /// Manages Watch Connectivity for syncing authentication state to watchOS app.
-  private var watchConnectivityManager: (any WatchConnectivitySyncing)?
-  #else
-  /// Manages receiving synced authentication state from the companion iOS app via Watch Connectivity.
-  private var watchSyncReceiver: WatchSyncReceiver?
-  #endif
+  /// Coordinates watch connectivity syncing.
+  package var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+
+  /// Task that listens for device token events and handles saving.
+  private var deviceTokenEventListenerTask: Task<Void, Never>?
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -197,24 +184,23 @@ public extension Clerk {
       options: options
     )
 
-    // Set up Watch Connectivity manager/receiver if enabled
-    #if os(iOS)
-    if options.watchConnectivityEnabled {
-      watchConnectivityManager = createWatchConnectivityManager(keychain: dependencies.keychain)
-    }
-    #elseif os(watchOS)
-    if options.watchConnectivityEnabled {
-      watchSyncReceiver = WatchSyncReceiver(keychain: dependencies.keychain)
-    }
-    #endif
+    // Set up session polling and lifecycle management
+    sessionPollingManager = SessionPollingManager(sessionProvider: self)
+    lifecycleManager = LifecycleManager(handler: self)
+    sessionPollingManager?.startPolling()
+    lifecycleManager?.startObserving()
 
-    // Set up runtime services (session polling, lifecycle management)
-    runtimeServices = ClerkRuntimeServices(
-      sessionProvider: self,
-      lifecycleHandler: self,
-      watchConnectivitySync: watchConnectivitySync
-    )
-    runtimeServices?.start()
+    // Set up device token event listener (always needed for saving tokens)
+    startDeviceTokenEventListener()
+
+    // Set up watch connectivity coordinator only if enabled
+    if options.watchConnectivityEnabled {
+      watchConnectivityCoordinator = WatchConnectivityCoordinator(
+        keychain: dependencies.keychain,
+        enabled: true
+      )
+      watchConnectivityCoordinator?.start()
+    }
 
     // Set up cache manager and load cached data asynchronously
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
@@ -291,7 +277,7 @@ public extension Clerk {
       attestDeviceIfNeeded(environment: env)
 
       // Sync authentication state to watch app after initial load if enabled
-      watchConnectivitySync?.syncAll()
+      watchConnectivityCoordinator?.sync()
 
       isLoaded = true
     } catch {
@@ -361,10 +347,10 @@ extension Clerk: SessionProviding {}
 extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
-    runtimeServices?.resume()
+    sessionPollingManager?.startPolling()
 
     // Sync authentication state to watch app if enabled
-    watchConnectivitySync?.syncAll()
+    watchConnectivityCoordinator?.sync()
 
     // Refresh client and environment concurrently
     taskCoordinator?.task {
@@ -386,7 +372,7 @@ extension Clerk: LifecycleEventHandling {
 
   /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
-    runtimeServices?.pause()
+    sessionPollingManager?.stopPolling()
 
     taskCoordinator?.task(priority: .utility) { [weak self] in
       await self?.telemetry.flush()
@@ -407,15 +393,37 @@ extension Clerk {
     }
   }
 
+  /// Starts listening for device token events and handles saving to keychain.
+  private func startDeviceTokenEventListener() {
+    deviceTokenEventListenerTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      for await event in authEventEmitter.events {
+        // Process synchronously since we're already on MainActor
+        if case .deviceTokenReceived(let token) = event {
+          // Save device token to keychain
+          do {
+            try self.dependencies.keychain.set(token, forKey: "clerkDeviceToken")
+          } catch {
+            ClerkLogger.logError(error, message: "Failed to save device token to keychain")
+          }
+
+          // Sync to watch app if enabled
+          self.watchConnectivityCoordinator?.sync()
+        }
+      }
+    }
+  }
+
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
-    runtimeServices?.stop()
-    runtimeServices = nil
-    #if !os(watchOS)
-    watchConnectivityManager = nil
-    #else
-    watchSyncReceiver = nil
-    #endif
+    sessionPollingManager?.stopPolling()
+    sessionPollingManager = nil
+    lifecycleManager?.stopObserving()
+    lifecycleManager = nil
+    deviceTokenEventListenerTask?.cancel()
+    deviceTokenEventListenerTask = nil
+    watchConnectivityCoordinator?.stop()
+    watchConnectivityCoordinator = nil
   }
 }
