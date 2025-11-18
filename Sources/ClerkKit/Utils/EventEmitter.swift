@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 /// A generic class for broadcasting strongly typed events to multiple asynchronous consumers.
 ///
@@ -33,13 +34,17 @@ import Foundation
 /// ```
 @MainActor
 public final class EventEmitter<Event: Sendable> {
-  /// A dictionary of active AsyncStream continuations keyed by UUID.
-  private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
+  /// The Combine subject that broadcasts events to all subscribers.
+  ///
+  /// Using `PassthroughSubject` allows multiple subscribers to receive
+  /// the same events without storing a current value.
+  private let subject = PassthroughSubject<Event, Never>()
 
   /// Returns a new `AsyncStream` that receives all future events.
   ///
   /// Each consumer that calls this method will receive its own stream of events.
-  /// When a consumer finishes or cancels the stream, its continuation is removed.
+  /// The stream is backed by a Combine publisher, allowing multiple concurrent
+  /// consumers to receive the same events.
   ///
   /// ### Example:
   /// ```swift
@@ -50,20 +55,18 @@ public final class EventEmitter<Event: Sendable> {
   /// }
   /// ```
   public var events: AsyncStream<Event> {
-    let id = UUID()
-
-    // Capture a weak reference to self to avoid strong reference cycles
-    weak var weakSelf = self
-
+    // Convert the Combine publisher to an AsyncSequence using .values
+    // and wrap it in an AsyncStream to maintain the public API
     return AsyncStream<Event> { continuation in
-      // Store the continuation for broadcasting
-      self.continuations[id] = continuation
-
-      // Clean up when the stream is terminated
-      continuation.onTermination = { @Sendable _ in
-        Task { @MainActor in
-          weakSelf?.continuations.removeValue(forKey: id)
+      let task = Task {
+        for await event in subject.values {
+          continuation.yield(event)
         }
+        continuation.finish()
+      }
+
+      continuation.onTermination = { @Sendable _ in
+        task.cancel()
       }
     }
   }
@@ -77,19 +80,14 @@ public final class EventEmitter<Event: Sendable> {
   /// emitter.send(.signUpCompleted(signUp: signUp))
   /// ```
   public func send(_ event: Event) {
-    for continuation in continuations.values {
-      continuation.yield(event)
-    }
+    subject.send(event)
   }
 
   /// Finishes all active event streams and removes all consumers.
   ///
   /// Use this to cleanly shut down the event emitter.
   public func finish() {
-    for continuation in continuations.values {
-      continuation.finish()
-    }
-    continuations.removeAll()
+    subject.send(completion: .finished)
   }
 }
 
@@ -104,4 +102,6 @@ public enum AuthEvent: Sendable {
   case signUpCompleted(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)
+  /// The device token was received from the API.
+  case deviceTokenReceived(token: String)
 }
