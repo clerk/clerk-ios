@@ -134,11 +134,8 @@ public final class Clerk {
   /// Manages caching of client and environment data.
   private var cacheManager: CacheManager?
 
-  /// Manages app lifecycle notifications and coordinates foreground/background transitions.
-  private var lifecycleManager: LifecycleManager?
-
-  /// Manages periodic polling of session tokens to keep them refreshed.
-  private var sessionPollingManager: SessionPollingManager?
+  /// Runtime services that manage session polling, lifecycle, and platform-specific features.
+  private var runtimeServices: (any ClerkRuntimeServicesProtocol)?
 
   /// Unified Watch Connectivity sync interface for both iOS and watchOS platforms.
   /// On iOS, this manages syncing to watchOS. On watchOS, this manages syncing to iOS.
@@ -200,27 +197,27 @@ public extension Clerk {
       options: options
     )
 
-    // Set up session polling manager
-    sessionPollingManager = SessionPollingManager(sessionProvider: self)
-    sessionPollingManager?.startPolling()
-
-    // Set up lifecycle manager for foreground/background transitions
-    lifecycleManager = LifecycleManager(handler: self)
-    lifecycleManager?.startObserving()
-
     // Set up Watch Connectivity manager/receiver if enabled
-    #if !os(watchOS)
+    #if os(iOS)
     if options.watchConnectivityEnabled {
       watchConnectivityManager = createWatchConnectivityManager(keychain: dependencies.keychain)
     }
-    #else
+    #elseif os(watchOS)
     if options.watchConnectivityEnabled {
       watchSyncReceiver = WatchSyncReceiver(keychain: dependencies.keychain)
     }
     #endif
 
+    // Set up runtime services (session polling, lifecycle management)
+    runtimeServices = ClerkRuntimeServices(
+      sessionProvider: self,
+      lifecycleHandler: self,
+      watchConnectivitySync: watchConnectivitySync
+    )
+    runtimeServices?.start()
+
     // Set up cache manager and load cached data asynchronously
-    let cacheManager = CacheManager(coordinator: self)
+    let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
 
     // Load cached data asynchronously (don't block on this)
@@ -364,7 +361,7 @@ extension Clerk: SessionProviding {}
 extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
-    sessionPollingManager?.startPolling()
+    runtimeServices?.resume()
 
     // Sync authentication state to watch app if enabled
     watchConnectivitySync?.syncAll()
@@ -389,7 +386,7 @@ extension Clerk: LifecycleEventHandling {
 
   /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
-    sessionPollingManager?.stopPolling()
+    runtimeServices?.pause()
 
     taskCoordinator?.task(priority: .utility) { [weak self] in
       await self?.telemetry.flush()
@@ -413,10 +410,8 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
-    sessionPollingManager?.stopPolling()
-    lifecycleManager?.stopObserving()
-    sessionPollingManager = nil
-    lifecycleManager = nil
+    runtimeServices?.stop()
+    runtimeServices = nil
     #if !os(watchOS)
     watchConnectivityManager = nil
     #else

@@ -18,16 +18,25 @@ struct ClerkHeaderRequestMiddlewareTests {
     configureClerkForTesting()
   }
 
-  @Test
-  func addsDeviceTokenHeaderWhenPresent() async throws {
+  /// Creates a test setup with a fresh keychain and configured dependencies.
+  ///
+  /// - Returns: A fresh InMemoryKeychain instance.
+  private func createTestKeychain() -> InMemoryKeychain {
     let keychain = InMemoryKeychain()
-    try keychain.set("test-device-token", forKey: "clerkDeviceToken")
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
+
+    return keychain
+  }
+
+  @Test
+  func addsDeviceTokenHeaderWhenPresent() async throws {
+    let keychain = createTestKeychain()
+    try keychain.set("test-device-token", forKey: "clerkDeviceToken")
 
     let middleware = ClerkHeaderRequestMiddleware()
     var request = URLRequest(url: URL(string: "https://example.com")!)
@@ -39,13 +48,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
-    let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
+    _ = createTestKeychain()
 
     let middleware = ClerkHeaderRequestMiddleware()
     var request = URLRequest(url: URL(string: "https://example.com")!)
