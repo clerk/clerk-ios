@@ -8,6 +8,33 @@
 import Foundation
 import os.log
 
+/// A structured representation of a log entry containing all relevant information about an error.
+public struct LogEntry: Sendable {
+  /// The log level (will always be `.error` for delegate callbacks).
+  public let level: LogLevel
+
+  /// The error message.
+  public let message: String
+
+  /// The error object if present.
+  public let error: Error?
+
+  /// The source file name where the error occurred.
+  public let file: String
+
+  /// The function name where the error occurred.
+  public let function: String
+
+  /// The line number where the error occurred.
+  public let line: Int
+
+  /// The timestamp when the error was logged.
+  public let timestamp: Date
+
+  /// The full formatted log message (includes emoji, level, timestamp, location, message, and error details).
+  public let formattedMessage: String
+}
+
 /// Log levels for different types of messages
 public enum LogLevel: String, CaseIterable, Comparable, Sendable {
   case error = "ERROR"
@@ -196,9 +223,10 @@ package enum ClerkLogger {
   ) {
 
     let fileName = URL(fileURLWithPath: file).lastPathComponent
-    let timestamp = DateFormatter.logFormatter.string(from: Date())
+    let timestampString = DateFormatter.logFormatter.string(from: Date())
+    let timestamp = Date()
 
-    var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestamp) \(fileName):\(line) \(function) - \(message)"
+    var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestampString) \(fileName):\(line) \(function) - \(message)"
 
     if let error {
       logMessage += "\n   Error: \(error)"
@@ -220,6 +248,31 @@ package enum ClerkLogger {
 
     // Use unified logging for structured logs only (avoid duplicate console output)
     logger.log(level: level.osLogType, "\(logMessage)")
+
+    // Invoke delegate for errors only
+    if level == .error {
+      let logEntry = LogEntry(
+        level: level,
+        message: message,
+        error: error,
+        file: fileName,
+        function: function,
+        line: line,
+        timestamp: timestamp,
+        formattedMessage: logMessage
+      )
+
+      // Capture handler closure while we're on MainActor (where Clerk.shared is safe to access)
+      // This avoids issues if Clerk isn't configured yet or if we're in a detached context
+      let handler = Clerk.shared.options.loggerHandler
+
+      // Invoke handler asynchronously to avoid blocking
+      if let handler {
+        Task.detached {
+          handler(logEntry)
+        }
+      }
+    }
   }
 
   /// Determines if a message at the given level should be logged based on the configured log level
