@@ -50,20 +50,16 @@ jobs:
       - name: Build for ${{ matrix.platform }}
         run: |
           set -euo pipefail
-          if [ "${{ matrix.platform }}" = "macOS" ]; then
-            echo "Building for macOS using Swift Package Manager..."
-            swift build -c release
-          else
-            echo "Building for ${{ matrix.platform }} using xcodebuild..."
-            case "${{ matrix.platform }}" in
-              iOS) destination="platform=iOS Simulator,OS=latest" ;;
-              macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
-              watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
-              tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
-              visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
-            esac
-            xcodebuild build -scheme Clerk -destination "$destination"
-          fi
+          echo "Building for ${{ matrix.platform }} using xcodebuild..."
+          case "${{ matrix.platform }}" in
+            iOS) destination="platform=iOS Simulator,OS=latest" ;;
+            macOS) destination="platform=macOS" ;;
+            macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
+            watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
+            tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
+            visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
+          esac
+          xcodebuild build -scheme Clerk -destination "$destination"
 
   test:
     name: Run tests on macOS
