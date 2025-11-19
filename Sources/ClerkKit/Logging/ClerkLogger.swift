@@ -130,16 +130,18 @@ package enum ClerkLogger {
   /// Log an info message (only logs when log level is set to info or lower)
   /// - Parameters:
   ///   - message: The info message to log
+  ///   - force: If `true`, always logs regardless of log level configuration. Defaults to `false`.
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
   static func info(
     _ message: String,
+    force: Bool = false,
     file: String = #file,
     function: String = #function,
     line: Int = #line
   ) {
-    logSync(level: .info, message: message, file: file, function: function, line: line)
+    logSync(level: .info, message: message, forceLog: force, file: file, function: function, line: line)
   }
 
   /// Log a debug message (only logs when log level is set to debug or lower)

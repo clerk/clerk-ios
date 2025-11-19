@@ -88,5 +88,3 @@ extension NetworkingPipeline {
     )
   }
 }
-
-// TODO: add tests ensuring middleware order and error handling using MockingURLProtocol.
