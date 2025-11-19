@@ -25,7 +25,10 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   nonisolated private static let environmentKey = "clerkEnvironment"
 
   /// The keychain storage used to store the received data.
-  private let keychain: any KeychainStorage
+  @MainActor
+  private var keychain: any KeychainStorage {
+    Clerk.shared.dependencies.keychain
+  }
 
   /// The WCSession instance used for communication.
   private let session: WCSession
@@ -35,10 +38,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   private var isProcessingSync = false
 
   /// Creates a new Watch Sync Receiver.
-  ///
-  /// - Parameter keychain: The keychain storage to store synced data in.
-  init(keychain: any KeychainStorage) {
-    self.keychain = keychain
+  init() {
     self.session = WCSession.default
     super.init()
 
