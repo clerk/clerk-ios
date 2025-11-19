@@ -27,6 +27,7 @@ jobs:
 
   build:
     name: Build on all platforms
+    needs: format-and-lint
     runs-on: macos-latest
     strategy:
       matrix:
@@ -63,6 +64,7 @@ jobs:
 
   test:
     name: Run tests on macOS
+    needs: format-and-lint
     runs-on: macos-latest
     steps:
       - name: Checkout repository
