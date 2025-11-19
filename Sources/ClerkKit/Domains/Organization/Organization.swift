@@ -232,23 +232,6 @@ public extension Organization {
     try await organizationService.inviteOrganizationMember(organizationId: id, emailAddress: emailAddress, role: role)
   }
 
-  //    /// Creates and sends an invitation to the target email addresses for becoming a member with the role passed in the parameters.
-  //    ///
-  //    /// - Parameters:
-  //    ///   - params: ``InviteMembersParams``
-  //    ///
-  //    /// - Returns:
-  //    ///   An array of ``OrganizationInvitation`` objects.
-  //    @discardableResult @MainActor
-  //    public func inviteMembers(params: InviteMembersParams) async throws -> [OrganizationInvitation] {
-  //        let request = Request<ClientResponse<[OrganizationInvitation]>>(
-  //            path: "/v1/organizations/\(id)/invitations/bulk",
-  //            method: .post,
-  //            query: [("_clerk_session_id", Clerk.shared.session?.id)],
-  //            body: params
-  //        )
-  //    }
-
   /// Creates a new domain for the currently active organization.
   ///
   /// - Parameters:
