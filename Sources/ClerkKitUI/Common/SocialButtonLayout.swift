@@ -58,9 +58,9 @@ struct SocialButtonLayout: Layout {
       }
 
       for (column, subview) in rowSubviews.enumerated() {
-        let x = bounds.minX + xOffset + CGFloat(column) * (buttonWidth + spacing)
-        let y = bounds.minY + CGFloat(row) * (rowHeight + spacing)
-        subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(width: buttonWidth, height: rowHeight))
+        let xPosition = bounds.minX + xOffset + CGFloat(column) * (buttonWidth + spacing)
+        let yPosition = bounds.minY + CGFloat(row) * (rowHeight + spacing)
+        subview.place(at: CGPoint(x: xPosition, y: yPosition), proposal: ProposedViewSize(width: buttonWidth, height: rowHeight))
       }
     }
   }

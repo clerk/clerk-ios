@@ -130,7 +130,7 @@ enum AppAttestHelper {
     let assertion = try await createAssertion(payload: payload)
 
     let body = [
-      "client_data": String(decoding: payload, as: UTF8.self),
+      "client_data": String(bytes: payload, encoding: .utf8) ?? "",
       "assertion": assertion,
       "challenge": challenge,
       "platform": "ios",

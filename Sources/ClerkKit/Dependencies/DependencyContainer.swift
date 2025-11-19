@@ -94,32 +94,9 @@ final class DependencyContainer: Dependencies {
     }
 
     // Phase 3: Telemetry collector (depends on options)
-    if options.telemetryEnabled {
-      let telemetryOptions = TelemetryCollectorOptions(
-        samplingRate: 1.0,
-        maxBufferSize: 5,
-        flushInterval: 30.0,
-        disableThrottling: false
-      )
-
-      // Determine instance type from publishable key
-      let instanceType: InstanceEnvironmentType = publishableKey.starts(with: "pk_live_") ? .production : .development
-
-      telemetryCollector = TelemetryCollector(
-        options: telemetryOptions,
-        networkRequester: URLSession.shared,
-        environment: StandaloneTelemetryEnvironment(
-          publishableKey: publishableKey,
-          instanceType: instanceType,
-          telemetryEnabled: options.telemetryEnabled
-        )
-      )
-    } else {
-      telemetryCollector = NoOpTelemetryCollector()
-    }
+    telemetryCollector = Self.createTelemetryCollector(publishableKey: publishableKey, options: options)
 
     // Phase 4: Services (depend on apiClient and other dependencies)
-    // Pass apiClient directly to services
     clientService = ClientService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
@@ -132,5 +109,35 @@ final class DependencyContainer: Dependencies {
     emailAddressService = EmailAddressService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
+  }
+
+  @MainActor
+  private static func createTelemetryCollector(
+    publishableKey: String,
+    options: Clerk.ClerkOptions
+  ) -> any TelemetryCollectorProtocol {
+    guard options.telemetryEnabled else {
+      return NoOpTelemetryCollector()
+    }
+
+    let telemetryOptions = TelemetryCollectorOptions(
+      samplingRate: 1.0,
+      maxBufferSize: 5,
+      flushInterval: 30.0,
+      disableThrottling: false
+    )
+
+    // Determine instance type from publishable key
+    let instanceType: InstanceEnvironmentType = publishableKey.starts(with: "pk_live_") ? .production : .development
+
+    return TelemetryCollector(
+      options: telemetryOptions,
+      networkRequester: URLSession.shared,
+      environment: StandaloneTelemetryEnvironment(
+        publishableKey: publishableKey,
+        instanceType: instanceType,
+        telemetryEnabled: options.telemetryEnabled
+      )
+    )
   }
 }

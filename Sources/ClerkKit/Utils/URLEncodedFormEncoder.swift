@@ -22,6 +22,8 @@
 //  THE SOFTWARE.
 //
 
+// swiftlint:disable all
+
 import Foundation
 
 /// An object that encodes instances into URL-encoded query strings.
@@ -1315,3 +1317,5 @@ extension Protected: Sendable {}
 #else
 extension Protected: @unchecked Sendable {}
 #endif
+
+// swiftlint:enable all

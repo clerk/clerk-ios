@@ -1,6 +1,5 @@
 --indent 2
 --linebreaks lf
---maxwidth 1000
 --swiftversion 5.10
 --disable preferKeyPath
 --disable hoistPatternLet

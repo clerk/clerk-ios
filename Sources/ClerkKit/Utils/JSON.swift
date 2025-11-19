@@ -22,6 +22,8 @@
 
 // https://github.com/iwill/generic-json-swift
 
+// swiftlint:disable all
+
 import Foundation
 
 // MARK: - JSON
@@ -363,3 +365,5 @@ public extension JSON {
     return tail.isEmpty ? value : value.queryKeyPath(tail)
   }
 }
+
+// swiftlint:enable all

@@ -33,6 +33,7 @@ protocol OrganizationServiceProtocol: Sendable {
   @MainActor func rejectOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest
 }
 
+// swiftlint:disable:next type_body_length
 final class OrganizationService: OrganizationServiceProtocol {
   private let apiClient: APIClient
 
@@ -70,11 +71,11 @@ final class OrganizationService: OrganizationServiceProtocol {
   func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization {
     let boundary = UUID().uuidString
     var data = Data()
-    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".data(using: .utf8)!)
-    data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)\r\n".utf8))
+    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
+    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
     data.append(imageData)
-    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
 
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations/\(organizationId)/logo",

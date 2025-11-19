@@ -98,7 +98,7 @@ actor TelemetryEventThrottler {
     fields.append("it:\(event.it)")
     fields.append("sdk:\(event.sdk)")
     fields.append("sdkv:\(event.sdkv)")
-    if let pk = event.pk { fields.append("pk:\(pk)") }
+    if let publishableKey = event.pk { fields.append("pk:\(publishableKey)") }
 
     let payloadKey = stableJSONString(event.payload)
     fields.append("payload:\(payloadKey)")
@@ -110,16 +110,16 @@ actor TelemetryEventThrottler {
     // Convert to a stable JSON string with sorted keys
     func encodeJSON(_ value: JSON) -> Any {
       switch value {
-      case let .string(s): return s
-      case let .number(n): return n
-      case let .bool(b): return b
+      case let .string(stringValue): return stringValue
+      case let .number(numberValue): return numberValue
+      case let .bool(boolValue): return boolValue
       case .null: return NSNull()
       case let .array(arr): return arr.map(encodeJSON)
       case let .object(obj):
         let sorted = obj.sorted { $0.key < $1.key }
         var dict: [String: Any] = [:]
-        for (k, v) in sorted {
-          dict[k] = encodeJSON(v)
+        for (key, value) in sorted {
+          dict[key] = encodeJSON(value)
         }
         return dict
       }
@@ -127,8 +127,8 @@ actor TelemetryEventThrottler {
 
     let sorted = value.sorted { $0.key < $1.key }
     var dict: [String: Any] = [:]
-    for (k, v) in sorted {
-      dict[k] = encodeJSON(v)
+    for (key, value) in sorted {
+      dict[key] = encodeJSON(value)
     }
 
     guard let data = try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys]) else {

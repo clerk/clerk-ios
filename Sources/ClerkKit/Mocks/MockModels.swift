@@ -5,6 +5,8 @@
 //  Created on 2025-01-27.
 //
 
+// swiftlint:disable file_length
+
 import Foundation
 
 // MARK: - Clerk
@@ -274,6 +276,7 @@ public extension Verification {
     )
   }
 
+  // swiftlint:disable:next identifier_name
   static var mockExternalAccountUnverifiedVerification: Verification {
     Verification(
       status: .unverified,

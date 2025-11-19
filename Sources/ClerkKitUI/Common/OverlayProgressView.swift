@@ -47,7 +47,7 @@ extension View {
 
 #Preview {
   AsyncButton {
-    try! await Task.sleep(for: .seconds(3))
+    try? await Task.sleep(for: .seconds(3))
   } label: { isRunning in
     Text("Button")
       .overlayProgressView(isActive: isRunning)
@@ -58,7 +58,7 @@ extension View {
 
 #Preview("Custom Progress View") {
   AsyncButton {
-    try! await Task.sleep(for: .seconds(3))
+    try? await Task.sleep(for: .seconds(3))
   } label: { isRunning in
     Text("Button")
       .overlayProgressView(isActive: isRunning) {
