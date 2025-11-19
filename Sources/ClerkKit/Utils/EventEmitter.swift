@@ -101,6 +101,14 @@ public enum AuthEvent: Sendable {
   case signUpCompleted(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)
+  /// The active session changed.
+  ///
+  /// This event is emitted whenever the active session changes, including:
+  /// - When a user signs in (nil → session)
+  /// - When a user signs out (session → nil)
+  /// - When the active session changes (session → different session)
+  /// - When the same session is updated (e.g., status, updatedAt changed)
+  case sessionChanged(session: Session?)
 }
 
 /// An enumeration of general Clerk events.

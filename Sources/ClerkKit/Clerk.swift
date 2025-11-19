@@ -37,6 +37,11 @@ public final class Clerk {
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
+      // Emit session change event if the session changed
+      if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
+        authEventEmitter.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
+      }
+
       if let client {
         cacheManager?.saveClient(client)
         dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
@@ -70,8 +75,7 @@ public final class Clerk {
 
   /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
   public var session: Session? {
-    guard let client else { return nil }
-    return client.activeSessions.first(where: { $0.id == client.lastActiveSessionId })
+    client?.activeSession
   }
 
   /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
