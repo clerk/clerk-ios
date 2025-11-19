@@ -275,14 +275,11 @@ public extension Clerk {
     }
 
     do {
-      // Fetch client and environment concurrently
-      // Both of these are automatically applied to the shared instance:
-      async let client = Client.get()  // via middleware
-      async let environment = Environment.get()  // via the function itself
+      async let client = Client.get()
+      async let environment = Environment.get()
 
       // Wait for both to complete - if either fails, we exit early
       // since both are required for the SDK to work properly
-      // If client fails, environment will be cancelled automatically
       let env = try await environment
       _ = try await client
       attestDeviceIfNeeded(environment: env)
@@ -409,26 +406,20 @@ extension Clerk {
     clerkEventListenerTask = Task { @MainActor [weak self] in
       guard let self else { return }
       for await event in clerkEventEmitter.events {
-        // Process synchronously since we're already on MainActor
-        if case .deviceTokenReceived(let token) = event {
-          // Save device token to keychain
+        switch event {
+        case .deviceTokenReceived(let token):
           do {
             try self.dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
           } catch {
             ClerkLogger.logError(error, message: "Failed to save device token to keychain")
           }
 
-          // Sync to watch app if enabled
           self.watchConnectivityCoordinator?.sync()
-        }
 
-        if case .clientReceived(let client) = event {
-          // Update client from event
+        case .clientReceived(let client):
           self.client = client
-        }
 
-        if case .environmentReceived(let environment) = event {
-          // Update environment from event
+        case .environmentReceived(let environment):
           self.environment = environment
         }
       }
