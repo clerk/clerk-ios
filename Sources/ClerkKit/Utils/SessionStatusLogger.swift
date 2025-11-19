@@ -27,7 +27,8 @@ final class SessionStatusLogger {
     }
 
     let tasksDescription: String
-    if let session = currentClient.activeSession,
+    if let sessionId = currentClient.lastActiveSessionId,
+       let session = currentClient.sessions.first(where: { $0.id == sessionId }),
        let tasks = session.tasks,
        !tasks.isEmpty
     {
@@ -38,7 +39,7 @@ final class SessionStatusLogger {
     }
 
     let message = "Your session is currently pending. Complete the remaining session tasks to activate it.\(tasksDescription)"
-    ClerkLogger.info(message)
+    ClerkLogger.info(message, force: true)
   }
 
   /// Determines whether pending session status should be logged.
@@ -55,7 +56,9 @@ final class SessionStatusLogger {
   ///   - currentClient: The current client state.
   /// - Returns: `true` if logging should occur, `false` otherwise.
   func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
-    guard let session = currentClient.activeSession else {
+    guard let sessionId = currentClient.lastActiveSessionId,
+          let session = currentClient.sessions.first(where: { $0.id == sessionId })
+    else {
       return false
     }
 
@@ -65,7 +68,8 @@ final class SessionStatusLogger {
 
     // Log if this is the first client or if there's no previous session
     guard let previousClient,
-          let previousSession = previousClient.activeSession
+          let previousId = previousClient.lastActiveSessionId,
+          let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
     else {
       return true
     }
