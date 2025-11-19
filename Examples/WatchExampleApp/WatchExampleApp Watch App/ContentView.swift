@@ -22,28 +22,45 @@ struct ContentView: View {
 
   var body: some View {
     ScrollView {
-      VStack(spacing: 12) {
+      VStack(spacing: 16) {
         if let user = clerk.user {
           // Display shared auth state synced from the iOS app
-          VStack(alignment: .leading, spacing: 8) {
-            Text("Signed In")
-              .font(.headline)
-              .fontWeight(.semibold)
-
-            if let fullName = fullName {
-              Text(fullName)
-                .font(.caption)
+          VStack(spacing: 8) {
+            // Circular user image
+            AsyncImage(url: URL(string: user.imageUrl)) { phase in
+              switch phase {
+              case .success(let image):
+                image
+                  .resizable()
+                  .scaledToFill()
+              case .failure, .empty:
+                Image(systemName: "person.circle.fill")
+                  .resizable()
+                  .foregroundColor(.secondary)
+              @unknown default:
+                Image(systemName: "person.circle.fill")
+                  .resizable()
+                  .foregroundColor(.secondary)
+              }
             }
+            .frame(width: 70, height: 70)
+            .clipShape(.circle)
 
-            if let email = user.primaryEmailAddress?.emailAddress {
-              Text(email)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            VStack(spacing: 0) {
+              if let fullName = fullName {
+                Text(fullName)
+                  .font(.caption)
+                  .lineLimit(1)
+              }
+
+              if let username = user.username, !username.isEmpty {
+                Text(username)
+                  .font(.caption2)
+                  .foregroundColor(.secondary)
+                  .lineLimit(1)
+              }
             }
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding()
 
           Button {
             Task {
@@ -53,21 +70,21 @@ struct ContentView: View {
             Text("Sign Out")
           }
           .buttonStyle(.borderedProminent)
+          .controlSize(.small)
         } else {
           VStack(spacing: 8) {
             Text("Not Signed In")
-              .font(.headline)
+              .font(.caption)
               .fontWeight(.semibold)
 
             Text("Sign in on your iPhone to sync your authentication state to your Apple Watch.")
               .font(.caption2)
               .foregroundColor(.secondary)
-              .multilineTextAlignment(.center)
+              .lineLimit(3)
           }
-          .padding()
+          .padding(.horizontal, 8)
         }
       }
-      .padding()
     }
   }
 }
