@@ -110,19 +110,7 @@ struct OTPField: View {
     )
     .overlay {
       if isSelected {
-        Rectangle()
-          .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
-          .foregroundStyle(theme.colors.primary)
-          .animation(
-            .easeInOut.speed(0.75).repeatForever(),
-            body: { content in
-              content
-                .opacity(cursorAnimating ? 1 : 0)
-            }
-          )
-          .onAppear {
-            cursorAnimating.toggle()
-          }
+        cursorOverlay
       }
     }
     .font(theme.fonts.body)
@@ -137,6 +125,23 @@ struct OTPField: View {
       isFocused: fieldState == .error || isSelected,
       state: fieldState == .error ? .error : .default
     )
+  }
+
+  @ViewBuilder
+  private var cursorOverlay: some View {
+    Rectangle()
+      .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
+      .foregroundStyle(theme.colors.primary)
+      .animation(
+        .easeInOut.speed(0.75).repeatForever(),
+        body: { content in
+          content
+            .opacity(cursorAnimating ? 1 : 0)
+        }
+      )
+      .onAppear {
+        cursorAnimating.toggle()
+      }
   }
 }
 

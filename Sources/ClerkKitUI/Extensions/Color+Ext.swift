@@ -21,13 +21,13 @@ extension Color {
   /// Mixes the current color with another color by the given amount (0 = self, 1 = other).
   func mix(with color: Color, amount: CGFloat) -> Color {
     let from = rgbComponents
-    let to = color.rgbComponents
+    let targetColor = color.rgbComponents
 
-    let r = from.red + (to.red - from.red) * amount
-    let g = from.green + (to.green - from.green) * amount
-    let b = from.blue + (to.blue - from.blue) * amount
+    let red = from.red + (targetColor.red - from.red) * amount
+    let green = from.green + (targetColor.green - from.green) * amount
+    let blue = from.blue + (targetColor.blue - from.blue) * amount
 
-    return Color(red: Double(r), green: Double(g), blue: Double(b))
+    return Color(red: Double(red), green: Double(green), blue: Double(blue))
   }
 
   /// Lightens the color by mixing it with white.
@@ -40,16 +40,22 @@ extension Color {
     mix(with: .black, amount: amount)
   }
 
-  private var rgbComponents: (red: CGFloat, green: CGFloat, blue: CGFloat) {
+  private struct RGBComponents {
+    let red: CGFloat
+    let green: CGFloat
+    let blue: CGFloat
+  }
+
+  private var rgbComponents: RGBComponents {
     #if os(iOS) || os(tvOS) || os(watchOS)
     let uiColor = UIColor(self)
     var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
     uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-    return (red, green, blue)
+    return RGBComponents(red: red, green: green, blue: blue)
     #elseif os(macOS)
     let nsColor = NSColor(self)
     let rgbColor = nsColor.usingColorSpace(.sRGB) ?? .black
-    return (rgbColor.redComponent, rgbColor.greenComponent, rgbColor.blueComponent)
+    return RGBComponents(red: rgbColor.redComponent, green: rgbColor.greenComponent, blue: rgbColor.blueComponent)
     #endif
   }
 }

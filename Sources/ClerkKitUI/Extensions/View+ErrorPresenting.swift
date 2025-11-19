@@ -39,24 +39,25 @@ struct ClerkErrorViewModifier: ViewModifier {
         ),
         onDismiss: {
           onDismiss?(error)
+        },
+        content: {
+          if let error {
+            ErrorView(error: error, action: actionProvider?(error))
+              .padding()
+              .onGeometryChange(
+                for: CGFloat.self,
+                of: { geometry in
+                  geometry.size.height
+                },
+                action: { newValue in
+                  sheetHeight = newValue
+                }
+              )
+              .presentationDetents(detents)
+              .presentationDragIndicator(.visible)
+          }
         }
-      ) {
-        if let error {
-          ErrorView(error: error, action: actionProvider?(error))
-            .padding()
-            .onGeometryChange(
-              for: CGFloat.self,
-              of: { geometry in
-                geometry.size.height
-              },
-              action: { newValue in
-                sheetHeight = newValue
-              }
-            )
-            .presentationDetents(detents)
-            .presentationDragIndicator(.visible)
-        }
-      }
+      )
   }
 }
 
@@ -85,7 +86,7 @@ extension View {
       .init(
         text: "Call to action",
         action: {
-          try! await Task.sleep(for: .seconds(1))
+          try? await Task.sleep(for: .seconds(1))
         }
       )
     }

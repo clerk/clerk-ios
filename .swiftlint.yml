@@ -6,6 +6,7 @@ disabled_rules:
   - line_length  # SwiftFormat handles this (maxwidth 1000)
   - indentation_width  # SwiftFormat handles this (indent 2)
   - todo  # Allow TODO comments
+  - nesting  # Allow nested types
 
 # Opt-in rules
 opt_in_rules:
@@ -22,12 +23,7 @@ excluded:
   - .build
   - DerivedData
   - build
-
-# Line length (matching SwiftFormat maxwidth)
-line_length: 1000
-
-# Indentation (matching SwiftFormat indent)
-indentation_width: 2
+  - Tests
 
 # Reporter type
 reporter: "xcode"

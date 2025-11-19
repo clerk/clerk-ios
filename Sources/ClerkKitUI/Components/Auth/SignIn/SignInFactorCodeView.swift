@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 4/21/25.
 //
 
+// swiftlint:disable file_length
+
 #if os(iOS)
 
 import ClerkKit
@@ -328,41 +330,56 @@ extension SignInFactorCodeView {
     verificationState = .verifying
 
     do {
-      switch factor.strategy {
-      case "email_code":
-        if isSecondFactor {
-          signIn = try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
-        } else {
-          signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
-        }
-      case "phone_code":
-        if isSecondFactor {
-          signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
-        } else {
-          signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
-        }
-      case "reset_password_email_code":
-        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
-      case "reset_password_phone_code":
-        signIn = try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
-      case "totp":
-        signIn = try await signIn.attemptSecondFactor(strategy: .totp(code: code))
-      default:
-        throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
-      }
-
+      signIn = try await attemptVerification(signIn: signIn)
       otpFieldIsFocused = false
       verificationState = .success
       authState.setToStepForStatus(signIn: signIn)
     } catch {
-      otpFieldState = .error
-      verificationState = .error(error)
+      handleVerificationError(error)
+    }
+  }
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
-        self.error = error
-        ClerkLogger.error("Failed to attempt factor for sign in", error: error)
-        otpFieldIsFocused = false
-      }
+  private func attemptVerification(signIn: SignIn) async throws -> SignIn {
+    switch factor.strategy {
+    case "email_code":
+      return try await attemptEmailCode(signIn: signIn)
+    case "phone_code":
+      return try await attemptPhoneCode(signIn: signIn)
+    case "reset_password_email_code":
+      return try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
+    case "reset_password_phone_code":
+      return try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
+    case "totp":
+      return try await signIn.attemptSecondFactor(strategy: .totp(code: code))
+    default:
+      throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
+    }
+  }
+
+  private func attemptEmailCode(signIn: SignIn) async throws -> SignIn {
+    if isSecondFactor {
+      try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
+    } else {
+      try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
+    }
+  }
+
+  private func attemptPhoneCode(signIn: SignIn) async throws -> SignIn {
+    if isSecondFactor {
+      try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
+    } else {
+      try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
+    }
+  }
+
+  private func handleVerificationError(_ error: Error) {
+    otpFieldState = .error
+    verificationState = .error(error)
+
+    if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
+      self.error = error
+      ClerkLogger.error("Failed to attempt factor for sign in", error: error)
+      otpFieldIsFocused = false
     }
   }
 }
