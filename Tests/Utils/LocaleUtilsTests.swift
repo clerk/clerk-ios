@@ -22,7 +22,7 @@ struct LocaleUtilsTests {
     // Should be a valid BCP-47 language tag format (contains at least a language code)
     let parts = locale.split(separator: "-")
     #expect(parts.count >= 1)
-    #expect(parts[0].count >= 2)  // Language code should be at least 2 characters
+    #expect(parts[0].count >= 2) // Language code should be at least 2 characters
 
     // Should not contain spaces
     #expect(!locale.contains(" "))

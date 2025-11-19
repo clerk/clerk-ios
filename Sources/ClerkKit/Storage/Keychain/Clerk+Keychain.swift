@@ -51,4 +51,3 @@ public extension Clerk {
     }
   }
 }
-

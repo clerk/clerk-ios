@@ -41,4 +41,3 @@ struct ContentView: View {
   ContentView()
     .environment(Clerk.preview())
 }
-

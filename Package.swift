@@ -12,17 +12,17 @@ let package = Package(
     .macOS(.v14),
     .watchOS(.v10),
     .tvOS(.v17),
-    .visionOS(.v1)
+    .visionOS(.v1),
   ],
   products: [
     .library(name: "ClerkKit", targets: ["ClerkKit"]),
-    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"])
+    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
-    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0")
+    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0"),
   ],
   targets: [
     .target(
@@ -30,7 +30,7 @@ let package = Package(
       dependencies: [],
       path: "Sources/ClerkKit",
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
+        .enableExperimentalFeature("StrictConcurrency"),
       ]
     ),
     .target(
@@ -39,14 +39,14 @@ let package = Package(
         "ClerkKit",
         .product(name: "Nuke", package: "Nuke"),
         .product(name: "NukeUI", package: "Nuke"),
-        .product(name: "PhoneNumberKit", package: "PhoneNumberKit")
+        .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
       ],
       path: "Sources/ClerkKitUI",
       resources: [
-        .process("Resources")
+        .process("Resources"),
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
+        .enableExperimentalFeature("StrictConcurrency"),
       ]
     ),
     .testTarget(
@@ -54,11 +54,11 @@ let package = Package(
       dependencies: [
         "ClerkKit",
         .product(name: "Mocker", package: "Mocker"),
-        .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras")
+        .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
+        .enableExperimentalFeature("StrictConcurrency"),
       ]
-    )
+    ),
   ]
 )

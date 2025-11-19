@@ -46,4 +46,3 @@ enum SessionUtils {
     client?.activeSession
   }
 }
-

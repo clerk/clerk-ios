@@ -91,7 +91,6 @@ public enum LogLevel: String, CaseIterable, Comparable, Sendable {
 
 /// A unified logging system for the Clerk SDK that respects log level configuration.
 package enum ClerkLogger {
-
   /// The unified logging instance for Clerk
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
@@ -223,7 +222,6 @@ package enum ClerkLogger {
     function: String,
     line: Int
   ) {
-
     let fileName = URL(fileURLWithPath: file).lastPathComponent
     let timestampString = DateFormatter.logFormatter.string(from: Date())
     let timestamp = Date()

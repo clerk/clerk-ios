@@ -44,7 +44,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
   /// Creates a new Watch Connectivity manager.
   override init() {
-    self.session = WCSession.default
+    session = WCSession.default
     super.init()
 
     if WCSession.isSupported() {
@@ -175,7 +175,7 @@ func createWatchConnectivityManager() -> any WatchConnectivitySyncing {
 
 extension WatchConnectivityManager: WCSessionDelegate {
   nonisolated func session(
-    _ session: WCSession,
+    _: WCSession,
     activationDidCompleteWith activationState: WCSessionActivationState,
     error: Error?
   ) {
@@ -193,19 +193,19 @@ extension WatchConnectivityManager: WCSessionDelegate {
   }
 
   #if os(iOS)
-  nonisolated func sessionDidBecomeInactive(_ session: WCSession) {
+  nonisolated func sessionDidBecomeInactive(_: WCSession) {
     Task { @MainActor in
       self.isSessionActivated = false
     }
   }
 
-  nonisolated func sessionDidDeactivate(_ session: WCSession) {
+  nonisolated func sessionDidDeactivate(_: WCSession) {
     Task { @MainActor in
       self.session.activate()
     }
   }
 
-  nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+  nonisolated func session(_: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
     // Extract values before crossing actor boundaries to avoid Sendable warnings
     // Use string literals instead of static properties to avoid actor isolation issues
     let deviceToken = applicationContext["clerkDeviceToken"] as? String
@@ -215,13 +215,13 @@ extension WatchConnectivityManager: WCSessionDelegate {
     Task { @MainActor [weak self] in
       guard let self else { return }
       if let deviceToken {
-        self.processSyncedDeviceToken(deviceToken)
+        processSyncedDeviceToken(deviceToken)
       }
       if let clientData {
-        self.processSyncedClient(clientData)
+        processSyncedClient(clientData)
       }
       if let environmentData {
-        self.processSyncedEnvironment(environmentData)
+        processSyncedEnvironment(environmentData)
       }
     }
   }

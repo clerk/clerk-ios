@@ -283,6 +283,7 @@ extension SignInFactorCodeView {
             strategy: .emailCode(emailAddressId: factor.emailAddressId)
           )
         }
+
       case "phone_code":
         if isSecondFactor {
           try await signIn.prepareSecondFactor(

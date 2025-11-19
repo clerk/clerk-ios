@@ -91,7 +91,7 @@ public extension Clerk {
     // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
     var environment: Clerk.Environment?
     if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
-      let loadedEnvironment = try? Clerk.Environment(fromFile: url)
+       let loadedEnvironment = try? Clerk.Environment(fromFile: url)
     {
       environment = loadedEnvironment
     }
@@ -106,11 +106,11 @@ public extension Clerk {
     // All other services use their default mock implementations
     let clientService = MockClientService {
       // Determine which client to use based on isSignedIn
-      return previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut
+      previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut
     }
 
     let environmentService = MockEnvironmentService {
-      return mockEnvironment
+      mockEnvironment
     }
 
     // Use default mock services for everything else

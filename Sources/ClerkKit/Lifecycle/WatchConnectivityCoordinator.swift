@@ -22,11 +22,11 @@ package final class WatchConnectivityCoordinator {
   init() {
     // Create watch connectivity manager/receiver
     #if os(iOS)
-    self.watchConnectivitySync = createWatchConnectivityManager()
+    watchConnectivitySync = createWatchConnectivityManager()
     #elseif os(watchOS)
-    self.watchConnectivitySync = WatchSyncReceiver()
+    watchConnectivitySync = WatchSyncReceiver()
     #else
-    self.watchConnectivitySync = nil
+    watchConnectivitySync = nil
     #endif
   }
 
@@ -63,11 +63,9 @@ package final class WatchConnectivityCoordinator {
       for await event in Clerk.shared.clerkEventEmitter.events {
         if case .deviceTokenReceived = event {
           // Sync to watch app
-          self.sync()
+          sync()
         }
       }
     }
   }
-
 }
-

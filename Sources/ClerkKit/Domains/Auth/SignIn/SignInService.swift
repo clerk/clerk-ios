@@ -134,7 +134,8 @@ final class SignInService: SignInServiceProtocol {
         (
           "rotating_token_nonce",
           rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        ))
+        )
+      )
     }
 
     let request = Request<ClientResponse<SignIn>>(
@@ -152,7 +153,7 @@ final class SignInService: SignInServiceProtocol {
     let signIn = try await SignIn.create(strategy: strategy.signInStrategy)
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-      let url = URL(string: externalVerificationRedirectUrl)
+          let url = URL(string: externalVerificationRedirectUrl)
     else {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
@@ -165,7 +166,7 @@ final class SignInService: SignInServiceProtocol {
   @MainActor
   func authenticateWithRedirect(signIn: SignIn, prefersEphemeralWebBrowserSession: Bool) async throws -> TransferFlowResult {
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-      let url = URL(string: externalVerificationRedirectUrl)
+          let url = URL(string: externalVerificationRedirectUrl)
     else {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
@@ -221,8 +222,8 @@ final class SignInService: SignInServiceProtocol {
         "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
         "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
         "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-        "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String()
-      ]
+        "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
+      ],
     ]
 
     return try JSON(publicKeyCredential).debugDescription

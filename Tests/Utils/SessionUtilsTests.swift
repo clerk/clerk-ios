@@ -239,4 +239,3 @@ struct SessionUtilsTests {
     #expect(changed == true)
   }
 }
-

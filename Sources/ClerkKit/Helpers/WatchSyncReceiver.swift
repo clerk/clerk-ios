@@ -16,13 +16,13 @@ import WatchConnectivity
 /// For Client, it implements conflict resolution using timestamps (iOS takes priority).
 final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   /// The key used to receive deviceToken in the application context.
-  nonisolated private static let deviceTokenKey = "clerkDeviceToken"
+  private nonisolated static let deviceTokenKey = "clerkDeviceToken"
 
   /// The key used to receive Client in the application context.
-  nonisolated private static let clientKey = "clerkClient"
+  private nonisolated static let clientKey = "clerkClient"
 
   /// The key used to receive Environment in the application context.
-  nonisolated private static let environmentKey = "clerkEnvironment"
+  private nonisolated static let environmentKey = "clerkEnvironment"
 
   /// The keychain storage used to store the received data.
   @MainActor
@@ -39,7 +39,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
 
   /// Creates a new Watch Sync Receiver.
   override init() {
-    self.session = WCSession.default
+    session = WCSession.default
     super.init()
 
     if WCSession.isSupported() {
@@ -177,7 +177,7 @@ extension WatchSyncReceiver: WCSessionDelegate {
   ) {
     if let error {
       let nsError = error as NSError
-      if nsError.domain == "WCErrorDomain" && nsError.code == 7001 {
+      if nsError.domain == "WCErrorDomain", nsError.code == 7001 {
         return
       }
       ClerkLogger.logError(error, message: "Watch Connectivity session activation failed")
@@ -192,32 +192,32 @@ extension WatchSyncReceiver: WCSessionDelegate {
       guard let self else { return }
       if activationState == .activated {
         if let deviceToken {
-          self.processSyncedDeviceToken(deviceToken)
+          processSyncedDeviceToken(deviceToken)
         }
         if let clientData {
-          self.processSyncedClient(clientData)
+          processSyncedClient(clientData)
         }
         if let environmentData {
-          self.processSyncedEnvironment(environmentData)
+          processSyncedEnvironment(environmentData)
         }
       }
     }
   }
 
-  nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+  nonisolated func session(_: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
     let deviceToken = applicationContext[Self.deviceTokenKey] as? String
     let clientData = applicationContext[Self.clientKey] as? Data
     let environmentData = applicationContext[Self.environmentKey] as? Data
     Task { @MainActor [weak self] in
       guard let self else { return }
       if let deviceToken {
-        self.processSyncedDeviceToken(deviceToken)
+        processSyncedDeviceToken(deviceToken)
       }
       if let clientData {
-        self.processSyncedClient(clientData)
+        processSyncedClient(clientData)
       }
       if let environmentData {
-        self.processSyncedEnvironment(environmentData)
+        processSyncedEnvironment(environmentData)
       }
     }
   }
