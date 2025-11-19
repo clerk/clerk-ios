@@ -1,15 +1,18 @@
 # WatchExampleApp
 
-This example demonstrates how to sync authentication state from an iOS app to its companion Apple Watch app using Clerk's Watch Connectivity integration.
+This example demonstrates how to sync authentication state bidirectionally between an iOS app and its companion Apple Watch app using Clerk's Watch Connectivity integration.
 
 ## Overview
 
 This example consists of two apps:
 
 - **iOS App** - Handles authentication (sign-in/sign-up) and automatically syncs authentication state to the watch app
-- **watchOS App** - Receives synced authentication state and uses it automatically for API requests
+- **watchOS App** - Receives synced authentication state and can also sync changes back to the iOS app
 
-When you sign in on the iOS app, your authentication state automatically syncs to the watch app. The watch app can then make authenticated API requests without requiring separate sign-in.
+The apps use two-way sync to keep authentication state synchronized:
+- When you sign in on the iOS app, your authentication state automatically syncs to the watch app
+- When authentication state changes on the watch app, it automatically syncs back to the iOS app
+- Both apps can make authenticated API requests without requiring separate sign-in
 
 ## Setup
 
@@ -57,8 +60,8 @@ Clerk.configure(
 1. Select the **WatchExampleApp** scheme from the workspace navigator
 2. Build and run the **iOS app first** - this installs the companion app
 3. Then build and run the **watchOS app** - it will connect to the iOS app
-4. Sign in on the iOS app - authentication state will automatically sync to the watch
-5. The watch app will automatically use the synced authentication state for API requests
+4. Sign in on either app - authentication state will automatically sync bidirectionally between both apps
+5. Both apps will automatically use the synced authentication state for API requests
 
 **Note:** If you see "WCSession counterpart app not installed" errors, make sure the iOS app is installed before running the watch app.
 
