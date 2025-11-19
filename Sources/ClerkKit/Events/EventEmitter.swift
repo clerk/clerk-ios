@@ -90,36 +90,3 @@ public final class EventEmitter<Event: Sendable>: @unchecked Sendable {
   }
 }
 
-/// An enumeration of authentication-related events.
-///
-/// `AuthEvent` represents specific events that occur during authentication processes,
-/// such as signing in or signing up.
-public enum AuthEvent: Sendable {
-  /// The current sign in was completed.
-  case signInCompleted(signIn: SignIn)
-  /// The current sign up was completed.
-  case signUpCompleted(signUp: SignUp)
-  /// A session was signed out.
-  case signedOut(session: Session)
-  /// The active session changed.
-  ///
-  /// This event is emitted whenever the active session changes, including:
-  /// - When a user signs in (nil → session)
-  /// - When a user signs out (session → nil)
-  /// - When the active session changes (session → different session)
-  /// - When the same session is updated (e.g., status, updatedAt changed)
-  case sessionChanged(session: Session?)
-}
-
-/// An enumeration of general Clerk events.
-///
-/// `ClerkEvent` represents general events that occur during Clerk operations,
-/// such as receiving data from the API.
-enum ClerkEvent: Sendable {
-  /// The device token was received from the API.
-  case deviceTokenReceived(token: String)
-  /// The client was received from the API.
-  case clientReceived(client: Client)
-  /// The environment was received from the API.
-  case environmentReceived(environment: Clerk.Environment)
-}
