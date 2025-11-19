@@ -5,8 +5,10 @@ disabled_rules:
   - trailing_whitespace  # SwiftFormat handles this
   - line_length  # SwiftFormat handles this (maxwidth 1000)
   - indentation_width  # SwiftFormat handles this (indent 2)
+  - trailing_comma  # Allow trailing commas (SwiftFormat adds them)
   - todo  # Allow TODO comments
   - nesting  # Allow nested types
+  - opening_brace  # Allow wrapped opening braces (on new line)
 
 # Opt-in rules
 opt_in_rules:
@@ -27,4 +29,3 @@ excluded:
 
 # Reporter type
 reporter: "xcode"
-
