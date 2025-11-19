@@ -62,6 +62,8 @@ Clerk.configure(
 
 **Note:** If you see "WCSession counterpart app not installed" errors, make sure the iOS app is installed before running the watch app.
 
+**Note:** When running in the simulator, make sure you have a simulator with a paired Apple Watch setup. You can create a paired watch simulator in Xcode by going to **Window > Devices and Simulators** and adding a watch simulator paired to your iPhone simulator.
+
 ## Requirements
 
 - iOS 17.0+
