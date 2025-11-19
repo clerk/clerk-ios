@@ -49,12 +49,12 @@ format:
 # Check formatting without modifying files
 format-check:
 	@echo "Checking Swift file formatting..."
-	@swiftformat --lint .
+	swiftformat --lint .
 
 # Run SwiftLint
 lint:
 	@echo "Running SwiftLint..."
-	@swiftlint
+	swiftlint
 
 # Run SwiftLint with auto-fix
 lint-fix:

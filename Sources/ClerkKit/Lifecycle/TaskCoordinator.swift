@@ -60,7 +60,7 @@ final class TaskCoordinator {
   /// Cancels all tracked tasks and cleans up resources.
   ///
   /// This is called automatically when the coordinator is deallocated.
-  nonisolated deinit {
+  deinit {
     cancelAll()
   }
 }
