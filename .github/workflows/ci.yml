@@ -9,6 +9,22 @@ on:
       - main
 
 jobs:
+  format-and-lint:
+    name: Check formatting and linting
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Check formatting and linting
+        run: make check
+
   build:
     name: Build on all platforms
     runs-on: macos-latest
