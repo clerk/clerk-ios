@@ -3,4 +3,5 @@
 --maxwidth 1000
 --swiftversion 5.10
 --disable preferKeyPath
+--disable hoistPatternLet
 --ifdef no-indent
