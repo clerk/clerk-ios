@@ -1,0 +1,34 @@
+# SwiftLint Configuration for Clerk iOS SDK
+
+# Disabled rules that conflict with SwiftFormat or project preferences
+disabled_rules:
+  - trailing_whitespace  # SwiftFormat handles this
+  - line_length  # SwiftFormat handles this (maxwidth 1000)
+  - indentation_width  # SwiftFormat handles this (indent 2)
+  - todo  # Allow TODO comments
+
+# Opt-in rules
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - first_where
+  - sorted_first_last
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+# Paths to ignore
+excluded:
+  - Examples
+  - .build
+  - DerivedData
+  - build
+
+# Line length (matching SwiftFormat maxwidth)
+line_length: 1000
+
+# Indentation (matching SwiftFormat indent)
+indentation_width: 2
+
+# Reporter type
+reporter: "xcode"
+
