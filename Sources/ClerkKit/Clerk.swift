@@ -198,10 +198,7 @@ public extension Clerk {
 
     // Set up watch connectivity coordinator only if enabled
     if options.watchConnectivityEnabled {
-      watchConnectivityCoordinator = WatchConnectivityCoordinator(
-        keychain: dependencies.keychain,
-        enabled: true
-      )
+      watchConnectivityCoordinator = WatchConnectivityCoordinator()
       watchConnectivityCoordinator?.start()
     }
 

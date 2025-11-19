@@ -11,33 +11,20 @@ import Foundation
 ///
 /// This class manages all watch connectivity concerns including:
 /// - Listening for device token updates and saving them to keychain
-/// - Syncing authentication state (deviceToken, Client, Environment) to watch app when enabled
+/// - Syncing authentication state (deviceToken, Client, Environment) to watch app
 /// - Handling lifecycle events (foreground sync)
 @MainActor
 package final class WatchConnectivityCoordinator {
   /// Unified Watch Connectivity sync interface for both iOS and watchOS platforms.
   private let watchConnectivitySync: (any WatchConnectivitySyncing)?
 
-  /// Whether watch connectivity syncing is enabled.
-  private let syncEnabled: Bool
-
   /// Creates a new watch connectivity coordinator.
-  ///
-  /// - Parameters:
-  ///   - keychain: The keychain storage for device tokens and watch connectivity sync.
-  ///   - enabled: Whether watch connectivity sync is enabled.
-  init(keychain: any KeychainStorage, enabled: Bool) {
-    self.syncEnabled = enabled
-
-    // Create watch connectivity manager/receiver if enabled
+  init() {
+    // Create watch connectivity manager/receiver
     #if os(iOS)
-    self.watchConnectivitySync = enabled
-      ? createWatchConnectivityManager(keychain: keychain)
-      : nil
+    self.watchConnectivitySync = createWatchConnectivityManager()
     #elseif os(watchOS)
-    self.watchConnectivitySync = enabled
-      ? WatchSyncReceiver(keychain: keychain)
-      : nil
+    self.watchConnectivitySync = WatchSyncReceiver()
     #else
     self.watchConnectivitySync = nil
     #endif
@@ -45,7 +32,7 @@ package final class WatchConnectivityCoordinator {
 
   /// Starts the coordinator and begins listening for events.
   ///
-  /// Registers async event listener for watch sync if enabled.
+  /// Registers async event listener for watch sync.
   /// Device token saving happens synchronously in the middleware.
   func start() {
     startEventListener()
@@ -57,7 +44,7 @@ package final class WatchConnectivityCoordinator {
     eventListenerTask = nil
   }
 
-  /// Syncs authentication state to watch app if watch connectivity is enabled.
+  /// Syncs authentication state to watch app.
   func sync() {
     watchConnectivitySync?.syncAll()
   }
@@ -68,16 +55,14 @@ package final class WatchConnectivityCoordinator {
   /// Starts listening for auth events and handling device token updates.
   ///
   /// When a device token is received:
-  /// 1. Syncs to watch app if watch connectivity is enabled
+  /// 1. Syncs to watch app
   /// Note: Device token saving happens synchronously in the middleware
   private func startEventListener() {
-    guard syncEnabled else { return }
-
     eventListenerTask = Task { @MainActor [weak self] in
       guard let self else { return }
       for await event in Clerk.shared.clerkEventEmitter.events {
         if case .deviceTokenReceived = event {
-          // Sync to watch app if enabled
+          // Sync to watch app
           self.sync()
         }
       }

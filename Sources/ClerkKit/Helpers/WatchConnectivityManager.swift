@@ -29,7 +29,10 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   private let session: WCSession
 
   /// The keychain storage used to read the deviceToken.
-  private let keychain: any KeychainStorage
+  @MainActor
+  private var keychain: any KeychainStorage {
+    Clerk.shared.dependencies.keychain
+  }
 
   /// Whether the session is currently activated. Must be accessed from MainActor.
   @MainActor
@@ -40,11 +43,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   private var isProcessingSync = false
 
   /// Creates a new Watch Connectivity manager.
-  ///
-  /// - Parameter keychain: The keychain storage to read deviceToken from.
-  init(keychain: any KeychainStorage) {
+  init() {
     self.session = WCSession.default
-    self.keychain = keychain
     super.init()
 
     if WCSession.isSupported() {
@@ -168,8 +168,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
 #if os(iOS)
 @MainActor
-func createWatchConnectivityManager(keychain: any KeychainStorage) -> any WatchConnectivitySyncing {
-  WatchConnectivityManager(keychain: keychain)
+func createWatchConnectivityManager() -> any WatchConnectivitySyncing {
+  WatchConnectivityManager()
 }
 #endif
 
