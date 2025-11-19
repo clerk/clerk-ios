@@ -437,5 +437,9 @@ extension Clerk {
     clerkEventListenerTask = nil
     watchConnectivityCoordinator?.stop()
     watchConnectivityCoordinator = nil
+    cachedDataLoadingTask?.cancel()
+    cachedDataLoadingTask = nil
+    taskCoordinator?.cancelAll()
+    taskCoordinator = nil
   }
 }
