@@ -38,7 +38,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   private var isProcessingSync = false
 
   /// Creates a new Watch Sync Receiver.
-  init() {
+  override init() {
     self.session = WCSession.default
     super.init()
 
