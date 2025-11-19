@@ -43,7 +43,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   private var isProcessingSync = false
 
   /// Creates a new Watch Connectivity manager.
-  init() {
+  override init() {
     self.session = WCSession.default
     super.init()
 
