@@ -24,9 +24,7 @@ struct ContentView: View {
     ScrollView {
       VStack(spacing: 16) {
         if let user = clerk.user {
-          // Display shared auth state synced from the iOS app
           VStack(spacing: 8) {
-            // Circular user image
             AsyncImage(url: URL(string: user.imageUrl)) { phase in
               switch phase {
               case .success(let image):
