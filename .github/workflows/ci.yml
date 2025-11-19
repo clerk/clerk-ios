@@ -22,12 +22,35 @@ jobs:
       - name: Install SwiftLint
         run: brew install swiftlint
 
-      - name: Check formatting and linting
-        run: make check
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          git config core.autocrlf false
+          git config core.eol lf
+          set +e
+          swiftformat --lint . 2>&1
+          exit_code=$?
+          set -e
+          if [ $exit_code -ne 0 ]; then
+            echo "❌ SwiftFormat check failed. Run 'make format' locally to fix."
+            exit 1
+          fi
+
+      - name: Check linting
+        run: |
+          set -euo pipefail
+          set +e
+          swiftlint 2>&1
+          exit_code=$?
+          set -e
+          if [ $exit_code -ne 0 ]; then
+            echo "❌ SwiftLint check failed. Run 'make lint-fix' locally to fix."
+            exit 1
+          fi
 
   build:
-    name: Build on all platforms
-    needs: format-and-lint
+    name: Build ${{ matrix.platform }}
+    needs: test
     runs-on: macos-latest
     strategy:
       matrix:
@@ -53,14 +76,14 @@ jobs:
           set -euo pipefail
           echo "Building for ${{ matrix.platform }} using xcodebuild..."
           case "${{ matrix.platform }}" in
-            iOS) destination="platform=iOS Simulator,OS=latest" ;;
+            iOS) destination="platform=iOS Simulator,name=iPhone 16,OS=18.6" ;;
             macOS) destination="platform=macOS" ;;
             macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
-            watchOS) destination="platform=watchOS Simulator,OS=latest" ;;
-            tvOS) destination="platform=tvOS Simulator,OS=latest" ;;
-            visionOS) destination="platform=visionOS Simulator,OS=latest" ;;
+            watchOS) destination="platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5" ;;
+            tvOS) destination="platform=tvOS Simulator,name=Apple TV,OS=18.5" ;;
+            visionOS) destination="platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5" ;;
           esac
-          xcodebuild build -scheme Clerk -destination "$destination"
+          xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 
   test:
     name: Run tests on macOS

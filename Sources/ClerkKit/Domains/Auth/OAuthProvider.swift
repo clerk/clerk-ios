@@ -146,9 +146,9 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   }
 
   private struct OAuthProviderData {
-    public var provider: String
-    public let strategy: String
-    public let name: String
+    var provider: String
+    let strategy: String
+    let name: String
   }
 
   private var providerData: OAuthProviderData {
