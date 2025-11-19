@@ -20,12 +20,10 @@ struct AppLogoView: View {
         image
           .resizable()
           .scaledToFit()
-      } else {
-        if EnvironmentDetection.isRunningInPreviews {
-          Image(systemName: "circle.square.fill")
-            .resizable()
-            .scaledToFit()
-        }
+      } else if EnvironmentDetection.isRunningInPreviews {
+        Image(systemName: "circle.square.fill")
+          .resizable()
+          .scaledToFit()
       }
     }
   }
