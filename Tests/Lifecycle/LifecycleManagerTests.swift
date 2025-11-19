@@ -6,6 +6,7 @@
 //
 
 #if canImport(UIKit)
+import ConcurrencyExtras
 import Foundation
 import Testing
 import UIKit
