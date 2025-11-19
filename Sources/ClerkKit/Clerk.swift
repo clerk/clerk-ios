@@ -132,6 +132,7 @@ public final class Clerk {
   }
 
   // MARK: - Lifecycle Managers
+
   // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
 
   /// Manages caching of client and environment data.
@@ -410,12 +411,12 @@ extension Clerk {
         switch event {
         case .deviceTokenReceived(let token):
           do {
-            try self.dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+            try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
           } catch {
             ClerkLogger.logError(error, message: "Failed to save device token to keychain")
           }
 
-          self.watchConnectivityCoordinator?.sync()
+          watchConnectivityCoordinator?.sync()
 
         case .clientReceived(let client):
           self.client = client

@@ -47,7 +47,7 @@ struct ContentView: View {
             .clipShape(.circle)
 
             VStack(spacing: 0) {
-              if let fullName = fullName {
+              if let fullName {
                 Text(fullName)
                   .font(.caption)
                   .lineLimit(1)
@@ -94,7 +94,8 @@ struct ContentView: View {
     .environment(
       Clerk.preview { preview in
         preview.isSignedIn = false
-      })
+      }
+    )
 }
 
 #Preview("Signed In") {
