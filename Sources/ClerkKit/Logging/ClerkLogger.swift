@@ -89,6 +89,13 @@ public enum LogLevel: String, CaseIterable, Comparable, Sendable {
   }
 }
 
+/// Location information for logging
+private struct LogLocation {
+  let file: String
+  let function: String
+  let line: Int
+}
+
 /// A unified logging system for the Clerk SDK that respects log level configuration.
 package enum ClerkLogger {
   /// The unified logging instance for Clerk
@@ -201,14 +208,16 @@ package enum ClerkLogger {
       // This ensures errors always log, and other levels will be filtered properly in async contexts
       Task {
         guard await shouldLogTask.value else { return }
-        await performLog(level: level, message: message, error: error, file: file, function: function, line: line)
+        let location = LogLocation(file: file, function: function, line: line)
+        await performLog(level: level, message: message, error: error, location: location)
       }
       return
     }
 
     // For forceLog (errors), log immediately
     Task {
-      await performLog(level: level, message: message, error: error, file: file, function: function, line: line)
+      let location = LogLocation(file: file, function: function, line: line)
+      await performLog(level: level, message: message, error: error, location: location)
     }
   }
 
@@ -218,10 +227,11 @@ package enum ClerkLogger {
     level: LogLevel,
     message: String,
     error: Error?,
-    file: String,
-    function: String,
-    line: Int
+    location: LogLocation
   ) {
+    let file = location.file
+    let function = location.function
+    let line = location.line
     let fileName = URL(fileURLWithPath: file).lastPathComponent
     let timestampString = DateFormatter.logFormatter.string(from: Date())
     let timestamp = Date()

@@ -5,6 +5,8 @@
 //  Created by Mike Pitre on 1/30/24.
 //
 
+// swiftlint:disable file_length
+
 import AuthenticationServices
 import Foundation
 

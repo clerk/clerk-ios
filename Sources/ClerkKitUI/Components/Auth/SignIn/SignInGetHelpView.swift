@@ -45,8 +45,8 @@ struct SignInGetHelpView: View {
 }
 
 extension SignInGetHelpView {
-  func openEmail(to: String) {
-    let urlString = "mailto:\(to)"
+  func openEmail(to emailAddress: String) {
+    let urlString = "mailto:\(emailAddress)"
 
     if let url = URL(string: urlString) {
       UIApplication.shared.open(url)
