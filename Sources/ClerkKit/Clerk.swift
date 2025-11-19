@@ -206,7 +206,7 @@ public extension Clerk {
     }
 
     // Set up cache manager and load cached data asynchronously
-    let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
+    let cacheManager = CacheManager(coordinator: self)
     self.cacheManager = cacheManager
 
     // Load cached data asynchronously (don't block on this)

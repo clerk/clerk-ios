@@ -39,16 +39,15 @@ final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
 
   /// The keychain storage for persisting cached data.
-  private let keychain: any KeychainStorage
+  private var keychain: any KeychainStorage {
+    Clerk.shared.dependencies.keychain
+  }
 
   /// Creates a new cache manager.
   ///
-  /// - Parameters:
-  ///   - coordinator: The object that coordinates cache updates with Clerk properties.
-  ///   - keychain: The keychain storage for persisting cached data.
-  init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
+  /// - Parameter coordinator: The object that coordinates cache updates with Clerk properties.
+  init(coordinator: any CacheCoordinator) {
     self.coordinator = coordinator
-    self.keychain = keychain
   }
 
   /// Loads cached client and environment data from keychain.
