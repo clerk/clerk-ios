@@ -110,7 +110,8 @@ final class SignUpService: SignUpServiceProtocol {
         (
           "rotating_token_nonce",
           rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        ))
+        )
+      )
     }
 
     let request = Request<ClientResponse<SignUp>>(
