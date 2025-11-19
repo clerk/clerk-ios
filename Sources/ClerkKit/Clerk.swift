@@ -142,9 +142,6 @@ public final class Clerk {
   /// Coordinates watch connectivity syncing.
   package var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
-  /// Task that listens for auth events and handles them.
-  private var authEventListenerTask: Task<Void, Never>?
-
   /// Task that listens for general Clerk events and handles them.
   private var clerkEventListenerTask: Task<Void, Never>?
 
@@ -197,7 +194,6 @@ public extension Clerk {
     lifecycleManager?.startObserving()
 
     // Set up event listeners
-    startAuthEventListener()
     startClerkEventListener()
 
     // Set up watch connectivity coordinator only if enabled
@@ -408,17 +404,6 @@ extension Clerk {
     }
   }
 
-  /// Starts listening for auth events and handles them.
-  private func startAuthEventListener() {
-    authEventListenerTask = Task { @MainActor [weak self] in
-      guard let self else { return }
-      for await _ in authEventEmitter.events {
-        // Process auth events synchronously since we're already on MainActor
-        // Auth events are handled elsewhere (e.g., by ClerkAuthEventEmitterResponseMiddleware)
-      }
-    }
-  }
-
   /// Starts listening for general Clerk events and handles them.
   private func startClerkEventListener() {
     clerkEventListenerTask = Task { @MainActor [weak self] in
@@ -457,8 +442,6 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    authEventListenerTask?.cancel()
-    authEventListenerTask = nil
     clerkEventListenerTask?.cancel()
     clerkEventListenerTask = nil
     watchConnectivityCoordinator?.stop()
