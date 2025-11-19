@@ -28,17 +28,11 @@ enum DeviceHelper {
   /// The device's interface type based on `UIDevice.userInterfaceIdiom`.
   ///
   /// Returns one of: "ipad", "iphone", "mac", "carplay", "tv", "vision", "watch", or "unspecified".
+  @MainActor
   static var deviceType: String {
     #if os(watchOS)
     return "watch"
     #elseif canImport(UIKit)
-    #if compiler(>=5.9.2)
-    if #available(iOS 17.0, *) {
-      if UIDevice.current.userInterfaceIdiom == .vision {
-        return "vision"
-      }
-    }
-    #endif
     switch UIDevice.current.userInterfaceIdiom {
     case .pad:
       return "ipad"
@@ -50,6 +44,8 @@ enum DeviceHelper {
       return "carplay"
     case .tv:
       return "tv"
+    case .vision:
+      return "vision"
     case .unspecified:
       fallthrough
     @unknown default:
