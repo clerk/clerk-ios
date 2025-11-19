@@ -4,7 +4,7 @@ This is a companion project to the [iOS Quickstart guide](https://clerk.com/docs
 
 ## Overview
 
-This quickstart example shows how to:
+This quickstart example demonstrates how to use the Prebuilt Clerk Views:
 
 - Configure the Clerk iOS SDK in a SwiftUI application
 - Implement sign-in and sign-up flows using Clerk's pre-built components
@@ -19,16 +19,18 @@ This quickstart example shows how to:
 2. Create a new application in your Clerk Dashboard
 3. Copy your **Publishable Key** from the API Keys section
 
-### 2. Configure the Example
+### 2. Add Your Publishable Key
 
-1. Open `QuickstartApp.swift`
-2. Replace `"YOUR_PUBLISHABLE_KEY"` with your actual Clerk publishable key:
+1. Open `Quickstart/QuickstartApp.swift`
+2. Replace `"pk_test_..."` with your actual Clerk publishable key:
 
 ```swift
-clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+Clerk.configure(
+  publishableKey: "YOUR_PUBLISHABLE_KEY"
+)
 ```
 
-### 3. Run the App
+## Running the Example
 
 1. Select the **Quickstart** scheme from the workspace navigator
 2. Choose your target device/simulator
