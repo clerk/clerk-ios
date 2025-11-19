@@ -14,9 +14,9 @@ package enum EnvironmentDetection {
   /// This is detected by checking if the process is running in Xcode's preview environment.
   package static var isRunningInPreviews: Bool {
     #if DEBUG
-      return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     #else
-      return false
+    return false
     #endif
   }
 
@@ -26,28 +26,28 @@ package enum EnvironmentDetection {
   /// that are set when running tests in Xcode or via Swift Testing.
   package static var isRunningInTests: Bool {
     #if DEBUG
-      let processInfo = ProcessInfo.processInfo
+    let processInfo = ProcessInfo.processInfo
 
-      // Check for Xcode test arguments
-      if processInfo.arguments.contains("-XCTest") {
-        return true
-      }
+    // Check for Xcode test arguments
+    if processInfo.arguments.contains("-XCTest") {
+      return true
+    }
 
-      // Check for Swift Testing environment variable
-      if processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] != nil {
-        return true
-      }
+    // Check for Swift Testing environment variable
+    if processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] != nil {
+      return true
+    }
 
-      // Check for test bundle identifier
-      if let bundleIdentifier = Bundle.main.bundleIdentifier,
-         bundleIdentifier.contains("xctest") || bundleIdentifier.contains("Tests") {
-        return true
-      }
+    // Check for test bundle identifier
+    if let bundleIdentifier = Bundle.main.bundleIdentifier,
+       bundleIdentifier.contains("xctest") || bundleIdentifier.contains("Tests")
+    {
+      return true
+    }
 
-      return false
+    return false
     #else
-      return false
+    return false
     #endif
   }
 }
-

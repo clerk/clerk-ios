@@ -66,12 +66,11 @@ final class DependencyContainer: Dependencies {
     sessionStatusLogger = SessionStatusLogger()
 
     // Determine baseURL from configured manager (use default if not configured)
-    let baseURL: URL
-    if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
-      baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
+    let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
+      configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
     } else {
       // Temporary container fallback
-      baseURL = URL(string: "https://clerk.clerk.dev")!
+      URL(string: "https://clerk.clerk.dev")!
     }
 
     networkingPipeline = .clerkDefault

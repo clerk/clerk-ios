@@ -357,7 +357,7 @@ extension SignUp {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignUp = try await get(rotatingTokenNonce: nonce)
       if let verification = updatedSignUp.verifications.first(where: { $0.key == "external_account" })?.value,
-        let error = verification.error
+         let error = verification.error
       {
         throw error
       }
@@ -373,7 +373,7 @@ extension SignUp {
         }
       case .signUp(let signUp):
         if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-          let error = verification.error
+           let error = verification.error
         {
           throw error
         }

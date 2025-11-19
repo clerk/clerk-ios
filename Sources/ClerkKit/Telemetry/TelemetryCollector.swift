@@ -273,7 +273,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     )
   }
 
-
   // MARK: - Testing hooks
 
   func debugBufferedEvents() async -> [TelemetryEvent] {

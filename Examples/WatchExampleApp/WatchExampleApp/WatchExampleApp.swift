@@ -11,7 +11,6 @@ import SwiftUI
 
 @main
 struct WatchExampleApp: App {
-
   init() {
     // Configure Clerk with Watch Connectivity sync enabled
     // This will automatically sync the deviceToken to the companion watch app

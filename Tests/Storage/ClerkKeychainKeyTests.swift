@@ -35,4 +35,3 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.attestKeyId.rawValue == "AttestKeyId")
   }
 }
-
