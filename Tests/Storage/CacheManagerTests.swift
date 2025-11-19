@@ -61,7 +61,7 @@ struct CacheManagerTests {
     )
 
     let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator, keychain: keychain)
+    let cacheManager = CacheManager(coordinator: coordinator)
 
     return (keychain, coordinator, cacheManager)
   }
