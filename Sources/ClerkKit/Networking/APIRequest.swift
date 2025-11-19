@@ -40,9 +40,7 @@ enum RequestBody: @unchecked Sendable {
 }
 
 /// Canonical empty payload used for requests where no response body is anticipated.
-struct EmptyResponse: Codable, Sendable {
-  init() {}
-}
+struct EmptyResponse: Codable, Sendable {}
 
 /// Describes a single API request with a strongly typed response.
 struct Request<Response: Decodable & Sendable>: Sendable {
@@ -62,7 +60,12 @@ struct Request<Response: Decodable & Sendable>: Sendable {
     body: (any Encodable & Sendable)? = nil,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
       if Response.self == EmptyResponse.self {
-        return EmptyResponse() as! Response
+        guard let response = EmptyResponse() as? Response else {
+          throw DecodingError.dataCorrupted(
+            DecodingError.Context(codingPath: [], debugDescription: "Failed to cast EmptyResponse to Response")
+          )
+        }
+        return response
       }
       return try decoder.decode(Response.self, from: data)
     }
@@ -119,7 +122,12 @@ struct Request<Response: Decodable & Sendable>: Sendable {
 
   func decode(_ data: Data, using decoder: JSONDecoder) throws -> Response {
     if Response.self == EmptyResponse.self {
-      return EmptyResponse() as! Response
+      guard let response = EmptyResponse() as? Response else {
+        throw DecodingError.dataCorrupted(
+          DecodingError.Context(codingPath: [], debugDescription: "Failed to cast EmptyResponse to Response")
+        )
+      }
+      return response
     }
     return try decodeClosure(data, decoder)
   }

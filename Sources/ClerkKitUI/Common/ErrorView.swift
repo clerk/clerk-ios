@@ -81,7 +81,7 @@ struct ErrorView: View {
     action: .init(
       text: "Call to action",
       action: {
-        try! await Task.sleep(for: .seconds(2))
+        try? await Task.sleep(for: .seconds(2))
       }
     )
   )

@@ -50,13 +50,13 @@ struct TelemetryEvent: Codable, Sendable {
   /// The event name (e.g. "method_invoked").
   let event: String
   /// The instance type string (e.g. "development", "production").
-  let it: String
+  let it: String // swiftlint:disable:this identifier_name
   /// The SDK name (e.g. "clerk-ios").
   let sdk: String
   /// The SDK version string.
   let sdkv: String
   /// The publishable key, if available.
-  let pk: String?
+  let pk: String? // swiftlint:disable:this identifier_name
   /// Arbitrary JSON payload for the event.
   let payload: [String: JSON]
 }
