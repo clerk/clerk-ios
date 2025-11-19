@@ -2,15 +2,14 @@
 
 This directory contains example projects demonstrating how to use the Clerk Swift package.
 
-## Structure
+## Available Examples
 
-Each example is a standalone Xcode project that demonstrates specific features or use cases of the Clerk package.
+- **Quickstart** - Demonstrates how to use the Prebuilt Clerk Views
+- **WatchExampleApp** - Sync authentication state from iOS to a companion Apple Watch app
 
-## Opening Examples
+## Running Examples
 
 1. Open `Clerk.xcworkspace` in the root directory
 2. Select a project/scheme and run
 
-## Available Examples
-
-- **Quickstart** - Basic Clerk integration with sign-in/sign-up flows and user management
+Each example includes its own README with setup instructions.
