@@ -81,43 +81,54 @@ final class AuthState {
     case .abandoned:
       path = []
     case .missingRequirements:
-      if let firstFieldToVerify = signUp.firstFieldToVerify {
-        switch firstFieldToVerify {
-        case "email_address":
-          guard let emailAddress = signUp.emailAddress else {
-            path = []
-            return
-          }
+      handleMissingRequirements(signUp: signUp)
+    case .complete, .unknown:
+      return
+    }
+  }
 
-          path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
-        case "phone_number":
-          guard let phoneNumber = signUp.phoneNumber else {
-            path = []
-            return
-          }
+  @MainActor
+  private func handleMissingRequirements(signUp: SignUp) {
+    if let firstFieldToVerify = signUp.firstFieldToVerify {
+      handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
+    } else if let nextFieldToCollect = signUp.firstFieldToCollect {
+      handleFieldToCollect(field: nextFieldToCollect)
+    }
+  }
 
-          path.append(AuthView.Destination.signUpCode(.phone(phoneNumber)))
-        default:
-          path = []
-        }
-      } else if let nextFieldToCollect = signUp.firstFieldToCollect {
-        switch nextFieldToCollect {
-        case "password":
-          path.append(AuthView.Destination.signUpCollectField(.password))
-        case "email_address":
-          path.append(AuthView.Destination.signUpCollectField(.emailAddress))
-        case "phone_number":
-          path.append(AuthView.Destination.signUpCollectField(.phoneNumber))
-        case "username":
-          path.append(AuthView.Destination.signUpCollectField(.username))
-        default:
-          path.append(AuthView.Destination.signUpCompleteProfile)
-        }
+  @MainActor
+  private func handleFieldToVerify(signUp: SignUp, field: String) {
+    switch field {
+    case "email_address":
+      guard let emailAddress = signUp.emailAddress else {
+        path = []
+        return
       }
-    case .complete:
-      return
-    case .unknown:
-      return
+      path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+    case "phone_number":
+      guard let phoneNumber = signUp.phoneNumber else {
+        path = []
+        return
+      }
+      path.append(AuthView.Destination.signUpCode(.phone(phoneNumber)))
+    default:
+      path = []
+    }
+  }
+
+  @MainActor
+  private func handleFieldToCollect(field: String) {
+    switch field {
+    case "password":
+      path.append(AuthView.Destination.signUpCollectField(.password))
+    case "email_address":
+      path.append(AuthView.Destination.signUpCollectField(.emailAddress))
+    case "phone_number":
+      path.append(AuthView.Destination.signUpCollectField(.phoneNumber))
+    case "username":
+      path.append(AuthView.Destination.signUpCollectField(.username))
+    default:
+      path.append(AuthView.Destination.signUpCompleteProfile)
     }
   }
 }

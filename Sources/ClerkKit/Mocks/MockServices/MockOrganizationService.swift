@@ -58,10 +58,10 @@ public final class MockOrganizationService: OrganizationServiceProtocol {
   public nonisolated(unsafe) var deleteOrganizationDomainHandler: ((String, String) async throws -> DeletedObject)?
 
   /// Custom handler for the `prepareOrganizationDomainAffiliationVerification(organizationId:domainId:affiliationEmailAddress:)` method.
-  public nonisolated(unsafe) var prepareOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)?
+  public nonisolated(unsafe) var prepareOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
   /// Custom handler for the `attemptOrganizationDomainAffiliationVerification(organizationId:domainId:code:)` method.
-  public nonisolated(unsafe) var attemptOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)?
+  public nonisolated(unsafe) var attemptOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
   /// Custom handler for the `revokeOrganizationInvitation(organizationId:invitationId:)` method.
   public nonisolated(unsafe) var revokeOrganizationInvitationHandler: ((String, String) async throws -> OrganizationInvitation)?
@@ -76,10 +76,10 @@ public final class MockOrganizationService: OrganizationServiceProtocol {
   public nonisolated(unsafe) var acceptOrganizationSuggestionHandler: ((String) async throws -> OrganizationSuggestion)?
 
   /// Custom handler for the `acceptOrganizationMembershipRequest(organizationId:requestId:)` method.
-  public nonisolated(unsafe) var acceptOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)?
+  public nonisolated(unsafe) var acceptOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)? // swiftlint:disable:this identifier_name
 
   /// Custom handler for the `rejectOrganizationMembershipRequest(organizationId:requestId:)` method.
-  public nonisolated(unsafe) var rejectOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)?
+  public nonisolated(unsafe) var rejectOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)? // swiftlint:disable:this identifier_name
 
   public init(
     updateOrganization: ((String, String, String?) async throws -> Organization)? = nil,
@@ -97,7 +97,9 @@ public final class MockOrganizationService: OrganizationServiceProtocol {
     getOrganizationDomain: ((String, String) async throws -> OrganizationDomain)? = nil,
     getOrganizationMembershipRequests: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>)? = nil,
     deleteOrganizationDomain: ((String, String) async throws -> DeletedObject)? = nil,
+    // swiftlint:disable:next identifier_name
     prepareOrganizationDomainAffiliationVerification: ((String, String, String) async throws -> OrganizationDomain)? = nil,
+    // swiftlint:disable:next identifier_name
     attemptOrganizationDomainAffiliationVerification: ((String, String, String) async throws -> OrganizationDomain)? = nil,
     revokeOrganizationInvitation: ((String, String) async throws -> OrganizationInvitation)? = nil,
     destroyOrganizationMembership: ((String, String) async throws -> OrganizationMembership)? = nil,

@@ -54,10 +54,8 @@ struct NetworkingPipeline: Sendable {
     error: any Error,
     attempts: Int
   ) async throws -> Bool {
-    for middleware in retryMiddleware {
-      if try await middleware.shouldRetry(request: request, response: response, error: error, attempts: attempts) {
-        return true
-      }
+    for middleware in retryMiddleware where try await middleware.shouldRetry(request: request, response: response, error: error, attempts: attempts) {
+      return true
     }
     return false
   }

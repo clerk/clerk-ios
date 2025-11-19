@@ -9,7 +9,7 @@ import Foundation
 import RegexBuilder
 
 /// A type that represents the OAuth provider.
-public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable {
+public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable { // swiftlint:disable:this type_body_length
   case facebook
   case google
   case hubspot
@@ -20,7 +20,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   case twitter
   case twitch
   case linkedin
-  case linkedin_oidc
+  case linkedinOidc
   case dropbox
   case atlassian
   case bitbucket
@@ -56,7 +56,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
       .twitter,
       .twitch,
       .linkedin,
-      .linkedin_oidc,
+      .linkedinOidc,
       .dropbox,
       .atlassian,
       .bitbucket,
@@ -221,7 +221,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         strategy: "oauth_linkedin",
         name: "LinkedIn"
       )
-    case .linkedin_oidc:
+    case .linkedinOidc:
       .init(
         provider: "linkedin_oidc",
         strategy: "oauth_linkedin_oidc",
