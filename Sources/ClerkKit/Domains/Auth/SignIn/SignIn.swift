@@ -408,7 +408,7 @@ extension SignIn {
         }
       case .signUp(let signUp):
         if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-          let error = verification.error
+           let error = verification.error
         {
           throw error
         }

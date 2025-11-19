@@ -37,7 +37,7 @@ public final class EventEmitter<Event: Sendable>: @unchecked Sendable {
   /// until the stream terminates.
   /// Marked as nonisolated(unsafe) because AsyncStream.Continuation operations
   /// (yield, finish) are thread-safe.
-  nonisolated(unsafe) private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
+  private nonisolated(unsafe) var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
 
   /// Returns a new `AsyncStream` that receives all future events.
   ///
@@ -89,4 +89,3 @@ public final class EventEmitter<Event: Sendable>: @unchecked Sendable {
     }
   }
 }
-

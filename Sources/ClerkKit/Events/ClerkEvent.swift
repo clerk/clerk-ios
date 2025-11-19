@@ -19,4 +19,3 @@ enum ClerkEvent: Sendable {
   /// The environment was received from the API.
   case environmentReceived(environment: Clerk.Environment)
 }
-

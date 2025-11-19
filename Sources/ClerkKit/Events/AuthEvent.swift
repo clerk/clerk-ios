@@ -27,4 +27,3 @@ public enum AuthEvent: Sendable {
   /// - When the same session is updated (e.g., status, updatedAt changed)
   case sessionChanged(session: Session?)
 }
-

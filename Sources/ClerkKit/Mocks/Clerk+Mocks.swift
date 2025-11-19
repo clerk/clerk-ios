@@ -44,51 +44,51 @@ import Foundation
 package final class MockBuilder {
   /// Mock client service for customizing `Client.get()` behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var clientService: MockClientService = MockClientService()
+  package var clientService: MockClientService = .init()
 
   /// Mock user service for customizing `User` service methods behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var userService: MockUserService = MockUserService()
+  package var userService: MockUserService = .init()
 
   /// Mock sign-in service for customizing sign-in behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var signInService: MockSignInService = MockSignInService()
+  package var signInService: MockSignInService = .init()
 
   /// Mock sign-up service for customizing sign-up behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var signUpService: MockSignUpService = MockSignUpService()
+  package var signUpService: MockSignUpService = .init()
 
   /// Mock session service for customizing session behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var sessionService: MockSessionService = MockSessionService()
+  package var sessionService: MockSessionService = .init()
 
   /// Mock passkey service for customizing passkey behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var passkeyService: MockPasskeyService = MockPasskeyService()
+  package var passkeyService: MockPasskeyService = .init()
 
   /// Mock organization service for customizing organization behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var organizationService: MockOrganizationService = MockOrganizationService()
+  package var organizationService: MockOrganizationService = .init()
 
   /// Mock environment service for customizing `Environment.get()` behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var environmentService: MockEnvironmentService = MockEnvironmentService()
+  package var environmentService: MockEnvironmentService = .init()
 
   /// Mock clerk service for customizing clerk operations.
   /// You can modify handler properties directly or replace the entire service.
-  package var clerkService: MockClerkService = MockClerkService()
+  package var clerkService: MockClerkService = .init()
 
   /// Mock email address service for customizing email address behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var emailAddressService: MockEmailAddressService = MockEmailAddressService()
+  package var emailAddressService: MockEmailAddressService = .init()
 
   /// Mock phone number service for customizing phone number behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var phoneNumberService: MockPhoneNumberService = MockPhoneNumberService()
+  package var phoneNumberService: MockPhoneNumberService = .init()
 
   /// Mock external account service for customizing external account behavior.
   /// You can modify handler properties directly or replace the entire service.
-  package var externalAccountService: MockExternalAccountService = MockExternalAccountService()
+  package var externalAccountService: MockExternalAccountService = .init()
 
   /// Custom mock environment for configuring environment properties.
   /// If set, this environment will be used instead of the default `.mock` environment.
@@ -119,7 +119,7 @@ package final class MockBuilder {
   package init() {}
 }
 
-public extension Clerk {
+package extension Clerk {
   /// Configures Clerk.shared with mock services and environment.
   ///
   /// This function allows you to inject custom mock services (like `MockClientService`) and configure
@@ -180,7 +180,7 @@ public extension Clerk {
   /// ```
   @MainActor
   @discardableResult
-  package static func configureWithMocks(
+  static func configureWithMocks(
     builder: ((MockBuilder) -> Void)? = nil
   ) -> Clerk {
     #if DEBUG
@@ -196,7 +196,7 @@ public extension Clerk {
 
     // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
     if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
-      let environment = try? Clerk.Environment(fromFile: url)
+       let environment = try? Clerk.Environment(fromFile: url)
     {
       mockBuilder.environment = environment
     }
@@ -210,23 +210,21 @@ public extension Clerk {
     let mockClient = mockBuilder.client ?? .mock
 
     // If builder has a custom environment, update the environmentService to return it
-    let environmentService: MockEnvironmentService
-    if mockBuilder.environment != nil {
-      environmentService = MockEnvironmentService {
+    let environmentService: MockEnvironmentService = if mockBuilder.environment != nil {
+      MockEnvironmentService {
         mockEnvironment
       }
     } else {
-      environmentService = mockBuilder.environmentService
+      mockBuilder.environmentService
     }
 
     // If builder has a custom client, update the clientService to return it
-    let clientService: MockClientService
-    if mockBuilder.client != nil {
-      clientService = MockClientService {
+    let clientService: MockClientService = if mockBuilder.client != nil {
+      MockClientService {
         mockClient
       }
     } else {
-      clientService = mockBuilder.clientService
+      mockBuilder.clientService
     }
 
     // Create mock dependency container with mock services

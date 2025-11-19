@@ -125,4 +125,3 @@ struct ClerkLoggerTests {
     // If we get here, error() worked (it uses forceLog: true internally)
   }
 }
-
