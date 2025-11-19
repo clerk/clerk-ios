@@ -27,8 +27,7 @@ final class SessionStatusLogger {
     }
 
     let tasksDescription: String
-    if let sessionId = currentClient.lastActiveSessionId,
-       let session = currentClient.sessions.first(where: { $0.id == sessionId }),
+    if let session = currentClient.activeSession,
        let tasks = session.tasks,
        !tasks.isEmpty
     {
@@ -56,9 +55,7 @@ final class SessionStatusLogger {
   ///   - currentClient: The current client state.
   /// - Returns: `true` if logging should occur, `false` otherwise.
   func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
-    guard let sessionId = currentClient.lastActiveSessionId,
-          let session = currentClient.sessions.first(where: { $0.id == sessionId })
-    else {
+    guard let session = currentClient.activeSession else {
       return false
     }
 
@@ -68,8 +65,7 @@ final class SessionStatusLogger {
 
     // Log if this is the first client or if there's no previous session
     guard let previousClient,
-          let previousId = previousClient.lastActiveSessionId,
-          let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
+          let previousSession = previousClient.activeSession
     else {
       return true
     }
