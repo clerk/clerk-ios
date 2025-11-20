@@ -66,6 +66,9 @@ final class DependencyContainer: Dependencies {
     sessionStatusLogger = SessionStatusLogger()
 
     // Determine baseURL from configured manager (use default if not configured)
+    // Note: frontendApiUrl is always extracted from the publishable key, even when using a proxy,
+    // because it's needed for passkey authentication which requires the original Clerk domain
+    // (not the proxy domain) as the relying party identifier.
     let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
       configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
     } else {
