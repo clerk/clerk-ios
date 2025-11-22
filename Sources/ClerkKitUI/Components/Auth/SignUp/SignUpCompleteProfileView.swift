@@ -16,6 +16,7 @@ struct SignUpCompleteProfileView: View {
   @Environment(AuthState.self) private var authState
 
   @State private var error: Error?
+  @State private var safariSheetItem: SafariSheetItem?
 
   @FocusState private var focused: Field?
 
@@ -24,13 +25,13 @@ struct SignUpCompleteProfileView: View {
     case lastName
   }
 
-  func fieldIsRequired(_ field: Field) -> Bool {
+  func fieldIsMissing(_ field: Field) -> Bool {
     guard let signUp else { return false }
     switch field {
     case .firstName:
-      signUp.fieldIsRequired(field: "first_name")
+      return signUp.missingFields.contains("first_name")
     case .lastName:
-      signUp.fieldIsRequired(field: "last_name")
+      return signUp.missingFields.contains("last_name")
     }
   }
 
@@ -44,41 +45,41 @@ struct SignUpCompleteProfileView: View {
     }
   }
 
-  // Find the first required field that's empty
-  func firstEmptyRequiredField() -> Field? {
+  // Find the first missing field that's empty
+  func firstEmptyMissingField() -> Field? {
     Field.allCases.first { field in
-      fieldIsRequired(field) && textForField(field).isEmptyTrimmed
+      fieldIsMissing(field) && textForField(field).isEmptyTrimmed
     }
   }
 
-  // Get the first required field (fallback)
-  func firstRequiredField() -> Field? {
-    Field.allCases.first { fieldIsRequired($0) }
+  // Get the first missing field (fallback)
+  func firstMissingField() -> Field? {
+    Field.allCases.first { fieldIsMissing($0) }
   }
 
-  // Get the last required field
-  func lastRequiredField() -> Field? {
-    Field.allCases.last { fieldIsRequired($0) }
+  // Get the last missing field
+  func lastMissingField() -> Field? {
+    Field.allCases.last { fieldIsMissing($0) }
   }
 
   // Determine the submit label for each field
   func submitLabelFor(_ field: Field) -> SubmitLabel {
-    field == lastRequiredField() ? .done : .next
+    field == lastMissingField() ? .done : .next
   }
 
-  func nextRequiredField(after currentField: Field) -> Field? {
+  func nextMissingField(after currentField: Field) -> Field? {
     guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
       return nil
     }
 
     let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
-    return fieldsAfterCurrent.first { fieldIsRequired($0) }
+    return fieldsAfterCurrent.first { fieldIsMissing($0) }
   }
 
   func handleReturnKey() {
     guard let currentField = focused else { return }
 
-    if let nextField = nextRequiredField(after: currentField) {
+    if let nextField = nextMissingField(after: currentField) {
       focused = nextField
     } else {
       focused = nil
@@ -89,7 +90,7 @@ struct SignUpCompleteProfileView: View {
   func updateFocusIfNeeded() {
     // Only update focus if we're not currently focused on a field
     // or if the current field is now filled and there's an empty field to focus on
-    if focused == nil, let firstEmpty = firstEmptyRequiredField() {
+    if focused == nil, let firstEmpty = firstEmptyMissingField() {
       focused = firstEmpty
     }
   }
@@ -98,13 +99,29 @@ struct SignUpCompleteProfileView: View {
     clerk.client?.signUp
   }
 
-  var firstOrLastNameIsRequired: Bool {
-    fieldIsRequired(.firstName) || fieldIsRequired(.lastName)
+  var firstOrLastNameIsMissing: Bool {
+    fieldIsMissing(.firstName) || fieldIsMissing(.lastName)
+  }
+
+  var legalConsentMissing: Bool {
+    signUp?.missingFields.contains("legal_accepted") ?? false
+  }
+
+  var termsUrl: URL? {
+    clerk.environment.displayConfig?.termsUrl.flatMap { URL(string: $0) }
+  }
+
+  var privacyPolicyUrl: URL? {
+    clerk.environment.displayConfig?.privacyPolicyUrl.flatMap { URL(string: $0) }
   }
 
   var continueIsDisabled: Bool {
-    (fieldIsRequired(.firstName) && authState.signUpFirstName.isEmptyTrimmed) ||
-      (fieldIsRequired(.lastName) && authState.signUpLastName.isEmptyTrimmed)
+    let hasMissingNameFields = (fieldIsMissing(.firstName) && authState.signUpFirstName.isEmptyTrimmed) ||
+      (fieldIsMissing(.lastName) && authState.signUpLastName.isEmptyTrimmed)
+
+    let isMissingLegalConsent = legalConsentMissing && !authState.signUpLegalAccepted
+
+    return hasMissingNameFields || isMissingLegalConsent
   }
 
   var body: some View {
@@ -118,9 +135,9 @@ struct SignUpCompleteProfileView: View {
         }
 
         VStack(spacing: 24) {
-          if firstOrLastNameIsRequired {
+          if firstOrLastNameIsMissing {
             HStack(spacing: 24) {
-              if fieldIsRequired(.firstName) {
+              if fieldIsMissing(.firstName) {
                 ClerkTextField("First name", text: $authState.signUpFirstName)
                   .textContentType(.givenName)
                   .focused($focused, equals: .firstName)
@@ -129,7 +146,7 @@ struct SignUpCompleteProfileView: View {
                     updateFocusIfNeeded()
                   }
               }
-              if fieldIsRequired(.lastName) {
+              if fieldIsMissing(.lastName) {
                 ClerkTextField("Last name", text: $authState.signUpLastName)
                   .textContentType(.familyName)
                   .focused($focused, equals: .lastName)
@@ -141,6 +158,18 @@ struct SignUpCompleteProfileView: View {
             }
             .autocorrectionDisabled()
             .onSubmit { handleReturnKey() }
+          }
+
+          if legalConsentMissing {
+            LegalConsentView(
+              isAccepted: $authState.signUpLegalAccepted,
+              onTermsTap: termsUrl != nil ? {
+                safariSheetItem = SafariSheetItem(url: termsUrl!)
+              } : nil,
+              onPrivacyTap: privacyPolicyUrl != nil ? {
+                safariSheetItem = SafariSheetItem(url: privacyPolicyUrl!)
+              } : nil
+            )
           }
 
           AsyncButton {
@@ -168,6 +197,9 @@ struct SignUpCompleteProfileView: View {
     }
     .scrollDismissesKeyboard(.interactively)
     .clerkErrorPresenting($error)
+    .sheet(item: $safariSheetItem) { item in
+      SafariView(url: item.url)
+    }
     .background(theme.colors.background)
     .toolbar {
       ToolbarItem(placement: .principal) {
@@ -178,7 +210,7 @@ struct SignUpCompleteProfileView: View {
     }
     .navigationBarTitleDisplayMode(.inline)
     .onFirstAppear {
-      focused = firstEmptyRequiredField() ?? firstRequiredField()
+      focused = firstEmptyMissingField() ?? firstMissingField()
     }
   }
 }
@@ -188,12 +220,21 @@ extension SignUpCompleteProfileView {
     guard var signUp else { return }
 
     do {
-      signUp = try await signUp.update(
-        params: .init(
-          firstName: authState.signUpFirstName,
-          lastName: authState.signUpLastName
-        )
-      )
+      var params = SignUp.UpdateParams()
+
+      if fieldIsMissing(.firstName) {
+        params.firstName = authState.signUpFirstName
+      }
+
+      if fieldIsMissing(.lastName) {
+        params.lastName = authState.signUpLastName
+      }
+
+      if legalConsentMissing {
+        params.legalAccepted = authState.signUpLegalAccepted
+      }
+
+      signUp = try await signUp.update(params: params)
       authState.setToStepForStatus(signUp: signUp)
     } catch {
       self.error = error
@@ -205,6 +246,17 @@ extension SignUpCompleteProfileView {
 #Preview {
   SignUpCompleteProfileView()
     .clerkPreview()
+    .environment(Clerk.preview { preview in
+      var client = Client.mock
+      var signUp = SignUp.mock
+      signUp.missingFields.append(contentsOf: [
+        "first_name",
+        "last_name",
+        "legal_accepted",
+      ])
+      client.signUp = signUp
+      preview.client = client
+    })
     .environment(\.clerkTheme, .clerk)
 }
 

@@ -11,21 +11,20 @@ import SafariServices
 import SwiftUI
 
 struct SafariView: UIViewControllerRepresentable {
-    let url: URL
+  let url: URL
 
-    func makeUIViewController(context _: Context) -> SFSafariViewController {
-        SFSafariViewController(url: url)
-    }
+  func makeUIViewController(context _: Context) -> SFSafariViewController {
+    SFSafariViewController(url: url)
+  }
 
-    func updateUIViewController(_: SFSafariViewController, context _: Context) {
-        // No updates needed as URL doesn't change after creation
-    }
+  func updateUIViewController(_: SFSafariViewController, context _: Context) {
+    // No updates needed as URL doesn't change after creation
+  }
 }
 
 struct SafariSheetItem: Identifiable {
-    let id = UUID()
-    let url: URL
+  let id = UUID()
+  let url: URL
 }
 
 #endif
-

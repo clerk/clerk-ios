@@ -27,6 +27,20 @@ public final class PreviewBuilder {
   /// ```
   public var environment: Clerk.Environment?
 
+  /// Custom mock client for configuring client properties like sessions and user data.
+  /// If set, this client will be used instead of the default client based on `isSignedIn`.
+  /// Assign a `Client` instance to configure it.
+  ///
+  /// Example:
+  /// ```swift
+  /// Clerk.preview { builder in
+  ///   var client = Client.mock
+  ///   client.sessions = [Session.mock, Session.mock2]
+  ///   builder.client = client
+  /// }
+  /// ```
+  public var client: Client?
+
   /// Creates a new preview builder.
   public init() {}
 }
@@ -68,6 +82,18 @@ public extension Clerk {
   ///     })
   /// }
   /// ```
+  ///
+  /// You can customize the client object:
+  /// ```swift
+  /// #Preview {
+  ///   ContentView()
+  ///     .environment(Clerk.preview { preview in
+  ///       var client = Client.mock
+  ///       client.sessions = [Session.mock, Session.mock2]
+  ///       preview.client = client
+  ///     })
+  /// }
+  /// ```
   @MainActor
   @discardableResult
   static func preview(
@@ -102,11 +128,13 @@ public extension Clerk {
     // Determine which environment to use: from builder, loaded from file, or default .mock
     let mockEnvironment = previewBuilder.environment ?? environment ?? .mock
 
+    // Determine which client to use: custom from builder, or based on isSignedIn
+    let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
+
     // Configure only the services that need custom behavior
     // All other services use their default mock implementations
     let clientService = MockClientService {
-      // Determine which client to use based on isSignedIn
-      previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut
+      mockClient
     }
 
     let environmentService = MockEnvironmentService {
@@ -144,7 +172,7 @@ public extension Clerk {
 
     // Replace dependencies with mock services
     clerk.dependencies = container
-    clerk.client = previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut
+    clerk.client = mockClient
     clerk.environment = mockEnvironment
 
     return clerk

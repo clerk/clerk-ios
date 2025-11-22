@@ -47,6 +47,7 @@ final class AuthState {
   var signUpUsername = ""
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
+  var signUpLegalAccepted = false
 
   @MainActor
   func setToStepForStatus(signIn: SignIn) {
