@@ -12,7 +12,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \u0648 "
+            "value" : " و "
           }
         },
         "de" : {
@@ -24,7 +24,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \u03ba\u03b1\u03b9 "
+            "value" : " και "
           }
         },
         "es" : {
@@ -42,7 +42,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \u0914\u0930 "
+            "value" : " और "
           }
         },
         "it" : {
@@ -54,19 +54,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \u3068 "
+            "value" : " と "
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \ubc0f "
+            "value" : " 및 "
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " \u548c "
+            "value" : " 和 "
           }
         }
       }
@@ -5068,7 +5068,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u0623\u0648\u0627\u0641\u0642 \u0639\u0644\u0649 "
+            "value" : "أوافق على "
           }
         },
         "de" : {
@@ -5080,7 +5080,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u03a3\u03c5\u03bc\u03c6\u03c9\u03bd\u03ce \u03bc\u03b5 \u03c4\u03b7\u03bd "
+            "value" : "Συμφωνώ με την "
           }
         },
         "es" : {
@@ -5098,7 +5098,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u092e\u0948\u0902 \u0907\u0938\u0938\u0947 \u0938\u0939\u092e\u0924 \u0939\u0942\u0902 "
+            "value" : "मैं इससे सहमत हूं "
           }
         },
         "it" : {
@@ -5110,19 +5110,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u306b\u540c\u610f\u3057\u307e\u3059 "
+            "value" : "に同意します "
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\uc5d0 \ub3d9\uc758\ud569\ub2c8\ub2e4 "
+            "value" : "에 동의합니다 "
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u6211\u540c\u610f "
+            "value" : "我同意 "
           }
         }
       }
@@ -6668,7 +6668,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629"
+            "value" : "سياسة الخصوصية"
           }
         },
         "de" : {
@@ -6680,25 +6680,25 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u03a0\u03bf\u03bb\u03b9\u03c4\u03b9\u03ba\u03ae \u0391\u03c0\u03bf\u03c1\u03c1\u03ae\u03c4\u03bf\u03c5"
+            "value" : "Πολιτική Απορρήτου"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pol\u00edtica de Privacidad"
+            "value" : "Política de Privacidad"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Politique de Confidentialit\u00e9"
+            "value" : "Politique de Confidentialité"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u0917\u094b\u092a\u0928\u0940\u092f\u0924\u093e \u0928\u0940\u0924\u093f"
+            "value" : "गोपनीयता नीति"
           }
         },
         "it" : {
@@ -6710,19 +6710,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u30d7\u30e9\u30a4\u30d0\u30b7\u30fc\u30dd\u30ea\u30b7\u30fc"
+            "value" : "プライバシーポリシー"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\uac1c\uc778\uc815\ubcf4 \ubcf4\ud638\uc815\ucc45"
+            "value" : "개인정보 보호정책"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u9690\u79c1\u653f\u7b56"
+            "value" : "隐私政策"
           }
         }
       }
@@ -9421,7 +9421,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u0634\u0631\u0648\u0637 \u0627\u0644\u062e\u062f\u0645\u0629"
+            "value" : "شروط الخدمة"
           }
         },
         "de" : {
@@ -9433,13 +9433,13 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u038c\u03c1\u03bf\u03c5\u03c2 \u03a7\u03c1\u03ae\u03c3\u03b7\u03c2"
+            "value" : "Όρους Χρήσης"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "T\u00e9rminos de Servicio"
+            "value" : "Términos de Servicio"
           }
         },
         "fr" : {
@@ -9451,7 +9451,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u0938\u0947\u0935\u093e \u0915\u0940 \u0936\u0930\u094d\u0924\u0947\u0902"
+            "value" : "सेवा की शर्तें"
           }
         },
         "it" : {
@@ -9463,19 +9463,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u5229\u7528\u898f\u7d04"
+            "value" : "利用規約"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\uc11c\ube44\uc2a4 \uc57d\uad00"
+            "value" : "서비스 약관"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\u670d\u52a1\u6761\u6b3e"
+            "value" : "服务条款"
           }
         }
       }
@@ -10120,71 +10120,6 @@
         }
       }
     },
-    "Unable to evaluate policy." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذر تقييم السياسة."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Es konnte keine Richtlinie ausgewertet werden."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Αδυναμία αξιολόγησης πολιτικής."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede evaluar la política."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible d'évaluer la politique."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "नीति का मूल्यांकन करने में असमर्थ।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile valutare la policy."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポリシーを評価できません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "정책을 평가할 수 없습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法评估策略。"
-          }
-        }
-      }
-    },
     "Unable to get the challenge for the passkey." : {
       "localizations" : {
         "ar" : {
@@ -10437,71 +10372,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法获取您的Apple ID凭证。"
-          }
-        }
-      }
-    },
-    "Unable to retrieve the apple identity token." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذر استرداد رمز هوية Apple."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Es konnte kein Apple-Identitäts-Token erhalten werden."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Αδυναμία ανάκτησης του διακριτικού ταυτότητας Apple."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede recuperar el token de identidad de Apple."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de récupérer le jeton d'identité Apple."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple पहचान टोकन पुनर्प्राप्त करने में असमर्थ।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile recuperare il token di identità Apple."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AppleのIDトークンを取得できません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple ID 토큰을 검색할 수 없습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法检索Apple身份令牌。"
           }
         }
       }
