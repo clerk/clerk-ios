@@ -7,6 +7,76 @@
     " ": {
       "shouldTranslate": false
     },
+    " and ": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " و "
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " und "
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " και "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " y "
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " et "
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " और "
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " e "
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " と "
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 및 "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 和 "
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " e "
+          }
+        }
+      }
+    },
     "%@ will be removed from this account. You will no longer be able to sign in using this connected account.": {
       "localizations": {
         "ar": {
@@ -72,7 +142,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ será removido desta conta. Você não poderá mais fazer login usando esta conta conectada."
+            "value": "%@ será removido desta conta. Você não poderá mais entrar usando esta conta conectada."
           }
         }
       }
@@ -142,7 +212,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ será removido desta conta. Você não poderá mais fazer login usando este endereço de email."
+            "value": "%@ será removido desta conta. Você não poderá mais entrar usando este endereço de e-mail."
           }
         }
       }
@@ -212,7 +282,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ será removido desta conta. Você não poderá mais fazer login usando esta chave de acesso."
+            "value": "%@ será removido desta conta. Você não poderá mais entrar usando esta chave de acesso."
           }
         }
       }
@@ -282,7 +352,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ será removido desta conta. Você não poderá mais fazer login usando este número de telefone."
+            "value": "%@ será removido desta conta. Você não poderá mais entrar usando este número de telefone."
           }
         }
       }
@@ -352,7 +422,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ não receberá mais códigos de verificação ao fazer login."
+            "value": "%@ não receberá mais códigos de verificação ao entrar."
           }
         }
       }
@@ -422,7 +492,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uma mensagem de texto contendo um código de verificação será enviada para este número de telefone. Podem ser aplicadas taxas de mensagem e dados."
+            "value": "Uma mensagem de texto contendo um código de verificação será enviada para este número de telefone. Taxas de mensagem e dados podem ser aplicadas."
           }
         }
       }
@@ -468,7 +538,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Account"
+            "value": "Conto"
           }
         },
         "ja": {
@@ -842,7 +912,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adicionar endereço de email"
+            "value": "Adicionar endereço de e-mail"
           }
         }
       }
@@ -1052,7 +1122,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adicionar verificação de código SMS"
+            "value": "Adicionar verificação por código SMS"
           }
         }
       }
@@ -1192,78 +1262,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alternativamente, se o seu autenticador suportar URIs TOTP, você também pode copiar o URI completo."
-          }
-        }
-      }
-    },
-    "An unknown error occurred.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein unbekannter Fehler ist aufgetreten."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Κάτι πήγε στραβά. Παρακαλώ δοκιμάστε ξανά."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Algo salió mal. Por favor, inténtalo de nuevo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une erreur s'est produite. Veuillez réessayer."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qualcosa è andato storto. Per favore riprova."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不明なエラーが発生しました。もう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "알 수 없는 오류가 발생했습니다. 다시 시도해 주세요."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "出现错误。请重试。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ocorreu um erro desconhecido."
+            "value": "Alternativamente, se seu autenticador suporta URIs TOTP, você também pode copiar o URI completo."
           }
         }
       }
@@ -1683,7 +1682,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os códigos de backup estão agora ativados. Você pode usar um deles para fazer login na sua conta, se perder o acesso ao seu dispositivo de autenticação. Cada código só pode ser usado uma vez."
+            "value": "Os códigos de backup agora estão habilitados. Você pode usar um deles para entrar na sua conta, se perder o acesso ao seu dispositivo de autenticação. Cada código só pode ser usado uma vez."
           }
         }
       }
@@ -1893,7 +1892,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verifique seu email"
+            "value": "Verifique seu e-mail"
           }
         }
       }
@@ -2314,77 +2313,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Escolha seu nome de usuário"
-          }
-        }
-      }
-    },
-    "Client ID is unavailble.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "معرف العميل غير متاح."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Client-ID ist nicht verfügbar."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Το Client ID δεν είναι διαθέσιμο."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El ID del cliente no está disponible."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'ID client n'est pas disponible."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "क्लाइंट आईडी उपलब्ध नहीं है।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'ID client non è disponibile."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "クライアントIDは利用できません。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "클라이언트 ID를 사용할 수 없습니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "客户端 ID 不可用。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ID do cliente não está disponível."
           }
         }
       }
@@ -2850,7 +2778,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "per continuare a %@"
+            "value": "Continua a %@"
           }
         },
         "ja": {
@@ -3644,7 +3572,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dispositivo desktop"
+            "value": "Dispositivo de desktop"
           }
         }
       }
@@ -3854,7 +3782,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Endereço de email"
+            "value": "Endereço de e-mail"
           }
         }
       }
@@ -3924,7 +3852,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "ENDEREÇOS DE EMAIL"
+            "value": "ENDEREÇOS DE E-MAIL"
           }
         }
       }
@@ -3994,7 +3922,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enviar código por email para %@"
+            "value": "Enviar código por e-mail para %@"
           }
         }
       }
@@ -4064,7 +3992,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enviar email para suporte"
+            "value": "Suporte por e-mail"
           }
         }
       }
@@ -4274,7 +4202,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Digite o endereço de email que deseja usar."
+            "value": "Digite o endereço de e-mail que deseja usar."
           }
         }
       }
@@ -4694,7 +4622,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Digite seu email"
+            "value": "Digite seu e-mail"
           }
         }
       }
@@ -4764,7 +4692,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Digite seu email ou nome de usuário"
+            "value": "Digite seu e-mail ou nome de usuário"
           }
         }
       }
@@ -5044,7 +4972,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enfrentando problemas? Você pode usar qualquer um destes métodos para fazer login."
+            "value": "Enfrentando problemas? Você pode usar qualquer um desses métodos para entrar."
           }
         }
       }
@@ -5184,7 +5112,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Primeiro, digite o código enviado para seu endereço de email"
+            "value": "Primeiro, digite o código enviado para seu endereço de e-mail"
           }
         }
       }
@@ -5469,6 +5397,76 @@
         }
       }
     },
+    "I agree to the ": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوافق على "
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich stimme der "
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συμφωνώ με την "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acepto la "
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'accepte la "
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मैं इससे सहमत हूं "
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accetto la "
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "に同意します "
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "에 동의합니다 "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我同意 "
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eu concordo com os "
+          }
+        }
+      }
+    },
     "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible.": {
       "localizations": {
         "ar": {
@@ -5477,22 +5475,6 @@
             "value": "إذا واجهت مشكلة في تسجيل الدخول إلى حسابك، أرسل لنا بريداً إلكترونياً وسنعمل معك لاستعادة الوصول في أقرب وقت ممكن."
           }
         },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe erhalten"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Λάβετε βοήθεια"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtener ayuda"
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -5550,7 +5532,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se você tiver problemas para fazer login na sua conta, envie-nos um email e trabalharemos com você para restaurar o acesso o mais rápido possível."
+            "value": "Se você tiver problemas para entrar na sua conta, envie-nos um e-mail e trabalharemos com você para restaurar o acesso o mais rápido possível."
           }
         }
       }
@@ -5625,77 +5607,6 @@
         }
       }
     },
-    "Invalid credential type.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "نوع بيانات الاعتماد غير صالح."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein ungültiger Anmeldetyp."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Μη έγκυρος τύπος διαπιστευτηρίων."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipo de credencial no válido."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Type d'identifiant invalide."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "अमान्य प्रमाण-पत्र प्रकार।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipo di credenziali non valido."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無効な認証情報の種類です。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "유효하지 않은 인증 정보 유형입니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "凭证类型无效。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipo de credencial inválido."
-          }
-        }
-      }
-    },
     "It is recommended to sign out of all other devices which may have used your old password.": {
       "localizations": {
         "ar": {
@@ -5761,7 +5672,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "É recomendado fazer logout de todos os outros dispositivos que possam ter usado sua senha antiga."
+            "value": "É recomendado sair de todos os outros dispositivos que podem ter usado sua senha antiga."
           }
         }
       }
@@ -5971,7 +5882,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vincule outra opção de login à sua conta. Você precisará verificá-la antes que possa ser usada."
+            "value": "Vincular outra opção de login à sua conta. Você precisará verificá-la antes que possa ser usada."
           }
         }
       }
@@ -6182,77 +6093,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "MFA reservado"
-          }
-        }
-      }
-    },
-    "Missing callback URL": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "رابط الاستدعاء مفقود"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rückruf-URL fehlt"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Λείπει το URL επανάκλησης"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Falta URL de retorno"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URL de rappel manquant"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "कॉलबैक URL अनुपलब्ध"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URL di callback mancante"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "コールバックURLがありません"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "콜백 URL이 없습니다"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "缺少回调URL"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URL de retorno ausente"
           }
         }
       }
@@ -6672,7 +6512,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ou, faça login com outro método"
+            "value": "Ou, entre com outro método"
           }
         }
       }
@@ -6788,7 +6628,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Password"
+            "value": "Parola d'accesso"
           }
         },
         "ja": {
@@ -6858,7 +6698,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "PASSWORD"
+            "value": "PAROLA D'ACCESSO"
           }
         },
         "ja": {
@@ -7167,6 +7007,76 @@
         }
       }
     },
+    "Privacy Policy": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سياسة الخصوصية"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutzrichtlinie"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πολιτική Απορρήτου"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Política de Privacidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Politique de Confidentialité"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीयता नीति"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informativa sulla Privacy"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライバシーポリシー"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "개인정보 보호정책"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私政策"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Política de Privacidade"
+          }
+        }
+      }
+    },
     "Profile": {
       "localizations": {
         "ar": {
@@ -7302,7 +7212,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Detalhes do perfil"
+            "value": "Detalhes do Perfil"
           }
         }
       }
@@ -7793,7 +7703,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remover email"
+            "value": "Remover e-mail"
           }
         }
       }
@@ -7863,7 +7773,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remover endereço de email"
+            "value": "Remover endereço de e-mail"
           }
         }
       }
@@ -8633,7 +8543,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redefina sua senha"
+            "value": "Redefinir sua senha"
           }
         }
       }
@@ -8913,7 +8823,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selecione um número de telefone existente para registrar a verificação em duas etapas por código SMS ou adicione um novo."
+            "value": "Selecione um número de telefone existente para registrar verificação em duas etapas por código SMS ou adicione um novo."
           }
         }
       }
@@ -9263,7 +9173,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configure um novo método de login no seu autenticador e digite a Chave fornecida abaixo.\n\nCertifique-se de que senhas baseadas em tempo ou de uso único estão ativadas e conclua a vinculação da sua conta."
+            "value": "Configure um novo método de entrada no seu autenticador e insira a Chave fornecida abaixo.\n\nCertifique-se de que Senhas baseadas em tempo ou de uso único estão habilitadas e conclua a vinculação da sua conta."
           }
         }
       }
@@ -9333,7 +9243,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fazer login com sua chave de acesso"
+            "value": "Entre com sua chave de acesso"
           }
         }
       }
@@ -9403,7 +9313,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fazer login com sua senha"
+            "value": "Entre com sua senha"
           }
         }
       }
@@ -9753,7 +9663,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Criar conta"
+            "value": "Inscrever-se"
           }
         }
       }
@@ -9898,77 +9808,6 @@
         }
       }
     },
-    "Something went wrong. Please try again.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein unbekannter Fehler ist aufgetreten."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Κάτι πήγε στραβά. Παρακαλώ δοκιμάστε ξανά."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Algo salió mal. Por favor, inténtalo de nuevo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une erreur s'est produite. Veuillez réessayer."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qualcosa è andato storto. Per favore riprova."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "エラーが発生しました。もう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "문제가 발생했습니다. 다시 시도해 주세요."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "出现错误。请重试。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Algo deu errado. Por favor, tente novamente."
-          }
-        }
-      }
-    },
     "Success": {
       "localizations": {
         "ar": {
@@ -10104,7 +9943,77 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trocar conta"
+            "value": "Trocar de conta"
+          }
+        }
+      }
+    },
+    "Terms of Service": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شروط الخدمة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzungsbedingungen"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Όρους Χρήσης"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Términos de Servicio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conditions de Service"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सेवा की शर्तें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termini di Servizio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "利用規約"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "서비스 약관"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务条款"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termos de Serviço"
           }
         }
       }
@@ -10117,10 +10026,6 @@
             "value": "حدث خطأ أثناء تحميل الصورة من مكتبة الصور."
           }
         },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beim Laden des Bildes aus der Fotobibliothek ist ein Fehler aufgetreten."
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -10668,7 +10573,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A verificação em duas etapas está agora ativada. Ao fazer login, você precisará digitar um código de verificação deste aplicativo autenticador como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, poderá usar códigos de backup para fazer login."
+            "value": "A verificação em duas etapas agora está habilitada. Ao entrar, você precisará digitar um código de verificação deste aplicativo autenticador como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
           }
         }
       }
@@ -10743,481 +10648,14 @@
         }
       }
     },
-    "Unable to delete membership: missing userId": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر حذف العضوية: معرف المستخدم مفقود"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte keine Mitgliedschaft gelöscht werden: userId fehlt"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία διαγραφής συμμετοχής: λείπει το userId"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede eliminar la membresía: falta el userId"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible de supprimer l'adhésion : userId manquant"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "सदस्यता हटाने में असमर्थ: userId अनुपलब्ध"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile eliminare l'appartenenza: userId mancante"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メンバーシップを削除できません：userIdがありません"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "멤버십을 삭제할 수 없습니다: userId가 없습니다"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法删除成员资格：缺少userId"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível excluir a associação: userId ausente"
-          }
-        }
-      }
-    },
-    "Unable to evaluate policy.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر تقييم السياسة."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Es konnte keine Mitgliedschaft gelöscht werden: userId fehlt"
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte keine Richtlinie ausgewertet werden."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Αδυναμία διαγραφής συμμετοχής: λείπει το userId"
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία αξιολόγησης πολιτικής."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede eliminar la membresía: falta el userId"
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede evaluar la política."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de supprimer l'adhésion : userId manquant"
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'évaluer la politique."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "सदस्यता हटाने में असमर्थ: userId अनुपलब्ध"
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "नीति का मूल्यांकन करने में असमर्थ।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile eliminare l'appartenenza: userId mancante"
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile valutare la policy."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メンバーシップを削除できません：userIdがありません"
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ポリシーを評価できません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "멤버십을 삭제할 수 없습니다: userId가 없습니다"
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "정책을 평가할 수 없습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法删除成员资格：缺少userId"
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法评估策略。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível avaliar a política."
-          }
-        }
-      }
-    },
-    "Unable to get the challenge for the passkey." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذر الحصول على التحدي لمفتاح المرور."
-    "Unable to get the challenge for the passkey.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر الحصول على التحدي لمفتاح المرور."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Es konnte kein Challenge für die Passkey erhalten werden."
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte kein Challenge für die Passkey erhalten werden."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία λήψης της πρόκλησης για το passkey."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede obtener el desafío para la clave de acceso."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'obtenir le défi pour la clé d'accès."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "पासकी के लिए चैलेंज प्राप्त करने में असमर्थ।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile ottenere la sfida per la passkey."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "パスキーのチャレンジを取得できません。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "패스키의 챌린지를 가져올 수 없습니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法获取通行密钥的质询。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível obter o desafio para a chave de acesso."
-          }
-        }
-      }
-    },
-    "Unable to get the user ID for the passkey.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر الحصول على معرف المستخدم لمفتاح المرور."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte keine userId für die Passkey erhalten werden."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία λήψης του αναγνωριστικού χρήστη για το passkey."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede obtener el ID de usuario para la clave de acceso."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'obtenir l'ID utilisateur pour la clé d'accès."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "पासकी के लिए उपयोगकर्ता ID प्राप्त करने में असमर्थ।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile ottenere l'ID utente per la passkey."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "パスキーのユーザーIDを取得できません。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "패스키의 사용자 ID를 가져올 수 없습니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法获取通行密钥的用户ID。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível obter o ID do usuário para a chave de acesso."
-          }
-        }
-      }
-    },
-    "Unable to get the username for the passkey.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر الحصول على اسم المستخدم لمفتاح المرور."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte kein Benutzername für die Passkey erhalten werden."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία λήψης του ονόματος χρήστη για το passkey."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede obtener el nombre de usuario para la clave de acceso."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'obtenir le nom d'utilisateur pour la clé d'accès."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "पासकी के लिए उपयोगकर्ता नाम प्राप्त करने में असमर्थ।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile ottenere il nome utente per la passkey."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "パスキーのユーザー名を取得できません。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "패스키의 사용자 이름을 가져올 수 없습니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法获取通行密钥的用户名。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível obter o nome de usuário para a chave de acesso."
-          }
-        }
-      }
-    },
-    "Unable to get your Apple ID credential.": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر الحصول على بيانات اعتماد Apple ID الخاصة بك."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte keine Apple ID-Anmeldedaten erhalten werden."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία λήψης των διαπιστευτηρίων Apple ID σας."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede obtener la credencial de Apple ID."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'obtenir vos identifiants Apple ID."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "आपका Apple ID क्रेडेंशियल प्राप्त करने में असमर्थ।"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile ottenere le credenziali del tuo Apple ID."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple IDの認証情報を取得できません。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple ID 인증 정보를 가져올 수 없습니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法获取您的Apple ID凭证。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível obter suas credenciais do Apple ID."
-          }
-        }
-      }
-    },
     "Unable to retrieve the apple identity token.": {
       "localizations": {
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível recuperar o token de identidade da Apple."
+          }
+        },
         "ar": {
           "stringUnit": {
             "state": "translated",
@@ -11227,19 +10665,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Es konnte kein Apple-Identitäts-Token erhalten werden."
+            "value": "Der Apple-Identitätstoken konnte nicht abgerufen werden."
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Αδυναμία ανάκτησης του διακριτικού ταυτότητας Apple."
+            "value": "Δεν ήταν δυνατή η ανάκτηση του διακριτικού ταυτότητας της Apple."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se puede recuperar el token de identidad de Apple."
+            "value": "No se pudo recuperar el token de identidad de Apple."
           }
         },
         "fr": {
@@ -11263,7 +10701,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "AppleのIDトークンを取得できません。"
+            "value": "Apple IDトークンを取得できませんでした。"
           }
         },
         "ko": {
@@ -11275,84 +10713,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法检索Apple身份令牌。"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível recuperar o token de identidade da Apple."
-          }
-        }
-      }
-    },
-    "Unable to update membership: missing userId": {
-      "extractionState": "stale",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر تحديث العضوية: معرف المستخدم مفقود"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es konnte keine Mitgliedschaft aktualisiert werden: userId fehlt"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αδυναμία ενημέρωσης συμμετοχής: λείπει το userId"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se puede actualizar la membresía: falta el userId"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible de mettre à jour l'adhésion : userId manquant"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "सदस्यता अपडेट करने में असमर्थ: userId अनुपलब्ध"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossibile aggiornare l'appartenenza: userId mancante"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メンバーシップを更新できません：userIdがありません"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "멤버십을 업데이트할 수 없습니다: userId가 없습니다"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法更新成员资格：缺少userId"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível atualizar a associação: userId ausente"
+            "value": "无法检索 Apple 身份令牌。"
           }
         }
       }
@@ -11912,7 +11273,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usar endereço de email"
+            "value": "Usar endereço de e-mail"
           }
         }
       }
@@ -11982,7 +11343,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usar endereço de email ou nome de usuário"
+            "value": "Usar endereço de e-mail ou nome de usuário"
           }
         }
       }
@@ -12192,7 +11553,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usar seu aplicativo autenticador"
+            "value": "Use seu aplicativo autenticador"
           }
         }
       }
@@ -12262,7 +11623,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usar sua chave de acesso"
+            "value": "Use sua chave de acesso"
           }
         }
       }
@@ -12472,7 +11833,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os códigos de verificação deste autenticador não serão mais necessários ao fazer login."
+            "value": "Os códigos de verificação deste autenticador não serão mais necessários ao entrar."
           }
         }
       }
@@ -12682,7 +12043,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verificar endereço de email"
+            "value": "Verificar endereço de e-mail"
           }
         }
       }
@@ -12892,7 +12253,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bem-vindo! Por favor, preencha os detalhes para começar."
+            "value": "Bem-vindo! Preencha os detalhes para começar."
           }
         }
       }
@@ -12962,7 +12323,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bem-vindo! Faça login para continuar"
+            "value": "Bem-vindo! Entre para continuar"
           }
         }
       }
@@ -13032,7 +12393,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ao fazer login, você precisará digitar um código de verificação enviado para este número de telefone como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, poderá usar códigos de backup para fazer login."
+            "value": "Ao entrar, você precisará digitar um código de verificação enviado para este número de telefone como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
           }
         }
       }
@@ -13242,7 +12603,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você precisará verificar este endereço de email antes que ele possa ser adicionado à sua conta."
+            "value": "Você precisará verificar este endereço de e-mail antes que ele possa ser adicionado à sua conta."
           }
         }
       }
