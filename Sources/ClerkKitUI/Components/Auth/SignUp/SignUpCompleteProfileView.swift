@@ -24,12 +24,13 @@ struct SignUpCompleteProfileView: View {
     case lastName
   }
 
-  func fieldIsEnabled(_ field: Field) -> Bool {
+  func fieldIsRequired(_ field: Field) -> Bool {
+    guard let signUp else { return false }
     switch field {
     case .firstName:
-      clerk.environment.firstNameIsEnabled
+      signUp.fieldIsRequired(field: "first_name")
     case .lastName:
-      clerk.environment.lastNameIsEnabled
+      signUp.fieldIsRequired(field: "last_name")
     }
   }
 
@@ -43,41 +44,41 @@ struct SignUpCompleteProfileView: View {
     }
   }
 
-  // Find the first enabled field that's empty
-  func firstEmptyEnabledField() -> Field? {
+  // Find the first required field that's empty
+  func firstEmptyRequiredField() -> Field? {
     Field.allCases.first { field in
-      fieldIsEnabled(field) && textForField(field).isEmptyTrimmed
+      fieldIsRequired(field) && textForField(field).isEmptyTrimmed
     }
   }
 
-  // Get the first enabled field (fallback)
-  func firstEnabledField() -> Field? {
-    Field.allCases.first { fieldIsEnabled($0) }
+  // Get the first required field (fallback)
+  func firstRequiredField() -> Field? {
+    Field.allCases.first { fieldIsRequired($0) }
   }
 
-  // Get the last enabled field
-  func lastEnabledField() -> Field? {
-    Field.allCases.last { fieldIsEnabled($0) }
+  // Get the last required field
+  func lastRequiredField() -> Field? {
+    Field.allCases.last { fieldIsRequired($0) }
   }
 
   // Determine the submit label for each field
   func submitLabelFor(_ field: Field) -> SubmitLabel {
-    field == lastEnabledField() ? .done : .next
+    field == lastRequiredField() ? .done : .next
   }
 
-  func nextEnabledField(after currentField: Field) -> Field? {
+  func nextRequiredField(after currentField: Field) -> Field? {
     guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
       return nil
     }
 
     let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
-    return fieldsAfterCurrent.first { fieldIsEnabled($0) }
+    return fieldsAfterCurrent.first { fieldIsRequired($0) }
   }
 
   func handleReturnKey() {
     guard let currentField = focused else { return }
 
-    if let nextField = nextEnabledField(after: currentField) {
+    if let nextField = nextRequiredField(after: currentField) {
       focused = nextField
     } else {
       focused = nil
@@ -88,7 +89,7 @@ struct SignUpCompleteProfileView: View {
   func updateFocusIfNeeded() {
     // Only update focus if we're not currently focused on a field
     // or if the current field is now filled and there's an empty field to focus on
-    if focused == nil, let firstEmpty = firstEmptyEnabledField() {
+    if focused == nil, let firstEmpty = firstEmptyRequiredField() {
       focused = firstEmpty
     }
   }
@@ -97,12 +98,13 @@ struct SignUpCompleteProfileView: View {
     clerk.client?.signUp
   }
 
-  var firstOrLastNameIsEnabled: Bool {
-    fieldIsEnabled(.firstName) || fieldIsEnabled(.lastName)
+  var firstOrLastNameIsRequired: Bool {
+    fieldIsRequired(.firstName) || fieldIsRequired(.lastName)
   }
 
   var continueIsDisabled: Bool {
-    authState.signUpFirstName.isEmptyTrimmed || authState.signUpLastName.isEmptyTrimmed
+    (fieldIsRequired(.firstName) && authState.signUpFirstName.isEmptyTrimmed) ||
+      (fieldIsRequired(.lastName) && authState.signUpLastName.isEmptyTrimmed)
   }
 
   var body: some View {
@@ -116,9 +118,9 @@ struct SignUpCompleteProfileView: View {
         }
 
         VStack(spacing: 24) {
-          if firstOrLastNameIsEnabled {
+          if firstOrLastNameIsRequired {
             HStack(spacing: 24) {
-              if fieldIsEnabled(.firstName) {
+              if fieldIsRequired(.firstName) {
                 ClerkTextField("First name", text: $authState.signUpFirstName)
                   .textContentType(.givenName)
                   .focused($focused, equals: .firstName)
@@ -127,7 +129,7 @@ struct SignUpCompleteProfileView: View {
                     updateFocusIfNeeded()
                   }
               }
-              if fieldIsEnabled(.lastName) {
+              if fieldIsRequired(.lastName) {
                 ClerkTextField("Last name", text: $authState.signUpLastName)
                   .textContentType(.familyName)
                   .focused($focused, equals: .lastName)
@@ -176,7 +178,7 @@ struct SignUpCompleteProfileView: View {
     }
     .navigationBarTitleDisplayMode(.inline)
     .onFirstAppear {
-      focused = firstEmptyEnabledField() ?? firstEnabledField()
+      focused = firstEmptyRequiredField() ?? firstRequiredField()
     }
   }
 }
