@@ -11,39 +11,40 @@ import ClerkKit
 import Foundation
 
 extension SignUp {
-  static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
-  static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
-  static let completeProfileFields = ["first_name", "last_name", "legal_accepted"]
+  static let fieldPriority: [SignUpField] = [.emailAddress, .phoneNumber, .username, .password]
+  static let individuallyCollectableFields: Set<SignUpField> = [.emailAddress, .phoneNumber, .username, .password]
+  static let completeProfileFields: Set<SignUpField> = [.firstName, .lastName, .legalAccepted]
 
-  var firstFieldToCollect: String? {
+  var firstFieldToCollect: SignUpField? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  var firstFieldToVerify: String? {
+  var firstFieldToVerify: SignUpField? {
     unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  func fieldIsRequired(field: String) -> Bool {
+  func fieldIsRequired(field: SignUpField) -> Bool {
     requiredFields.contains(field)
   }
 
   var firstVerification: Verification? {
-    verifications.first(where: { $0.key == firstFieldToVerify })?.value
+    guard let firstFieldToVerify else { return nil }
+    return verifications.first(where: { $0.key == firstFieldToVerify.rawValue })?.value
   }
 
-  func fieldWasCollected(field: String) -> Bool {
+  func fieldWasCollected(field: SignUpField) -> Bool {
     switch field {
-    case "email_address":
+    case .emailAddress:
       emailAddress != nil
-    case "phone_number":
+    case .phoneNumber:
       phoneNumber != nil
-    case "username":
+    case .username:
       username != nil
-    case "password":
+    case .password:
       passwordEnabled
-    case "first_name":
+    case .firstName:
       firstName != nil
-    case "last_name":
+    case .lastName:
       lastName != nil
     default:
       false
@@ -51,7 +52,7 @@ extension SignUp {
   }
 
   var canCompleteProfileHandleMissingFields: Bool {
-    let allSupportedFields = Set(SignUp.individuallyCollectableFields + SignUp.completeProfileFields)
+    let allSupportedFields = SignUp.individuallyCollectableFields.union(SignUp.completeProfileFields)
     return missingFields.allSatisfy { allSupportedFields.contains($0) }
   }
 }

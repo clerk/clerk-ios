@@ -140,7 +140,7 @@ package enum ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  static func info(
+  package static func info(
     _ message: String,
     force: Bool = false,
     file: String = #file,
