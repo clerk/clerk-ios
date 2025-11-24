@@ -111,35 +111,50 @@ public extension Clerk {
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL)
 
-    // Create preview builder
+    // Create preview builder and apply closure
     let previewBuilder = PreviewBuilder()
-
-    // Try to load ClerkEnvironment.json from bundle, fall back to .mock if it fails
-    var environment: Clerk.Environment?
-    if let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
-       let loadedEnvironment = try? Clerk.Environment(fromFile: url)
-    {
-      environment = loadedEnvironment
-    }
-
-    // Apply preview closure
     preview?(previewBuilder)
 
-    // Determine which environment to use: from builder, loaded from file, or default .mock
-    let mockEnvironment = previewBuilder.environment ?? environment ?? .mock
-
-    // Determine which client to use: custom from builder, or based on isSignedIn
+    // Determine environment and client
+    let loadedEnvironment = loadEnvironmentFromBundle()
+    let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Configure only the services that need custom behavior
-    // All other services use their default mock implementations
-    let clientService = MockClientService {
-      mockClient
-    }
+    // Create mock dependency container
+    let container = createMockDependencyContainer(
+      apiClient: mockAPIClient,
+      client: mockClient,
+      environment: mockEnvironment
+    )
 
-    let environmentService = MockEnvironmentService {
-      mockEnvironment
+    // Replace dependencies with mock services
+    clerk.dependencies = container
+    clerk.client = mockClient
+    clerk.environment = mockEnvironment
+
+    return clerk
+  }
+
+  /// Loads the Clerk environment from ClerkEnvironment.json in the main bundle.
+  @MainActor
+  private static func loadEnvironmentFromBundle() -> Clerk.Environment? {
+    guard let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
+          let loadedEnvironment = try? Clerk.Environment(fromFile: url)
+    else {
+      return nil
     }
+    return loadedEnvironment
+  }
+
+  /// Creates a mock dependency container with all mock services configured.
+  @MainActor
+  private static func createMockDependencyContainer(
+    apiClient: APIClient,
+    client: Client,
+    environment: Clerk.Environment
+  ) -> MockDependencyContainer {
+    let clientService = MockClientService { client }
+    let environmentService = MockEnvironmentService { environment }
 
     // Use default mock services for everything else
     let clerkService = MockClerkService()
@@ -153,9 +168,8 @@ public extension Clerk {
     let phoneNumberService = MockPhoneNumberService()
     let externalAccountService = MockExternalAccountService()
 
-    // Create mock dependency container with mock services
-    let container = MockDependencyContainer(
-      apiClient: mockAPIClient,
+    return MockDependencyContainer(
+      apiClient: apiClient,
       clientService: clientService,
       userService: userService,
       signInService: signInService,
@@ -169,12 +183,5 @@ public extension Clerk {
       phoneNumberService: phoneNumberService,
       externalAccountService: externalAccountService
     )
-
-    // Replace dependencies with mock services
-    clerk.dependencies = container
-    clerk.client = mockClient
-    clerk.environment = mockEnvironment
-
-    return clerk
   }
 }

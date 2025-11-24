@@ -68,7 +68,7 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
   }
 
   /// Creates a `FactorStrategy` from its raw string value.
-  public init(rawValue: String) {
+  public init(rawValue: String) { // swiftlint:disable:this cyclomatic_complexity
     switch rawValue {
     case "password":
       self = .password

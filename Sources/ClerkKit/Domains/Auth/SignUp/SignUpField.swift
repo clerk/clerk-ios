@@ -68,7 +68,7 @@ public enum SignUpField: Hashable, Codable, Sendable {
   }
 
   /// Creates a `SignUpField` from its raw string value.
-  public init(rawValue: String) {
+  public init(rawValue: String) { // swiftlint:disable:this cyclomatic_complexity
     switch rawValue {
     case "email_address":
       self = .emailAddress

@@ -254,7 +254,7 @@ extension AuthStartView {
         )
       )
 
-      if signIn.startingFirstFactor?.strategy == "enterprise_sso" {
+      if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
         signIn = try await signIn.prepareFirstFactor(strategy: .enterpriseSSO())
 
         if signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
