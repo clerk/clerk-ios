@@ -42,19 +42,19 @@ struct SignInFactorAlternativeMethodsView: View {
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
     switch factor.strategy {
-    case "phone_code":
+    case .phoneCode:
       guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
-    case "email_code":
+    case .emailCode:
       guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email code to \(safeIdentifier)"
-    case "passkey":
+    case .passkey:
       return "Sign in with your passkey"
-    case "password":
+    case .password:
       return "Sign in with your password"
-    case "totp":
+    case .totp:
       return "Use your authenticator app"
-    case "backup_code":
+    case .backupCode:
       return "Use a backup code"
     default:
       return nil
@@ -63,17 +63,17 @@ struct SignInFactorAlternativeMethodsView: View {
 
   func iconName(factor: Factor) -> String? {
     switch factor.strategy {
-    case "password":
+    case .password:
       "icon-lock"
-    case "phone_code":
+    case .phoneCode:
       "icon-sms"
-    case "email_code":
+    case .emailCode:
       "icon-email"
-    case "passkey":
+    case .passkey:
       "icon-fingerprint"
-    case "totp":
+    case .totp:
       "icon-key"
-    case "backup_code":
+    case .backupCode:
       "icon-lock"
     default:
       nil

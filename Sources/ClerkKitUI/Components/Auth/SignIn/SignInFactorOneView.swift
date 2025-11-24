@@ -18,14 +18,14 @@ struct SignInFactorOneView: View {
   @ViewBuilder
   var viewForFactor: some View {
     switch factor.strategy {
-    case "passkey":
+    case .passkey:
       SignInFactorOnePasskeyView(factor: factor)
-    case "password":
+    case .password:
       SignInFactorOnePasswordView(factor: factor)
-    case "email_code",
-         "phone_code",
-         "reset_password_email_code",
-         "reset_password_phone_code":
+    case .emailCode,
+         .phoneCode,
+         .resetPasswordEmailCode,
+         .resetPasswordPhoneCode:
       SignInFactorCodeView(factor: factor)
     default:
       GetHelpView(context: .signIn)
@@ -40,7 +40,7 @@ struct SignInFactorOneView: View {
 #Preview {
   SignInFactorOneView(
     factor: .init(
-      strategy: "passkey"
+      strategy: .passkey
     )
   )
 }

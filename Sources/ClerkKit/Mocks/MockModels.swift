@@ -294,43 +294,43 @@ public extension Verification {
 
 public extension Factor {
   static var mockEmailCode: Factor {
-    Factor(strategy: "email_code")
+    Factor(strategy: .emailCode)
   }
 
   static var mockPhoneCode: Factor {
-    Factor(strategy: "phone_code")
+    Factor(strategy: .phoneCode)
   }
 
   static var mockGoogle: Factor {
-    Factor(strategy: "oauth_google")
+    Factor(strategy: .oauth(.google))
   }
 
   static var mockApple: Factor {
-    Factor(strategy: "oauth_apple")
+    Factor(strategy: .oauth(.apple))
   }
 
   static var mockPassword: Factor {
-    Factor(strategy: "password")
+    Factor(strategy: .password)
   }
 
   static var mockPasskey: Factor {
-    Factor(strategy: "passkey")
+    Factor(strategy: .passkey)
   }
 
   static var mockResetPasswordEmailCode: Factor {
-    Factor(strategy: "reset_password_email_code")
+    Factor(strategy: .resetPasswordEmailCode)
   }
 
   static var mockResetPasswordPhoneCode: Factor {
-    Factor(strategy: "reset_password_phone_code")
+    Factor(strategy: .resetPasswordPhoneCode)
   }
 
   static var mockTotp: Factor {
-    Factor(strategy: "totp")
+    Factor(strategy: .totp)
   }
 
   static var mockBackupCode: Factor {
-    Factor(strategy: "backup_code")
+    Factor(strategy: .backupCode)
   }
 }
 

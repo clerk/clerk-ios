@@ -10,7 +10,7 @@ import Foundation
 /// The Factor type represents the factor verification strategy that can be used in the sign-in process.
 public struct Factor: Codable, Equatable, Hashable, Sendable {
   /// The strategy of the factor.
-  public var strategy: String
+  public var strategy: FactorStrategy
 
   /// The ID of the email address that a code or link will be sent to.
   public var emailAddressId: String?
@@ -28,7 +28,7 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
   public var primary: Bool?
 
   public init(
-    strategy: String,
+    strategy: FactorStrategy,
     emailAddressId: String? = nil,
     phoneNumberId: String? = nil,
     web3WalletId: String? = nil,
