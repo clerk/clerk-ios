@@ -29,9 +29,9 @@ struct SignUpCompleteProfileView: View {
     guard let signUp else { return false }
     switch field {
     case .firstName:
-      return signUp.missingFields.contains("first_name")
+      return signUp.missingFields.contains(.firstName)
     case .lastName:
-      return signUp.missingFields.contains("last_name")
+      return signUp.missingFields.contains(.lastName)
     }
   }
 
@@ -104,7 +104,7 @@ struct SignUpCompleteProfileView: View {
   }
 
   var legalConsentMissing: Bool {
-    signUp?.missingFields.contains("legal_accepted") ?? false
+    signUp?.missingFields.contains(.legalAccepted) ?? false
   }
 
   var termsUrl: URL? {
@@ -250,9 +250,9 @@ extension SignUpCompleteProfileView {
       var client = Client.mock
       var signUp = SignUp.mock
       signUp.missingFields.append(contentsOf: [
-        "first_name",
-        "last_name",
-        "legal_accepted",
+        .firstName,
+        .lastName,
+        .legalAccepted,
       ])
       client.signUp = signUp
       preview.client = client
