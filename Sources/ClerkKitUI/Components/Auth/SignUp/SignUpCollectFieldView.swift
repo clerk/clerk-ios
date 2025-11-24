@@ -24,6 +24,8 @@ struct SignUpCollectFieldView: View {
     clerk.client?.signUp
   }
 
+  let field: Field
+
   enum Field: String {
     case emailAddress = "email_address"
     case phoneNumber = "phone_number"
@@ -110,12 +112,6 @@ struct SignUpCollectFieldView: View {
     }
   }
 
-  var fieldIsOptional: Bool {
-    signUp?.fieldIsRequired(field: field.rawValue) == false
-  }
-
-  let field: Field
-
   var body: some View {
     ScrollView {
       VStack(spacing: 32) {
@@ -150,19 +146,6 @@ struct SignUpCollectFieldView: View {
           .buttonStyle(.primary())
           .disabled(continueIsDisabled)
           .simultaneousGesture(TapGesture())
-
-          if fieldIsOptional, let signUp {
-            Button {
-              authState.setToStepForStatus(signUp: signUp)
-            } label: {
-              Text("Skip", bundle: .module)
-            }
-            .buttonStyle(
-              .primary(
-                config: .init(emphasis: .none, size: .small)
-              )
-            )
-          }
         }
 
         SecuredByClerkView()
