@@ -33,18 +33,18 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
   public var status: Status
 
   /// An array of all the required fields that need to be supplied and verified in order for this sign-up to be marked as complete and converted into a user.
-  public var requiredFields: [String]
+  public var requiredFields: [SignUpField]
 
   /// An array of all the fields that can be supplied to the sign-up, but their absence does not prevent the sign-up from being marked as complete.
-  public var optionalFields: [String]
+  public var optionalFields: [SignUpField]
 
   /// An array of all the fields whose values are not supplied yet but they are mandatory in order for a sign-up to be marked as complete.
-  public var missingFields: [String]
+  public var missingFields: [SignUpField]
 
   /// An array of all the fields whose values have been supplied, but they need additional verification in order for them to be accepted.
   ///
   /// Examples of such fields are `email_address` and `phone_number`.
-  public var unverifiedFields: [String]
+  public var unverifiedFields: [SignUpField]
 
   /// An object that contains information about all the verifications that are in-flight.
   public var verifications: [String: Verification?]
@@ -85,10 +85,10 @@ public struct SignUp: Codable, Sendable, Equatable, Hashable {
   public init(
     id: String,
     status: SignUp.Status,
-    requiredFields: [String],
-    optionalFields: [String],
-    missingFields: [String],
-    unverifiedFields: [String],
+    requiredFields: [SignUpField],
+    optionalFields: [SignUpField],
+    missingFields: [SignUpField],
+    unverifiedFields: [SignUpField],
     verifications: [String: Verification?],
     username: String? = nil,
     emailAddress: String? = nil,
@@ -340,6 +340,73 @@ extension SignUp {
 
   private var needsTransferToSignIn: Bool {
     verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
+  }
+
+  // MARK: - Codable
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case status
+    case requiredFields = "required_fields"
+    case optionalFields = "optional_fields"
+    case missingFields = "missing_fields"
+    case unverifiedFields = "unverified_fields"
+    case verifications
+    case username
+    case emailAddress = "email_address"
+    case phoneNumber = "phone_number"
+    case web3Wallet = "web3_wallet"
+    case passwordEnabled = "password_enabled"
+    case firstName = "first_name"
+    case lastName = "last_name"
+    case unsafeMetadata = "unsafe_metadata"
+    case createdSessionId = "created_session_id"
+    case createdUserId = "created_user_id"
+    case abandonAt = "abandon_at"
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(String.self, forKey: .id)
+    status = try container.decode(Status.self, forKey: .status)
+    requiredFields = try container.decode([SignUpField].self, forKey: .requiredFields)
+    optionalFields = try container.decode([SignUpField].self, forKey: .optionalFields)
+    missingFields = try container.decode([SignUpField].self, forKey: .missingFields)
+    unverifiedFields = try container.decode([SignUpField].self, forKey: .unverifiedFields)
+    verifications = try container.decode([String: Verification?].self, forKey: .verifications)
+    username = try container.decodeIfPresent(String.self, forKey: .username)
+    emailAddress = try container.decodeIfPresent(String.self, forKey: .emailAddress)
+    phoneNumber = try container.decodeIfPresent(String.self, forKey: .phoneNumber)
+    web3Wallet = try container.decodeIfPresent(String.self, forKey: .web3Wallet)
+    passwordEnabled = try container.decode(Bool.self, forKey: .passwordEnabled)
+    firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+    lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
+    unsafeMetadata = try container.decodeIfPresent(JSON.self, forKey: .unsafeMetadata)
+    createdSessionId = try container.decodeIfPresent(String.self, forKey: .createdSessionId)
+    createdUserId = try container.decodeIfPresent(String.self, forKey: .createdUserId)
+    abandonAt = try container.decode(Date.self, forKey: .abandonAt)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(status, forKey: .status)
+    try container.encode(requiredFields, forKey: .requiredFields)
+    try container.encode(optionalFields, forKey: .optionalFields)
+    try container.encode(missingFields, forKey: .missingFields)
+    try container.encode(unverifiedFields, forKey: .unverifiedFields)
+    try container.encode(verifications, forKey: .verifications)
+    try container.encodeIfPresent(username, forKey: .username)
+    try container.encodeIfPresent(emailAddress, forKey: .emailAddress)
+    try container.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
+    try container.encodeIfPresent(web3Wallet, forKey: .web3Wallet)
+    try container.encode(passwordEnabled, forKey: .passwordEnabled)
+    try container.encodeIfPresent(firstName, forKey: .firstName)
+    try container.encodeIfPresent(lastName, forKey: .lastName)
+    try container.encodeIfPresent(unsafeMetadata, forKey: .unsafeMetadata)
+    try container.encodeIfPresent(createdSessionId, forKey: .createdSessionId)
+    try container.encodeIfPresent(createdUserId, forKey: .createdUserId)
+    try container.encode(abandonAt, forKey: .abandonAt)
   }
 
   /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
