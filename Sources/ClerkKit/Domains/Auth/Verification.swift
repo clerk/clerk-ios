@@ -13,7 +13,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
   public var status: Status?
 
   /// The strategy pertaining to the parent sign-up or sign-in attempt.
-  public var strategy: String?
+  public var strategy: FactorStrategy?
 
   /// The number of attempts related to the verification.
   public var attempts: Int?
@@ -32,7 +32,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
 
   public init(
     status: Verification.Status? = nil,
-    strategy: String? = nil,
+    strategy: FactorStrategy? = nil,
     attempts: Int? = nil,
     expireAt: Date? = nil,
     error: ClerkAPIError? = nil,
