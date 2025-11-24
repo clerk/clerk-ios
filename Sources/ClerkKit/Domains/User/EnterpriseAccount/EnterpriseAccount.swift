@@ -10,7 +10,7 @@ import Foundation
 /// A model representing an enterprise account.
 ///
 /// `EnterpriseAccount` encapsulates the details of a user's enterprise account.
-public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
+public struct EnterpriseAccount: Codable, Equatable, Sendable {
   // MARK: - Properties
 
   /// The unique identifier for the enterprise account.
@@ -81,7 +81,7 @@ public struct EnterpriseAccount: Codable, Hashable, Equatable, Sendable {
   ///
   /// `EnterpriseConnection` contains the configuration and metadata for the connection
   /// between the enterprise account and the identity provider.
-  public struct EnterpriseConnection: Codable, Hashable, Equatable, Sendable {
+  public struct EnterpriseConnection: Codable, Equatable, Sendable {
     /// The unique identifier for the enterprise connection.
     public let id: String
 

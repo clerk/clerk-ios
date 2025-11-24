@@ -8,7 +8,7 @@
 import Foundation
 
 /// The state of the verification process of a sign-in or sign-up attempt.
-public struct Verification: Codable, Equatable, Hashable, Sendable {
+public struct Verification: Codable, Equatable, Sendable {
   /// The state of the verification.
   public var status: Status?
 
@@ -49,17 +49,63 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
   }
 
   /// The state of the verification.
-  public enum Status: String, Codable, Sendable {
+  public enum Status: Codable, Sendable, Equatable, Hashable {
     case unverified
     case verified
     case transferable
     case failed
     case expired
 
-    case unknown
+    /// Represents an unknown verification status.
+    ///
+    /// The associated value captures the raw string value from the API.
+    case unknown(String)
+
+    /// The raw string value used in the API.
+    public var rawValue: String {
+      switch self {
+      case .unverified:
+        "unverified"
+      case .verified:
+        "verified"
+      case .transferable:
+        "transferable"
+      case .failed:
+        "failed"
+      case .expired:
+        "expired"
+      case .unknown(let value):
+        value
+      }
+    }
+
+    /// Creates a `Status` from its raw string value.
+    public init(rawValue: String) {
+      switch rawValue {
+      case "unverified":
+        self = .unverified
+      case "verified":
+        self = .verified
+      case "transferable":
+        self = .transferable
+      case "failed":
+        self = .failed
+      case "expired":
+        self = .expired
+      default:
+        self = .unknown(rawValue)
+      }
+    }
 
     public init(from decoder: Decoder) throws {
-      self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+      let container = try decoder.singleValueContainer()
+      let rawValue = try container.decode(String.self)
+      self.init(rawValue: rawValue)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      try container.encode(rawValue)
     }
   }
 }

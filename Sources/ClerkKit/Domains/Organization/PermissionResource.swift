@@ -8,7 +8,7 @@
 import Foundation
 
 /// An experimental interface that includes information about a user's permission.
-public struct PermissionResource: Codable, Identifiable, Sendable, Hashable {
+public struct PermissionResource: Codable, Identifiable, Sendable {
   /// The unique identifier of the permission.
   public var id: String
 

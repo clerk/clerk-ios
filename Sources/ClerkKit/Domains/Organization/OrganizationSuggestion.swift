@@ -8,7 +8,7 @@
 import Foundation
 
 /// An interface representing an organization suggestion.
-public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Identifiable {
+public struct OrganizationSuggestion: Codable, Equatable, Sendable, Identifiable {
   /// An interface representing an organization suggestion.
   /// The ID of the organization suggestion.
   public var id: String
@@ -40,7 +40,7 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Hashable, Id
   }
 
   /// The public data of the organization.
-  public struct PublicOrganizationData: Codable, Equatable, Sendable, Hashable {
+  public struct PublicOrganizationData: Codable, Equatable, Sendable {
     /// Whether the organization has an image.
     public var hasImage: Bool
 

@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents a role with associated permissions and metadata about its creation and updates.
-public struct RoleResource: Codable, Sendable, Identifiable, Hashable {
+public struct RoleResource: Codable, Sendable, Identifiable {
   /// The unique identifier of the role.
   public var id: String
 

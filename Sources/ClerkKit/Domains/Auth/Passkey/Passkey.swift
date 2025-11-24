@@ -8,7 +8,7 @@
 import Foundation
 
 /// An object that represents a passkey associated with a user.
-public struct Passkey: Codable, Identifiable, Equatable, Sendable, Hashable {
+public struct Passkey: Codable, Identifiable, Equatable, Sendable {
   /// The unique identifier of the passkey.
   public var id: String
 

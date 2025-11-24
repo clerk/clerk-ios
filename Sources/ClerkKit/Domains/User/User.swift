@@ -21,7 +21,7 @@ import Foundation
 /// Backend API, but public metadata can also be accessed from the Frontend API.
 ///
 /// The Clerk iOS SDK provides some helper methods on the User object to help retrieve and update user information and authentication status.
-public struct User: Codable, Equatable, Sendable, Hashable, Identifiable {
+public struct User: Codable, Equatable, Sendable, Identifiable {
   public var backupCodeEnabled: Bool
 
   /// Date when the user was first created.

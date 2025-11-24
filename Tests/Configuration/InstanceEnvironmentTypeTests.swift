@@ -16,7 +16,7 @@ struct InstanceEnvironmentTypeTests {
   func enumCases() {
     #expect(InstanceEnvironmentType.production.rawValue == "production")
     #expect(InstanceEnvironmentType.development.rawValue == "development")
-    #expect(InstanceEnvironmentType.unknown.rawValue == "unknown")
+    #expect(InstanceEnvironmentType.unknown("unknown").rawValue == "unknown")
   }
 
   @Test
@@ -31,7 +31,7 @@ struct InstanceEnvironmentTypeTests {
     let developmentString = String(data: developmentData, encoding: .utf8)
     #expect(developmentString == "\"development\"")
 
-    let unknownData = try encoder.encode(InstanceEnvironmentType.unknown)
+    let unknownData = try encoder.encode(InstanceEnvironmentType.unknown("unknown"))
     let unknownString = String(data: unknownData, encoding: .utf8)
     #expect(unknownString == "\"unknown\"")
   }
@@ -50,31 +50,34 @@ struct InstanceEnvironmentTypeTests {
 
     let unknownData = "\"unknown\"".data(using: .utf8)!
     let unknown = try decoder.decode(InstanceEnvironmentType.self, from: unknownData)
-    #expect(unknown == .unknown)
+    #expect(unknown == .unknown("unknown"))
   }
 
   @Test
   func decodingInvalidValue() throws {
     let decoder = JSONDecoder()
 
-    // Invalid value should decode to unknown
+    // Invalid value should decode to unknown with the captured value
     let invalidData = "\"invalid\"".data(using: .utf8)!
     let result = try decoder.decode(InstanceEnvironmentType.self, from: invalidData)
-    #expect(result == .unknown)
+    #expect(result == .unknown("invalid"))
+    #expect(result.rawValue == "invalid")
   }
 
   @Test
   func rawValueAccess() {
     #expect(InstanceEnvironmentType.production.rawValue == "production")
     #expect(InstanceEnvironmentType.development.rawValue == "development")
-    #expect(InstanceEnvironmentType.unknown.rawValue == "unknown")
+    #expect(InstanceEnvironmentType.unknown("unknown").rawValue == "unknown")
+    #expect(InstanceEnvironmentType.unknown("custom_value").rawValue == "custom_value")
   }
 
   @Test
   func equatable() {
     #expect(InstanceEnvironmentType.production == .production)
     #expect(InstanceEnvironmentType.development == .development)
-    #expect(InstanceEnvironmentType.unknown == .unknown)
+    #expect(InstanceEnvironmentType.unknown("unknown") == .unknown("unknown"))
+    #expect(InstanceEnvironmentType.unknown("value1") != .unknown("value2"))
     #expect(InstanceEnvironmentType.production != .development)
   }
 }
