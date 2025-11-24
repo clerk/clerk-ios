@@ -209,7 +209,7 @@ package enum ClerkLogger {
       Task {
         guard await shouldLogTask.value else { return }
         let location = LogLocation(file: file, function: function, line: line)
-        await performLog(level: level, message: message, error: error, location: location)
+        await performLog(level: level, message: message, error: error, forceLog: false, location: location)
       }
       return
     }
@@ -217,7 +217,7 @@ package enum ClerkLogger {
     // For forceLog (errors), log immediately
     Task {
       let location = LogLocation(file: file, function: function, line: line)
-      await performLog(level: level, message: message, error: error, location: location)
+      await performLog(level: level, message: message, error: error, forceLog: true, location: location)
     }
   }
 
@@ -227,6 +227,7 @@ package enum ClerkLogger {
     level: LogLevel,
     message: String,
     error: Error?,
+    forceLog: Bool,
     location: LogLocation
   ) {
     let file = location.file
@@ -236,7 +237,8 @@ package enum ClerkLogger {
     let timestampString = DateFormatter.logFormatter.string(from: Date())
     let timestamp = Date()
 
-    var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestampString) \(fileName):\(line) \(function) - \(message)"
+    let forceIndicator = forceLog ? "🚨 " : ""
+    var logMessage = "\(level.emoji) [\(level.rawValue)] \(timestampString) \(fileName):\(line) \(function) - \(forceIndicator)\(message)"
 
     if let error {
       logMessage += "\n   Error: \(error)"
@@ -334,7 +336,7 @@ package extension ClerkLogger {
     if let statusCode {
       message += " (Status: \(statusCode))"
     }
-    logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
+    logSync(level: .error, message: message, error: error, forceLog: false, file: file, function: function, line: line)
   }
 }
 
