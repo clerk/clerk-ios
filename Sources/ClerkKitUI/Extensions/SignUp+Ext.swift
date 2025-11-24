@@ -13,6 +13,7 @@ import Foundation
 extension SignUp {
   static let fieldPriority: [String] = ["email_address", "phone_number", "username", "password"]
   static let individuallyCollectableFields = ["email_address", "phone_number", "username", "password"]
+  static let completeProfileFields = ["first_name", "last_name", "legal_accepted"]
 
   var firstFieldToCollect: String? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first
@@ -47,6 +48,11 @@ extension SignUp {
     default:
       false
     }
+  }
+
+  var canCompleteProfileHandleMissingFields: Bool {
+    let allSupportedFields = Set(SignUp.individuallyCollectableFields + SignUp.completeProfileFields)
+    return missingFields.allSatisfy { allSupportedFields.contains($0) }
   }
 }
 
