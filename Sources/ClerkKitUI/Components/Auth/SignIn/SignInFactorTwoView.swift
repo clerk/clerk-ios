@@ -18,9 +18,9 @@ struct SignInFactorTwoView: View {
   @ViewBuilder
   var viewForFactor: some View {
     switch factor.strategy {
-    case "totp", "phone_code", "email_code":
+    case .totp, .phoneCode, .emailCode:
       SignInFactorCodeView(factor: factor, isSecondFactor: true)
-    case "backup_code":
+    case .backupCode:
       SignInFactorTwoBackupCodeView(factor: factor)
     default:
       GetHelpView(context: .signIn)
@@ -33,9 +33,9 @@ struct SignInFactorTwoView: View {
 }
 
 #Preview {
-  SignInFactorOneView(
+  SignInFactorTwoView(
     factor: .init(
-      strategy: "totp"
+      strategy: .totp
     )
   )
 }

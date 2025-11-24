@@ -437,14 +437,14 @@ extension SignIn {
   /// The first factor for the identifier that was used to initiate the SignIn
   package func identifyingFirstFactor(strategy: PrepareFirstFactorStrategy) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
-      factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
+      factor.strategy.rawValue == strategy.strategy && factor.safeIdentifier == identifier
     })
   }
 
   /// The second factor matching the specified strategy.
   func identifyingSecondFactor(strategy: PrepareSecondFactorStrategy) -> Factor? {
     supportedSecondFactors?.first(where: { factor in
-      factor.strategy == strategy.strategy && factor.safeIdentifier == identifier
+      factor.strategy.rawValue == strategy.strategy && factor.safeIdentifier == identifier
     })
   }
 }

@@ -23,7 +23,7 @@ struct SignInFactorOneForgotPasswordView: View {
 
   var alternativeFactors: [Factor] {
     let factors = signIn?.alternativeFirstFactors(currentFactor: nil) ?? []
-    return factors.filter { $0.strategy != "password" }
+    return factors.filter { $0.strategy != .password }
   }
 
   var socialProviders: [OAuthProvider] {
@@ -32,19 +32,19 @@ struct SignInFactorOneForgotPasswordView: View {
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
     switch factor.strategy {
-    case "phone_code":
+    case .phoneCode:
       guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
-    case "email_code":
+    case .emailCode:
       guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email code to \(safeIdentifier)"
-    case "passkey":
+    case .passkey:
       return "Sign in with your passkey"
-    case "password":
+    case .password:
       return "Sign in with your password"
-    case "totp":
+    case .totp:
       return "Use your authenticator app"
-    case "backup_code":
+    case .backupCode:
       return "Use a backup code"
     default:
       return nil
@@ -53,13 +53,13 @@ struct SignInFactorOneForgotPasswordView: View {
 
   func iconName(factor: Factor) -> String? {
     switch factor.strategy {
-    case "password":
+    case .password:
       "icon-lock"
-    case "phone_code":
+    case .phoneCode:
       "icon-sms"
-    case "email_code":
+    case .emailCode:
       "icon-email"
-    case "passkey":
+    case .passkey:
       "icon-fingerprint"
     default:
       nil
