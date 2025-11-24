@@ -23,19 +23,19 @@ extension SignIn {
   }
 
   var factorWhenPasswordIsPreferred: Factor? {
-    // email links are not supported on iOS
     let availableFirstFactors = supportedFirstFactors?.filter { factor in
-      factor.strategy != "email_link"
+      if case .unknown = factor.strategy { return false }
+      return true
     }
 
     if let passkeyFactor = availableFirstFactors?.first(where: { factor in
-      factor.strategy == "passkey"
+      factor.strategy == .passkey
     }) {
       return passkeyFactor
     }
 
     if let passwordFactor = availableFirstFactors?.first(where: { factor in
-      factor.strategy == "password"
+      factor.strategy == .password
     }) {
       return passwordFactor
     }
@@ -48,13 +48,13 @@ extension SignIn {
   }
 
   var factorWhenOtpIsPreferred: Factor? {
-    // email links are not supported on iOS
     let availableFirstFactors = supportedFirstFactors?.filter { factor in
-      factor.strategy != "email_link"
+      if case .unknown = factor.strategy { return false }
+      return true
     }
 
     if let passkeyFactor = availableFirstFactors?.first(where: { factor in
-      factor.strategy == "passkey"
+      factor.strategy == .passkey
     }) {
       return passkeyFactor
     }
@@ -69,22 +69,23 @@ extension SignIn {
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
     // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
     let firstFactors = supportedFirstFactors?.filter { factor in
-      factor != currentFactor && factor.isResetFactor == false && !(factor.strategy).hasPrefix("oauth_") && factor.strategy != "enterprise_sso" && factor.strategy != "saml"
+      if case .oauth = factor.strategy { return false }
+      return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml
     }
 
     return (firstFactors ?? []).sorted(using: Factor.allStrategiesButtonsComparator)
   }
 
   var startingSecondFactor: Factor? {
-    if let totp = supportedSecondFactors?.first(where: { $0.strategy == "totp" }) {
+    if let totp = supportedSecondFactors?.first(where: { $0.strategy == .totp }) {
       return totp
     }
 
-    if let phoneCode = supportedSecondFactors?.first(where: { $0.strategy == "phone_code" }) {
+    if let phoneCode = supportedSecondFactors?.first(where: { $0.strategy == .phoneCode }) {
       return phoneCode
     }
 
-    if let emailCode = supportedSecondFactors?.first(where: { $0.strategy == "email_code" }) {
+    if let emailCode = supportedSecondFactors?.first(where: { $0.strategy == .emailCode }) {
       return emailCode
     }
 

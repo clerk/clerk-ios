@@ -7,34 +7,35 @@
 
 #if os(iOS)
 
+import ClerkKit
 import Foundation
 
 public extension Factor {
-  private static let strategySortOrderPasswordPref = [
-    "passkey",
-    "password",
-    "email_code",
-    "phone_code",
+  private static let strategySortOrderPasswordPref: [FactorStrategy] = [
+    .passkey,
+    .password,
+    .emailCode,
+    .phoneCode,
   ]
 
-  private static let strategySortOrderOtpPref = [
-    "email_code",
-    "phone_code",
-    "passkey",
-    "password",
+  private static let strategySortOrderOtpPref: [FactorStrategy] = [
+    .emailCode,
+    .phoneCode,
+    .passkey,
+    .password,
   ]
 
-  private static let strategySortOrderAllStrategies = [
-    "email_code",
-    "phone_code",
-    "passkey",
-    "password",
+  private static let strategySortOrderAllStrategies: [FactorStrategy] = [
+    .emailCode,
+    .phoneCode,
+    .passkey,
+    .password,
   ]
 
-  private static let strategySortOrderBackupCodePref = [
-    "totp",
-    "phone_code",
-    "backup_code",
+  private static let strategySortOrderBackupCodePref: [FactorStrategy] = [
+    .totp,
+    .phoneCode,
+    .backupCode,
   ]
 
   struct PasswordPrefComparator: SortComparator {

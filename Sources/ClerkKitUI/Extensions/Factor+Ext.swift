@@ -7,14 +7,12 @@
 
 #if os(iOS)
 
+import ClerkKit
 import Foundation
 
 extension Factor {
   var isResetFactor: Bool {
-    [
-      "reset_password_email_code",
-      "reset_password_phone_code",
-    ].contains(strategy)
+    strategy == .resetPasswordEmailCode || strategy == .resetPasswordPhoneCode
   }
 }
 
