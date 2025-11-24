@@ -100,7 +100,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   }
 
   /// Represents the status of a session.
-  public enum SessionStatus: String, Codable, Sendable {
+  public enum SessionStatus: Codable, Sendable, Equatable {
     /// The session was abandoned client-side.
     case abandoned
 
@@ -125,10 +125,68 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     /// The application ended the session, and the Session was removed from the Client object.
     case revoked
 
-    case unknown
+    /// Represents an unknown session status.
+    ///
+    /// The associated value captures the raw string value from the API.
+    case unknown(String)
+
+    /// The raw string value used in the API.
+    public var rawValue: String {
+      switch self {
+      case .abandoned:
+        "abandoned"
+      case .active:
+        "active"
+      case .pending:
+        "pending"
+      case .ended:
+        "ended"
+      case .expired:
+        "expired"
+      case .removed:
+        "removed"
+      case .replaced:
+        "replaced"
+      case .revoked:
+        "revoked"
+      case .unknown(let value):
+        value
+      }
+    }
+
+    /// Creates a `SessionStatus` from its raw string value.
+    public init(rawValue: String) {
+      switch rawValue {
+      case "abandoned":
+        self = .abandoned
+      case "active":
+        self = .active
+      case "pending":
+        self = .pending
+      case "ended":
+        self = .ended
+      case "expired":
+        self = .expired
+      case "removed":
+        self = .removed
+      case "replaced":
+        self = .replaced
+      case "revoked":
+        self = .revoked
+      default:
+        self = .unknown(rawValue)
+      }
+    }
 
     public init(from decoder: Decoder) throws {
-      self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+      let container = try decoder.singleValueContainer()
+      let rawValue = try container.decode(String.self)
+      self.init(rawValue: rawValue)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      try container.encode(rawValue)
     }
   }
 
@@ -225,7 +283,7 @@ public extension Session {
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.
-  struct GetTokenOptions: Hashable, Sendable {
+  struct GetTokenOptions: Sendable {
     /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.
     public var template: String?
 

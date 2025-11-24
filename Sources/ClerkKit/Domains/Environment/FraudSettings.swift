@@ -14,14 +14,53 @@ public extension Clerk.Environment {
     public struct Native: Codable, Sendable, Equatable {
       public let deviceAttestationMode: DeviceAttestationMode
 
-      public enum DeviceAttestationMode: String, Codable, CodingKeyRepresentable, Sendable, Equatable {
+      public enum DeviceAttestationMode: Codable, Sendable, Equatable {
         case disabled
         case onboarding
         case enforced
-        case unknown
+
+        /// Represents an unknown device attestation mode.
+        ///
+        /// The associated value captures the raw string value from the API.
+        case unknown(String)
+
+        /// The raw string value used in the API.
+        public var rawValue: String {
+          switch self {
+          case .disabled:
+            "disabled"
+          case .onboarding:
+            "onboarding"
+          case .enforced:
+            "enforced"
+          case .unknown(let value):
+            value
+          }
+        }
+
+        /// Creates a `DeviceAttestationMode` from its raw string value.
+        public init(rawValue: String) {
+          switch rawValue {
+          case "disabled":
+            self = .disabled
+          case "onboarding":
+            self = .onboarding
+          case "enforced":
+            self = .enforced
+          default:
+            self = .unknown(rawValue)
+          }
+        }
 
         public init(from decoder: Decoder) throws {
-          self = try .init(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+          let container = try decoder.singleValueContainer()
+          let rawValue = try container.decode(String.self)
+          self.init(rawValue: rawValue)
+        }
+
+        public func encode(to encoder: Encoder) throws {
+          var container = encoder.singleValueContainer()
+          try container.encode(rawValue)
         }
       }
     }

@@ -8,7 +8,7 @@
 import Foundation
 
 /// The model representing an organization domain.
-public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
+public struct OrganizationDomain: Codable, Identifiable, Sendable {
   /// The unique identifier for this organization domain.
   public var id: String
 
@@ -64,7 +64,7 @@ public struct OrganizationDomain: Codable, Identifiable, Hashable, Sendable {
   }
 
   /// The model representing the verification details of an organization domain.
-  public struct Verification: Codable, Sendable, Hashable {
+  public struct Verification: Codable, Sendable {
     /// The status of the verification process.
     public var status: String
 

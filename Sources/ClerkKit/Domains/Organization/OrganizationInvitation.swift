@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an organization invitation and its associated details.
-public struct OrganizationInvitation: Codable, Sendable, Hashable, Identifiable {
+public struct OrganizationInvitation: Codable, Sendable, Identifiable {
   /// The unique identifier for this organization invitation.
   public var id: String
 

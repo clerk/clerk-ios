@@ -10,7 +10,7 @@ import Foundation
 /// The `ExternalAccount` object is a model around an identification obtained by an external provider (e.g. a social provider such as Google).
 ///
 /// External account must be verified, so that you can make sure they can be assigned to their rightful owners. The `ExternalAccount` object holds all necessary state around the verification process.
-public struct ExternalAccount: Codable, Identifiable, Sendable, Hashable, Equatable {
+public struct ExternalAccount: Codable, Identifiable, Sendable, Equatable {
   /// The unique identifier for this external account.
   public var id: String
 

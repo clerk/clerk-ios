@@ -42,7 +42,7 @@ import Foundation
 ///
 ///    Attempt to verify the user's second factor authentication details if MFA is required.
 
-public struct SignIn: Codable, Sendable, Equatable, Hashable {
+public struct SignIn: Codable, Sendable, Equatable {
   /// Unique identifier for this sign in.
   public var id: String
 

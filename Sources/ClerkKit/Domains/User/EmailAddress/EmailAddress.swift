@@ -19,7 +19,7 @@ import Foundation
 ///
 /// The second and final step involves an attempt to complete the verification by calling the ``EmailAddress/attemptVerification(strategy:)`` method,
 /// passing the one-time code as a parameter.
-public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
+public struct EmailAddress: Codable, Equatable, Identifiable, Sendable {
   /// The unique identifier for this email address.
   public var id: String
 
