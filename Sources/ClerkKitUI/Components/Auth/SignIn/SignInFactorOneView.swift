@@ -28,7 +28,7 @@ struct SignInFactorOneView: View {
          "reset_password_phone_code":
       SignInFactorCodeView(factor: factor)
     default:
-      SignInGetHelpView()
+      GetHelpView(context: .signIn)
     }
   }
 
