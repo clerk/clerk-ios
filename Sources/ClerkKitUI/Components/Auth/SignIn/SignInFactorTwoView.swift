@@ -23,7 +23,7 @@ struct SignInFactorTwoView: View {
     case "backup_code":
       SignInFactorTwoBackupCodeView(factor: factor)
     default:
-      SignInGetHelpView()
+      GetHelpView(context: .signIn)
     }
   }
 

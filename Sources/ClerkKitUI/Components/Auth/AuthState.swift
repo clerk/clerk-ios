@@ -58,13 +58,13 @@ final class AuthState {
       path = []
     case .needsFirstFactor:
       guard let factor = signIn.startingFirstFactor else {
-        path.append(AuthView.Destination.signInGetHelp)
+        path.append(AuthView.Destination.getHelp(.signIn))
         return
       }
       path.append(AuthView.Destination.signInFactorOne(factor: factor))
     case .needsSecondFactor:
       guard let factor = signIn.startingSecondFactor else {
-        path.append(AuthView.Destination.signInGetHelp)
+        path.append(AuthView.Destination.getHelp(.signIn))
         return
       }
 
@@ -93,7 +93,7 @@ final class AuthState {
     if let firstFieldToVerify = signUp.firstFieldToVerify {
       handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
     } else if let nextFieldToCollect = signUp.firstFieldToCollect {
-      handleFieldToCollect(field: nextFieldToCollect)
+      handleFieldToCollect(signUp: signUp, field: nextFieldToCollect)
     }
   }
 
@@ -118,7 +118,7 @@ final class AuthState {
   }
 
   @MainActor
-  private func handleFieldToCollect(field: String) {
+  private func handleFieldToCollect(signUp: SignUp, field: String) {
     switch field {
     case "password":
       path.append(AuthView.Destination.signUpCollectField(.password))
@@ -129,7 +129,11 @@ final class AuthState {
     case "username":
       path.append(AuthView.Destination.signUpCollectField(.username))
     default:
-      path.append(AuthView.Destination.signUpCompleteProfile)
+      if signUp.canCompleteProfileHandleMissingFields {
+        path.append(AuthView.Destination.signUpCompleteProfile)
+      } else {
+        path.append(AuthView.Destination.getHelp(.signUp))
+      }
     }
   }
 }
