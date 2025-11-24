@@ -23,7 +23,7 @@ import Foundation
 ///
 /// 4. **Sign Up Complete**:
 ///    If the verification is successful, the newly created session is set as the active session.
-public struct SignUp: Codable, Sendable, Equatable, Hashable {
+public struct SignUp: Codable, Sendable, Equatable {
   /// The unique identifier of the current sign-up.
   public var id: String
 

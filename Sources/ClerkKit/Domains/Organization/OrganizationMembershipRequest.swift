@@ -8,7 +8,7 @@
 import Foundation
 
 /// The model that describes the request of a user to join an organization.
-public struct OrganizationMembershipRequest: Codable, Sendable, Hashable, Identifiable {
+public struct OrganizationMembershipRequest: Codable, Sendable, Identifiable {
   /// The unique identifier for this membership request.
   public var id: String
 

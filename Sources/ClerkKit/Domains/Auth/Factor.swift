@@ -8,7 +8,7 @@
 import Foundation
 
 /// The Factor type represents the factor verification strategy that can be used in the sign-in process.
-public struct Factor: Codable, Equatable, Hashable, Sendable {
+public struct Factor: Codable, Equatable, Sendable {
   /// The strategy of the factor.
   public var strategy: FactorStrategy
 

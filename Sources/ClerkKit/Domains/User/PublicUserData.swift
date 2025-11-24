@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents publicly available information about a user.
-public struct PublicUserData: Codable, Sendable, Hashable, Equatable {
+public struct PublicUserData: Codable, Sendable, Equatable {
   /// The user's first name.
   public let firstName: String?
 

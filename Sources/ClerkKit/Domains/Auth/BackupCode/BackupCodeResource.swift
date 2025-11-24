@@ -8,7 +8,7 @@
 import Foundation
 
 /// An interface that represents a backup code.
-public struct BackupCodeResource: Identifiable, Codable, Hashable, Equatable, Sendable {
+public struct BackupCodeResource: Identifiable, Codable, Equatable, Sendable {
   /// The unique identifier for the set of backup codes.
   public var id: String
 

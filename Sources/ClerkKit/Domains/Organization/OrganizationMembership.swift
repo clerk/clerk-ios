@@ -9,7 +9,7 @@ import Foundation
 
 /// The `OrganizationMembership` object is the model around an organization membership entity
 /// and describes the relationship between users and organizations.
-public struct OrganizationMembership: Codable, Equatable, Sendable, Hashable, Identifiable {
+public struct OrganizationMembership: Codable, Equatable, Sendable, Identifiable {
   /// The unique identifier for this organization membership.
   public var id: String
 
