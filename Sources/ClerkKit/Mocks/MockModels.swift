@@ -195,7 +195,7 @@ public extension Verification {
   static var mockEmailCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
-      strategy: "email_code",
+      strategy: .emailCode,
       attempts: nil,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -207,7 +207,7 @@ public extension Verification {
   static var mockEmailCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
-      strategy: "email_code",
+      strategy: .emailCode,
       attempts: nil,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -219,7 +219,7 @@ public extension Verification {
   static var mockPhoneCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
-      strategy: "phone_code",
+      strategy: .phoneCode,
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -231,7 +231,7 @@ public extension Verification {
   static var mockPhoneCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
-      strategy: "phone_code",
+      strategy: .phoneCode,
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -243,7 +243,7 @@ public extension Verification {
   static var mockPasskeyVerifiedVerification: Verification {
     Verification(
       status: .verified,
-      strategy: "passkey",
+      strategy: .passkey,
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -255,7 +255,7 @@ public extension Verification {
   static var mockPasskeyUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
-      strategy: "passkey",
+      strategy: .passkey,
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -267,7 +267,7 @@ public extension Verification {
   static var mockExternalAccountVerifiedVerification: Verification {
     Verification(
       status: .verified,
-      strategy: "oauth_google",
+      strategy: .oauth(.google),
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
@@ -280,7 +280,7 @@ public extension Verification {
   static var mockExternalAccountUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
-      strategy: "oauth_google",
+      strategy: .oauth(.google),
       attempts: 0,
       expireAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       error: nil,
