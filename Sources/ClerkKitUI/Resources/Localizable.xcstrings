@@ -5537,6 +5537,76 @@
         }
       }
     },
+    "If you have trouble creating your account, email us and we will work with you to complete your registration as soon as possible.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إذا واجهت مشكلة في إنشاء حسابك، أرسل لنا بريداً إلكترونياً وسنعمل معك لإكمال تسجيلك في أقرب وقت ممكن."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn Sie Probleme beim Erstellen Ihres Kontos haben, senden Sie uns eine E-Mail und wir werden mit Ihnen zusammenarbeiten, um Ihre Registrierung so schnell wie möglich abzuschließen."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αν έχετε πρόβλημα με τη δημιουργία του λογαριασμού σας, στείλτε μας email και θα συνεργαστούμε μαζί σας για να ολοκληρώσουμε την εγγραφή σας το συντομότερο δυνατό."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tienes problemas para crear tu cuenta, envíanos un correo electrónico y trabajaremos contigo para completar tu registro lo antes posible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si vous avez des difficultés à créer votre compte, envoyez-nous un e-mail et nous travaillerons avec vous pour finaliser votre inscription dès que possible."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यदि आपको अपना खाता बनाने में परेशानी हो रही है, तो हमें ईमेल करें और हम आपके साथ काम करेंगे ताकि जल्द से जल्द आपका पंजीकरण पूरा हो सके।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se hai problemi a creare il tuo account, inviaci una email e lavoreremo con te per completare la tua registrazione il prima possibile."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントの作成で問題が発生した場合は、メールでご連絡ください。できるだけ早く登録を完了できるよう対応いたします。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계정 생성에 문제가 있으시면 이메일로 문의해 주세요. 최대한 빨리 등록을 완료하도록 도와드리겠습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果您在创建账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快完成您的注册。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se você tiver problemas para criar sua conta, envie-nos um e-mail e trabalharemos com você para concluir seu cadastro o mais rápido possível."
+          }
+        }
+      }
+    },
     "International": {
       "localizations": {
         "ar": {
