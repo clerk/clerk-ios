@@ -262,9 +262,10 @@ struct AuthAndClientIntegrationTests {
     // Get the current client
     let client = try await Client.get()
 
-    // Client may be nil if no client exists yet, which is valid
+    // Client should exist after SignUp and SignIn tests
     guard let client = client else {
-      // No client exists, which is a valid state - nothing more to verify
+      Issue.record("Client.get() returned nil - expected a client after authentication")
+      #expect(Bool(false), "Client should not be nil after SignUp and SignIn")
       return
     }
 
