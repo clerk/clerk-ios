@@ -6,7 +6,6 @@
 //
 
 import ClerkKit
-import ClerkKitUI
 import SwiftUI
 
 @main
@@ -14,12 +13,11 @@ struct WatchExampleApp: App {
   init() {
     // Configure Clerk with Watch Connectivity sync enabled
     let options = Clerk.ClerkOptions(
-      logLevel: .debug,
       watchConnectivityEnabled: true
     )
 
     Clerk.configure(
-      publishableKey: "pk_test_YW11c2luZy1iYXJuYWNsZS0yNi5jbGVyay5hY2NvdW50cy5kZXYk",
+      publishableKey: "YOUR_PUBLISHABLE_KEY",
       options: options
     )
   }
