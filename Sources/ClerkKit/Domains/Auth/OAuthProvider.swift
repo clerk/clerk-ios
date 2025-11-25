@@ -102,9 +102,11 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   public var name: String {
     switch self {
     case let .custom(strategy):
-      if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
-        socialConfig.value.strategy == strategy
-      }) {
+      if let environment = Clerk.shared.environment,
+         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
+           socialConfig.value.strategy == strategy
+         })
+      {
         return socialConfig.value.name
       }
 
@@ -122,18 +124,22 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   public func iconImageUrl(darkMode: Bool = false) -> URL? {
     switch self {
     case let .custom(strategy):
-      if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
-        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
-      }) {
+      if let environment = Clerk.shared.environment,
+         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
+           socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
+         })
+      {
         return URL(string: socialConfig.value.logoUrl ?? "")
       }
 
       return nil
 
     default:
-      if let socialConfig = Clerk.shared.environment.userSettings?.social.first(where: { socialConfig in
-        socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
-      }) {
+      if let environment = Clerk.shared.environment,
+         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
+           socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
+         })
+      {
         if var logoUrl = socialConfig.value.logoUrl {
           if darkMode {
             logoUrl = logoUrl.replacingOccurrences(of: ".png", with: "-dark.png")

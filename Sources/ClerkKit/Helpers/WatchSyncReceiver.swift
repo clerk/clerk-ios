@@ -146,8 +146,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
       applicationContext[Self.clientKey] = Data()
     }
 
-    let environment = Clerk.shared.environment
-    if !environment.isEmpty {
+    if let environment = Clerk.shared.environment {
       do {
         applicationContext[Self.environmentKey] = try JSONEncoder.clerkEncoder.encode(environment)
       } catch {
