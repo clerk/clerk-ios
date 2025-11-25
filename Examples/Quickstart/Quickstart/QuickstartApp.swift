@@ -22,7 +22,11 @@ struct QuickstartApp: App {
       ContentView()
         .environment(Clerk.shared)
         .task {
-          try? await Clerk.shared.load()
+          do {
+            try await Clerk.shared.load()
+          } catch {
+            dump(error)
+          }
         }
         #if DEBUG
         .task { Atlantis.start() }

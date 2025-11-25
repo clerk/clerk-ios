@@ -763,8 +763,7 @@ public extension Clerk.Environment {
       authConfig: .mock,
       userSettings: .mock,
       displayConfig: .mock,
-      fraudSettings: nil,
-      commerceSettings: .mock
+      fraudSettings: nil
     )
   }
 }
