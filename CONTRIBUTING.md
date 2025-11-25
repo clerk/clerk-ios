@@ -16,9 +16,13 @@ This command will:
 1. Check if SwiftFormat is installed, and install it via Homebrew if needed
 2. Check if SwiftLint is installed, and install it via Homebrew if needed
 3. Set up the pre-commit hook to automatically format staged Swift files
-4. Create a `.env` file for integration test configuration (if it doesn't exist)
+4. Create a `.env.local` file for integration test configuration (if it doesn't exist)
 
 After running `make setup`, you're ready to start developing!
+
+**For Clerk employees only:** After running `make setup`, you can optionally run `make fetch-secrets` to automatically populate integration test keys from 1Password. This will automatically install 1Password CLI if needed. This requires:
+- Access to Clerk's Shared vault in 1Password
+- 1Password desktop app integration enabled (see [1Password CLI setup guide](https://developer.1password.com/docs/cli/get-started/#step-2-turn-on-the-1password-desktop-app-integration))
 
 ### Prerequisites
 
@@ -57,17 +61,15 @@ After running `make setup`, you're ready to start developing!
 
 ### Available Make Commands
 
-- `make setup` - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .env file
+- `make setup` - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .env.local file
 - `make format` - Format all Swift files using SwiftFormat
 - `make format-check` - Check formatting without modifying files (for CI)
 - `make lint` - Run SwiftLint to check code quality
 - `make lint-fix` - Run SwiftLint with auto-fix where possible
 - `make check` - Run both format-check and lint (for CI)
-- `make test` - Run all tests (unit + integration)
-- `make test-unit` - Run only unit tests (exclude integration tests)
-- `make test-integration` - Run only integration tests (requires .env file with publishable key)
-- `make install-tools` - Install SwiftFormat and SwiftLint via Homebrew
-- `make install-hooks` - Set up pre-commit hook to auto-format staged Swift files
+- `make test` - Run unit tests
+- `make test-integration` - Run only integration tests (requires .env.local file with publishable key; Clerk employees only)
+- `make fetch-secrets` - Fetch integration test secrets from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
 ## Code Formatting
 
@@ -77,6 +79,19 @@ This project uses **SwiftFormat** for code formatting. The configuration is stor
 - **Line length**: 1000 characters (very permissive)
 - **Line breaks**: LF (Unix-style)
 - **Swift version**: 5.10
+
+### Xcode Indentation Settings
+
+To ensure consistent indentation in Xcode, configure your editor to use 2 spaces:
+
+1. Open Xcode Preferences (⌘,)
+2. Go to **Text Editing** → **Indentation**
+3. Set **Tab Width** to `2`
+4. Set **Indent Width** to `2`
+5. Enable **Tab Key**: Inserts spaces, not tabs
+6. Enable **Indent Using**: Spaces
+
+**Note:** SwiftFormat will automatically format your code on commit, but configuring Xcode ensures consistency while editing.
 
 ## Code Linting
 
@@ -98,8 +113,7 @@ Unit tests are located in `Tests/` and use mocked API responses via the `Mocker`
 
 **Running unit tests:**
 ```bash
-make test-unit  # Run only unit tests
-make test       # Run all tests (unit + integration)
+make test  # Run unit tests
 ```
 
 **When to run unit tests:**
@@ -111,41 +125,47 @@ make test       # Run all tests (unit + integration)
 
 Integration tests are located in `Tests/Integration/` and make real API calls to Clerk instances. They verify end-to-end functionality and require network access.
 
-**Running integration tests:**
+**Important:** Integration tests can only be run locally by **Clerk employees** who have access to the 1Password Shared vault. **OSS contributors** will have integration tests run automatically in CI - you don't need to run them locally.
+
+**Running integration tests (Clerk employees only):**
 ```bash
 make test-integration  # Run only integration tests
-make test              # Run all tests (unit + integration)
 ```
 
 **Requirements:**
 - Network access
-- Valid Clerk test instance publishable key configured in `.env` file
+- Valid Clerk test instance publishable key configured in `.env.local` file
 - Test instance should be stable and not modified by other processes
+- **Clerk employees only:** Access to Clerk's 1Password Shared vault
 
-**Setup:**
-1. Run `make setup` to create the `.env` file (if you haven't already)
-2. Add your integration test publishable key to `.env`:
+**Setup (Clerk employees only):**
+1. Run `make setup` to create the `.env.local` file (if you haven't already)
+2. Run `make fetch-secrets` to automatically populate `.env.local` from 1Password
+   - This will automatically install 1Password CLI if not already installed
+   - Requires access to Clerk's Shared vault and 1Password desktop app integration enabled
+   - See [1Password CLI setup guide](https://developer.1password.com/docs/cli/get-started/#step-2-turn-on-the-1password-desktop-app-integration)
+3. If `make fetch-secrets` doesn't work, you can manually add the key to `.env.local`:
    ```
    CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY=pk_test_...
    ```
-3. Get the key from your Clerk Dashboard or ask a team member for the integration test instance key
 
-**When to run integration tests:**
-- Before committing changes that affect Environment domain or API client
-- When debugging API integration issues
-- Before opening a PR that touches environment-related code
-- Periodically during development to catch regressions
+**OSS contributors:**
+- Integration tests will run automatically in CI for your pull requests
+- You don't need to configure anything locally
+- The `.env.local` file created by `make setup` will remain empty, which is expected
 
 **How it works:**
-- The `.env` file is automatically created by `make setup` with a blank key
-- `make test-integration` loads the key from `.env` and passes it as an environment variable
+- The `.env.local` file is automatically created by `make setup` with a blank key
+- Clerk employees can run `make fetch-secrets` to populate it from 1Password
+- `make test-integration` loads the key from `.env.local` and passes it as an environment variable
 - The test code reads the key from the environment variable
 - In CI, the key is automatically provided via GitHub Actions secrets
 
 **Troubleshooting:**
 - If integration tests fail with network errors, check your internet connection
-- If tests fail with authentication errors, verify the test instance publishable key in `.env` is valid
-- If `.env` file is missing, run `make setup` to create it
+- If tests fail with authentication errors, verify the test instance publishable key in `.env.local` is valid
+- If `.env.local` file is missing, run `make setup` to create it
+- If `make fetch-secrets` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
 - Integration tests may be slower than unit tests due to real network calls
 - Some tests may be flaky due to network conditions - consider retrying
 
@@ -157,22 +177,20 @@ Every pull request will automatically:
    - Format checking (`make format-check`)
    - Linting (`make lint`)
 
-2. Run unit tests (`make test-unit`)
+2. Run unit tests (`make test`)
 
 3. Run integration tests (`make test-integration`)
-   - Requires `.env` file with `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY` set
-   - Integration test failures are currently non-blocking (they won't prevent merges)
-   - This allows the test infrastructure to stabilize before making it required
+   - Requires `.env.local` file with `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY` set (in CI, this is provided via GitHub Actions secrets)
 
 4. Build for all supported platforms (iOS, macOS, macCatalyst, watchOS, tvOS, visionOS)
 
-5. If code is not formatted, has lint violations, or unit tests fail, CI will fail
+5. If code is not formatted, has lint violations, or tests fail, CI will fail
 
 6. To fix issues locally:
    ```bash
    make format    # Fix formatting
    make lint-fix  # Fix lint issues
-   make test-unit # Run unit tests
+   make test      # Run unit tests
    ```
 
 7. Commit and push again
