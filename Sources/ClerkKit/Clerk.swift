@@ -168,12 +168,10 @@ public final class Clerk {
 
   package init() {
     // Create temporary container - will be replaced during configure with proper values
-    // Empty publishableKey is handled gracefully by DependencyContainer
-    let tempOptions = Clerk.ClerkOptions()
     do {
       dependencies = try DependencyContainer(
         publishableKey: "",
-        options: tempOptions
+        options: .init()
       )
     } catch {
       // This should never happen, but handle it just in case
