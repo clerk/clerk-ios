@@ -117,7 +117,6 @@ struct AuthAndClientIntegrationTests {
     }
 
     // Step 3: Attempt verification with the test verification code
-    // For test emails (test+clerk_test@...), the code 424242 always works
     let attemptedSignUp = try await preparedSignUp.attemptVerification(strategy: .emailCode(code: "424242"))
 
     // Verify status after attempt
@@ -223,7 +222,6 @@ struct AuthAndClientIntegrationTests {
     }
 
     // Step 3: Attempt first factor with the test verification code
-    // For test emails (test+clerk_test@...), the code 424242 always works
     let attemptedSignIn = try await preparedSignIn.attemptFirstFactor(strategy: .emailCode(code: "424242"))
 
     // Verify status after attempt
