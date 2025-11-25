@@ -145,6 +145,9 @@ struct AuthAndClientIntegrationTests {
         }
       }
     }
+
+    // Sign out so that SignIn test can sign in with the new account
+    try await Clerk.shared.signOut()
   }
 
   // MARK: - SignIn Test
