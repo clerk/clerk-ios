@@ -97,4 +97,4 @@ buildServer.json
 .compile
 
 # Environment variables
-.env
+.env.local

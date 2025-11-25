@@ -53,32 +53,32 @@ struct AuthAndClientIntegrationTests {
 
     // Verify required fields don't contain unknown values
     for field in signUp.requiredFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "requiredFields")
     }
 
     // Verify optional fields don't contain unknown values
     for field in signUp.optionalFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "optionalFields")
     }
 
     // Verify missing fields don't contain unknown values
     for field in signUp.missingFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "missingFields")
     }
 
     // Verify unverified fields don't contain unknown values
     for field in signUp.unverifiedFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "unverifiedFields")
     }
 
     // Verify verifications don't contain unknown values
-    for (_, verification) in signUp.verifications {
+    for (key, verification) in signUp.verifications {
       if let verification {
         if let status = verification.status {
-          verifyVerificationStatus(status)
+          verifyVerificationStatus(status, property: "verifications[\(key)].status")
         }
         if let strategy = verification.strategy {
-          verifyFactorStrategy(strategy)
+          verifyFactorStrategy(strategy, property: "verifications[\(key)].strategy")
         }
       }
     }
@@ -92,26 +92,26 @@ struct AuthAndClientIntegrationTests {
 
     // Verify fields after prepare
     for field in preparedSignUp.requiredFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "requiredFields")
     }
     for field in preparedSignUp.optionalFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "optionalFields")
     }
     for field in preparedSignUp.missingFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "missingFields")
     }
     for field in preparedSignUp.unverifiedFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "unverifiedFields")
     }
 
     // Verify verifications after prepare
-    for (_, verification) in preparedSignUp.verifications {
+    for (key, verification) in preparedSignUp.verifications {
       if let verification {
         if let status = verification.status {
-          verifyVerificationStatus(status)
+          verifyVerificationStatus(status, property: "verifications[\(key)].status")
         }
         if let strategy = verification.strategy {
-          verifyFactorStrategy(strategy)
+          verifyFactorStrategy(strategy, property: "verifications[\(key)].strategy")
         }
       }
     }
@@ -124,26 +124,26 @@ struct AuthAndClientIntegrationTests {
 
     // Verify fields after attempt
     for field in attemptedSignUp.requiredFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "requiredFields")
     }
     for field in attemptedSignUp.optionalFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "optionalFields")
     }
     for field in attemptedSignUp.missingFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "missingFields")
     }
     for field in attemptedSignUp.unverifiedFields {
-      verifySignUpField(field)
+      verifySignUpField(field, property: "unverifiedFields")
     }
 
     // Verify verifications after attempt
-    for (_, verification) in attemptedSignUp.verifications {
+    for (key, verification) in attemptedSignUp.verifications {
       if let verification {
         if let status = verification.status {
-          verifyVerificationStatus(status)
+          verifyVerificationStatus(status, property: "verifications[\(key)].status")
         }
         if let strategy = verification.strategy {
-          verifyFactorStrategy(strategy)
+          verifyFactorStrategy(strategy, property: "verifications[\(key)].strategy")
         }
       }
     }
@@ -169,31 +169,31 @@ struct AuthAndClientIntegrationTests {
     // Verify supported identifiers don't contain unknown values
     if let supportedIdentifiers = signIn.supportedIdentifiers {
       for identifier in supportedIdentifiers {
-        verifySignInIdentifier(identifier)
+        verifySignInIdentifier(identifier, property: "supportedIdentifiers")
       }
     }
 
     // Verify supported first factors don't contain unknown strategies
     if let supportedFirstFactors = signIn.supportedFirstFactors {
       for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
+        verifyFactorStrategy(factor.strategy, property: "supportedFirstFactors")
       }
     }
 
     // Verify supported second factors don't contain unknown strategies
     if let supportedSecondFactors = signIn.supportedSecondFactors {
       for factor in supportedSecondFactors {
-        verifyFactorStrategy(factor.strategy)
+        verifyFactorStrategy(factor.strategy, property: "supportedSecondFactors")
       }
     }
 
     // Verify first factor verification status if present
     if let verification = signIn.firstFactorVerification {
       if let status = verification.status {
-        verifyVerificationStatus(status)
+        verifyVerificationStatus(status, property: "firstFactorVerification.status")
       }
       if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
+        verifyFactorStrategy(strategy, property: "firstFactorVerification.strategy")
       }
     }
 
@@ -207,17 +207,17 @@ struct AuthAndClientIntegrationTests {
     // Verify first factor verification is set up correctly
     if let verification = preparedSignIn.firstFactorVerification {
       if let status = verification.status {
-        verifyVerificationStatus(status)
+        verifyVerificationStatus(status, property: "firstFactorVerification.status")
       }
       if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
+        verifyFactorStrategy(strategy, property: "firstFactorVerification.strategy")
       }
     }
 
     // Verify supported factors after prepare
     if let supportedFirstFactors = preparedSignIn.supportedFirstFactors {
       for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
+        verifyFactorStrategy(factor.strategy, property: "supportedFirstFactors")
       }
     }
 
@@ -230,23 +230,23 @@ struct AuthAndClientIntegrationTests {
     // Verify first factor verification after attempt
     if let verification = attemptedSignIn.firstFactorVerification {
       if let status = verification.status {
-        verifyVerificationStatus(status)
+        verifyVerificationStatus(status, property: "firstFactorVerification.status")
       }
       if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
+        verifyFactorStrategy(strategy, property: "firstFactorVerification.strategy")
       }
     }
 
     // Verify supported factors after attempt
     if let supportedFirstFactors = attemptedSignIn.supportedFirstFactors {
       for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
+        verifyFactorStrategy(factor.strategy, property: "supportedFirstFactors")
       }
     }
 
     if let supportedSecondFactors = attemptedSignIn.supportedSecondFactors {
       for factor in supportedSecondFactors {
-        verifyFactorStrategy(factor.strategy)
+        verifyFactorStrategy(factor.strategy, property: "supportedSecondFactors")
       }
     }
   }
@@ -279,41 +279,41 @@ struct AuthAndClientIntegrationTests {
       // Verify supported identifiers
       if let supportedIdentifiers = signIn.supportedIdentifiers {
         for identifier in supportedIdentifiers {
-          verifySignInIdentifier(identifier)
+          verifySignInIdentifier(identifier, property: "supportedIdentifiers")
         }
       }
 
       // Verify supported first factors
       if let supportedFirstFactors = signIn.supportedFirstFactors {
         for factor in supportedFirstFactors {
-          verifyFactorStrategy(factor.strategy)
+          verifyFactorStrategy(factor.strategy, property: "supportedFirstFactors")
         }
       }
 
       // Verify supported second factors
       if let supportedSecondFactors = signIn.supportedSecondFactors {
         for factor in supportedSecondFactors {
-          verifyFactorStrategy(factor.strategy)
+          verifyFactorStrategy(factor.strategy, property: "supportedSecondFactors")
         }
       }
 
       // Verify first factor verification
       if let verification = signIn.firstFactorVerification {
         if let status = verification.status {
-          verifyVerificationStatus(status)
+          verifyVerificationStatus(status, property: "firstFactorVerification.status")
         }
         if let strategy = verification.strategy {
-          verifyFactorStrategy(strategy)
+          verifyFactorStrategy(strategy, property: "firstFactorVerification.strategy")
         }
       }
 
       // Verify second factor verification
       if let verification = signIn.secondFactorVerification {
         if let status = verification.status {
-          verifyVerificationStatus(status)
+          verifyVerificationStatus(status, property: "secondFactorVerification.status")
         }
         if let strategy = verification.strategy {
-          verifyFactorStrategy(strategy)
+          verifyFactorStrategy(strategy, property: "secondFactorVerification.strategy")
         }
       }
     }
@@ -324,32 +324,32 @@ struct AuthAndClientIntegrationTests {
 
       // Verify required fields
       for field in signUp.requiredFields {
-        verifySignUpField(field)
+        verifySignUpField(field, property: "requiredFields")
       }
 
       // Verify optional fields
       for field in signUp.optionalFields {
-        verifySignUpField(field)
+        verifySignUpField(field, property: "optionalFields")
       }
 
       // Verify missing fields
       for field in signUp.missingFields {
-        verifySignUpField(field)
+        verifySignUpField(field, property: "missingFields")
       }
 
       // Verify unverified fields
       for field in signUp.unverifiedFields {
-        verifySignUpField(field)
+        verifySignUpField(field, property: "unverifiedFields")
       }
 
       // Verify verifications
-      for (_, verification) in signUp.verifications {
+      for (key, verification) in signUp.verifications {
         if let verification {
           if let status = verification.status {
-            verifyVerificationStatus(status)
+            verifyVerificationStatus(status, property: "verifications[\(key)].status")
           }
           if let strategy = verification.strategy {
-            verifyFactorStrategy(strategy)
+            verifyFactorStrategy(strategy, property: "verifications[\(key)].strategy")
           }
         }
       }
@@ -368,13 +368,13 @@ struct AuthAndClientIntegrationTests {
     }
   }
 
-  private func verifySignInIdentifier(_ identifier: SignIn.Identifier) {
+  private func verifySignInIdentifier(_ identifier: SignIn.Identifier, property: String) {
     switch identifier {
     case .emailAddress, .phoneNumber, .web3Wallet, .username, .passkey:
       break // Valid cases
     case .unknown(let value):
-      Issue.record("SignIn.Identifier returned unknown value: \(value)")
-      #expect(Bool(false), "SignIn.Identifier should not be unknown, got: \(value)")
+      Issue.record("SignIn.Identifier returned unknown value: \(value) in property: \(property)")
+      #expect(Bool(false), "SignIn.Identifier should not be unknown, got: \(value) in property: \(property)")
     }
   }
 
@@ -388,15 +388,15 @@ struct AuthAndClientIntegrationTests {
     }
   }
 
-  private func verifySignUpField(_ field: SignUpField) {
+  private func verifySignUpField(_ field: SignUpField, property: String) {
     switch field {
     case .emailAddress, .phoneNumber, .web3Wallet, .username, .passkey, .password,
          .authenticatorApp, .ticket, .backupCode, .firstName, .lastName,
-         .saml, .enterpriseSSO, .legalAccepted, .customAction:
+         .saml, .enterpriseSSO, .legalAccepted, .customAction, .oauth:
       break // Valid cases
     case .unknown(let value):
-      Issue.record("SignUpField returned unknown value: \(value)")
-      #expect(Bool(false), "SignUpField should not be unknown, got: \(value)")
+      Issue.record("SignUpField returned unknown value: \(value) in property: \(property)")
+      #expect(Bool(false), "SignUpField should not be unknown, got: \(value) in property: \(property)")
     }
   }
 
@@ -410,25 +410,25 @@ struct AuthAndClientIntegrationTests {
     }
   }
 
-  private func verifyFactorStrategy(_ strategy: FactorStrategy) {
+  private func verifyFactorStrategy(_ strategy: FactorStrategy, property: String) {
     switch strategy {
     case .password, .emailCode, .phoneCode, .passkey, .totp, .backupCode, .ticket,
          .resetPasswordEmailCode, .resetPasswordPhoneCode, .saml, .enterpriseSSO,
          .oauth:
       break // Valid cases
     case .unknown(let value):
-      Issue.record("FactorStrategy returned unknown value: \(value)")
-      #expect(Bool(false), "FactorStrategy should not be unknown, got: \(value)")
+      Issue.record("FactorStrategy returned unknown value: \(value) in property: \(property)")
+      #expect(Bool(false), "FactorStrategy should not be unknown, got: \(value) in property: \(property)")
     }
   }
 
-  private func verifyVerificationStatus(_ status: Verification.Status) {
+  private func verifyVerificationStatus(_ status: Verification.Status, property: String) {
     switch status {
     case .unverified, .verified, .transferable, .failed, .expired:
       break // Valid cases
     case .unknown(let value):
-      Issue.record("Verification.Status returned unknown value: \(value)")
-      #expect(Bool(false), "Verification.Status should not be unknown, got: \(value)")
+      Issue.record("Verification.Status returned unknown value: \(value) in property: \(property)")
+      #expect(Bool(false), "Verification.Status should not be unknown, got: \(value) in property: \(property)")
     }
   }
 }
