@@ -18,17 +18,15 @@ import Testing
 ///
 /// Requirements:
 /// - Network access
-/// - Valid Clerk test instance (configured via `integrationTestPublishableKey`)
+/// - Valid Clerk test instance (configured via `configureClerkForIntegrationTesting(keyName:)`)
 /// - Test instance should be stable and not modified by other processes
 @MainActor
 @Suite(.serialized)
 struct EnvironmentIntegrationTests {
-  init() {
-    configureClerkForIntegrationTesting()
-  }
-
   @Test
   func fetchAndDecodeEnvironment() async throws {
+    configureClerkForIntegrationTesting(keyName: "with-email-codes")
+
     // Test that we can fetch and decode the environment from a real Clerk instance
     let environment = try await Clerk.Environment.get()
 

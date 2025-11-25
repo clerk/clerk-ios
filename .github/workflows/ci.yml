@@ -102,7 +102,27 @@ jobs:
           key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-macOS-
 
+      - name: Setup test keys
+        run: |
+          set +x  # Disable command echoing to prevent secret exposure
+          # Write .keys.json from GitHub Actions secret
+          # This allows tests to use different keys by specifying keyName parameter
+          if [ -z "${{ secrets.CLERK_TEST_KEYS_JSON }}" ]; then
+            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
+            echo "   Please configure CLERK_TEST_KEYS_JSON secret in repository settings"
+            exit 1
+          fi
+          echo '${{ secrets.CLERK_TEST_KEYS_JSON }}' > .keys.json
+          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+          # Ensure file permissions are restrictive (read/write for owner only)
+          chmod 600 .keys.json
+
       - name: Run integration tests
         run: make test-integration
-        env:
-          CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY }}
+
+      - name: Cleanup test keys
+        if: always()
+        run: |
+          # Remove .keys.json to prevent secrets from being exposed in artifacts or logs
+          rm -f .keys.json
+          echo "✅ Cleaned up .keys.json"
