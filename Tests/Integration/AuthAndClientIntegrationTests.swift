@@ -41,6 +41,9 @@ struct AuthAndClientIntegrationTests {
   /// This test runs first to create an account that SignIn will use.
   @Test
   func test1_signUpCreatePrepareAttempt() async throws {
+    // Sign out first to ensure a clean slate
+    try? await Clerk.shared.signOut()
+
     // Step 1: Create a SignUp with an email address
     // Using test email format - test+clerk_test@email.com emails are test emails
     let signUp = try await SignUp.create(strategy: .standard(emailAddress: Self.testEmail))
