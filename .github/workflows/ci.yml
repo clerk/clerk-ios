@@ -80,7 +80,7 @@ jobs:
           restore-keys: swiftpm-macOS-
 
       - name: Run unit tests
-        run: make test-unit
+        run: make test
 
   test-integration:
     name: Run integration tests on macOS
@@ -106,4 +106,3 @@ jobs:
         run: make test-integration
         env:
           CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY }}
-        continue-on-error: true

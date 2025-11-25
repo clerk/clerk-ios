@@ -13,7 +13,7 @@ import Foundation
 ///
 /// To get the key for local development:
 /// - Get the key from your Clerk Dashboard or ask a team member for the integration test instance key
-/// - Add it to `.env` file: `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY=pk_test_...`
+/// - Add it to `.env.local` file: `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY=pk_test_...`
 ///
 /// In CI, the environment variable is automatically set from GitHub Actions secrets.
 let integrationTestPublishableKey: String = {

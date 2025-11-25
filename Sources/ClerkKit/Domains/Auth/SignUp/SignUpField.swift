@@ -27,6 +27,7 @@ public enum SignUpField: Hashable, Codable, Sendable {
   case enterpriseSSO
   case legalAccepted
   case customAction
+  case oauth(OAuthProvider)
   case unknown(String)
 
   /// The raw string value used in the API.
@@ -62,6 +63,8 @@ public enum SignUpField: Hashable, Codable, Sendable {
       "legal_accepted"
     case .customAction:
       "custom_action"
+    case let .oauth(provider):
+      provider.strategy
     case .unknown(let value):
       value
     }
@@ -101,7 +104,11 @@ public enum SignUpField: Hashable, Codable, Sendable {
     case "custom_action":
       self = .customAction
     default:
-      self = .unknown(rawValue)
+      if rawValue.hasPrefix("oauth_") {
+        self = .oauth(OAuthProvider(strategy: rawValue))
+      } else {
+        self = .unknown(rawValue)
+      }
     }
   }
 
