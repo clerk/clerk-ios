@@ -52,7 +52,7 @@ public extension Clerk.Environment {
     return authConfig.singleSessionMode == false
   }
 
-  public var passwordIsEnabled: Bool {
+  var passwordIsEnabled: Bool {
     guard let userSettings else { return false }
     return userSettings.attributes.contains { key, value in
       key == "password" && value.enabled
