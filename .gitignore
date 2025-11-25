@@ -96,5 +96,5 @@ buildServer.json
 buildServer.json
 .compile
 
-# Environment variables
-.env.local
+# Integration test publishable keys
+.keys.json

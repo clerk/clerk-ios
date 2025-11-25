@@ -9,22 +9,32 @@ import Foundation
 
 @testable import ClerkKit
 
-/// Publishable key for the integration test Clerk instance.
+/// Gets the publishable key for integration tests.
 ///
-/// To get the key for local development:
-/// - Get the key from your Clerk Dashboard or ask a team member for the integration test instance key
-/// - Add it to `.env.local` file: `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY=pk_test_...`
+/// Reads from `.keys.json` file using the specified `keyName`.
+/// Returns an empty string if the key is not found.
 ///
-/// In CI, the environment variable is automatically set from GitHub Actions secrets.
-let integrationTestPublishableKey: String = {
-  if let envKey = ProcessInfo.processInfo.environment["CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY"],
-     !envKey.isEmpty
+/// To get keys for local development:
+/// - Run `make fetch-test-keys` to populate `.keys.json` from 1Password
+/// - Or manually add keys to `.keys.json`: `{ "key-name": { "pk": "pk_test_..." } }`
+///
+/// In CI, `.keys.json` is created from `CLERK_TEST_KEYS_JSON` GitHub Actions secret.
+func getIntegrationTestPublishableKey(keyName: String) -> String {
+  // Try to read from .keys.json file
+  let keysFilePath = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    .appendingPathComponent(".keys.json")
+
+  if let keysData = try? Data(contentsOf: keysFilePath),
+     let keysJSON = try? JSONSerialization.jsonObject(with: keysData) as? [String: Any],
+     let keyEntry = keysJSON[keyName] as? [String: Any],
+     let pk = keyEntry["pk"] as? String,
+     !pk.isEmpty
   {
-    return envKey
+    return pk
   }
 
   return ""
-}()
+}
 
 /// Configures Clerk for integration testing with real API calls.
 ///
@@ -36,13 +46,15 @@ let integrationTestPublishableKey: String = {
 /// This ensures integration tests are isolated and don't log out the user or affect
 /// cached data on the device.
 ///
-/// This function should be called at the start of each integration test suite or test.
+/// This function must be called at the start of each integration test method.
 ///
+/// - Parameter keyName: Key name from `.keys.json` to use (e.g., `"with-email-codes"`, `"with-email-links"`).
 /// - Note: Integration tests require network access and a valid Clerk test instance.
 /// - Note: Integration tests are slower than unit tests due to real network calls.
 @MainActor
-func configureClerkForIntegrationTesting() {
-  Clerk.configure(publishableKey: integrationTestPublishableKey)
+func configureClerkForIntegrationTesting(keyName: String) {
+  let publishableKey = getIntegrationTestPublishableKey(keyName: keyName)
+  Clerk.configure(publishableKey: publishableKey)
 
   // Replace the dependencies with a container that uses an in-memory keychain
   // but keeps the real API client and services for making actual API calls

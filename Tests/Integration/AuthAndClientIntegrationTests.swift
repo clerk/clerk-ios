@@ -21,7 +21,7 @@ import Testing
 ///
 /// Requirements:
 /// - Network access
-/// - Valid Clerk test instance (configured via `integrationTestPublishableKey`)
+/// - Valid Clerk test instance (configured via `configureClerkForIntegrationTesting(keyName:)`)
 /// - Test instance should be stable and not modified by other processes
 @MainActor
 @Suite(.serialized)
@@ -30,10 +30,6 @@ struct AuthAndClientIntegrationTests {
   /// Using a fixed email so SignIn can authenticate with the account created by SignUp.
   private static let testEmail = "test+clerk_test@example.com"
 
-  init() {
-    configureClerkForIntegrationTesting()
-  }
-
   // MARK: - SignUp Test
 
   /// Tests the complete SignUp flow: create -> prepare -> attempt
@@ -41,6 +37,7 @@ struct AuthAndClientIntegrationTests {
   /// This test runs first to create an account that SignIn will use.
   @Test
   func test1_signUpCreatePrepareAttempt() async throws {
+    configureClerkForIntegrationTesting(keyName: "with-email-codes")
     // Sign out first to ensure a clean slate
     try? await Clerk.shared.signOut()
 
@@ -159,6 +156,7 @@ struct AuthAndClientIntegrationTests {
   /// This test runs after SignUp to sign in with the newly created account.
   @Test
   func test2_signInCreatePrepareAttempt() async throws {
+    configureClerkForIntegrationTesting(keyName: "with-email-codes")
     // Step 1: Create a SignIn with the same email used in SignUp
     // Using test email format - test+clerk_test@email.com emails are test emails
     let signIn = try await SignIn.create(strategy: .identifier(Self.testEmail))
@@ -257,6 +255,7 @@ struct AuthAndClientIntegrationTests {
   /// This test runs after SignIn and SignUp tests to verify client state.
   @Test
   func test3_getClient() async throws {
+    configureClerkForIntegrationTesting(keyName: "with-email-codes")
     // Get the current client
     let client = try await Client.get()
 
