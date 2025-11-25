@@ -14,7 +14,7 @@ struct SecuredByClerkView: View {
   @Environment(\.clerkTheme) private var theme
 
   var body: some View {
-    if clerk.environment.displayConfig?.branded == true {
+    if clerk.environment?.displayConfig.branded == true {
       HStack(spacing: 6) {
         Text("Secured by", bundle: .module)
         Image("clerk-logo", bundle: .module)
@@ -33,7 +33,7 @@ struct SecuredByClerkFooter: View {
   @Environment(\.clerkTheme) private var theme
 
   var body: some View {
-    if clerk.environment.displayConfig?.branded == true {
+    if clerk.environment?.displayConfig.branded == true {
       SecuredByClerkView()
         .padding(16)
         .frame(maxWidth: .infinity)

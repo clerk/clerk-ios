@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents information about a TOTP configuration.
-public struct TOTPResource: Codable, Equatable, Sendable {
+public struct TOTPResource: Codable, Equatable, Hashable, Sendable {
   /// A unique identifier for this TOTP secret.
   public var id: String
 

@@ -45,7 +45,7 @@ struct UserProfileAddMfaView: View {
     }
   }
 
-  var environment: Clerk.Environment { clerk.environment }
+  var environment: Clerk.Environment? { clerk.environment }
   var user: User? { clerk.user }
 
   init(
@@ -67,7 +67,7 @@ struct UserProfileAddMfaView: View {
 
           VStack(spacing: 0) {
             Group {
-              if environment.mfaPhoneCodeIsEnabled {
+              if environment?.mfaPhoneCodeIsEnabled == true {
                 Button {
                   sharedState.chooseMfaTypeIsPresented = false
                   sharedState.presentedAddMfaType = .sms
@@ -76,7 +76,7 @@ struct UserProfileAddMfaView: View {
                 }
               }
 
-              if environment.mfaAuthenticatorAppIsEnabled, user?.totpEnabled != true {
+              if environment?.mfaAuthenticatorAppIsEnabled == true, user?.totpEnabled != true {
                 AsyncButton {
                   await createTotp()
                 } label: { isRunning in

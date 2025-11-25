@@ -26,12 +26,12 @@ struct UserProfileUpdateProfileView: View {
   @State private var username: String
   @State private var error: Error?
 
-  var environment: Clerk.Environment {
+  var environment: Clerk.Environment? {
     clerk.environment
   }
 
   var showSaveButton: Bool {
-    environment.usernameIsEnabled || environment.firstNameIsEnabled || environment.lastNameIsEnabled
+    (environment?.usernameIsEnabled ?? false) || (environment?.firstNameIsEnabled ?? false) || (environment?.lastNameIsEnabled ?? false)
   }
 
   let user: User
@@ -50,19 +50,19 @@ struct UserProfileUpdateProfileView: View {
           menu
 
           VStack(spacing: 24) {
-            if environment.usernameIsEnabled {
+            if environment?.usernameIsEnabled == true {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
             }
 
-            if environment.firstNameIsEnabled {
+            if environment?.firstNameIsEnabled == true {
               ClerkTextField("First name", text: $firstName)
                 .textContentType(.givenName)
             }
 
-            if environment.lastNameIsEnabled {
+            if environment?.lastNameIsEnabled == true {
               ClerkTextField("Last name", text: $lastName)
                 .textContentType(.familyName)
             }
@@ -226,9 +226,9 @@ extension UserProfileUpdateProfileView {
     do {
       try await user.update(
         .init(
-          username: environment.usernameIsEnabled ? username : nil,
-          firstName: environment.firstNameIsEnabled ? firstName : nil,
-          lastName: environment.lastNameIsEnabled ? lastName : nil
+          username: environment?.usernameIsEnabled == true ? username : nil,
+          firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
+          lastName: environment?.lastNameIsEnabled == true ? lastName : nil
         )
       )
 

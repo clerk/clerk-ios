@@ -13,7 +13,7 @@ import Foundation
 extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
-    let preferredSignInStrategy = Clerk.shared.environment.displayConfig?.preferredSignInStrategy
+    let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
 
     if preferredSignInStrategy == .password {
       return factorWhenPasswordIsPreferred

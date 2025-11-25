@@ -38,7 +38,8 @@ extension User {
 
   @MainActor
   var usernameForPasswordKeeper: String {
-    guard let userSettings = Clerk.shared.environment.userSettings else { return "" }
+    guard let environment = Clerk.shared.environment else { return "" }
+    let userSettings = environment.userSettings
 
     if userSettings.attributes.contains(where: { $0 == "username" && $1.enabled && $1.usedForFirstFactor }),
        let username
@@ -63,7 +64,8 @@ extension User {
 
   @MainActor
   var unconnectedProviders: [OAuthProvider] {
-    let socialProviders = Clerk.shared.environment.allSocialProviders
+    guard let environment = Clerk.shared.environment else { return [] }
+    let socialProviders = environment.allSocialProviders
     let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
     return socialProviders.filter { !verifiedExternalProviders.contains($0) }
   }

@@ -22,7 +22,7 @@ import Foundation
 /// Finally, phone numbers can be used as part of multi-factor authentication. During sign-in, users can opt in to an extra
 /// verification step where they will receive an SMS message with a one-time code. This code must be entered to complete
 /// the sign-in process.
-public struct PhoneNumber: Codable, Equatable, Identifiable, Sendable {
+public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable {
   /// The unique identifier for this phone number.
   public var id: String
 
