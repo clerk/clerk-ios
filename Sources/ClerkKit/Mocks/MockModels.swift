@@ -952,20 +952,6 @@ public extension Clerk.Environment.FraudSettings {
   }
 }
 
-// MARK: CommerceSettings
-
-public extension CommerceSettings {
-  static var mock: Self {
-    .init(
-      billing: .init(
-        enabled: true,
-        hasPaidUserPlans: true,
-        hasPaidOrgPlans: true
-      )
-    )
-  }
-}
-
 // MARK: - Common
 
 // MARK: DeletedObject
