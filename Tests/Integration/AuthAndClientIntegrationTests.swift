@@ -26,120 +26,24 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AuthAndClientIntegrationTests {
+  /// Shared test email used across SignUp and SignIn tests.
+  /// Using a fixed email so SignIn can authenticate with the account created by SignUp.
+  private static let testEmail = "test+clerk_test@example.com"
+
   init() {
     configureClerkForIntegrationTesting()
-  }
-
-  // MARK: - SignIn Test
-
-  /// Tests the complete SignIn flow: create -> prepare -> attempt
-  /// Verifies all enum values are properly decoded without unknown cases.
-  @Test
-  func test1_signInCreatePrepareAttempt() async throws {
-    // Step 1: Create a SignIn with an identifier
-    // Using test email format - test+clerk_test@email.com emails are test emails
-    let signIn = try await SignIn.create(strategy: .identifier("test+clerk_test@example.com"))
-
-    // Verify SignIn status is not unknown
-    verifySignInStatus(signIn.status)
-
-    // Verify supported identifiers don't contain unknown values
-    if let supportedIdentifiers = signIn.supportedIdentifiers {
-      for identifier in supportedIdentifiers {
-        verifySignInIdentifier(identifier)
-      }
-    }
-
-    // Verify supported first factors don't contain unknown strategies
-    if let supportedFirstFactors = signIn.supportedFirstFactors {
-      for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
-      }
-    }
-
-    // Verify supported second factors don't contain unknown strategies
-    if let supportedSecondFactors = signIn.supportedSecondFactors {
-      for factor in supportedSecondFactors {
-        verifyFactorStrategy(factor.strategy)
-      }
-    }
-
-    // Verify first factor verification status if present
-    if let verification = signIn.firstFactorVerification {
-      if let status = verification.status {
-        verifyVerificationStatus(status)
-      }
-      if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
-      }
-    }
-
-    // Step 2: Prepare first factor verification (email_code)
-    // This will send a code to the email address
-    let preparedSignIn = try await signIn.prepareFirstFactor(strategy: .emailCode())
-
-    // Verify status after prepare
-    verifySignInStatus(preparedSignIn.status)
-
-    // Verify first factor verification is set up correctly
-    if let verification = preparedSignIn.firstFactorVerification {
-      if let status = verification.status {
-        verifyVerificationStatus(status)
-      }
-      if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
-      }
-    }
-
-    // Verify supported factors after prepare
-    if let supportedFirstFactors = preparedSignIn.supportedFirstFactors {
-      for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
-      }
-    }
-
-    // Step 3: Attempt first factor with the test verification code
-    // For test emails (test+clerk_test@...), the code 424242 always works
-    let attemptedSignIn = try await preparedSignIn.attemptFirstFactor(strategy: .emailCode(code: "424242"))
-
-    // Verify status after attempt
-    verifySignInStatus(attemptedSignIn.status)
-
-    // Verify first factor verification after attempt
-    if let verification = attemptedSignIn.firstFactorVerification {
-      if let status = verification.status {
-        verifyVerificationStatus(status)
-      }
-      if let strategy = verification.strategy {
-        verifyFactorStrategy(strategy)
-      }
-    }
-
-    // Verify supported factors after attempt
-    if let supportedFirstFactors = attemptedSignIn.supportedFirstFactors {
-      for factor in supportedFirstFactors {
-        verifyFactorStrategy(factor.strategy)
-      }
-    }
-
-    if let supportedSecondFactors = attemptedSignIn.supportedSecondFactors {
-      for factor in supportedSecondFactors {
-        verifyFactorStrategy(factor.strategy)
-      }
-    }
   }
 
   // MARK: - SignUp Test
 
   /// Tests the complete SignUp flow: create -> prepare -> attempt
   /// Verifies all enum values are properly decoded without unknown cases.
+  /// This test runs first to create an account that SignIn will use.
   @Test
-  func test2_signUpCreatePrepareAttempt() async throws {
+  func test1_signUpCreatePrepareAttempt() async throws {
     // Step 1: Create a SignUp with an email address
     // Using test email format - test+clerk_test@email.com emails are test emails
-    // Adding UUID suffix to ensure uniqueness for each test run
-    let uniqueEmail = "test+clerk_test_\(UUID().uuidString.prefix(8))@example.com"
-    let signUp = try await SignUp.create(strategy: .standard(emailAddress: uniqueEmail))
+    let signUp = try await SignUp.create(strategy: .standard(emailAddress: Self.testEmail))
 
     // Verify SignUp status is not unknown
     verifySignUpStatus(signUp.status)
@@ -239,6 +143,106 @@ struct AuthAndClientIntegrationTests {
         if let strategy = verification.strategy {
           verifyFactorStrategy(strategy)
         }
+      }
+    }
+  }
+
+  // MARK: - SignIn Test
+
+  /// Tests the complete SignIn flow: create -> prepare -> attempt
+  /// Verifies all enum values are properly decoded without unknown cases.
+  /// This test runs after SignUp to sign in with the newly created account.
+  @Test
+  func test2_signInCreatePrepareAttempt() async throws {
+    // Step 1: Create a SignIn with the same email used in SignUp
+    // Using test email format - test+clerk_test@email.com emails are test emails
+    let signIn = try await SignIn.create(strategy: .identifier(Self.testEmail))
+
+    // Verify SignIn status is not unknown
+    verifySignInStatus(signIn.status)
+
+    // Verify supported identifiers don't contain unknown values
+    if let supportedIdentifiers = signIn.supportedIdentifiers {
+      for identifier in supportedIdentifiers {
+        verifySignInIdentifier(identifier)
+      }
+    }
+
+    // Verify supported first factors don't contain unknown strategies
+    if let supportedFirstFactors = signIn.supportedFirstFactors {
+      for factor in supportedFirstFactors {
+        verifyFactorStrategy(factor.strategy)
+      }
+    }
+
+    // Verify supported second factors don't contain unknown strategies
+    if let supportedSecondFactors = signIn.supportedSecondFactors {
+      for factor in supportedSecondFactors {
+        verifyFactorStrategy(factor.strategy)
+      }
+    }
+
+    // Verify first factor verification status if present
+    if let verification = signIn.firstFactorVerification {
+      if let status = verification.status {
+        verifyVerificationStatus(status)
+      }
+      if let strategy = verification.strategy {
+        verifyFactorStrategy(strategy)
+      }
+    }
+
+    // Step 2: Prepare first factor verification (email_code)
+    // This will send a code to the email address
+    let preparedSignIn = try await signIn.prepareFirstFactor(strategy: .emailCode())
+
+    // Verify status after prepare
+    verifySignInStatus(preparedSignIn.status)
+
+    // Verify first factor verification is set up correctly
+    if let verification = preparedSignIn.firstFactorVerification {
+      if let status = verification.status {
+        verifyVerificationStatus(status)
+      }
+      if let strategy = verification.strategy {
+        verifyFactorStrategy(strategy)
+      }
+    }
+
+    // Verify supported factors after prepare
+    if let supportedFirstFactors = preparedSignIn.supportedFirstFactors {
+      for factor in supportedFirstFactors {
+        verifyFactorStrategy(factor.strategy)
+      }
+    }
+
+    // Step 3: Attempt first factor with the test verification code
+    // For test emails (test+clerk_test@...), the code 424242 always works
+    let attemptedSignIn = try await preparedSignIn.attemptFirstFactor(strategy: .emailCode(code: "424242"))
+
+    // Verify status after attempt
+    verifySignInStatus(attemptedSignIn.status)
+
+    // Verify first factor verification after attempt
+    if let verification = attemptedSignIn.firstFactorVerification {
+      if let status = verification.status {
+        verifyVerificationStatus(status)
+      }
+      if let strategy = verification.strategy {
+        verifyFactorStrategy(strategy)
+      }
+    }
+
+    // Verify supported factors after attempt
+    if let supportedFirstFactors = attemptedSignIn.supportedFirstFactors {
+      for factor in supportedFirstFactors {
+        verifyFactorStrategy(factor.strategy)
+      }
+    }
+
+    if let supportedSecondFactors = attemptedSignIn.supportedSecondFactors {
+      for factor in supportedSecondFactors {
+        verifyFactorStrategy(factor.strategy)
       }
     }
   }
