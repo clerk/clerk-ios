@@ -1,16 +1,11 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-secrets
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys
 
-# Load .env.local file if it exists
-ifneq (,$(wildcard .env.local))
-    include .env.local
-    export
-endif
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make setup         - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .env.local file"
-	@echo "  make fetch-secrets - Fetch integration test secrets from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
+	@echo "  make setup         - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .keys.json file"
+	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
 	@echo "  make lint          - Run SwiftLint to check code quality"
@@ -23,13 +18,13 @@ help:
 
 # Main setup command - installs tools and hooks
 setup: install-tools install-hooks create-env
-	@echo "✅ Setup complete! SwiftFormat, SwiftLint, pre-commit hooks, and .env.local file are ready."
+	@echo "✅ Setup complete! SwiftFormat, SwiftLint, pre-commit hooks, and .keys.json file are ready."
 	@echo ""
-	@echo "   Clerk employees: Run 'make fetch-secrets' to populate integration test keys from 1Password"
+	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
-# Create .env.local file with blank integration test key if it doesn't exist
+# Create .keys.json file with blank integration test key if it doesn't exist
 create-env:
-	@./scripts/create-env-local.sh
+	@./scripts/create-keys-json.sh
 
 # Install SwiftFormat and SwiftLint via Homebrew
 install-tools:
@@ -66,9 +61,9 @@ install-1password-cli:
 		echo "✅ 1Password CLI is already installed"; \
 	fi
 
-# Fetch integration test secrets from 1Password (optional, for Clerk employees only)
+# Fetch integration test keys from 1Password (optional, for Clerk employees only)
 # Automatically installs 1Password CLI if not present
-fetch-secrets: install-1password-cli
+fetch-test-keys: install-1password-cli
 	@./scripts/fetch-1password-secrets.sh
 
 # Format all Swift files
@@ -102,8 +97,8 @@ test:
 	@echo "✅ Unit tests completed!"
 
 # Run only integration tests
-# Automatically loads CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY from environment variable or .env.local file
-# In CI, the environment variable is provided via GitHub Actions secrets
+# Tests decide which key to use from .keys.json (each test can specify its own key)
+# In CI, .keys.json is created from CLERK_TEST_KEYS_JSON GitHub Actions secret
 # Locally, only Clerk employees can run integration tests (they have 1Password vault access)
 # OSS contributors: Integration tests will run automatically in CI
 test-integration:

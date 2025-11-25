@@ -16,11 +16,11 @@ This command will:
 1. Check if SwiftFormat is installed, and install it via Homebrew if needed
 2. Check if SwiftLint is installed, and install it via Homebrew if needed
 3. Set up the pre-commit hook to automatically format staged Swift files
-4. Create a `.env.local` file for integration test configuration (if it doesn't exist)
+4. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
 
 After running `make setup`, you're ready to start developing!
 
-**For Clerk employees only:** After running `make setup`, you can optionally run `make fetch-secrets` to automatically populate integration test keys from 1Password. This will automatically install 1Password CLI if needed. This requires:
+**For Clerk employees only:** After running `make setup`, you can optionally run `make fetch-test-keys` to automatically populate integration test keys from 1Password. This will automatically install 1Password CLI if needed. This requires:
 - Access to Clerk's Shared vault in 1Password
 - 1Password desktop app integration enabled (see [1Password CLI setup guide](https://developer.1password.com/docs/cli/get-started/#step-2-turn-on-the-1password-desktop-app-integration))
 
@@ -61,15 +61,15 @@ After running `make setup`, you're ready to start developing!
 
 ### Available Make Commands
 
-- `make setup` - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .env.local file
+- `make setup` - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .keys.json file
 - `make format` - Format all Swift files using SwiftFormat
 - `make format-check` - Check formatting without modifying files (for CI)
 - `make lint` - Run SwiftLint to check code quality
 - `make lint-fix` - Run SwiftLint with auto-fix where possible
 - `make check` - Run both format-check and lint (for CI)
 - `make test` - Run unit tests
-- `make test-integration` - Run only integration tests (requires .env.local file with publishable key; Clerk employees only)
-- `make fetch-secrets` - Fetch integration test secrets from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
+- `make test-integration` - Run only integration tests (requires `.keys.json` file; Clerk employees only)
+- `make fetch-test-keys` - Fetch integration test keys from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
 ## Code Formatting
 
@@ -132,42 +132,78 @@ Integration tests are located in `Tests/Integration/` and make real API calls to
 make test-integration  # Run only integration tests
 ```
 
+Each test method must call `configureClerkForIntegrationTesting(keyName:)` at the start to specify which key to use.
+
 **Requirements:**
 - Network access
-- Valid Clerk test instance publishable key configured in `.env.local` file
+- Valid Clerk test instance publishable key configured in `.keys.json` file
 - Test instance should be stable and not modified by other processes
 - **Clerk employees only:** Access to Clerk's 1Password Shared vault
 
 **Setup (Clerk employees only):**
-1. Run `make setup` to create the `.env.local` file (if you haven't already)
-2. Run `make fetch-secrets` to automatically populate `.env.local` from 1Password
+1. Run `make setup` to create the `.keys.json` file (if you haven't already)
+2. Run `make fetch-test-keys` to automatically populate `.keys.json` from 1Password
    - This will automatically install 1Password CLI if not already installed
    - Requires access to Clerk's Shared vault and 1Password desktop app integration enabled
    - See [1Password CLI setup guide](https://developer.1password.com/docs/cli/get-started/#step-2-turn-on-the-1password-desktop-app-integration)
-3. If `make fetch-secrets` doesn't work, you can manually add the key to `.env.local`:
-   ```
-   CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY=pk_test_...
+3. If `make fetch-test-keys` doesn't work, you can manually add the key to `.keys.json`:
+   ```json
+   {
+     "with-email-codes": {
+       "pk": "pk_test_..."
+     }
+   }
    ```
 
 **OSS contributors:**
 - Integration tests will run automatically in CI for your pull requests
 - You don't need to configure anything locally
-- The `.env.local` file created by `make setup` will remain empty, which is expected
+- The `.keys.json` file created by `make setup` will remain empty, which is expected
 
 **How it works:**
-- The `.env.local` file is automatically created by `make setup` with a blank key
-- Clerk employees can run `make fetch-secrets` to populate it from 1Password
-- `make test-integration` loads the key from `.env.local` and passes it as an environment variable
-- The test code reads the key from the environment variable
-- In CI, the key is automatically provided via GitHub Actions secrets
+- The `.keys.json` file is automatically created by `make setup` with a blank `with-email-codes.pk` entry
+- Clerk employees can run `make fetch-test-keys` to populate it from 1Password (only includes `pk` values)
+- Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
+- Tests read keys directly from `.keys.json` file
+- In CI, the entire `.keys.json` content is provided via `CLERK_TEST_KEYS_JSON` GitHub Actions secret (written to `.keys.json` file before tests run)
 
 **Troubleshooting:**
 - If integration tests fail with network errors, check your internet connection
-- If tests fail with authentication errors, verify the test instance publishable key in `.env.local` is valid
-- If `.env.local` file is missing, run `make setup` to create it
-- If `make fetch-secrets` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
+- If tests fail with authentication errors, verify the test instance publishable key in `.keys.json` is valid
+- If `.keys.json` file is missing, run `make setup` to create it
+- If `make fetch-test-keys` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
 - Integration tests may be slower than unit tests due to real network calls
 - Some tests may be flaky due to network conditions - consider retrying
+
+## CI Configuration
+
+### Setting up GitHub Actions Secrets
+
+For integration tests to run in CI, you need to set up the `CLERK_TEST_KEYS_JSON` secret in GitHub Actions:
+
+1. **Get the `.keys.json` content:**
+   - Run `make fetch-test-keys` locally to populate `.keys.json`
+   - Copy the entire contents of `.keys.json` (or get it from 1Password)
+
+2. **Add it as a GitHub Actions secret:**
+   - Go to your repository settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `CLERK_TEST_KEYS_JSON`
+   - Value: Paste the entire JSON content from `.keys.json`
+     ```json
+     {
+       "with-email-codes": {
+         "pk": "pk_test_..."
+       },
+       "with-email-links": {
+         "pk": "pk_test_..."
+       },
+       ...
+     }
+     ```
+
+
+**Note:** GitHub Actions secrets can store multi-line JSON. Just paste the entire JSON structure as-is.
 
 ## CI Workflow
 
@@ -180,7 +216,8 @@ Every pull request will automatically:
 2. Run unit tests (`make test`)
 
 3. Run integration tests (`make test-integration`)
-   - Requires `.env.local` file with `CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY` set (in CI, this is provided via GitHub Actions secrets)
+   - In CI: `.keys.json` is created from `CLERK_TEST_KEYS_JSON` GitHub Actions secret (contains all test keys)
+   - Locally: Tests read from `.keys.json` file (populated via `make fetch-test-keys`)
 
 4. Build for all supported platforms (iOS, macOS, macCatalyst, watchOS, tvOS, visionOS)
 
