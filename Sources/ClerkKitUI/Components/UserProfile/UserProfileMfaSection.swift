@@ -49,7 +49,7 @@ struct UserProfileMfaSection: View {
           )
         }
 
-        if clerk.environment.mfaPhoneCodeIsEnabled {
+        if clerk.environment?.mfaPhoneCodeIsEnabled == true {
           ForEach(mfaPhoneNumbers) { phoneNumber in
             UserProfileMfaRow(
               style: .sms(phoneNumber: phoneNumber),
@@ -58,7 +58,7 @@ struct UserProfileMfaSection: View {
           }
         }
 
-        if clerk.environment.mfaBackupCodeIsEnabled {
+        if clerk.environment?.mfaBackupCodeIsEnabled == true {
           if user?.backupCodeEnabled == true {
             UserProfileMfaRow(
               style: .backupCodes

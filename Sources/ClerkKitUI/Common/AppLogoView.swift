@@ -15,7 +15,7 @@ struct AppLogoView: View {
   @Environment(Clerk.self) private var clerk
 
   var body: some View {
-    LazyImage(url: URL(string: clerk.environment.displayConfig?.logoImageUrl ?? "")) { state in
+    LazyImage(url: URL(string: clerk.environment?.displayConfig.logoImageUrl ?? "")) { state in
       if let image = state.image {
         image
           .resizable()

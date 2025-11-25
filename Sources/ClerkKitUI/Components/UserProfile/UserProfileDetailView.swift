@@ -66,7 +66,7 @@ struct UserProfileDetailView: View {
         VStack(spacing: 0) {
           ScrollView {
             LazyVStack(spacing: 0) {
-              if clerk.environment.emailIsEnabled {
+              if clerk.environment?.emailIsEnabled == true {
                 Section {
                   Group {
                     ForEach(sortedEmails) { emailAddress in
@@ -84,7 +84,7 @@ struct UserProfileDetailView: View {
                 }
               }
 
-              if clerk.environment.phoneNumberIsEnabled {
+              if clerk.environment?.phoneNumberIsEnabled == true {
                 Section {
                   Group {
                     ForEach(sortedPhoneNumbers) { phoneNumber in
@@ -101,7 +101,7 @@ struct UserProfileDetailView: View {
                 }
               }
 
-              if !clerk.environment.allSocialProviders.isEmpty {
+              if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
                 Section {
                   Group {
                     ForEach(sortedExternalAccounts) { externalAccount in

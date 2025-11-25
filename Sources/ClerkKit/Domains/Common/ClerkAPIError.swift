@@ -8,7 +8,7 @@
 import Foundation
 
 /// An object that represents an error returned by the Clerk API.
-public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, ClerkError {
+public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable, ClerkError {
   /// A string code that represents the error, such as `username_exists_code`.
   public var code: String
 
