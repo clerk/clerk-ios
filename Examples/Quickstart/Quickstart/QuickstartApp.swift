@@ -21,7 +21,11 @@ struct QuickstartApp: App {
             ContentView()
                 .task {
                     clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
-                    try? await clerk.load()
+                    do {
+                        try await clerk.load()
+                    } catch {
+                        dump(error)
+                    }
                 }
                 #if DEBUG
                 .task { Atlantis.start() }

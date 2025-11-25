@@ -52,11 +52,6 @@ extension Clerk.Environment {
         return authConfig.singleSessionMode == false
     }
 
-    var billingIsEnabled: Bool {
-        guard let commerceSettings else { return false }
-        return commerceSettings.billing.enabled
-    }
-
     var passwordIsEnabled: Bool {
         guard let userSettings else { return false }
         return userSettings.attributes.contains { key, value in
