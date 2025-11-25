@@ -11,7 +11,7 @@ import ClerkKit
 import Foundation
 import SwiftUI
 
-enum RemoveResource: Hashable {
+enum RemoveResource: Equatable {
   case email(EmailAddress)
   case phoneNumber(PhoneNumber)
   case externalAccount(ExternalAccount)

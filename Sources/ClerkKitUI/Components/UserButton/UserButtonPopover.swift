@@ -67,7 +67,7 @@ struct UserButtonPopover: View {
           .buttonStyle(.pressedBackground)
           .simultaneousGesture(TapGesture())
 
-          if clerk.environment.mutliSessionModeIsEnabled {
+          if clerk.environment?.mutliSessionModeIsEnabled == true {
             Button {
               accountSwitcherIsPresented = true
             } label: {

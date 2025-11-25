@@ -26,7 +26,7 @@ struct SignUpCollectFieldView: View {
 
   let field: Field
 
-  enum Field: String {
+  enum Field: String, Hashable {
     case emailAddress = "email_address"
     case phoneNumber = "phone_number"
     case password

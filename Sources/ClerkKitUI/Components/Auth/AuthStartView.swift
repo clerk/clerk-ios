@@ -24,7 +24,7 @@ struct AuthStartView: View {
   var titleString: LocalizedStringKey {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      if let appName = clerk.environment.displayConfig?.applicationName {
+      if let appName = clerk.environment?.displayConfig.applicationName {
         "Continue to \(appName)"
       } else {
         "Continue"
@@ -44,18 +44,18 @@ struct AuthStartView: View {
   }
 
   var emailIsEnabled: Bool {
-    clerk.environment.enabledFirstFactorAttributes
-      .contains("email_address")
+    clerk.environment?.enabledFirstFactorAttributes
+      .contains("email_address") ?? false
   }
 
   var usernameIsEnabled: Bool {
-    clerk.environment.enabledFirstFactorAttributes
-      .contains("username")
+    clerk.environment?.enabledFirstFactorAttributes
+      .contains("username") ?? false
   }
 
   var phoneNumberIsEnabled: Bool {
-    clerk.environment.enabledFirstFactorAttributes
-      .contains("phone_number")
+    clerk.environment?.enabledFirstFactorAttributes
+      .contains("phone_number") ?? false
   }
 
   var showIdentifierField: Bool {
@@ -108,7 +108,7 @@ struct AuthStartView: View {
   }
 
   var showOrDivider: Bool {
-    !clerk.environment.authenticatableSocialProviders.isEmpty && showIdentifierField
+    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
   }
 
   var continueIsDisabled: Bool {
@@ -201,7 +201,7 @@ struct AuthStartView: View {
           }
 
           SocialButtonLayout {
-            ForEach(clerk.environment.authenticatableSocialProviders) { provider in
+            ForEach(clerk.environment?.authenticatableSocialProviders ?? []) { provider in
               SocialButton(provider: provider) { result in
                 handleTransferFlowResult(result)
               } onError: { error in

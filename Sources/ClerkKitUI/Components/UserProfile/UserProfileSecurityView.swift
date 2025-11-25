@@ -21,7 +21,7 @@ struct UserProfileSecurityView: View {
     clerk.user
   }
 
-  var environment: Clerk.Environment {
+  var environment: Clerk.Environment? {
     clerk.environment
   }
 
@@ -32,15 +32,15 @@ struct UserProfileSecurityView: View {
       if let user {
         ScrollView {
           VStack(spacing: 0) {
-            if environment.passwordIsEnabled {
+            if environment?.passwordIsEnabled == true {
               UserProfilePasswordSection()
             }
 
-            if environment.passkeyIsEnabled {
+            if environment?.passkeyIsEnabled == true {
               UserProfilePasskeySection()
             }
 
-            if environment.mfaIsEnabled {
+            if environment?.mfaIsEnabled == true {
               UserProfileMfaSection()
             }
 
@@ -50,7 +50,7 @@ struct UserProfileSecurityView: View {
               UserProfileDevicesSection()
             }
 
-            if environment.deleteSelfIsEnabled {
+            if environment?.deleteSelfIsEnabled == true {
               UserProfileDeleteAccountSection()
             }
           }

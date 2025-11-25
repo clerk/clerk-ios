@@ -108,11 +108,11 @@ struct SignUpCompleteProfileView: View {
   }
 
   var termsUrl: URL? {
-    clerk.environment.displayConfig?.termsUrl.flatMap { URL(string: $0) }
+    clerk.environment?.displayConfig.termsUrl.flatMap { URL(string: $0) }
   }
 
   var privacyPolicyUrl: URL? {
-    clerk.environment.displayConfig?.privacyPolicyUrl.flatMap { URL(string: $0) }
+    clerk.environment?.displayConfig.privacyPolicyUrl.flatMap { URL(string: $0) }
   }
 
   var continueIsDisabled: Bool {

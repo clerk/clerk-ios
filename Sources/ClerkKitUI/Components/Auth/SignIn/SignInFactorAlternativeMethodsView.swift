@@ -36,7 +36,7 @@ struct SignInFactorAlternativeMethodsView: View {
     if isSecondFactor {
       []
     } else {
-      clerk.environment.authenticatableSocialProviders
+      clerk.environment?.authenticatableSocialProviders ?? []
     }
   }
 

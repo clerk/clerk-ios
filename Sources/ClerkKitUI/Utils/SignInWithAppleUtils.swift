@@ -19,7 +19,7 @@ enum SignInWithAppleUtils {
       throw ClerkClientError(message: "Unable to retrieve the apple identity token.")
     }
 
-    if Clerk.shared.environment.signUpIsPublic {
+    if let environment = Clerk.shared.environment, environment.signUpIsPublic {
       let firstName = credential.fullName?.givenName.nilIfEmpty
       let lastName = credential.fullName?.familyName.nilIfEmpty
       return try await SignUp.authenticateWithIdToken(provider: .apple, idToken: idToken, firstName: firstName, lastName: lastName)

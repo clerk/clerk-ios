@@ -183,7 +183,7 @@ public struct UserProfileView: View {
                 }
 
                 VStack(spacing: 0) {
-                  if clerk.environment.mutliSessionModeIsEnabled {
+                  if clerk.environment?.mutliSessionModeIsEnabled == true {
                     if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
                       row(icon: "icon-switch", text: "Switch account") {
                         sharedState.accountSwitcherIsPresented = true
