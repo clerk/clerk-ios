@@ -22,35 +22,16 @@ jobs:
       - name: Install SwiftLint
         run: brew install swiftlint
 
-      - name: Check formatting
+      - name: Check formatting and linting
         run: |
           set -euo pipefail
           git config core.autocrlf false
           git config core.eol lf
-          set +e
-          swiftformat --lint . 2>&1
-          exit_code=$?
-          set -e
-          if [ $exit_code -ne 0 ]; then
-            echo "❌ SwiftFormat check failed. Run 'make format' locally to fix."
-            exit 1
-          fi
-
-      - name: Check linting
-        run: |
-          set -euo pipefail
-          set +e
-          swiftlint 2>&1
-          exit_code=$?
-          set -e
-          if [ $exit_code -ne 0 ]; then
-            echo "❌ SwiftLint check failed. Run 'make lint-fix' locally to fix."
-            exit 1
-          fi
+          make check
 
   build:
     name: Build ${{ matrix.platform }}
-    needs: test
+    needs: [test, test-integration]
     runs-on: macos-latest
     strategy:
       matrix:
@@ -79,7 +60,7 @@ jobs:
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 
   test:
-    name: Run tests on macOS
+    name: Run unit tests on macOS
     needs: format-and-lint
     runs-on: macos-latest
     steps:
@@ -98,17 +79,31 @@ jobs:
           key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-macOS-
 
-      - name: Verify tests exist
-        run: |
-          set -euo pipefail
-          if [ ! -d "Tests" ]; then
-            echo "Error: Tests directory not found"
-            exit 1
-          fi
-          echo "Test directory found. Running tests..."
+      - name: Run unit tests
+        run: make test-unit
 
-      - name: Run tests
+  test-integration:
+    name: Run integration tests on macOS
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify macOS and Xcode version
         run: |
-          set -euo pipefail
-          echo "Running tests using Swift Package Manager..."
-          swift test
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-macOS-
+
+      - name: Run integration tests
+        run: make test-integration
+        env:
+          CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_INTEGRATION_TEST_PUBLISHABLE_KEY }}
+        continue-on-error: true

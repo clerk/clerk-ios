@@ -100,12 +100,13 @@ public final class Clerk {
   let clerkEventEmitter = EventEmitter<ClerkEvent>()
 
   /// The Clerk environment for the instance.
-  public internal(set) var environment = Environment() {
+  public internal(set) var environment: Environment? {
     didSet {
-      cacheManager?.saveEnvironment(environment)
-
-      // Sync to watch app if enabled
-      watchConnectivityCoordinator?.sync()
+      if let environment {
+        cacheManager?.saveEnvironment(environment)
+        // Sync to watch app if enabled
+        watchConnectivityCoordinator?.sync()
+      }
     }
   }
 
@@ -341,7 +342,9 @@ extension Clerk: CacheCoordinator {
   }
 
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
-    guard self.environment.isEmpty else { return }
+    // Only set if environment hasn't been loaded yet
+    // This prevents cached data from overwriting fresh data loaded from the API
+    guard self.environment == nil else { return }
     self.environment = environment
   }
 
@@ -350,7 +353,7 @@ extension Clerk: CacheCoordinator {
   }
 
   var isEnvironmentEmpty: Bool {
-    environment.isEmpty
+    environment == nil
   }
 }
 
@@ -394,7 +397,9 @@ extension Clerk: LifecycleEventHandling {
 
 extension Clerk {
   private func attestDeviceIfNeeded(environment: Environment) {
-    if !AppAttestHelper.hasKeyId, [.onboarding, .enforced].contains(environment.fraudSettings?.native.deviceAttestationMode) {
+    if !AppAttestHelper.hasKeyId,
+       [.onboarding, .enforced].contains(environment.fraudSettings.native.deviceAttestationMode)
+    {
       taskCoordinator?.task(priority: .background) {
         do {
           try await AppAttestHelper.performDeviceAttestation()

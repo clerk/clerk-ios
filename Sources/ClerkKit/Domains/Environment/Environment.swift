@@ -9,13 +9,21 @@ import Foundation
 
 public extension Clerk {
   struct Environment: Codable, Sendable, Equatable {
-    public var authConfig: AuthConfig?
-    public var userSettings: UserSettings?
-    public var displayConfig: DisplayConfig?
-    public var fraudSettings: FraudSettings?
+    public var authConfig: AuthConfig
+    public var userSettings: UserSettings
+    public var displayConfig: DisplayConfig
+    public var fraudSettings: FraudSettings
 
-    public var isEmpty: Bool {
-      authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil
+    public init(
+      authConfig: AuthConfig,
+      userSettings: UserSettings,
+      displayConfig: DisplayConfig,
+      fraudSettings: FraudSettings
+    ) {
+      self.authConfig = authConfig
+      self.userSettings = userSettings
+      self.displayConfig = displayConfig
+      self.fraudSettings = fraudSettings
     }
   }
 }
