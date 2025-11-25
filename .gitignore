@@ -95,3 +95,7 @@ iOSInjectionProject/
 .docc-build/
 
 buildServer.json
+
+# xcode-build-server files
+buildServer.json
+.compile

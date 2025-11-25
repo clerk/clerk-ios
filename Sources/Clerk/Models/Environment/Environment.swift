@@ -15,10 +15,9 @@ extension Clerk {
         var userSettings: UserSettings?
         var displayConfig: DisplayConfig?
         var fraudSettings: FraudSettings?
-        var commerceSettings: CommerceSettings?
 
         var isEmpty: Bool {
-            authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil && commerceSettings == nil
+            authConfig == nil && userSettings == nil && displayConfig == nil && fraudSettings == nil
         }
     }
 
@@ -40,8 +39,7 @@ extension Clerk.Environment {
             authConfig: .mock,
             userSettings: .mock,
             displayConfig: .mock,
-            fraudSettings: nil,
-            commerceSettings: .mock
+            fraudSettings: nil
         )
     }
 
