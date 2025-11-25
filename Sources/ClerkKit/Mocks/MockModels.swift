@@ -763,7 +763,7 @@ public extension Clerk.Environment {
       authConfig: .mock,
       userSettings: .mock,
       displayConfig: .mock,
-      fraudSettings: nil
+      fraudSettings: .mock
     )
   }
 }
@@ -936,6 +936,18 @@ public extension Clerk.Environment.DisplayConfig {
       homeUrl: "",
       privacyPolicyUrl: "privacy",
       termsUrl: "terms"
+    )
+  }
+}
+
+// MARK: FraudSettings
+
+public extension Clerk.Environment.FraudSettings {
+  static var mock: Self {
+    .init(
+      native: .init(
+        deviceAttestationMode: .disabled
+      )
     )
   }
 }
