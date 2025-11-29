@@ -39,15 +39,17 @@ final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
 
   /// The keychain storage for persisting cached data.
-  private var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
-  }
+  private let keychain: any KeychainStorage
 
   /// Creates a new cache manager.
   ///
-  /// - Parameter coordinator: The object that coordinates cache updates with Clerk properties.
-  init(coordinator: any CacheCoordinator) {
+  /// - Parameters:
+  ///   - coordinator: The object that coordinates cache updates with Clerk properties.
+  ///   - keychain: The keychain storage to use for persisting cached data.
+  ///     Passed in directly because CacheManager is initialized during `configure()` before `Clerk.shared` is set.
+  init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
     self.coordinator = coordinator
+    self.keychain = keychain
   }
 
   /// Loads cached client and environment data from keychain.
@@ -56,16 +58,16 @@ final class CacheManager {
   /// the current state allows them to be set (i.e., no fresh data exists).
   ///
   /// Errors are logged but do not prevent initialization from proceeding.
-  func loadCachedData() async {
-    await loadCachedClient()
-    await loadCachedEnvironment()
+  func loadCachedData() {
+    loadCachedClient()
+    loadCachedEnvironment()
   }
 
   /// Loads cached client data from keychain if available.
   ///
   /// The cached client is only set if no client is currently set, preventing
   /// cached data from overwriting fresh data loaded from the API.
-  private func loadCachedClient() async {
+  private func loadCachedClient() {
     do {
       guard let cachedClient = try loadClientFromKeychain() else {
         return
@@ -90,7 +92,7 @@ final class CacheManager {
   ///
   /// The cached environment is only set if the current environment is empty, preventing
   /// cached data from overwriting fresh data loaded from the API.
-  private func loadCachedEnvironment() async {
+  private func loadCachedEnvironment() {
     do {
       guard let cachedEnvironment = try loadEnvironmentFromKeychain() else {
         return
