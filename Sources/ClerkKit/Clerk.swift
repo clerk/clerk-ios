@@ -118,17 +118,6 @@ public final class Clerk {
   /// Coordinates task lifecycle and cleanup.
   private var taskCoordinator: TaskCoordinator?
 
-  /// Task that coordinates cached data loading during initialization.
-  /// This is set during `configure()` and awaited during `load()`.
-  /// Automatically tracked via TaskCoordinator for cleanup.
-  private var cachedDataLoadingTask: Task<Void, Never>? {
-    didSet {
-      if let task = cachedDataLoadingTask {
-        taskCoordinator?.track(task)
-      }
-    }
-  }
-
   /// Frontend API URL.
   var frontendApiUrl: String {
     dependencies.configurationManager.frontendApiUrl
@@ -208,14 +197,10 @@ public extension Clerk {
       watchConnectivityCoordinator?.start()
     }
 
-    // Set up cache manager and load cached data asynchronously
-    let cacheManager = CacheManager(coordinator: self)
+    // Set up cache manager and load cached data synchronously
+    let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
-
-    // Load cached data asynchronously (don't block on this)
-    cachedDataLoadingTask = Task { @MainActor in
-      await cacheManager.loadCachedData()
-    }
+    cacheManager.loadCachedData()
   }
 
   /// Configures the shared Clerk instance.
@@ -228,7 +213,7 @@ public extension Clerk {
   /// This method:
   /// 1. Sets up configuration (API client, options, etc.)
   /// 2. Sets up lifecycle and session polling managers
-  /// 3. Starts loading cached client and environment data from keychain (asynchronously)
+  /// 3. Loads cached client and environment data from keychain (synchronously)
   /// 4. Sets the shared instance
   ///
   /// - Parameters:
@@ -267,11 +252,8 @@ public extension Clerk {
   /// Loads all necessary environment configuration and instance settings from the Frontend API.
   /// It is absolutely necessary to call this method before using the Clerk object in your code.
   func load() async throws {
-    // Ensure cached data loading has completed
-    await cachedDataLoadingTask?.value
-
     // Ensure Clerk has been configured
-    guard cachedDataLoadingTask != nil else {
+    guard cacheManager != nil else {
       throw ClerkInitializationError.initializationFailed(
         underlyingError: ClerkClientError(message: "Clerk must be configured before calling load(). Call Clerk.configure() first.")
       )
@@ -444,8 +426,6 @@ extension Clerk {
     clerkEventListenerTask = nil
     watchConnectivityCoordinator?.stop()
     watchConnectivityCoordinator = nil
-    cachedDataLoadingTask?.cancel()
-    cachedDataLoadingTask = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

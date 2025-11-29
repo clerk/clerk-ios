@@ -61,7 +61,7 @@ struct CacheManagerTests {
     )
 
     let coordinator = MockCacheCoordinator()
-    let cacheManager = CacheManager(coordinator: coordinator)
+    let cacheManager = CacheManager(coordinator: coordinator, keychain: keychain)
 
     return (keychain, coordinator, cacheManager)
   }
@@ -105,7 +105,7 @@ struct CacheManagerTests {
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
-    await cacheManager.loadCachedData()
+    cacheManager.loadCachedData()
 
     // Verify coordinator was called to set client
     #expect(coordinator.clientSet.value == true)
@@ -120,7 +120,7 @@ struct CacheManagerTests {
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
-    await cacheManager.loadCachedData()
+    cacheManager.loadCachedData()
 
     // Verify coordinator was called to set environment
     #expect(coordinator.environmentSet.value == true)
@@ -137,7 +137,7 @@ struct CacheManagerTests {
 
     coordinator.hasClientValue.setValue(true) // Simulate existing client
 
-    await cacheManager.loadCachedData()
+    cacheManager.loadCachedData()
 
     // Verify coordinator was NOT called to set client
     #expect(coordinator.clientSet.value == false)
@@ -154,7 +154,7 @@ struct CacheManagerTests {
 
     coordinator.isEnvironmentEmptyValue.setValue(false) // Simulate existing environment
 
-    await cacheManager.loadCachedData()
+    cacheManager.loadCachedData()
 
     // Verify coordinator was NOT called to set environment
     #expect(coordinator.environmentSet.value == false)
@@ -181,7 +181,7 @@ struct CacheManagerTests {
     let (_, coordinator, cacheManager) = createTestSetup()
 
     // Should not crash when no cached data exists
-    await cacheManager.loadCachedData()
+    cacheManager.loadCachedData()
 
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.environmentSet.value == false)
