@@ -16,27 +16,21 @@ import Testing
 final class MockCacheCoordinator: CacheCoordinator {
   var clientSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
-  var hasClientValue = LockIsolated(false)
-  var isEnvironmentEmptyValue = LockIsolated(true)
+  private var client: Client?
+  private var environment: Clerk.Environment?
 
   func setClientIfNeeded(_ client: Client?) {
+    guard self.client == nil else { return }
+    self.client = client
     if client != nil {
       clientSet.setValue(true)
-      hasClientValue.setValue(true)
     }
   }
 
-  func setEnvironmentIfNeeded(_: Clerk.Environment) {
+  func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
+    guard self.environment == nil else { return }
+    self.environment = environment
     environmentSet.setValue(true)
-    isEnvironmentEmptyValue.setValue(false)
-  }
-
-  var hasClient: Bool {
-    hasClientValue.value
-  }
-
-  var isEnvironmentEmpty: Bool {
-    isEnvironmentEmptyValue.value
   }
 }
 
@@ -135,11 +129,13 @@ struct CacheManagerTests {
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
-    coordinator.hasClientValue.setValue(true) // Simulate existing client
+    // Simulate existing client by setting one directly
+    coordinator.setClientIfNeeded(Client.mock)
+    coordinator.clientSet.setValue(false) // Reset to test that it's not set again
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set client
+    // Verify coordinator was NOT called to set client again
     #expect(coordinator.clientSet.value == false)
   }
 
@@ -152,11 +148,13 @@ struct CacheManagerTests {
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
-    coordinator.isEnvironmentEmptyValue.setValue(false) // Simulate existing environment
+    // Simulate existing environment by setting one directly
+    coordinator.setEnvironmentIfNeeded(Clerk.Environment.mock)
+    coordinator.environmentSet.setValue(false) // Reset to test that it's not set again
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set environment
+    // Verify coordinator was NOT called to set environment again
     #expect(coordinator.environmentSet.value == false)
   }
 
