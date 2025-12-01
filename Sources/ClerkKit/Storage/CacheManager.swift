@@ -21,6 +21,12 @@ protocol CacheCoordinator: AnyObject, Sendable {
   ///
   /// - Parameter environment: The environment to set.
   @MainActor func setEnvironmentIfNeeded(_ environment: Clerk.Environment)
+
+  /// Returns whether a client is currently set.
+  @MainActor var hasClient: Bool { get }
+
+  /// Returns whether the current environment is empty.
+  @MainActor var isEnvironmentEmpty: Bool { get }
 }
 
 /// Manages caching of Clerk client and environment data to keychain.
@@ -70,7 +76,9 @@ final class CacheManager {
       // Only set cached client if we don't already have one
       // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
-      coordinator.setClientIfNeeded(cachedClient)
+      if coordinator.hasClient == false {
+        coordinator.setClientIfNeeded(cachedClient)
+      }
     } catch {
       // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
@@ -93,7 +101,9 @@ final class CacheManager {
       // Only set cached environment if we don't already have fresh data
       // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
-      coordinator.setEnvironmentIfNeeded(cachedEnvironment)
+      if coordinator.isEnvironmentEmpty == true {
+        coordinator.setEnvironmentIfNeeded(cachedEnvironment)
+      }
     } catch {
       // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
