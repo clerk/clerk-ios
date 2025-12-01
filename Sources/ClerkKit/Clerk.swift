@@ -327,14 +327,6 @@ extension Clerk: CacheCoordinator {
     guard self.environment == nil else { return }
     self.environment = environment
   }
-
-  var hasClient: Bool {
-    client != nil
-  }
-
-  var isEnvironmentEmpty: Bool {
-    environment == nil
-  }
 }
 
 extension Clerk: SessionProviding {}
