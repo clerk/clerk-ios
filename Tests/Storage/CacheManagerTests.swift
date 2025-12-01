@@ -16,21 +16,27 @@ import Testing
 final class MockCacheCoordinator: CacheCoordinator {
   var clientSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
-  private var client: Client?
-  private var environment: Clerk.Environment?
+  var hasClientValue = LockIsolated(false)
+  var isEnvironmentEmptyValue = LockIsolated(true)
 
   func setClientIfNeeded(_ client: Client?) {
-    guard self.client == nil else { return }
-    self.client = client
     if client != nil {
       clientSet.setValue(true)
+      hasClientValue.setValue(true)
     }
   }
 
-  func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
-    guard self.environment == nil else { return }
-    self.environment = environment
+  func setEnvironmentIfNeeded(_: Clerk.Environment) {
     environmentSet.setValue(true)
+    isEnvironmentEmptyValue.setValue(false)
+  }
+
+  var hasClient: Bool {
+    hasClientValue.value
+  }
+
+  var isEnvironmentEmpty: Bool {
+    isEnvironmentEmptyValue.value
   }
 }
 
@@ -129,13 +135,11 @@ struct CacheManagerTests {
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
-    // Simulate existing client by setting one directly
-    coordinator.setClientIfNeeded(Client.mock)
-    coordinator.clientSet.setValue(false) // Reset to test that it's not set again
+    coordinator.hasClientValue.setValue(true) // Simulate existing client
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set client again
+    // Verify coordinator was NOT called to set client
     #expect(coordinator.clientSet.value == false)
   }
 
@@ -148,13 +152,11 @@ struct CacheManagerTests {
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
-    // Simulate existing environment by setting one directly
-    coordinator.setEnvironmentIfNeeded(Clerk.Environment.mock)
-    coordinator.environmentSet.setValue(false) // Reset to test that it's not set again
+    coordinator.isEnvironmentEmptyValue.setValue(false) // Simulate existing environment
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set environment again
+    // Verify coordinator was NOT called to set environment
     #expect(coordinator.environmentSet.value == false)
   }
 
