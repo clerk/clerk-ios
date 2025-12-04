@@ -57,7 +57,7 @@ struct AuthAndClientIntegrationTests {
     try await preparedSignUp.attemptVerification(strategy: .emailCode(code: Self.testVerificationCode))
 
     // Sign out so that SignIn can sign in with the new account
-    try await Clerk.shared.signOut()
+    try await Clerk.shared.auth.signOut()
 
     // MARK: - SignIn Flow
 

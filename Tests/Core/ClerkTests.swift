@@ -30,7 +30,7 @@ struct ClerkTests {
     }
     mock.register()
 
-    try await Clerk.shared.signOut()
+    try await Clerk.shared.auth.signOut()
     #expect(requestHandled.value)
   }
 
@@ -53,7 +53,7 @@ struct ClerkTests {
     }
     mock.register()
 
-    try await Clerk.shared.signOut(sessionId: sessionId)
+    try await Clerk.shared.auth.signOut(sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -80,7 +80,7 @@ struct ClerkTests {
     }
     mock.register()
 
-    try await Clerk.shared.setActive(sessionId: sessionId)
+    try await Clerk.shared.auth.setActive(sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -108,7 +108,7 @@ struct ClerkTests {
     }
     mock.register()
 
-    try await Clerk.shared.setActive(sessionId: sessionId, organizationId: organizationId)
+    try await Clerk.shared.auth.setActive(sessionId: sessionId, organizationId: organizationId)
     #expect(requestHandled.value)
   }
 

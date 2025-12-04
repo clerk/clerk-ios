@@ -118,7 +118,7 @@ struct UserButtonPopover: View {
 extension UserButtonPopover {
   func signOut(sessionId: String) async {
     do {
-      try await clerk.signOut(sessionId: sessionId)
+      try await clerk.auth.signOut(sessionId: sessionId)
       if clerk.session == nil {
         dismiss()
       }
