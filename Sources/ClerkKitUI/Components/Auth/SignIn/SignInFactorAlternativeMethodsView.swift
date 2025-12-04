@@ -160,9 +160,7 @@ extension SignInFactorAlternativeMethodsView {
         if provider == .apple {
           try await SignInWithAppleUtils.signIn()
         } else {
-          try await signIn
-            .prepareFirstFactor(strategy: .oauth(provider: provider))
-            .authenticateWithRedirect()
+          try await signIn.authenticateWithOAuth(provider: provider)
         }
 
       switch result {

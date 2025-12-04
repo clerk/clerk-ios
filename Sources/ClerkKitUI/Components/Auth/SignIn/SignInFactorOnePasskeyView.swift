@@ -124,11 +124,7 @@ extension SignInFactorOnePasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      signIn = try await signIn.prepareFirstFactor(strategy: .passkey)
-      let credential = try await signIn.getCredentialForPasskey()
-      signIn = try await signIn.attemptFirstFactor(
-        strategy: .passkey(publicKeyCredential: credential)
-      )
+      signIn = try await signIn.authenticateWithPasskey()
 
       error = nil
       authState.setToStepForStatus(signIn: signIn)
