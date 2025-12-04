@@ -33,7 +33,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .standard(emailAddress: "test@example.com", password: "password123"))
+    _ = try await Clerk.shared.auth.signUp(emailAddress: "test@example.com", password: "password123")
     #expect(requestHandled.value)
   }
 
@@ -59,33 +59,11 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .oauth(provider: .google))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithOAuthExplicitRedirectUrl() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
-    let explicitRedirectUrl = "custom://redirect"
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
+    do {
+      _ = try await Clerk.shared.auth.signUpWithOAuth(provider: .google)
+    } catch {
+      // Expected to fail in unit tests due to web authentication, but request should still be made
     }
-    mock.register()
-
-    try await SignUp.create(strategy: .oauth(provider: .google, redirectUrl: explicitRedirectUrl))
     #expect(requestHandled.value)
   }
 
@@ -112,34 +90,11 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .enterpriseSSO(identifier: "user@enterprise.com"))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithEnterpriseSSOExplicitRedirectUrl() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
-    let explicitRedirectUrl = "custom://enterprise-redirect"
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "enterprise_sso")
-      #expect(request.urlEncodedFormBody!["email_address"] == "user@enterprise.com")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
+    do {
+      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+    } catch {
+      // Expected to fail in unit tests due to web authentication, but request should still be made
     }
-    mock.register()
-
-    try await SignUp.create(strategy: .enterpriseSSO(identifier: "user@enterprise.com", redirectUrl: explicitRedirectUrl))
     #expect(requestHandled.value)
   }
 
@@ -164,7 +119,11 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .idToken(provider: .apple, idToken: "mock_id_token"))
+    do {
+      _ = try await Clerk.shared.auth.signUpWithIdToken("mock_id_token", provider: .apple)
+    } catch {
+      // Expected to fail in unit tests due to transfer flow handling, but request should still be made
+    }
     #expect(requestHandled.value)
   }
 
@@ -189,7 +148,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .ticket("mock_ticket_value"))
+    _ = try await Clerk.shared.auth.signUpWithTicket("mock_ticket_value")
     #expect(requestHandled.value)
   }
 
@@ -213,7 +172,8 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .transfer)
+    // Transfer is an internal parameter not exposed in public API, so we test the service directly
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }
 
@@ -236,7 +196,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await SignUp.create(strategy: .none)
+    _ = try await Clerk.shared.auth.signUp()
     #expect(requestHandled.value)
   }
 
@@ -261,7 +221,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.update(params: .init(firstName: "John", lastName: "Doe"))
+    _ = try await signUp.update(firstName: "John", lastName: "Doe")
     #expect(requestHandled.value)
   }
 
@@ -285,7 +245,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.prepareVerification(strategy: .emailCode)
+    _ = try await signUp.sendEmailCode()
     #expect(requestHandled.value)
   }
 
@@ -309,7 +269,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.prepareVerification(strategy: .phoneCode)
+    _ = try await signUp.sendPhoneCode()
     #expect(requestHandled.value)
   }
 
@@ -334,7 +294,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.attemptVerification(strategy: .emailCode(code: "123456"))
+    _ = try await signUp.verifyCode("123456", type: .email)
     #expect(requestHandled.value)
   }
 
@@ -359,7 +319,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.attemptVerification(strategy: .phoneCode(code: "654321"))
+    _ = try await signUp.verifyCode("654321", type: .phone)
     #expect(requestHandled.value)
   }
 
@@ -382,7 +342,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.get()
+    _ = try await signUp.reload()
     #expect(requestHandled.value)
   }
 
@@ -406,7 +366,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.get(rotatingTokenNonce: "test_nonce")
+    _ = try await signUp.reload(rotatingTokenNonce: "test_nonce")
     #expect(requestHandled.value)
   }
 }

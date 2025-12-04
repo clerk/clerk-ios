@@ -47,14 +47,14 @@ struct AuthAndClientIntegrationTests {
 
     // Step 1: Create a SignUp with an email address and password
     // Using test email format - test+clerk_test@email.com emails are test emails
-    let signUp = try await SignUp.create(strategy: .standard(emailAddress: Self.testEmail, password: Self.testPassword))
+    let signUp = try await Clerk.shared.auth.signUp(emailAddress: Self.testEmail, password: Self.testPassword)
 
     // Step 2: Prepare verification (email_code)
     // This will send a code to the email address
-    let preparedSignUp = try await signUp.prepareVerification(strategy: .emailCode)
+    let preparedSignUp = try await signUp.sendEmailCode()
 
     // Step 3: Attempt verification with the test verification code
-    try await preparedSignUp.attemptVerification(strategy: .emailCode(code: Self.testVerificationCode))
+    try await preparedSignUp.verifyCode(Self.testVerificationCode, type: .email)
 
     // Sign out so that SignIn can sign in with the new account
     try await Clerk.shared.auth.signOut()
@@ -62,14 +62,14 @@ struct AuthAndClientIntegrationTests {
     // MARK: - SignIn Flow
 
     // Step 1: Create a SignIn with the same email used in SignUp
-    let signIn = try await SignIn.create(strategy: .identifier(Self.testEmail))
+    let signIn = try await Clerk.shared.auth.signIn(Self.testEmail)
 
     // Step 2: Prepare first factor verification (email_code)
     // This will send a code to the email address
-    let preparedSignIn = try await signIn.prepareFirstFactor(strategy: .emailCode())
+    let preparedSignIn = try await signIn.sendEmailCode()
 
     // Step 3: Attempt first factor with the test verification code
-    try await preparedSignIn.attemptFirstFactor(strategy: .emailCode(code: Self.testVerificationCode))
+    try await preparedSignIn.verifyCode(Self.testVerificationCode)
 
     // Sign out after completing sign in
     try await Clerk.shared.user?.delete()
@@ -82,7 +82,7 @@ struct AuthAndClientIntegrationTests {
   private func deleteTestAccountIfExists() async {
     // Try to sign in with the test email
     do {
-      try await SignIn.create(strategy: .identifier(Self.testEmail, password: Self.testPassword))
+      _ = try await Clerk.shared.auth.signInWithPassword(identifier: Self.testEmail, password: Self.testPassword)
       try await Clerk.shared.user?.delete()
     } catch {
       // Account doesn't exist or sign in failed, which is fine
