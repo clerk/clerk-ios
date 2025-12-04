@@ -278,21 +278,21 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      let signUp = try await SignUp.create(strategy: signUpParams)
+      let signUp = try await clerk.auth.signUp(signUpParams)
       authState.setToStepForStatus(signUp: signUp)
     } catch {
       fieldError = error
     }
   }
 
-  private var signUpParams: SignUp.CreateStrategy {
+  private var signUpParams: SignUp.CreateParams {
     if phoneNumberFieldIsActive {
-      .standard(phoneNumber: authState.authStartPhoneNumber)
+      .init(phoneNumber: authState.authStartPhoneNumber)
     } else {
       if authState.authStartIdentifier.isEmailAddress {
-        .standard(emailAddress: authState.authStartIdentifier)
+        .init(emailAddress: authState.authStartIdentifier)
       } else {
-        .standard(username: authState.authStartIdentifier)
+        .init(username: authState.authStartIdentifier)
       }
     }
   }

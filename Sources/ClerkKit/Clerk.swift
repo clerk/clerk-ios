@@ -150,6 +150,19 @@ public final class Clerk {
     dependencies.clerkService
   }
 
+  /// The main entry point for all authentication operations.
+  ///
+  /// Use this property to perform sign in, sign up, and session management operations.
+  public var auth: Auth {
+    Auth(
+      signInService: dependencies.signInService,
+      signUpService: dependencies.signUpService,
+      clerkService: dependencies.clerkService,
+      sessionService: dependencies.sessionService,
+      clerk: self
+    )
+  }
+
   /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration
@@ -283,35 +296,6 @@ public extension Clerk {
         throw ClerkInitializationError.initializationFailed(underlyingError: error)
       }
     }
-  }
-
-  /// Signs out the active user.
-  ///
-  /// - In a **multi-session** application: Signs out the active user from all sessions.
-  /// - In a **single-session** context: Signs out the active user from the current session.
-  /// - You can specify a specific session to sign out by passing the `sessionId` parameter.
-  ///
-  /// - Parameter sessionId: An optional session ID to specify a particular session to sign out.
-  ///   Useful for multi-session applications.
-  ///
-  /// - Throws: An error if the sign-out process fails.
-  ///
-  /// - Example:
-  /// ```swift
-  /// try await clerk.signOut()
-  /// ```
-  func signOut(sessionId: String? = nil) async throws {
-    try await clerkService.signOut(sessionId: sessionId)
-  }
-
-  /// A method used to set the active session.
-  ///
-  /// Useful for multi-session applications.
-  ///
-  /// - Parameter sessionId: The session ID to be set as active.
-  /// - Parameter organizationId: The organization ID to be set as active in the current session. If nil, the currently active organization is removed as active.
-  func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await clerkService.setActive(sessionId: sessionId, organizationId: organizationId)
   }
 }
 

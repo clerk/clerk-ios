@@ -10,7 +10,7 @@ import Foundation
 /// Represents a factor verification strategy used in the sign-in process.
 ///
 /// This enum provides type-safe representation of factor strategies with support for
-/// OAuth providers and unknown values to maintain forward compatibility with new strategies.
+/// OAuth providers, ID token providers, and unknown values to maintain forward compatibility with new strategies.
 public enum FactorStrategy: Hashable, Codable, Sendable {
   // Standard strategies
   case password
@@ -31,6 +31,9 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
 
   // OAuth strategies (uses OAuthProvider enum)
   case oauth(OAuthProvider)
+
+  // ID token strategies (uses IDTokenProvider enum)
+  case idToken(IDTokenProvider)
 
   // Unknown for forward compatibility
   case unknown(String)
@@ -61,6 +64,8 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
     case .enterpriseSSO:
       "enterprise_sso"
     case let .oauth(provider):
+      provider.strategy
+    case let .idToken(provider):
       provider.strategy
     case let .unknown(value):
       value
@@ -93,7 +98,13 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
     case "enterprise_sso":
       self = .enterpriseSSO
     default:
-      if rawValue.hasPrefix("oauth_") {
+      if rawValue.hasPrefix("oauth_token_") {
+        if let provider = IDTokenProvider(strategy: rawValue) {
+          self = .idToken(provider)
+        } else {
+          self = .unknown(rawValue)
+        }
+      } else if rawValue.hasPrefix("oauth_") {
         self = .oauth(OAuthProvider(strategy: rawValue))
       } else {
         self = .unknown(rawValue)
