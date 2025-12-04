@@ -227,9 +227,9 @@ extension SignUpCodeView {
     do {
       switch field {
       case .email:
-        signUp = try await signUp.prepareVerification(strategy: .emailCode)
+        signUp = try await signUp.sendEmailCode()
       case .phone:
-        signUp = try await signUp.prepareVerification(strategy: .phoneCode)
+        signUp = try await signUp.sendPhoneCode()
       }
 
       authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] = .now
@@ -253,9 +253,9 @@ extension SignUpCodeView {
     do {
       switch field {
       case .email:
-        signUp = try await signUp.attemptVerification(strategy: .emailCode(code: code))
+        signUp = try await signUp.verifyCode(code, type: .email)
       case .phone:
-        signUp = try await signUp.attemptVerification(strategy: .phoneCode(code: code))
+        signUp = try await signUp.verifyCode(code, type: .phone)
       }
 
       otpFieldIsFocused = false

@@ -98,9 +98,9 @@ extension SignIn {
   }
 
   var resetPasswordFactor: Factor? {
-    if let resetPasswordEmailFactor = identifyingFirstFactor(strategy: .resetPasswordEmailCode()) {
+    if let resetPasswordEmailFactor = identifyingFirstFactor(for: "reset_password_email_code") {
       resetPasswordEmailFactor
-    } else if let resetPasswordPhoneFactor = identifyingFirstFactor(strategy: .resetPasswordPhoneCode()) {
+    } else if let resetPasswordPhoneFactor = identifyingFirstFactor(for: "reset_password_phone_code") {
       resetPasswordPhoneFactor
     } else {
       supportedFirstFactors?.first(where: \.isResetFactor)

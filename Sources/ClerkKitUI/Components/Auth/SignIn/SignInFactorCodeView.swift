@@ -268,7 +268,7 @@ extension SignInFactorCodeView {
     code = ""
     verificationState = .default
 
-    guard let signIn else {
+    guard var signIn else {
       authState.path = []
       return
     }
@@ -277,35 +277,27 @@ extension SignInFactorCodeView {
       switch factor.strategy {
       case .emailCode:
         if isSecondFactor {
-          try await signIn.prepareSecondFactor(
-            strategy: .emailCode(emailAddressId: factor.emailAddressId)
-          )
+          signIn = try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
         } else {
-          try await signIn.prepareFirstFactor(
-            strategy: .emailCode(emailAddressId: factor.emailAddressId)
-          )
+          signIn = try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
         }
 
       case .phoneCode:
         if isSecondFactor {
-          try await signIn.prepareSecondFactor(
-            strategy: .phoneCode
-          )
+          signIn = try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
         } else {
-          try await signIn.prepareFirstFactor(
-            strategy: .phoneCode(phoneNumberId: factor.phoneNumberId)
-          )
+          signIn = try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
         }
 
       case .resetPasswordEmailCode:
-        try await signIn.prepareFirstFactor(
-          strategy: .resetPasswordEmailCode(emailAddressId: factor.emailAddressId)
-        )
+        if let emailAddress = factor.safeIdentifier {
+          signIn = try await signIn.sendResetPasswordEmailCode(emailAddress: emailAddress)
+        }
 
       case .resetPasswordPhoneCode:
-        try await signIn.prepareFirstFactor(
-          strategy: .resetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
-        )
+        if let phoneNumber = factor.safeIdentifier {
+          signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumber: phoneNumber)
+        }
 
       default:
         break
@@ -342,33 +334,23 @@ extension SignInFactorCodeView {
   private func attemptVerification(signIn: SignIn) async throws -> SignIn {
     switch factor.strategy {
     case .emailCode:
-      return try await attemptEmailCode(signIn: signIn)
+      if isSecondFactor {
+        return try await signIn.verifyMfaCode(code, type: .emailCode)
+      } else {
+        return try await signIn.verifyCode(code)
+      }
     case .phoneCode:
-      return try await attemptPhoneCode(signIn: signIn)
-    case .resetPasswordEmailCode:
-      return try await signIn.attemptFirstFactor(strategy: .resetPasswordEmailCode(code: code))
-    case .resetPasswordPhoneCode:
-      return try await signIn.attemptFirstFactor(strategy: .resetPasswordPhoneCode(code: code))
+      if isSecondFactor {
+        return try await signIn.verifyMfaCode(code, type: .phoneCode)
+      } else {
+        return try await signIn.verifyCode(code)
+      }
+    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
+      return try await signIn.verifyCode(code)
     case .totp:
-      return try await signIn.attemptSecondFactor(strategy: .totp(code: code))
+      return try await signIn.verifyMfaCode(code, type: .totp)
     default:
       throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
-    }
-  }
-
-  private func attemptEmailCode(signIn: SignIn) async throws -> SignIn {
-    if isSecondFactor {
-      try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
-    } else {
-      try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
-    }
-  }
-
-  private func attemptPhoneCode(signIn: SignIn) async throws -> SignIn {
-    if isSecondFactor {
-      try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
-    } else {
-      try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
     }
   }
 

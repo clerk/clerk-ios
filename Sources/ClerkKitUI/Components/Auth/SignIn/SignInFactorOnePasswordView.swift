@@ -153,9 +153,7 @@ extension SignInFactorOnePasswordView {
         return
       }
 
-      signIn = try await signIn.attemptFirstFactor(
-        strategy: .password(password: authState.signInPassword)
-      )
+      signIn = try await signIn.verifyWithPassword(authState.signInPassword)
 
       fieldError = nil
       authState.setToStepForStatus(signIn: signIn)

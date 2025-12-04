@@ -86,12 +86,14 @@ public final class Auth {
 
   /// Signs in with OAuth using the specified provider.
   ///
-  /// - Parameter provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  /// - Parameters:
+  ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signInWithOAuth(provider: OAuthProvider) async throws -> TransferFlowResult {
+  public func signInWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: FactorStrategy(rawValue: provider.strategy),
       redirectUrl: clerk.options.redirectConfig.redirectUrl
@@ -103,9 +105,12 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
@@ -137,11 +142,12 @@ public final class Auth {
 
   /// Signs in with the account portal.
   ///
+  /// - Parameter prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the account portal flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signInWithAccountPortal() async throws -> TransferFlowResult {
+  public func signInWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: FactorStrategy(rawValue: "account_portal"),
       redirectUrl: clerk.options.redirectConfig.redirectUrl
@@ -153,20 +159,25 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
   /// Signs in with Enterprise SSO using an email address.
   ///
-  /// - Parameter emailAddress: The user's enterprise email address.
+  /// - Parameters:
+  ///   - emailAddress: The user's enterprise email address.
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signInWithEnterpriseSSO(emailAddress: String) async throws -> TransferFlowResult {
+  public func signInWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
@@ -179,9 +190,12 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleOAuthCallbackUrl(callbackUrl)
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
@@ -240,12 +254,14 @@ public final class Auth {
 
   /// Signs up with OAuth using the specified provider.
   ///
-  /// - Parameter provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  /// - Parameters:
+  ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signUpWithOAuth(provider: OAuthProvider) async throws -> TransferFlowResult {
+  public func signUpWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       strategy: FactorStrategy(rawValue: provider.strategy),
       redirectUrl: clerk.options.redirectConfig.redirectUrl
@@ -259,9 +275,12 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signUp.handleOAuthCallbackUrl(callbackUrl)
+    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
@@ -290,11 +309,12 @@ public final class Auth {
 
   /// Signs up with the account portal.
   ///
+  /// - Parameter prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the account portal flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signUpWithAccountPortal() async throws -> TransferFlowResult {
+  public func signUpWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       strategy: FactorStrategy(rawValue: "account_portal"),
       redirectUrl: clerk.options.redirectConfig.redirectUrl
@@ -308,20 +328,25 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signUp.handleOAuthCallbackUrl(callbackUrl)
+    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
   /// Signs up with Enterprise SSO using an email address.
   ///
-  /// - Parameter emailAddress: The user's enterprise email address.
+  /// - Parameters:
+  ///   - emailAddress: The user's enterprise email address.
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signUpWithEnterpriseSSO(emailAddress: String) async throws -> TransferFlowResult {
+  public func signUpWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       emailAddress: emailAddress,
       strategy: FactorStrategy.enterpriseSSO,
@@ -336,9 +361,12 @@ public final class Auth {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
     }
 
-    let authSession = WebAuthentication(url: url, prefersEphemeralWebBrowserSession: false)
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
     let callbackUrl = try await authSession.start()
-    return try await signUp.handleOAuthCallbackUrl(callbackUrl)
+    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
@@ -373,7 +401,10 @@ public final class Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await clerkService.setActive(sessionId: sessionId, organizationId: organizationId)
+    try await clerkService.setActive(
+      sessionId: sessionId,
+      organizationId: organizationId
+    )
   }
 
   /// Retrieves the user's session token for the given template or the default clerk token.
