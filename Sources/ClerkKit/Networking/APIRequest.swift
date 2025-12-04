@@ -24,6 +24,23 @@ struct AnyEncodable: Encodable, @unchecked Sendable {
   }
 }
 
+/// Encodable dictionary wrapper that allows `[String: Any]` to be encoded.
+struct EncodableDictionary: Encodable, @unchecked Sendable {
+  let dictionary: [String: Any]
+
+  init(_ dictionary: [String: Any]) {
+    self.dictionary = dictionary
+  }
+
+  func encode(to encoder: Encoder) throws {
+    // Convert dictionary to JSON data using JSONSerialization
+    let jsonData = try JSONSerialization.data(withJSONObject: dictionary, options: [])
+    // Decode it back as a generic JSON structure and encode it properly
+    let json = try JSONDecoder().decode(JSON.self, from: jsonData)
+    try json.encode(to: encoder)
+  }
+}
+
 /// Represents a request body, either unused, raw data, or an encodable payload.
 enum RequestBody: @unchecked Sendable {
   case data(Data)

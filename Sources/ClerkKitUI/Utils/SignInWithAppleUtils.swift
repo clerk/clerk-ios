@@ -22,9 +22,9 @@ enum SignInWithAppleUtils {
     if let environment = Clerk.shared.environment, environment.signUpIsPublic {
       let firstName = credential.fullName?.givenName.nilIfEmpty
       let lastName = credential.fullName?.familyName.nilIfEmpty
-      return try await SignUp.authenticateWithIdToken(provider: .apple, idToken: idToken, firstName: firstName, lastName: lastName)
+      return try await Clerk.shared.auth.signUpWithIdToken(idToken, provider: .apple, firstName: firstName, lastName: lastName)
     } else {
-      return try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
+      return try await Clerk.shared.auth.signInWithIdToken(idToken, provider: .apple)
     }
   }
 }

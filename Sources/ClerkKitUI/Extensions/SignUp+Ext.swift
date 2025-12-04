@@ -11,19 +11,19 @@ import ClerkKit
 import Foundation
 
 extension SignUp {
-  static let fieldPriority: [SignUpField] = [.emailAddress, .phoneNumber, .username, .password]
-  static let individuallyCollectableFields: Set<SignUpField> = [.emailAddress, .phoneNumber, .username, .password]
-  static let completeProfileFields: Set<SignUpField> = [.firstName, .lastName, .legalAccepted]
+  static let fieldPriority: [SignUp.Field] = [.emailAddress, .phoneNumber, .username, .password]
+  static let individuallyCollectableFields: Set<SignUp.Field> = [.emailAddress, .phoneNumber, .username, .password]
+  static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
 
-  var firstFieldToCollect: SignUpField? {
+  var firstFieldToCollect: SignUp.Field? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  var firstFieldToVerify: SignUpField? {
+  var firstFieldToVerify: SignUp.Field? {
     unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  func fieldIsRequired(field: SignUpField) -> Bool {
+  func fieldIsRequired(field: SignUp.Field) -> Bool {
     requiredFields.contains(field)
   }
 
@@ -32,7 +32,7 @@ extension SignUp {
     return verifications.first(where: { $0.key == firstFieldToVerify.rawValue })?.value
   }
 
-  func fieldWasCollected(field: SignUpField) -> Bool {
+  func fieldWasCollected(field: SignUp.Field) -> Bool {
     switch field {
     case .emailAddress:
       emailAddress != nil

@@ -12,6 +12,7 @@ import NukeUI
 import SwiftUI
 
 struct SocialButton: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.colorScheme) private var colorScheme
 
@@ -99,9 +100,7 @@ extension SocialButton {
     let result: TransferFlowResult = if provider == .apple {
       try await SignInWithAppleUtils.signIn()
     } else {
-      try await SignIn.authenticateWithRedirect(
-        strategy: .oauth(provider: provider)
-      )
+      try await clerk.auth.signInWithOAuth(provider: provider)
     }
     onSuccess?(result)
   }
