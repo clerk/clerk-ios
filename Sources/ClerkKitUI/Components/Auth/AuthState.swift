@@ -100,7 +100,7 @@ final class AuthState {
   }
 
   @MainActor
-  private func handleFieldToVerify(signUp: SignUp, field: SignUpField) {
+  private func handleFieldToVerify(signUp: SignUp, field: SignUp.Field) {
     switch field {
     case .emailAddress:
       guard let emailAddress = signUp.emailAddress else {
@@ -120,7 +120,7 @@ final class AuthState {
   }
 
   @MainActor
-  private func handleFieldToCollect(signUp: SignUp, field: SignUpField) {
+  private func handleFieldToCollect(signUp: SignUp, field: SignUp.Field) {
     switch field {
     case .password:
       path.append(AuthView.Destination.signUpCollectField(.password))
