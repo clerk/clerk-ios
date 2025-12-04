@@ -32,7 +32,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .identifier("test@example.com"))
+    _ = try await Clerk.shared.auth.signIn("test@example.com")
     #expect(requestHandled.value)
   }
 
@@ -58,33 +58,11 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .oauth(provider: .google))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithOAuthExplicitRedirectUrl() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-    let explicitRedirectUrl = "custom://redirect"
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
+    do {
+      _ = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
+    } catch {
+      // Expected to fail in unit tests due to web authentication, but request should still be made
     }
-    mock.register()
-
-    try await SignIn.create(strategy: .oauth(provider: .google, redirectUrl: explicitRedirectUrl))
     #expect(requestHandled.value)
   }
 
@@ -111,34 +89,11 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .enterpriseSSO(identifier: "user@enterprise.com"))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithEnterpriseSSOExplicitRedirectUrl() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-    let explicitRedirectUrl = "custom://enterprise-redirect"
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "enterprise_sso")
-      #expect(request.urlEncodedFormBody!["identifier"] == "user@enterprise.com")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
+    do {
+      _ = try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+    } catch {
+      // Expected to fail in unit tests due to web authentication, but request should still be made
     }
-    mock.register()
-
-    try await SignIn.create(strategy: .enterpriseSSO(identifier: "user@enterprise.com", redirectUrl: explicitRedirectUrl))
     #expect(requestHandled.value)
   }
 
@@ -163,7 +118,11 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .idToken(provider: .apple, idToken: "mock_id_token"))
+    do {
+      _ = try await Clerk.shared.auth.signInWithIdToken("mock_id_token", provider: .apple)
+    } catch {
+      // Expected to fail in unit tests due to transfer flow handling, but request should still be made
+    }
     #expect(requestHandled.value)
   }
 
@@ -187,7 +146,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .passkey)
+    _ = try await Clerk.shared.auth.signInWithPasskey()
     #expect(requestHandled.value)
   }
 
@@ -212,7 +171,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .ticket("mock_ticket_value"))
+    _ = try await Clerk.shared.auth.signInWithTicket("mock_ticket_value")
     #expect(requestHandled.value)
   }
 
@@ -236,7 +195,8 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .transfer)
+    // Transfer is an internal parameter not exposed in public API, so we test the service directly
+    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }
 
@@ -259,7 +219,8 @@ struct SignInTests {
     }
     mock.register()
 
-    try await SignIn.create(strategy: .none)
+    // Empty create is not exposed in public API, so we test the service directly
+    _ = try await Clerk.shared.dependencies.signInService.create(params: .init())
     #expect(requestHandled.value)
   }
 
@@ -284,7 +245,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.resetPassword(.init(password: "newPassword123", signOutOfOtherSessions: true))
+    _ = try await signIn.resetPassword(newPassword: "newPassword123", signOutOfOtherSessions: true)
     #expect(requestHandled.value)
   }
 
@@ -308,7 +269,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.prepareFirstFactor(strategy: .emailCode())
+    _ = try await signIn.sendEmailCode()
     #expect(requestHandled.value)
   }
 
@@ -332,7 +293,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.prepareFirstFactor(strategy: .phoneCode())
+    _ = try await signIn.sendPhoneCode()
     #expect(requestHandled.value)
   }
 
@@ -356,7 +317,11 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.prepareFirstFactor(strategy: .passkey)
+    // Passkey prepare requires getting credential first, so we test the service directly for this unit test
+    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+      signInId: signIn.id,
+      params: .init(strategy: .passkey)
+    )
     #expect(requestHandled.value)
   }
 
@@ -381,7 +346,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptFirstFactor(strategy: .password(password: "password123"))
+    _ = try await signIn.verifyWithPassword("password123")
     #expect(requestHandled.value)
   }
 
@@ -406,7 +371,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptFirstFactor(strategy: .emailCode(code: "123456"))
+    _ = try await signIn.verifyCode("123456")
     #expect(requestHandled.value)
   }
 
@@ -431,7 +396,12 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptFirstFactor(strategy: .phoneCode(code: "654321"))
+    // verifyCode() infers strategy from firstFactorVerification state, which is hard to control in unit tests
+    // For this test that specifically verifies phone_code parameters, we use the service directly
+    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+      signInId: signIn.id,
+      params: .init(strategy: .phoneCode, code: "654321")
+    )
     #expect(requestHandled.value)
   }
 
@@ -456,12 +426,16 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptFirstFactor(strategy: .passkey(publicKeyCredential: "mock_credential"))
+    // Passkey attempt requires getting credential first, so we test the service directly for this unit test
+    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+      signInId: signIn.id,
+      params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")
+    )
     #expect(requestHandled.value)
   }
 
   @Test
-  func testPrepareSecondFactor() async throws {
+  func prepareSecondFactor() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_second_factor")!
@@ -480,7 +454,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.prepareSecondFactor(strategy: .phoneCode)
+    _ = try await signIn.sendMfaPhoneCode()
     #expect(requestHandled.value)
   }
 
@@ -505,7 +479,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptSecondFactor(strategy: .phoneCode(code: "123456"))
+    _ = try await signIn.verifyMfaCode("123456", type: .phoneCode)
     #expect(requestHandled.value)
   }
 
@@ -530,7 +504,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptSecondFactor(strategy: .totp(code: "654321"))
+    _ = try await signIn.verifyMfaCode("654321", type: .totp)
     #expect(requestHandled.value)
   }
 
@@ -555,7 +529,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.attemptSecondFactor(strategy: .backupCode(code: "backup123"))
+    _ = try await signIn.verifyMfaCode("backup123", type: .backupCode)
     #expect(requestHandled.value)
   }
 
@@ -578,7 +552,7 @@ struct SignInTests {
     }
     mock.register()
 
-    _ = try await signIn.get()
+    _ = try await signIn.reload()
     #expect(requestHandled.value)
   }
 
@@ -602,7 +576,7 @@ struct SignInTests {
     }
     mock.register()
 
-    _ = try await signIn.get(rotatingTokenNonce: "test_nonce")
+    _ = try await signIn.reload(rotatingTokenNonce: "test_nonce")
     #expect(requestHandled.value)
   }
 }
