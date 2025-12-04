@@ -72,7 +72,6 @@ func configureClerkForIntegrationTesting(keyName: String) {
     passkeyService: PasskeyService(apiClient: apiClient),
     organizationService: OrganizationService(apiClient: apiClient),
     environmentService: EnvironmentService(apiClient: apiClient),
-    clerkService: ClerkService(apiClient: apiClient),
     emailAddressService: EmailAddressService(apiClient: apiClient),
     phoneNumberService: PhoneNumberService(apiClient: apiClient),
     externalAccountService: ExternalAccountService(apiClient: apiClient)

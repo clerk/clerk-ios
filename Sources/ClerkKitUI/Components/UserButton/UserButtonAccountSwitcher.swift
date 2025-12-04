@@ -35,7 +35,7 @@ struct UserButtonAccountSwitcher: View {
 
   func setActiveSession(_ session: Session) async {
     do {
-      try await clerk.setActive(sessionId: session.id)
+      try await clerk.auth.setActive(sessionId: session.id)
       dismiss()
     } catch {
       self.error = error
@@ -45,7 +45,7 @@ struct UserButtonAccountSwitcher: View {
 
   func signOutOfAllAccounts() async {
     do {
-      try await clerk.signOut()
+      try await clerk.auth.signOut()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to sign out of all accounts", error: error)

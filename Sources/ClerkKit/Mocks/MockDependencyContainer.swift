@@ -27,7 +27,6 @@ final class MockDependencyContainer: Dependencies {
   let passkeyService: PasskeyServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let clerkService: ClerkServiceProtocol
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
@@ -48,7 +47,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
   ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
-  ///   - clerkService: Optional custom clerk service (defaults to MockClerkService).
   ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
   ///   - phoneNumberService: Optional custom phone number service (defaults to MockPhoneNumberService).
   ///   - externalAccountService: Optional custom external account service (defaults to MockExternalAccountService).
@@ -64,7 +62,6 @@ final class MockDependencyContainer: Dependencies {
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
     environmentService: (any EnvironmentServiceProtocol)? = nil,
-    clerkService: (any ClerkServiceProtocol)? = nil,
     emailAddressService: (any EmailAddressServiceProtocol)? = nil,
     phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
     externalAccountService: (any ExternalAccountServiceProtocol)? = nil
@@ -85,7 +82,6 @@ final class MockDependencyContainer: Dependencies {
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.environmentService = environmentService ?? MockEnvironmentService()
-    self.clerkService = clerkService ?? MockClerkService()
     self.emailAddressService = emailAddressService ?? MockEmailAddressService()
     self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
     self.externalAccountService = externalAccountService ?? MockExternalAccountService()

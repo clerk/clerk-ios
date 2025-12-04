@@ -173,13 +173,13 @@ extension SignUpCollectFieldView {
     do {
       switch field {
       case .emailAddress:
-        signUp = try await signUp.update(params: .init(emailAddress: authState.signUpEmailAddress))
+        signUp = try await signUp.update(emailAddress: authState.signUpEmailAddress)
       case .phoneNumber:
-        signUp = try await signUp.update(params: .init(phoneNumber: authState.signUpPhoneNumber))
+        signUp = try await signUp.update(phoneNumber: authState.signUpPhoneNumber)
       case .password:
-        signUp = try await signUp.update(params: .init(password: authState.signUpPassword))
+        signUp = try await signUp.update(password: authState.signUpPassword)
       case .username:
-        signUp = try await signUp.update(params: .init(username: authState.signUpUsername))
+        signUp = try await signUp.update(username: authState.signUpUsername)
       }
 
       authState.setToStepForStatus(signUp: signUp)

@@ -157,7 +157,6 @@ public extension Clerk {
     let environmentService = MockEnvironmentService { environment }
 
     // Use default mock services for everything else
-    let clerkService = MockClerkService()
     let userService = MockUserService()
     let signInService = MockSignInService()
     let signUpService = MockSignUpService()
@@ -178,7 +177,6 @@ public extension Clerk {
       passkeyService: passkeyService,
       organizationService: organizationService,
       environmentService: environmentService,
-      clerkService: clerkService,
       emailAddressService: emailAddressService,
       phoneNumberService: phoneNumberService,
       externalAccountService: externalAccountService

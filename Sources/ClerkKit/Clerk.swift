@@ -145,11 +145,6 @@ public final class Clerk {
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
-  /// Clerk service for handling sign out and session management operations.
-  private var clerkService: any ClerkServiceProtocol {
-    dependencies.clerkService
-  }
-
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
@@ -157,7 +152,6 @@ public final class Clerk {
     Auth(
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
-      clerkService: dependencies.clerkService,
       sessionService: dependencies.sessionService,
       clerk: self
     )

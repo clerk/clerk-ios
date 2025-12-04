@@ -283,7 +283,7 @@ public struct UserProfileView: View {
 extension UserProfileView {
   func signOut(sessionId: String) async {
     do {
-      try await clerk.signOut(sessionId: sessionId)
+      try await clerk.auth.signOut(sessionId: sessionId)
       if clerk.session == nil {
         dismiss()
       }

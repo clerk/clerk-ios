@@ -15,20 +15,17 @@ import Foundation
 public final class Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
-  private let clerkService: ClerkServiceProtocol
   private let sessionService: SessionServiceProtocol
   private let clerk: Clerk
 
   init(
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
-    clerkService: ClerkServiceProtocol,
     sessionService: SessionServiceProtocol,
     clerk: Clerk
   ) {
     self.signInService = signInService
     self.signUpService = signUpService
-    self.clerkService = clerkService
     self.sessionService = sessionService
     self.clerk = clerk
   }
@@ -391,7 +388,7 @@ public final class Auth {
   /// - Parameter sessionId: An optional session ID to sign out from a specific session. If nil, signs out from all sessions.
   /// - Throws: An error if the sign-out process fails.
   public func signOut(sessionId: String? = nil) async throws {
-    try await clerkService.signOut(sessionId: sessionId)
+    try await sessionService.signOut(sessionId: sessionId)
   }
 
   /// Sets the active session and optionally the active organization.
@@ -401,7 +398,7 @@ public final class Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await clerkService.setActive(
+    try await sessionService.setActive(
       sessionId: sessionId,
       organizationId: organizationId
     )
