@@ -279,7 +279,10 @@ public extension SignIn {
   @discardableResult
   @MainActor
   func sendResetPasswordEmailCode(emailAddress: String) async throws -> SignIn {
-    let emailId = identifyingFirstFactor(for: "email_code", matching: emailAddress)?.emailAddressId
+    let emailId = identifyingFirstFactor(
+      for: "email_code",
+      matching: emailAddress
+    )?.emailAddressId
     return try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
@@ -294,7 +297,10 @@ public extension SignIn {
   @discardableResult
   @MainActor
   func sendResetPasswordPhoneCode(phoneNumber: String) async throws -> SignIn {
-    let phoneId = identifyingFirstFactor(for: "phone_code", matching: phoneNumber)?.phoneNumberId
+    let phoneId = identifyingFirstFactor(
+      for: "phone_code",
+      matching: phoneNumber
+    )?.phoneNumberId
     return try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
@@ -317,9 +323,112 @@ public extension SignIn {
     )
   }
 
+  // MARK: - Enterprise SSO
+
+  #if !os(tvOS) && !os(watchOS)
+  /// Authenticates with Enterprise SSO.
+  ///
+  /// This method prepares the enterprise SSO first factor and initiates the redirect flow.
+  /// After the user completes authentication with their identity provider, the callback URL
+  /// is handled automatically.
+  ///
+  /// - Parameter prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the enterprise SSO flow fails.
+  @discardableResult
+  @MainActor
+  func authenticateWithEnterpriseSSO(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    let signIn = try await signInService.prepareFirstFactor(
+      signInId: id,
+      params: .init(
+        strategy: .enterpriseSSO,
+        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+      )
+    )
+
+    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+          let url = URL(string: externalVerificationRedirectUrl)
+    else {
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    }
+
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
+    let callbackUrl = try await authSession.start()
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
+  }
+
+  /// Authenticates with OAuth using the specified provider.
+  ///
+  /// This method prepares the OAuth first factor and initiates the redirect flow.
+  /// After the user completes authentication with the OAuth provider, the callback URL
+  /// is handled automatically.
+  ///
+  /// - Parameters:
+  ///   - provider: The OAuth provider to use (e.g., `.google`, `.github`).
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the OAuth flow fails.
+  @discardableResult
+  @MainActor
+  func authenticateWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+    let signIn = try await signInService.prepareFirstFactor(
+      signInId: id,
+      params: .init(
+        strategy: .oauth(provider),
+        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+      )
+    )
+
+    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+          let url = URL(string: externalVerificationRedirectUrl)
+    else {
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    }
+
+    let authSession = WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    )
+    let callbackUrl = try await authSession.start()
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
+  }
+  #endif
+
   // MARK: - Passkey
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Authenticates with a passkey.
+  ///
+  /// This method prepares the passkey first factor, gets the credential from the device,
+  /// and completes the authentication flow.
+  ///
+  /// - Parameters:
+  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
+  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
+  /// - Returns: An updated `SignIn` object reflecting the authentication result.
+  /// - Throws: An error if passkey authentication fails.
+  @discardableResult
+  @MainActor
+  func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
+    let signIn = try await signInService.prepareFirstFactor(
+      signInId: id,
+      params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
+    )
+
+    let credential = try await signIn.getCredentialForPasskey(
+      autofill: autofill,
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+    )
+
+    return try await signInService.attemptFirstFactor(
+      signInId: signIn.id,
+      params: .init(strategy: .passkey, publicKeyCredential: credential)
+    )
+  }
+
   /// Gets the credential for passkey authentication.
   ///
   /// - Parameters:
@@ -375,8 +484,14 @@ public extension SignIn {
       ],
     ]
 
-    let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential, options: [])
-    return String(data: jsonData, encoding: .utf8) ?? ""
+    let jsonData = try JSONSerialization.data(
+      withJSONObject: publicKeyCredential,
+      options: []
+    )
+    return String(
+      data: jsonData,
+      encoding: .utf8
+    ) ?? ""
   }
   #endif
 
@@ -399,7 +514,7 @@ extension SignIn {
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
-  func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+  func handleRedirectCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignIn = try await reload(rotatingTokenNonce: nonce)
       if let error = updatedSignIn.firstFactorVerification?.error {

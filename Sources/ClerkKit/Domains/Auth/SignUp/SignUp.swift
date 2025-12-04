@@ -227,7 +227,7 @@ extension SignUp {
   }
 
   @discardableResult @MainActor
-  func handleOAuthCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
+  func handleRedirectCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignUp = try await reload(rotatingTokenNonce: nonce)
       if let verification = updatedSignUp.verifications.first(where: { $0.key == "external_account" })?.value,

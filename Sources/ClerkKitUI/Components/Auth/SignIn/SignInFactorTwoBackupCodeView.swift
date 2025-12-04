@@ -109,9 +109,7 @@ extension SignInFactorTwoBackupCodeView {
         return
       }
 
-      signIn = try await signIn.attemptSecondFactor(
-        strategy: .backupCode(code: authState.signInBackupCode)
-      )
+      signIn = try await signIn.verifyMfaCode(authState.signInBackupCode, type: .backupCode)
 
       fieldError = nil
       authState.setToStepForStatus(signIn: signIn)

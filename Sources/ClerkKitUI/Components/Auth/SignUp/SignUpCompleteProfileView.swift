@@ -220,21 +220,11 @@ extension SignUpCompleteProfileView {
     guard var signUp else { return }
 
     do {
-      var params = SignUp.UpdateParams()
-
-      if fieldIsMissing(.firstName) {
-        params.firstName = authState.signUpFirstName
-      }
-
-      if fieldIsMissing(.lastName) {
-        params.lastName = authState.signUpLastName
-      }
-
-      if legalConsentMissing {
-        params.legalAccepted = authState.signUpLegalAccepted
-      }
-
-      signUp = try await signUp.update(params: params)
+      signUp = try await signUp.update(
+        firstName: fieldIsMissing(.firstName) ? authState.signUpFirstName : nil,
+        lastName: fieldIsMissing(.lastName) ? authState.signUpLastName : nil,
+        legalAccepted: legalConsentMissing ? authState.signUpLegalAccepted : nil
+      )
       authState.setToStepForStatus(signUp: signUp)
     } catch {
       self.error = error

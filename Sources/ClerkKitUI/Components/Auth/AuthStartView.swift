@@ -246,22 +246,16 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      var signIn = try await SignIn.create(
-        strategy: .identifier(
-          phoneNumberFieldIsActive && phoneNumberIsEnabled
-            ? authState.authStartPhoneNumber
-            : authState.authStartIdentifier
-        )
-      )
+      let identifier = phoneNumberFieldIsActive && phoneNumberIsEnabled
+        ? authState.authStartPhoneNumber
+        : authState.authStartIdentifier
+
+      let signIn = try await clerk.auth.signIn(identifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        signIn = try await signIn.prepareFirstFactor(strategy: .enterpriseSSO())
-
-        if signIn.firstFactorVerification?.externalVerificationRedirectUrl != nil {
-          let result = try await signIn.authenticateWithRedirect()
-          handleTransferFlowResult(result)
-          return
-        }
+        let result = try await signIn.authenticateWithEnterpriseSSO()
+        handleTransferFlowResult(result)
+        return
       }
 
       authState.setToStepForStatus(signIn: signIn)
@@ -278,22 +272,20 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      let signUp = try await clerk.auth.signUp(signUpParams)
+      let signUp = try await signUpParams()
       authState.setToStepForStatus(signUp: signUp)
     } catch {
       fieldError = error
     }
   }
 
-  private var signUpParams: SignUp.CreateParams {
+  private func signUpParams() async throws -> SignUp {
     if phoneNumberFieldIsActive {
-      .init(phoneNumber: authState.authStartPhoneNumber)
+      try await clerk.auth.signUp(phoneNumber: authState.authStartPhoneNumber)
+    } else if authState.authStartIdentifier.isEmailAddress {
+      try await clerk.auth.signUp(emailAddress: authState.authStartIdentifier)
     } else {
-      if authState.authStartIdentifier.isEmailAddress {
-        .init(emailAddress: authState.authStartIdentifier)
-      } else {
-        .init(username: authState.authStartIdentifier)
-      }
+      try await clerk.auth.signUp(username: authState.authStartIdentifier)
     }
   }
 

@@ -134,10 +134,8 @@ extension SignInSetNewPasswordView {
       }
 
       signIn = try await signIn.resetPassword(
-        .init(
-          password: authState.signInNewPassword,
-          signOutOfOtherSessions: signOutOfOtherDevices
-        )
+        newPassword: authState.signInNewPassword,
+        signOutOfOtherSessions: signOutOfOtherDevices
       )
 
       authState.setToStepForStatus(signIn: signIn)
