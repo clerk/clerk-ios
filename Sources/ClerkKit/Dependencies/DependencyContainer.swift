@@ -30,7 +30,6 @@ final class DependencyContainer: Dependencies {
   let passkeyService: PasskeyServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let clerkService: ClerkServiceProtocol
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
@@ -108,7 +107,6 @@ final class DependencyContainer: Dependencies {
     passkeyService = PasskeyService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     environmentService = EnvironmentService(apiClient: apiClient)
-    clerkService = ClerkService(apiClient: apiClient)
     emailAddressService = EmailAddressService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)

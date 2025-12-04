@@ -15,8 +15,20 @@ public final class MockSessionService: SessionServiceProtocol {
   /// Custom handler for the `revoke(sessionId:)` method.
   public nonisolated(unsafe) var revokeHandler: ((String) async throws -> Session)?
 
-  public init(revoke: ((String) async throws -> Session)? = nil) {
+  /// Custom handler for the `signOut(sessionId:)` method.
+  public nonisolated(unsafe) var signOutHandler: ((String?) async throws -> Void)?
+
+  /// Custom handler for the `setActive(sessionId:organizationId:)` method.
+  public nonisolated(unsafe) var setActiveHandler: ((String, String?) async throws -> Void)?
+
+  public init(
+    revoke: ((String) async throws -> Session)? = nil,
+    signOut: ((String?) async throws -> Void)? = nil,
+    setActive: ((String, String?) async throws -> Void)? = nil
+  ) {
     revokeHandler = revoke
+    signOutHandler = signOut
+    setActiveHandler = setActive
   }
 
   @MainActor
@@ -25,5 +37,20 @@ public final class MockSessionService: SessionServiceProtocol {
       return try await handler(sessionId)
     }
     return .mock
+  }
+
+  @MainActor
+  public func signOut(sessionId: String?) async throws {
+    if let handler = signOutHandler {
+      try await handler(sessionId)
+    }
+    // No-op by default - does not actually sign out
+  }
+
+  @MainActor
+  public func setActive(sessionId: String, organizationId: String?) async throws {
+    if let handler = setActiveHandler {
+      try await handler(sessionId, organizationId)
+    }
   }
 }

@@ -74,10 +74,6 @@ package final class MockBuilder {
   /// You can modify handler properties directly or replace the entire service.
   package var environmentService: MockEnvironmentService = .init()
 
-  /// Mock clerk service for customizing clerk operations.
-  /// You can modify handler properties directly or replace the entire service.
-  package var clerkService: MockClerkService = .init()
-
   /// Mock email address service for customizing email address behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var emailAddressService: MockEmailAddressService = .init()
@@ -238,7 +234,6 @@ package extension Clerk {
       passkeyService: mockBuilder.passkeyService,
       organizationService: mockBuilder.organizationService,
       environmentService: environmentService,
-      clerkService: mockBuilder.clerkService,
       emailAddressService: mockBuilder.emailAddressService,
       phoneNumberService: mockBuilder.phoneNumberService,
       externalAccountService: mockBuilder.externalAccountService

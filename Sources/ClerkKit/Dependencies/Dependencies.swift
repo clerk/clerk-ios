@@ -48,9 +48,6 @@ protocol Dependencies: AnyObject {
   /// Service for environment-related operations.
   var environmentService: EnvironmentServiceProtocol { get }
 
-  /// Service for Clerk operations (sign out, set active).
-  var clerkService: ClerkServiceProtocol { get }
-
   /// Service for email address operations.
   var emailAddressService: EmailAddressServiceProtocol { get }
 
