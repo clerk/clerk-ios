@@ -134,7 +134,7 @@ public struct AuthView: View {
     }
     .task {
       if isDismissable {
-        for await event in clerk.authEventEmitter.events {
+        for await event in clerk.auth.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
             dismiss()

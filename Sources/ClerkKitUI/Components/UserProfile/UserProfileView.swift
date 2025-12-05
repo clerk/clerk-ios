@@ -249,7 +249,7 @@ public struct UserProfileView: View {
           .interactiveDismissDisabled()
       }
       .task {
-        for await event in clerk.authEventEmitter.events {
+        for await event in clerk.auth.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
             sharedState.authViewIsPresented = false
