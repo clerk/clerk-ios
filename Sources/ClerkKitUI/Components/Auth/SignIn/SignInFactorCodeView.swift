@@ -290,14 +290,10 @@ extension SignInFactorCodeView {
         }
 
       case .resetPasswordEmailCode:
-        if let emailAddress = factor.safeIdentifier {
-          signIn = try await signIn.sendResetPasswordEmailCode(emailAddress: emailAddress)
-        }
+        signIn = try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
 
       case .resetPasswordPhoneCode:
-        if let phoneNumber = factor.safeIdentifier {
-          signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumber: phoneNumber)
-        }
+        signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
 
       default:
         break
