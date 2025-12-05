@@ -165,14 +165,14 @@ public extension SignIn {
     )
   }
 
-  /// Verifies the user's password.
+  /// Authenticates with the user's password.
   ///
   /// - Parameter password: The user's password.
-  /// - Returns: An updated `SignIn` object reflecting the verification result.
-  /// - Throws: An error if password verification fails.
+  /// - Returns: An updated `SignIn` object reflecting the authentication result.
+  /// - Throws: An error if password authentication fails.
   @discardableResult
   @MainActor
-  func verifyWithPassword(_ password: String) async throws -> SignIn {
+  func authenticateWithPassword(_ password: String) async throws -> SignIn {
     try await signInService.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .password, password: password)
@@ -183,43 +183,23 @@ public extension SignIn {
 
   /// Sends an MFA code to the phone number.
   ///
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  func sendMfaPhoneCode() async throws -> SignIn {
-    try await sendMfaCode(phoneNumberId: nil)
-  }
-
-  /// Sends an MFA code to the specified phone number.
-  ///
   /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying second factor.
   /// - Returns: An updated `SignIn` object with the MFA verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendMfaPhoneCode(phoneNumberId: String?) async throws -> SignIn {
+  func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     try await sendMfaCode(phoneNumberId: phoneNumberId)
   }
 
   /// Sends an MFA code to the email address.
-  ///
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  func sendMfaEmailCode() async throws -> SignIn {
-    try await sendMfaCode(emailAddressId: nil)
-  }
-
-  /// Sends an MFA code to the specified email address.
   ///
   /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying second factor.
   /// - Returns: An updated `SignIn` object with the MFA verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendMfaEmailCode(emailAddressId: String?) async throws -> SignIn {
+  func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     try await sendMfaCode(emailAddressId: emailAddressId)
   }
 
@@ -273,37 +253,31 @@ public extension SignIn {
 
   /// Sends a password reset code to the specified email address.
   ///
-  /// - Parameter emailAddress: The email address to send the reset code to.
+  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendResetPasswordEmailCode(emailAddress: String) async throws -> SignIn {
-    let emailId = identifyingFirstFactor(
-      for: "email_code",
-      matching: emailAddress
-    )?.emailAddressId
+  func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
+    let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
     return try await signInService.prepareFirstFactor(
       signInId: id,
-      params: .init(strategy: .emailCode, emailAddressId: emailId)
+      params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
     )
   }
 
   /// Sends a password reset code to the specified phone number.
   ///
-  /// - Parameter phoneNumber: The phone number to send the reset code to.
+  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendResetPasswordPhoneCode(phoneNumber: String) async throws -> SignIn {
-    let phoneId = identifyingFirstFactor(
-      for: "phone_code",
-      matching: phoneNumber
-    )?.phoneNumberId
+  func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
+    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
     return try await signInService.prepareFirstFactor(
       signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
+      params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
     )
   }
 

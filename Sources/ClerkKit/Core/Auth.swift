@@ -16,18 +16,15 @@ public final class Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
-  private unowned let clerk: Clerk
 
   init(
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
-    sessionService: SessionServiceProtocol,
-    clerk: Clerk
+    sessionService: SessionServiceProtocol
   ) {
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
-    self.clerk = clerk
   }
 
   // MARK: - Sign In Entry Points
@@ -93,7 +90,7 @@ public final class Auth {
   public func signInWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: FactorStrategy(rawValue: provider.strategy),
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
@@ -147,7 +144,7 @@ public final class Auth {
   public func signInWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: FactorStrategy(rawValue: "account_portal"),
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
@@ -178,7 +175,7 @@ public final class Auth {
     let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
@@ -259,7 +256,7 @@ public final class Auth {
   public func signUpWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       strategy: FactorStrategy(rawValue: provider.strategy),
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard
@@ -311,7 +308,7 @@ public final class Auth {
   public func signUpWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       strategy: FactorStrategy(rawValue: "account_portal"),
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard
@@ -344,7 +341,7 @@ public final class Auth {
     let signUp = try await signUpService.create(params: .init(
       emailAddress: emailAddress,
       strategy: .enterpriseSSO,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
 
     guard
@@ -410,7 +407,7 @@ public final class Auth {
   /// - Throws: An error if token retrieval fails.
   @discardableResult
   public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
-    guard let session = clerk.session else {
+    guard let session = Clerk.shared.session else {
       return nil
     }
     return try await session.getToken(options)

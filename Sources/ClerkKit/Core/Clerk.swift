@@ -146,8 +146,7 @@ public final class Clerk {
   public lazy var auth: Auth = .init(
     signInService: dependencies.signInService,
     signUpService: dependencies.signUpService,
-    sessionService: dependencies.sessionService,
-    clerk: self
+    sessionService: dependencies.sessionService
   )
 
   /// The event emitter for general Clerk events.
