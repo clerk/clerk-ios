@@ -93,9 +93,6 @@ public final class Clerk {
     dependencies.configurationManager.publishableKey
   }
 
-  /// The event emitter for general Clerk events.
-  let clerkEventEmitter = EventEmitter<ClerkEvent>()
-
   /// The Clerk environment for the instance.
   public internal(set) var environment: Environment? {
     didSet {
@@ -153,6 +150,9 @@ public final class Clerk {
       clerk: self
     )
   }
+
+  /// The event emitter for general Clerk events.
+  let clerkEventEmitter = EventEmitter<ClerkEvent>()
 
   /// An `AsyncStream` of general Clerk events.
   ///
