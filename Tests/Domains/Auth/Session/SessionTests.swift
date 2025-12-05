@@ -31,7 +31,7 @@ struct SessionTests {
     }
     mock.register()
 
-    _ = try await session.revoke()
+    try await session.revoke()
     #expect(requestHandled.value)
   }
 
@@ -54,7 +54,7 @@ struct SessionTests {
     }
     mock.register()
 
-    _ = try await session.getToken(.init(skipCache: true))
+    try await session.getToken(.init(skipCache: true))
     #expect(requestHandled.value)
   }
 
@@ -78,7 +78,7 @@ struct SessionTests {
     }
     mock.register()
 
-    _ = try await session.getToken(.init(template: template, skipCache: true))
+    try await session.getToken(.init(template: template, skipCache: true))
     #expect(requestHandled.value)
   }
 
@@ -101,7 +101,7 @@ struct SessionTests {
     }
     mock.register()
 
-    _ = try await session.getToken(.init(skipCache: true))
+    try await session.getToken(.init(skipCache: true))
     #expect(requestHandled.value)
   }
 }

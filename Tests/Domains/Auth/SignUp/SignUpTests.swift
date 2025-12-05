@@ -33,7 +33,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.auth.signUp(emailAddress: "test@example.com", password: "password123")
+    try await Clerk.shared.auth.signUp(emailAddress: "test@example.com", password: "password123")
     #expect(requestHandled.value)
   }
 
@@ -60,7 +60,7 @@ struct SignUpTests {
     mock.register()
 
     do {
-      _ = try await Clerk.shared.auth.signUpWithOAuth(provider: .google)
+      try await Clerk.shared.auth.signUpWithOAuth(provider: .google)
     } catch {
       // Expected to fail in unit tests due to web authentication, but request should still be made
     }
@@ -91,7 +91,7 @@ struct SignUpTests {
     mock.register()
 
     do {
-      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+      try await Clerk.shared.auth.signUpWithEnterpriseSSO(emailAddress: "user@enterprise.com")
     } catch {
       // Expected to fail in unit tests due to web authentication, but request should still be made
     }
@@ -120,7 +120,7 @@ struct SignUpTests {
     mock.register()
 
     do {
-      _ = try await Clerk.shared.auth.signUpWithIdToken("mock_id_token", provider: .apple)
+      try await Clerk.shared.auth.signUpWithIdToken("mock_id_token", provider: .apple)
     } catch {
       // Expected to fail in unit tests due to transfer flow handling, but request should still be made
     }
@@ -148,7 +148,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.auth.signUpWithTicket("mock_ticket_value")
+    try await Clerk.shared.auth.signUpWithTicket("mock_ticket_value")
     #expect(requestHandled.value)
   }
 
@@ -173,7 +173,7 @@ struct SignUpTests {
     mock.register()
 
     // Transfer is an internal parameter not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
+    try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }
 
@@ -196,7 +196,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.auth.signUp()
+    try await Clerk.shared.auth.signUp()
     #expect(requestHandled.value)
   }
 
@@ -221,7 +221,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.update(firstName: "John", lastName: "Doe")
+    try await signUp.update(firstName: "John", lastName: "Doe")
     #expect(requestHandled.value)
   }
 
@@ -245,7 +245,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.sendEmailCode()
+    try await signUp.sendEmailCode()
     #expect(requestHandled.value)
   }
 
@@ -269,7 +269,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.sendPhoneCode()
+    try await signUp.sendPhoneCode()
     #expect(requestHandled.value)
   }
 
@@ -294,7 +294,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.verifyCode("123456", type: .email)
+    try await signUp.verifyCode("123456", type: .email)
     #expect(requestHandled.value)
   }
 
@@ -319,7 +319,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.verifyCode("654321", type: .phone)
+    try await signUp.verifyCode("654321", type: .phone)
     #expect(requestHandled.value)
   }
 
@@ -342,7 +342,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.reload()
+    try await signUp.reload()
     #expect(requestHandled.value)
   }
 
@@ -366,7 +366,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    _ = try await signUp.reload(rotatingTokenNonce: "test_nonce")
+    try await signUp.reload(rotatingTokenNonce: "test_nonce")
     #expect(requestHandled.value)
   }
 }
