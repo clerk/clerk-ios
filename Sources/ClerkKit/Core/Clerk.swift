@@ -41,7 +41,7 @@ public final class Clerk {
     didSet {
       // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        authEventEmitter.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
+        auth.eventEmitter.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
       }
 
       if let client {
@@ -92,9 +92,6 @@ public final class Clerk {
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
   }
-
-  /// The event emitter for auth events.
-  public let authEventEmitter = EventEmitter<AuthEvent>()
 
   /// The event emitter for general Clerk events.
   let clerkEventEmitter = EventEmitter<ClerkEvent>()
@@ -155,6 +152,13 @@ public final class Clerk {
       sessionService: dependencies.sessionService,
       clerk: self
     )
+  }
+
+  /// An `AsyncStream` of general Clerk events.
+  ///
+  /// Subscribe to this stream to receive notifications about device tokens, client updates, and environment changes.
+  var events: AsyncStream<ClerkEvent> {
+    clerkEventEmitter.events
   }
 
   /// Proxy configuration derived from `proxyUrl`, if present.
