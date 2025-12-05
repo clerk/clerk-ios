@@ -18,6 +18,9 @@ public final class Auth {
   private let sessionService: SessionServiceProtocol
   private let clerk: Clerk
 
+  /// The event emitter for auth events.
+  let eventEmitter = EventEmitter<AuthEvent>()
+
   init(
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
@@ -471,6 +474,6 @@ public final class Auth {
   /// }
   /// ```
   public var events: AsyncStream<AuthEvent> {
-    clerk.authEventEmitter.events
+    eventEmitter.events
   }
 }
