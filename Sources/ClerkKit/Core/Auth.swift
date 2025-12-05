@@ -16,7 +16,7 @@ public final class Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
-  private let clerk: Clerk
+  private unowned let clerk: Clerk
 
   init(
     signInService: SignInServiceProtocol,

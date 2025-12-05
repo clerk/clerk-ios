@@ -142,14 +142,13 @@ public final class Clerk {
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
-  public var auth: Auth {
-    Auth(
-      signInService: dependencies.signInService,
-      signUpService: dependencies.signUpService,
-      sessionService: dependencies.sessionService,
-      clerk: self
-    )
-  }
+  @ObservationIgnored
+  public lazy var auth: Auth = .init(
+    signInService: dependencies.signInService,
+    signUpService: dependencies.signUpService,
+    sessionService: dependencies.sessionService,
+    clerk: self
+  )
 
   /// The event emitter for general Clerk events.
   let clerkEventEmitter = EventEmitter<ClerkEvent>()
