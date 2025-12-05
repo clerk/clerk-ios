@@ -133,7 +133,7 @@ public final class Auth {
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .passkey, redirectUrl: clerk.options.redirectConfig.redirectUrl))
+    try await signInService.create(params: .init(strategy: .passkey))
   }
   #endif
 
@@ -205,8 +205,7 @@ public final class Auth {
   public func signInWithTicket(_ ticket: String) async throws -> SignIn {
     try await signInService.create(params: .init(
       strategy: .ticket,
-      ticket: ticket,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      ticket: ticket
     ))
   }
 
@@ -244,8 +243,7 @@ public final class Auth {
       lastName: lastName,
       username: username,
       unsafeMetadata: unsafeMetadata,
-      legalAccepted: legalAccepted,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      legalAccepted: legalAccepted
     ))
   }
 
@@ -297,8 +295,7 @@ public final class Auth {
       firstName: firstName,
       lastName: lastName,
       strategy: FactorStrategy(rawValue: provider.strategy),
-      token: idToken,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      token: idToken
     ))
     return try await signUp.handleTransferFlow()
   }
@@ -346,7 +343,7 @@ public final class Auth {
   public func signUpWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       emailAddress: emailAddress,
-      strategy: FactorStrategy.enterpriseSSO,
+      strategy: .enterpriseSSO,
       redirectUrl: clerk.options.redirectConfig.redirectUrl
     ))
 
@@ -376,8 +373,7 @@ public final class Auth {
   public func signUpWithTicket(_ ticket: String) async throws -> SignUp {
     try await signUpService.create(params: .init(
       ticket: ticket,
-      strategy: FactorStrategy.ticket,
-      redirectUrl: clerk.options.redirectConfig.redirectUrl
+      strategy: .ticket
     ))
   }
 
