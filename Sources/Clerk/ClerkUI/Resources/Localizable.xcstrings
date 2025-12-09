@@ -3399,7 +3399,7 @@
         }
       }
     },
-    "Didn't recieve a code? " : {
+    "Didn't receive a code?" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {

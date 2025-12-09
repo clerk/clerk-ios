@@ -169,7 +169,7 @@ struct SignInFactorCodeView: View {
                             await prepare()
                         } label: { isRunning in
                             HStack(spacing: 0) {
-                                Text("Didn't recieve a code? ", bundle: .module)
+                                Text("Didn't receive a code? ", bundle: .module)
                                 Text(resendString, bundle: .module)
                                     .foregroundStyle(
                                         remainingSeconds > 0
