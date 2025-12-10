@@ -26,13 +26,6 @@ struct WatchExampleAppWatchApp: App {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
-        .task {
-          do {
-            try await Clerk.shared.load()
-          } catch {
-            dump(error)
-          }
-        }
     }
   }
 }

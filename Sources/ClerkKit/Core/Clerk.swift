@@ -213,24 +213,29 @@ public extension Clerk {
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
+
+    // Fire and forget: fetch fresh client and environment from API
+    taskCoordinator?.task { @MainActor [weak self] in
+      do {
+        async let client = Client.get()
+        async let environment = Environment.get()
+
+        let env = try await environment
+        _ = try await client
+        self?.attestDeviceIfNeeded(environment: env)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to load client or environment")
+      }
+    }
   }
 
   /// Configures the shared Clerk instance.
   ///
-  /// This method must be called before accessing `Clerk.shared`. If called multiple times,
-  /// a warning will be logged and subsequent calls will be ignored.
-  ///
-  /// In test environments, reconfiguration is allowed to support test isolation.
-  ///
-  /// This method:
-  /// 1. Sets up configuration (API client, options, etc.)
-  /// 2. Sets up lifecycle and session polling managers
-  /// 3. Loads cached client and environment data from keychain (synchronously)
-  /// 4. Sets the shared instance
+  /// Call this method once at app launch before accessing `Clerk.shared`.
   ///
   /// - Parameters:
-  ///     - publishableKey: The publishable key from your Clerk Dashboard, used to connect to Clerk.
-  ///     - options: Configuration options for the Clerk instance. Defaults to a new `ClerkOptions` instance.
+  ///     - publishableKey: The publishable key from your Clerk Dashboard.
+  ///     - options: Configuration options for the Clerk instance.
   /// - Returns: The configured Clerk instance.
   @MainActor
   @discardableResult
@@ -259,40 +264,6 @@ public extension Clerk {
 
     _shared = clerk
     return clerk
-  }
-
-  /// Loads all necessary environment configuration and instance settings from the Frontend API.
-  /// It is absolutely necessary to call this method before using the Clerk object in your code.
-  func load() async throws {
-    // Ensure Clerk has been configured
-    guard cacheManager != nil else {
-      throw ClerkInitializationError.initializationFailed(
-        underlyingError: ClerkClientError(message: "Clerk must be configured before calling load(). Call Clerk.configure() first.")
-      )
-    }
-
-    do {
-      async let client = Client.get()
-      async let environment = Environment.get()
-
-      // Wait for both to complete - if either fails, we exit early
-      // since both are required for the SDK to work properly
-      let env = try await environment
-      _ = try await client
-      attestDeviceIfNeeded(environment: env)
-
-      // Sync authentication state to watch app after initial load if enabled
-      watchConnectivityCoordinator?.sync()
-    } catch {
-      // Wrap errors in appropriate ClerkInitializationError
-      if let error = error as? ClerkInitializationError {
-        throw error
-      } else {
-        // Since we're fetching concurrently, we can't easily tell which one failed
-        // So we'll use a generic initialization error
-        throw ClerkInitializationError.initializationFailed(underlyingError: error)
-      }
-    }
   }
 }
 
@@ -353,7 +324,7 @@ extension Clerk {
     if !AppAttestHelper.hasKeyId,
        [.onboarding, .enforced].contains(environment.fraudSettings.native.deviceAttestationMode)
     {
-      taskCoordinator?.task(priority: .background) {
+      Task(priority: .background) {
         do {
           try await AppAttestHelper.performDeviceAttestation()
         } catch {

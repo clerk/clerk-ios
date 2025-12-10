@@ -11,20 +11,13 @@ import SwiftUI
 @main
 struct QuickstartApp: App {
   init() {
-    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+    Clerk.configure(publishableKey: "pk_live_Y2xlcmsubWlrZS5jbGVyay5hcHAk")
   }
 
   var body: some Scene {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
-        .task {
-          do {
-            try await Clerk.shared.load()
-          } catch {
-            dump(error)
-          }
-        }
     }
   }
 }
