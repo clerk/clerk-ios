@@ -3577,48 +3577,48 @@
         }
       }
     },
-    "Didn't recieve a code? " : {
+    "Didn't receive a code?" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لم تستلم رمزاً؟ "
+            "value" : "لم تستلم رمزاً؟"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keinen Code erhalten? "
+            "value" : "Keinen Code erhalten?"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Δεν λάβατε κωδικό; "
+            "value" : "Δεν λάβατε κωδικό;"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿No recibiste el código? "
+            "value" : "¿No recibiste el código?"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas reçu le code ? "
+            "value" : "Vous n'avez pas reçu le code ?"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "कोड नहीं मिला? "
+            "value" : "कोड नहीं मिला?"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Non hai ricevuto il codice? "
+            "value" : "Non hai ricevuto il codice?"
           }
         },
         "ja" : {
@@ -3636,7 +3636,7 @@
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Não recebeu um código? "
+            "value" : "Não recebeu o código?"
           }
         },
         "zh-Hans" : {
