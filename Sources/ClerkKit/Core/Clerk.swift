@@ -29,7 +29,10 @@ public final class Clerk {
   private static var _shared: Clerk?
 
   /// A getter to see if the Clerk object is ready for use or not.
-  public private(set) var isLoaded: Bool = false
+  /// Returns true when both environment and client are loaded.
+  public var isLoaded: Bool {
+    environment != nil && client != nil
+  }
 
   /// A getter to see if a Clerk instance is running in production or development mode.
   public var instanceType: InstanceEnvironmentType {
@@ -280,8 +283,6 @@ public extension Clerk {
 
       // Sync authentication state to watch app after initial load if enabled
       watchConnectivityCoordinator?.sync()
-
-      isLoaded = true
     } catch {
       // Wrap errors in appropriate ClerkInitializationError
       if let error = error as? ClerkInitializationError {
