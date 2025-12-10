@@ -346,7 +346,7 @@ struct SignInTests {
     }
     mock.register()
 
-    try await signIn.verifyWithPassword("password123")
+    try await signIn.authenticateWithPassword("password123")
     #expect(requestHandled.value)
   }
 

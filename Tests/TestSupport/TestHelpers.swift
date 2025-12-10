@@ -27,6 +27,11 @@ func configureClerkForTesting() {
 func setupMockAPIClient() {
   let mockAPIClient = createMockAPIClient()
 
+  // Create mock services that use the mock API client
+  let signInService = SignInService(apiClient: mockAPIClient)
+  let signUpService = SignUpService(apiClient: mockAPIClient)
+  let sessionService = SessionService(apiClient: mockAPIClient)
+
   // Replace the container with a mock container that uses the mock API client
   // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
   Clerk.shared.dependencies = MockDependencyContainer(
@@ -34,15 +39,24 @@ func setupMockAPIClient() {
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
     clientService: ClientService(apiClient: mockAPIClient),
     userService: UserService(apiClient: mockAPIClient),
-    signInService: SignInService(apiClient: mockAPIClient),
-    signUpService: SignUpService(apiClient: mockAPIClient),
-    sessionService: SessionService(apiClient: mockAPIClient),
+    signInService: signInService,
+    signUpService: signUpService,
+    sessionService: sessionService,
     passkeyService: PasskeyService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     environmentService: EnvironmentService(apiClient: mockAPIClient),
     emailAddressService: EmailAddressService(apiClient: mockAPIClient),
     phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
     externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
+  )
+
+  // Reinitialize auth to use the mock services
+  // This is necessary because auth is a lazy property that may have already been initialized
+  // with the original services before we replaced dependencies
+  Clerk.shared.auth = Auth(
+    signInService: signInService,
+    signUpService: signUpService,
+    sessionService: sessionService
   )
 }
 

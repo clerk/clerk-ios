@@ -211,4 +211,66 @@ struct ClerkTests {
     // Verify key was deleted
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
   }
+
+  // MARK: - isLoaded Tests
+
+  @Test
+  func isLoadedReturnsFalseWhenBothNil() {
+    // Clear both client and environment
+    Clerk.shared.client = nil
+    Clerk.shared.environment = nil
+
+    // isLoaded should return false when both are nil
+    #expect(Clerk.shared.isLoaded == false)
+  }
+
+  @Test
+  func isLoadedReturnsFalseWhenOnlyEnvironmentSet() {
+    // Set only environment
+    Clerk.shared.environment = Clerk.Environment.mock
+    Clerk.shared.client = nil
+
+    // isLoaded should return false when client is nil
+    #expect(Clerk.shared.isLoaded == false)
+  }
+
+  @Test
+  func isLoadedReturnsFalseWhenOnlyClientSet() {
+    // Set only client
+    Clerk.shared.client = Client.mock
+    Clerk.shared.environment = nil
+
+    // isLoaded should return false when environment is nil
+    #expect(Clerk.shared.isLoaded == false)
+  }
+
+  @Test
+  func isLoadedReturnsTrueWhenBothSet() {
+    // Set both client and environment
+    Clerk.shared.client = Client.mock
+    Clerk.shared.environment = Clerk.Environment.mock
+
+    // isLoaded should return true when both are set
+    #expect(Clerk.shared.isLoaded == true)
+  }
+
+  @Test
+  func isLoadedBecomesTrue() async {
+    // Clear both client and environment first
+    Clerk.shared.client = nil
+    Clerk.shared.environment = nil
+    #expect(Clerk.shared.isLoaded == false)
+
+    // Set client - should still be false since environment is nil
+    Clerk.shared.client = Client.mock
+    #expect(Clerk.shared.isLoaded == false)
+
+    // Set environment - now both are set so should be true
+    Clerk.shared.environment = Clerk.Environment.mock
+    #expect(Clerk.shared.isLoaded == true)
+
+    // Clear client - should become false again
+    Clerk.shared.client = nil
+    #expect(Clerk.shared.isLoaded == false)
+  }
 }
