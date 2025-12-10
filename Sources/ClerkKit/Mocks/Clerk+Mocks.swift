@@ -241,6 +241,7 @@ package extension Clerk {
 
     // Replace dependencies with mock services
     clerk.dependencies = container
+    clerk._auth = nil // Force auth to reinitialize with new mock services
     clerk.client = mockClient
     clerk.environment = mockEnvironment
 
