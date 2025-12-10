@@ -142,15 +142,24 @@ public final class Clerk {
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
+  /// Backing storage for the `auth` property.
+  /// Can be reset to `nil` to force reinitialization with new services after reconfiguration.
+  @ObservationIgnored
+  package var _auth: Auth?
+
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
-  @ObservationIgnored
-  public lazy var auth: Auth = .init(
-    signInService: dependencies.signInService,
-    signUpService: dependencies.signUpService,
-    sessionService: dependencies.sessionService
-  )
+  public var auth: Auth {
+    if _auth == nil {
+      _auth = Auth(
+        signInService: dependencies.signInService,
+        signUpService: dependencies.signUpService,
+        sessionService: dependencies.sessionService
+      )
+    }
+    return _auth!
+  }
 
   /// The event emitter for general Clerk events.
   let clerkEventEmitter = EventEmitter<ClerkEvent>()
@@ -246,7 +255,8 @@ public extension Clerk {
     // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
-        // Reset the shared instance to allow reconfiguration in tests
+        // Clean up old managers before resetting to prevent background tasks from interfering
+        existing.cleanupManagers()
         _shared = nil
       } else {
         ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
