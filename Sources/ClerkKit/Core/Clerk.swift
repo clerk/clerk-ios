@@ -17,10 +17,12 @@ import Foundation
 public final class Clerk {
   /// The shared Clerk instance.
   ///
-  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will result in a precondition failure.
+  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will trigger an assertion failure in debug builds.
+  /// In release builds, a new unconfigured `Clerk` instance is returned.
   public static var shared: Clerk {
     guard let instance = _shared else {
-      preconditionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
+      assertionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
+      return Clerk()
     }
     return instance
   }
@@ -185,7 +187,8 @@ public final class Clerk {
       )
     } catch {
       // This should never happen, but handle it just in case
-      preconditionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
+      assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
+      dependencies = try! DependencyContainer(publishableKey: "", options: .init())
     }
   }
 }
@@ -269,7 +272,8 @@ public extension Clerk {
     do {
       try clerk.performConfiguration(publishableKey: publishableKey, options: options)
     } catch {
-      preconditionFailure("Failed to configure Clerk: \(error.localizedDescription)")
+      assertionFailure("Failed to configure Clerk: \(error.localizedDescription)")
+      return Clerk()
     }
 
     _shared = clerk
