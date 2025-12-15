@@ -10,8 +10,6 @@
 import SwiftUI
 
 struct SignInClientTrustView: View {
-    @Environment(\.clerkTheme) private var theme
-
     let factor: Factor
 
     @ViewBuilder
@@ -30,7 +28,7 @@ struct SignInClientTrustView: View {
 }
 
 #Preview {
-    SignInFactorOneView(
+    SignInClientTrustView(
         factor: .init(
             strategy: "email_code"
         )

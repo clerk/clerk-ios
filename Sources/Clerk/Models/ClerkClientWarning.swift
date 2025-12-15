@@ -6,11 +6,10 @@
 //
 
 import Foundation
-import SwiftUI
 
 /// An object that represents a warning created by Clerk on the client.
 /// Unlike `ClerkClientError`, this does not conform to `Error` and is intended for non-error notices.
-public struct ClerkClientWarning {
+public struct ClerkClientWarning: Sendable {
     /// A message that describes the warning.
     public let message: String.LocalizationValue?
 

@@ -105,13 +105,6 @@ struct SignInFactorCodeView: View {
         }
     }
 
-    var newDeviceVerificationNotice: LocalizedStringKey {
-        if isClientTrust {
-            "You're signing in from a new device. We're asking for verification to keep your account secure."
-        } else {
-            ""
-        }
-    }
 
     private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
         signIn.id + (factor.safeIdentifier ?? UUID().uuidString)

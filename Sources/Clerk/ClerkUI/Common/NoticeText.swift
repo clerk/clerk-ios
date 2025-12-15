@@ -22,6 +22,7 @@ struct NoticeText: View {
                 .frame(width: 16, height: 16)
                 .scaledToFit()
                 .offset(y: 3)
+                .accessibilityHidden(true)
             Text(notice.localizedDescription)
                 .multilineTextAlignment(.leading)
         }
