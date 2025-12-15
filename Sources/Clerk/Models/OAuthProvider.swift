@@ -36,6 +36,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     case slack
     case linear
     case huggingFace
+    case vercel
     case custom(_ strategy: String)
 
     // **
@@ -70,7 +71,8 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
             .box,
             .slack,
             .linear,
-            .huggingFace
+            .huggingFace,
+            .vercel
         ]
     }
 
@@ -315,6 +317,12 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
                 provider: "huggingface",
                 strategy: "oauth_huggingface",
                 name: "Hugging Face"
+            )
+        case .vercel:
+            return .init(
+                provider: "vercel",
+                strategy: "oauth_vercel",
+                name: "Vercel"
             )
         }
     }
