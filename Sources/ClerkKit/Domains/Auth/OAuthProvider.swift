@@ -324,7 +324,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         name: "Hugging Face"
       )
     case .vercel:
-      return .init(
+      .init(
         provider: "vercel",
         strategy: "oauth_vercel",
         name: "Vercel"
@@ -349,4 +349,3 @@ extension OAuthProvider: Comparable {
     return lhsName < rhsName
   }
 }
-
