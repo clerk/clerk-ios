@@ -27,6 +27,9 @@ extension SignIn {
         /// The user needs to set a new password.
         case needsNewPassword = "needs_new_password"
 
+        /// Client trust verification is required.
+        case needsClientTrust = "needs_client_trust"
+
         /// The sign-in returned an unknown status value.
         case unknown
 

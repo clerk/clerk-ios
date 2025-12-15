@@ -170,6 +170,7 @@ extension AuthView {
         case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
         case signInForgotPassword
         case signInSetNewPassword
+        case signInClientTrust(factor: Factor)
         case signInGetHelp
 
         // Sign up
@@ -198,6 +199,8 @@ extension AuthView {
                 SignInFactorOneForgotPasswordView()
             case .signInSetNewPassword:
                 SignInSetNewPasswordView()
+            case .signInClientTrust(let factor):
+                SignInClientTrustView(factor: factor)
             case .signInGetHelp:
                 SignInGetHelpView()
             case .signUpCollectField(let field):
