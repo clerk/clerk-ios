@@ -105,6 +105,9 @@ struct SignInFactorCodeView: View {
         }
     }
 
+    private var clientTrustNoticeString: String.LocalizationValue {
+        "You're signing in from a new device. We're asking for verification to keep your account secure."
+    }
 
     private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
         signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
@@ -167,7 +170,7 @@ struct SignInFactorCodeView: View {
                     .font(theme.fonts.subheadline)
 
                     if isClientTrust {
-                        NoticeText(notice: ClerkClientWarning(message: "You're signing in from a new device. We're asking for verification to keep your account secure."))
+                        NoticeText(notice: ClerkClientWarning(message: clientTrustNoticeString))
                     }
 
                     if showResend {
