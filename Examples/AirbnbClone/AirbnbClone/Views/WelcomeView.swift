@@ -31,10 +31,11 @@ struct WelcomeView: View {
         } label: {
           Text("Log in or sign up")
             .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Color(uiColor: .systemBackground))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(.black)
+            // `label` is black in light mode and white in dark mode, so the button stays high-contrast.
+            .background(Color(uiColor: .label))
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .padding(.top, 24)

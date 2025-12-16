@@ -50,6 +50,7 @@ struct EmailLoginView: View {
 
     // Continue button
     Button {
+      dismissKeyboard()
       submitEmail()
     } label: {
       Text("Continue")

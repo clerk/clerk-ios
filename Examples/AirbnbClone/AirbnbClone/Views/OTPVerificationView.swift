@@ -106,6 +106,7 @@ struct OTPVerificationView: View {
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         Button {
+          dismissKeyboard()
           dismiss()
         } label: {
           Image(systemName: "xmark")
@@ -117,6 +118,7 @@ struct OTPVerificationView: View {
     }
     .safeAreaInset(edge: .bottom) {
       Button {
+        dismissKeyboard()
         verifyCode()
       } label: {
         Group {
@@ -209,6 +211,7 @@ struct OTPVerificationView: View {
   private func verifyCode() {
     guard !isVerifying else { return }
     Task {
+      dismissKeyboard()
       isLoading = true
       isVerifying = true
       errorMessage = nil
