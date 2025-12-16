@@ -64,10 +64,8 @@ struct HomeView: View {
   }
 
   private var displayName: String {
-    let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let lastName = clerk.user?.lastName?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let full = [firstName, lastName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
-    return full.isEmpty ? "Guest" : full
+    let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return firstName.isEmpty ? "Guest" : firstName
   }
 
   private var profileCard: some View {
@@ -95,7 +93,7 @@ struct HomeView: View {
             .font(.system(size: 28, weight: .bold))
             .foregroundStyle(.primary)
 
-          Text("New Jersey, United States")
+          Text("United States")
             .font(.system(size: 16))
             .foregroundStyle(.secondary)
         }
