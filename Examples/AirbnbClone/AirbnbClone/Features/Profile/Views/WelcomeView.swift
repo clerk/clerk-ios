@@ -13,7 +13,6 @@ struct WelcomeView: View {
   var body: some View {
     NavigationStack {
       VStack(alignment: .leading, spacing: 0) {
-        // Header
         VStack(alignment: .leading, spacing: 8) {
           Text("Profile")
             .font(.system(size: 34, weight: .bold))
@@ -25,7 +24,6 @@ struct WelcomeView: View {
         .padding(.top, 24)
         .padding(.horizontal, 24)
 
-        // Log in button
         Button {
           showLoginSheet = true
         } label: {
@@ -34,7 +32,6 @@ struct WelcomeView: View {
             .foregroundStyle(Color(uiColor: .systemBackground))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            // `label` is black in light mode and white in dark mode, so the button stays high-contrast.
             .background(Color(uiColor: .label))
             .clipShape(.rect(cornerRadius: 12))
         }

@@ -38,12 +38,11 @@ struct OTPVerificationView: View {
 
   private var subtitle: String {
     if identifierRaw.first == "+" {
-      let utility = PhoneNumberUtility()
-      if let phoneNumber = try? utility.parse(identifierRaw) {
-        let formatted = utility.format(phoneNumber, toType: .international)
+      if let phoneNumber = try? phoneNumberUtility.parse(identifierRaw) {
+        let formatted = phoneNumberUtility.format(phoneNumber, toType: .international)
         let withoutPlus = formatted
           .trimmingCharacters(in: .whitespacesAndNewlines)
-          .replacingOccurrences(of: "+", with: "")
+          .replacing("+", with: "")
         return "Enter the code we sent over SMS to \(withoutPlus):"
       }
     }
@@ -56,43 +55,27 @@ struct OTPVerificationView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      Text(subtitle)
-        .font(.system(size: 16))
-        .foregroundStyle(.secondary)
+      OTPSubtitleText(subtitle: subtitle)
         .padding(.top, 16)
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
 
-      codeField
+      OTPCodeField(
+        code: $code,
+        isFocused: $isCodeFieldFocused,
+        onCodeComplete: verifyCode
+      )
+      .padding(.horizontal, 24)
+
+      OTPErrorMessage(message: errorMessage)
         .padding(.horizontal, 24)
+        .padding(.top, 12)
 
-      if let errorMessage {
-        Text(errorMessage)
-          .font(.system(size: 14))
-          .foregroundStyle(.red)
-          .padding(.horizontal, 24)
-          .padding(.top, 12)
-      }
-
-      VStack(alignment: .leading, spacing: 16) {
-        HStack(spacing: 0) {
-          Text("Didn't get an SMS? ")
-            .font(.system(size: 16))
-            .foregroundStyle(.secondary)
-
-          Button {
-            resendCode()
-          } label: {
-            Text("Send again")
-              .font(.system(size: 16, weight: .semibold))
-              .underline()
-              .foregroundStyle(.primary)
-          }
-          .buttonStyle(.plain)
-          .disabled(!canResend || isLoading)
-          .opacity(canResend ? 1 : 0.45)
-        }
-      }
+      ResendCodeSection(
+        canResend: canResend,
+        isLoading: isLoading,
+        onResend: resendCode
+      )
       .padding(.top, 24)
       .padding(.horizontal, 24)
 
@@ -105,41 +88,20 @@ struct OTPVerificationView: View {
     .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        Button {
+        OTPCloseButton {
           dismissKeyboard()
           dismiss()
-        } label: {
-          Image(systemName: "xmark")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Color(uiColor: .label))
         }
-        .buttonStyle(.plain)
       }
     }
     .safeAreaInset(edge: .bottom) {
-      Button {
+      OTPContinueButton(
+        canContinue: canContinue,
+        isLoading: isLoading || isVerifying
+      ) {
         dismissKeyboard()
         verifyCode()
-      } label: {
-        Group {
-          if isLoading || isVerifying {
-            LoadingDotsView(color: .white)
-          } else {
-            Text("Continue")
-              .font(.system(size: 17, weight: .semibold))
-              .foregroundStyle(.white)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(
-          canContinue
-            ? Color(red: 0.87, green: 0.0, blue: 0.35)
-            : Color(uiColor: .systemGray4)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
       }
-      .disabled(!canContinue)
       .padding(.horizontal, 24)
       .padding(.top, 12)
       .padding(.bottom, 12)
@@ -157,57 +119,6 @@ struct OTPVerificationView: View {
     }
   }
 
-  private func digitAt(index: Int) -> String {
-    guard index < code.count else { return "" }
-    let codeArray = Array(code)
-    return String(codeArray[index])
-  }
-
-  private var codeField: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(
-          isCodeFieldFocused ? Color(uiColor: .systemGray2) : Color(uiColor: .systemGray3),
-          lineWidth: 2
-        )
-        .frame(height: 72)
-
-      HStack(spacing: 18) {
-        ForEach(0 ..< 6, id: \.self) { index in
-          Text(digitAt(index: index).isEmpty ? "-" : digitAt(index: index))
-            .font(.system(size: 24, weight: .medium))
-            .foregroundStyle(.primary)
-            .frame(width: 20)
-        }
-      }
-      .monospaced()
-    }
-    .contentShape(Rectangle())
-    .onTapGesture { isCodeFieldFocused = true }
-    .background(hiddenCodeField)
-  }
-
-  private var hiddenCodeField: some View {
-    // Keep the actual TextField out of the visible box so we don't render a caret/cursor.
-    TextField("", text: $code)
-      .keyboardType(.numberPad)
-      .textContentType(.oneTimeCode)
-      .focused($isCodeFieldFocused)
-      .frame(width: 1, height: 1)
-      .opacity(0)
-      .accessibilityHidden(true)
-      .onChange(of: code) { _, newValue in
-        let digits = newValue.filter(\.isWholeNumber)
-        let clipped = String(digits.prefix(6))
-        if code != clipped {
-          code = clipped
-        }
-        if clipped.count == 6 {
-          verifyCode()
-        }
-      }
-  }
-
   private func verifyCode() {
     guard !isVerifying else { return }
     Task {
@@ -222,7 +133,6 @@ struct OTPVerificationView: View {
         case .signUp(let signUp, let type):
           pending = try await .signUp(signUp.verifyCode(code, type: type), type)
         }
-        // Navigation will be handled by the Clerk environment observing the user state
       } catch {
         errorMessage = error.localizedDescription
         code = ""
@@ -239,7 +149,6 @@ struct OTPVerificationView: View {
       do {
         switch pending {
         case .signIn(let signIn):
-          // Resend based on the verification strategy
           if signIn.firstFactorVerification?.strategy == .emailCode {
             pending = try await .signIn(signIn.sendEmailCode())
           } else {
@@ -273,6 +182,210 @@ struct OTPVerificationView: View {
     }
   }
 }
+
+// MARK: - OTPSubtitleText
+
+private struct OTPSubtitleText: View {
+  let subtitle: String
+
+  var body: some View {
+    Text(subtitle)
+      .font(.system(size: 16))
+      .foregroundStyle(.secondary)
+  }
+}
+
+// MARK: - OTPCodeField
+
+private struct OTPCodeField: View {
+  @Binding var code: String
+  var isFocused: FocusState<Bool>.Binding
+  let onCodeComplete: () -> Void
+
+  var body: some View {
+    ZStack {
+      OTPCodeFieldBorder(isFocused: isFocused.wrappedValue)
+
+      OTPDigitsDisplay(code: code)
+    }
+    .contentShape(Rectangle())
+    .onTapGesture { isFocused.wrappedValue = true }
+    .background(
+      HiddenCodeTextField(
+        code: $code,
+        isFocused: isFocused,
+        onCodeComplete: onCodeComplete
+      )
+    )
+  }
+}
+
+// MARK: - OTPCodeFieldBorder
+
+private struct OTPCodeFieldBorder: View {
+  let isFocused: Bool
+
+  var body: some View {
+    RoundedRectangle(cornerRadius: 12)
+      .strokeBorder(
+        isFocused ? Color(uiColor: .systemGray2) : Color(uiColor: .systemGray3),
+        lineWidth: 2
+      )
+      .frame(height: 72)
+  }
+}
+
+// MARK: - OTPDigitsDisplay
+
+private struct OTPDigitsDisplay: View {
+  let code: String
+
+  var body: some View {
+    HStack(spacing: 18) {
+      ForEach(0 ..< 6, id: \.self) { index in
+        OTPDigitCell(digit: digitAt(index: index))
+      }
+    }
+    .monospaced()
+  }
+
+  private func digitAt(index: Int) -> String {
+    guard index < code.count else { return "" }
+    let codeArray = Array(code)
+    return String(codeArray[index])
+  }
+}
+
+// MARK: - OTPDigitCell
+
+private struct OTPDigitCell: View {
+  let digit: String
+
+  var body: some View {
+    Text(digit.isEmpty ? "-" : digit)
+      .font(.system(size: 24, weight: .medium))
+      .foregroundStyle(.primary)
+      .frame(width: 20)
+  }
+}
+
+// MARK: - HiddenCodeTextField
+
+private struct HiddenCodeTextField: View {
+  @Binding var code: String
+  var isFocused: FocusState<Bool>.Binding
+  let onCodeComplete: () -> Void
+
+  var body: some View {
+    TextField("", text: $code)
+      .keyboardType(.numberPad)
+      .textContentType(.oneTimeCode)
+      .focused(isFocused)
+      .frame(width: 1, height: 1)
+      .opacity(0)
+      .accessibilityHidden(true)
+      .onChange(of: code) { _, newValue in
+        let digits = newValue.filter(\.isWholeNumber)
+        let clipped = String(digits.prefix(6))
+        if code != clipped {
+          code = clipped
+        }
+        if clipped.count == 6 {
+          onCodeComplete()
+        }
+      }
+  }
+}
+
+// MARK: - OTPErrorMessage
+
+private struct OTPErrorMessage: View {
+  let message: String?
+
+  var body: some View {
+    if let message {
+      Text(message)
+        .font(.system(size: 14))
+        .foregroundStyle(.red)
+    }
+  }
+}
+
+// MARK: - ResendCodeSection
+
+private struct ResendCodeSection: View {
+  let canResend: Bool
+  let isLoading: Bool
+  let onResend: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      HStack(spacing: 0) {
+        Text("Didn't get an SMS? ")
+          .font(.system(size: 16))
+          .foregroundStyle(.secondary)
+
+        Button(action: onResend) {
+          Text("Send again")
+            .font(.system(size: 16, weight: .semibold))
+            .underline()
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canResend || isLoading)
+        .opacity(canResend ? 1 : 0.45)
+      }
+    }
+  }
+}
+
+// MARK: - OTPCloseButton
+
+private struct OTPCloseButton: View {
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: "xmark")
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(Color(uiColor: .label))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+// MARK: - OTPContinueButton
+
+private struct OTPContinueButton: View {
+  let canContinue: Bool
+  let isLoading: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Group {
+        if isLoading {
+          LoadingDotsView(color: .white)
+        } else {
+          Text("Continue")
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(.white)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      .frame(height: 56)
+      .background(
+        canContinue
+          ? Color(red: 0.87, green: 0.0, blue: 0.35)
+          : Color(uiColor: .systemGray4)
+      )
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    .disabled(!canContinue)
+  }
+}
+
+// MARK: - Preview
 
 #Preview {
   NavigationStack {

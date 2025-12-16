@@ -1,5 +1,5 @@
 //
-//  SocialButton.swift
+//  AuthOptionButton.swift
 //  AirbnbClone
 //
 //  Created by Mike Pitre on 12/15/25.
@@ -8,7 +8,7 @@
 import ClerkKit
 import SwiftUI
 
-struct SocialButton: View {
+struct AuthOptionButton: View {
   var icon: String?
   var iconURL: URL?
   var provider: OAuthProvider?
@@ -31,16 +31,15 @@ struct SocialButton: View {
   var body: some View {
     Button(action: action) {
       ZStack {
-        // Reserve height so the button doesn't shrink when we swap content for a loader.
         Text(title)
           .font(.system(size: 16, weight: .medium))
           .opacity(isLoading ? 0 : 1)
 
-        // Left-aligned icon (hidden while loading)
         HStack {
           Group {
             if let icon {
               Image(systemName: icon)
+                .symbolRenderingMode(.monochrome)
                 .font(.system(size: 20, weight: .medium))
                 .frame(width: 24, height: 24)
             } else if let url = resolvedIconURL {
@@ -87,10 +86,10 @@ struct SocialButton: View {
 
 #Preview {
   VStack(spacing: 16) {
-    SocialButton(icon: "envelope", title: "Continue with email") {}
-    SocialButton(icon: "apple.logo", title: "Continue with Apple") {}
-    SocialButton(provider: .google, title: "Continue with Google") {}
-    SocialButton(provider: .facebook, title: "Continue with Facebook") {}
+    AuthOptionButton(icon: "envelope", title: "Continue with email") {}
+    AuthOptionButton(icon: "apple.logo", title: "Continue with Apple") {}
+    AuthOptionButton(provider: .google, title: "Continue with Google") {}
+    AuthOptionButton(provider: .facebook, title: "Continue with Facebook") {}
   }
   .padding()
   .environment(Clerk.preview())
