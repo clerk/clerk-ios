@@ -40,8 +40,8 @@ struct AuthOptionButton: View {
             if let icon {
               Image(systemName: icon)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 20, weight: .medium))
-                .frame(width: 24, height: 24)
+                .font(.system(size: 18))
+                .frame(width: 20, height: 20)
             } else if let url = resolvedIconURL {
               AsyncImage(url: url) { phase in
                 switch phase {
@@ -51,7 +51,7 @@ struct AuthOptionButton: View {
                     .aspectRatio(contentMode: .fit)
                 case .failure:
                   Image(systemName: "questionmark.circle")
-                    .font(.system(size: 20))
+                    .font(.system(size: 18))
                 case .empty:
                   ProgressView()
                     .scaleEffect(0.7)
@@ -59,7 +59,7 @@ struct AuthOptionButton: View {
                   EmptyView()
                 }
               }
-              .frame(width: 24, height: 24)
+              .frame(width: 20, height: 20)
             }
           }
           Spacer()
@@ -72,11 +72,11 @@ struct AuthOptionButton: View {
             .frame(maxWidth: .infinity)
         }
       }
-      .foregroundStyle(.primary)
+      .foregroundStyle(Color(uiColor: .label))
       .padding(.horizontal, 16)
-      .frame(height: 56)
+      .frame(height: 46)
       .background {
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 10)
           .strokeBorder(Color(uiColor: .systemGray3), lineWidth: 1)
       }
     }

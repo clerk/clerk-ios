@@ -27,6 +27,42 @@ struct OTPVerificationView: View {
     _pending = State(initialValue: pending)
   }
 
+  private enum VerificationChannel {
+    case sms
+    case email
+  }
+
+  private var verificationChannel: VerificationChannel {
+    switch pending {
+    case .signIn(let signIn):
+      if signIn.firstFactorVerification?.strategy == .emailCode {
+        .email
+      } else if (signIn.identifier ?? "").contains("@") {
+        .email
+      } else {
+        .sms
+      }
+    case .signUp(_, let type):
+      switch type {
+      case .email:
+        .email
+      case .phone:
+        .sms
+      }
+    }
+  }
+
+  private var formattedIdentifier: String {
+    guard verificationChannel == .sms, identifierRaw.first == "+" else { return identifierRaw }
+    if let phoneNumber = try? phoneNumberUtility.parse(identifierRaw) {
+      let formatted = phoneNumberUtility.format(phoneNumber, toType: .international)
+      return formatted
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacing("+", with: "")
+    }
+    return identifierRaw
+  }
+
   private var identifierRaw: String {
     switch pending {
     case .signIn(let signIn):
@@ -36,17 +72,22 @@ struct OTPVerificationView: View {
     }
   }
 
-  private var subtitle: String {
-    if identifierRaw.first == "+" {
-      if let phoneNumber = try? phoneNumberUtility.parse(identifierRaw) {
-        let formatted = phoneNumberUtility.format(phoneNumber, toType: .international)
-        let withoutPlus = formatted
-          .trimmingCharacters(in: .whitespacesAndNewlines)
-          .replacing("+", with: "")
-        return "Enter the code we sent over SMS to \(withoutPlus):"
-      }
+  private var navigationTitle: String {
+    switch verificationChannel {
+    case .sms:
+      "Confirm your number"
+    case .email:
+      "Confirm your email"
     }
-    return "Enter the code we sent over SMS to \(identifierRaw):"
+  }
+
+  private var subtitle: String {
+    switch verificationChannel {
+    case .sms:
+      "Enter the code we sent over SMS to \(formattedIdentifier):"
+    case .email:
+      "Enter the code we sent over email to \(formattedIdentifier):"
+    }
   }
 
   private var canContinue: Bool {
@@ -74,6 +115,7 @@ struct OTPVerificationView: View {
       ResendCodeSection(
         canResend: canResend,
         isLoading: isLoading,
+        isEmail: verificationChannel == .email,
         onResend: resendCode
       )
       .padding(.top, 24)
@@ -81,7 +123,7 @@ struct OTPVerificationView: View {
 
       Spacer(minLength: 0)
     }
-    .navigationTitle("Confirm your number")
+    .navigationTitle(navigationTitle)
     .navigationBarTitleDisplayMode(.inline)
     .navigationBarBackButtonHidden()
     .toolbarBackground(.visible, for: .navigationBar)
@@ -95,16 +137,20 @@ struct OTPVerificationView: View {
       }
     }
     .safeAreaInset(edge: .bottom) {
-      OTPContinueButton(
-        canContinue: canContinue,
-        isLoading: isLoading || isVerifying
-      ) {
-        dismissKeyboard()
-        verifyCode()
+      VStack(spacing: 0) {
+        Divider()
+
+        OTPContinueButton(
+          canContinue: canContinue,
+          isLoading: isLoading || isVerifying
+        ) {
+          dismissKeyboard()
+          verifyCode()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
       }
-      .padding(.horizontal, 24)
-      .padding(.top, 12)
-      .padding(.bottom, 12)
       .background(Color(uiColor: .systemBackground))
     }
     .overlay {
@@ -190,8 +236,8 @@ private struct OTPSubtitleText: View {
 
   var body: some View {
     Text(subtitle)
-      .font(.system(size: 16))
-      .foregroundStyle(.secondary)
+      .font(.system(size: 17))
+      .foregroundStyle(Color(uiColor: .label))
   }
 }
 
@@ -204,11 +250,12 @@ private struct OTPCodeField: View {
 
   var body: some View {
     ZStack {
-      OTPCodeFieldBorder(isFocused: isFocused.wrappedValue)
-
+      OTPCodeFieldBorder()
       OTPDigitsDisplay(code: code)
     }
-    .contentShape(Rectangle())
+    .frame(maxWidth: .infinity)
+    .frame(height: 72)
+    .contentShape(.rect)
     .onTapGesture { isFocused.wrappedValue = true }
     .background(
       HiddenCodeTextField(
@@ -223,15 +270,9 @@ private struct OTPCodeField: View {
 // MARK: - OTPCodeFieldBorder
 
 private struct OTPCodeFieldBorder: View {
-  let isFocused: Bool
-
   var body: some View {
     RoundedRectangle(cornerRadius: 12)
-      .strokeBorder(
-        isFocused ? Color(uiColor: .systemGray2) : Color(uiColor: .systemGray3),
-        lineWidth: 2
-      )
-      .frame(height: 72)
+      .strokeBorder(Color(uiColor: .label), lineWidth: 2)
   }
 }
 
@@ -241,7 +282,7 @@ private struct OTPDigitsDisplay: View {
   let code: String
 
   var body: some View {
-    HStack(spacing: 18) {
+    HStack(spacing: 24) {
       ForEach(0 ..< 6, id: \.self) { index in
         OTPDigitCell(digit: digitAt(index: index))
       }
@@ -264,7 +305,7 @@ private struct OTPDigitCell: View {
   var body: some View {
     Text(digit.isEmpty ? "-" : digit)
       .font(.system(size: 24, weight: .medium))
-      .foregroundStyle(.primary)
+      .foregroundStyle(digit.isEmpty ? Color(uiColor: .systemGray2) : Color(uiColor: .label))
       .frame(width: 20)
   }
 }
@@ -316,25 +357,24 @@ private struct OTPErrorMessage: View {
 private struct ResendCodeSection: View {
   let canResend: Bool
   let isLoading: Bool
+  let isEmail: Bool
   let onResend: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 0) {
-        Text("Didn't get an SMS? ")
-          .font(.system(size: 16))
-          .foregroundStyle(.secondary)
+    HStack(spacing: 0) {
+      Text(isEmail ? "Didn't get an email? " : "Didn't get an SMS? ")
+        .font(.system(size: 17))
+        .foregroundStyle(Color(uiColor: .label))
 
-        Button(action: onResend) {
-          Text("Send again")
-            .font(.system(size: 16, weight: .semibold))
-            .underline()
-            .foregroundStyle(.primary)
-        }
-        .buttonStyle(.plain)
-        .disabled(!canResend || isLoading)
-        .opacity(canResend ? 1 : 0.45)
+      Button(action: onResend) {
+        Text("Send again")
+          .font(.system(size: 17, weight: .semibold))
+          .underline()
+          .foregroundStyle(Color(uiColor: .label))
       }
+      .buttonStyle(.plain)
+      .disabled(!canResend || isLoading)
+      .opacity(canResend ? 1 : 0.35)
     }
   }
 }
@@ -375,13 +415,15 @@ private struct OTPContinueButton: View {
       .frame(maxWidth: .infinity)
       .frame(height: 56)
       .background(
-        canContinue
-          ? Color(red: 0.87, green: 0.0, blue: 0.35)
-          : Color(uiColor: .systemGray4)
+        isLoading
+          ? .black
+          : (canContinue
+            ? Color(red: 0.87, green: 0.0, blue: 0.35)
+            : Color(uiColor: .systemGray4))
       )
-      .clipShape(RoundedRectangle(cornerRadius: 12))
+      .clipShape(.rect(cornerRadius: 12))
     }
-    .disabled(!canContinue)
+    .disabled(!canContinue || isLoading)
   }
 }
 

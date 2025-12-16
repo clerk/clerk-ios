@@ -12,29 +12,6 @@ struct HomeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.colorScheme) private var colorScheme
 
-  var body: some View {
-    ScrollView {
-      VStack(spacing: 20) {
-        ProfileHeaderView()
-          .padding(.horizontal, 24)
-          .padding(.top, 24)
-
-        ProfileCardView(
-          displayName: displayName,
-          imageUrl: clerk.user?.imageUrl
-        )
-        .padding(.horizontal, 24)
-
-        LogoutRowView {
-          signOut()
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 32)
-      }
-    }
-    .background(pageBackground.ignoresSafeArea())
-  }
-
   private var pageBackground: Color {
     switch colorScheme {
     case .dark:
@@ -47,6 +24,27 @@ struct HomeView: View {
   private var displayName: String {
     let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     return firstName.isEmpty ? "Guest" : firstName
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 20) {
+        ProfileHeaderView()
+          .padding(.top, 24)
+
+        ProfileCardView(
+          displayName: displayName,
+          imageUrl: clerk.user?.imageUrl
+        )
+
+        LogoutRowView {
+          signOut()
+        }
+        .padding(.bottom, 32)
+      }
+      .padding(.horizontal, 24)
+    }
+    .background(pageBackground.ignoresSafeArea())
   }
 
   private func signOut() {

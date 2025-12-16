@@ -13,7 +13,7 @@ struct ContentView: View {
   @State private var showLoginSheet = false
 
   var body: some View {
-    Group {
+    ZStack {
       if clerk.user != nil {
         HomeView()
       } else {

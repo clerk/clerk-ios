@@ -26,6 +26,7 @@ struct PhoneLoginView: View {
   @State private var displayPhoneNumber = ""
   @State private var e164PhoneNumber = ""
   @State private var showCountryPicker = false
+  @State private var showValidationError = false
   @FocusState private var isPhoneFieldFocused: Bool
 
   private static var defaultCountry: CountryCodePickerViewController.Country {
@@ -34,8 +35,7 @@ struct PhoneLoginView: View {
       ?? CountryCodePickerViewController.Country(for: "US", with: phoneNumberUtility)!
   }
 
-  private var canSubmit: Bool {
-    guard !isLoading else { return false }
+  private var isValidPhoneNumber: Bool {
     let rawDigits = displayPhoneNumber.filter(\.isWholeNumber)
     return rawDigits.count >= 6
   }
@@ -46,6 +46,7 @@ struct PhoneLoginView: View {
         selectedCountry: selectedCountry,
         displayPhoneNumber: $displayPhoneNumber,
         isPhoneFieldFocused: $isPhoneFieldFocused,
+        showCountryPicker: showCountryPicker,
         onCountryTap: {
           dismissKeyboard()
           showCountryPicker = true
@@ -53,24 +54,35 @@ struct PhoneLoginView: View {
         onPhoneNumberChange: updatePhoneNumber
       )
 
-      PhoneDisclaimer()
-        .padding(.top, 6)
+      PhoneValidationError(isVisible: showValidationError)
+        .padding(.top, 8)
 
-      PhoneContinueButton(
-        canSubmit: canSubmit,
-        isLoading: isLoading
-      ) {
+      PhoneDisclaimer()
+        .padding(.top, showValidationError ? 4 : 8)
+
+      PhoneContinueButton(isLoading: isLoading) {
         dismissKeyboard()
-        submitPhoneNumber()
+        if isValidPhoneNumber {
+          showValidationError = false
+          submitPhoneNumber()
+        } else {
+          showValidationError = true
+        }
       }
-      .padding(.top, 14)
+      .padding(.top, showValidationError ? 10 : 14)
     }
+    .animation(.default, value: showValidationError)
     .sheet(isPresented: $showCountryPicker) {
       CountryPickerView(selectedCountry: $selectedCountry)
     }
     .onChange(of: selectedCountry.code) { _, newCode in
       partialFormatter.defaultRegion = newCode
       updatePhoneNumber(from: displayPhoneNumber)
+    }
+    .onChange(of: displayPhoneNumber) {
+      if showValidationError, isValidPhoneNumber {
+        showValidationError = false
+      }
     }
   }
 
@@ -119,35 +131,81 @@ struct PhoneLoginView: View {
   }
 }
 
+// MARK: - PhoneInputFocus
+
+private enum PhoneInputFocus: Hashable {
+  case country
+  case phone
+}
+
 // MARK: - PhoneInputContainer
 
 private struct PhoneInputContainer: View {
   let selectedCountry: CountryCodePickerViewController.Country
   @Binding var displayPhoneNumber: String
   var isPhoneFieldFocused: FocusState<Bool>.Binding
+  let showCountryPicker: Bool
   let onCountryTap: () -> Void
   let onPhoneNumberChange: (String) -> Void
+
+  @State private var focusedField: PhoneInputFocus?
+  @Namespace private var animation
 
   var body: some View {
     VStack(spacing: 0) {
       CountrySelectorRow(
         country: selectedCountry,
-        onTap: onCountryTap
+        onTap: {
+          withAnimation(.easeInOut(duration: 0.2)) {
+            focusedField = .country
+          }
+          onCountryTap()
+        }
       )
+      .background {
+        if focusedField == .country {
+          RoundedRectangle(cornerRadius: 10)
+            .strokeBorder(Color(uiColor: .label), lineWidth: 2)
+            .matchedGeometryEffect(id: "highlight", in: animation)
+        }
+      }
 
-      Divider()
+      if focusedField == nil {
+        Divider()
+      }
 
       PhoneNumberInputRow(
         displayPhoneNumber: $displayPhoneNumber,
         isFocused: isPhoneFieldFocused,
         onPhoneNumberChange: onPhoneNumberChange
       )
+      .background {
+        if focusedField == .phone {
+          RoundedRectangle(cornerRadius: 10)
+            .strokeBorder(Color(uiColor: .label), lineWidth: 2)
+            .matchedGeometryEffect(id: "highlight", in: animation)
+        }
+      }
     }
     .background(
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(Color(uiColor: .systemGray4), lineWidth: 1)
+      RoundedRectangle(cornerRadius: 10)
+        .strokeBorder(Color(uiColor: .separator), lineWidth: 1)
     )
     .frame(maxWidth: .infinity, alignment: .leading)
+    .onChange(of: isPhoneFieldFocused.wrappedValue) { _, isFocused in
+      if isFocused {
+        withAnimation(.easeInOut(duration: 0.2)) {
+          focusedField = .phone
+        }
+      }
+    }
+    .onChange(of: showCountryPicker) { _, isShowing in
+      if isShowing {
+        withAnimation(.easeInOut(duration: 0.2)) {
+          focusedField = .country
+        }
+      }
+    }
   }
 }
 
@@ -160,25 +218,25 @@ private struct CountrySelectorRow: View {
   var body: some View {
     Button(action: onTap) {
       HStack {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
           Text("Country/Region")
             .font(.system(size: 12))
             .foregroundStyle(.secondary)
           Text("\(country.name) (\(country.prefix))")
             .font(.system(size: 16))
-            .foregroundStyle(.primary)
+            .foregroundStyle(Color(uiColor: .label))
         }
 
         Spacer()
 
         Image(systemName: "chevron.down")
-          .font(.system(size: 14, weight: .medium))
-          .foregroundStyle(.secondary)
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(Color(uiColor: .label))
       }
       .padding(.horizontal, 16)
-      .frame(height: 56)
-      .contentShape(.rect)
+      .padding(.vertical, 10)
       .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(.rect)
     }
     .buttonStyle(.plain)
   }
@@ -192,23 +250,41 @@ private struct PhoneNumberInputRow: View {
   let onPhoneNumberChange: (String) -> Void
 
   var body: some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 4) {
-        Text("Phone number")
-          .font(.system(size: 12))
-          .foregroundStyle(.secondary)
+    VStack(alignment: .leading, spacing: 2) {
+      Text("Phone number")
+        .font(.system(size: 12))
+        .foregroundStyle(.secondary)
 
-        TextField("", text: $displayPhoneNumber)
-          .font(.system(size: 16))
-          .keyboardType(.phonePad)
-          .focused(isFocused)
-          .onChange(of: displayPhoneNumber) { _, newValue in
-            onPhoneNumberChange(newValue)
-          }
+      TextField("", text: $displayPhoneNumber)
+        .font(.system(size: 16))
+        .keyboardType(.phonePad)
+        .focused(isFocused)
+        .onChange(of: displayPhoneNumber) { _, newValue in
+          onPhoneNumberChange(newValue)
+        }
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+// MARK: - PhoneValidationError
+
+private struct PhoneValidationError: View {
+  let isVisible: Bool
+
+  var body: some View {
+    if isVisible {
+      HStack(spacing: 6) {
+        Image(systemName: "exclamationmark.circle.fill")
+          .font(.system(size: 14))
+        Text("Please enter a valid phone number")
+          .font(.system(size: 14))
       }
-      .padding(.horizontal, 16)
-      .frame(height: 56)
+      .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
       .frame(maxWidth: .infinity, alignment: .leading)
+      .transition(.opacity)
     }
   }
 }
@@ -219,7 +295,7 @@ private struct PhoneDisclaimer: View {
   var body: some View {
     Text("We'll call or text to confirm your number. Standard message and data rates apply.")
       .font(.system(size: 14))
-      .foregroundStyle(.secondary)
+      .foregroundStyle(Color(uiColor: .label))
       .multilineTextAlignment(.leading)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -228,14 +304,13 @@ private struct PhoneDisclaimer: View {
 // MARK: - PhoneContinueButton
 
 private struct PhoneContinueButton: View {
-  let canSubmit: Bool
   let isLoading: Bool
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
       Text("Continue")
-        .font(.system(size: 18, weight: .semibold))
+        .font(.system(size: 16, weight: .semibold))
         .foregroundStyle(.white)
         .opacity(isLoading ? 0 : 1)
         .overlay {
@@ -244,15 +319,11 @@ private struct PhoneContinueButton: View {
           }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(
-          canSubmit
-            ? Color(red: 0.87, green: 0.0, blue: 0.35)
-            : Color(uiColor: .systemGray4)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(height: 50)
+        .background(Color(red: 0.87, green: 0.0, blue: 0.35))
+        .clipShape(.rect(cornerRadius: 10))
     }
-    .disabled(!canSubmit)
+    .disabled(isLoading)
   }
 }
 

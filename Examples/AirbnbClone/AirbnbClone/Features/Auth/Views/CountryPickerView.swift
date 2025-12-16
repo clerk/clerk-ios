@@ -72,15 +72,15 @@ private struct CountryRow: View {
     Button(action: action) {
       HStack {
         Text("\(country.name) (\(country.prefix))")
-          .font(.system(size: 16))
-          .foregroundStyle(.primary)
+          .font(.system(size: 15, weight: .light))
+          .foregroundStyle(Color(uiColor: .label))
 
         Spacer()
 
         CountrySelectionIndicator(isSelected: isSelected)
       }
       .padding(.horizontal, 24)
-      .padding(.vertical, 16)
+      .padding(.vertical, 20)
       .contentShape(.rect)
     }
     .buttonStyle(.plain)
@@ -93,12 +93,20 @@ private struct CountrySelectionIndicator: View {
   let isSelected: Bool
 
   var body: some View {
-    Circle()
-      .strokeBorder(
-        isSelected ? Color.primary : Color(uiColor: .systemGray3),
-        lineWidth: isSelected ? 6 : 1
-      )
-      .frame(width: 24, height: 24)
+    ZStack {
+      Circle()
+        .strokeBorder(
+          isSelected ? Color(uiColor: .label) : Color(uiColor: .systemGray4),
+          lineWidth: isSelected ? 2 : 0.5
+        )
+        .frame(width: 22, height: 22)
+
+      if isSelected {
+        Circle()
+          .fill(Color(uiColor: .label))
+          .frame(width: 14, height: 14)
+      }
+    }
   }
 }
 
@@ -107,7 +115,7 @@ private struct CountrySelectionIndicator: View {
 private struct CountryRowDivider: View {
   var body: some View {
     Divider()
-      .padding(.leading, 24)
+      .padding(.horizontal, 24)
   }
 }
 
