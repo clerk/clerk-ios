@@ -28,6 +28,8 @@ struct PhoneLoginView: View {
   @State private var showCountryPicker = false
   @State private var showValidationError = false
   @FocusState private var isPhoneFieldFocused: Bool
+  @State private var showFinishSigningUp = false
+  @State private var pendingSignUp: SignUp?
 
   private static var defaultCountry: CountryCodePickerViewController.Country {
     let regionCode = Locale.current.region?.identifier ?? "US"
@@ -57,6 +59,19 @@ struct PhoneLoginView: View {
       PhoneValidationError(isVisible: showValidationError)
         .padding(.top, 8)
 
+      if let errorMessage {
+        HStack(spacing: 6) {
+          Image(systemName: "exclamationmark.circle.fill")
+            .font(.system(size: 14))
+          Text(errorMessage)
+            .font(.system(size: 14))
+        }
+        .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+        .transition(.opacity)
+      }
+
       PhoneDisclaimer()
         .padding(.top, showValidationError ? 4 : 8)
 
@@ -72,6 +87,15 @@ struct PhoneLoginView: View {
       .padding(.top, showValidationError ? 10 : 14)
     }
     .animation(.default, value: showValidationError)
+    .animation(.default, value: errorMessage)
+    .toolbar {
+      ToolbarItemGroup(placement: .keyboard) {
+        Spacer()
+        Button("Done") {
+          isPhoneFieldFocused = false
+        }
+      }
+    }
     .sheet(isPresented: $showCountryPicker) {
       CountryPickerView(selectedCountry: $selectedCountry)
     }
@@ -82,6 +106,24 @@ struct PhoneLoginView: View {
     .onChange(of: displayPhoneNumber) {
       if showValidationError, isValidPhoneNumber {
         showValidationError = false
+      }
+    }
+    .navigationDestination(isPresented: $showFinishSigningUp) {
+      FinishSigningUpView(identifierTitle: "Phone number", identifierValue: e164PhoneNumber) { firstName, lastName, legalAccepted in
+        guard let signUp = pendingSignUp else {
+          throw ClerkClientError(message: "Unable to continue sign up: missing sign up state.")
+        }
+        let updated = try await signUp.update(
+          firstName: firstName,
+          lastName: lastName,
+          legalAccepted: legalAccepted
+        )
+        let prepared = try await updated.sendPhoneCode()
+        pendingSignUp = nil
+        return .signUp(prepared, .phone)
+      }
+      .onDisappear {
+        pendingSignUp = nil
       }
     }
   }
@@ -106,23 +148,18 @@ struct PhoneLoginView: View {
     Task {
       isLoading = true
       errorMessage = nil
+      pendingVerification = nil
+      showVerification = false
       do {
-        let signIn = try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
-        pendingVerification = .signIn(signIn)
-        showVerification = true
+        let signUp = try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
+        pendingSignUp = signUp
+        showFinishSigningUp = true
       } catch {
-        if let apiError = error as? ClerkAPIError,
-           ["form_identifier_not_found", "invitation_account_not_exists"].contains(apiError.code)
-        {
-          do {
-            let signUp = try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
-            let prepared = try await signUp.sendPhoneCode()
-            pendingVerification = .signUp(prepared, .phone)
-            showVerification = true
-          } catch {
-            errorMessage = error.localizedDescription
-          }
-        } else {
+        do {
+          let signIn = try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
+          pendingVerification = .signIn(signIn)
+          showVerification = true
+        } catch {
           errorMessage = error.localizedDescription
         }
       }
@@ -193,9 +230,11 @@ private struct PhoneInputContainer: View {
     )
     .frame(maxWidth: .infinity, alignment: .leading)
     .onChange(of: isPhoneFieldFocused.wrappedValue) { _, isFocused in
-      if isFocused {
-        withAnimation(.easeInOut(duration: 0.2)) {
+      withAnimation(.easeInOut(duration: 0.2)) {
+        if isFocused {
           focusedField = .phone
+        } else if focusedField == .phone {
+          focusedField = nil
         }
       }
     }
