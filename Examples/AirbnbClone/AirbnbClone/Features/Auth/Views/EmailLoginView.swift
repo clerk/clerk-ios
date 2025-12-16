@@ -26,59 +26,24 @@ struct EmailLoginView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Email input
-      VStack(alignment: .leading, spacing: 4) {
-        Text("Email")
-          .font(.system(size: 12))
-          .foregroundStyle(.secondary)
+      EmailInputField(email: $email, isFocused: $isEmailFieldFocused)
 
-        TextField("", text: $email)
-          .font(.system(size: 16))
-          .keyboardType(.emailAddress)
-          .textContentType(.emailAddress)
-          .autocapitalization(.none)
-          .autocorrectionDisabled()
-          .focused($isEmailFieldFocused)
+      ContinueButton(
+        isEnabled: isValidEmail,
+        isLoading: isLoading
+      ) {
+        dismissKeyboard()
+        submitEmail()
       }
-      .padding(.horizontal, 16)
-      .frame(height: 56)
+      .padding(.top, 16)
     }
-    .background(
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(Color(.systemGray4), lineWidth: 1)
-    )
-
-    // Continue button
-    Button {
-      dismissKeyboard()
-      submitEmail()
-    } label: {
-      Text("Continue")
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundStyle(.white)
-        .opacity(isLoading ? 0 : 1)
-        .overlay {
-          if isLoading {
-            LoadingDotsView(color: .white)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(
-          isValidEmail
-            ? Color(red: 0.87, green: 0.0, blue: 0.35)
-            : Color(.systemGray4)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-    .disabled(!isValidEmail || isLoading)
-    .padding(.top, 16)
   }
 
   private func submitEmail() {
     Task {
-      isLoading = true
       errorMessage = nil
+      isLoading = true
+      defer { isLoading = false }
       do {
         let signIn = try await clerk.auth.signInWithEmailCode(emailAddress: email)
         pendingVerification = .signIn(signIn)
@@ -99,10 +64,71 @@ struct EmailLoginView: View {
           errorMessage = error.localizedDescription
         }
       }
-      isLoading = false
     }
   }
 }
+
+// MARK: - EmailInputField
+
+private struct EmailInputField: View {
+  @Binding var email: String
+  var isFocused: FocusState<Bool>.Binding
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text("Email")
+        .font(.system(size: 12))
+        .foregroundStyle(.secondary)
+
+      TextField("", text: $email)
+        .font(.system(size: 16))
+        .keyboardType(.emailAddress)
+        .textContentType(.emailAddress)
+        .autocapitalization(.none)
+        .autocorrectionDisabled()
+        .focused(isFocused)
+    }
+    .padding(.horizontal, 16)
+    .frame(height: 56)
+    .background(
+      RoundedRectangle(cornerRadius: 12)
+        .strokeBorder(Color(.systemGray4), lineWidth: 1)
+    )
+  }
+}
+
+// MARK: - ContinueButton
+
+private struct ContinueButton: View {
+  let isEnabled: Bool
+  let isLoading: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Text("Continue")
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(.white)
+        .opacity(isLoading ? 0 : 1)
+        .overlay {
+          if isLoading {
+            LoadingDotsView(color: .white)
+          }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 56)
+        .background(
+          isEnabled
+            ? Color(red: 0.87, green: 0.0, blue: 0.35)
+            : Color(.systemGray4)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    .disabled(!isEnabled || isLoading)
+  }
+}
+
+// MARK: - Preview
 
 #Preview {
   EmailLoginView(

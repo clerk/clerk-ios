@@ -51,69 +51,18 @@ struct LoginView: View {
             )
           }
 
-          // Error message
-          if let errorMessage {
-            Text(errorMessage)
-              .font(.system(size: 14))
-              .foregroundStyle(.red)
-              .multilineTextAlignment(.center)
-              .padding(.horizontal)
-          }
+          LoginErrorMessage(message: errorMessage)
 
-          // Divider
-          HStack {
-            Rectangle()
-              .fill(Color(.systemGray4))
-              .frame(height: 1)
-            Text("or")
-              .font(.system(size: 14))
-              .foregroundStyle(.secondary)
-              .padding(.horizontal, 16)
-            Rectangle()
-              .fill(Color(.systemGray4))
-              .frame(height: 1)
-          }
-          .padding(.vertical, 8)
+          LoginDivider()
 
-          // Alternative login methods
-          VStack(spacing: 16) {
-            // Toggle between email and phone
-            SocialButton(
-              icon: loginMode == .phone ? "envelope" : "iphone",
-              title: loginMode == .phone ? "Continue with email" : "Continue with Phone",
-              action: {
-                dismissKeyboard()
-                withAnimation {
-                  loginMode = loginMode == .phone ? .email : .phone
-                  errorMessage = nil
-                }
-              }
-            )
-
-            // Apple Sign In
-            SocialButton(
-              provider: .apple,
-              isLoading: isSocialLoading && loadingSocialProvider == .apple,
-              title: "Continue with Apple",
-              action: signInWithApple
-            )
-
-            // Google Sign In
-            SocialButton(
-              provider: .google,
-              isLoading: isSocialLoading && loadingSocialProvider == .google,
-              title: "Continue with Google",
-              action: { signInWithOAuth(.google) }
-            )
-
-            // Facebook Sign In
-            SocialButton(
-              provider: .facebook,
-              isLoading: isSocialLoading && loadingSocialProvider == .facebook,
-              title: "Continue with Facebook",
-              action: { signInWithOAuth(.facebook) }
-            )
-          }
+          SocialLoginButtons(
+            loginMode: loginMode,
+            isSocialLoading: isSocialLoading,
+            loadingSocialProvider: loadingSocialProvider,
+            onToggleLoginMode: toggleLoginMode,
+            onAppleSignIn: signInWithApple,
+            onOAuthSignIn: signInWithOAuth
+          )
           .disabled(isBusy)
 
           Spacer(minLength: 40)
@@ -127,15 +76,10 @@ struct LoginView: View {
       .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Button {
+          CloseButton {
             dismissKeyboard()
             dismiss()
-          } label: {
-            Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .semibold))
-              .foregroundStyle(Color(uiColor: .label))
           }
-          .buttonStyle(.plain)
         }
         .sharedBackgroundVisibility(.hidden)
       }
@@ -157,6 +101,14 @@ struct LoginView: View {
           OTPVerificationView(pending: pendingVerification)
         }
       }
+    }
+  }
+
+  private func toggleLoginMode() {
+    dismissKeyboard()
+    withAnimation {
+      loginMode = loginMode == .phone ? .email : .phone
+      errorMessage = nil
     }
   }
 
@@ -216,6 +168,101 @@ struct LoginView: View {
     }
   }
 }
+
+// MARK: - LoginErrorMessage
+
+private struct LoginErrorMessage: View {
+  let message: String?
+
+  var body: some View {
+    if let message {
+      Text(message)
+        .font(.system(size: 14))
+        .foregroundStyle(.red)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
+    }
+  }
+}
+
+// MARK: - LoginDivider
+
+private struct LoginDivider: View {
+  var body: some View {
+    HStack {
+      Rectangle()
+        .fill(Color(.systemGray4))
+        .frame(height: 1)
+      Text("or")
+        .font(.system(size: 14))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 16)
+      Rectangle()
+        .fill(Color(.systemGray4))
+        .frame(height: 1)
+    }
+    .padding(.vertical, 8)
+  }
+}
+
+// MARK: - SocialLoginButtons
+
+private struct SocialLoginButtons: View {
+  let loginMode: LoginMode
+  let isSocialLoading: Bool
+  let loadingSocialProvider: OAuthProvider?
+  let onToggleLoginMode: () -> Void
+  let onAppleSignIn: () -> Void
+  let onOAuthSignIn: (OAuthProvider) -> Void
+
+  var body: some View {
+    VStack(spacing: 16) {
+      AuthOptionButton(
+        icon: loginMode == .phone ? "envelope" : "iphone",
+        title: loginMode == .phone ? "Continue with email" : "Continue with phone",
+        action: onToggleLoginMode
+      )
+
+      AuthOptionButton(
+        provider: .apple,
+        isLoading: isSocialLoading && loadingSocialProvider == .apple,
+        title: "Continue with Apple",
+        action: onAppleSignIn
+      )
+
+      AuthOptionButton(
+        provider: .google,
+        isLoading: isSocialLoading && loadingSocialProvider == .google,
+        title: "Continue with Google",
+        action: { onOAuthSignIn(.google) }
+      )
+
+      AuthOptionButton(
+        provider: .facebook,
+        isLoading: isSocialLoading && loadingSocialProvider == .facebook,
+        title: "Continue with Facebook",
+        action: { onOAuthSignIn(.facebook) }
+      )
+    }
+  }
+}
+
+// MARK: - CloseButton
+
+private struct CloseButton: View {
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: "xmark")
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(Color(uiColor: .label))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+// MARK: - Preview
 
 #Preview {
   LoginView()

@@ -10,22 +10,26 @@ import SwiftUI
 
 struct HomeView: View {
   @Environment(Clerk.self) private var clerk
-  @State private var isSigningOut = false
   @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
-        header
+        ProfileHeaderView()
           .padding(.horizontal, 24)
           .padding(.top, 24)
 
-        profileCard
-          .padding(.horizontal, 24)
+        ProfileCardView(
+          displayName: displayName,
+          imageUrl: clerk.user?.imageUrl
+        )
+        .padding(.horizontal, 24)
 
-        logoutRow
-          .padding(.horizontal, 24)
-          .padding(.bottom, 32)
+        LogoutRowView {
+          signOut()
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 32)
       }
     }
     .background(pageBackground.ignoresSafeArea())
@@ -40,7 +44,26 @@ struct HomeView: View {
     }
   }
 
-  private var header: some View {
+  private var displayName: String {
+    let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return firstName.isEmpty ? "Guest" : firstName
+  }
+
+  private func signOut() {
+    Task {
+      do {
+        try await clerk.auth.signOut()
+      } catch {
+        print("Sign out error: \(error.localizedDescription)")
+      }
+    }
+  }
+}
+
+// MARK: - ProfileHeaderView
+
+private struct ProfileHeaderView: View {
+  var body: some View {
     HStack(alignment: .center) {
       Text("Profile")
         .font(.system(size: 34, weight: .bold))
@@ -48,52 +71,47 @@ struct HomeView: View {
 
       Spacer()
 
-      Button {
-        // Non-functional (matches screenshot affordance)
-      } label: {
-        Image(systemName: "bell")
-          .font(.system(size: 18, weight: .medium))
-          .foregroundStyle(.primary)
-          .frame(width: 44, height: 44)
-          .background(Color(uiColor: .systemBackground))
-          .clipShape(.circle)
-          .overlay {
-            if colorScheme == .dark {
-              Circle()
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-            }
-          }
-          .shadow(color: .black.opacity(0.10), radius: 14, x: 0, y: 8)
-          .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-      }
-      .buttonStyle(.plain)
+      NotificationButton()
     }
   }
+}
 
-  private var displayName: String {
-    let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return firstName.isEmpty ? "Guest" : firstName
+// MARK: - NotificationButton
+
+private struct NotificationButton: View {
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    Button {} label: {
+      Image(systemName: "bell")
+        .font(.system(size: 18, weight: .medium))
+        .foregroundStyle(.primary)
+        .frame(width: 44, height: 44)
+        .background(Color(uiColor: .systemBackground))
+        .clipShape(.circle)
+        .overlay {
+          if colorScheme == .dark {
+            Circle()
+              .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+          }
+        }
+        .shadow(color: .black.opacity(0.10), radius: 14, x: 0, y: 8)
+        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    .buttonStyle(.plain)
   }
+}
 
-  private var profileCard: some View {
+// MARK: - ProfileCardView
+
+private struct ProfileCardView: View {
+  let displayName: String
+  let imageUrl: String?
+
+  var body: some View {
     HStack(spacing: 20) {
       VStack(spacing: 12) {
-        ZStack(alignment: .bottomTrailing) {
-          avatar
-            .frame(width: 112, height: 112)
-            .clipShape(.circle)
-
-          // Verified badge (non-functional, visual only)
-          Circle()
-            .fill(Color(red: 0.87, green: 0.0, blue: 0.35))
-            .frame(width: 36, height: 36)
-            .overlay {
-              Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-            }
-            .offset(x: 6, y: 6)
-        }
+        ProfileAvatarView(imageUrl: imageUrl)
 
         VStack(spacing: 4) {
           Text(displayName)
@@ -107,32 +125,72 @@ struct HomeView: View {
       }
       .frame(maxWidth: .infinity, alignment: .center)
 
-      statsColumn
+      StatsColumnView()
     }
     .padding(20)
     .airbnbCardSurface(cornerRadius: 28)
   }
+}
 
-  private var avatar: some View {
-    Group {
-      if let imageUrl = clerk.user?.imageUrl, let url = URL(string: imageUrl) {
-        AsyncImage(url: url) { phase in
-          switch phase {
-          case .success(let image):
-            image
-              .resizable()
-              .aspectRatio(contentMode: .fill)
-          default:
-            avatarPlaceholder
-          }
-        }
-      } else {
-        avatarPlaceholder
-      }
+// MARK: - ProfileAvatarView
+
+private struct ProfileAvatarView: View {
+  let imageUrl: String?
+
+  var body: some View {
+    ZStack(alignment: .bottomTrailing) {
+      AvatarImageView(imageUrl: imageUrl)
+        .frame(width: 112, height: 112)
+        .clipShape(.circle)
+
+      VerifiedBadge()
+        .offset(x: 6, y: 6)
     }
   }
+}
 
-  private var avatarPlaceholder: some View {
+// MARK: - AvatarImageView
+
+private struct AvatarImageView: View {
+  let imageUrl: String?
+
+  var body: some View {
+    if let imageUrl, let url = URL(string: imageUrl) {
+      AsyncImage(url: url) { phase in
+        switch phase {
+        case .success(let image):
+          image
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+        default:
+          AvatarPlaceholderView()
+        }
+      }
+    } else {
+      AvatarPlaceholderView()
+    }
+  }
+}
+
+// MARK: - VerifiedBadge
+
+private struct VerifiedBadge: View {
+  var body: some View {
+    Circle()
+      .fill(Color(red: 0.87, green: 0.0, blue: 0.35))
+      .frame(width: 36, height: 36)
+      .overlay {
+        Image(systemName: "checkmark.seal.fill")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(.white)
+      }
+  }
+}
+
+// MARK: - AvatarPlaceholderView
+
+private struct AvatarPlaceholderView: View {
+  var body: some View {
     ZStack {
       Color(uiColor: .systemGray5)
       Image(systemName: "person.fill")
@@ -140,8 +198,30 @@ struct HomeView: View {
         .foregroundStyle(.secondary)
     }
   }
+}
 
-  private func statRow(value: String, label: String) -> some View {
+// MARK: - StatsColumnView
+
+private struct StatsColumnView: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      StatRowView(value: "7", label: "Trips")
+      StatSeparator()
+      StatRowView(value: "5", label: "Reviews")
+      StatSeparator()
+      StatRowView(value: "12", label: "Years on Airbnb")
+    }
+    .frame(width: 140, alignment: .leading)
+  }
+}
+
+// MARK: - StatRowView
+
+private struct StatRowView: View {
+  let value: String
+  let label: String
+
+  var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(value)
         .font(.system(size: 22, weight: .bold))
@@ -150,33 +230,32 @@ struct HomeView: View {
         .font(.system(size: 13, weight: .semibold))
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.leading)
-        .lineLimit(2) // reserve the same label space for all rows to avoid "staggered" layout
+        .lineLimit(2)
         .frame(height: 34, alignment: .topLeading)
     }
     .frame(height: 62, alignment: .topLeading)
   }
+}
 
-  private var statSeparator: some View {
+// MARK: - StatSeparator
+
+private struct StatSeparator: View {
+  var body: some View {
     Rectangle()
       .fill(Color(uiColor: .systemGray5))
       .frame(height: 1)
       .padding(.vertical, 12)
   }
+}
 
-  private var statsColumn: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      statRow(value: "7", label: "Trips")
-      statSeparator
-      statRow(value: "5", label: "Reviews")
-      statSeparator
-      statRow(value: "12", label: "Years on Airbnb")
-    }
-    .frame(width: 140, alignment: .leading)
-  }
+// MARK: - LogoutRowView
 
-  private var logoutRow: some View {
+private struct LogoutRowView: View {
+  let action: () -> Void
+
+  var body: some View {
     Button {
-      signOut()
+      action()
     } label: {
       HStack(spacing: 16) {
         Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -189,33 +268,15 @@ struct HomeView: View {
           .foregroundStyle(.primary)
 
         Spacer()
-
-        LoadingDotsView(color: .secondary, dotSize: 5, spacing: 5, travel: 3)
-          .opacity(isSigningOut ? 1 : 0)
       }
       .padding(.vertical, 10)
       .contentShape(.rect)
     }
     .buttonStyle(.plain)
-    .disabled(isSigningOut)
-  }
-
-  private func signOut() {
-    Task {
-      withAnimation(.easeInOut(duration: 0.2)) {
-        isSigningOut = true
-      }
-      do {
-        try await clerk.auth.signOut()
-      } catch {
-        print("Sign out error: \(error.localizedDescription)")
-      }
-      withAnimation(.easeInOut(duration: 0.2)) {
-        isSigningOut = false
-      }
-    }
   }
 }
+
+// MARK: - Preview
 
 #Preview {
   HomeView()
