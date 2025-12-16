@@ -17,6 +17,7 @@ struct EmailLoginView: View {
   @Binding var errorMessage: String?
 
   @State private var email = ""
+  @State private var showValidationError = false
   @FocusState private var isEmailFieldFocused: Bool
 
   private var isValidEmail: Bool {
@@ -26,16 +27,30 @@ struct EmailLoginView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      EmailInputField(email: $email, isFocused: $isEmailFieldFocused)
+      EmailInputField(
+        email: $email,
+        isFocused: $isEmailFieldFocused
+      )
 
-      ContinueButton(
-        isEnabled: isValidEmail,
-        isLoading: isLoading
-      ) {
+      EmailValidationError(isVisible: showValidationError)
+        .padding(.top, 8)
+
+      EmailContinueButton(isLoading: isLoading) {
         dismissKeyboard()
-        submitEmail()
+        if isValidEmail {
+          showValidationError = false
+          submitEmail()
+        } else {
+          showValidationError = true
+        }
       }
-      .padding(.top, 16)
+      .padding(.top, showValidationError ? 10 : 16)
+    }
+    .animation(.default, value: showValidationError)
+    .onChange(of: email) {
+      if showValidationError, isValidEmail {
+        showValidationError = false
+      }
     }
   }
 
@@ -74,8 +89,16 @@ private struct EmailInputField: View {
   @Binding var email: String
   var isFocused: FocusState<Bool>.Binding
 
+  private var borderColor: Color {
+    isFocused.wrappedValue ? Color(uiColor: .label) : Color(uiColor: .separator)
+  }
+
+  private var borderWidth: CGFloat {
+    isFocused.wrappedValue ? 2 : 1
+  }
+
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: 2) {
       Text("Email")
         .font(.system(size: 12))
         .foregroundStyle(.secondary)
@@ -89,18 +112,37 @@ private struct EmailInputField: View {
         .focused(isFocused)
     }
     .padding(.horizontal, 16)
-    .frame(height: 56)
+    .padding(.vertical, 10)
     .background(
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(Color(.systemGray4), lineWidth: 1)
+      RoundedRectangle(cornerRadius: 10)
+        .strokeBorder(borderColor, lineWidth: borderWidth)
     )
   }
 }
 
-// MARK: - ContinueButton
+// MARK: - EmailValidationError
 
-private struct ContinueButton: View {
-  let isEnabled: Bool
+private struct EmailValidationError: View {
+  let isVisible: Bool
+
+  var body: some View {
+    if isVisible {
+      HStack(spacing: 6) {
+        Image(systemName: "exclamationmark.circle.fill")
+          .font(.system(size: 14))
+        Text("Please enter a valid email address")
+          .font(.system(size: 14))
+      }
+      .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .transition(.opacity)
+    }
+  }
+}
+
+// MARK: - EmailContinueButton
+
+private struct EmailContinueButton: View {
   let isLoading: Bool
   let action: () -> Void
 
@@ -116,15 +158,11 @@ private struct ContinueButton: View {
           }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(
-          isEnabled
-            ? Color(red: 0.87, green: 0.0, blue: 0.35)
-            : Color(.systemGray4)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(height: 50)
+        .background(Color(red: 0.87, green: 0.0, blue: 0.35))
+        .clipShape(.rect(cornerRadius: 10))
     }
-    .disabled(!isEnabled || isLoading)
+    .disabled(isLoading)
   }
 }
 
