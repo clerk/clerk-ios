@@ -10,17 +10,14 @@ import SwiftUI
 
 struct EmailLoginView: View {
   @Environment(Clerk.self) private var clerk
-
-  @Binding var showVerification: Bool
-  @Binding var pendingVerification: PendingVerification?
-  @Binding var isLoading: Bool
-  @Binding var errorMessage: String?
+  @Environment(Router.self) private var router
+  @Environment(\.otpLoginMode) private var otpLoginMode
 
   @State private var email = ""
   @State private var showValidationError = false
+  @State private var isLoading = false
+  @State private var errorMessage: String?
   @FocusState private var isEmailFieldFocused: Bool
-  @State private var showFinishSigningUp = false
-  @State private var pendingSignUp: SignUp?
 
   private var isValidEmail: Bool {
     let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -34,23 +31,13 @@ struct EmailLoginView: View {
         isFocused: $isEmailFieldFocused
       )
 
-      EmailValidationError(isVisible: showValidationError)
+      ValidationError(message: "Please enter a valid email address", isVisible: showValidationError)
         .padding(.top, 8)
 
-      if let errorMessage {
-        HStack(spacing: 6) {
-          Image(systemName: "exclamationmark.circle.fill")
-            .font(.system(size: 14))
-          Text(errorMessage)
-            .font(.system(size: 14))
-        }
-        .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
-        .frame(maxWidth: .infinity, alignment: .leading)
+      ErrorMessage(message: errorMessage)
         .padding(.top, 8)
-        .transition(.opacity)
-      }
 
-      EmailContinueButton(isLoading: isLoading) {
+      ContinueButton(isLoading: isLoading) {
         dismissKeyboard()
         if isValidEmail {
           showValidationError = false
@@ -76,24 +63,6 @@ struct EmailLoginView: View {
         showValidationError = false
       }
     }
-    .navigationDestination(isPresented: $showFinishSigningUp) {
-      FinishSigningUpView(identifierTitle: "Email", identifierValue: email) { firstName, lastName, legalAccepted in
-        guard let signUp = pendingSignUp else {
-          throw ClerkClientError(message: "Unable to continue sign up: missing sign up state.")
-        }
-        let updated = try await signUp.update(
-          firstName: firstName,
-          lastName: lastName,
-          legalAccepted: legalAccepted
-        )
-        let prepared = try await updated.sendEmailCode()
-        pendingSignUp = nil
-        return .signUp(prepared, .email)
-      }
-      .onDisappear {
-        pendingSignUp = nil
-      }
-    }
   }
 
   private func submitEmail() {
@@ -101,17 +70,22 @@ struct EmailLoginView: View {
       errorMessage = nil
       isLoading = true
       defer { isLoading = false }
-      pendingVerification = nil
-      showVerification = false
+
       do {
-        let signUp = try await clerk.auth.signUp(emailAddress: email)
-        pendingSignUp = signUp
-        showFinishSigningUp = true
+        // Try sign up first
+        try await clerk.auth.signUp(emailAddress: email)
+        router.authPath.append(
+          AuthDestination.finishSigningUp(
+            identifierValue: email,
+            loginMode: .signUp(method: .email)
+          )
+        )
       } catch {
+        // If sign up fails, try sign in
         do {
-          let signIn = try await clerk.auth.signInWithEmailCode(emailAddress: email)
-          pendingVerification = .signIn(signIn)
-          showVerification = true
+          try await clerk.auth.signInWithEmailCode(emailAddress: email)
+          otpLoginMode.wrappedValue = .signIn(method: .email)
+          router.showOTPVerification = true
         } catch {
           errorMessage = error.localizedDescription
         }
@@ -158,61 +132,11 @@ private struct EmailInputField: View {
   }
 }
 
-// MARK: - EmailValidationError
-
-private struct EmailValidationError: View {
-  let isVisible: Bool
-
-  var body: some View {
-    if isVisible {
-      HStack(spacing: 6) {
-        Image(systemName: "exclamationmark.circle.fill")
-          .font(.system(size: 14))
-        Text("Please enter a valid email address")
-          .font(.system(size: 14))
-      }
-      .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .transition(.opacity)
-    }
-  }
-}
-
-// MARK: - EmailContinueButton
-
-private struct EmailContinueButton: View {
-  let isLoading: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Text("Continue")
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundStyle(.white)
-        .opacity(isLoading ? 0 : 1)
-        .overlay {
-          if isLoading {
-            LoadingDotsView(color: .white)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 50)
-        .background(Color(red: 0.87, green: 0.0, blue: 0.35))
-        .clipShape(.rect(cornerRadius: 10))
-    }
-    .disabled(isLoading)
-  }
-}
-
 // MARK: - Preview
 
 #Preview {
-  EmailLoginView(
-    showVerification: .constant(false),
-    pendingVerification: .constant(nil),
-    isLoading: .constant(false),
-    errorMessage: .constant(nil)
-  )
-  .padding()
-  .environment(Clerk.preview())
+  EmailLoginView()
+    .padding()
+    .environment(Clerk.preview())
+    .environment(Router())
 }

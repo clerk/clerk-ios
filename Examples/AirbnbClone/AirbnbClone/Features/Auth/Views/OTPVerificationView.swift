@@ -13,7 +13,7 @@ struct OTPVerificationView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(Clerk.self) private var clerk
 
-  @State private var pending: PendingVerification
+  let loginMode: LoginMode
 
   @State private var code = ""
   @State private var isLoading = false
@@ -23,37 +23,16 @@ struct OTPVerificationView: View {
   @FocusState private var isCodeFieldFocused: Bool
   @State private var isVerifying = false
 
-  init(pending: PendingVerification) {
-    _pending = State(initialValue: pending)
+  private var signIn: SignIn? {
+    clerk.client?.signIn
   }
 
-  private enum VerificationChannel {
-    case sms
-    case email
-  }
-
-  private var verificationChannel: VerificationChannel {
-    switch pending {
-    case .signIn(let signIn):
-      if signIn.firstFactorVerification?.strategy == .emailCode {
-        .email
-      } else if (signIn.identifier ?? "").contains("@") {
-        .email
-      } else {
-        .sms
-      }
-    case .signUp(_, let type):
-      switch type {
-      case .email:
-        .email
-      case .phone:
-        .sms
-      }
-    }
+  private var signUp: SignUp? {
+    clerk.client?.signUp
   }
 
   private var formattedIdentifier: String {
-    guard verificationChannel == .sms, identifierRaw.first == "+" else { return identifierRaw }
+    guard loginMode.method == .phone, identifierRaw.first == "+" else { return identifierRaw }
     if let phoneNumber = try? phoneNumberUtility.parse(identifierRaw) {
       let formatted = phoneNumberUtility.format(phoneNumber, toType: .international)
       return formatted
@@ -64,29 +43,30 @@ struct OTPVerificationView: View {
   }
 
   private var identifierRaw: String {
-    switch pending {
-    case .signIn(let signIn):
-      signIn.identifier ?? ""
-    case .signUp(let signUp, _):
-      signUp.emailAddress ?? signUp.phoneNumber ?? ""
+    if case .signUp = loginMode, let signUp {
+      return signUp.emailAddress ?? signUp.phoneNumber ?? ""
     }
+    if let signIn {
+      return signIn.identifier ?? ""
+    }
+    return ""
   }
 
   private var navigationTitle: String {
-    switch verificationChannel {
-    case .sms:
-      "Confirm your number"
+    switch loginMode.method {
     case .email:
       "Confirm your email"
+    case .phone:
+      "Confirm your number"
     }
   }
 
   private var subtitle: String {
-    switch verificationChannel {
-    case .sms:
-      "Enter the code we sent over SMS to \(formattedIdentifier):"
+    switch loginMode.method {
     case .email:
       "Enter the code we sent over email to \(formattedIdentifier):"
+    case .phone:
+      "Enter the code we sent over SMS to \(formattedIdentifier):"
     }
   }
 
@@ -115,7 +95,7 @@ struct OTPVerificationView: View {
       ResendCodeSection(
         canResend: canResend,
         isLoading: isLoading,
-        isEmail: verificationChannel == .email,
+        isEmail: loginMode.method == .email,
         onResend: resendCode
       )
       .padding(.top, 24)
@@ -130,7 +110,7 @@ struct OTPVerificationView: View {
     .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        OTPCloseButton {
+        CloseButton {
           dismissKeyboard()
           dismiss()
         }
@@ -153,11 +133,6 @@ struct OTPVerificationView: View {
       }
       .background(Color(uiColor: .systemBackground))
     }
-    .overlay {
-      if isLoading {
-        EmptyView()
-      }
-    }
     .task {
       await Task.yield()
       isCodeFieldFocused = true
@@ -172,40 +147,49 @@ struct OTPVerificationView: View {
       isLoading = true
       isVerifying = true
       errorMessage = nil
+      defer {
+        isLoading = false
+        isVerifying = false
+      }
+
       do {
-        switch pending {
-        case .signIn(let signIn):
-          pending = try await .signIn(signIn.verifyCode(code))
-        case .signUp(let signUp, let type):
-          pending = try await .signUp(signUp.verifyCode(code, type: type), type)
+        if case .signUp = loginMode, let signUp {
+          switch loginMode.method {
+          case .email:
+            try await signUp.verifyCode(code, type: .email)
+          case .phone:
+            try await signUp.verifyCode(code, type: .phone)
+          }
+        } else if let signIn {
+          try await signIn.verifyCode(code)
         }
       } catch {
         errorMessage = error.localizedDescription
         code = ""
       }
-      isLoading = false
-      isVerifying = false
     }
   }
 
   private func resendCode() {
     Task {
-      isLoading = true
       errorMessage = nil
+      isLoading = true
+      defer { isLoading = false }
+
       do {
-        switch pending {
-        case .signIn(let signIn):
-          if signIn.firstFactorVerification?.strategy == .emailCode {
-            pending = try await .signIn(signIn.sendEmailCode())
-          } else {
-            pending = try await .signIn(signIn.sendPhoneCode())
-          }
-        case .signUp(let signUp, let type):
-          switch type {
+        if case .signUp = loginMode, let signUp {
+          switch loginMode.method {
           case .email:
-            pending = try await .signUp(signUp.sendEmailCode(), type)
+            try await signUp.sendEmailCode()
           case .phone:
-            pending = try await .signUp(signUp.sendPhoneCode(), type)
+            try await signUp.sendPhoneCode()
+          }
+        } else if let signIn {
+          switch loginMode.method {
+          case .email:
+            try await signIn.sendEmailCode()
+          case .phone:
+            try await signIn.sendPhoneCode()
           }
         }
         resendCountdown = 30
@@ -214,7 +198,6 @@ struct OTPVerificationView: View {
       } catch {
         errorMessage = error.localizedDescription
       }
-      isLoading = false
     }
   }
 
@@ -379,21 +362,6 @@ private struct ResendCodeSection: View {
   }
 }
 
-// MARK: - OTPCloseButton
-
-private struct OTPCloseButton: View {
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Image(systemName: "xmark")
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundStyle(Color(uiColor: .label))
-    }
-    .buttonStyle(.plain)
-  }
-}
-
 // MARK: - OTPContinueButton
 
 private struct OTPContinueButton: View {
@@ -425,7 +393,7 @@ private struct OTPContinueButton: View {
 
 #Preview {
   NavigationStack {
-    OTPVerificationView(pending: .signIn(.mock))
+    OTPVerificationView(loginMode: .signIn(method: .phone))
   }
   .environment(Clerk.preview())
 }

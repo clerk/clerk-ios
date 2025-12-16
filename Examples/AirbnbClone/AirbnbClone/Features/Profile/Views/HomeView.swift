@@ -21,11 +21,6 @@ struct HomeView: View {
     }
   }
 
-  private var displayName: String {
-    let firstName = clerk.user?.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return firstName.isEmpty ? "Guest" : firstName
-  }
-
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
@@ -33,7 +28,7 @@ struct HomeView: View {
           .padding(.top, 24)
 
         ProfileCardView(
-          displayName: displayName,
+          displayName: clerk.user?.firstName ?? "N/A",
           imageUrl: clerk.user?.imageUrl
         )
 

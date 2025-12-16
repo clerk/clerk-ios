@@ -52,7 +52,7 @@ struct CountryPickerView: View {
       .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          CountryPickerCloseButton {
+          CloseButton {
             dismiss()
           }
         }
@@ -116,21 +116,6 @@ private struct CountryRowDivider: View {
   var body: some View {
     Divider()
       .padding(.horizontal, 24)
-  }
-}
-
-// MARK: - CountryPickerCloseButton
-
-private struct CountryPickerCloseButton: View {
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Image(systemName: "xmark")
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundStyle(Color(uiColor: .label))
-    }
-    .buttonStyle(.plain)
   }
 }
 
