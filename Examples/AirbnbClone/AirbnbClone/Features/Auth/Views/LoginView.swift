@@ -9,59 +9,43 @@ import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
-enum LoginMode {
-  case phone
-  case email
+extension EnvironmentValues {
+  @Entry var otpLoginMode: Binding<LoginMode?> = .constant(nil)
 }
 
 struct LoginView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(Clerk.self) private var clerk
+  @Environment(Router.self) private var router
 
-  @State private var loginMode: LoginMode = .phone
-  @State private var showVerification = false
-  @State private var pendingVerification: PendingVerification?
-  @State private var isFormLoading = false
-  @State private var isSocialLoading = false
+  @State private var loginMode: LoginMode.Method = .phone
   @State private var loadingSocialProvider: OAuthProvider?
   @State private var errorMessage: String?
-
-  private var isBusy: Bool {
-    isFormLoading || isSocialLoading
-  }
+  @State private var otpLoginMode: LoginMode?
 
   var body: some View {
-    NavigationStack {
+    @Bindable var router = router
+
+    NavigationStack(path: $router.authPath) {
       ScrollView {
         VStack(spacing: 24) {
           switch loginMode {
           case .phone:
-            PhoneLoginView(
-              showVerification: $showVerification,
-              pendingVerification: $pendingVerification,
-              isLoading: $isFormLoading,
-              errorMessage: $errorMessage
-            )
+            PhoneLoginView()
           case .email:
-            EmailLoginView(
-              showVerification: $showVerification,
-              pendingVerification: $pendingVerification,
-              isLoading: $isFormLoading,
-              errorMessage: $errorMessage
-            )
+            EmailLoginView()
           }
 
           LoginDivider()
 
           SocialLoginButtons(
             loginMode: loginMode,
-            isSocialLoading: isSocialLoading,
             loadingSocialProvider: loadingSocialProvider,
             onToggleLoginMode: toggleLoginMode,
             onAppleSignIn: signInWithApple,
             onOAuthSignIn: signInWithOAuth
           )
-          .disabled(isBusy)
+          .disabled(loadingSocialProvider != nil)
 
           Spacer(minLength: 40)
         }
@@ -81,8 +65,17 @@ struct LoginView: View {
         }
         .sharedBackgroundVisibility(.hidden)
       }
+      .navigationDestination(for: AuthDestination.self) { destination in
+        switch destination {
+        case .finishSigningUp(let identifierValue, let loginMode):
+          FinishSigningUpView(
+            identifierValue: identifierValue,
+            loginMode: loginMode
+          )
+        }
+      }
     }
-    .tint(Color(uiColor: .label))
+    .tint(Color(.label))
     .task {
       for await event in clerk.auth.events {
         switch event {
@@ -94,14 +87,17 @@ struct LoginView: View {
         }
       }
     }
-    .sheet(isPresented: $showVerification, onDismiss: { pendingVerification = nil }) {
-      if let pendingVerification {
+    .sheet(isPresented: $router.showOTPVerification, onDismiss: {
+      otpLoginMode = nil
+    }) {
+      if let loginMode = otpLoginMode {
         NavigationStack {
-          OTPVerificationView(pending: pendingVerification)
+          OTPVerificationView(loginMode: loginMode)
         }
         .tint(Color(uiColor: .label))
       }
     }
+    .environment(\.otpLoginMode, $otpLoginMode)
   }
 
   private func toggleLoginMode() {
@@ -116,12 +112,8 @@ struct LoginView: View {
     Task {
       dismissKeyboard()
       errorMessage = nil
-      isSocialLoading = true
       loadingSocialProvider = .apple
-      defer {
-        isSocialLoading = false
-        loadingSocialProvider = nil
-      }
+      defer { loadingSocialProvider = nil }
       do {
         let credential = try await SignInWithAppleHelper.getAppleIdCredential(
           requestedScopes: [.email, .fullName]
@@ -151,12 +143,8 @@ struct LoginView: View {
     Task {
       dismissKeyboard()
       errorMessage = nil
-      isSocialLoading = true
       loadingSocialProvider = provider
-      defer {
-        isSocialLoading = false
-        loadingSocialProvider = nil
-      }
+      defer { loadingSocialProvider = nil }
       do {
         try await clerk.auth.signUpWithOAuth(provider: provider)
         dismiss()
@@ -192,8 +180,7 @@ private struct LoginDivider: View {
 // MARK: - SocialLoginButtons
 
 private struct SocialLoginButtons: View {
-  let loginMode: LoginMode
-  let isSocialLoading: Bool
+  let loginMode: LoginMode.Method
   let loadingSocialProvider: OAuthProvider?
   let onToggleLoginMode: () -> Void
   let onAppleSignIn: () -> Void
@@ -209,40 +196,25 @@ private struct SocialLoginButtons: View {
 
       AuthOptionButton(
         provider: .apple,
-        isLoading: isSocialLoading && loadingSocialProvider == .apple,
+        isLoading: loadingSocialProvider == .apple,
         title: "Continue with Apple",
         action: onAppleSignIn
       )
 
       AuthOptionButton(
         provider: .google,
-        isLoading: isSocialLoading && loadingSocialProvider == .google,
+        isLoading: loadingSocialProvider == .google,
         title: "Continue with Google",
         action: { onOAuthSignIn(.google) }
       )
 
       AuthOptionButton(
         provider: .facebook,
-        isLoading: isSocialLoading && loadingSocialProvider == .facebook,
+        isLoading: loadingSocialProvider == .facebook,
         title: "Continue with Facebook",
         action: { onOAuthSignIn(.facebook) }
       )
     }
-  }
-}
-
-// MARK: - CloseButton
-
-private struct CloseButton: View {
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Image(systemName: "xmark")
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundStyle(Color(uiColor: .label))
-    }
-    .buttonStyle(.plain)
   }
 }
 
@@ -253,4 +225,5 @@ private struct CloseButton: View {
     .environment(Clerk.preview { preview in
       preview.isSignedIn = false
     })
+    .environment(Router())
 }

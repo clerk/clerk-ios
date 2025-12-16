@@ -11,11 +11,8 @@ import SwiftUI
 
 struct PhoneLoginView: View {
   @Environment(Clerk.self) private var clerk
-
-  @Binding var showVerification: Bool
-  @Binding var pendingVerification: PendingVerification?
-  @Binding var isLoading: Bool
-  @Binding var errorMessage: String?
+  @Environment(Router.self) private var router
+  @Environment(\.otpLoginMode) private var otpLoginMode
 
   @State private var selectedCountry = defaultCountry
   @State private var partialFormatter = PartialFormatter(
@@ -27,9 +24,9 @@ struct PhoneLoginView: View {
   @State private var e164PhoneNumber = ""
   @State private var showCountryPicker = false
   @State private var showValidationError = false
+  @State private var isLoading = false
+  @State private var errorMessage: String?
   @FocusState private var isPhoneFieldFocused: Bool
-  @State private var showFinishSigningUp = false
-  @State private var pendingSignUp: SignUp?
 
   private static var defaultCountry: CountryCodePickerViewController.Country {
     let regionCode = Locale.current.region?.identifier ?? "US"
@@ -56,26 +53,16 @@ struct PhoneLoginView: View {
         onPhoneNumberChange: updatePhoneNumber
       )
 
-      PhoneValidationError(isVisible: showValidationError)
+      ValidationError(message: "Please enter a valid phone number", isVisible: showValidationError)
         .padding(.top, 8)
 
-      if let errorMessage {
-        HStack(spacing: 6) {
-          Image(systemName: "exclamationmark.circle.fill")
-            .font(.system(size: 14))
-          Text(errorMessage)
-            .font(.system(size: 14))
-        }
-        .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
-        .frame(maxWidth: .infinity, alignment: .leading)
+      ErrorMessage(message: errorMessage)
         .padding(.top, 8)
-        .transition(.opacity)
-      }
 
       PhoneDisclaimer()
         .padding(.top, showValidationError ? 4 : 8)
 
-      PhoneContinueButton(isLoading: isLoading) {
+      ContinueButton(isLoading: isLoading) {
         dismissKeyboard()
         if isValidPhoneNumber {
           showValidationError = false
@@ -108,24 +95,6 @@ struct PhoneLoginView: View {
         showValidationError = false
       }
     }
-    .navigationDestination(isPresented: $showFinishSigningUp) {
-      FinishSigningUpView(identifierTitle: "Phone number", identifierValue: e164PhoneNumber) { firstName, lastName, legalAccepted in
-        guard let signUp = pendingSignUp else {
-          throw ClerkClientError(message: "Unable to continue sign up: missing sign up state.")
-        }
-        let updated = try await signUp.update(
-          firstName: firstName,
-          lastName: lastName,
-          legalAccepted: legalAccepted
-        )
-        let prepared = try await updated.sendPhoneCode()
-        pendingSignUp = nil
-        return .signUp(prepared, .phone)
-      }
-      .onDisappear {
-        pendingSignUp = nil
-      }
-    }
   }
 
   private func updatePhoneNumber(from input: String) {
@@ -148,22 +117,27 @@ struct PhoneLoginView: View {
     Task {
       isLoading = true
       errorMessage = nil
-      pendingVerification = nil
-      showVerification = false
+      defer { isLoading = false }
+
       do {
-        let signUp = try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
-        pendingSignUp = signUp
-        showFinishSigningUp = true
+        // Try sign up first
+        try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
+        router.authPath.append(
+          AuthDestination.finishSigningUp(
+            identifierValue: e164PhoneNumber,
+            loginMode: .signUp(method: .phone)
+          )
+        )
       } catch {
+        // If sign up fails, try sign in
         do {
-          let signIn = try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
-          pendingVerification = .signIn(signIn)
-          showVerification = true
+          try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
+          otpLoginMode.wrappedValue = .signIn(method: .phone)
+          router.showOTPVerification = true
         } catch {
           errorMessage = error.localizedDescription
         }
       }
-      isLoading = false
     }
   }
 }
@@ -308,26 +282,6 @@ private struct PhoneNumberInputRow: View {
   }
 }
 
-// MARK: - PhoneValidationError
-
-private struct PhoneValidationError: View {
-  let isVisible: Bool
-
-  var body: some View {
-    if isVisible {
-      HStack(spacing: 6) {
-        Image(systemName: "exclamationmark.circle.fill")
-          .font(.system(size: 14))
-        Text("Please enter a valid phone number")
-          .font(.system(size: 14))
-      }
-      .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .transition(.opacity)
-    }
-  }
-}
-
 // MARK: - PhoneDisclaimer
 
 private struct PhoneDisclaimer: View {
@@ -340,41 +294,11 @@ private struct PhoneDisclaimer: View {
   }
 }
 
-// MARK: - PhoneContinueButton
-
-private struct PhoneContinueButton: View {
-  let isLoading: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Text("Continue")
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundStyle(.white)
-        .opacity(isLoading ? 0 : 1)
-        .overlay {
-          if isLoading {
-            LoadingDotsView(color: .white)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 50)
-        .background(Color(red: 0.87, green: 0.0, blue: 0.35))
-        .clipShape(.rect(cornerRadius: 10))
-    }
-    .disabled(isLoading)
-  }
-}
-
 // MARK: - Preview
 
 #Preview {
-  PhoneLoginView(
-    showVerification: .constant(false),
-    pendingVerification: .constant(nil),
-    isLoading: .constant(false),
-    errorMessage: .constant(nil)
-  )
-  .padding()
-  .environment(Clerk.preview())
+  PhoneLoginView()
+    .padding()
+    .environment(Clerk.preview())
+    .environment(Router())
 }

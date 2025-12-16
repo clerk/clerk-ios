@@ -9,16 +9,30 @@ import ClerkKit
 import SwiftUI
 
 struct FinishSigningUpView: View {
-  let identifierTitle: String
+  @Environment(Clerk.self) private var clerk
+  @Environment(Router.self) private var router
+  @Environment(\.otpLoginMode) private var otpLoginMode
+
   let identifierValue: String
-  let onContinue: (_ firstName: String, _ lastName: String, _ legalAccepted: Bool) async throws -> PendingVerification
+  let loginMode: LoginMode
+
+  private var identifierTitle: String {
+    switch loginMode.method {
+    case .email:
+      "Email"
+    case .phone:
+      "Phone number"
+    }
+  }
 
   @State private var firstName = ""
   @State private var lastName = ""
   @State private var isLoading = false
   @State private var errorMessage: String?
-  @State private var showOTP = false
-  @State private var pendingVerification: PendingVerification?
+
+  private var signUp: SignUp? {
+    clerk.client?.signUp
+  }
 
   private var canContinue: Bool {
     !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -84,32 +98,31 @@ struct FinishSigningUpView: View {
       }
       .background(Color(uiColor: .systemBackground))
     }
-    .sheet(isPresented: $showOTP) {
-      if let pendingVerification {
-        NavigationStack {
-          OTPVerificationView(pending: pendingVerification)
-        }
-        .tint(Color(uiColor: .label))
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
-      }
-    }
   }
 
   private func submit() {
     Task {
-      guard canContinue else { return }
+      guard canContinue, let signUp else { return }
       errorMessage = nil
       isLoading = true
       defer { isLoading = false }
+
       do {
-        let pending = try await onContinue(
-          firstName.trimmingCharacters(in: .whitespacesAndNewlines),
-          lastName.trimmingCharacters(in: .whitespacesAndNewlines),
-          true
+        let updated = try await signUp.update(
+          firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+          lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
+          legalAccepted: true
         )
-        pendingVerification = pending
-        showOTP = true
+
+        switch loginMode.method {
+        case .email:
+          try await updated.sendEmailCode()
+        case .phone:
+          try await updated.sendPhoneCode()
+        }
+
+        otpLoginMode.wrappedValue = loginMode
+        router.showOTPVerification = true
       } catch {
         errorMessage = error.localizedDescription
       }
@@ -146,7 +159,7 @@ private struct NameInputCard: View {
   }
 }
 
-// MARK: - EmailReadOnlyField
+// MARK: - IdentifierReadOnlyField
 
 private struct IdentifierReadOnlyField: View {
   let title: String
@@ -199,7 +212,12 @@ private struct AgreeAndContinueButton: View {
 }
 
 #Preview {
-  FinishSigningUpView(identifierTitle: "Email", identifierValue: "mike@clerk.dev") { _, _, _ in
-    .signIn(.mock)
+  NavigationStack {
+    FinishSigningUpView(
+      identifierValue: "mike@clerk.dev",
+      loginMode: .signUp(method: .email)
+    )
   }
+  .environment(Clerk.preview())
+  .environment(Router())
 }

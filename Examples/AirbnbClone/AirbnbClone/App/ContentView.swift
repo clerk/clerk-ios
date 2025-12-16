@@ -11,6 +11,7 @@ import SwiftUI
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
   @State private var showLoginSheet = false
+  @State private var router = Router()
 
   var body: some View {
     ZStack {
@@ -20,8 +21,12 @@ struct ContentView: View {
         WelcomeView(showLoginSheet: $showLoginSheet)
       }
     }
-    .sheet(isPresented: $showLoginSheet) {
+    .sheet(isPresented: $showLoginSheet, onDismiss: {
+      router.authPath = NavigationPath()
+      router.showOTPVerification = false
+    }) {
       LoginView()
+        .environment(router)
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
     }
