@@ -11,7 +11,7 @@ import SwiftUI
 @main
 struct QuickstartApp: App {
   init() {
-    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY_HERE")
   }
 
   var body: some Scene {
