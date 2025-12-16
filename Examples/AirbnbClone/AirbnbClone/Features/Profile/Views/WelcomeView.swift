@@ -16,7 +16,7 @@ struct WelcomeView: View {
         // Header
         VStack(alignment: .leading, spacing: 8) {
           Text("Profile")
-            .font(.system(size: 32, weight: .bold))
+            .font(.system(size: 34, weight: .bold))
 
           Text("Log in and start planning your next trip.")
             .font(.system(size: 16))
@@ -36,7 +36,7 @@ struct WelcomeView: View {
             .padding(.vertical, 14)
             // `label` is black in light mode and white in dark mode, so the button stays high-contrast.
             .background(Color(uiColor: .label))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(.rect(cornerRadius: 12))
         }
         .padding(.top, 24)
         .padding(.horizontal, 24)
