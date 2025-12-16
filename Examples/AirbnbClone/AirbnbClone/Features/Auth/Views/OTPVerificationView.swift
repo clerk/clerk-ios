@@ -414,13 +414,7 @@ private struct OTPContinueButton: View {
       }
       .frame(maxWidth: .infinity)
       .frame(height: 56)
-      .background(
-        isLoading
-          ? .black
-          : (canContinue
-            ? Color(red: 0.87, green: 0.0, blue: 0.35)
-            : Color(uiColor: .systemGray4))
-      )
+      .background(canContinue || isLoading ? .black : Color(uiColor: .systemGray4))
       .clipShape(.rect(cornerRadius: 12))
     }
     .disabled(!canContinue || isLoading)

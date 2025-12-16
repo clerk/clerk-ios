@@ -51,8 +51,6 @@ struct LoginView: View {
             )
           }
 
-          LoginErrorMessage(message: errorMessage)
-
           LoginDivider()
 
           SocialLoginButtons(
@@ -84,6 +82,7 @@ struct LoginView: View {
         .sharedBackgroundVisibility(.hidden)
       }
     }
+    .tint(Color(uiColor: .label))
     .task {
       for await event in clerk.auth.events {
         switch event {
@@ -100,6 +99,7 @@ struct LoginView: View {
         NavigationStack {
           OTPVerificationView(pending: pendingVerification)
         }
+        .tint(Color(uiColor: .label))
       }
     }
   }
@@ -165,22 +165,6 @@ struct LoginView: View {
           errorMessage = error.localizedDescription
         }
       }
-    }
-  }
-}
-
-// MARK: - LoginErrorMessage
-
-private struct LoginErrorMessage: View {
-  let message: String?
-
-  var body: some View {
-    if let message {
-      Text(message)
-        .font(.system(size: 14))
-        .foregroundStyle(.red)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal)
     }
   }
 }

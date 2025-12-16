@@ -19,6 +19,8 @@ struct EmailLoginView: View {
   @State private var email = ""
   @State private var showValidationError = false
   @FocusState private var isEmailFieldFocused: Bool
+  @State private var showFinishSigningUp = false
+  @State private var pendingSignUp: SignUp?
 
   private var isValidEmail: Bool {
     let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -35,6 +37,19 @@ struct EmailLoginView: View {
       EmailValidationError(isVisible: showValidationError)
         .padding(.top, 8)
 
+      if let errorMessage {
+        HStack(spacing: 6) {
+          Image(systemName: "exclamationmark.circle.fill")
+            .font(.system(size: 14))
+          Text(errorMessage)
+            .font(.system(size: 14))
+        }
+        .foregroundStyle(Color(red: 0.76, green: 0.15, blue: 0.18))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+        .transition(.opacity)
+      }
+
       EmailContinueButton(isLoading: isLoading) {
         dismissKeyboard()
         if isValidEmail {
@@ -44,12 +59,39 @@ struct EmailLoginView: View {
           showValidationError = true
         }
       }
-      .padding(.top, showValidationError ? 10 : 16)
+      .padding(.top, (showValidationError || errorMessage != nil) ? 10 : 16)
     }
     .animation(.default, value: showValidationError)
+    .animation(.default, value: errorMessage)
+    .toolbar {
+      ToolbarItemGroup(placement: .keyboard) {
+        Spacer()
+        Button("Done") {
+          isEmailFieldFocused = false
+        }
+      }
+    }
     .onChange(of: email) {
       if showValidationError, isValidEmail {
         showValidationError = false
+      }
+    }
+    .navigationDestination(isPresented: $showFinishSigningUp) {
+      FinishSigningUpView(identifierTitle: "Email", identifierValue: email) { firstName, lastName, legalAccepted in
+        guard let signUp = pendingSignUp else {
+          throw ClerkClientError(message: "Unable to continue sign up: missing sign up state.")
+        }
+        let updated = try await signUp.update(
+          firstName: firstName,
+          lastName: lastName,
+          legalAccepted: legalAccepted
+        )
+        let prepared = try await updated.sendEmailCode()
+        pendingSignUp = nil
+        return .signUp(prepared, .email)
+      }
+      .onDisappear {
+        pendingSignUp = nil
       }
     }
   }
@@ -59,23 +101,18 @@ struct EmailLoginView: View {
       errorMessage = nil
       isLoading = true
       defer { isLoading = false }
+      pendingVerification = nil
+      showVerification = false
       do {
-        let signIn = try await clerk.auth.signInWithEmailCode(emailAddress: email)
-        pendingVerification = .signIn(signIn)
-        showVerification = true
+        let signUp = try await clerk.auth.signUp(emailAddress: email)
+        pendingSignUp = signUp
+        showFinishSigningUp = true
       } catch {
-        if let apiError = error as? ClerkAPIError,
-           ["form_identifier_not_found", "invitation_account_not_exists"].contains(apiError.code)
-        {
-          do {
-            let signUp = try await clerk.auth.signUp(emailAddress: email)
-            let prepared = try await signUp.sendEmailCode()
-            pendingVerification = .signUp(prepared, .email)
-            showVerification = true
-          } catch {
-            errorMessage = error.localizedDescription
-          }
-        } else {
+        do {
+          let signIn = try await clerk.auth.signInWithEmailCode(emailAddress: email)
+          pendingVerification = .signIn(signIn)
+          showVerification = true
+        } catch {
           errorMessage = error.localizedDescription
         }
       }
@@ -117,6 +154,7 @@ private struct EmailInputField: View {
       RoundedRectangle(cornerRadius: 10)
         .strokeBorder(borderColor, lineWidth: borderWidth)
     )
+    .animation(.easeInOut(duration: 0.2), value: isFocused.wrappedValue)
   }
 }
 
