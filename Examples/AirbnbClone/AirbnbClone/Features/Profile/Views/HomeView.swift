@@ -11,6 +11,7 @@ import SwiftUI
 struct HomeView: View {
   @Environment(Clerk.self) private var clerk
   @State private var isSigningOut = false
+  @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     ScrollView {
@@ -27,17 +28,15 @@ struct HomeView: View {
           .padding(.bottom, 32)
       }
     }
-    .background(Color(uiColor: .systemBackground))
-    .overlay {
-      if isSigningOut {
-        Color.black.opacity(0.2)
-          .ignoresSafeArea()
-          .overlay {
-            ProgressView()
-              .scaleEffect(1.5)
-              .tint(.white)
-          }
-      }
+    .background(pageBackground.ignoresSafeArea())
+  }
+
+  private var pageBackground: Color {
+    switch colorScheme {
+    case .dark:
+      Color(uiColor: .secondarySystemBackground)
+    default:
+      Color(uiColor: .systemBackground)
     }
   }
 
@@ -56,8 +55,16 @@ struct HomeView: View {
           .font(.system(size: 18, weight: .medium))
           .foregroundStyle(.primary)
           .frame(width: 44, height: 44)
-          .background(Color(uiColor: .secondarySystemBackground))
-          .clipShape(Circle())
+          .background(Color(uiColor: .systemBackground))
+          .clipShape(.circle)
+          .overlay {
+            if colorScheme == .dark {
+              Circle()
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            }
+          }
+          .shadow(color: .black.opacity(0.10), radius: 14, x: 0, y: 8)
+          .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
       }
       .buttonStyle(.plain)
     }
@@ -73,13 +80,13 @@ struct HomeView: View {
       VStack(spacing: 12) {
         ZStack(alignment: .bottomTrailing) {
           avatar
-            .frame(width: 96, height: 96)
-            .clipShape(Circle())
+            .frame(width: 112, height: 112)
+            .clipShape(.circle)
 
           // Verified badge (non-functional, visual only)
           Circle()
             .fill(Color(red: 0.87, green: 0.0, blue: 0.35))
-            .frame(width: 34, height: 34)
+            .frame(width: 36, height: 36)
             .overlay {
               Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 16, weight: .semibold))
@@ -90,26 +97,20 @@ struct HomeView: View {
 
         VStack(spacing: 4) {
           Text(displayName)
-            .font(.system(size: 28, weight: .bold))
+            .font(.system(size: 34, weight: .bold))
             .foregroundStyle(.primary)
 
           Text("United States")
-            .font(.system(size: 16))
+            .font(.system(size: 15))
             .foregroundStyle(.secondary)
         }
       }
-
-      Spacer(minLength: 12)
+      .frame(maxWidth: .infinity, alignment: .center)
 
       statsColumn
     }
     .padding(20)
-    .background(Color(uiColor: .secondarySystemBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 24))
-    .overlay {
-      RoundedRectangle(cornerRadius: 24)
-        .strokeBorder(Color(uiColor: .systemGray5), lineWidth: 1)
-    }
+    .airbnbCardSurface(cornerRadius: 28)
   }
 
   private var avatar: some View {
@@ -143,21 +144,21 @@ struct HomeView: View {
   private func statRow(value: String, label: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(value)
-        .font(.system(size: 28, weight: .bold))
+        .font(.system(size: 22, weight: .bold))
         .foregroundStyle(.primary)
       Text(label)
-        .font(.system(size: 18, weight: .semibold))
-        .foregroundStyle(.primary)
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(.secondary)
         .multilineTextAlignment(.leading)
         .lineLimit(2) // reserve the same label space for all rows to avoid "staggered" layout
-        .frame(height: 44, alignment: .topLeading)
+        .frame(height: 34, alignment: .topLeading)
     }
-    .frame(height: 76, alignment: .topLeading)
+    .frame(height: 62, alignment: .topLeading)
   }
 
   private var statSeparator: some View {
     Rectangle()
-      .fill(Color(uiColor: .systemGray4))
+      .fill(Color(uiColor: .systemGray5))
       .frame(height: 1)
       .padding(.vertical, 12)
   }
@@ -168,80 +169,9 @@ struct HomeView: View {
       statSeparator
       statRow(value: "5", label: "Reviews")
       statSeparator
-      statRow(value: "11", label: "Years on Airbnb")
+      statRow(value: "12", label: "Years on Airbnb")
     }
-    .frame(width: 156, alignment: .leading)
-  }
-
-  private func featureTile(title: String, isNew: Bool, systemImage: String) -> some View {
-    VStack(spacing: 14) {
-      ZStack(alignment: .topTrailing) {
-        ZStack {
-          RoundedRectangle(cornerRadius: 16)
-            .fill(Color(uiColor: .systemGray6))
-          Image(systemName: systemImage)
-            .font(.system(size: 34, weight: .regular))
-            .foregroundStyle(.secondary)
-        }
-        .frame(height: 92)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-
-        if isNew {
-          Text("NEW")
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(uiColor: .tertiaryLabel).opacity(0.9))
-            .clipShape(Capsule())
-            .padding(10)
-        }
-      }
-
-      Text(title)
-        .font(.system(size: 18, weight: .semibold))
-        .foregroundStyle(.primary)
-        .padding(.bottom, 6)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(16)
-    .background(Color(uiColor: .secondarySystemBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 24))
-    .overlay {
-      RoundedRectangle(cornerRadius: 24)
-        .strokeBorder(Color(uiColor: .systemGray5), lineWidth: 1)
-    }
-  }
-
-  private func wideTile(title: String, subtitle: String, systemImage: String) -> some View {
-    HStack(spacing: 16) {
-      ZStack {
-        RoundedRectangle(cornerRadius: 14)
-          .fill(Color(uiColor: .systemGray6))
-          .frame(width: 56, height: 56)
-        Image(systemName: systemImage)
-          .font(.system(size: 24))
-          .foregroundStyle(.secondary)
-      }
-
-      VStack(alignment: .leading, spacing: 4) {
-        Text(title)
-          .font(.system(size: 18, weight: .semibold))
-          .foregroundStyle(.primary)
-        Text(subtitle)
-          .font(.system(size: 14))
-          .foregroundStyle(.secondary)
-      }
-
-      Spacer()
-    }
-    .padding(16)
-    .background(Color(uiColor: .secondarySystemBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 24))
-    .overlay {
-      RoundedRectangle(cornerRadius: 24)
-        .strokeBorder(Color(uiColor: .systemGray5), lineWidth: 1)
-    }
+    .frame(width: 140, alignment: .leading)
   }
 
   private var logoutRow: some View {
@@ -255,19 +185,16 @@ struct HomeView: View {
           .frame(width: 24)
 
         Text("Log out")
-          .font(.system(size: 18))
+          .font(.system(size: 17))
           .foregroundStyle(.primary)
 
         Spacer()
+
+        LoadingDotsView(color: .secondary, dotSize: 5, spacing: 5, travel: 3)
+          .opacity(isSigningOut ? 1 : 0)
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 18)
-      .background(Color(uiColor: .secondarySystemBackground))
-      .clipShape(RoundedRectangle(cornerRadius: 24))
-      .overlay {
-        RoundedRectangle(cornerRadius: 24)
-          .strokeBorder(Color(uiColor: .systemGray5), lineWidth: 1)
-      }
+      .padding(.vertical, 10)
+      .contentShape(.rect)
     }
     .buttonStyle(.plain)
     .disabled(isSigningOut)
@@ -275,13 +202,17 @@ struct HomeView: View {
 
   private func signOut() {
     Task {
-      isSigningOut = true
+      withAnimation(.easeInOut(duration: 0.2)) {
+        isSigningOut = true
+      }
       do {
         try await clerk.auth.signOut()
       } catch {
         print("Sign out error: \(error.localizedDescription)")
       }
-      isSigningOut = false
+      withAnimation(.easeInOut(duration: 0.2)) {
+        isSigningOut = false
+      }
     }
   }
 }

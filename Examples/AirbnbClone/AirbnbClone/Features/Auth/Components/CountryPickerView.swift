@@ -9,28 +9,26 @@ import PhoneNumberKit
 import SwiftUI
 
 struct CountryPickerView: View {
+  typealias Country = CountryCodePickerViewController.Country
+
   @Environment(\.dismiss) private var dismiss
-  @Binding var selectedCountry: CountryCodePickerViewController.Country
+  @Binding var selectedCountry: Country
 
   @State private var scrolledID: String?
-  var countries: [CountryCodePickerViewController.Country]
 
-  init(selectedCountry: Binding<CountryCodePickerViewController.Country>) {
-    _selectedCountry = selectedCountry
-    _scrolledID = State(initialValue: selectedCountry.wrappedValue.code)
-
+  private static let countries: [Country] = {
     let utility = PhoneNumberUtility()
-    countries = utility
+    return utility
       .allCountries()
-      .compactMap { CountryCodePickerViewController.Country(for: $0, with: utility) }
+      .compactMap { Country(for: $0, with: utility) }
       .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-  }
+  }()
 
   var body: some View {
     NavigationStack {
       ScrollView {
         LazyVStack(spacing: 0) {
-          ForEach(countries, id: \.code) { country in
+          ForEach(Self.countries, id: \.code) { country in
             Button {
               selectedCountry = country
               dismiss()
@@ -57,7 +55,7 @@ struct CountryPickerView: View {
             }
             .buttonStyle(.plain)
 
-            if country.code != countries.last?.code {
+            if country.code != Self.countries.last?.code {
               Divider()
                 .padding(.leading, 24)
             }
@@ -66,8 +64,9 @@ struct CountryPickerView: View {
         .scrollTargetLayout()
       }
       .scrollPosition(id: $scrolledID, anchor: .center)
-      .onChange(of: selectedCountry.code) { _, newCode in
-        scrolledID = newCode
+      .task {
+        guard scrolledID == nil else { return }
+        scrolledID = selectedCountry.code
       }
       .navigationTitle("Country/Region")
       .navigationBarTitleDisplayMode(.inline)
@@ -90,12 +89,7 @@ struct CountryPickerView: View {
 }
 
 #Preview {
-  CountryPickerView(
-    selectedCountry: .constant(
-      CountryCodePickerViewController.Country(
-        for: "US",
-        with: PhoneNumberUtility()
-      )!
-    )
-  )
+  let utility = PhoneNumberUtility()
+  let country = CountryCodePickerViewController.Country(for: "US", with: utility)!
+  CountryPickerView(selectedCountry: .constant(country))
 }
