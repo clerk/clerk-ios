@@ -82,6 +82,7 @@ struct LoginView: View {
               icon: loginMode == .phone ? "envelope" : "iphone",
               title: loginMode == .phone ? "Continue with email" : "Continue with Phone",
               action: {
+                dismissKeyboard()
                 withAnimation {
                   loginMode = loginMode == .phone ? .email : .phone
                   errorMessage = nil
@@ -127,6 +128,7 @@ struct LoginView: View {
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
+            dismissKeyboard()
             dismiss()
           } label: {
             Image(systemName: "xmark")
@@ -160,6 +162,7 @@ struct LoginView: View {
 
   private func signInWithApple() {
     Task {
+      dismissKeyboard()
       errorMessage = nil
       isSocialLoading = true
       loadingSocialProvider = .apple
@@ -194,6 +197,7 @@ struct LoginView: View {
 
   private func signInWithOAuth(_ provider: OAuthProvider) {
     Task {
+      dismissKeyboard()
       errorMessage = nil
       isSocialLoading = true
       loadingSocialProvider = provider

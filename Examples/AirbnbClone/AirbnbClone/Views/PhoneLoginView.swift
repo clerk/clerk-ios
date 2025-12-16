@@ -62,6 +62,7 @@ struct PhoneLoginView: View {
     VStack(spacing: 0) {
       // Country selector
       Button {
+        dismissKeyboard()
         showCountryPicker = true
       } label: {
         HStack {
@@ -125,6 +126,7 @@ struct PhoneLoginView: View {
 
     // Continue button
     Button {
+      dismissKeyboard()
       submitPhoneNumber()
     } label: {
       Text("Continue")
