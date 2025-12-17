@@ -1,0 +1,99 @@
+//
+//  EmailPasswordMFAView.swift
+//  CustomFlows
+//
+//  Created by Mike Pitre on 12/15/25.
+//
+
+import ClerkKit
+import SwiftUI
+
+struct EmailPasswordMFAView: View {
+  @Environment(Clerk.self) private var clerk
+  @State private var emailAddress = ""
+  @State private var password = ""
+  @State private var mfaCode = ""
+  @State private var needsMFA = false
+
+  var body: some View {
+    Form {
+      if needsMFA {
+        Section {
+          TextField("Enter MFA code", text: $mfaCode)
+        }
+
+        Section {
+          Button("Verify MFA") {
+            Task {
+              await verifyMFA(code: mfaCode)
+            }
+          }
+        }
+      } else {
+        Section {
+          TextField("Enter email address", text: $emailAddress)
+            .textContentType(.emailAddress)
+            .keyboardType(.emailAddress)
+            .autocapitalization(.none)
+            .autocorrectionDisabled()
+
+          SecureField("Enter password", text: $password)
+            .textContentType(.password)
+        }
+
+        Section {
+          Button("Sign In") {
+            Task {
+              await handleSignIn()
+            }
+          }
+        }
+      }
+    }
+    .navigationTitle("Email & Password MFA")
+  }
+
+  private func handleSignIn() async {
+    do {
+      let signIn = try await clerk.auth.signInWithPassword(identifier: emailAddress, password: password)
+
+      switch signIn.status {
+      case .complete:
+        dump(clerk.session)
+      case .needsSecondFactor:
+        guard let inProgressSignIn = clerk.client?.signIn else { return }
+        try await inProgressSignIn.sendMfaEmailCode()
+        needsMFA = true
+      default:
+        dump(signIn.status)
+      }
+    } catch {
+      dump(error)
+    }
+  }
+
+  private func verifyMFA(code: String) async {
+    do {
+      guard let inProgressSignIn = clerk.client?.signIn else { return }
+      let signIn = try await inProgressSignIn.verifyMfaCode(code, type: .emailCode)
+
+      switch signIn.status {
+      case .complete:
+        dump(clerk.session)
+      default:
+        dump(signIn.status)
+      }
+    } catch {
+      dump(error)
+    }
+  }
+}
+
+#Preview {
+  NavigationStack {
+    EmailPasswordMFAView()
+      .environment(Clerk.preview { preview in
+        preview.isSignedIn = false
+      })
+  }
+}
