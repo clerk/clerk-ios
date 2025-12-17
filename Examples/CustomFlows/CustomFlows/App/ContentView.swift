@@ -12,12 +12,10 @@ struct ContentView: View {
   @Environment(Clerk.self) private var clerk
 
   var body: some View {
-    NavigationStack {
-      if clerk.user != nil {
-        ProfileView()
-      } else {
-        AuthFlowListView()
-      }
+    if clerk.user != nil {
+      ProfileView()
+    } else {
+      AuthFlowListView()
     }
   }
 }

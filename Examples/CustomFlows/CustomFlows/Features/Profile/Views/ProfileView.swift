@@ -14,7 +14,6 @@ struct ProfileView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 24) {
-        // User Avatar
         if let imageUrl = clerk.user?.imageUrl, let url = URL(string: imageUrl) {
           AsyncImage(url: url) { phase in
             switch phase {
@@ -33,40 +32,14 @@ struct ProfileView: View {
             .frame(width: 100, height: 100)
         }
 
-        // User Name
-        if let firstName = clerk.user?.firstName, let lastName = clerk.user?.lastName {
-          Text("\(firstName) \(lastName)")
-            .font(.title)
-            .bold()
-        } else if let firstName = clerk.user?.firstName {
-          Text(firstName)
-            .font(.title)
-            .bold()
-        } else if let username = clerk.user?.username {
-          Text(username)
-            .font(.title)
-            .bold()
-        } else if let primaryEmailAddress = clerk.user?.primaryEmailAddress {
-          Text(primaryEmailAddress.emailAddress)
-            .font(.title)
-            .bold()
-        }
+        Text(clerk.user?.id ?? "No user ID")
 
-        // Sign Out Button
-        Button {
+        Button("Sign Out") {
           signOut()
-        } label: {
-          Text("Sign Out")
-            .font(.headline)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.red)
-            .clipShape(.rect(cornerRadius: 12))
         }
-        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
+        .buttonStyle(.borderedProminent)
       }
-      .padding(.vertical, 32)
     }
     .navigationTitle("Profile")
   }
@@ -81,8 +54,6 @@ struct ProfileView: View {
     }
   }
 }
-
-// MARK: - AvatarPlaceholder
 
 private struct AvatarPlaceholder: View {
   var body: some View {
