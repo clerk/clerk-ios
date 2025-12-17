@@ -11,6 +11,7 @@ import SwiftUI
 
 struct SignInWithAppleView: View {
   @Environment(Clerk.self) private var clerk
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -29,6 +30,20 @@ struct SignInWithAppleView: View {
       }
     }
     .navigationTitle("Sign in with Apple")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.signInWithApple.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 
   private func handleSignUpWithApple() async {

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct AuthFlowListView: View {
+  @State private var showDocs = false
+
   var body: some View {
     NavigationStack {
       List {
@@ -24,8 +26,22 @@ struct AuthFlowListView: View {
         }
       }
       .navigationTitle("Custom Flows")
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            showDocs = true
+          } label: {
+            Image(systemName: "book")
+          }
+        }
+      }
       .navigationDestination(for: AuthFlow.self) { flow in
         flowView(for: flow)
+      }
+      .sheet(isPresented: $showDocs) {
+        if let url = URL(string: "https://clerk.com/docs/guides/development/custom-flows/overview") {
+          SafariView(url: url)
+        }
       }
     }
   }

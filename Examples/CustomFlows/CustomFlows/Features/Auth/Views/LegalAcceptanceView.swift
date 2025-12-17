@@ -15,6 +15,7 @@ struct LegalAcceptanceView: View {
   @State private var code = ""
   @State private var legalAccepted = false
   @State private var isVerifying = false
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -56,6 +57,20 @@ struct LegalAcceptanceView: View {
       }
     }
     .navigationTitle("Legal Acceptance")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.legalAcceptance.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 
   private func handleSignUp() async {

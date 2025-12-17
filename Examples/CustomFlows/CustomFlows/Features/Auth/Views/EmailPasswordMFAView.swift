@@ -14,6 +14,7 @@ struct EmailPasswordMFAView: View {
   @State private var password = ""
   @State private var mfaCode = ""
   @State private var needsMFA = false
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -51,6 +52,20 @@ struct EmailPasswordMFAView: View {
       }
     }
     .navigationTitle("Email & Password MFA")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.emailPasswordMFA.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 
   private func handleSignIn() async {
