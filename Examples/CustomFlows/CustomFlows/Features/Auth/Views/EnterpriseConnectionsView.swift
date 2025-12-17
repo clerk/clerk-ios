@@ -11,6 +11,7 @@ import SwiftUI
 struct EnterpriseConnectionsView: View {
   @Environment(Clerk.self) private var clerk
   @State private var emailAddress = ""
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -31,6 +32,20 @@ struct EnterpriseConnectionsView: View {
       }
     }
     .navigationTitle("Enterprise Connections")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.enterpriseConnections.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 
   private func handleSignIn() async {

@@ -10,6 +10,7 @@ import SwiftUI
 
 struct EmailPasswordView: View {
   @State private var isSignUp = false
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -28,6 +29,20 @@ struct EmailPasswordView: View {
       }
     }
     .navigationTitle("Email & Password")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.emailPassword.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import SwiftUI
 
 struct OAuthConnectionsView: View {
   @Environment(Clerk.self) private var clerk
+  @State private var showDocs = false
 
   var body: some View {
     Form {
@@ -28,6 +29,20 @@ struct OAuthConnectionsView: View {
       }
     }
     .navigationTitle("Sign In with OAuth")
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showDocs = true
+        } label: {
+          Image(systemName: "book")
+        }
+      }
+    }
+    .sheet(isPresented: $showDocs) {
+      if let url = AuthFlow.oauthConnections.documentationURL {
+        SafariView(url: url)
+      }
+    }
   }
 
   private func handleSignIn(provider: OAuthProvider) async {

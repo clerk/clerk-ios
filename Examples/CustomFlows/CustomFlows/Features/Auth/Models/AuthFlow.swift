@@ -60,4 +60,27 @@ enum AuthFlow: Identifiable, CaseIterable, Hashable {
       "Handle legal acceptance requirements"
     }
   }
+
+  var documentationURL: URL? {
+    let baseURL = "https://clerk.com/docs/guides/development/custom-flows/authentication"
+    let path = switch self {
+    case .emailPassword:
+      "\(baseURL)/email-password"
+    case .emailCode:
+      "\(baseURL)/email-links"
+    case .phoneSMSOTP:
+      "\(baseURL)/email-sms-otp"
+    case .oauthConnections:
+      "\(baseURL)/oauth-connections"
+    case .emailPasswordMFA:
+      "\(baseURL)/email-password-mfa"
+    case .enterpriseConnections:
+      "\(baseURL)/enterprise-connections"
+    case .signInWithApple:
+      "https://clerk.com/docs/ios/guides/configure/auth-strategies/sign-in-with-apple"
+    case .legalAcceptance:
+      "\(baseURL)/legal-acceptance"
+    }
+    return URL(string: path)
+  }
 }
