@@ -13,4 +13,7 @@
    <FileRef
       location = "group:Examples/WatchExampleApp/WatchExampleApp.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:Examples/CustomFlows/CustomFlows.xcodeproj">
+   </FileRef>
 </Workspace>
