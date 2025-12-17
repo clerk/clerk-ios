@@ -9,22 +9,24 @@ import SwiftUI
 
 struct AuthFlowListView: View {
   var body: some View {
-    List {
-      Section {
-        ForEach(AuthFlow.allCases) { flow in
-          NavigationLink(value: flow) {
-            AuthFlowRow(flow: flow)
+    NavigationStack {
+      List {
+        Section {
+          ForEach(AuthFlow.allCases) { flow in
+            NavigationLink(value: flow) {
+              AuthFlowRow(flow: flow)
+            }
           }
+        } header: {
+          Text("Authentication Flows")
+        } footer: {
+          Text("Select an authentication flow to see how it's implemented with Clerk.")
         }
-      } header: {
-        Text("Authentication Flows")
-      } footer: {
-        Text("Select an authentication flow to see how it's implemented with Clerk.")
       }
-    }
-    .navigationTitle("Custom Flows")
-    .navigationDestination(for: AuthFlow.self) { flow in
-      flowView(for: flow)
+      .navigationTitle("Custom Flows")
+      .navigationDestination(for: AuthFlow.self) { flow in
+        flowView(for: flow)
+      }
     }
   }
 
