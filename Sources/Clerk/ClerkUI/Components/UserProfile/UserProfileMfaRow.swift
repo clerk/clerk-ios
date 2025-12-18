@@ -63,7 +63,7 @@ struct UserProfileMfaRow: View {
                 AsyncButton {
                     await makeDefaultSecondFactor(phoneNumber: phoneNumber)
                 } label: { _ in
-                    Text("Set as default")
+                    Text("Set as default", bundle: .module)
                 }
                 .onIsRunningChanged { isLoading = $0 }
                 .onDisappear { isLoading = false }
