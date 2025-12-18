@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(AuthenticationServices)
+import AuthenticationServices
+#endif
 
 /// The `User` object holds all of the information for a single user of your application and provides a set of methods to manage their account.
 ///
@@ -267,6 +270,30 @@ public extension User {
   func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
     try await userService.createExternalAccountToken(provider: provider, idToken: idToken)
   }
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Connects an Apple account to the user using Sign in with Apple.
+  ///
+  /// This method handles the entire Sign in with Apple flow for connecting an external account, including:
+  /// - Requesting Apple ID credentials
+  /// - Extracting the ID token
+  /// - Creating the external account
+  ///
+  /// - Parameters:
+  ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  /// - Returns: The created `ExternalAccount` object.
+  /// - Throws: An error if the connection fails.
+  @discardableResult @MainActor
+  func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
+    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+
+    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+    }
+
+    return try await createExternalAccount(provider: .apple, idToken: idToken)
+  }
+  #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS)
   /// Creates a passkey for the signed-in user.

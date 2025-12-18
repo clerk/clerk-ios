@@ -179,6 +179,53 @@ public extension SignIn {
     )
   }
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Authenticates with an ID token from a provider (e.g., Sign in with Apple).
+  ///
+  /// This method attempts first factor authentication using an ID token directly,
+  /// without requiring a prepare step. This is useful for native authentication flows
+  /// where you already have an ID token from the provider.
+  ///
+  /// - Parameters:
+  ///   - idToken: The ID token from the provider.
+  ///   - provider: The ID token provider (e.g., `.apple`).
+  /// - Returns: An updated `SignIn` object reflecting the authentication result.
+  /// - Throws: An error if authentication fails.
+  @discardableResult
+  @MainActor
+  func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
+    try await signInService.attemptFirstFactor(
+      signInId: id,
+      params: .init(strategy: .idToken(provider), token: idToken)
+    )
+  }
+
+  /// Authenticates with Apple using Sign in with Apple.
+  ///
+  /// This method handles the entire Sign in with Apple flow for an existing sign-in, including:
+  /// - Requesting Apple ID credentials
+  /// - Extracting the ID token
+  /// - Attempting authentication with the existing sign-in
+  /// - Handling the transfer flow if needed
+  ///
+  /// - Parameters:
+  ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the authentication fails.
+  @discardableResult
+  @MainActor
+  func authenticateWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+
+    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+    }
+
+    let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
+    return try await signIn.handleTransferFlow()
+  }
+  #endif
+
   // MARK: - Second Factor Verification (MFA)
 
   /// Sends an MFA code to the phone number.

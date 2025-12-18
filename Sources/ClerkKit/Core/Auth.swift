@@ -123,6 +123,35 @@ public final class Auth {
   }
   #endif
 
+  /// Signs in with Apple using Sign in with Apple.
+  ///
+  /// This method handles the entire Sign in with Apple flow, including:
+  /// - Requesting Apple ID credentials
+  /// - Extracting the ID token
+  /// - Automatically routing to sign-in or sign-up via the transfer flow
+  ///
+  /// - Parameters:
+  ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the authentication fails.
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @discardableResult
+  public func signInWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+
+    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+    }
+
+    return try await signUpWithIdToken(
+      idToken,
+      provider: .apple,
+      firstName: credential.fullName?.givenName,
+      lastName: credential.fullName?.familyName
+    )
+  }
+  #endif
+
   /// Signs in with a passkey.
   ///
   /// - Returns: A `SignIn` object representing the sign-in attempt.

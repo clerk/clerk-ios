@@ -98,7 +98,7 @@ struct SocialButton: View {
 extension SocialButton {
   func defaultAction() async throws {
     let result: TransferFlowResult = if provider == .apple {
-      try await SignInWithAppleUtils.signIn()
+      try await clerk.auth.signInWithApple()
     } else {
       try await clerk.auth.signInWithOAuth(provider: provider)
     }

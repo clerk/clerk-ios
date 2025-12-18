@@ -15,25 +15,7 @@ import Foundation
 ///
 /// This class simplifies the process of requesting user credentials using Sign in with Apple
 /// by wrapping the necessary functionality in an async-await compatible API.
-///
-/// ### Example Usage
-/// ```swift
-/// do {
-///     // Create an instance of the helper and get the Apple ID credential.
-///     let appleIdCredential = try await SignInWithAppleHelper.getAppleIdCredential()
-///
-///     // Extract the ID token from the credential.
-///     guard let idToken = appleIdCredential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-///         // throw an error
-///     }
-///
-///     // Authenticate with the extracted ID token.
-///     try await SignIn.authenticateWithIdToken(provider: .apple, idToken: idToken)
-/// } catch {
-///     // Handle any errors.
-/// }
-/// ```
-public final class SignInWithAppleHelper: NSObject {
+final class SignInWithAppleHelper: NSObject {
   /// A continuation to handle the result of the authorization process.
   private var continuation: CheckedContinuation<ASAuthorization, Error>?
 
@@ -97,7 +79,7 @@ public final class SignInWithAppleHelper: NSObject {
   /// - Returns: An `ASAuthorizationAppleIDCredential` object containing the user's Apple ID credentials.
   /// - Throws: An error if the authorization fails or if the credential cannot be retrieved.
   @MainActor
-  public static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
+  static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
     let authManager = SignInWithAppleHelper()
     let authorization = try await authManager.start(requestedScopes: requestedScopes)
 
@@ -111,24 +93,30 @@ public final class SignInWithAppleHelper: NSObject {
 
 extension SignInWithAppleHelper: ASAuthorizationControllerDelegate {
   /// Called when the authorization process completes successfully.
-  public func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+  func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
     continuation?.resume(returning: authorization)
   }
 
   /// Called when the authorization process fails.
-  public func authorizationController(controller _: ASAuthorizationController, didCompleteWithError error: any Error) {
+  func authorizationController(controller _: ASAuthorizationController, didCompleteWithError error: any Error) {
     continuation?.resume(throwing: error)
   }
 }
 
 extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
-  public func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
+  func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
     #if os(iOS)
     UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
     #else
     ASPresentationAnchor()
     #endif
+  }
+}
+
+extension ASAuthorizationAppleIDCredential {
+  var tokenString: String {
+    identityToken.flatMap { String(data: $0, encoding: .utf8) } ?? ""
   }
 }
 

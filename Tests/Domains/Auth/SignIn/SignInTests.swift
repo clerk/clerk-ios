@@ -196,7 +196,7 @@ struct SignInTests {
     mock.register()
 
     // Transfer is an internal parameter not exposed in public API, so we test the service directly
-    try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
+    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }
 
@@ -220,7 +220,7 @@ struct SignInTests {
     mock.register()
 
     // Empty create is not exposed in public API, so we test the service directly
-    try await Clerk.shared.dependencies.signInService.create(params: .init())
+    _ = try await Clerk.shared.dependencies.signInService.create(params: .init())
     #expect(requestHandled.value)
   }
 
@@ -318,7 +318,7 @@ struct SignInTests {
     mock.register()
 
     // Passkey prepare requires getting credential first, so we test the service directly for this unit test
-    try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey)
     )
@@ -398,7 +398,7 @@ struct SignInTests {
 
     // verifyCode() infers strategy from firstFactorVerification state, which is hard to control in unit tests
     // For this test that specifically verifies phone_code parameters, we use the service directly
-    try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode, code: "654321")
     )
@@ -427,12 +427,40 @@ struct SignInTests {
     mock.register()
 
     // Passkey attempt requires getting credential first, so we test the service directly for this unit test
-    try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")
     )
     #expect(requestHandled.value)
   }
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func attemptFirstFactorIdToken() async throws {
+    let signIn = SignIn.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
+    let mockIdToken = "mock_apple_id_token"
+
+    var mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
+      #expect(request.urlEncodedFormBody!["token"] == mockIdToken)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    try await signIn.authenticateWithIdToken(mockIdToken, provider: .apple)
+    #expect(requestHandled.value)
+  }
+  #endif
 
   @Test
   func prepareSecondFactor() async throws {
