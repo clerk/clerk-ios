@@ -24,11 +24,25 @@ struct SignInFactorCodeView: View {
     @FocusState private var otpFieldIsFocused: Bool
 
     let factor: Factor
-    var isClientTrust: Bool = false
-    var isSecondFactor: Bool = false
+    var mode: FactorMode = .firstFactor
 
     var signIn: SignIn? {
         clerk.client?.signIn
+    }
+
+    enum FactorMode {
+        case firstFactor
+        case secondFactor
+        case clientTrust
+
+        var usesSecondFactorAPI: Bool {
+            switch self {
+            case .firstFactor:
+                return false
+            case .secondFactor, .clientTrust:
+                return true
+            }
+        }
     }
 
     enum VerificationState {
@@ -105,10 +119,6 @@ struct SignInFactorCodeView: View {
         }
     }
 
-    private var clientTrustNoticeString: String.LocalizationValue {
-        "You're signing in from a new device. We're asking for verification to keep your account secure."
-    }
-
     private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
         signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
     }
@@ -131,6 +141,14 @@ struct SignInFactorCodeView: View {
                     }
                 }
                 .padding(.bottom, 32)
+
+                if mode == .clientTrust {
+                    Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
+                        .foregroundStyle(theme.colors.warning)
+                        .font(theme.fonts.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 32)
+                }
 
                 VStack(spacing: 24) {
                     OTPField(
@@ -169,10 +187,6 @@ struct SignInFactorCodeView: View {
                     }
                     .font(theme.fonts.subheadline)
 
-                    if isClientTrust {
-                        NoticeText(notice: ClerkClientWarning(message: clientTrustNoticeString))
-                    }
-
                     if showResend {
                         AsyncButton {
                             await prepare()
@@ -206,7 +220,7 @@ struct SignInFactorCodeView: View {
 
                     if showUseAnotherMethod {
                         Button {
-                            if isSecondFactor || isClientTrust {
+                            if mode.usesSecondFactorAPI {
                                 authState.path.append(
                                     AuthView.Destination.signInFactorTwoUseAnotherMethod(
                                         currentFactor: factor
@@ -284,7 +298,7 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                if isSecondFactor || isClientTrust {
+                if mode.usesSecondFactorAPI {
                     try await signIn.prepareSecondFactor(
                         strategy: .emailCode(emailAddressId: factor.emailAddressId)
                     )
@@ -294,7 +308,7 @@ extension SignInFactorCodeView {
                     )
                 }
             case "phone_code":
-                if isSecondFactor || isClientTrust {
+                if mode.usesSecondFactorAPI {
                     try await signIn.prepareSecondFactor(
                         strategy: .phoneCode
                     )
@@ -338,13 +352,13 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                if isSecondFactor || isClientTrust {
+                if mode.usesSecondFactorAPI {
                     signIn = try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
                 } else {
                     signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
                 }
             case "phone_code":
-                if isSecondFactor || isClientTrust {
+                if mode.usesSecondFactorAPI {
                     signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
                 } else {
                     signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
@@ -426,7 +440,7 @@ extension SignInFactorCodeView {
         )
     }
 
-    SignInFactorCodeView(factor: .mockEmailCode, isClientTrust: true)
+    SignInFactorCodeView(factor: .mockEmailCode, mode: .clientTrust)
         .environment(\.clerk, .mock)
 }
 
@@ -444,7 +458,7 @@ extension SignInFactorCodeView {
         )
     }
 
-    SignInFactorCodeView(factor: .mockPhoneCode, isClientTrust: true)
+    SignInFactorCodeView(factor: .mockPhoneCode, mode: .clientTrust)
         .environment(\.clerk, .mock)
 }
 
