@@ -12,18 +12,13 @@ import SwiftUI
 struct SignInClientTrustView: View {
     let factor: Factor
 
-    @ViewBuilder
-    var viewForFactor: some View {
+    var body: some View {
         switch factor.strategy {
         case "phone_code", "email_code":
-            SignInFactorCodeView(factor: factor, isClientTrust: true)
+            SignInFactorCodeView(factor: factor, mode: .clientTrust)
         default:
             SignInGetHelpView()
         }
-    }
-
-    var body: some View {
-        viewForFactor
     }
 }
 
