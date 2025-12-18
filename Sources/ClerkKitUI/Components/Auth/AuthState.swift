@@ -73,6 +73,13 @@ final class AuthState {
       path.append(AuthView.Destination.signInFactorTwo(factor: factor))
     case .needsNewPassword:
       path.append(AuthView.Destination.signInSetNewPassword)
+    case .needsClientTrust:
+      guard let factor = signIn.startingSecondFactor else {
+        ClerkLogger.info("Navigating to GetHelp: No starting second factor available for client trust", force: true)
+        path.append(AuthView.Destination.getHelp(.signIn))
+        return
+      }
+      path.append(AuthView.Destination.signInClientTrust(factor: factor))
     case .unknown:
       return
     }

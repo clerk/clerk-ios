@@ -12608,6 +12608,76 @@
         }
       }
     },
+    "You're signing in from a new device. We're asking for verification to keep your account secure." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت تسجل الدخول من جهاز جديد. نطلب التحقق للحفاظ على أمان حسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sie melden sich von einem neuen Gerät an. Wir bitten um Verifizierung, um Ihr Konto sicher zu halten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συνδέεστε από μια νέα συσκευή. Ζητάμε επαλήθευση για να διατηρήσουμε τον λογαριασμό σας ασφαλή."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estás iniciando sesión desde un dispositivo nuevo. Estamos solicitando verificación para mantener tu cuenta segura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous vous connectez depuis un nouvel appareil. Nous demandons une vérification pour sécuriser votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आप एक नए डिवाइस से साइन इन कर रहे हैं। हम आपके खाते को सुरक्षित रखने के लिए सत्यापन मांग रहे हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stai effettuando l'accesso da un nuovo dispositivo. Richiediamo la verifica per mantenere il tuo account sicuro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいデバイスからサインインしています。アカウントを保護するために確認を求めています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 기기에서 로그인하고 있습니다. 계정을 안전하게 유지하기 위해 확인을 요청하고 있습니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você está fazendo login de um novo dispositivo. Estamos solicitando verificação para manter sua conta segura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您正在从新设备登录。我们要求进行验证以保护您的账户安全。"
+          }
+        }
+      }
+    },
     "Your backup code is the one you got when setting up two-step authentication." : {
       "localizations" : {
         "ar" : {

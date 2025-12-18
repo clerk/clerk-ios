@@ -19,7 +19,7 @@ struct SignInFactorTwoView: View {
   var viewForFactor: some View {
     switch factor.strategy {
     case .totp, .phoneCode, .emailCode:
-      SignInFactorCodeView(factor: factor, isSecondFactor: true)
+      SignInFactorCodeView(factor: factor, mode: .secondFactor)
     case .backupCode:
       SignInFactorTwoBackupCodeView(factor: factor)
     default:

@@ -79,7 +79,7 @@ struct UserProfileChangePasswordView: View {
         Button {
           path.append(Destination.updatePassword)
         } label: {
-          Text("Next")
+          Text("Next", bundle: .module)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.primary())
@@ -130,7 +130,7 @@ struct UserProfileChangePasswordView: View {
         AsyncButton {
           await resetPassword()
         } label: { isRunning in
-          Text("Save")
+          Text("Save", bundle: .module)
             .frame(maxWidth: .infinity)
             .overlayProgressView(isActive: isRunning) {
               SpinnerView(color: theme.colors.primaryForeground)
