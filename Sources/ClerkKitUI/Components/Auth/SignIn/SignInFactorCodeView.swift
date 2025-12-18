@@ -26,10 +26,25 @@ struct SignInFactorCodeView: View {
   @FocusState private var otpFieldIsFocused: Bool
 
   let factor: Factor
-  var isSecondFactor: Bool = false
+  var mode: FactorMode = .firstFactor
 
   var signIn: SignIn? {
     clerk.client?.signIn
+  }
+
+  enum FactorMode {
+    case firstFactor
+    case secondFactor
+    case clientTrust
+
+    var usesSecondFactorAPI: Bool {
+      switch self {
+      case .firstFactor:
+        false
+      case .secondFactor, .clientTrust:
+        true
+      }
+    }
   }
 
   enum VerificationState {
@@ -129,6 +144,14 @@ struct SignInFactorCodeView: View {
         }
         .padding(.bottom, 32)
 
+        if mode == .clientTrust {
+          Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
+            .foregroundStyle(theme.colors.warning)
+            .font(theme.fonts.subheadline)
+            .multilineTextAlignment(.center)
+            .padding(.bottom, 32)
+        }
+
         VStack(spacing: 24) {
           OTPField(
             code: $code,
@@ -199,7 +222,7 @@ struct SignInFactorCodeView: View {
 
           if showUseAnotherMethod {
             Button {
-              if isSecondFactor {
+              if mode.usesSecondFactorAPI {
                 authState.path.append(
                   AuthView.Destination.signInFactorTwoUseAnotherMethod(
                     currentFactor: factor
@@ -276,14 +299,14 @@ extension SignInFactorCodeView {
     do {
       switch factor.strategy {
       case .emailCode:
-        if isSecondFactor {
+        if mode.usesSecondFactorAPI {
           signIn = try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
         } else {
           signIn = try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
         }
 
       case .phoneCode:
-        if isSecondFactor {
+        if mode.usesSecondFactorAPI {
           signIn = try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
         } else {
           signIn = try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
@@ -330,13 +353,13 @@ extension SignInFactorCodeView {
   private func attemptVerification(signIn: SignIn) async throws -> SignIn {
     switch factor.strategy {
     case .emailCode:
-      if isSecondFactor {
+      if mode.usesSecondFactorAPI {
         return try await signIn.verifyMfaCode(code, type: .emailCode)
       } else {
         return try await signIn.verifyCode(code)
       }
     case .phoneCode:
-      if isSecondFactor {
+      if mode.usesSecondFactorAPI {
         return try await signIn.verifyMfaCode(code, type: .phoneCode)
       } else {
         return try await signIn.verifyCode(code)

@@ -168,6 +168,7 @@ extension AuthView {
     case signInFactorOneUseAnotherMethod(currentFactor: Factor)
     case signInFactorTwo(factor: Factor)
     case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
+    case signInClientTrust(factor: Factor)
     case signInForgotPassword
     case signInSetNewPassword
     case getHelp(GetHelpView.Context)
@@ -194,6 +195,8 @@ extension AuthView {
           currentFactor: currentFactor,
           isSecondFactor: true
         )
+      case let .signInClientTrust(factor):
+        SignInClientTrustView(factor: factor)
       case .signInForgotPassword:
         SignInFactorOneForgotPasswordView()
       case .signInSetNewPassword:

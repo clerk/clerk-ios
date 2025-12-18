@@ -1,5 +1,5 @@
 //
-//  SignInStatus.swift
+//  SignIn+Status.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
@@ -25,6 +25,9 @@ public extension SignIn {
     /// The user needs to set a new password.
     case needsNewPassword
 
+    /// Client trust verification is required.
+    case needsClientTrust
+
     /// The sign-in returned an unknown status value.
     ///
     /// The associated value captures the raw string value from the API.
@@ -43,6 +46,8 @@ public extension SignIn {
         "needs_second_factor"
       case .needsNewPassword:
         "needs_new_password"
+      case .needsClientTrust:
+        "needs_client_trust"
       case .unknown(let value):
         value
       }
@@ -61,6 +66,8 @@ public extension SignIn {
         self = .needsSecondFactor
       case "needs_new_password":
         self = .needsNewPassword
+      case "needs_client_trust":
+        self = .needsClientTrust
       default:
         self = .unknown(rawValue)
       }

@@ -70,7 +70,7 @@ struct UserProfileUpdateProfileView: View {
             AsyncButton {
               await save()
             } label: { isRunning in
-              Text("Save")
+              Text("Save", bundle: .module)
                 .frame(maxWidth: .infinity)
                 .overlayProgressView(isActive: isRunning) {
                   SpinnerView(color: theme.colors.primaryForeground)
@@ -215,7 +215,7 @@ struct UserProfileUpdateProfileView: View {
           ClerkLogger.error("Failed to delete profile image", error: error)
         }
       } label: { _ in
-        Text("Remove photo")
+        Text("Remove photo", bundle: .module)
       }
     }
   }
