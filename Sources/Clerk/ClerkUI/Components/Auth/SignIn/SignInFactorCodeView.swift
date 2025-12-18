@@ -24,10 +24,25 @@ struct SignInFactorCodeView: View {
     @FocusState private var otpFieldIsFocused: Bool
 
     let factor: Factor
-    var isSecondFactor: Bool = false
+    var mode: FactorMode = .firstFactor
 
     var signIn: SignIn? {
         clerk.client?.signIn
+    }
+
+    enum FactorMode {
+        case firstFactor
+        case secondFactor
+        case clientTrust
+
+        var usesSecondFactorAPI: Bool {
+            switch self {
+            case .firstFactor:
+                return false
+            case .secondFactor, .clientTrust:
+                return true
+            }
+        }
     }
 
     enum VerificationState {
@@ -127,6 +142,14 @@ struct SignInFactorCodeView: View {
                 }
                 .padding(.bottom, 32)
 
+                if mode == .clientTrust {
+                    Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
+                        .foregroundStyle(theme.colors.warning)
+                        .font(theme.fonts.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 32)
+                }
+
                 VStack(spacing: 24) {
                     OTPField(
                         code: $code,
@@ -197,7 +220,7 @@ struct SignInFactorCodeView: View {
 
                     if showUseAnotherMethod {
                         Button {
-                            if isSecondFactor {
+                            if mode.usesSecondFactorAPI {
                                 authState.path.append(
                                     AuthView.Destination.signInFactorTwoUseAnotherMethod(
                                         currentFactor: factor
@@ -275,7 +298,7 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                if isSecondFactor {
+                if mode.usesSecondFactorAPI {
                     try await signIn.prepareSecondFactor(
                         strategy: .emailCode(emailAddressId: factor.emailAddressId)
                     )
@@ -285,7 +308,7 @@ extension SignInFactorCodeView {
                     )
                 }
             case "phone_code":
-                if isSecondFactor {
+                if mode.usesSecondFactorAPI {
                     try await signIn.prepareSecondFactor(
                         strategy: .phoneCode
                     )
@@ -329,13 +352,13 @@ extension SignInFactorCodeView {
         do {
             switch factor.strategy {
             case "email_code":
-                if isSecondFactor {
+                if mode.usesSecondFactorAPI {
                     signIn = try await signIn.attemptSecondFactor(strategy: .emailCode(code: code))
                 } else {
                     signIn = try await signIn.attemptFirstFactor(strategy: .emailCode(code: code))
                 }
             case "phone_code":
-                if isSecondFactor {
+                if mode.usesSecondFactorAPI {
                     signIn = try await signIn.attemptSecondFactor(strategy: .phoneCode(code: code))
                 } else {
                     signIn = try await signIn.attemptFirstFactor(strategy: .phoneCode(code: code))
@@ -400,6 +423,42 @@ extension SignInFactorCodeView {
     }
 
     SignInFactorCodeView(factor: .mockPhoneCode)
+        .environment(\.clerk, .mock)
+}
+
+#Preview("Client Trust - Email Code") {
+    Container.shared.signInService.preview { @MainActor in
+        .init(
+            prepareSecondFactor: { _, _, _ in
+                try! await Task.sleep(for: .seconds(1))
+                return .mock
+            },
+            attemptSecondFactor: { _, _ in
+                try! await Task.sleep(for: .seconds(1))
+                return .mock
+            }
+        )
+    }
+
+    SignInFactorCodeView(factor: .mockEmailCode, mode: .clientTrust)
+        .environment(\.clerk, .mock)
+}
+
+#Preview("Client Trust - Phone Code") {
+    Container.shared.signInService.preview { @MainActor in
+        .init(
+            prepareSecondFactor: { _, _, _ in
+                try! await Task.sleep(for: .seconds(1))
+                return .mock
+            },
+            attemptSecondFactor: { _, _ in
+                try! await Task.sleep(for: .seconds(1))
+                return .mock
+            }
+        )
+    }
+
+    SignInFactorCodeView(factor: .mockPhoneCode, mode: .clientTrust)
         .environment(\.clerk, .mock)
 }
 

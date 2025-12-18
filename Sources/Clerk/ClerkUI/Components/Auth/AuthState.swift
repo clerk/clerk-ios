@@ -71,6 +71,12 @@ final class AuthState {
             path.append(AuthView.Destination.signInFactorTwo(factor: factor))
         case .needsNewPassword:
             path.append(AuthView.Destination.signInSetNewPassword)
+        case .needsClientTrust:
+            guard let factor = signIn.startingSecondFactor else {
+                path.append(AuthView.Destination.signInGetHelp)
+                return
+            }
+            path.append(AuthView.Destination.signInClientTrust(factor: factor))
         case .unknown:
             return
         }
