@@ -62,17 +62,20 @@ extension SignIn {
     let code: String?
     let password: String?
     let publicKeyCredential: String?
+    let token: String?
 
     init(
       strategy: FactorStrategy,
       code: String? = nil,
       password: String? = nil,
-      publicKeyCredential: String? = nil
+      publicKeyCredential: String? = nil,
+      token: String? = nil
     ) {
       self.strategy = strategy
       self.code = code
       self.password = password
       self.publicKeyCredential = publicKeyCredential
+      self.token = token
     }
   }
 

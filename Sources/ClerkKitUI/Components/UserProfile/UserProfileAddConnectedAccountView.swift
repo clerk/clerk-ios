@@ -92,8 +92,7 @@ extension UserProfileAddConnectedAccountView {
 
     do {
       if provider == .apple {
-        let credential = try await SignInWithAppleHelper.getAppleIdCredential()
-        try await user.createExternalAccount(provider: .apple, idToken: credential.tokenString)
+        try await user.connectAppleAccount()
       } else {
         let newExternalAccount = try await user.createExternalAccount(provider: provider)
         try await newExternalAccount.reauthorize()

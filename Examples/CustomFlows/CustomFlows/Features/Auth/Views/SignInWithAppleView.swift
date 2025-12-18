@@ -48,21 +48,7 @@ struct SignInWithAppleView: View {
 
   private func handleSignUpWithApple() async {
     do {
-      let credential = try await SignInWithAppleHelper.getAppleIdCredential(
-        requestedScopes: [.email, .fullName]
-      )
-
-      guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-        dump("Unable to retrieve the Apple identity token.")
-        return
-      }
-
-      _ = try await clerk.auth.signUpWithIdToken(
-        idToken,
-        provider: .apple,
-        firstName: credential.fullName?.givenName,
-        lastName: credential.fullName?.familyName
-      )
+      try await clerk.auth.signInWithApple()
       dump(clerk.session)
     } catch {
       dump(error)
