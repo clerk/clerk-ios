@@ -9,15 +9,29 @@
 /* Begin PBXBuildFile section */
 		8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
 		8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
+		8FATLANTIS001E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS002E3A648E00831B13 /* Atlantis */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8FC2FE082E3A5C32001E5953 /* Quickstart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quickstart.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8FQUICKSTART001E3A648E00831B13 /* Exceptions for "Quickstart" folder in "Quickstart" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8FC2FE072E3A5C32001E5953 /* Quickstart */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8FC2FE0A2E3A5C32001E5953 /* Quickstart */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8FQUICKSTART001E3A648E00831B13 /* Exceptions for "Quickstart" folder in "Quickstart" target */,
+			);
 			path = Quickstart;
 			sourceTree = "<group>";
 		};
@@ -30,6 +44,7 @@
 			files = (
 				8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */,
 				8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */,
+				8FATLANTIS001E3A648E00831B13 /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +89,7 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* ClerkKitUI */,
 				8F692CBF2E3D008D00E6E7ED /* ClerkKit */,
+				8FATLANTIS002E3A648E00831B13 /* Atlantis */,
 			);
 			productName = Quickstart;
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
@@ -87,7 +103,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					8FC2FE072E3A5C32001E5953 = {
 						CreatedOnToolsVersion = 26.0;
@@ -104,6 +120,7 @@
 			mainGroup = 8FC2FDFF2E3A5C32001E5953;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				8FATLANTIS003E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE092E3A5C32001E5953 /* Products */;
@@ -195,6 +212,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -252,6 +270,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -268,6 +287,7 @@
 				DEVELOPMENT_TEAM = L8SD6SB282;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Quickstart/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,6 +321,7 @@
 				DEVELOPMENT_TEAM = L8SD6SB282;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Quickstart/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -347,6 +368,17 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8FATLANTIS003E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		8F692CBF2E3D008D00E6E7ED /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -355,6 +387,11 @@
 		8F9023512E3A648E00831B13 /* ClerkKitUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkKitUI;
+		};
+		8FATLANTIS002E3A648E00831B13 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FATLANTIS003E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

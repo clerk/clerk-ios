@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		8F000001E3A648E00831B13 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F000002E3A648E00831B13 /* ClerkKit */; };
 		8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */; };
+		8FATLANTIS004E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS005E3A648E00831B13 /* Atlantis */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			files = (
 				8F000001E3A648E00831B13 /* ClerkKit in Frameworks */,
 				8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */,
+				8FATLANTIS004E3A648E00831B13 /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 			packageProductDependencies = (
 				8F000002E3A648E00831B13 /* ClerkKit */,
 				8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */,
+				8FATLANTIS005E3A648E00831B13 /* Atlantis */,
 			);
 			productName = AirbnbClone;
 			productReference = 8F000003E3A5C32001E5953 /* AirbnbClone.app */;
@@ -100,7 +103,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					8F000008E3A5C32001E5953 = {
 						CreatedOnToolsVersion = 26.0;
@@ -118,6 +121,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8F3946202EF0B22F00BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
+				8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8F000007E3A5C32001E5953 /* Products */;
@@ -209,6 +213,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -266,6 +271,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -381,6 +387,14 @@
 				minimumVersion = 4.2.1;
 			};
 		};
+		8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -392,6 +406,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8F3946202EF0B22F00BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
 			productName = PhoneNumberKit;
+		};
+		8FATLANTIS005E3A648E00831B13 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
