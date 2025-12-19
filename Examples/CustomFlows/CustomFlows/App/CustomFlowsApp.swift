@@ -11,13 +11,14 @@ import SwiftUI
 @main
 struct CustomFlowsApp: App {
   init() {
-    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+    Clerk.configure(publishableKey: "pk_test_YW11c2luZy1iYXJuYWNsZS0yNi5jbGVyay5hY2NvdW50cy5kZXYk")
   }
 
   var body: some Scene {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
+        .atlantisProxy()
     }
   }
 }

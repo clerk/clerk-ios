@@ -26,6 +26,7 @@ struct WatchExampleAppWatchApp: App {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
+        .atlantisProxy()
     }
   }
 }

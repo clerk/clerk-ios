@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3599FB08D73F41D3A43DAC80 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = E6971758A22B49D086A5B33F /* ClerkKit */; };
+		E6ATLANTIS001A22B49D086A5B33F /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = E6ATLANTIS002A22B49D086A5B33F /* Atlantis */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +42,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3599FB08D73F41D3A43DAC80 /* ClerkKit in Frameworks */,
+				E6ATLANTIS001A22B49D086A5B33F /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +86,7 @@
 			name = CustomFlows;
 			packageProductDependencies = (
 				E6971758A22B49D086A5B33F /* ClerkKit */,
+				E6ATLANTIS002A22B49D086A5B33F /* Atlantis */,
 			);
 			productName = CustomFlows;
 			productReference = 7E216999C6384977B268D666 /* CustomFlows.app */;
@@ -97,7 +100,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					1D673AB985BB4DB7B157A437 = {
 						CreatedOnToolsVersion = 26.0;
@@ -114,6 +117,7 @@
 			mainGroup = 5A0BB47F941740D5986BFE00;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				E6ATLANTIS003A22B49D086A5B33F /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D942975F92244884B5AEA971 /* Products */;
@@ -237,6 +241,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -340,6 +345,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -368,10 +374,26 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		E6ATLANTIS003A22B49D086A5B33F /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		E6971758A22B49D086A5B33F /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkKit;
+		};
+		E6ATLANTIS002A22B49D086A5B33F /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6ATLANTIS003A22B49D086A5B33F /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
