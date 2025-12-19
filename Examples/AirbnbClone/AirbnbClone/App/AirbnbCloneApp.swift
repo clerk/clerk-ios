@@ -11,7 +11,7 @@ import SwiftUI
 @main
 struct AirbnbCloneApp: App {
   init() {
-    Clerk.configure(publishableKey: "pk_test_dGFsZW50ZWQta3JpbGwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA")
+    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
   }
 
   var body: some Scene {
