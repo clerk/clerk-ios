@@ -294,7 +294,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.verifyCode("123456", type: .email)
+    try await signUp.verifyEmailCode("123456")
     #expect(requestHandled.value)
   }
 
@@ -319,7 +319,7 @@ struct SignUpTests {
     }
     mock.register()
 
-    try await signUp.verifyCode("654321", type: .phone)
+    try await signUp.verifyPhoneCode("654321")
     #expect(requestHandled.value)
   }
 

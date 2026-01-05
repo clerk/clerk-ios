@@ -161,7 +161,7 @@ struct EmailCodeSignUpView: View {
   private func verify(code: String) async {
     do {
       guard let inProgressSignUp = clerk.client?.signUp else { return }
-      let signUp = try await inProgressSignUp.verifyCode(code, type: .email)
+      let signUp = try await inProgressSignUp.verifyEmailCode(code)
 
       switch signUp.status {
       case .complete:

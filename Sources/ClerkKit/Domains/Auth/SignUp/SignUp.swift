@@ -191,18 +191,29 @@ public extension SignUp {
     )
   }
 
-  /// Verifies the code entered by the user.
+  /// Verifies the email code entered by the user.
   ///
-  /// - Parameters:
-  ///   - code: The verification code entered by the user.
-  ///   - type: The type of verification (`.email` or `.phone`).
+  /// - Parameter code: The verification code entered by the user.
   /// - Returns: The updated `SignUp` object reflecting the verification result.
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
-  func verifyCode(_ code: String, type: VerificationType) async throws -> SignUp {
+  func verifyEmailCode(_ code: String) async throws -> SignUp {
     try await signUpService.attemptVerification(
       signUpId: id,
-      params: .init(strategy: type.strategy, code: code)
+      params: .init(strategy: .emailCode, code: code)
+    )
+  }
+
+  /// Verifies the phone code entered by the user.
+  ///
+  /// - Parameter code: The verification code entered by the user.
+  /// - Returns: The updated `SignUp` object reflecting the verification result.
+  /// - Throws: An error if verification fails.
+  @discardableResult @MainActor
+  func verifyPhoneCode(_ code: String) async throws -> SignUp {
+    try await signUpService.attemptVerification(
+      signUpId: id,
+      params: .init(strategy: .phoneCode, code: code)
     )
   }
 }

@@ -253,9 +253,9 @@ extension SignUpCodeView {
     do {
       switch field {
       case .email:
-        signUp = try await signUp.verifyCode(code, type: .email)
+        signUp = try await signUp.verifyEmailCode(code)
       case .phone:
-        signUp = try await signUp.verifyCode(code, type: .phone)
+        signUp = try await signUp.verifyPhoneCode(code)
       }
 
       otpFieldIsFocused = false
