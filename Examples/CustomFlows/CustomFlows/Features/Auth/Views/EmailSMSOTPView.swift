@@ -183,9 +183,9 @@ struct EmailPhoneOTPSignUpView: View {
     do {
       guard let inProgressSignUp = clerk.client?.signUp else { return }
       let signUp: SignUp = if useEmail {
-        try await inProgressSignUp.verifyCode(code, type: .email)
+        try await inProgressSignUp.verifyEmailCode(code)
       } else {
-        try await inProgressSignUp.verifyCode(code, type: .phone)
+        try await inProgressSignUp.verifyPhoneCode(code)
       }
 
       switch signUp.status {

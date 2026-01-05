@@ -156,9 +156,9 @@ struct OTPVerificationView: View {
         if case .signUp = loginMode, let signUp {
           switch loginMode.method {
           case .email:
-            try await signUp.verifyCode(code, type: .email)
+            try await signUp.verifyEmailCode(code)
           case .phone:
-            try await signUp.verifyCode(code, type: .phone)
+            try await signUp.verifyPhoneCode(code)
           }
         } else if let signIn {
           try await signIn.verifyCode(code)

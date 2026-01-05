@@ -54,7 +54,7 @@ struct AuthAndClientIntegrationTests {
     let preparedSignUp = try await signUp.sendEmailCode()
 
     // Step 3: Attempt verification with the test verification code
-    try await preparedSignUp.verifyCode(Self.testVerificationCode, type: .email)
+    try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
 
     // Sign out so that SignIn can sign in with the new account
     try await Clerk.shared.auth.signOut()
