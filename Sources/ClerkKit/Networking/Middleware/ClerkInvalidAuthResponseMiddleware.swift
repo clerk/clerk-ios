@@ -27,7 +27,7 @@ struct ClerkInvalidAuthResponseMiddleware: NetworkResponseMiddleware {
     }
 
     Task {
-      try await Client.get()
+      try await Clerk.shared.refreshClient()
     }
   }
 }

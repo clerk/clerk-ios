@@ -9,10 +9,10 @@ import Foundation
 
 /// Mock implementation of `EnvironmentServiceProtocol` for testing and previews.
 ///
-/// Allows customizing the behavior of `get()` through a handler closure.
+/// Allows customizing the behavior of `clerk.refreshEnvironment()` through a handler closure.
 /// Returns default mock values if handler is not provided.
 public final class MockEnvironmentService: EnvironmentServiceProtocol {
-  /// Custom handler for the `get()` method.
+  /// Custom handler for the `get()` method used by `clerk.refreshEnvironment()`.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.

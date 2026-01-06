@@ -113,7 +113,7 @@ public extension ExternalAccount {
 
     _ = try await authSession.start()
 
-    try await Client.get()
+    try await Clerk.shared.refreshClient()
     guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
       throw ClerkClientError(message: "Something went wrong. Please try again.")
     }

@@ -30,7 +30,7 @@ struct ClientTests {
     }
     mock.register()
 
-    _ = try await Client.get()
+    _ = try await Clerk.shared.refreshClient()
     #expect(requestHandled.value)
   }
 }

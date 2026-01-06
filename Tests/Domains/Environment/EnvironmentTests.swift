@@ -30,7 +30,7 @@ struct EnvironmentTests {
     }
     mock.register()
 
-    _ = try await Clerk.Environment.get()
+    _ = try await Clerk.shared.refreshEnvironment()
     #expect(requestHandled.value)
   }
 }

@@ -9,10 +9,10 @@ import Foundation
 
 /// Mock implementation of `ClientServiceProtocol` for testing and previews.
 ///
-/// Allows customizing the behavior of `get()` through a handler closure.
+/// Allows customizing the behavior of `clerk.refreshClient()` through a handler closure.
 /// Returns default mock values if handler is not provided.
 public final class MockClientService: ClientServiceProtocol {
-  /// Custom handler for the `get()` method.
+  /// Custom handler for the `get()` method used by `clerk.refreshClient()`.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.

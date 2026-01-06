@@ -29,14 +29,6 @@ public extension Clerk {
 }
 
 extension Clerk.Environment {
-  @MainActor
-  private static var environmentService: any EnvironmentServiceProtocol { Clerk.shared.dependencies.environmentService }
-
-  @MainActor
-  public static func get() async throws -> Clerk.Environment {
-    try await environmentService.get()
-  }
-
   /// Creates an environment from a JSON file.
   ///
   /// This initializer allows you to create a mock environment from a JSON file containing a real API response,
