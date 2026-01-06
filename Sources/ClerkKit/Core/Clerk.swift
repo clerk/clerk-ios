@@ -145,6 +145,11 @@ public final class Clerk {
   var dependencies: any Dependencies
 
   /// Backing storage for the `auth` property.
+  ///
+  /// This uses lazy initialization rather than a pure computed property because `Auth` contains
+  /// an `EventEmitter` that must maintain stable identity across accesses. If `Auth` were recreated
+  /// on every access, subscribers to `auth.events` would lose their subscriptions.
+  ///
   /// Can be reset to `nil` to force reinitialization with new services after reconfiguration.
   @ObservationIgnored
   package var _auth: Auth?
