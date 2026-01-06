@@ -163,34 +163,6 @@ public final class Auth {
   }
   #endif
 
-  /// Signs in with the account portal.
-  ///
-  /// - Parameter prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the account portal flow fails.
-  #if !os(tvOS) && !os(watchOS)
-  @discardableResult
-  public func signInWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
-      strategy: FactorStrategy(rawValue: "account_portal"),
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
-  }
-  #endif
-
   /// Signs in with Enterprise SSO using an email address.
   ///
   /// - Parameters:
@@ -327,36 +299,6 @@ public final class Auth {
   }
   #endif
 
-  /// Signs up with the account portal.
-  ///
-  /// - Parameter prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the account portal flow fails.
-  #if !os(tvOS) && !os(watchOS)
-  @discardableResult
-  public func signUpWithAccountPortal(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
-      strategy: FactorStrategy(rawValue: "account_portal"),
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard
-      let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-      let redirectUrl = verification.externalVerificationRedirectUrl,
-      let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
-  }
-  #endif
-
   /// Signs up with Enterprise SSO using an email address.
   ///
   /// - Parameters:
@@ -450,27 +392,6 @@ public final class Auth {
   @discardableResult
   public func revokeSession(_ session: Session) async throws -> Session {
     try await sessionService.revoke(sessionId: session.id)
-  }
-
-  // MARK: - Deep Link Handling
-
-  /// Handles OAuth/SSO deep link callbacks.
-  ///
-  /// Call this method from your app's URL handler (e.g., `onOpenURL` in SwiftUI or `SceneDelegate`).
-  ///
-  /// - Parameter url: The callback URL from the OAuth provider or SSO flow.
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if handling the callback fails.
-  @discardableResult
-  public func handle(_ url: URL) async throws -> TransferFlowResult? {
-    // Check if this is an OAuth callback
-    if ExternalAuthUtils.nonceFromCallbackUrl(url: url) != nil {
-      // Try to find an active sign-in or sign-up with this nonce
-      // For now, we'll need to track active auth attempts or query by nonce
-      // This is a simplified implementation - may need enhancement
-      return nil
-    }
-    return nil
   }
 
   // MARK: - Events

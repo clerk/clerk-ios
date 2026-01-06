@@ -236,7 +236,11 @@ public extension SignIn {
   @discardableResult
   @MainActor
   func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    try await sendMfaCode(phoneNumberId: phoneNumberId)
+    let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
+    return try await signInService.prepareSecondFactor(
+      signInId: id,
+      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
+    )
   }
 
   /// Sends an MFA code to the email address.
@@ -247,32 +251,6 @@ public extension SignIn {
   @discardableResult
   @MainActor
   func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    try await sendMfaCode(emailAddressId: emailAddressId)
-  }
-
-  /// Sends an MFA code to the specified phone number.
-  ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying second factor.
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  func sendMfaCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareSecondFactor(
-      signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
-  }
-
-  /// Sends an MFA code to the specified email address.
-  ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying second factor.
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  func sendMfaCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
     return try await signInService.prepareSecondFactor(
       signInId: id,
@@ -449,7 +427,24 @@ public extension SignIn {
       params: .init(strategy: .passkey, publicKeyCredential: credential)
     )
   }
+  #endif
+}
 
+extension SignIn {
+  // MARK: - Internal Helpers
+
+  /// Reloads the current sign-in state from the server.
+  ///
+  /// - Parameter rotatingTokenNonce: Optional rotating token nonce for reloading.
+  /// - Returns: An updated `SignIn` object with the latest state.
+  /// - Throws: An error if reloading fails.
+  @discardableResult
+  @MainActor
+  func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
+    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+  }
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   /// Gets the credential for passkey authentication.
   ///
   /// - Parameters:
@@ -515,23 +510,6 @@ public extension SignIn {
     ) ?? ""
   }
   #endif
-
-  // MARK: - Reload
-
-  /// Reloads the current sign-in state from the server.
-  ///
-  /// - Parameter rotatingTokenNonce: Optional rotating token nonce for reloading.
-  /// - Returns: An updated `SignIn` object with the latest state.
-  /// - Throws: An error if reloading fails.
-  @discardableResult
-  @MainActor
-  func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
-  }
-}
-
-extension SignIn {
-  // MARK: - Internal Helpers
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
