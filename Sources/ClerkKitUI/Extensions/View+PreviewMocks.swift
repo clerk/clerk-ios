@@ -53,7 +53,7 @@ package extension View {
 
   /// Preview with custom mock service behaviors.
   ///
-  /// This modifier allows you to configure mock services (like `Client.get()`) to have custom behaviors
+  /// This modifier allows you to configure mock services (like `refreshClient()`) to have custom behaviors
   /// such as delays or custom return values. This is useful for testing loading states and async behavior.
   ///
   /// - Parameter configureServices: A closure that receives a `MockBuilder` for configuring mock services.

@@ -96,7 +96,11 @@ struct PhoneLoginView: View {
       }
     }
   }
+}
 
+// MARK: - Actions
+
+extension PhoneLoginView {
   private func updatePhoneNumber(from input: String) {
     let rawDigits = String(input.filter(\.isWholeNumber).prefix(15))
     let formattedDisplay = partialFormatter.formatPartial(rawDigits)

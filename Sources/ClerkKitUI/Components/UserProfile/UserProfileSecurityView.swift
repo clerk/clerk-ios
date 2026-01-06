@@ -79,7 +79,7 @@ struct UserProfileSecurityView: View {
       _ = try? await user?.getSessions()
     }
     .task {
-      _ = try? await Client.get()
+      _ = try? await clerk.refreshClient()
     }
     .sheet(item: $sharedState.presentedAddMfaType) {
       $0.view

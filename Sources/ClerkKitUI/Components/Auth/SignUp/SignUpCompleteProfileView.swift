@@ -17,82 +17,11 @@ struct SignUpCompleteProfileView: View {
 
   @State private var error: Error?
   @State private var safariSheetItem: SafariSheetItem?
-
   @FocusState private var focused: Field?
 
   enum Field: CaseIterable {
     case firstName
     case lastName
-  }
-
-  func fieldIsMissing(_ field: Field) -> Bool {
-    guard let signUp else { return false }
-    switch field {
-    case .firstName:
-      return signUp.missingFields.contains(.firstName)
-    case .lastName:
-      return signUp.missingFields.contains(.lastName)
-    }
-  }
-
-  // Get the text for each field
-  func textForField(_ field: Field) -> String {
-    switch field {
-    case .firstName:
-      authState.signUpFirstName
-    case .lastName:
-      authState.signUpLastName
-    }
-  }
-
-  // Find the first missing field that's empty
-  func firstEmptyMissingField() -> Field? {
-    Field.allCases.first { field in
-      fieldIsMissing(field) && textForField(field).isEmptyTrimmed
-    }
-  }
-
-  // Get the first missing field (fallback)
-  func firstMissingField() -> Field? {
-    Field.allCases.first { fieldIsMissing($0) }
-  }
-
-  // Get the last missing field
-  func lastMissingField() -> Field? {
-    Field.allCases.last { fieldIsMissing($0) }
-  }
-
-  // Determine the submit label for each field
-  func submitLabelFor(_ field: Field) -> SubmitLabel {
-    field == lastMissingField() ? .done : .next
-  }
-
-  func nextMissingField(after currentField: Field) -> Field? {
-    guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
-      return nil
-    }
-
-    let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
-    return fieldsAfterCurrent.first { fieldIsMissing($0) }
-  }
-
-  func handleReturnKey() {
-    guard let currentField = focused else { return }
-
-    if let nextField = nextMissingField(after: currentField) {
-      focused = nextField
-    } else {
-      focused = nil
-    }
-  }
-
-  // Dynamically update focus when text changes
-  func updateFocusIfNeeded() {
-    // Only update focus if we're not currently focused on a field
-    // or if the current field is now filled and there's an empty field to focus on
-    if focused == nil, let firstEmpty = firstEmptyMissingField() {
-      focused = firstEmpty
-    }
   }
 
   var signUp: SignUp? {
@@ -214,6 +143,78 @@ struct SignUpCompleteProfileView: View {
     }
   }
 }
+
+// MARK: - Field Helpers
+
+extension SignUpCompleteProfileView {
+  func fieldIsMissing(_ field: Field) -> Bool {
+    guard let signUp else { return false }
+    switch field {
+    case .firstName:
+      return signUp.missingFields.contains(.firstName)
+    case .lastName:
+      return signUp.missingFields.contains(.lastName)
+    }
+  }
+
+  func textForField(_ field: Field) -> String {
+    switch field {
+    case .firstName:
+      authState.signUpFirstName
+    case .lastName:
+      authState.signUpLastName
+    }
+  }
+
+  func firstEmptyMissingField() -> Field? {
+    Field.allCases.first { field in
+      fieldIsMissing(field) && textForField(field).isEmptyTrimmed
+    }
+  }
+
+  func firstMissingField() -> Field? {
+    Field.allCases.first { fieldIsMissing($0) }
+  }
+
+  func lastMissingField() -> Field? {
+    Field.allCases.last { fieldIsMissing($0) }
+  }
+
+  func nextMissingField(after currentField: Field) -> Field? {
+    guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
+      return nil
+    }
+
+    let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
+    return fieldsAfterCurrent.first { fieldIsMissing($0) }
+  }
+}
+
+// MARK: - Validation
+
+extension SignUpCompleteProfileView {
+  func submitLabelFor(_ field: Field) -> SubmitLabel {
+    field == lastMissingField() ? .done : .next
+  }
+
+  func handleReturnKey() {
+    guard let currentField = focused else { return }
+
+    if let nextField = nextMissingField(after: currentField) {
+      focused = nextField
+    } else {
+      focused = nil
+    }
+  }
+
+  func updateFocusIfNeeded() {
+    if focused == nil, let firstEmpty = firstEmptyMissingField() {
+      focused = firstEmpty
+    }
+  }
+}
+
+// MARK: - Actions
 
 extension SignUpCompleteProfileView {
   func updateSignUp() async {

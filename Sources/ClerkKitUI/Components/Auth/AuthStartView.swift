@@ -21,28 +21,6 @@ struct AuthStartView: View {
   @State private var fieldError: Error?
   @State private var generalError: Error?
 
-  var titleString: LocalizedStringKey {
-    switch authState.mode {
-    case .signIn, .signInOrUp:
-      if let appName = clerk.environment?.displayConfig.applicationName {
-        "Continue to \(appName)"
-      } else {
-        "Continue"
-      }
-    case .signUp:
-      "Create your account"
-    }
-  }
-
-  var subtitleString: LocalizedStringKey {
-    switch authState.mode {
-    case .signIn, .signInOrUp:
-      "Welcome! Sign in to continue"
-    case .signUp:
-      "Welcome! Please fill in the details to get started."
-    }
-  }
-
   var emailIsEnabled: Bool {
     clerk.environment?.enabledFirstFactorAttributes
       .contains("email_address") ?? false
@@ -66,20 +44,8 @@ struct AuthStartView: View {
     (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled
   }
 
-  var identifierSwitcherString: LocalizedStringKey {
-    if phoneNumberFieldIsActive {
-      if emailIsEnabled, usernameIsEnabled {
-        "Use email address or username"
-      } else if emailIsEnabled {
-        "Use email address"
-      } else if usernameIsEnabled {
-        "Use username"
-      } else {
-        ""
-      }
-    } else {
-      "Use phone number"
-    }
+  var showOrDivider: Bool {
+    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
   }
 
   var shouldStartOnPhoneNumber: Bool {
@@ -94,21 +60,6 @@ struct AuthStartView: View {
     }
 
     return false
-  }
-
-  var emailOrUsernamePlaceholder: LocalizedStringKey {
-    switch (emailIsEnabled, usernameIsEnabled) {
-    case (true, false):
-      "Enter your email"
-    case (false, true):
-      "Enter your username"
-    default:
-      "Enter your email or username"
-    }
-  }
-
-  var showOrDivider: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
   }
 
   var continueIsDisabled: Bool {
@@ -128,88 +79,24 @@ struct AuthStartView: View {
           .frame(maxHeight: 44)
           .padding(.bottom, 24)
 
-        VStack(spacing: 8) {
-          HeaderView(style: .title, text: titleString)
-          HeaderView(style: .subtitle, text: subtitleString)
-        }
-        .padding(.bottom, 32)
+        headerSection
 
         VStack(spacing: 24) {
           if showIdentifierField {
-            VStack(spacing: 4) {
-              if phoneNumberFieldIsActive, phoneNumberIsEnabled {
-                ClerkPhoneNumberField(
-                  "Enter your phone number",
-                  text: $authState.authStartPhoneNumber,
-                  fieldState: fieldError != nil ? .error : .default
-                )
-                .transition(.blurReplace)
-              } else {
-                ClerkTextField(
-                  emailOrUsernamePlaceholder,
-                  text: $authState.authStartIdentifier,
-                  fieldState: fieldError != nil ? .error : .default
-                )
-                .textContentType(.username)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .transition(.blurReplace)
-              }
+            identifierInputSection
 
-              if let fieldError {
-                ErrorText(error: fieldError, alignment: .leading)
-                  .font(theme.fonts.subheadline)
-                  .transition(.blurReplace.animation(.default.speed(2)))
-                  .id(fieldError.localizedDescription)
-              }
-            }
+            continueButton
 
-            AsyncButton {
-              await startAuth()
-            } label: { isRunning in
-              HStack(spacing: 4) {
-                Text("Continue", bundle: .module)
-                Image("icon-triangle-right", bundle: .module)
-                  .foregroundStyle(theme.colors.primaryForeground)
-                  .opacity(0.6)
-              }
-              .frame(maxWidth: .infinity)
-              .overlayProgressView(isActive: isRunning) {
-                SpinnerView(color: theme.colors.primaryForeground)
-              }
+            if showIdentifierSwitcher {
+              identifierSwitcherButton
             }
-            .buttonStyle(.primary())
-            .disabled(continueIsDisabled)
-            .simultaneousGesture(TapGesture())
-          }
-
-          if showIdentifierSwitcher {
-            Button {
-              withAnimation(.default.speed(2)) {
-                phoneNumberFieldIsActive.toggle()
-              }
-            } label: {
-              Text(identifierSwitcherString, bundle: .module)
-                .id(phoneNumberFieldIsActive)
-            }
-            .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
-            .simultaneousGesture(TapGesture())
           }
 
           if showOrDivider {
             TextDivider(string: "or")
           }
 
-          SocialButtonLayout {
-            ForEach(clerk.environment?.authenticatableSocialProviders ?? []) { provider in
-              SocialButton(provider: provider) { result in
-                handleTransferFlowResult(result)
-              } onError: { error in
-                generalError = error
-              }
-              .simultaneousGesture(TapGesture())
-            }
-          }
+          socialButtonsSection
         }
         .padding(.bottom, 32)
 
@@ -230,6 +117,153 @@ struct AuthStartView: View {
     }
   }
 }
+
+// MARK: - Subviews
+
+extension AuthStartView {
+  private var headerSection: some View {
+    VStack(spacing: 8) {
+      HeaderView(style: .title, text: titleString)
+      HeaderView(style: .subtitle, text: subtitleString)
+    }
+    .padding(.bottom, 32)
+  }
+
+  private var identifierInputSection: some View {
+    @Bindable var authState = authState
+
+    return VStack(spacing: 4) {
+      if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+        ClerkPhoneNumberField(
+          "Enter your phone number",
+          text: $authState.authStartPhoneNumber,
+          fieldState: fieldError != nil ? .error : .default
+        )
+        .transition(.blurReplace)
+      } else {
+        ClerkTextField(
+          emailOrUsernamePlaceholder,
+          text: $authState.authStartIdentifier,
+          fieldState: fieldError != nil ? .error : .default
+        )
+        .textContentType(.username)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
+        .transition(.blurReplace)
+      }
+
+      if let fieldError {
+        ErrorText(error: fieldError, alignment: .leading)
+          .font(theme.fonts.subheadline)
+          .transition(.blurReplace.animation(.default.speed(2)))
+          .id(fieldError.localizedDescription)
+      }
+    }
+  }
+
+  private var continueButton: some View {
+    @Bindable var authState = authState
+
+    return AsyncButton {
+      await startAuth()
+    } label: { isRunning in
+      HStack(spacing: 4) {
+        Text("Continue", bundle: .module)
+        Image("icon-triangle-right", bundle: .module)
+          .foregroundStyle(theme.colors.primaryForeground)
+          .opacity(0.6)
+      }
+      .frame(maxWidth: .infinity)
+      .overlayProgressView(isActive: isRunning) {
+        SpinnerView(color: theme.colors.primaryForeground)
+      }
+    }
+    .buttonStyle(.primary())
+    .disabled(continueIsDisabled)
+    .simultaneousGesture(TapGesture())
+  }
+
+  private var identifierSwitcherButton: some View {
+    Button {
+      withAnimation(.default.speed(2)) {
+        phoneNumberFieldIsActive.toggle()
+      }
+    } label: {
+      Text(identifierSwitcherString, bundle: .module)
+        .id(phoneNumberFieldIsActive)
+    }
+    .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
+    .simultaneousGesture(TapGesture())
+  }
+
+  private var socialButtonsSection: some View {
+    SocialButtonLayout {
+      ForEach(clerk.environment?.authenticatableSocialProviders ?? []) { provider in
+        SocialButton(provider: provider) { result in
+          handleTransferFlowResult(result)
+        } onError: { error in
+          generalError = error
+        }
+        .simultaneousGesture(TapGesture())
+      }
+    }
+  }
+}
+
+// MARK: - Computed Properties
+
+extension AuthStartView {
+  private var titleString: LocalizedStringKey {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      if let appName = clerk.environment?.displayConfig.applicationName {
+        "Continue to \(appName)"
+      } else {
+        "Continue"
+      }
+    case .signUp:
+      "Create your account"
+    }
+  }
+
+  private var subtitleString: LocalizedStringKey {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      "Welcome! Sign in to continue"
+    case .signUp:
+      "Welcome! Please fill in the details to get started."
+    }
+  }
+
+  private var identifierSwitcherString: LocalizedStringKey {
+    if phoneNumberFieldIsActive {
+      if emailIsEnabled, usernameIsEnabled {
+        "Use email address or username"
+      } else if emailIsEnabled {
+        "Use email address"
+      } else if usernameIsEnabled {
+        "Use username"
+      } else {
+        ""
+      }
+    } else {
+      "Use phone number"
+    }
+  }
+
+  private var emailOrUsernamePlaceholder: LocalizedStringKey {
+    switch (emailIsEnabled, usernameIsEnabled) {
+    case (true, false):
+      "Enter your email"
+    case (false, true):
+      "Enter your username"
+    default:
+      "Enter your email or username"
+    }
+  }
+}
+
+// MARK: - Actions
 
 extension AuthStartView {
   func startAuth() async {

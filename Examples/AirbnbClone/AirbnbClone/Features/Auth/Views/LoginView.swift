@@ -99,7 +99,11 @@ struct LoginView: View {
     }
     .environment(\.otpLoginMode, $otpLoginMode)
   }
+}
 
+// MARK: - Actions
+
+extension LoginView {
   private func toggleLoginMode() {
     dismissKeyboard()
     withAnimation {
