@@ -50,14 +50,3 @@ public struct Client: Codable, Sendable, Equatable {
     self.updatedAt = updatedAt
   }
 }
-
-extension Client {
-  @MainActor
-  private static var clientService: any ClientServiceProtocol { Clerk.shared.dependencies.clientService }
-
-  /// Retrieves the current client.
-  @discardableResult @MainActor
-  public static func get() async throws -> Client? {
-    try await clientService.get()
-  }
-}

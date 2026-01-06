@@ -42,7 +42,7 @@ import Foundation
 /// ```
 @MainActor
 package final class MockBuilder {
-  /// Mock client service for customizing `Client.get()` behavior.
+  /// Mock client service for customizing `clerk.refreshClient()` behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var clientService: MockClientService = .init()
 
@@ -70,7 +70,7 @@ package final class MockBuilder {
   /// You can modify handler properties directly or replace the entire service.
   package var organizationService: MockOrganizationService = .init()
 
-  /// Mock environment service for customizing `Environment.get()` behavior.
+  /// Mock environment service for customizing `clerk.refreshEnvironment()` behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var environmentService: MockEnvironmentService = .init()
 

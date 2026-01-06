@@ -229,12 +229,13 @@ public extension Clerk {
     // Fire and forget: fetch fresh client and environment from API
     taskCoordinator?.task { @MainActor [weak self] in
       do {
-        async let client = Client.get()
-        async let environment = Environment.get()
+        guard let self else { return }
+        async let client = refreshClient()
+        async let environment = refreshEnvironment()
 
         let env = try await environment
         _ = try await client
-        self?.attestDeviceIfNeeded(environment: env)
+        attestDeviceIfNeeded(environment: env)
       } catch {
         ClerkLogger.logError(error, message: "Failed to load client or environment")
       }
@@ -279,6 +280,17 @@ public extension Clerk {
     _shared = clerk
     return clerk
   }
+
+  /// Refreshes the current client from the API.
+  @discardableResult
+  func refreshClient() async throws -> Client? {
+    try await dependencies.clientService.get()
+  }
+
+  /// Refreshes the current environment from the API.
+  func refreshEnvironment() async throws -> Environment {
+    try await dependencies.environmentService.get()
+  }
 }
 
 extension Clerk: CacheCoordinator {
@@ -306,17 +318,19 @@ extension Clerk: LifecycleEventHandling {
     watchConnectivityCoordinator?.sync()
 
     // Refresh client and environment concurrently
-    taskCoordinator?.task {
+    taskCoordinator?.task { [weak self] in
+      guard let self else { return }
       do {
-        try await Client.get()
+        try await refreshClient()
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
     }
 
-    taskCoordinator?.task {
+    taskCoordinator?.task { [weak self] in
+      guard let self else { return }
       do {
-        _ = try await Environment.get()
+        _ = try await refreshEnvironment()
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh environment on foreground")
       }
