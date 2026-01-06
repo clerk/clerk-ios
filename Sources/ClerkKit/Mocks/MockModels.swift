@@ -264,6 +264,30 @@ public extension Verification {
     )
   }
 
+  static var mockTotpUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: .totp,
+      attempts: nil,
+      expireAt: nil,
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+
+  static var mockBackupCodeUnverifiedVerification: Verification {
+    Verification(
+      status: .unverified,
+      strategy: .backupCode,
+      attempts: nil,
+      expireAt: nil,
+      error: nil,
+      externalVerificationRedirectUrl: nil,
+      nonce: nil
+    )
+  }
+
   static var mockExternalAccountVerifiedVerification: Verification {
     Verification(
       status: .verified,
