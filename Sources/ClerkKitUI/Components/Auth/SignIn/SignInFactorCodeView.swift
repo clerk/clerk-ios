@@ -5,8 +5,6 @@
 //  Created by Mike Pitre on 4/21/25.
 //
 
-// swiftlint:disable file_length
-
 #if os(iOS)
 
 import ClerkKit
@@ -17,6 +15,9 @@ struct SignInFactorCodeView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthState.self) private var authState
 
+  let factor: Factor
+  var mode: FactorMode = .firstFactor
+
   @State private var code = ""
   @State private var error: Error?
   @State private var remainingSeconds: Int = 30
@@ -25,13 +26,249 @@ struct SignInFactorCodeView: View {
   @State private var otpFieldState: OTPField.FieldState = .default
   @FocusState private var otpFieldIsFocused: Bool
 
-  let factor: Factor
-  var mode: FactorMode = .firstFactor
-
   var signIn: SignIn? {
     clerk.client?.signIn
   }
 
+  var showResend: Bool {
+    switch factor.strategy {
+    case .totp:
+      false
+    default:
+      verificationState.showResend
+    }
+  }
+
+  var showUseAnotherMethod: Bool {
+    switch factor.strategy {
+    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
+      false
+    default:
+      true
+    }
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 0) {
+        headerSection
+
+        if mode == .clientTrust {
+          clientTrustWarning
+        }
+
+        inputSection
+
+        SecuredByClerkView()
+          .padding(.top, 32)
+      }
+      .padding(16)
+    }
+    .scrollDismissesKeyboard(.interactively)
+    .clerkErrorPresenting($error)
+    .background(theme.colors.background)
+    .taskOnce {
+      startTimer()
+      if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {
+        await prepare()
+      }
+    }
+  }
+}
+
+// MARK: - Subviews
+
+extension SignInFactorCodeView {
+  private var headerSection: some View {
+    VStack(spacing: 8) {
+      HeaderView(style: .title, text: title)
+      HeaderView(style: .subtitle, text: subtitleString)
+
+      if let identifier = factor.safeIdentifier {
+        Button {
+          authState.path = []
+        } label: {
+          IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
+        }
+        .buttonStyle(.secondary(config: .init(size: .small)))
+        .simultaneousGesture(TapGesture())
+      }
+    }
+    .padding(.bottom, 32)
+  }
+
+  private var clientTrustWarning: some View {
+    Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
+      .foregroundStyle(theme.colors.warning)
+      .font(theme.fonts.subheadline)
+      .multilineTextAlignment(.center)
+      .padding(.bottom, 32)
+  }
+
+  private var inputSection: some View {
+    VStack(spacing: 24) {
+      otpInputSection
+
+      verificationStatusView
+
+      if showResend {
+        resendSection
+      }
+
+      if showUseAnotherMethod {
+        useAnotherMethodButton
+      }
+    }
+  }
+
+  private var otpInputSection: some View {
+    OTPField(
+      code: $code,
+      fieldState: $otpFieldState,
+      isFocused: $otpFieldIsFocused
+    ) { _ in
+      await attempt()
+    }
+    .onAppear {
+      verificationState = .default
+      otpFieldIsFocused = true
+    }
+  }
+
+  private var verificationStatusView: some View {
+    Group {
+      switch verificationState {
+      case .verifying:
+        HStack(spacing: 4) {
+          SpinnerView()
+            .frame(width: 16, height: 16)
+          Text("Verifying...", bundle: .module)
+        }
+        .foregroundStyle(theme.colors.mutedForeground)
+      case .success:
+        HStack(spacing: 4) {
+          Image("icon-check-circle", bundle: .module)
+            .foregroundStyle(theme.colors.success)
+          Text("Success", bundle: .module)
+            .foregroundStyle(theme.colors.mutedForeground)
+        }
+      case let .error(error):
+        ErrorText(error: error)
+      default:
+        EmptyView()
+      }
+    }
+    .font(theme.fonts.subheadline)
+  }
+
+  private var resendSection: some View {
+    AsyncButton {
+      await prepare()
+    } label: { isRunning in
+      HStack(spacing: 2) {
+        Text("Didn't receive a code?", bundle: .module)
+        Text(resendString, bundle: .module)
+          .foregroundStyle(
+            remainingSeconds > 0
+              ? theme.colors.mutedForeground
+              : theme.colors.primary
+          )
+          .monospacedDigit()
+          .contentTransition(.numericText(countsDown: true))
+          .animation(.default, value: remainingSeconds)
+      }
+      .overlayProgressView(isActive: isRunning)
+      .frame(maxWidth: .infinity)
+    }
+    .buttonStyle(
+      .secondary(
+        config: .init(
+          emphasis: .none,
+          size: .small
+        )
+      )
+    )
+    .disabled(remainingSeconds > 0)
+    .simultaneousGesture(TapGesture())
+  }
+
+  private var useAnotherMethodButton: some View {
+    Button {
+      if mode.usesSecondFactorAPI {
+        authState.path.append(
+          AuthView.Destination.signInFactorTwoUseAnotherMethod(
+            currentFactor: factor
+          )
+        )
+      } else {
+        authState.path.append(
+          AuthView.Destination.signInFactorOneUseAnotherMethod(
+            currentFactor: factor
+          )
+        )
+      }
+    } label: {
+      Text("Use another method", bundle: .module)
+    }
+    .buttonStyle(
+      .primary(
+        config: .init(
+          emphasis: .none,
+          size: .small
+        )
+      )
+    )
+    .simultaneousGesture(TapGesture())
+  }
+}
+
+// MARK: - Computed Properties
+
+extension SignInFactorCodeView {
+  private var title: LocalizedStringKey {
+    switch factor.strategy {
+    case .emailCode:
+      "Check your email"
+    case .phoneCode:
+      "Check your phone"
+    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
+      "Reset password"
+    case .totp:
+      "Two-step verification"
+    default:
+      ""
+    }
+  }
+
+  private var subtitleString: LocalizedStringKey {
+    switch factor.strategy {
+    case .resetPasswordEmailCode:
+      "First, enter the code sent to your email address"
+    case .resetPasswordPhoneCode:
+      "First, enter the code sent to your phone"
+    case .totp:
+      "To continue, please enter the verification code generated by your authenticator app"
+    default:
+      if let appName = clerk.environment?.displayConfig.applicationName {
+        "to continue to \(appName)"
+      } else {
+        "to continue"
+      }
+    }
+  }
+
+  private var resendString: LocalizedStringKey {
+    if remainingSeconds > 0 {
+      "Resend (\(remainingSeconds))"
+    } else {
+      "Resend"
+    }
+  }
+}
+
+// MARK: - Enums
+
+extension SignInFactorCodeView {
   enum FactorMode {
     case firstFactor
     case secondFactor
@@ -62,210 +299,17 @@ struct SignInFactorCodeView: View {
       }
     }
   }
+}
 
-  var showResend: Bool {
-    switch factor.strategy {
-    case .totp:
-      false
-    default:
-      verificationState.showResend
-    }
-  }
+// MARK: - Helpers
 
-  var showUseAnotherMethod: Bool {
-    switch factor.strategy {
-    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-      false
-    default:
-      true
-    }
-  }
-
-  var title: LocalizedStringKey {
-    switch factor.strategy {
-    case .emailCode:
-      "Check your email"
-    case .phoneCode:
-      "Check your phone"
-    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-      "Reset password"
-    case .totp:
-      "Two-step verification"
-    default:
-      ""
-    }
-  }
-
-  var subtitleString: LocalizedStringKey {
-    switch factor.strategy {
-    case .resetPasswordEmailCode:
-      "First, enter the code sent to your email address"
-    case .resetPasswordPhoneCode:
-      "First, enter the code sent to your phone"
-    case .totp:
-      "To continue, please enter the verification code generated by your authenticator app"
-    default:
-      if let appName = clerk.environment?.displayConfig.applicationName {
-        "to continue to \(appName)"
-      } else {
-        "to continue"
-      }
-    }
-  }
-
-  var resendString: LocalizedStringKey {
-    if remainingSeconds > 0 {
-      "Resend (\(remainingSeconds))"
-    } else {
-      "Resend"
-    }
-  }
-
+extension SignInFactorCodeView {
   private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
     signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
   }
-
-  var body: some View {
-    ScrollView {
-      VStack(spacing: 0) {
-        VStack(spacing: 8) {
-          HeaderView(style: .title, text: title)
-          HeaderView(style: .subtitle, text: subtitleString)
-
-          if let identifier = factor.safeIdentifier {
-            Button {
-              authState.path = []
-            } label: {
-              IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
-            }
-            .buttonStyle(.secondary(config: .init(size: .small)))
-            .simultaneousGesture(TapGesture())
-          }
-        }
-        .padding(.bottom, 32)
-
-        if mode == .clientTrust {
-          Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
-            .foregroundStyle(theme.colors.warning)
-            .font(theme.fonts.subheadline)
-            .multilineTextAlignment(.center)
-            .padding(.bottom, 32)
-        }
-
-        VStack(spacing: 24) {
-          OTPField(
-            code: $code,
-            fieldState: $otpFieldState,
-            isFocused: $otpFieldIsFocused
-          ) { _ in
-            await attempt()
-          }
-          .onAppear {
-            verificationState = .default
-            otpFieldIsFocused = true
-          }
-
-          Group {
-            switch verificationState {
-            case .verifying:
-              HStack(spacing: 4) {
-                SpinnerView()
-                  .frame(width: 16, height: 16)
-                Text("Verifying...", bundle: .module)
-              }
-              .foregroundStyle(theme.colors.mutedForeground)
-            case .success:
-              HStack(spacing: 4) {
-                Image("icon-check-circle", bundle: .module)
-                  .foregroundStyle(theme.colors.success)
-                Text("Success", bundle: .module)
-                  .foregroundStyle(theme.colors.mutedForeground)
-              }
-            case let .error(error):
-              ErrorText(error: error)
-            default:
-              EmptyView()
-            }
-          }
-          .font(theme.fonts.subheadline)
-
-          if showResend {
-            AsyncButton {
-              await prepare()
-            } label: { isRunning in
-              HStack(spacing: 2) {
-                Text("Didn't receive a code?", bundle: .module)
-                Text(resendString, bundle: .module)
-                  .foregroundStyle(
-                    remainingSeconds > 0
-                      ? theme.colors.mutedForeground
-                      : theme.colors.primary
-                  )
-                  .monospacedDigit()
-                  .contentTransition(.numericText(countsDown: true))
-                  .animation(.default, value: remainingSeconds)
-              }
-              .overlayProgressView(isActive: isRunning)
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(
-              .secondary(
-                config: .init(
-                  emphasis: .none,
-                  size: .small
-                )
-              )
-            )
-            .disabled(remainingSeconds > 0)
-            .simultaneousGesture(TapGesture())
-          }
-
-          if showUseAnotherMethod {
-            Button {
-              if mode.usesSecondFactorAPI {
-                authState.path.append(
-                  AuthView.Destination.signInFactorTwoUseAnotherMethod(
-                    currentFactor: factor
-                  )
-                )
-              } else {
-                authState.path.append(
-                  AuthView.Destination.signInFactorOneUseAnotherMethod(
-                    currentFactor: factor
-                  )
-                )
-              }
-            } label: {
-              Text("Use another method", bundle: .module)
-            }
-            .buttonStyle(
-              .primary(
-                config: .init(
-                  emphasis: .none,
-                  size: .small
-                )
-              )
-            )
-            .simultaneousGesture(TapGesture())
-          }
-        }
-
-        SecuredByClerkView()
-          .padding(.top, 32)
-      }
-      .padding(16)
-    }
-    .scrollDismissesKeyboard(.interactively)
-    .clerkErrorPresenting($error)
-    .background(theme.colors.background)
-    .taskOnce {
-      startTimer()
-      if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {
-        await prepare()
-      }
-    }
-  }
 }
+
+// MARK: - Timer Management
 
 extension SignInFactorCodeView {
   func startTimer() {
@@ -286,7 +330,11 @@ extension SignInFactorCodeView {
     let elapsed = Int(Date.now.timeIntervalSince(lastCodeSentAt))
     remainingSeconds = max(0, 30 - elapsed)
   }
+}
 
+// MARK: - Actions
+
+extension SignInFactorCodeView {
   func prepare() async {
     code = ""
     verificationState = .default

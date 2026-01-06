@@ -130,7 +130,7 @@ public struct AuthView: View {
     .tint(theme.colors.primary)
     .environment(authState)
     .task {
-      _ = try? await Clerk.Environment.get()
+      _ = try? await clerk.refreshEnvironment()
     }
     .task {
       if isDismissable {

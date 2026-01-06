@@ -152,7 +152,7 @@ struct UserProfileDetailView: View {
         .presentationDetents([.height(connectAccountSheetHeight)])
     }
     .task {
-      _ = try? await Client.get()
+      _ = try? await clerk.refreshClient()
     }
   }
 }
