@@ -11,15 +11,20 @@ import ClerkKit
 import SwiftUI
 
 struct AuthStartView: View {
+  // MARK: - Environment
+
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthState.self) private var authState
   @Environment(\.dismissKeyboard) private var dismissKeyboard
 
-  @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
+  // MARK: - State
 
+  @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
+
+  // MARK: - Configuration
 
   var emailIsEnabled: Bool {
     clerk.environment?.enabledFirstFactorAttributes
@@ -69,6 +74,59 @@ struct AuthStartView: View {
       authState.authStartIdentifier.isEmpty
     }
   }
+
+  // MARK: - Display Strings
+
+  private var titleString: LocalizedStringKey {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      if let appName = clerk.environment?.displayConfig.applicationName {
+        "Continue to \(appName)"
+      } else {
+        "Continue"
+      }
+    case .signUp:
+      "Create your account"
+    }
+  }
+
+  private var subtitleString: LocalizedStringKey {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      "Welcome! Sign in to continue"
+    case .signUp:
+      "Welcome! Please fill in the details to get started."
+    }
+  }
+
+  private var identifierSwitcherString: LocalizedStringKey {
+    if phoneNumberFieldIsActive {
+      if emailIsEnabled, usernameIsEnabled {
+        "Use email address or username"
+      } else if emailIsEnabled {
+        "Use email address"
+      } else if usernameIsEnabled {
+        "Use username"
+      } else {
+        ""
+      }
+    } else {
+      "Use phone number"
+    }
+  }
+
+  private var emailOrUsernamePlaceholder: LocalizedStringKey {
+    switch (emailIsEnabled, usernameIsEnabled) {
+    case (true, false):
+      "Enter your email"
+    case (false, true):
+      "Enter your username"
+    default:
+      "Enter your email or username"
+    }
+  }
+
+  // MARK: - Body
 
   var body: some View {
     @Bindable var authState = authState
@@ -130,34 +188,43 @@ extension AuthStartView {
   }
 
   private var identifierInputSection: some View {
+    VStack(spacing: 4) {
+      identifierField
+      fieldErrorView
+    }
+  }
+
+  @ViewBuilder
+  private var identifierField: some View {
     @Bindable var authState = authState
 
-    return VStack(spacing: 4) {
-      if phoneNumberFieldIsActive, phoneNumberIsEnabled {
-        ClerkPhoneNumberField(
-          "Enter your phone number",
-          text: $authState.authStartPhoneNumber,
-          fieldState: fieldError != nil ? .error : .default
-        )
-        .transition(.blurReplace)
-      } else {
-        ClerkTextField(
-          emailOrUsernamePlaceholder,
-          text: $authState.authStartIdentifier,
-          fieldState: fieldError != nil ? .error : .default
-        )
-        .textContentType(.username)
-        .keyboardType(.emailAddress)
-        .textInputAutocapitalization(.never)
-        .transition(.blurReplace)
-      }
+    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+      ClerkPhoneNumberField(
+        "Enter your phone number",
+        text: $authState.authStartPhoneNumber,
+        fieldState: fieldError != nil ? .error : .default
+      )
+      .transition(.blurReplace)
+    } else {
+      ClerkTextField(
+        emailOrUsernamePlaceholder,
+        text: $authState.authStartIdentifier,
+        fieldState: fieldError != nil ? .error : .default
+      )
+      .textContentType(.username)
+      .keyboardType(.emailAddress)
+      .textInputAutocapitalization(.never)
+      .transition(.blurReplace)
+    }
+  }
 
-      if let fieldError {
-        ErrorText(error: fieldError, alignment: .leading)
-          .font(theme.fonts.subheadline)
-          .transition(.blurReplace.animation(.default.speed(2)))
-          .id(fieldError.localizedDescription)
-      }
+  @ViewBuilder
+  private var fieldErrorView: some View {
+    if let fieldError {
+      ErrorText(error: fieldError, alignment: .leading)
+        .font(theme.fonts.subheadline)
+        .transition(.blurReplace.animation(.default.speed(2)))
+        .id(fieldError.localizedDescription)
     }
   }
 
@@ -206,59 +273,6 @@ extension AuthStartView {
         }
         .simultaneousGesture(TapGesture())
       }
-    }
-  }
-}
-
-// MARK: - Computed Properties
-
-extension AuthStartView {
-  private var titleString: LocalizedStringKey {
-    switch authState.mode {
-    case .signIn, .signInOrUp:
-      if let appName = clerk.environment?.displayConfig.applicationName {
-        "Continue to \(appName)"
-      } else {
-        "Continue"
-      }
-    case .signUp:
-      "Create your account"
-    }
-  }
-
-  private var subtitleString: LocalizedStringKey {
-    switch authState.mode {
-    case .signIn, .signInOrUp:
-      "Welcome! Sign in to continue"
-    case .signUp:
-      "Welcome! Please fill in the details to get started."
-    }
-  }
-
-  private var identifierSwitcherString: LocalizedStringKey {
-    if phoneNumberFieldIsActive {
-      if emailIsEnabled, usernameIsEnabled {
-        "Use email address or username"
-      } else if emailIsEnabled {
-        "Use email address"
-      } else if usernameIsEnabled {
-        "Use username"
-      } else {
-        ""
-      }
-    } else {
-      "Use phone number"
-    }
-  }
-
-  private var emailOrUsernamePlaceholder: LocalizedStringKey {
-    switch (emailIsEnabled, usernameIsEnabled) {
-    case (true, false):
-      "Enter your email"
-    case (false, true):
-      "Enter your username"
-    default:
-      "Enter your email or username"
     }
   }
 }

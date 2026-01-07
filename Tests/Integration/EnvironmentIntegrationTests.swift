@@ -28,6 +28,6 @@ struct EnvironmentIntegrationTests {
     configureClerkForIntegrationTesting(keyName: "with-email-codes")
 
     // Test that we can fetch and decode the environment from a real Clerk instance
-    let environment = try await Clerk.shared.refreshEnvironment()
+    _ = try await Clerk.shared.refreshEnvironment()
   }
 }
