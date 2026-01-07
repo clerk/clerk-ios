@@ -1,5 +1,5 @@
 //
-//  SignUpStatus.swift
+//  SignUp+Status.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/22/25.
