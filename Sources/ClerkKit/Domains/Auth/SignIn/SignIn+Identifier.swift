@@ -1,5 +1,5 @@
 //
-//  SignInIdentifier.swift
+//  SignIn+Identifier.swift
 //  Clerk
 //
 //  Created by Mike Pitre on 1/21/25.
