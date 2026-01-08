@@ -371,55 +371,51 @@ extension UserProfileView {
 
 #Preview("Dismissable") {
   UserProfileView()
-    .clerkPreview { builder in
-      builder.clientService = MockClientService(
-        get: {
+    .environment(
+      Clerk.preview { builder in
+        builder.services.clientService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Client.mock
         }
-      )
 
-      builder.environmentService = MockEnvironmentService(
-        get: {
+        builder.services.environmentService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
-      )
 
-      builder.userService = MockUserService(
-        getSessions: { _ in
+        builder.services.userService.getSessionsHandler = { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
-      )
-    }
+      }
+    )
+    .environment(AuthState())
+    .environment(UserProfileView.SharedState())
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Not dismissable") {
   UserProfileView(isDismissable: false)
-    .clerkPreview { builder in
-      builder.clientService = MockClientService(
-        get: {
+    .environment(
+      Clerk.preview { builder in
+        builder.services.clientService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Client.mock
         }
-      )
 
-      builder.environmentService = MockEnvironmentService(
-        get: {
+        builder.services.environmentService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
-      )
 
-      builder.userService = MockUserService(
-        getSessions: { _ in
+        builder.services.userService.getSessionsHandler = { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
-      )
-    }
+      }
+    )
+    .environment(AuthState())
+    .environment(UserProfileView.SharedState())
     .environment(\.clerkTheme, .clerk)
 }
 
