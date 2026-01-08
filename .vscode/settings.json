@@ -10,5 +10,6 @@
   },
   "files.eol": "\n",
   "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true
+  "files.insertFinalNewline": true,
+  "window.title": "${activeRepositoryBranchName}${separator}${rootName}${separator}${profileName}"
 }
