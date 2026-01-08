@@ -41,6 +41,25 @@ public final class PreviewBuilder {
   /// ```
   public var client: Client?
 
+  /// Advanced mock services configuration for customizing individual service behaviors.
+  ///
+  /// Use this to add delays, custom return values, or other behaviors to mock services.
+  /// This is useful for testing loading states and async behavior in previews.
+  ///
+  /// Example:
+  /// ```swift
+  /// Clerk.preview { builder in
+  ///   builder.services.clientService = MockClientService {
+  ///     try? await Task.sleep(for: .seconds(1))
+  ///     return Client.mock
+  ///   }
+  ///   builder.services.userService.getSessionsHandler = { _ in
+  ///     return [Session.mock, Session.mock2]
+  ///   }
+  /// }
+  /// ```
+  package var services: MockServicesBuilder = .init()
+
   /// Creates a new preview builder.
   public init() {}
 }
@@ -120,11 +139,18 @@ public extension Clerk {
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Create mock dependency container
+    // Configure services to return builder values if no custom handler set
+    if previewBuilder.services.clientService.getHandler == nil {
+      previewBuilder.services.clientService.getHandler = { mockClient }
+    }
+    if previewBuilder.services.environmentService.getHandler == nil {
+      previewBuilder.services.environmentService.getHandler = { mockEnvironment }
+    }
+
+    // Create mock dependency container using services from builder
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
-      client: mockClient,
-      environment: mockEnvironment
+      services: previewBuilder.services
     )
 
     // Replace dependencies with mock services
@@ -150,36 +176,23 @@ public extension Clerk {
   @MainActor
   private static func createMockDependencyContainer(
     apiClient: APIClient,
-    client: Client,
-    environment: Clerk.Environment
+    services: MockServicesBuilder
   ) -> MockDependencyContainer {
-    let clientService = MockClientService { client }
-    let environmentService = MockEnvironmentService { environment }
-
-    // Use default mock services for everything else
-    let userService = MockUserService()
-    let signInService = MockSignInService()
-    let signUpService = MockSignUpService()
-    let sessionService = MockSessionService()
-    let passkeyService = MockPasskeyService()
-    let organizationService = MockOrganizationService()
-    let emailAddressService = MockEmailAddressService()
-    let phoneNumberService = MockPhoneNumberService()
-    let externalAccountService = MockExternalAccountService()
-
-    return MockDependencyContainer(
+    // Use the services from the builder directly - this allows users to customize
+    // individual service behaviors (like adding delays for loading states).
+    MockDependencyContainer(
       apiClient: apiClient,
-      clientService: clientService,
-      userService: userService,
-      signInService: signInService,
-      signUpService: signUpService,
-      sessionService: sessionService,
-      passkeyService: passkeyService,
-      organizationService: organizationService,
-      environmentService: environmentService,
-      emailAddressService: emailAddressService,
-      phoneNumberService: phoneNumberService,
-      externalAccountService: externalAccountService
+      clientService: services.clientService,
+      userService: services.userService,
+      signInService: services.signInService,
+      signUpService: services.signUpService,
+      sessionService: services.sessionService,
+      passkeyService: services.passkeyService,
+      organizationService: services.organizationService,
+      environmentService: services.environmentService,
+      emailAddressService: services.emailAddressService,
+      phoneNumberService: services.phoneNumberService,
+      externalAccountService: services.externalAccountService
     )
   }
 }
