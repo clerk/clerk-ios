@@ -6,6 +6,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 @main
@@ -26,6 +27,7 @@ struct WatchExampleApp: App {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
+        .clerkImagePrefetching()
         .atlantisProxy()
     }
   }

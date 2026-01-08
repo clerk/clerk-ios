@@ -6,6 +6,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 @main
@@ -18,6 +19,7 @@ struct QuickstartApp: App {
     WindowGroup {
       ContentView()
         .environment(Clerk.shared)
+        .clerkImagePrefetching()
         .atlantisProxy()
     }
   }
