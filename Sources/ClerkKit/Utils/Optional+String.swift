@@ -2,7 +2,7 @@
 //  Optional+String.swift
 //  Clerk
 //
-//  Created by OpenAI Assistant on 2024-05-17.
+//  Created by Mike Pitre on 5/17/24.
 //
 
 import Foundation
