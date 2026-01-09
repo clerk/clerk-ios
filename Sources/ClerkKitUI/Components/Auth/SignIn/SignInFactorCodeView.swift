@@ -68,7 +68,7 @@ struct SignInFactorCodeView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {
-      if let signIn, codeLimiter.isFirstRequest(for: codeLimiterIdentifier(for: signIn)) {
+      if signIn != nil, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
         await prepare()
       }
     }
@@ -161,34 +161,13 @@ extension SignInFactorCodeView {
   }
 
   private var resendSection: some View {
-    AsyncButton {
+    ResendCodeButton(
+      codeLimiter: codeLimiter,
+      identifier: codeLimiterIdentifier,
+      theme: theme
+    ) {
       await prepare()
-    } label: { isRunning in
-      HStack(spacing: 2) {
-        Text("Didn't receive a code?", bundle: .module)
-        Text(resendString, bundle: .module)
-          .foregroundStyle(
-            remainingSeconds > 0
-              ? theme.colors.mutedForeground
-              : theme.colors.primary
-          )
-          .monospacedDigit()
-          .contentTransition(.numericText(countsDown: true))
-          .animation(.default, value: remainingSeconds)
-      }
-      .overlayProgressView(isActive: isRunning)
-      .frame(maxWidth: .infinity)
     }
-    .buttonStyle(
-      .secondary(
-        config: .init(
-          emphasis: .none,
-          size: .small
-        )
-      )
-    )
-    .disabled(remainingSeconds > 0)
-    .simultaneousGesture(TapGesture())
   }
 
   private var useAnotherMethodButton: some View {
@@ -255,14 +234,6 @@ extension SignInFactorCodeView {
       }
     }
   }
-
-  private var resendString: LocalizedStringKey {
-    if remainingSeconds > 0 {
-      "Resend (\(remainingSeconds))"
-    } else {
-      "Resend"
-    }
-  }
 }
 
 // MARK: - Enums
@@ -303,13 +274,9 @@ extension SignInFactorCodeView {
 // MARK: - Helpers
 
 extension SignInFactorCodeView {
-  private func codeLimiterIdentifier(for signIn: SignIn) -> String {
-    signIn.id + (factor.safeIdentifier ?? factor.strategy.rawValue)
-  }
-
-  private var remainingSeconds: Int {
-    guard let signIn else { return 0 }
-    return codeLimiter.remainingCooldown(for: codeLimiterIdentifier(for: signIn))
+  private var codeLimiterIdentifier: String {
+    guard let signIn else { return "" }
+    return signIn.id + (factor.safeIdentifier ?? factor.strategy.rawValue)
   }
 }
 
@@ -351,7 +318,7 @@ extension SignInFactorCodeView {
         break
       }
 
-      codeLimiter.recordCodeSent(for: codeLimiterIdentifier(for: signIn))
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -410,6 +377,55 @@ extension SignInFactorCodeView {
       ClerkLogger.error("Failed to attempt factor for sign in", error: error)
       otpFieldIsFocused = false
     }
+  }
+}
+
+// MARK: - ResendCodeButton
+
+/// A leaf view that isolates timer-driven countdown updates.
+/// Only this view re-renders every second, not the parent SignInFactorCodeView.
+private struct ResendCodeButton: View {
+  let codeLimiter: CodeLimiter
+  let identifier: String
+  let theme: ClerkTheme
+  let action: () async -> Void
+
+  private var remainingSeconds: Int {
+    codeLimiter.remainingCooldown(for: identifier)
+  }
+
+  var body: some View {
+    AsyncButton {
+      await action()
+    } label: { isRunning in
+      HStack(spacing: 2) {
+        Text("Didn't receive a code?", bundle: .module)
+        Group {
+          if remainingSeconds > 0 {
+            Text("Resend (\(remainingSeconds))", bundle: .module)
+              .foregroundStyle(theme.colors.mutedForeground)
+          } else {
+            Text("Resend", bundle: .module)
+              .foregroundStyle(theme.colors.primary)
+          }
+        }
+        .monospacedDigit()
+        .contentTransition(.numericText(countsDown: true))
+        .animation(.default, value: remainingSeconds)
+      }
+      .overlayProgressView(isActive: isRunning)
+      .frame(maxWidth: .infinity)
+    }
+    .buttonStyle(
+      .secondary(
+        config: .init(
+          emphasis: .none,
+          size: .small
+        )
+      )
+    )
+    .disabled(remainingSeconds > 0)
+    .simultaneousGesture(TapGesture())
   }
 }
 
