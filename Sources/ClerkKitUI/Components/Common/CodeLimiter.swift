@@ -114,6 +114,11 @@ final class CodeLimiter {
   func canSendCode(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Bool {
     remainingCooldown(for: identifier, cooldown: cooldown) == 0
   }
+
+  /// Ensures the timer is invalidated if the limiter is released.
+  deinit {
+    stopTimer()
+  }
 }
 
 #endif

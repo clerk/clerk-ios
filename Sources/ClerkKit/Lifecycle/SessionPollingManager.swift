@@ -161,4 +161,10 @@ final class SessionPollingManager {
       return false
     }
   }
+
+  /// Cancels polling and cleans up resources if the manager is released unexpectedly.
+  @MainActor
+  deinit {
+    stopPolling()
+  }
 }
