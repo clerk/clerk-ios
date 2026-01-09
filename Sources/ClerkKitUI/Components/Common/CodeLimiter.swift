@@ -116,6 +116,7 @@ final class CodeLimiter {
   }
 
   /// Ensures the timer is invalidated if the limiter is released.
+  @MainActor
   deinit {
     stopTimer()
   }
