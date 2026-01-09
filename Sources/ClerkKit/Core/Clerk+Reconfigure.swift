@@ -30,7 +30,6 @@ public extension Clerk {
     shared.cleanupManagers()
 
     // 3. Clear in-memory state
-    shared._auth = nil
     shared.client = nil
     shared.environment = nil
     shared.sessionsByUserId = [:]

@@ -13,7 +13,7 @@ import SwiftUI
 struct UserProfileMfaSection: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
 
   @State private var addMfaHeight: CGFloat = 400
 
@@ -38,7 +38,7 @@ struct UserProfileMfaSection: View {
   }
 
   var body: some View {
-    @Bindable var sharedState = sharedState
+    @Bindable var navigation = navigation
 
     Section {
       VStack(spacing: 0) {
@@ -67,14 +67,14 @@ struct UserProfileMfaSection: View {
         }
 
         UserProfileButtonRow(text: "Add two-step verification") {
-          sharedState.chooseMfaTypeIsPresented = true
+          navigation.chooseMfaTypeIsPresented = true
         }
       }
       .background(theme.colors.background)
     } header: {
       UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
     }
-    .sheet(isPresented: $sharedState.chooseMfaTypeIsPresented) {
+    .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
       UserProfileAddMfaView(contentHeight: $addMfaHeight)
         .presentationDetents([.height(addMfaHeight)])
     }

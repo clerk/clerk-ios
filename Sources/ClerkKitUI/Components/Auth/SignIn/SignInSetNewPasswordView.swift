@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInSetNewPasswordView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @State private var identifier = ""
@@ -129,7 +130,7 @@ extension SignInSetNewPasswordView {
       }
 
       guard var signIn else {
-        authState.path = []
+        navigation.path = []
         return
       }
 
@@ -138,7 +139,7 @@ extension SignInSetNewPasswordView {
         signOutOfOtherSessions: signOutOfOtherDevices
       )
 
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       fieldError = error
     }

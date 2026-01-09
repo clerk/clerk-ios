@@ -13,7 +13,7 @@ import SwiftUI
 struct UserProfileAddMfaView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
   @State private var error: Error?
@@ -69,8 +69,8 @@ struct UserProfileAddMfaView: View {
             Group {
               if environment?.mfaPhoneCodeIsEnabled == true {
                 Button {
-                  sharedState.chooseMfaTypeIsPresented = false
-                  sharedState.presentedAddMfaType = .sms
+                  navigation.chooseMfaTypeIsPresented = false
+                  navigation.presentedAddMfaType = .sms
                 } label: {
                   UserProfileRowView(icon: "icon-phone", text: "SMS code")
                 }
@@ -135,8 +135,8 @@ extension UserProfileAddMfaView {
 
     do {
       let totp = try await user.createTOTP()
-      sharedState.chooseMfaTypeIsPresented = false
-      sharedState.presentedAddMfaType = .authApp(totp)
+      navigation.chooseMfaTypeIsPresented = false
+      navigation.presentedAddMfaType = .authApp(totp)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)

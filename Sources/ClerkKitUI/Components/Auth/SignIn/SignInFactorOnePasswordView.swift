@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInFactorOnePasswordView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @FocusState private var isFocused: Bool
@@ -35,7 +36,7 @@ struct SignInFactorOnePasswordView: View {
 
           if let identifier = factor.safeIdentifier {
             Button {
-              authState.path = []
+              navigation.path = []
             } label: {
               IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
@@ -90,7 +91,7 @@ struct SignInFactorOnePasswordView: View {
 
         HStack(spacing: 16) {
           Button {
-            authState.path.append(
+            navigation.path.append(
               AuthView.Destination.signInFactorOneUseAnotherMethod(
                 currentFactor: factor
               )
@@ -106,11 +107,11 @@ struct SignInFactorOnePasswordView: View {
 
           Button {
             if signIn?.resetPasswordFactor != nil {
-              authState.path.append(
+              navigation.path.append(
                 AuthView.Destination.signInForgotPassword
               )
             } else {
-              authState.path.append(
+              navigation.path.append(
                 AuthView.Destination.signInFactorOneUseAnotherMethod(
                   currentFactor: factor
                 )
@@ -149,14 +150,14 @@ extension SignInFactorOnePasswordView {
 
     do {
       guard var signIn else {
-        authState.path = []
+        navigation.path = []
         return
       }
 
       signIn = try await signIn.authenticateWithPassword(authState.signInPassword)
 
       fieldError = nil
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       fieldError = error
     }

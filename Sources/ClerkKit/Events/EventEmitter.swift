@@ -14,7 +14,8 @@ import Foundation
 /// returns a new stream that will receive all future events emitted by the emitter.
 ///
 /// This implementation supports multiple concurrent consumers,
-/// making it suitable for event broadcasting scenarios.
+/// making it suitable for event broadcasting scenarios. All operations are
+/// MainActor-isolated for thread safety.
 ///
 /// ### Example:
 /// ```swift
@@ -31,13 +32,14 @@ import Foundation
 /// ```swift
 /// emitter.send(.signInCompleted(signIn: signIn))
 /// ```
-public final class EventEmitter<Event: Sendable>: @unchecked Sendable {
+@MainActor
+public final class EventEmitter<Event: Sendable> {
   /// Active continuations that need to receive events.
   /// Each call to `events` creates a new continuation that must be retained
   /// until the stream terminates.
-  /// Marked as nonisolated(unsafe) because AsyncStream.Continuation operations
-  /// (yield, finish) are thread-safe.
-  private nonisolated(unsafe) var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
+  private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
+
+  public init() {}
 
   /// Returns a new `AsyncStream` that receives all future events.
   ///
@@ -58,7 +60,9 @@ public final class EventEmitter<Event: Sendable>: @unchecked Sendable {
       continuations[id] = continuation
 
       continuation.onTermination = { @Sendable [weak self] _ in
-        self?.continuations.removeValue(forKey: id)
+        Task { @MainActor in
+          self?.continuations.removeValue(forKey: id)
+        }
       }
     }
   }

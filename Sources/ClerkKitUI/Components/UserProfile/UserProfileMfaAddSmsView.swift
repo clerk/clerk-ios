@@ -15,7 +15,7 @@ struct UserProfileMfaAddSmsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
 
   @State private var selectedPhoneNumber: ClerkKit.PhoneNumber?
   @State private var addPhoneNumberIsPresented = false
@@ -140,7 +140,7 @@ extension UserProfileMfaAddSmsView {
       if let backupCodes = phoneNumber.backupCodes {
         path.append(Destination.backupCodes(backupCodes))
       } else {
-        sharedState.presentedAddMfaType = nil
+        navigation.presentedAddMfaType = nil
       }
     } catch {
       self.error = error

@@ -10,21 +10,25 @@ import Foundation
 
 /// The main entry point for all authentication operations in the Clerk SDK.
 ///
-/// Access this class via `clerk.auth` to perform sign in, sign up, and session management operations.
+/// Access this via `clerk.auth` to perform sign in, sign up, and session management operations.
+/// This is a lightweight facade that namespaces auth-related methods - it holds no state itself.
 @MainActor
-public final class Auth {
+public struct Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
+  private let eventEmitter: EventEmitter<AuthEvent>
 
   init(
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
-    sessionService: SessionServiceProtocol
+    sessionService: SessionServiceProtocol,
+    eventEmitter: EventEmitter<AuthEvent>
   ) {
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
+    self.eventEmitter = eventEmitter
   }
 
   // MARK: - Sign In Entry Points
@@ -396,9 +400,6 @@ public final class Auth {
 
   // MARK: - Events
 
-  /// The event emitter for auth events.
-  let eventEmitter = EventEmitter<AuthEvent>()
-
   /// An `AsyncStream` of authentication events.
   ///
   /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion, sign-out, and session changes.
@@ -422,5 +423,12 @@ public final class Auth {
   /// ```
   public var events: AsyncStream<AuthEvent> {
     eventEmitter.events
+  }
+
+  /// Sends an auth event.
+  ///
+  /// This is internal to allow middleware to emit events while keeping the emitter private.
+  func send(_ event: AuthEvent) {
+    eventEmitter.send(event)
   }
 }
