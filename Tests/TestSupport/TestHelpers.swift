@@ -44,8 +44,6 @@ func setupMockAPIClient() {
     phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
     externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
   )
-  // Note: No need to reset auth since it's now a computed property that
-  // creates a new Auth instance using the current dependencies each time.
 }
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
