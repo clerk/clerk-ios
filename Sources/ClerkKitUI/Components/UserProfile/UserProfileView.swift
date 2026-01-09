@@ -61,7 +61,8 @@ public struct UserProfileView: View {
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var sharedState = SharedState()
+  @State private var navigation = UserProfileNavigation()
+  @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
   /// Creates a new user profile view.
@@ -81,7 +82,7 @@ public struct UserProfileView: View {
 
   public var body: some View {
     if let user {
-      NavigationStack(path: $sharedState.path) {
+      NavigationStack(path: $navigation.path) {
         VStack(spacing: 0) {
           ScrollView {
             LazyVStack(spacing: 0) {
@@ -127,14 +128,14 @@ public struct UserProfileView: View {
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .clerkErrorPresenting($error)
-      .sheet(isPresented: $sharedState.accountSwitcherIsPresented) {
+      .sheet(isPresented: $navigation.accountSwitcherIsPresented) {
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
       }
-      .sheet(isPresented: $sharedState.authViewIsPresented) {
+      .sheet(isPresented: $navigation.authViewIsPresented) {
         AuthView()
           .interactiveDismissDisabled()
       }
@@ -142,7 +143,7 @@ public struct UserProfileView: View {
         for await event in clerk.auth.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
-            sharedState.authViewIsPresented = false
+            navigation.authViewIsPresented = false
           default:
             break
           }
@@ -165,7 +166,8 @@ public struct UserProfileView: View {
           )
         )
       }
-      .environment(sharedState)
+      .environment(navigation)
+      .environment(codeLimiter)
     }
   }
 }
@@ -176,11 +178,11 @@ extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
       row(icon: "icon-profile", text: "Profile") {
-        sharedState.path.append(Destination.profileDetail)
+        navigation.path.append(Destination.profileDetail)
       }
 
       row(icon: "icon-security", text: "Security") {
-        sharedState.path.append(Destination.security)
+        navigation.path.append(Destination.security)
       }
     }
     .background(theme.colors.background)
@@ -196,12 +198,12 @@ extension UserProfileView {
       if clerk.environment?.mutliSessionModeIsEnabled == true {
         if let activeSessions = clerk.client?.activeSessions, activeSessions.count > 1 {
           row(icon: "icon-switch", text: "Switch account") {
-            sharedState.accountSwitcherIsPresented = true
+            navigation.accountSwitcherIsPresented = true
           }
         }
 
         row(icon: "icon-plus", text: "Add account") {
-          sharedState.authViewIsPresented = true
+          navigation.authViewIsPresented = true
         }
       }
 
@@ -355,20 +357,6 @@ extension UserProfileView {
   }
 }
 
-// MARK: - SharedState
-
-extension UserProfileView {
-  @Observable
-  class SharedState {
-    var path = NavigationPath()
-    var lastCodeSentAt: [String: Date] = [:]
-    var accountSwitcherIsPresented = false
-    var authViewIsPresented = false
-    var chooseMfaTypeIsPresented = false
-    var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
-  }
-}
-
 #Preview("Dismissable") {
   UserProfileView()
     .environment(
@@ -390,7 +378,7 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileView.SharedState())
+    .environment(UserProfileNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 
@@ -415,7 +403,7 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileView.SharedState())
+    .environment(UserProfileNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 

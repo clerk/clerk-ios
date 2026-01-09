@@ -13,7 +13,7 @@ import SwiftUI
 struct UserButtonAccountSwitcher: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
   @Binding private var contentHeight: CGFloat
@@ -104,8 +104,8 @@ struct UserButtonAccountSwitcher: View {
             }
 
             Button {
-              sharedState.accountSwitcherIsPresented = false
-              sharedState.authViewIsPresented = true
+              navigation.accountSwitcherIsPresented = false
+              navigation.authViewIsPresented = true
             } label: {
               UserProfileRowView(icon: "icon-plus", text: "Add account")
             }

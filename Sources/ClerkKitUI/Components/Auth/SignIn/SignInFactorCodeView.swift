@@ -13,15 +13,15 @@ import SwiftUI
 struct SignInFactorCodeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   let factor: Factor
   var mode: FactorMode = .firstFactor
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var remainingSeconds: Int = 30
-  @State private var timer: Timer?
   @State private var verificationState = VerificationState.default
   @State private var otpFieldState: OTPField.FieldState = .default
   @FocusState private var otpFieldIsFocused: Bool
@@ -68,8 +68,7 @@ struct SignInFactorCodeView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {
-      startTimer()
-      if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {
+      if let signIn, codeLimiter.isFirstRequest(for: codeLimiterIdentifier(for: signIn)) {
         await prepare()
       }
     }
@@ -86,7 +85,7 @@ extension SignInFactorCodeView {
 
       if let identifier = factor.safeIdentifier {
         Button {
-          authState.path = []
+          navigation.path = []
         } label: {
           IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
         }
@@ -195,13 +194,13 @@ extension SignInFactorCodeView {
   private var useAnotherMethodButton: some View {
     Button {
       if mode.usesSecondFactorAPI {
-        authState.path.append(
+        navigation.path.append(
           AuthView.Destination.signInFactorTwoUseAnotherMethod(
             currentFactor: factor
           )
         )
       } else {
-        authState.path.append(
+        navigation.path.append(
           AuthView.Destination.signInFactorOneUseAnotherMethod(
             currentFactor: factor
           )
@@ -304,31 +303,13 @@ extension SignInFactorCodeView {
 // MARK: - Helpers
 
 extension SignInFactorCodeView {
-  private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
+  private func codeLimiterIdentifier(for signIn: SignIn) -> String {
     signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
   }
-}
 
-// MARK: - Timer Management
-
-extension SignInFactorCodeView {
-  func startTimer() {
-    updateRemainingSeconds()
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-      Task { @MainActor in
-        updateRemainingSeconds()
-      }
-    }
-    RunLoop.current.add(timer!, forMode: .common)
-  }
-
-  func updateRemainingSeconds() {
-    guard let signIn, let lastCodeSentAt = authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] else {
-      return
-    }
-
-    let elapsed = Int(Date.now.timeIntervalSince(lastCodeSentAt))
-    remainingSeconds = max(0, 30 - elapsed)
+  private var remainingSeconds: Int {
+    guard let signIn else { return 0 }
+    return codeLimiter.remainingCooldown(for: codeLimiterIdentifier(for: signIn))
   }
 }
 
@@ -340,7 +321,7 @@ extension SignInFactorCodeView {
     verificationState = .default
 
     guard var signIn else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -370,8 +351,7 @@ extension SignInFactorCodeView {
         break
       }
 
-      authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] = .now
-      updateRemainingSeconds()
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier(for: signIn))
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -381,7 +361,7 @@ extension SignInFactorCodeView {
 
   func attempt() async {
     guard var signIn else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -392,7 +372,7 @@ extension SignInFactorCodeView {
       signIn = try await attemptVerification(signIn: signIn)
       otpFieldIsFocused = false
       verificationState = .success
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       handleVerificationError(error)
     }

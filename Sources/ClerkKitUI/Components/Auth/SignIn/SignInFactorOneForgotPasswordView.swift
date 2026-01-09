@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInFactorOneForgotPasswordView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @State private var error: Error?
@@ -99,7 +100,7 @@ struct SignInFactorOneForgotPasswordView: View {
           ForEach(alternativeFactors, id: \.self) { factor in
             if let actionText = actionText(factor: factor) {
               Button {
-                authState.path.append(
+                navigation.path.append(
                   AuthView.Destination.signInFactorOne(factor: factor)
                 )
               } label: {
@@ -138,11 +139,11 @@ struct SignInFactorOneForgotPasswordView: View {
 extension SignInFactorOneForgotPasswordView {
   func resetPassword() async {
     guard let signIn, let resetFactor = signIn.resetPasswordFactor else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
-    authState.path.append(
+    navigation.path.append(
       AuthView.Destination.signInFactorOne(factor: resetFactor)
     )
   }
@@ -150,7 +151,7 @@ extension SignInFactorOneForgotPasswordView {
   func signInWithProvider(_ provider: OAuthProvider) async {
     do {
       guard let signIn else {
-        authState.path = []
+        navigation.path = []
         return
       }
 
@@ -163,9 +164,9 @@ extension SignInFactorOneForgotPasswordView {
 
       switch result {
       case .signIn(let signIn):
-        authState.setToStepForStatus(signIn: signIn)
+        navigation.setToStepForStatus(signIn: signIn)
       case .signUp(let signUp):
-        authState.setToStepForStatus(signUp: signUp)
+        navigation.setToStepForStatus(signUp: signUp)
       }
 
     } catch {

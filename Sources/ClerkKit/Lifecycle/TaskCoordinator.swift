@@ -9,12 +9,12 @@ import Foundation
 
 /// Manages and coordinates tasks for cleanup and cancellation.
 ///
-/// This class provides a centralized way to track and cancel tasks,
-/// ensuring proper cleanup when the coordinator is deallocated.
+/// This class provides a centralized way to track and cancel tasks.
+/// Call `cancelAll()` before releasing the coordinator to ensure proper cleanup.
 @MainActor
 final class TaskCoordinator {
   /// Storage for tracked tasks.
-  private nonisolated(unsafe) var tasks: Set<Task<Void, Never>> = []
+  private var tasks: Set<Task<Void, Never>> = []
 
   /// Creates a new task coordinator.
   init() {}
@@ -50,17 +50,12 @@ final class TaskCoordinator {
   }
 
   /// Cancels all tracked tasks.
-  nonisolated func cancelAll() {
+  ///
+  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
+  func cancelAll() {
     for task in tasks {
       task.cancel()
     }
     tasks.removeAll()
-  }
-
-  /// Cancels all tracked tasks and cleans up resources.
-  ///
-  /// This is called automatically when the coordinator is deallocated.
-  deinit {
-    cancelAll()
   }
 }

@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInFactorOnePasskeyView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @State private var passkeyInProgress = true
@@ -34,7 +35,7 @@ struct SignInFactorOnePasskeyView: View {
 
           if let identifier = factor.safeIdentifier {
             Button {
-              authState.path = []
+              navigation.path = []
             } label: {
               IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
             }
@@ -77,7 +78,7 @@ struct SignInFactorOnePasskeyView: View {
           .simultaneousGesture(TapGesture())
 
           Button {
-            authState.path.append(
+            navigation.path.append(
               AuthView.Destination.signInFactorOneUseAnotherMethod(
                 currentFactor: factor
               )
@@ -116,7 +117,7 @@ struct SignInFactorOnePasskeyView: View {
 extension SignInFactorOnePasskeyView {
   func authWithPasskey() async {
     guard var signIn else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -127,7 +128,7 @@ extension SignInFactorOnePasskeyView {
       signIn = try await signIn.authenticateWithPasskey()
 
       error = nil
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       if error.isUserCancelledError { return }
       self.error = error

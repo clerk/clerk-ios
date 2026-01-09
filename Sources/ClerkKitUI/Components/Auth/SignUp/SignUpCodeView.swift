@@ -13,16 +13,21 @@ import SwiftUI
 struct SignUpCodeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var code = ""
-  @State private var remainingSeconds: Int = 30
-  @State private var timer: Timer?
   @State private var verificationState = VerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
   @State private var error: Error?
 
   @FocusState private var otpFieldIsFocused: Bool
+
+  private var remainingSeconds: Int {
+    guard let signUp else { return 0 }
+    return codeLimiter.remainingCooldown(for: codeLimiterIdentifier(signUp))
+  }
 
   var signUp: SignUp? {
     clerk.client?.signUp
@@ -75,7 +80,7 @@ struct SignUpCodeView: View {
     }
   }
 
-  private func lastCodeSentAtKey(_ signUp: SignUp) -> String {
+  private func codeLimiterIdentifier(_ signUp: SignUp) -> String {
     signUp.id + field.identityPreviewString
   }
 
@@ -87,7 +92,7 @@ struct SignUpCodeView: View {
         VStack(spacing: 8) {
           HeaderView(style: .title, text: field.title)
           Button {
-            authState.path = []
+            navigation.path = []
           } label: {
             IdentityPreviewView(label: field.identityPreviewString)
           }
@@ -179,15 +184,14 @@ struct SignUpCodeView: View {
       action: { error in
         if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
           return .init(text: "Continue") {
-            authState.setToStepForStatus(signUp: signUp)
+            navigation.setToStepForStatus(signUp: signUp)
           }
         }
         return nil
       }
     )
     .taskOnce {
-      startTimer()
-      if let signUp, authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] == nil {
+      if let signUp, codeLimiter.isFirstRequest(for: codeLimiterIdentifier(signUp)) {
         await prepare()
       }
     }
@@ -195,32 +199,13 @@ struct SignUpCodeView: View {
 }
 
 extension SignUpCodeView {
-  func startTimer() {
-    updateRemainingSeconds()
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-      Task { @MainActor in
-        updateRemainingSeconds()
-      }
-    }
-    RunLoop.current.add(timer!, forMode: .common)
-  }
-
-  func updateRemainingSeconds() {
-    guard let signUp, let lastCodeSentAt = authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] else {
-      return
-    }
-
-    let elapsed = Int(Date.now.timeIntervalSince(lastCodeSentAt))
-    remainingSeconds = max(0, 30 - elapsed)
-  }
-
   func prepare() async {
     code = ""
     otpFieldState = .default
     verificationState = .default
 
     guard var signUp else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -232,8 +217,7 @@ extension SignUpCodeView {
         signUp = try await signUp.sendPhoneCode()
       }
 
-      authState.lastCodeSentAt[lastCodeSentAtKey(signUp)] = .now
-      updateRemainingSeconds()
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier(signUp))
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -243,7 +227,7 @@ extension SignUpCodeView {
 
   func attempt() async {
     guard var signUp else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -260,7 +244,7 @@ extension SignUpCodeView {
 
       otpFieldIsFocused = false
       verificationState = .success
-      authState.setToStepForStatus(signUp: signUp)
+      navigation.setToStepForStatus(signUp: signUp)
     } catch {
       otpFieldState = .error
       verificationState = .error(error)

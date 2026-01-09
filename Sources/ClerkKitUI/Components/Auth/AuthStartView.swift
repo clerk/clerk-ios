@@ -15,6 +15,7 @@ struct AuthStartView: View {
 
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
   @Environment(\.dismissKeyboard) private var dismissKeyboard
 
@@ -306,7 +307,7 @@ extension AuthStartView {
         return
       }
 
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
         await signUp()
@@ -321,7 +322,7 @@ extension AuthStartView {
 
     do {
       let signUp = try await signUpParams()
-      authState.setToStepForStatus(signUp: signUp)
+      navigation.setToStepForStatus(signUp: signUp)
     } catch {
       fieldError = error
     }
@@ -340,9 +341,9 @@ extension AuthStartView {
   private func handleTransferFlowResult(_ result: TransferFlowResult) {
     switch result {
     case .signIn(let signIn):
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     case .signUp(let signUp):
-      authState.setToStepForStatus(signUp: signUp)
+      navigation.setToStepForStatus(signUp: signUp)
     }
   }
 }

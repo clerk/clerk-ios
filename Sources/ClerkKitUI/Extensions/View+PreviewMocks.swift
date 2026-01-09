@@ -16,7 +16,9 @@ package extension View {
   /// This modifier injects mock versions of all Clerk environment observables:
   /// - `Clerk.mock` for `@Environment(Clerk.self)`
   /// - `AuthState()` for `@Environment(AuthState.self)`
-  /// - `UserProfileView.SharedState()` for `@Environment(UserProfileView.SharedState.self)`
+  /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
+  /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
+  /// - `UserProfileNavigation()` for `@Environment(UserProfileNavigation.self)`
   ///
   /// Note: `ClerkTheme` has a default value and doesn't need to be injected.
   ///
@@ -41,7 +43,9 @@ package extension View {
       return AnyView(
         environment(clerk)
           .environment(AuthState())
-          .environment(UserProfileView.SharedState())
+          .environment(AuthNavigation())
+          .environment(CodeLimiter())
+          .environment(UserProfileNavigation())
       )
     }
     return AnyView(self)

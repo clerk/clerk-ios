@@ -19,7 +19,7 @@ protocol SessionProviding: Sendable {
 /// Manages periodic polling of session tokens to keep them refreshed.
 ///
 /// This class handles the background task that periodically refreshes session tokens
-/// to ensure they remain valid. The polling interval is configurable and defaults to 5 seconds.
+/// to ensure they remain valid. Call `stopPolling()` before releasing the manager.
 @MainActor
 final class SessionPollingManager {
   /// The interval between token refresh attempts.
@@ -32,10 +32,10 @@ final class SessionPollingManager {
   static let defaultMaxPollInterval: TimeInterval = 60.0
 
   /// Task that performs the periodic token polling.
-  private nonisolated(unsafe) var pollingTask: Task<Void, Error>?
+  private var pollingTask: Task<Void, Error>?
 
   /// The provider that supplies the current session for token retrieval.
-  @MainActor private let sessionProvider: any SessionProviding
+  private let sessionProvider: any SessionProviding
 
   /// The interval between polling attempts.
   private let pollInterval: TimeInterval
@@ -89,9 +89,8 @@ final class SessionPollingManager {
 
   /// Stops polling for session tokens.
   ///
-  /// This method cancels the polling task and cleans up resources. It can be called
-  /// multiple times safely.
-  nonisolated func stopPolling() {
+  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
+  func stopPolling() {
     pollingTask?.cancel()
     pollingTask = nil
   }
@@ -150,7 +149,6 @@ final class SessionPollingManager {
   /// Refreshes the token for the current session if one exists.
   ///
   /// - Returns: `true` if the refresh succeeded or no session exists, `false` if it failed.
-  @MainActor
   private func refreshTokenIfNeeded() async -> Bool {
     guard let session = sessionProvider.session else {
       return true // No session = not a failure
@@ -162,12 +160,5 @@ final class SessionPollingManager {
     } catch {
       return false
     }
-  }
-
-  /// Cancels polling and cleans up resources.
-  ///
-  /// This is called automatically when the manager is deallocated.
-  deinit {
-    stopPolling()
   }
 }

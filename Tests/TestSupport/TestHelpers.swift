@@ -44,11 +44,8 @@ func setupMockAPIClient() {
     phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
     externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
   )
-
-  // Reset auth to force reinitialization with the new mock services
-  // This is necessary because auth may have already been initialized
-  // with the original services before we replaced dependencies
-  Clerk.shared._auth = nil
+  // Note: No need to reset auth since it's now a computed property that
+  // creates a new Auth instance using the current dependencies each time.
 }
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.

@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInFactorAlternativeMethodsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @State private var error: Error?
@@ -107,11 +108,11 @@ struct SignInFactorAlternativeMethodsView: View {
             if let actionText = actionText(factor: factor) {
               Button {
                 if isSecondFactor {
-                  authState.path.append(
+                  navigation.path.append(
                     AuthView.Destination.signInFactorTwo(factor: factor)
                   )
                 } else {
-                  authState.path.append(
+                  navigation.path.append(
                     AuthView.Destination.signInFactorOne(factor: factor)
                   )
                 }
@@ -152,7 +153,7 @@ extension SignInFactorAlternativeMethodsView {
   func signInWithProvider(_ provider: OAuthProvider) async {
     do {
       guard let signIn else {
-        authState.path = []
+        navigation.path = []
         return
       }
 
@@ -165,9 +166,9 @@ extension SignInFactorAlternativeMethodsView {
 
       switch result {
       case .signIn(let signIn):
-        authState.setToStepForStatus(signIn: signIn)
+        navigation.setToStepForStatus(signIn: signIn)
       case .signUp(let signUp):
-        authState.setToStepForStatus(signUp: signUp)
+        navigation.setToStepForStatus(signUp: signUp)
       }
 
     } catch {
