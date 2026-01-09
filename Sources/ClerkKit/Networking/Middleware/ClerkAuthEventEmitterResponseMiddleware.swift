@@ -13,19 +13,19 @@ struct ClerkAuthEventEmitterResponseMiddleware: NetworkResponseMiddleware {
       if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,
          signIn.status == .complete
       {
-        Clerk.shared.auth.eventEmitter.send(.signInCompleted(signIn: signIn))
+        Clerk.shared.auth.send(.signInCompleted(signIn: signIn))
       }
 
       if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,
          signUp.status == .complete
       {
-        Clerk.shared.auth.eventEmitter.send(.signUpCompleted(signUp: signUp))
+        Clerk.shared.auth.send(.signUpCompleted(signUp: signUp))
       }
 
       if let session = try? JSONDecoder.clerkDecoder.decode(ClientResponse<Session>.self, from: data).response,
          session.status == .removed
       {
-        Clerk.shared.auth.eventEmitter.send(.signedOut(session: session))
+        Clerk.shared.auth.send(.signedOut(session: session))
       }
     }
   }

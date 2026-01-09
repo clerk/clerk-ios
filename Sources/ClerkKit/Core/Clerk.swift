@@ -46,7 +46,7 @@ public final class Clerk {
     didSet {
       // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        auth.eventEmitter.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
+        auth.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
       }
 
       if let client {
@@ -144,28 +144,21 @@ public final class Clerk {
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
-  /// Backing storage for the `auth` property.
-  ///
-  /// This uses lazy initialization rather than a pure computed property because `Auth` contains
-  /// an `EventEmitter` that must maintain stable identity across accesses. If `Auth` were recreated
-  /// on every access, subscribers to `auth.events` would lose their subscriptions.
-  ///
-  /// Can be reset to `nil` to force reinitialization with new services after reconfiguration.
-  @ObservationIgnored
-  package var _auth: Auth?
+  /// The event emitter for auth events.
+  /// Owned by Clerk to ensure stable identity across accesses to `auth`.
+  private let authEventEmitter = EventEmitter<AuthEvent>()
 
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
+  /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
-    if _auth == nil {
-      _auth = Auth(
-        signInService: dependencies.signInService,
-        signUpService: dependencies.signUpService,
-        sessionService: dependencies.sessionService
-      )
-    }
-    return _auth!
+    Auth(
+      signInService: dependencies.signInService,
+      signUpService: dependencies.signUpService,
+      sessionService: dependencies.sessionService,
+      eventEmitter: authEventEmitter
+    )
   }
 
   /// The event emitter for general Clerk events.
@@ -395,6 +388,7 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
+    authEventEmitter.finish()
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()

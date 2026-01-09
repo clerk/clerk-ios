@@ -14,7 +14,6 @@ import SwiftUI
 struct UserProfileDetailView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
 
   @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
   @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?

@@ -13,6 +13,7 @@ import SwiftUI
 struct SignInFactorTwoBackupCodeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @FocusState private var isFocused: Bool
@@ -77,7 +78,7 @@ struct SignInFactorTwoBackupCodeView: View {
         .padding(.bottom, 16)
 
         Button {
-          authState.path.append(
+          navigation.path.append(
             AuthView.Destination.signInFactorTwoUseAnotherMethod(
               currentFactor: factor
             )
@@ -105,14 +106,14 @@ extension SignInFactorTwoBackupCodeView {
 
     do {
       guard var signIn else {
-        authState.path = []
+        navigation.path = []
         return
       }
 
       signIn = try await signIn.verifyMfaCode(authState.signInBackupCode, type: .backupCode)
 
       fieldError = nil
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       fieldError = error
     }

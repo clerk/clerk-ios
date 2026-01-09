@@ -11,15 +11,18 @@ import ClerkKit
 import Foundation
 import SwiftUI
 
+/// Holds form field values for the authentication flow.
+///
+/// This class stores user input for auth start, sign-in, and sign-up forms.
+@MainActor
 @Observable
 final class AuthState {
+  /// The authentication mode (signIn, signUp, or signInOrUp).
+  let mode: AuthView.Mode
+
   init(mode: AuthView.Mode = .signInOrUp) {
     self.mode = mode
   }
-
-  var path: [AuthView.Destination] = []
-  let mode: AuthView.Mode
-  var lastCodeSentAt: [String: Date] = [:]
 
   // Auth Start Fields
   var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
@@ -48,107 +51,6 @@ final class AuthState {
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
   var signUpLegalAccepted = false
-
-  @MainActor
-  func setToStepForStatus(signIn: SignIn) {
-    switch signIn.status {
-    case .complete:
-      return
-    case .needsIdentifier:
-      path = []
-    case .needsFirstFactor:
-      guard let factor = signIn.startingFirstFactor else {
-        ClerkLogger.info("Navigating to GetHelp: No starting first factor available for sign-in", force: true)
-        path.append(AuthView.Destination.getHelp(.signIn))
-        return
-      }
-      path.append(AuthView.Destination.signInFactorOne(factor: factor))
-    case .needsSecondFactor:
-      guard let factor = signIn.startingSecondFactor else {
-        ClerkLogger.info("Navigating to GetHelp: No starting second factor available for sign-in", force: true)
-        path.append(AuthView.Destination.getHelp(.signIn))
-        return
-      }
-
-      path.append(AuthView.Destination.signInFactorTwo(factor: factor))
-    case .needsNewPassword:
-      path.append(AuthView.Destination.signInSetNewPassword)
-    case .needsClientTrust:
-      guard let factor = signIn.startingSecondFactor else {
-        ClerkLogger.info("Navigating to GetHelp: No starting second factor available for client trust", force: true)
-        path.append(AuthView.Destination.getHelp(.signIn))
-        return
-      }
-      path.append(AuthView.Destination.signInClientTrust(factor: factor))
-    case .unknown:
-      return
-    }
-  }
-
-  @MainActor
-  func setToStepForStatus(signUp: SignUp) {
-    switch signUp.status {
-    case .abandoned:
-      path = []
-    case .missingRequirements:
-      handleMissingRequirements(signUp: signUp)
-    case .complete, .unknown:
-      return
-    }
-  }
-
-  @MainActor
-  private func handleMissingRequirements(signUp: SignUp) {
-    if let firstFieldToVerify = signUp.firstFieldToVerify {
-      handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
-    } else if let nextFieldToCollect = signUp.firstFieldToCollect {
-      handleFieldToCollect(signUp: signUp, field: nextFieldToCollect)
-    }
-  }
-
-  @MainActor
-  private func handleFieldToVerify(signUp: SignUp, field: SignUp.Field) {
-    switch field {
-    case .emailAddress:
-      guard let emailAddress = signUp.emailAddress else {
-        path = []
-        return
-      }
-      path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
-    case .phoneNumber:
-      guard let phoneNumber = signUp.phoneNumber else {
-        path = []
-        return
-      }
-      path.append(AuthView.Destination.signUpCode(.phone(phoneNumber)))
-    default:
-      path = []
-    }
-  }
-
-  @MainActor
-  private func handleFieldToCollect(signUp: SignUp, field: SignUp.Field) {
-    switch field {
-    case .password:
-      path.append(AuthView.Destination.signUpCollectField(.password))
-    case .emailAddress:
-      path.append(AuthView.Destination.signUpCollectField(.emailAddress))
-    case .phoneNumber:
-      path.append(AuthView.Destination.signUpCollectField(.phoneNumber))
-    case .username:
-      path.append(AuthView.Destination.signUpCollectField(.username))
-    default:
-      if signUp.canCompleteProfileHandleMissingFields {
-        path.append(AuthView.Destination.signUpCompleteProfile)
-      } else {
-        let allSupportedFields = SignUp.individuallyCollectableFields.union(SignUp.completeProfileFields)
-        let unsupportedFields = signUp.missingFields.filter { !allSupportedFields.contains($0) }
-        let unsupportedFieldStrings = unsupportedFields.map { $0.rawValue }.joined(separator: ", ")
-        ClerkLogger.info("Navigating to GetHelp: Sign-up has unsupported missing fields: \(unsupportedFieldStrings)", force: true)
-        path.append(AuthView.Destination.getHelp(.signUp))
-      }
-    }
-  }
 }
 
 #endif

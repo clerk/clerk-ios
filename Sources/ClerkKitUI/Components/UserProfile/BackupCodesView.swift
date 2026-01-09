@@ -12,7 +12,7 @@ import SwiftUI
 
 struct BackupCodesView: View {
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
   enum MfaType {
@@ -66,7 +66,7 @@ struct BackupCodesView: View {
         Button {
           switch mfaType {
           case .phoneCode, .authenticatorApp:
-            sharedState.presentedAddMfaType = nil
+            navigation.presentedAddMfaType = nil
           case .backupCodes:
             dismiss()
           }

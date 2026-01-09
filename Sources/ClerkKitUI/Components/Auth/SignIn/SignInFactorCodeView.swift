@@ -13,15 +13,15 @@ import SwiftUI
 struct SignInFactorCodeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   let factor: Factor
   var mode: FactorMode = .firstFactor
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var remainingSeconds: Int = 30
-  @State private var timer: Timer?
   @State private var verificationState = VerificationState.default
   @State private var otpFieldState: OTPField.FieldState = .default
   @FocusState private var otpFieldIsFocused: Bool
@@ -68,8 +68,7 @@ struct SignInFactorCodeView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {
-      startTimer()
-      if let signIn, authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] == nil {
+      if signIn != nil, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
         await prepare()
       }
     }
@@ -86,7 +85,7 @@ extension SignInFactorCodeView {
 
       if let identifier = factor.safeIdentifier {
         Button {
-          authState.path = []
+          navigation.path = []
         } label: {
           IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
         }
@@ -162,46 +161,25 @@ extension SignInFactorCodeView {
   }
 
   private var resendSection: some View {
-    AsyncButton {
+    ResendCodeButton(
+      codeLimiter: codeLimiter,
+      identifier: codeLimiterIdentifier,
+      theme: theme
+    ) {
       await prepare()
-    } label: { isRunning in
-      HStack(spacing: 2) {
-        Text("Didn't receive a code?", bundle: .module)
-        Text(resendString, bundle: .module)
-          .foregroundStyle(
-            remainingSeconds > 0
-              ? theme.colors.mutedForeground
-              : theme.colors.primary
-          )
-          .monospacedDigit()
-          .contentTransition(.numericText(countsDown: true))
-          .animation(.default, value: remainingSeconds)
-      }
-      .overlayProgressView(isActive: isRunning)
-      .frame(maxWidth: .infinity)
     }
-    .buttonStyle(
-      .secondary(
-        config: .init(
-          emphasis: .none,
-          size: .small
-        )
-      )
-    )
-    .disabled(remainingSeconds > 0)
-    .simultaneousGesture(TapGesture())
   }
 
   private var useAnotherMethodButton: some View {
     Button {
       if mode.usesSecondFactorAPI {
-        authState.path.append(
+        navigation.path.append(
           AuthView.Destination.signInFactorTwoUseAnotherMethod(
             currentFactor: factor
           )
         )
       } else {
-        authState.path.append(
+        navigation.path.append(
           AuthView.Destination.signInFactorOneUseAnotherMethod(
             currentFactor: factor
           )
@@ -256,14 +234,6 @@ extension SignInFactorCodeView {
       }
     }
   }
-
-  private var resendString: LocalizedStringKey {
-    if remainingSeconds > 0 {
-      "Resend (\(remainingSeconds))"
-    } else {
-      "Resend"
-    }
-  }
 }
 
 // MARK: - Enums
@@ -304,31 +274,9 @@ extension SignInFactorCodeView {
 // MARK: - Helpers
 
 extension SignInFactorCodeView {
-  private func lastCodeSentAtKey(_ signIn: SignIn) -> String {
-    signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
-  }
-}
-
-// MARK: - Timer Management
-
-extension SignInFactorCodeView {
-  func startTimer() {
-    updateRemainingSeconds()
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-      Task { @MainActor in
-        updateRemainingSeconds()
-      }
-    }
-    RunLoop.current.add(timer!, forMode: .common)
-  }
-
-  func updateRemainingSeconds() {
-    guard let signIn, let lastCodeSentAt = authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] else {
-      return
-    }
-
-    let elapsed = Int(Date.now.timeIntervalSince(lastCodeSentAt))
-    remainingSeconds = max(0, 30 - elapsed)
+  private var codeLimiterIdentifier: String {
+    guard let signIn else { return "" }
+    return signIn.id + (factor.safeIdentifier ?? factor.strategy.rawValue)
   }
 }
 
@@ -340,7 +288,7 @@ extension SignInFactorCodeView {
     verificationState = .default
 
     guard var signIn else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -370,8 +318,7 @@ extension SignInFactorCodeView {
         break
       }
 
-      authState.lastCodeSentAt[lastCodeSentAtKey(signIn)] = .now
-      updateRemainingSeconds()
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -381,7 +328,7 @@ extension SignInFactorCodeView {
 
   func attempt() async {
     guard var signIn else {
-      authState.path = []
+      navigation.path = []
       return
     }
 
@@ -392,7 +339,7 @@ extension SignInFactorCodeView {
       signIn = try await attemptVerification(signIn: signIn)
       otpFieldIsFocused = false
       verificationState = .success
-      authState.setToStepForStatus(signIn: signIn)
+      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       handleVerificationError(error)
     }
@@ -430,6 +377,55 @@ extension SignInFactorCodeView {
       ClerkLogger.error("Failed to attempt factor for sign in", error: error)
       otpFieldIsFocused = false
     }
+  }
+}
+
+// MARK: - ResendCodeButton
+
+/// A leaf view that isolates timer-driven countdown updates.
+/// Only this view re-renders every second, not the parent SignInFactorCodeView.
+private struct ResendCodeButton: View {
+  let codeLimiter: CodeLimiter
+  let identifier: String
+  let theme: ClerkTheme
+  let action: () async -> Void
+
+  private var remainingSeconds: Int {
+    codeLimiter.remainingCooldown(for: identifier)
+  }
+
+  var body: some View {
+    AsyncButton {
+      await action()
+    } label: { isRunning in
+      HStack(spacing: 2) {
+        Text("Didn't receive a code?", bundle: .module)
+        Group {
+          if remainingSeconds > 0 {
+            Text("Resend (\(remainingSeconds))", bundle: .module)
+              .foregroundStyle(theme.colors.mutedForeground)
+          } else {
+            Text("Resend", bundle: .module)
+              .foregroundStyle(theme.colors.primary)
+          }
+        }
+        .monospacedDigit()
+        .contentTransition(.numericText(countsDown: true))
+        .animation(.default, value: remainingSeconds)
+      }
+      .overlayProgressView(isActive: isRunning)
+      .frame(maxWidth: .infinity)
+    }
+    .buttonStyle(
+      .secondary(
+        config: .init(
+          emphasis: .none,
+          size: .small
+        )
+      )
+    )
+    .disabled(remainingSeconds > 0)
+    .simultaneousGesture(TapGesture())
   }
 }
 

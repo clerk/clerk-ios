@@ -67,7 +67,15 @@ public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @State var authState: AuthState
+
+  /// Navigation state for the auth flow.
+  @State private var navigation = AuthNavigation()
+
+  /// Form field state for auth views.
+  @State private var authState: AuthState
+
+  /// Rate limiter for verification codes.
+  @State private var codeLimiter = CodeLimiter()
 
   /// The authentication mode that determines which flows are available to the user.
   public enum Mode: String {
@@ -96,12 +104,12 @@ public struct AuthView: View {
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: .init(mode: mode))
+    _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
   }
 
   public var body: some View {
-    NavigationStack(path: $authState.path) {
+    NavigationStack(path: $navigation.path) {
       AuthStartView()
         .toolbar {
           if isDismissable {
@@ -128,7 +136,9 @@ public struct AuthView: View {
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
     .tint(theme.colors.primary)
+    .environment(navigation)
     .environment(authState)
+    .environment(codeLimiter)
     .task {
       _ = try? await clerk.refreshEnvironment()
     }

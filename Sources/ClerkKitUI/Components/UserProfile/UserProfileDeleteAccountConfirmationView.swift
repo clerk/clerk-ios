@@ -14,7 +14,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
 
   @State private var deleteAccount = ""
   @State private var error: Error?
@@ -98,9 +98,9 @@ extension UserProfileDeleteAccountConfirmationView {
     do {
       try await user.delete()
       dismiss()
-      sharedState.path = NavigationPath()
+      navigation.path = NavigationPath()
       if clerk.session != nil, (clerk.client?.activeSessions ?? []).count > 1 {
-        sharedState.accountSwitcherIsPresented = true
+        navigation.accountSwitcherIsPresented = true
       }
     } catch {
       self.error = error

@@ -13,7 +13,6 @@ import SwiftUI
 struct GetHelpView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(AuthState.self) private var authState
 
   let context: Context
 

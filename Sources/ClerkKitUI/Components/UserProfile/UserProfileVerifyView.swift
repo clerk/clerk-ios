@@ -13,17 +13,19 @@ import SwiftUI
 struct UserProfileVerifyView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(CodeLimiter.self) private var codeLimiter
   @Environment(\.dismiss) private var environmentDismiss
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var remainingSeconds: Int = 30
-  @State private var timer: Timer?
   @State private var verificationState = VerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
 
   @FocusState private var otpFieldIsFocused: Bool
+
+  private var remainingSeconds: Int {
+    codeLimiter.remainingCooldown(for: codeLimiterIdentifier)
+  }
 
   var user: User? { clerk.user }
 
@@ -76,7 +78,7 @@ struct UserProfileVerifyView: View {
     }
   }
 
-  private var lastCodeSentAtKey: String {
+  private var codeLimiterIdentifier: String {
     switch mode {
     case let .email(emailAddress):
       emailAddress.emailAddress
@@ -231,36 +233,14 @@ struct UserProfileVerifyView: View {
       }
     }
     .taskOnce {
-      if showResend {
-        startTimer()
-        if sharedState.lastCodeSentAt[lastCodeSentAtKey] == nil {
-          await prepare()
-        }
+      if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
+        await prepare()
       }
     }
   }
 }
 
 extension UserProfileVerifyView {
-  func startTimer() {
-    updateRemainingSeconds()
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-      Task { @MainActor in
-        updateRemainingSeconds()
-      }
-    }
-    RunLoop.current.add(timer!, forMode: .common)
-  }
-
-  func updateRemainingSeconds() {
-    guard let lastCodeSentAt = sharedState.lastCodeSentAt[lastCodeSentAtKey] else {
-      return
-    }
-
-    let elapsed = Int(Date.now.timeIntervalSince(lastCodeSentAt))
-    remainingSeconds = max(0, 30 - elapsed)
-  }
-
   func prepare() async {
     code = ""
     verificationState = .default
@@ -275,8 +255,7 @@ extension UserProfileVerifyView {
         return
       }
 
-      sharedState.lastCodeSentAt[lastCodeSentAtKey] = .now
-      updateRemainingSeconds()
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -291,12 +270,12 @@ extension UserProfileVerifyView {
       switch mode {
       case let .email(emailAddress):
         try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
-        sharedState.lastCodeSentAt[emailAddress.emailAddress] = nil
+        codeLimiter.clearRecord(for: emailAddress.emailAddress)
         verificationState = .success
         onCompletion(nil)
       case let .phone(phoneNumber):
         try await phoneNumber.attemptVerification(code: code)
-        sharedState.lastCodeSentAt[phoneNumber.phoneNumber] = nil
+        codeLimiter.clearRecord(for: phoneNumber.phoneNumber)
         verificationState = .success
         onCompletion(nil)
       case .totp:
@@ -321,6 +300,7 @@ extension UserProfileVerifyView {
   NavigationStack {
     UserProfileVerifyView(mode: .email(.mock)) { _ in }
   }
+  .environment(CodeLimiter())
   .environment(\.clerkTheme, .clerk)
 }
 
@@ -328,6 +308,7 @@ extension UserProfileVerifyView {
   NavigationStack {
     UserProfileVerifyView(mode: .phone(.mock)) { _ in }
   }
+  .environment(CodeLimiter())
   .environment(\.clerkTheme, .clerk)
 }
 

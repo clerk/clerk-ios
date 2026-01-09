@@ -13,7 +13,7 @@ import SwiftUI
 struct UserProfileMfaAddTotpView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
   @State private var path = NavigationPath()
@@ -34,7 +34,7 @@ struct UserProfileMfaAddTotpView: View {
         if let backupCodes {
           path.append(Destination.backupCodes(backupCodes))
         } else {
-          sharedState.presentedAddMfaType = nil
+          navigation.presentedAddMfaType = nil
         }
       }
     case let .backupCodes(backupCodes):

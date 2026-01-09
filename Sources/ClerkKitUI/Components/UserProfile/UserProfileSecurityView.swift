@@ -13,7 +13,7 @@ import SwiftUI
 struct UserProfileSecurityView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileView.SharedState.self) private var sharedState
+  @Environment(UserProfileNavigation.self) private var navigation
 
   @State private var error: Error?
 
@@ -26,7 +26,7 @@ struct UserProfileSecurityView: View {
   }
 
   var body: some View {
-    @Bindable var sharedState = sharedState
+    @Bindable var navigation = navigation
 
     VStack(spacing: 0) {
       if let user {
@@ -81,7 +81,7 @@ struct UserProfileSecurityView: View {
     .task {
       _ = try? await clerk.refreshClient()
     }
-    .sheet(item: $sharedState.presentedAddMfaType) {
+    .sheet(item: $navigation.presentedAddMfaType) {
       $0.view
     }
   }

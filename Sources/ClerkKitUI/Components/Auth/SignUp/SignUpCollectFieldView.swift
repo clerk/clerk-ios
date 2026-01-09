@@ -13,6 +13,7 @@ import SwiftUI
 struct SignUpCollectFieldView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
   @State private var error: Error?
@@ -182,7 +183,7 @@ extension SignUpCollectFieldView {
         signUp = try await signUp.update(username: authState.signUpUsername)
       }
 
-      authState.setToStepForStatus(signUp: signUp)
+      navigation.setToStepForStatus(signUp: signUp)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to update sign up with field data", error: error)

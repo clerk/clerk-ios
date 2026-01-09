@@ -30,14 +30,14 @@ protocol LifecycleEventHandling: Sendable {
 /// Manages app lifecycle notifications and coordinates foreground/background transitions.
 ///
 /// This class handles the registration and cleanup of notification observers for app lifecycle events.
-/// It ensures proper task cancellation and resource cleanup when the app transitions between states.
+/// Call `stopObserving()` before releasing the manager to ensure proper cleanup.
 @MainActor
 final class LifecycleManager {
   /// Task that observes foreground notifications.
-  private nonisolated(unsafe) var willEnterForegroundTask: Task<Void, Error>?
+  private var willEnterForegroundTask: Task<Void, Error>?
 
   /// Task that observes background notifications.
-  private nonisolated(unsafe) var didEnterBackgroundTask: Task<Void, Error>?
+  private var didEnterBackgroundTask: Task<Void, Error>?
 
   /// The handler that responds to lifecycle events.
   private let handler: any LifecycleEventHandling
@@ -81,20 +81,12 @@ final class LifecycleManager {
 
   /// Stops observing app lifecycle notifications and cancels all active tasks.
   ///
-  /// This method should be called when the lifecycle manager is no longer needed
-  /// to ensure proper cleanup of resources.
-  nonisolated func stopObserving() {
+  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
+  func stopObserving() {
     willEnterForegroundTask?.cancel()
     willEnterForegroundTask = nil
 
     didEnterBackgroundTask?.cancel()
     didEnterBackgroundTask = nil
-  }
-
-  /// Cancels all active tasks and stops observing.
-  ///
-  /// This is called automatically when the manager is deallocated.
-  deinit {
-    stopObserving()
   }
 }
