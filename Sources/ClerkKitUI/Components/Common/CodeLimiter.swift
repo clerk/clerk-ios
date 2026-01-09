@@ -101,7 +101,8 @@ final class CodeLimiter {
     _ = tick
     guard let lastSent = lastCodeSentAt[identifier] else { return 0 }
     let elapsed = Date.now.timeIntervalSince(lastSent)
-    return max(0, Int(cooldown - elapsed))
+    let remaining = cooldown - elapsed
+    return max(0, Int(ceil(remaining)))
   }
 
   /// Checks if a new code can be sent for the given identifier.

@@ -304,7 +304,7 @@ extension SignInFactorCodeView {
 
 extension SignInFactorCodeView {
   private func codeLimiterIdentifier(for signIn: SignIn) -> String {
-    signIn.id + (factor.safeIdentifier ?? UUID().uuidString)
+    signIn.id + (factor.safeIdentifier ?? factor.strategy.rawValue)
   }
 
   private var remainingSeconds: Int {
