@@ -31,7 +31,7 @@ struct FinishSigningUpView: View {
   @State private var errorMessage: String?
 
   private var signUp: SignUp? {
-    clerk.client?.signUp
+    clerk.auth.currentSignUp
   }
 
   private var canContinue: Bool {

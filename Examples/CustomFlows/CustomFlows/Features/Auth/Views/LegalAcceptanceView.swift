@@ -89,8 +89,8 @@ struct LegalAcceptanceView: View {
 
   private func verify(code: String) async {
     do {
-      guard let inProgressSignUp = clerk.client?.signUp else { return }
-      let signUp = try await inProgressSignUp.verifyEmailCode(code)
+      guard var signUp = clerk.auth.currentSignUp else { return }
+      signUp = try await signUp.verifyEmailCode(code)
 
       switch signUp.status {
       case .complete:

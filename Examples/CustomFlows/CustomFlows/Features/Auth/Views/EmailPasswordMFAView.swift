@@ -76,8 +76,8 @@ struct EmailPasswordMFAView: View {
       case .complete:
         dump(clerk.session)
       case .needsSecondFactor:
-        guard let inProgressSignIn = clerk.client?.signIn else { return }
-        try await inProgressSignIn.sendMfaEmailCode()
+        guard var signIn = clerk.auth.currentSignIn else { return }
+        signIn = try await signIn.sendMfaEmailCode()
         needsMFA = true
       default:
         dump(signIn.status)
@@ -89,8 +89,8 @@ struct EmailPasswordMFAView: View {
 
   private func verifyMFA(code: String) async {
     do {
-      guard let inProgressSignIn = clerk.client?.signIn else { return }
-      let signIn = try await inProgressSignIn.verifyMfaCode(code, type: .emailCode)
+      guard var signIn = clerk.auth.currentSignIn else { return }
+      signIn = try await signIn.verifyMfaCode(code, type: .emailCode)
 
       switch signIn.status {
       case .complete:

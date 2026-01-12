@@ -93,8 +93,8 @@ struct PhoneSMSOTPSignInView: View {
 
   private func verify(code: String) async {
     do {
-      guard let inProgressSignIn = clerk.client?.signIn else { return }
-      let signIn = try await inProgressSignIn.verifyCode(code)
+      guard var signIn = clerk.auth.currentSignIn else { return }
+      signIn = try await signIn.verifyCode(code)
 
       switch signIn.status {
       case .complete:
@@ -156,8 +156,8 @@ struct PhoneSMSOTPSignUpView: View {
 
   private func verify(code: String) async {
     do {
-      guard let inProgressSignUp = clerk.client?.signUp else { return }
-      let signUp = try await inProgressSignUp.verifyPhoneCode(code)
+      guard var signUp = clerk.auth.currentSignUp else { return }
+      signUp = try await signUp.verifyPhoneCode(code)
 
       switch signUp.status {
       case .complete:

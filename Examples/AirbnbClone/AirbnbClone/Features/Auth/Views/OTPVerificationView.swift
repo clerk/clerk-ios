@@ -24,11 +24,11 @@ struct OTPVerificationView: View {
   @State private var isVerifying = false
 
   private var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   private var signUp: SignUp? {
-    clerk.client?.signUp
+    clerk.auth.currentSignUp
   }
 
   private var formattedIdentifier: String {
