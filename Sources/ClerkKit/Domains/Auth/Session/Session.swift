@@ -273,13 +273,15 @@ public extension Session {
   }
 
   /**
-   Retrieves the user's session token for the given template or the default clerk token.
+   Retrieves the user's session token for the given template or the default Clerk token.
    This method uses a cache so a network request will only be made if the token in memory is expired.
-   The TTL for clerk token is one minute.
+   The TTL for the Clerk token is one minute.
+
+   - Returns: The JWT string, or nil if no active session exists.
    */
   @discardableResult
-  func getToken(_ options: GetTokenOptions = .init()) async throws -> TokenResource? {
-    try await SessionTokenFetcher.shared.getToken(self, options: options)
+  func getToken(_ options: GetTokenOptions = .init()) async throws -> String? {
+    try await SessionTokenFetcher.shared.getToken(self, options: options)?.jwt
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.
