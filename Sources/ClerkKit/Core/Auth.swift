@@ -194,24 +194,11 @@ public struct Auth {
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
   public func signInWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
+    // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
+    try await signUpWithEnterpriseSSO(
+      emailAddress: emailAddress,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
