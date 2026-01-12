@@ -20,7 +20,7 @@ struct SignInFactorTwoBackupCodeView: View {
   @State private var fieldError: Error?
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   let factor: Factor

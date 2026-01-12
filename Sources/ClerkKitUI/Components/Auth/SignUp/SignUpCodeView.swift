@@ -30,7 +30,7 @@ struct SignUpCodeView: View {
   }
 
   var signUp: SignUp? {
-    clerk.client?.signUp
+    clerk.auth.currentSignUp
   }
 
   enum Field: Hashable {

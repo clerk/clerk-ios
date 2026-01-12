@@ -22,7 +22,7 @@ struct SignInSetNewPasswordView: View {
   @FocusState private var focusedField: Field?
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   var resetButtonIsDisabled: Bool {

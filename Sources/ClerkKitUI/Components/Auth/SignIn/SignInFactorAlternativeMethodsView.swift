@@ -22,7 +22,7 @@ struct SignInFactorAlternativeMethodsView: View {
   var isSecondFactor: Bool = false
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   var alternativeFactors: [Factor] {

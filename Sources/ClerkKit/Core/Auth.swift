@@ -31,6 +31,35 @@ public struct Auth {
     self.eventEmitter = eventEmitter
   }
 
+  /// The current sign-in attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignIn` stored on the current client.
+  /// Useful for continuing identifier-first flows or multi-step verifications.
+  ///
+  /// ```swift
+  /// if let signIn = clerk.auth.currentSignIn {
+  ///   // Continue the flow with the existing SignIn instance
+  ///   _ = try await signIn.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignIn: SignIn? {
+    Clerk.shared.client?.signIn
+  }
+
+  /// The current sign-up attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignUp` stored on the current client.
+  ///
+  /// ```swift
+  /// if let signUp = clerk.auth.currentSignUp {
+  ///   // Continue the flow with the existing SignUp instance
+  ///   _ = try await signUp.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignUp: SignUp? {
+    Clerk.shared.client?.signUp
+  }
+
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.
@@ -92,23 +121,11 @@ public struct Auth {
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
   public func signInWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
-      strategy: FactorStrategy(rawValue: provider.strategy),
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
+    // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
+    try await signUpWithOAuth(
+      provider: provider,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl)
   }
   #endif
 
@@ -372,20 +389,20 @@ public struct Auth {
     )
   }
 
-  /// Retrieves the user's session token for the given template or the default clerk token.
+  /// Retrieves the user's session token for the given template or the default Clerk token.
   ///
   /// This method uses a cache so a network request will only be made if the token in memory is expired.
-  /// The TTL for clerk token is one minute.
+  /// The TTL for Clerk token is one minute.
   ///
   /// - Parameter options: Options for token retrieval. See `Session.GetTokenOptions` for details.
-  /// - Returns: A `TokenResource` containing the session token, or nil if no active session exists.
+  /// - Returns: The session token string, or nil if no active session exists.
   /// - Throws: An error if token retrieval fails.
   @discardableResult
-  public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+  public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> String? {
     guard let session = Clerk.shared.session else {
       return nil
     }
-    return try await session.getToken(options)
+    return try await session.getToken(options)?.jwt
   }
 
   /// Revokes the specified session.

@@ -26,7 +26,7 @@ struct SignUpCompleteProfileView: View {
   }
 
   var signUp: SignUp? {
-    clerk.client?.signUp
+    clerk.auth.currentSignUp
   }
 
   var firstOrLastNameIsMissing: Bool {

@@ -19,7 +19,7 @@ struct SignInFactorOneForgotPasswordView: View {
   @State private var error: Error?
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   var alternativeFactors: [Factor] {

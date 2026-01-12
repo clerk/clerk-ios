@@ -21,7 +21,7 @@ struct SignInFactorOnePasskeyView: View {
   @State var error: Error?
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   let factor: Factor

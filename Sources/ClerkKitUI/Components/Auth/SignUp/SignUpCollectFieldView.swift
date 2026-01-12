@@ -22,7 +22,7 @@ struct SignUpCollectFieldView: View {
   @FocusState private var isFocused: Bool
 
   var signUp: SignUp? {
-    clerk.client?.signUp
+    clerk.auth.currentSignUp
   }
 
   let field: Field

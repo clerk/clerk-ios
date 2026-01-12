@@ -27,7 +27,7 @@ struct SignInFactorCodeView: View {
   @FocusState private var otpFieldIsFocused: Bool
 
   var signIn: SignIn? {
-    clerk.client?.signIn
+    clerk.auth.currentSignIn
   }
 
   var showResend: Bool {
