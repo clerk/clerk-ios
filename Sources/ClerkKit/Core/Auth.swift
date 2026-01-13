@@ -60,6 +60,16 @@ public struct Auth {
     Clerk.shared.client?.signUp
   }
 
+  /// The sessions on the current client.
+  public var sessions: [Session] {
+    Clerk.shared.client?.sessions ?? []
+  }
+
+  /// The active sessions on the current client.
+  public var activeSessions: [Session] {
+    Clerk.shared.client?.activeSessions ?? []
+  }
+
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.

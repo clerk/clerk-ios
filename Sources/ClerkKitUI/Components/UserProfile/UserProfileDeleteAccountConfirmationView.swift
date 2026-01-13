@@ -99,7 +99,7 @@ extension UserProfileDeleteAccountConfirmationView {
       try await user.delete()
       dismiss()
       navigation.path = NavigationPath()
-      if clerk.session != nil, (clerk.client?.activeSessions ?? []).count > 1 {
+      if clerk.session != nil, clerk.auth.activeSessions.count > 1 {
         navigation.accountSwitcherIsPresented = true
       }
     } catch {

@@ -21,7 +21,7 @@ struct UserButtonAccountSwitcher: View {
   @State private var error: Error?
 
   var sessions: [Session] {
-    (clerk.client?.sessions ?? [])
+    clerk.auth.sessions
       .sorted { lhs, rhs in
         if lhs.id == clerk.session?.id {
           true
