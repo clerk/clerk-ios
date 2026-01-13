@@ -12,7 +12,7 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientUsesService() async throws {
+  func refreshClientUsesClientServiceGet() async throws {
     let called = LockIsolated(false)
     let service = MockClientService(get: {
       called.setValue(true)

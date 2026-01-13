@@ -12,7 +12,7 @@ struct SessionTests {
   }
 
   @Test
-  func revokeUsesService() async throws {
+  func revokeUsesSessionServiceRevoke() async throws {
     let session = Session.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockSessionService(revoke: { sessionId in

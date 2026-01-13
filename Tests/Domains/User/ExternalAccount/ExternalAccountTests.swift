@@ -19,7 +19,7 @@ struct ExternalAccountTests {
   }
 
   @Test
-  func destroyUsesService() async throws {
+  func destroyUsesExternalAccountServiceDestroy() async throws {
     let externalAccount = ExternalAccount.mockVerified
     let captured = LockIsolated<String?>(nil)
     let service = MockExternalAccountService(destroy: { externalAccountId in

@@ -12,7 +12,7 @@ struct EnvironmentTests {
   }
 
   @Test
-  func refreshEnvironmentUsesService() async throws {
+  func refreshEnvironmentUsesEnvironmentServiceGet() async throws {
     let called = LockIsolated(false)
     let service = MockEnvironmentService(get: {
       called.setValue(true)

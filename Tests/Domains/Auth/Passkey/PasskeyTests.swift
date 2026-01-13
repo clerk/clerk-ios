@@ -19,7 +19,7 @@ struct PasskeyTests {
   }
 
   @Test
-  func createUsesService() async throws {
+  func createUsesPasskeyServiceCreate() async throws {
     let called = LockIsolated(false)
     let service = MockPasskeyService(create: {
       called.setValue(true)
@@ -34,7 +34,7 @@ struct PasskeyTests {
   }
 
   @Test
-  func updateUsesService() async throws {
+  func updateUsesPasskeyServiceUpdate() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<(String, String)?>(nil)
     let service = MockPasskeyService(update: { passkeyId, name in
@@ -52,7 +52,7 @@ struct PasskeyTests {
   }
 
   @Test
-  func attemptVerificationUsesService() async throws {
+  func attemptVerificationUsesPasskeyServiceAttemptVerification() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<(String, String)?>(nil)
     let service = MockPasskeyService(attemptVerification: { passkeyId, credential in
@@ -70,7 +70,7 @@ struct PasskeyTests {
   }
 
   @Test
-  func deleteUsesService() async throws {
+  func deleteUsesPasskeyServiceDelete() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockPasskeyService(delete: { passkeyId in

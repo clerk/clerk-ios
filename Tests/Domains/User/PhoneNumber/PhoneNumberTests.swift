@@ -19,7 +19,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func createUsesService() async throws {
+  func createUsesPhoneNumberServiceCreate() async throws {
     let captured = LockIsolated<String?>(nil)
     let service = MockPhoneNumberService(create: { phoneNumber in
       captured.setValue(phoneNumber)
@@ -34,7 +34,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func deleteUsesService() async throws {
+  func deleteUsesPhoneNumberServiceDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockPhoneNumberService(delete: { phoneNumberId in
@@ -50,7 +50,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func prepareVerificationUsesService() async throws {
+  func prepareVerificationUsesPhoneNumberServicePrepareVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockPhoneNumberService(prepareVerification: { phoneNumberId in
@@ -66,7 +66,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func attemptVerificationUsesService() async throws {
+  func attemptVerificationUsesPhoneNumberServiceAttemptVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<(String, String)?>(nil)
     let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code in
@@ -84,7 +84,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func makeDefaultSecondFactorUsesService() async throws {
+  func makeDefaultSecondFactorUsesPhoneNumberServiceMakeDefaultSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockPhoneNumberService(makeDefaultSecondFactor: { phoneNumberId in
@@ -100,7 +100,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func setReservedForSecondFactorUsesService() async throws {
+  func setReservedForSecondFactorUsesPhoneNumberServiceSetReservedForSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<(String, Bool)?>(nil)
     let service = MockPhoneNumberService(setReservedForSecondFactor: { phoneNumberId, reserved in

@@ -19,7 +19,7 @@ struct SignInTests {
   }
 
   @Test
-  func sendEmailCodeUsesService() async throws {
+  func sendEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
     let service = MockSignInService(prepareFirstFactor: { id, params in
@@ -37,7 +37,7 @@ struct SignInTests {
   }
 
   @Test
-  func sendPhoneCodeUsesService() async throws {
+  func sendPhoneCodeUsesSignInServicePrepareFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
     let service = MockSignInService(prepareFirstFactor: { id, params in
@@ -55,7 +55,7 @@ struct SignInTests {
   }
 
   @Test
-  func verifyCodeUsesService() async throws {
+  func verifyCodeUsesSignInServiceAttemptFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
     let service = MockSignInService(attemptFirstFactor: { id, params in
@@ -74,7 +74,7 @@ struct SignInTests {
   }
 
   @Test
-  func authenticateWithPasswordUsesService() async throws {
+  func authenticateWithPasswordUsesSignInServiceAttemptFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
     let service = MockSignInService(attemptFirstFactor: { id, params in
@@ -94,7 +94,7 @@ struct SignInTests {
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
-  func authenticateWithIdTokenUsesService() async throws {
+  func authenticateWithIdTokenUsesSignInServiceAttemptFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
     let service = MockSignInService(attemptFirstFactor: { id, params in
@@ -114,7 +114,7 @@ struct SignInTests {
   #endif
 
   @Test
-  func sendMfaPhoneCodeUsesService() async throws {
+  func sendMfaPhoneCodeUsesSignInServicePrepareSecondFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
     let service = MockSignInService(prepareSecondFactor: { id, params in
@@ -132,7 +132,7 @@ struct SignInTests {
   }
 
   @Test
-  func sendMfaEmailCodeUsesService() async throws {
+  func sendMfaEmailCodeUsesSignInServicePrepareSecondFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
     let service = MockSignInService(prepareSecondFactor: { id, params in
@@ -149,8 +149,49 @@ struct SignInTests {
     #expect(params.1.strategy == .emailCode)
   }
 
-  @Test
-  func verifyMfaPhoneCodeUsesService() async throws {
+  enum MfaVerifyScenario: String, CaseIterable, Codable, Sendable {
+    case phoneCode
+    case totp
+    case backupCode
+
+    var code: String {
+      switch self {
+      case .phoneCode:
+        "123456"
+      case .totp:
+        "654321"
+      case .backupCode:
+        "backup123"
+      }
+    }
+
+    var mfaType: SignIn.MfaType {
+      switch self {
+      case .phoneCode:
+        .phoneCode
+      case .totp:
+        .totp
+      case .backupCode:
+        .backupCode
+      }
+    }
+
+    var expectedStrategy: FactorStrategy {
+      switch self {
+      case .phoneCode:
+        .phoneCode
+      case .totp:
+        .totp
+      case .backupCode:
+        .backupCode
+      }
+    }
+  }
+
+  @Test(arguments: MfaVerifyScenario.allCases)
+  func verifyMfaCodeUsesSignInServiceAttemptSecondFactor(
+    scenario: MfaVerifyScenario
+  ) async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
     let service = MockSignInService(attemptSecondFactor: { id, params in
@@ -160,54 +201,16 @@ struct SignInTests {
 
     configureService(service)
 
-    _ = try await signIn.verifyMfaCode("123456", type: .phoneCode)
+    _ = try await signIn.verifyMfaCode(scenario.code, type: scenario.mfaType)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .phoneCode)
-    #expect(params.1.code == "123456")
+    #expect(params.1.strategy == scenario.expectedStrategy)
+    #expect(params.1.code == scenario.code)
   }
 
   @Test
-  func verifyMfaTotpUsesService() async throws {
-    let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
-    let service = MockSignInService(attemptSecondFactor: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signIn.verifyMfaCode("654321", type: .totp)
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .totp)
-    #expect(params.1.code == "654321")
-  }
-
-  @Test
-  func verifyMfaBackupCodeUsesService() async throws {
-    let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
-    let service = MockSignInService(attemptSecondFactor: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signIn.verifyMfaCode("backup123", type: .backupCode)
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .backupCode)
-    #expect(params.1.code == "backup123")
-  }
-
-  @Test
-  func sendResetPasswordEmailCodeUsesService() async throws {
+  func sendResetPasswordEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
     let service = MockSignInService(prepareFirstFactor: { id, params in
@@ -225,7 +228,7 @@ struct SignInTests {
   }
 
   @Test
-  func sendResetPasswordPhoneCodeUsesService() async throws {
+  func sendResetPasswordPhoneCodeUsesSignInServicePrepareFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
     let service = MockSignInService(prepareFirstFactor: { id, params in
@@ -243,7 +246,7 @@ struct SignInTests {
   }
 
   @Test
-  func resetPasswordUsesService() async throws {
+  func resetPasswordUsesSignInServiceResetPassword() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.ResetPasswordParams)?>(nil)
     let service = MockSignInService(resetPassword: { id, params in
@@ -261,26 +264,19 @@ struct SignInTests {
     #expect(params.1.signOutOfOtherSessions == true)
   }
 
-  @Test
-  func reloadUsesService() async throws {
-    let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let service = MockSignInService(get: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signIn.reload()
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == nil)
+  struct ReloadScenario: Codable, Sendable, Equatable {
+    let rotatingTokenNonce: String?
   }
 
-  @Test
-  func reloadWithRotatingTokenNonceUsesService() async throws {
+  @Test(
+    arguments: [
+      ReloadScenario(rotatingTokenNonce: nil),
+      ReloadScenario(rotatingTokenNonce: "test_nonce"),
+    ]
+  )
+  func reloadUsesSignInServiceGet(
+    scenario: ReloadScenario
+  ) async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
     let service = MockSignInService(get: { id, params in
@@ -290,10 +286,10 @@ struct SignInTests {
 
     configureService(service)
 
-    _ = try await signIn.reload(rotatingTokenNonce: "test_nonce")
+    _ = try await signIn.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == "test_nonce")
+    #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
   }
 }

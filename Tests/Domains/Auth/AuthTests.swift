@@ -24,8 +24,16 @@ struct AuthTests {
     )
   }
 
+  struct SignOutScenario: Codable, Sendable, Equatable {
+    let sessionId: String?
+  }
+
+  struct SetActiveScenario: Codable, Sendable, Equatable {
+    let organizationId: String?
+  }
+
   @Test
-  func signInWithIdentifierUsesSignInService() async throws {
+  func signInWithIdentifierUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
@@ -41,7 +49,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithPasswordUsesSignInService() async throws {
+  func signInWithPasswordUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
@@ -58,7 +66,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithOAuthUsesSignUpService() async throws {
+  func signInWithOAuthUsesSignUpServiceCreate() async throws {
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -84,7 +92,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithEnterpriseSSOUsesSignUpService() async throws {
+  func signInWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -110,7 +118,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithIdTokenUsesSignInService() async throws {
+  func signInWithIdTokenUsesSignInServiceCreate() async throws {
     let signUpCalled = LockIsolated(false)
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
@@ -133,7 +141,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithPasskeyUsesSignInService() async throws {
+  func signInWithPasskeyUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
@@ -148,7 +156,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithTicketUsesSignInService() async throws {
+  func signInWithTicketUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
@@ -164,7 +172,7 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithStandardFieldsUsesSignUpService() async throws {
+  func signUpWithStandardFieldsUsesSignUpServiceCreate() async throws {
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signUpService = MockSignUpService(create: { params in
       signUpParams.setValue(params)
@@ -181,7 +189,7 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithOAuthUsesSignUpService() async throws {
+  func signUpWithOAuthUsesSignUpServiceCreate() async throws {
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -207,7 +215,7 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithEnterpriseSSOUsesSignUpService() async throws {
+  func signUpWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -233,7 +241,7 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithIdTokenUsesSignUpService() async throws {
+  func signUpWithIdTokenUsesSignUpServiceCreate() async throws {
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -256,7 +264,7 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithTicketUsesSignUpService() async throws {
+  func signUpWithTicketUsesSignUpServiceCreate() async throws {
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signUpService = MockSignUpService(create: { params in
       signUpParams.setValue(params)
@@ -271,8 +279,15 @@ struct AuthTests {
     #expect(params.ticket == "mock_ticket_value")
   }
 
-  @Test
-  func signOutUsesSessionService() async throws {
+  @Test(
+    arguments: [
+      SignOutScenario(sessionId: nil),
+      SignOutScenario(sessionId: "sess_test123"),
+    ]
+  )
+  func signOutUsesSessionServiceSignOut(
+    scenario: SignOutScenario
+  ) async throws {
     let signOutSessionId = LockIsolated<String?>(nil)
     let sessionService = MockSessionService(signOut: { sessionId in
       signOutSessionId.setValue(sessionId)
@@ -280,27 +295,20 @@ struct AuthTests {
 
     configureDependencies(sessionService: sessionService)
 
-    try await Clerk.shared.auth.signOut()
+    try await Clerk.shared.auth.signOut(sessionId: scenario.sessionId)
 
-    #expect(signOutSessionId.value == nil)
+    #expect(signOutSessionId.value == scenario.sessionId)
   }
 
-  @Test
-  func signOutWithSessionIdUsesSessionService() async throws {
-    let signOutSessionId = LockIsolated<String?>(nil)
-    let sessionService = MockSessionService(signOut: { sessionId in
-      signOutSessionId.setValue(sessionId)
-    })
-
-    configureDependencies(sessionService: sessionService)
-
-    try await Clerk.shared.auth.signOut(sessionId: "sess_test123")
-
-    #expect(signOutSessionId.value == "sess_test123")
-  }
-
-  @Test
-  func setActiveUsesSessionService() async throws {
+  @Test(
+    arguments: [
+      SetActiveScenario(organizationId: nil),
+      SetActiveScenario(organizationId: "org_test456"),
+    ]
+  )
+  func setActiveUsesSessionServiceSetActive(
+    scenario: SetActiveScenario
+  ) async throws {
     let activeParams = LockIsolated<(String, String?)?>(nil)
     let sessionService = MockSessionService(setActive: { sessionId, organizationId in
       activeParams.setValue((sessionId, organizationId))
@@ -308,26 +316,13 @@ struct AuthTests {
 
     configureDependencies(sessionService: sessionService)
 
-    try await Clerk.shared.auth.setActive(sessionId: "sess_test123")
+    try await Clerk.shared.auth.setActive(
+      sessionId: "sess_test123",
+      organizationId: scenario.organizationId
+    )
 
     let params = try #require(activeParams.value)
     #expect(params.0 == "sess_test123")
-    #expect(params.1 == nil)
-  }
-
-  @Test
-  func setActiveWithOrganizationIdUsesSessionService() async throws {
-    let activeParams = LockIsolated<(String, String?)?>(nil)
-    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
-      activeParams.setValue((sessionId, organizationId))
-    })
-
-    configureDependencies(sessionService: sessionService)
-
-    try await Clerk.shared.auth.setActive(sessionId: "sess_test123", organizationId: "org_test456")
-
-    let params = try #require(activeParams.value)
-    #expect(params.0 == "sess_test123")
-    #expect(params.1 == "org_test456")
+    #expect(params.1 == scenario.organizationId)
   }
 }

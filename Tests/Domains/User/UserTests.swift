@@ -19,7 +19,7 @@ struct UserTests {
   }
 
   @Test
-  func reloadUsesService() async throws {
+  func reloadUsesUserServiceReload() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(reload: {
       called.setValue(true)
@@ -34,7 +34,7 @@ struct UserTests {
   }
 
   @Test
-  func updateUsesService() async throws {
+  func updateUsesUserServiceUpdate() async throws {
     let captured = LockIsolated<User.UpdateParams?>(nil)
     let service = MockUserService(update: { params in
       captured.setValue(params)
@@ -51,7 +51,7 @@ struct UserTests {
   }
 
   @Test
-  func createBackupCodesUsesService() async throws {
+  func createBackupCodesUsesUserServiceCreateBackupCodes() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(createBackupCodes: {
       called.setValue(true)
@@ -66,7 +66,7 @@ struct UserTests {
   }
 
   @Test
-  func createEmailAddressUsesService() async throws {
+  func createEmailAddressUsesUserServiceCreateEmailAddress() async throws {
     let captured = LockIsolated<String?>(nil)
     let service = MockUserService(createEmailAddress: { email in
       captured.setValue(email)
@@ -81,7 +81,7 @@ struct UserTests {
   }
 
   @Test
-  func createPhoneNumberUsesService() async throws {
+  func createPhoneNumberUsesUserServiceCreatePhoneNumber() async throws {
     let captured = LockIsolated<String?>(nil)
     let service = MockUserService(createPhoneNumber: { phoneNumber in
       captured.setValue(phoneNumber)
@@ -95,8 +95,21 @@ struct UserTests {
     #expect(captured.value == "+1234567890")
   }
 
-  @Test
-  func createExternalAccountUsesService() async throws {
+  struct ExternalAccountScenario: Codable, Sendable, Equatable {
+    let redirectUrl: String?
+    let additionalScopes: [String]?
+  }
+
+  @Test(
+    arguments: [
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: nil),
+      ExternalAccountScenario(redirectUrl: "custom://redirect", additionalScopes: nil),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: ["scope1", "scope2"]),
+    ]
+  )
+  func createExternalAccountUsesUserServiceCreateExternalAccount(
+    scenario: ExternalAccountScenario
+  ) async throws {
     let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
     let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
       captured.setValue((provider, redirectUrl, additionalScopes))
@@ -105,52 +118,20 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.createExternalAccount(provider: .google)
+    _ = try await User.mock.createExternalAccount(
+      provider: .google,
+      redirectUrl: scenario.redirectUrl,
+      additionalScopes: scenario.additionalScopes
+    )
 
     let params = try #require(captured.value)
     #expect(params.0 == .google)
-    #expect(params.1 == nil)
-    #expect(params.2 == nil)
+    #expect(params.1 == scenario.redirectUrl)
+    #expect(params.2 == scenario.additionalScopes)
   }
 
   @Test
-  func createExternalAccountWithRedirectUrlUsesService() async throws {
-    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
-      captured.setValue((provider, redirectUrl, additionalScopes))
-      return .mockVerified
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createExternalAccount(provider: .google, redirectUrl: "custom://redirect")
-
-    let params = try #require(captured.value)
-    #expect(params.0 == .google)
-    #expect(params.1 == "custom://redirect")
-    #expect(params.2 == nil)
-  }
-
-  @Test
-  func createExternalAccountWithAdditionalScopesUsesService() async throws {
-    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
-      captured.setValue((provider, redirectUrl, additionalScopes))
-      return .mockVerified
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createExternalAccount(provider: .google, additionalScopes: ["scope1", "scope2"])
-
-    let params = try #require(captured.value)
-    #expect(params.0 == .google)
-    #expect(params.1 == nil)
-    #expect(params.2 == ["scope1", "scope2"])
-  }
-
-  @Test
-  func createExternalAccountTokenUsesService() async throws {
+  func createExternalAccountTokenUsesUserServiceCreateExternalAccountToken() async throws {
     let captured = LockIsolated<(IDTokenProvider, String)?>(nil)
     let service = MockUserService(createExternalAccountToken: { provider, idToken in
       captured.setValue((provider, idToken))
@@ -167,7 +148,7 @@ struct UserTests {
   }
 
   @Test
-  func createTotpUsesService() async throws {
+  func createTotpUsesUserServiceCreateTotp() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(createTotp: {
       called.setValue(true)
@@ -182,7 +163,7 @@ struct UserTests {
   }
 
   @Test
-  func verifyTotpUsesService() async throws {
+  func verifyTotpUsesUserServiceVerifyTotp() async throws {
     let captured = LockIsolated<String?>(nil)
     let service = MockUserService(verifyTotp: { code in
       captured.setValue(code)
@@ -197,7 +178,7 @@ struct UserTests {
   }
 
   @Test
-  func disableTotpUsesService() async throws {
+  func disableTotpUsesUserServiceDisableTotp() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(disableTotp: {
       called.setValue(true)
@@ -212,7 +193,7 @@ struct UserTests {
   }
 
   @Test
-  func getOrganizationInvitationsUsesService() async throws {
+  func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
     let captured = LockIsolated<(Int, Int)?>(nil)
     let service = MockUserService(getOrganizationInvitations: { initialPage, pageSize in
       captured.setValue((initialPage, pageSize))
@@ -229,7 +210,7 @@ struct UserTests {
   }
 
   @Test
-  func getOrganizationMembershipsUsesService() async throws {
+  func getOrganizationMembershipsUsesUserServiceGetOrganizationMemberships() async throws {
     let captured = LockIsolated<(Int, Int)?>(nil)
     let service = MockUserService(getOrganizationMemberships: { initialPage, pageSize in
       captured.setValue((initialPage, pageSize))
@@ -245,8 +226,19 @@ struct UserTests {
     #expect(params.1 == 10)
   }
 
-  @Test
-  func getOrganizationSuggestionsUsesService() async throws {
+  struct OrganizationSuggestionsScenario: Codable, Sendable, Equatable {
+    let status: String?
+  }
+
+  @Test(
+    arguments: [
+      OrganizationSuggestionsScenario(status: nil),
+      OrganizationSuggestionsScenario(status: "active"),
+    ]
+  )
+  func getOrganizationSuggestionsUsesUserServiceGetOrganizationSuggestions(
+    scenario: OrganizationSuggestionsScenario
+  ) async throws {
     let captured = LockIsolated<(Int, Int, String?)?>(nil)
     let service = MockUserService(getOrganizationSuggestions: { initialPage, pageSize, status in
       captured.setValue((initialPage, pageSize, status))
@@ -255,34 +247,20 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationSuggestions(initialPage: 0, pageSize: 10)
+    _ = try await User.mock.getOrganizationSuggestions(
+      initialPage: 0,
+      pageSize: 10,
+      status: scenario.status
+    )
 
     let params = try #require(captured.value)
     #expect(params.0 == 0)
     #expect(params.1 == 10)
-    #expect(params.2 == nil)
+    #expect(params.2 == scenario.status)
   }
 
   @Test
-  func getOrganizationSuggestionsWithStatusUsesService() async throws {
-    let captured = LockIsolated<(Int, Int, String?)?>(nil)
-    let service = MockUserService(getOrganizationSuggestions: { initialPage, pageSize, status in
-      captured.setValue((initialPage, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: "active")
-
-    let params = try #require(captured.value)
-    #expect(params.0 == 0)
-    #expect(params.1 == 10)
-    #expect(params.2 == "active")
-  }
-
-  @Test
-  func getSessionsUsesService() async throws {
+  func getSessionsUsesUserServiceGetSessions() async throws {
     let user = User.mock
     let captured = LockIsolated<User?>(nil)
     let service = MockUserService(getSessions: { user in
@@ -298,7 +276,7 @@ struct UserTests {
   }
 
   @Test
-  func updatePasswordUsesService() async throws {
+  func updatePasswordUsesUserServiceUpdatePassword() async throws {
     let captured = LockIsolated<User.UpdatePasswordParams?>(nil)
     let service = MockUserService(updatePassword: { params in
       captured.setValue(params)
@@ -315,7 +293,7 @@ struct UserTests {
   }
 
   @Test
-  func setProfileImageUsesService() async throws {
+  func setProfileImageUsesUserServiceSetProfileImage() async throws {
     let imageData = Data("fake image data".utf8)
     let captured = LockIsolated<Data?>(nil)
     let service = MockUserService(setProfileImage: { data in
@@ -331,7 +309,7 @@ struct UserTests {
   }
 
   @Test
-  func deleteProfileImageUsesService() async throws {
+  func deleteProfileImageUsesUserServiceDeleteProfileImage() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(deleteProfileImage: {
       called.setValue(true)
@@ -346,7 +324,7 @@ struct UserTests {
   }
 
   @Test
-  func deleteUsesService() async throws {
+  func deleteUsesUserServiceDelete() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(delete: {
       called.setValue(true)

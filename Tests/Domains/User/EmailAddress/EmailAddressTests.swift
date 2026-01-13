@@ -19,7 +19,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func createUsesService() async throws {
+  func createUsesEmailAddressServiceCreate() async throws {
     let captured = LockIsolated<String?>(nil)
     let service = MockEmailAddressService(create: { email in
       captured.setValue(email)
@@ -34,7 +34,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func prepareVerificationUsesService() async throws {
+  func prepareVerificationUsesEmailAddressServicePrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
     let service = MockEmailAddressService(prepareVerification: { id, strategy in
@@ -52,7 +52,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func attemptVerificationUsesService() async throws {
+  func attemptVerificationUsesEmailAddressServiceAttemptVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.AttemptStrategy)?>(nil)
     let service = MockEmailAddressService(attemptVerification: { id, strategy in
@@ -73,7 +73,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func destroyUsesService() async throws {
+  func destroyUsesEmailAddressServiceDestroy() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockEmailAddressService(destroy: { id in
