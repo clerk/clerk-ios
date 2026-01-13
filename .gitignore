@@ -98,3 +98,7 @@ buildServer.json
 
 # Integration test publishable keys
 .keys.json
+
+# Agent skills
+.codex/skills/
+.claude/skills/

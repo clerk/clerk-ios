@@ -1,4 +1,4 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
 
 
 # Default target
@@ -15,6 +15,7 @@ help:
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
+	@echo "  make install-agent-skills - Install agent skills into .codex/skills and .claude/skills"
 
 # Main setup command - installs tools and hooks
 setup: install-tools install-hooks create-env
@@ -66,6 +67,10 @@ install-1password-cli:
 fetch-test-keys: install-1password-cli
 	@./scripts/fetch-1password-secrets.sh
 
+# Install agent skills into .codex/skills and .claude/skills
+install-agent-skills:
+	@./scripts/install-agent-skills.sh
+
 # Format all Swift files
 format:
 	@echo "Formatting Swift files..."
@@ -103,5 +108,4 @@ test:
 # OSS contributors: Integration tests will run automatically in CI
 test-integration:
 	@./scripts/run-integration-tests.sh
-
 
