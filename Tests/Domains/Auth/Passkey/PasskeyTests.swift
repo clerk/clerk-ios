@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,100 +8,80 @@ import Testing
 @Suite(.serialized)
 struct PasskeyTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureService(_ service: MockPasskeyService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      passkeyService: service
+    )
   }
 
   @Test
-  func testCreate() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys")!
+  func createUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockPasskeyService(create: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await Passkey.create()
-    #expect(requestHandled.value)
+
+    #expect(called.value == true)
   }
 
   @Test
-  func testUpdate() async throws {
+  func updateUsesService() async throws {
     let passkey = Passkey.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockPasskeyService(update: { passkeyId, name in
+      captured.setValue((passkeyId, name))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["name"] == "New Name")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await passkey.update(name: "New Name")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == passkey.id)
+    #expect(params.1 == "New Name")
   }
 
   @Test
-  func testAttemptVerification() async throws {
+  func attemptVerificationUsesService() async throws {
     let passkey = Passkey.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)/attempt_verification")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockPasskeyService(attemptVerification: { passkeyId, credential in
+      captured.setValue((passkeyId, credential))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
-      #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await passkey.attemptVerification(credential: "mock_credential")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == passkey.id)
+    #expect(params.1 == "mock_credential")
   }
 
   @Test
-  func testDelete() async throws {
+  func deleteUsesService() async throws {
     let passkey = Passkey.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockPasskeyService(delete: { passkeyId in
+      captured.setValue(passkeyId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await passkey.delete()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == passkey.id)
   }
 }

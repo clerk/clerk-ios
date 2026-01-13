@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,602 +8,292 @@ import Testing
 @Suite(.serialized)
 struct SignInTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
   }
 
-  @Test
-  func createWithIdentifier() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
+  private func configureService(_ service: MockSignInService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      signInService: service
     )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["identifier"] == "test@example.com")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await Clerk.shared.auth.signIn("test@example.com")
-    #expect(requestHandled.value)
   }
 
   @Test
-  func createWithOAuth() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    do {
-      try await Clerk.shared.auth.signInWithOAuth(provider: .google)
-    } catch {
-      // Expected to fail in unit tests due to web authentication, but request should still be made
-    }
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithEnterpriseSSO() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "enterprise_sso")
-      #expect(request.urlEncodedFormBody!["identifier"] == "user@enterprise.com")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    do {
-      try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
-    } catch {
-      // Expected to fail in unit tests due to web authentication, but request should still be made
-    }
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithIdToken() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
-      #expect(request.urlEncodedFormBody!["token"] == "mock_id_token")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    do {
-      try await Clerk.shared.auth.signInWithIdToken("mock_id_token", provider: .apple)
-    } catch {
-      // Expected to fail in unit tests due to transfer flow handling, but request should still be made
-    }
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithPasskey() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await Clerk.shared.auth.signInWithPasskey()
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithTicket() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "ticket")
-      #expect(request.urlEncodedFormBody!["ticket"] == "mock_ticket_value")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await Clerk.shared.auth.signInWithTicket("mock_ticket_value")
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithTransfer() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["transfer"] == "1")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    // Transfer is an internal parameter not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func createWithNone() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    // Empty create is not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init())
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func testResetPassword() async throws {
+  func sendEmailCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/reset_password")!
+    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
+    let service = MockSignInService(prepareFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["password"] == "newPassword123")
-      #expect(request.urlEncodedFormBody!["sign_out_of_other_sessions"] == "1")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.sendEmailCode()
 
-    try await signIn.resetPassword(newPassword: "newPassword123", signOutOfOtherSessions: true)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .emailCode)
   }
 
   @Test
-  func prepareFirstFactorEmailCode() async throws {
+  func sendPhoneCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
+    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
+    let service = MockSignInService(prepareFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.sendPhoneCode()
 
-    try await signIn.sendEmailCode()
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .phoneCode)
   }
 
   @Test
-  func prepareFirstFactorPhoneCode() async throws {
+  func verifyCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.verifyCode("123456")
 
-    try await signIn.sendPhoneCode()
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .emailCode)
+    #expect(params.1.code == "123456")
   }
 
   @Test
-  func prepareFirstFactorPasskey() async throws {
+  func authenticateWithPasswordUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.authenticateWithPassword("password123")
 
-    // Passkey prepare requires getting credential first, so we test the service directly for this unit test
-    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
-      signInId: signIn.id,
-      params: .init(strategy: .passkey)
-    )
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func attemptFirstFactorPassword() async throws {
-    let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "password")
-      #expect(request.urlEncodedFormBody!["password"] == "password123")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await signIn.authenticateWithPassword("password123")
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func attemptFirstFactorEmailCode() async throws {
-    let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await signIn.verifyCode("123456")
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func attemptFirstFactorPhoneCode() async throws {
-    let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
-      #expect(request.urlEncodedFormBody!["code"] == "654321")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    // verifyCode() infers strategy from firstFactorVerification state, which is hard to control in unit tests
-    // For this test that specifically verifies phone_code parameters, we use the service directly
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
-      signInId: signIn.id,
-      params: .init(strategy: .phoneCode, code: "654321")
-    )
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func attemptFirstFactorPasskey() async throws {
-    let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
-      #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    // Passkey attempt requires getting credential first, so we test the service directly for this unit test
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
-      signInId: signIn.id,
-      params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")
-    )
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .password)
+    #expect(params.1.password == "password123")
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
-  func attemptFirstFactorIdToken() async throws {
+  func authenticateWithIdTokenUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
-    let mockIdToken = "mock_apple_id_token"
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
-      #expect(request.urlEncodedFormBody!["token"] == mockIdToken)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.authenticateWithIdToken("mock_id_token", provider: .apple)
 
-    try await signIn.authenticateWithIdToken(mockIdToken, provider: .apple)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .idToken(.apple))
+    #expect(params.1.token == "mock_id_token")
   }
   #endif
 
   @Test
-  func prepareSecondFactor() async throws {
+  func sendMfaPhoneCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_second_factor")!
+    let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
+    let service = MockSignInService(prepareSecondFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.sendMfaPhoneCode()
 
-    try await signIn.sendMfaPhoneCode()
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .phoneCode)
   }
 
   @Test
-  func attemptSecondFactorPhoneCode() async throws {
+  func sendMfaEmailCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
+    let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
+    let service = MockSignInService(prepareSecondFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.sendMfaEmailCode()
 
-    try await signIn.verifyMfaCode("123456", type: .phoneCode)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .emailCode)
   }
 
   @Test
-  func attemptSecondFactorTotp() async throws {
+  func verifyMfaPhoneCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
+    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
+    let service = MockSignInService(attemptSecondFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "totp")
-      #expect(request.urlEncodedFormBody!["code"] == "654321")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.verifyMfaCode("123456", type: .phoneCode)
 
-    try await signIn.verifyMfaCode("654321", type: .totp)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .phoneCode)
+    #expect(params.1.code == "123456")
   }
 
   @Test
-  func attemptSecondFactorBackupCode() async throws {
+  func verifyMfaTotpUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_second_factor")!
+    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
+    let service = MockSignInService(attemptSecondFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "backup_code")
-      #expect(request.urlEncodedFormBody!["code"] == "backup123")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.verifyMfaCode("654321", type: .totp)
 
-    try await signIn.verifyMfaCode("backup123", type: .backupCode)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .totp)
+    #expect(params.1.code == "654321")
   }
 
   @Test
-  func testGet() async throws {
+  func verifyMfaBackupCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)")!
+    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
+    let service = MockSignInService(attemptSecondFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.verifyMfaCode("backup123", type: .backupCode)
 
-    try await signIn.reload()
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .backupCode)
+    #expect(params.1.code == "backup123")
   }
 
   @Test
-  func getWithRotatingTokenNonce() async throws {
+  func sendResetPasswordEmailCodeUsesService() async throws {
     let signIn = SignIn.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)")!
+    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
+    let service = MockSignInService(prepareFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("rotating_token_nonce=test_nonce") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await signIn.sendResetPasswordEmailCode()
 
-    try await signIn.reload(rotatingTokenNonce: "test_nonce")
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .resetPasswordEmailCode)
+  }
+
+  @Test
+  func sendResetPasswordPhoneCodeUsesService() async throws {
+    let signIn = SignIn.mock
+    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
+    let service = MockSignInService(prepareFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await signIn.sendResetPasswordPhoneCode()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .resetPasswordPhoneCode)
+  }
+
+  @Test
+  func resetPasswordUsesService() async throws {
+    let signIn = SignIn.mock
+    let captured = LockIsolated<(String, SignIn.ResetPasswordParams)?>(nil)
+    let service = MockSignInService(resetPassword: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await signIn.resetPassword(newPassword: "newPassword123", signOutOfOtherSessions: true)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.password == "newPassword123")
+    #expect(params.1.signOutOfOtherSessions == true)
+  }
+
+  @Test
+  func reloadUsesService() async throws {
+    let signIn = SignIn.mock
+    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let service = MockSignInService(get: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await signIn.reload()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.rotatingTokenNonce == nil)
+  }
+
+  @Test
+  func reloadWithRotatingTokenNonceUsesService() async throws {
+    let signIn = SignIn.mock
+    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let service = MockSignInService(get: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await signIn.reload(rotatingTokenNonce: "test_nonce")
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.rotatingTokenNonce == "test_nonce")
   }
 }

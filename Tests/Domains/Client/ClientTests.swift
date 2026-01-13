@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,28 +8,24 @@ import Testing
 @Suite(.serialized)
 struct ClientTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
   }
 
   @Test
-  func testGet() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
+  func refreshClientUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockClientService(get: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
-      ]
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
     _ = try await Clerk.shared.refreshClient()
-    #expect(requestHandled.value)
+
+    #expect(called.value == true)
   }
 }

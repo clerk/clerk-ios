@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,545 +8,355 @@ import Testing
 @Suite(.serialized)
 struct UserTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureService(_ service: MockUserService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      userService: service
+    )
   }
 
   @Test
-  func testReload() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+  func reloadUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(reload: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: user, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.reload()
 
-    _ = try await user.reload()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 
   @Test
-  func testUpdate() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+  func updateUsesService() async throws {
+    let captured = LockIsolated<User.UpdateParams?>(nil)
+    let service = MockUserService(update: { params in
+      captured.setValue(params)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: user, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["first_name"] == "John")
-      #expect(request.urlEncodedFormBody!["last_name"] == "Doe")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.update(.init(firstName: "John", lastName: "Doe"))
 
-    try await user.update(.init(firstName: "John", lastName: "Doe"))
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.firstName == "John")
+    #expect(params.lastName == "Doe")
   }
 
   @Test
-  func testCreateBackupCodes() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/backup_codes")!
+  func createBackupCodesUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(createBackupCodes: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<BackupCodeResource>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createBackupCodes()
 
-    _ = try await user.createBackupCodes()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 
   @Test
-  func testCreateEmailAddress() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
+  func createEmailAddressUsesService() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockUserService(createEmailAddress: { email in
+      captured.setValue(email)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["email_address"] == "new@example.com")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createEmailAddress("new@example.com")
 
-    _ = try await user.createEmailAddress("new@example.com")
-    #expect(requestHandled.value)
+    #expect(captured.value == "new@example.com")
   }
 
   @Test
-  func testCreatePhoneNumber() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
+  func createPhoneNumberUsesService() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockUserService(createPhoneNumber: { phoneNumber in
+      captured.setValue(phoneNumber)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["phone_number"] == "+1234567890")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createPhoneNumber("+1234567890")
 
-    _ = try await user.createPhoneNumber("+1234567890")
-    #expect(requestHandled.value)
+    #expect(captured.value == "+1234567890")
   }
 
   @Test
-  func testCreateExternalAccount() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
-    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
+  func createExternalAccountUsesService() async throws {
+    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
+      captured.setValue((provider, redirectUrl, additionalScopes))
+      return .mockVerified
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createExternalAccount(provider: .google)
 
-    _ = try await user.createExternalAccount(provider: .google)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == .google)
+    #expect(params.1 == nil)
+    #expect(params.2 == nil)
   }
 
   @Test
-  func createExternalAccountWithExplicitRedirectUrl() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
-    let explicitRedirectUrl = "custom://redirect"
+  func createExternalAccountWithRedirectUrlUsesService() async throws {
+    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
+      captured.setValue((provider, redirectUrl, additionalScopes))
+      return .mockVerified
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createExternalAccount(provider: .google, redirectUrl: "custom://redirect")
 
-    _ = try await user.createExternalAccount(provider: .google, redirectUrl: explicitRedirectUrl)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == .google)
+    #expect(params.1 == "custom://redirect")
+    #expect(params.2 == nil)
   }
 
   @Test
-  func createExternalAccountWithAdditionalScopes() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
-    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
+  func createExternalAccountWithAdditionalScopesUsesService() async throws {
+    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
+      captured.setValue((provider, redirectUrl, additionalScopes))
+      return .mockVerified
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
-      #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      #expect(request.urlEncodedFormBody!["additional_scopes"] == "scope1,scope2")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createExternalAccount(provider: .google, additionalScopes: ["scope1", "scope2"])
 
-    _ = try await user.createExternalAccount(provider: .google, additionalScopes: ["scope1", "scope2"])
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == .google)
+    #expect(params.1 == nil)
+    #expect(params.2 == ["scope1", "scope2"])
   }
 
   @Test
-  func createExternalAccountToken() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
+  func createExternalAccountTokenUsesService() async throws {
+    let captured = LockIsolated<(IDTokenProvider, String)?>(nil)
+    let service = MockUserService(createExternalAccountToken: { provider, idToken in
+      captured.setValue((provider, idToken))
+      return .mockVerified
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
-      #expect(request.urlEncodedFormBody!["token"] == "mock_id_token")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createExternalAccount(provider: .apple, idToken: "mock_id_token")
 
-    _ = try await user.createExternalAccount(provider: .apple, idToken: "mock_id_token")
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == .apple)
+    #expect(params.1 == "mock_id_token")
   }
 
   @Test
-  func createTotp() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp")!
+  func createTotpUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(createTotp: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.createTOTP()
 
-    _ = try await user.createTOTP()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 
   @Test
-  func verifyTotp() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp/attempt_verification")!
+  func verifyTotpUsesService() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockUserService(verifyTotp: { code in
+      captured.setValue(code)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.verifyTOTP(code: "123456")
 
-    _ = try await user.verifyTOTP(code: "123456")
-    #expect(requestHandled.value)
+    #expect(captured.value == "123456")
   }
 
   @Test
-  func disableTotp() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp")!
+  func disableTotpUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(disableTotp: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.disableTOTP()
 
-    _ = try await user.disableTOTP()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 
   @Test
-  func testGetOrganizationInvitations() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_invitations")!
+  func getOrganizationInvitationsUsesService() async throws {
+    let captured = LockIsolated<(Int, Int)?>(nil)
+    let service = MockUserService(getOrganizationInvitations: { initialPage, pageSize in
+      captured.setValue((initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.getOrganizationInvitations(initialPage: 0, pageSize: 10)
 
-    _ = try await user.getOrganizationInvitations(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == 0)
+    #expect(params.1 == 10)
   }
 
   @Test
-  func testGetOrganizationMemberships() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_memberships")!
+  func getOrganizationMembershipsUsesService() async throws {
+    let captured = LockIsolated<(Int, Int)?>(nil)
+    let service = MockUserService(getOrganizationMemberships: { initialPage, pageSize in
+      captured.setValue((initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
-            response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("paginated=true") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.getOrganizationMemberships(initialPage: 0, pageSize: 10)
 
-    _ = try await user.getOrganizationMemberships(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == 0)
+    #expect(params.1 == 10)
   }
 
   @Test
-  func testGetOrganizationSuggestions() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions")!
+  func getOrganizationSuggestionsUsesService() async throws {
+    let captured = LockIsolated<(Int, Int, String?)?>(nil)
+    let service = MockUserService(getOrganizationSuggestions: { initialPage, pageSize, status in
+      captured.setValue((initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.getOrganizationSuggestions(initialPage: 0, pageSize: 10)
 
-    _ = try await user.getOrganizationSuggestions(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == 0)
+    #expect(params.1 == 10)
+    #expect(params.2 == nil)
   }
 
   @Test
-  func getOrganizationSuggestionsWithStatus() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions")!
+  func getOrganizationSuggestionsWithStatusUsesService() async throws {
+    let captured = LockIsolated<(Int, Int, String?)?>(nil)
+    let service = MockUserService(getOrganizationSuggestions: { initialPage, pageSize, status in
+      captured.setValue((initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("status=active") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: "active")
 
-    _ = try await user.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: "active")
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == 0)
+    #expect(params.1 == 10)
+    #expect(params.2 == "active")
   }
 
   @Test
-  func testGetSessions() async throws {
+  func getSessionsUsesService() async throws {
     let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/active")!
+    let captured = LockIsolated<User?>(nil)
+    let service = MockUserService(getSessions: { user in
+      captured.setValue(user)
+      return [Session.mock]
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode([Session.mock]),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await user.getSessions()
-    #expect(requestHandled.value)
+
+    #expect(captured.value?.id == user.id)
   }
 
   @Test
-  func testUpdatePassword() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/change_password")!
+  func updatePasswordUsesService() async throws {
+    let captured = LockIsolated<User.UpdatePasswordParams?>(nil)
+    let service = MockUserService(updatePassword: { params in
+      captured.setValue(params)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: user, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["new_password"] == "newPassword123")
-      #expect(request.urlEncodedFormBody!["sign_out_of_other_sessions"] == "1")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.updatePassword(.init(newPassword: "newPassword123", signOutOfOtherSessions: true))
 
-    try await user.updatePassword(.init(newPassword: "newPassword123", signOutOfOtherSessions: true))
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.newPassword == "newPassword123")
+    #expect(params.signOutOfOtherSessions == true)
   }
 
   @Test
-  func testSetProfileImage() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/profile_image")!
+  func setProfileImageUsesService() async throws {
     let imageData = Data("fake image data".utf8)
+    let captured = LockIsolated<Data?>(nil)
+    let service = MockUserService(setProfileImage: { data in
+      captured.setValue(data)
+      return ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg")
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ImageResource>(
-            response: ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg"),
-            client: .mock
-          )
-        ),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.setProfileImage(imageData: imageData)
 
-    _ = try await user.setProfileImage(imageData: imageData)
-    #expect(requestHandled.value)
+    #expect(captured.value == imageData)
   }
 
   @Test
-  func testDeleteProfileImage() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/profile_image")!
+  func deleteProfileImageUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(deleteProfileImage: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.deleteProfileImage()
 
-    _ = try await user.deleteProfileImage()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 
   @Test
-  func testDelete() async throws {
-    let user = User.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+  func deleteUsesService() async throws {
+    let called = LockIsolated(false)
+    let service = MockUserService(delete: {
+      called.setValue(true)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
+    configureService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await User.mock.delete()
 
-    _ = try await user.delete()
-    #expect(requestHandled.value)
+    #expect(called.value == true)
   }
 }

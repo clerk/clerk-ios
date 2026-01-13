@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,100 +8,83 @@ import Testing
 @Suite(.serialized)
 struct EmailAddressTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureService(_ service: MockEmailAddressService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      emailAddressService: service
+    )
   }
 
   @Test
-  func testCreate() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
+  func createUsesService() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockEmailAddressService(create: { email in
+      captured.setValue(email)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await EmailAddress.create("test@example.com")
-    #expect(requestHandled.value)
+
+    #expect(captured.value == "test@example.com")
   }
 
   @Test
-  func testPrepareVerification() async throws {
+  func prepareVerificationUsesService() async throws {
     let emailAddress = EmailAddress.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")!
+    let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
+    let service = MockEmailAddressService(prepareVerification: { id, strategy in
+      captured.setValue((id, strategy))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await emailAddress.prepareVerification(strategy: .emailCode)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == emailAddress.id)
+    #expect(params.1 == .emailCode)
   }
 
   @Test
-  func testAttemptVerification() async throws {
+  func attemptVerificationUsesService() async throws {
     let emailAddress = EmailAddress.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)/attempt_verification")!
+    let captured = LockIsolated<(String, EmailAddress.AttemptStrategy)?>(nil)
+    let service = MockEmailAddressService(attemptVerification: { id, strategy in
+      captured.setValue((id, strategy))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await emailAddress.attemptVerification(strategy: .emailCode(code: "123456"))
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == emailAddress.id)
+    switch params.1 {
+    case .emailCode(let code):
+      #expect(code == "123456")
+    }
   }
 
   @Test
-  func testDestroy() async throws {
+  func destroyUsesService() async throws {
     let emailAddress = EmailAddress.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockEmailAddressService(destroy: { id in
+      captured.setValue(id)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await emailAddress.destroy()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == emailAddress.id)
   }
 }

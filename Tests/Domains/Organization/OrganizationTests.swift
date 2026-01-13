@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,736 +8,559 @@ import Testing
 @Suite(.serialized)
 struct OrganizationTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureOrganizationService(_ service: MockOrganizationService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      organizationService: service
+    )
   }
 
   @Test
-  func updateOrganization() async throws {
+  func updateOrganizationUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+    let captured = LockIsolated<(String, String, String?)?>(nil)
+    let service = MockOrganizationService(updateOrganization: { id, name, slug in
+      captured.setValue((id, name, slug))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
-      ]
-    )
+    configureOrganizationService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["name"] == "New Name")
-      #expect(request.urlEncodedFormBody!["slug"] == "new-slug")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await organization.update(name: "New Name", slug: "new-slug")
 
-    try await organization.update(name: "New Name", slug: "new-slug")
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "New Name")
+    #expect(params.2 == "new-slug")
   }
 
   @Test
-  func destroyOrganization() async throws {
+  func destroyOrganizationUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+    let capturedId = LockIsolated<String?>(nil)
+    let service = MockOrganizationService(destroyOrganization: { organizationId in
+      capturedId.setValue(organizationId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.destroy()
-    #expect(requestHandled.value)
+
+    #expect(capturedId.value == organization.id)
   }
 
   @Test
-  func setOrganizationLogo() async throws {
+  func setOrganizationLogoUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/logo")!
+    let captured = LockIsolated<(String, Data)?>(nil)
+    let service = MockOrganizationService(setOrganizationLogo: { organizationId, imageData in
+      captured.setValue((organizationId, imageData))
+      return .mock
+    })
+
+    configureOrganizationService(service)
+
     let imageData = Data("fake image data".utf8)
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .put: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PUT")
-      #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
     _ = try await organization.setLogo(imageData: imageData)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == imageData)
   }
 
   @Test
-  func getOrganizationRoles() async throws {
+  func getOrganizationRolesUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/roles")!
+    let captured = LockIsolated<(String, Int, Int)?>(nil)
+    let service = MockOrganizationService(getOrganizationRoles: { organizationId, initialPage, pageSize in
+      captured.setValue((organizationId, initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<RoleResource>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getRoles(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
   }
 
   @Test
-  func getOrganizationMemberships() async throws {
+  func getOrganizationMembershipsUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
+    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
+    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
+      captured.setValue((organizationId, query, role, initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
-            response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("paginated=true") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getMemberships(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == nil)
+    #expect(params.2 == nil)
+    #expect(params.3 == 0)
+    #expect(params.4 == 10)
   }
 
   @Test
-  func getOrganizationMembershipsWithQuery() async throws {
+  func getOrganizationMembershipsWithQueryUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
+    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
+    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
+      captured.setValue((organizationId, query, role, initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
-            response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("query=test") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getMemberships(query: "test", initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "test")
+    #expect(params.2 == nil)
+    #expect(params.3 == 0)
+    #expect(params.4 == 10)
   }
 
   @Test
-  func getOrganizationMembershipsWithRole() async throws {
+  func getOrganizationMembershipsWithRoleUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
+    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
+    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
+      captured.setValue((organizationId, query, role, initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
-            response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      let queryString = request.url?.query ?? ""
-      #expect(queryString.contains("role") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getMemberships(role: ["admin"], initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == nil)
+    #expect(params.2 == ["admin"])
+    #expect(params.3 == 0)
+    #expect(params.4 == 10)
   }
 
   @Test
-  func addOrganizationMember() async throws {
+  func addOrganizationMemberUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(addOrganizationMember: { organizationId, userId, role in
+      captured.setValue((organizationId, userId, role))
+      return .mockWithUserData
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["user_id"] == "user123")
-      #expect(request.urlEncodedFormBody!["role"] == "org:member")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.addMember(userId: "user123", role: "org:member")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "user123")
+    #expect(params.2 == "org:member")
   }
 
   @Test
-  func updateOrganizationMember() async throws {
+  func updateOrganizationMemberUsesService() async throws {
     let organization = Organization.mock
-    let membership = OrganizationMembership.mockWithUserData
-    let userId = membership.publicUserData!.userId!
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships/\(userId)")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
+      captured.setValue((organizationId, userId, role))
+      return .mockWithUserData
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
-      ]
-    )
+    configureOrganizationService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["role"] == "org:admin")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await organization.updateMember(userId: "user123", role: "org:admin")
 
-    try await membership.update(role: "org:admin")
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "user123")
+    #expect(params.2 == "org:admin")
   }
 
   @Test
-  func removeOrganizationMember() async throws {
+  func removeOrganizationMemberUsesService() async throws {
     let organization = Organization.mock
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(removeOrganizationMember: { organizationId, userId in
+      captured.setValue((organizationId, userId))
+      return .mockWithUserData
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.removeMember(userId: "user123")
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "user123")
+  }
+
+  @Test
+  func updateOrganizationMembershipUsesService() async throws {
     let membership = OrganizationMembership.mockWithUserData
-    let userId = membership.publicUserData!.userId!
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/memberships/\(userId)")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
+      captured.setValue((organizationId, userId, role))
+      return .mockWithUserData
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
-      ]
-    )
+    configureOrganizationService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await membership.update(role: "org:admin")
+
+    let params = try #require(captured.value)
+    #expect(params.0 == membership.organization.id)
+    #expect(params.1 == membership.publicUserData?.userId)
+    #expect(params.2 == "org:admin")
+  }
+
+  @Test
+  func destroyOrganizationMembershipUsesService() async throws {
+    let membership = OrganizationMembership.mockWithUserData
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(destroyOrganizationMembership: { organizationId, userId in
+      captured.setValue((organizationId, userId))
+      return .mockWithUserData
+    })
+
+    configureOrganizationService(service)
 
     _ = try await membership.destroy()
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == membership.organization.id)
+    #expect(params.1 == membership.publicUserData?.userId)
   }
 
   @Test
-  func getOrganizationInvitations() async throws {
+  func getOrganizationInvitationsUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("paginated=true") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getInvitations(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == nil)
   }
 
   @Test
-  func getOrganizationInvitationsWithStatus() async throws {
+  func getOrganizationInvitationsWithStatusUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("status=pending") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getInvitations(initialPage: 0, pageSize: 10, status: "pending")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == "pending")
   }
 
   @Test
-  func inviteOrganizationMember() async throws {
+  func inviteOrganizationMemberUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(inviteOrganizationMember: { organizationId, emailAddress, role in
+      captured.setValue((organizationId, emailAddress, role))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["email_address"] == "user@example.com")
-      #expect(request.urlEncodedFormBody!["role"] == "org:member")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.inviteMember(emailAddress: "user@example.com", role: "org:member")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "user@example.com")
+    #expect(params.2 == "org:member")
   }
 
   @Test
-  func createOrganizationDomain() async throws {
+  func createOrganizationDomainUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(createOrganizationDomain: { organizationId, domainName in
+      captured.setValue((organizationId, domainName))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["name"] == "example.com")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.createDomain(domainName: "example.com")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "example.com")
   }
 
   @Test
-  func getOrganizationDomains() async throws {
+  func getOrganizationDomainsUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
+      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getDomains(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == nil)
   }
 
   @Test
-  func getOrganizationDomainsWithEnrollmentMode() async throws {
+  func getOrganizationDomainsWithEnrollmentModeUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
+      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("enrollment_mode=automatic") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getDomains(initialPage: 0, pageSize: 10, enrollmentMode: "automatic")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == "automatic")
   }
 
   @Test
-  func getOrganizationDomain() async throws {
+  func getOrganizationDomainUsesService() async throws {
     let organization = Organization.mock
-    let domain = OrganizationDomain.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/domains/\(domain.id)")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(getOrganizationDomain: { organizationId, domainId in
+      captured.setValue((organizationId, domainId))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
-      ]
-    )
+    configureOrganizationService(service)
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await organization.getDomain(domainId: "domain123")
 
-    _ = try await organization.getDomain(domainId: domain.id)
-    #expect(requestHandled.value)
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "domain123")
   }
 
   @Test
-  func getOrganizationMembershipRequests() async throws {
+  func getOrganizationMembershipRequestsUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/membership_requests")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("offset=0") == true)
-      #expect(request.url?.query?.contains("limit=10") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(initialPage: 0, pageSize: 10)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == nil)
   }
 
   @Test
-  func getOrganizationMembershipRequestsWithStatus() async throws {
+  func getOrganizationMembershipRequestsWithStatusUsesService() async throws {
     let organization = Organization.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/membership_requests")!
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
-          ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
-            client: .mock
-          )
-        ),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("status=pending") == true)
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(initialPage: 0, pageSize: 10, status: "pending")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 0)
+    #expect(params.2 == 10)
+    #expect(params.3 == "pending")
   }
 
   @Test
-  func deleteOrganizationDomain() async throws {
+  func deleteOrganizationDomainUsesService() async throws {
     let domain = OrganizationDomain.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(deleteOrganizationDomain: { organizationId, domainId in
+      captured.setValue((organizationId, domainId))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await domain.delete()
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == domain.organizationId)
+    #expect(params.1 == domain.id)
   }
 
   @Test
-  func prepareOrganizationDomainAffiliationVerification() async throws {
+  func prepareOrganizationDomainAffiliationVerificationUsesService() async throws {
     let domain = OrganizationDomain.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/prepare_affiliation_verification")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(prepareOrganizationDomainAffiliationVerification: { organizationId, domainId, emailAddress in
+      captured.setValue((organizationId, domainId, emailAddress))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["affiliation_email_address"] == "user@example.com")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "user@example.com")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == domain.organizationId)
+    #expect(params.1 == domain.id)
+    #expect(params.2 == "user@example.com")
   }
 
   @Test
-  func attemptOrganizationDomainAffiliationVerification() async throws {
+  func attemptOrganizationDomainAffiliationVerificationUsesService() async throws {
     let domain = OrganizationDomain.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/attempt_affiliation_verification")!
+    let captured = LockIsolated<(String, String, String)?>(nil)
+    let service = MockOrganizationService(attemptOrganizationDomainAffiliationVerification: { organizationId, domainId, code in
+      captured.setValue((organizationId, domainId, code))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await domain.attemptAffiliationVerification(code: "123456")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == domain.organizationId)
+    #expect(params.1 == domain.id)
+    #expect(params.2 == "123456")
   }
 
   @Test
-  func revokeOrganizationInvitation() async throws {
+  func revokeOrganizationInvitationUsesService() async throws {
     let invitation = OrganizationInvitation.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(invitation.organizationId)/invitations/\(invitation.id)/revoke")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(revokeOrganizationInvitation: { organizationId, invitationId in
+      captured.setValue((organizationId, invitationId))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationInvitation>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await invitation.revoke()
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == invitation.organizationId)
+    #expect(params.1 == invitation.id)
   }
 
   @Test
-  func destroyOrganizationMembership() async throws {
-    let membership = OrganizationMembership.mockWithUserData
-    let userId = membership.publicUserData!.userId!
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(membership.organization.id)/memberships/\(userId)")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await membership.destroy()
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func acceptUserOrganizationInvitation() async throws {
+  func acceptUserOrganizationInvitationUsesService() async throws {
     let invitation = UserOrganizationInvitation.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_invitations/\(invitation.id)/accept")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+      captured.setValue(invitationId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<UserOrganizationInvitation>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await invitation.accept()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == invitation.id)
   }
 
   @Test
-  func acceptOrganizationSuggestion() async throws {
+  func acceptOrganizationSuggestionUsesService() async throws {
     let suggestion = OrganizationSuggestion.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions/\(suggestion.id)/accept")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
+      captured.setValue(suggestionId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationSuggestion>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await suggestion.accept()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == suggestion.id)
   }
 
   @Test
-  func acceptOrganizationMembershipRequest() async throws {
+  func acceptOrganizationMembershipRequestUsesService() async throws {
     let request = OrganizationMembershipRequest.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/accept")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(acceptOrganizationMembershipRequest: { organizationId, requestId in
+      captured.setValue((organizationId, requestId))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await request.accept()
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == request.organizationId)
+    #expect(params.1 == request.id)
   }
 
   @Test
-  func rejectOrganizationMembershipRequest() async throws {
+  func rejectOrganizationMembershipRequestUsesService() async throws {
     let request = OrganizationMembershipRequest.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/reject")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockOrganizationService(rejectOrganizationMembershipRequest: { organizationId, requestId in
+      captured.setValue((organizationId, requestId))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembershipRequest>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureOrganizationService(service)
 
     _ = try await request.reject()
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == request.organizationId)
+    #expect(params.1 == request.id)
   }
 }

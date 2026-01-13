@@ -1,0 +1,111 @@
+import ConcurrencyExtras
+import Foundation
+import Mocker
+import Testing
+
+@testable import ClerkKit
+
+@MainActor
+@Suite(.serialized)
+struct PasskeyServiceTests {
+  init() {
+    configureClerkForTesting()
+  }
+
+  @Test
+  func testCreate() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys")!
+
+    var mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.passkeyService.create()
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func testUpdate() async throws {
+    let passkey = Passkey.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+
+    var mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody!["name"] == "New Name")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.passkeyService.update(passkeyId: passkey.id, name: "New Name")
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func testAttemptVerification() async throws {
+    let passkey = Passkey.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)/attempt_verification")!
+
+    var mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
+      #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.passkeyService.attemptVerification(
+      passkeyId: passkey.id,
+      credential: "mock_credential"
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func testDelete() async throws {
+    let passkey = Passkey.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+
+    var mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "DELETE")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.passkeyService.delete(passkeyId: passkey.id)
+    #expect(requestHandled.value)
+  }
+}

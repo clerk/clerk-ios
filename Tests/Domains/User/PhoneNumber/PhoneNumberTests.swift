@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,148 +8,112 @@ import Testing
 @Suite(.serialized)
 struct PhoneNumberTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureService(_ service: MockPhoneNumberService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      phoneNumberService: service
+    )
   }
 
   @Test
-  func testCreate() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
+  func createUsesService() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockPhoneNumberService(create: { phoneNumber in
+      captured.setValue(phoneNumber)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["phone_number"] == "+1234567890")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await PhoneNumber.create("+1234567890")
-    #expect(requestHandled.value)
+
+    #expect(captured.value == "+1234567890")
   }
 
   @Test
-  func testDelete() async throws {
+  func deleteUsesService() async throws {
     let phoneNumber = PhoneNumber.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockPhoneNumberService(delete: { phoneNumberId in
+      captured.setValue(phoneNumberId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await phoneNumber.delete()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == phoneNumber.id)
   }
 
   @Test
-  func testPrepareVerification() async throws {
+  func prepareVerificationUsesService() async throws {
     let phoneNumber = PhoneNumber.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)/prepare_verification")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockPhoneNumberService(prepareVerification: { phoneNumberId in
+      captured.setValue(phoneNumberId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await phoneNumber.prepareVerification()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == phoneNumber.id)
   }
 
   @Test
-  func testAttemptVerification() async throws {
+  func attemptVerificationUsesService() async throws {
     let phoneNumber = PhoneNumber.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)/attempt_verification")!
+    let captured = LockIsolated<(String, String)?>(nil)
+    let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code in
+      captured.setValue((phoneNumberId, code))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["code"] == "123456")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await phoneNumber.attemptVerification(code: "123456")
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == phoneNumber.id)
+    #expect(params.1 == "123456")
   }
 
   @Test
-  func testMakeDefaultSecondFactor() async throws {
+  func makeDefaultSecondFactorUsesService() async throws {
     let phoneNumber = PhoneNumber.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockPhoneNumberService(makeDefaultSecondFactor: { phoneNumberId in
+      captured.setValue(phoneNumberId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["default_second_factor"] == "1")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await phoneNumber.makeDefaultSecondFactor()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == phoneNumber.id)
   }
 
   @Test
-  func testSetReservedForSecondFactor() async throws {
+  func setReservedForSecondFactorUsesService() async throws {
     let phoneNumber = PhoneNumber.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let captured = LockIsolated<(String, Bool)?>(nil)
+    let service = MockPhoneNumberService(setReservedForSecondFactor: { phoneNumberId, reserved in
+      captured.setValue((phoneNumberId, reserved))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["reserved_for_second_factor"] == "1")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await phoneNumber.setReservedForSecondFactor(reserved: true)
-    #expect(requestHandled.value)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == phoneNumber.id)
+    #expect(params.1 == true)
   }
 }

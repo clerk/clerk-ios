@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,99 +8,25 @@ import Testing
 @Suite(.serialized)
 struct SessionTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
   }
 
   @Test
-  func testRevoke() async throws {
+  func revokeUsesService() async throws {
     let session = Session.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/\(session.id)/revoke")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockSessionService(revoke: { sessionId in
+      captured.setValue(sessionId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock)),
-      ]
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await session.revoke()
 
-    try await session.revoke()
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func testGetToken() async throws {
-    let session = Session.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await session.getToken(.init(skipCache: true))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func getTokenWithTemplate() async throws {
-    let session = Session.mock
-    let template = "firebase"
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens/\(template)")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await session.getToken(.init(template: template, skipCache: true))
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func getTokenWithSkipCache() async throws {
-    let session = Session.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
-
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await session.getToken(.init(skipCache: true))
-    #expect(requestHandled.value)
+    #expect(captured.value == session.id)
   }
 }

@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,29 +8,29 @@ import Testing
 @Suite(.serialized)
 struct ExternalAccountTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
+  }
+
+  private func configureService(_ service: MockExternalAccountService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      externalAccountService: service
+    )
   }
 
   @Test
-  func testDestroy() async throws {
+  func destroyUsesService() async throws {
     let externalAccount = ExternalAccount.mockVerified
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts/\(externalAccount.id)")!
+    let captured = LockIsolated<String?>(nil)
+    let service = MockExternalAccountService(destroy: { externalAccountId in
+      captured.setValue(externalAccountId)
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    configureService(service)
 
     _ = try await externalAccount.destroy()
-    #expect(requestHandled.value)
+
+    #expect(captured.value == externalAccount.id)
   }
 }
