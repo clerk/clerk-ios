@@ -51,21 +51,10 @@ actor SessionTokenFetcher {
       return token
     }
 
-    var token: TokenResource?
-
-    if let template = options.template {
-      let request = Request<TokenResource?>(
-        path: "/v1/client/sessions/\(session.id)/tokens/\(template)",
-        method: .post
-      )
-      token = try await Clerk.shared.dependencies.apiClient.send(request).value
-    } else {
-      let request = Request<TokenResource?>(
-        path: "/v1/client/sessions/\(session.id)/tokens",
-        method: .post
-      )
-      token = try await Clerk.shared.dependencies.apiClient.send(request).value
-    }
+    let token = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: options.template
+    )
 
     if let token {
       await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)

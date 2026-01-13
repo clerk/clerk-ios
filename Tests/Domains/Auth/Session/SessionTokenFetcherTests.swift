@@ -1,6 +1,5 @@
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @testable import ClerkKit
@@ -9,53 +8,52 @@ import Testing
 @Suite(.serialized)
 struct SessionTokenFetcherTests {
   init() {
-    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey)
   }
 
   @Test
-  func fetchToken() async throws {
+  func fetchTokenUsesSessionService() async throws {
     let session = Session.mock
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
+    let captured = LockIsolated<(sessionId: String, template: String?)?>(nil)
+    let service = MockSessionService(fetchToken: { sessionId, template in
+      captured.setValue((sessionId: sessionId, template: template))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
     )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
 
     _ = try await SessionTokenFetcher.shared.fetchToken(session, options: .init(skipCache: true))
-    #expect(requestHandled.value)
+
+    let values = try #require(captured.value)
+    #expect(values.sessionId == session.id)
+    #expect(values.template == nil)
   }
 
   @Test
-  func fetchTokenWithTemplate() async throws {
+  func fetchTokenWithTemplateUsesSessionService() async throws {
     let session = Session.mock
     let template = "firebase"
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens/\(template)")!
+    let captured = LockIsolated<(sessionId: String, template: String?)?>(nil)
+    let service = MockSessionService(fetchToken: { sessionId, template in
+      captured.setValue((sessionId: sessionId, template: template))
+      return .mock
+    })
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
-    }
-    mock.register()
+    _ = try await SessionTokenFetcher.shared.fetchToken(
+      session,
+      options: .init(template: template, skipCache: true)
+    )
 
-    _ = try await SessionTokenFetcher.shared.fetchToken(session, options: .init(template: template, skipCache: true))
-    #expect(requestHandled.value)
+    let values = try #require(captured.value)
+    #expect(values.sessionId == session.id)
+    #expect(values.template == template)
   }
 }

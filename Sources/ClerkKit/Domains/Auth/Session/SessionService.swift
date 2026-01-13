@@ -19,6 +19,12 @@ protocol SessionServiceProtocol: Sendable {
   ///   - sessionId: The session ID to set as active.
   ///   - organizationId: Optional organization ID to set as active in the session.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
+
+  /// Creates a session token for the given session and optional template.
+  /// - Parameters:
+  ///   - sessionId: The session ID to generate a token for.
+  ///   - template: Optional JWT template name.
+  @MainActor func fetchToken(sessionId: String, template: String?) async throws -> TokenResource?
 }
 
 final class SessionService: SessionServiceProtocol {
@@ -67,5 +73,21 @@ final class SessionService: SessionServiceProtocol {
     )
 
     try await apiClient.send(request)
+  }
+
+  @MainActor
+  func fetchToken(sessionId: String, template: String?) async throws -> TokenResource? {
+    let path = if let template {
+      "/v1/client/sessions/\(sessionId)/tokens/\(template)"
+    } else {
+      "/v1/client/sessions/\(sessionId)/tokens"
+    }
+
+    let request = Request<TokenResource?>(
+      path: path,
+      method: .post
+    )
+
+    return try await apiClient.send(request).value
   }
 }
