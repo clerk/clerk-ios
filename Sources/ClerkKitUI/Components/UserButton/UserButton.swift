@@ -14,8 +14,8 @@ import SwiftUI
 /// A circular button that displays the current user's profile image and opens the user profile when tapped.
 ///
 /// `UserButton` automatically displays the signed-in user's profile image in a circular button.
-/// When tapped, it presents a sheet with the full user profile view. The button only appears
-/// when a user is signed in.
+/// When tapped, it presents a sheet with the full user profile view. You can provide signed-out content
+/// that renders when no user is available.
 ///
 /// ## Usage
 ///
@@ -23,21 +23,15 @@ import SwiftUI
 ///
 /// ```swift
 /// struct HomeView: View {
-///   @Environment(Clerk.self) private var clerk
 ///   @State private var authIsPresented = false
 ///
 ///   var body: some View {
 ///     ZStack {
-///       Group {
-///         if clerk.user != nil {
-///           UserButton()
-///             .frame(width: 36, height: 36)
-///         } else {
-///           Button("Sign in") {
-///             authIsPresented = true
-///           }
+///       UserButton(signedOutContent: {
+///         Button("Sign in") {
+///           authIsPresented = true
 ///         }
-///       }
+///       })
 ///     }
 ///     .sheet(isPresented: $authIsPresented) {
 ///       AuthView()
@@ -51,24 +45,33 @@ import SwiftUI
 /// ```swift
 /// .toolbar {
 ///   ToolbarItem(placement: .navigationBarTrailing) {
-///     if clerk.user != nil {
-///       UserButton()
-///         .frame(width: 36, height: 36)
-///     }
+///     UserButton(signedOutContent: {
+///       Button("Sign in") {
+///         authIsPresented = true
+///       }
+///     })
 ///   }
 /// }
 /// ```
-public struct UserButton: View {
+public struct UserButton<SignedOutContent: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   @State private var userProfileIsPresented: Bool = false
+  private let signedOutContent: () -> SignedOutContent
 
   /// Creates a new user button.
   ///
   /// The button will automatically display the current user's profile image
   /// and handle presenting the user profile sheet when tapped.
-  public init() {}
+  public init(@ViewBuilder signedOutContent: @escaping () -> SignedOutContent) {
+    self.signedOutContent = signedOutContent
+  }
+
+  /// Creates a new user button with no signed-out content.
+  public init() where SignedOutContent == EmptyView {
+    signedOutContent = { EmptyView() }
+  }
 
   public var body: some View {
     ZStack {
@@ -89,9 +92,12 @@ public struct UserButton: View {
                 .opacity(0.5)
             }
           }
+          .frame(width: 36, height: 36)
           .clipShape(.circle)
           .transition(.opacity.animation(.easeInOut(duration: 0.2)))
         }
+      } else {
+        signedOutContent()
       }
     }
     .sheet(isPresented: $userProfileIsPresented) {
@@ -111,7 +117,6 @@ public struct UserButton: View {
 
 #Preview {
   UserButton()
-    .frame(width: 36, height: 36)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

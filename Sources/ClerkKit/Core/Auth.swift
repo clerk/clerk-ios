@@ -144,6 +144,7 @@ public struct Auth {
   }
   #endif
 
+  #if !os(watchOS) && !os(tvOS)
   /// Signs in with Apple using Sign in with Apple.
   ///
   /// This method handles the entire Sign in with Apple flow, including:
@@ -155,7 +156,6 @@ public struct Auth {
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signInWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
@@ -253,6 +253,7 @@ public struct Auth {
     ))
   }
 
+  #if !os(tvOS) && !os(watchOS)
   /// Signs up with OAuth using the specified provider.
   ///
   /// - Parameters:
@@ -260,24 +261,7 @@ public struct Auth {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
-  #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  /// Signs up with Apple using Sign in with Apple.
-  ///
-  /// This method handles the entire Sign in with Apple flow and can return either a sign-in or sign-up result.
-  ///
-  /// - Parameters:
-  ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the authentication fails.
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  @discardableResult
-  public func signUpWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
-    // Delegate to the sign-in implementation which already handles the transfer flow.
-    try await signInWithApple(requestedScopes: requestedScopes)
-  }
-  #endif
-
   public func signUpWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       strategy: FactorStrategy(rawValue: provider.strategy),
@@ -298,6 +282,22 @@ public struct Auth {
     )
     let callbackUrl = try await authSession.start()
     return try await signUp.handleRedirectCallbackUrl(callbackUrl)
+  }
+  #endif
+
+  #if !os(watchOS) && !os(tvOS)
+  /// Signs up with Apple using Sign in with Apple.
+  ///
+  /// This method handles the entire Sign in with Apple flow and can return either a sign-in or sign-up result.
+  ///
+  /// - Parameters:
+  ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the authentication fails.
+  @discardableResult
+  public func signUpWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+    // Delegate to the sign-in implementation which already handles the transfer flow.
+    try await signInWithApple(requestedScopes: requestedScopes)
   }
   #endif
 
@@ -405,7 +405,7 @@ public struct Auth {
     guard let session = Clerk.shared.session else {
       return nil
     }
-    return try await session.getToken(options)?.jwt
+    return try await session.getToken(options)
   }
 
   /// Revokes the specified session.

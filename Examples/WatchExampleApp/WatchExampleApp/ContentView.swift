@@ -9,19 +9,15 @@ import ClerkKitUI
 import SwiftUI
 
 struct ContentView: View {
-  @Environment(Clerk.self) private var clerk
   @State private var authViewIsPresented = false
 
   var body: some View {
     VStack {
-      if clerk.user != nil {
-        UserButton()
-          .frame(width: 36, height: 36)
-      } else {
+      UserButton(signedOutContent: {
         Button("Sign in") {
           authViewIsPresented = true
         }
-      }
+      })
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView()
