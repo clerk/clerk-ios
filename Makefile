@@ -1,10 +1,10 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills install-mcps
 
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make setup         - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .keys.json file"
+	@echo "  make setup         - Install tools/hooks, install agent skills, and install MCPs"
 	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
@@ -16,11 +16,11 @@ help:
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-agent-skills - Install agent skills into .codex/skills and .claude/skills"
+	@echo "  make install-mcps    - Install repo MCP servers into ~/.codex/config.toml"
 
 # Main setup command - installs tools and hooks
-setup: install-tools install-hooks create-env
-	@echo "✅ Setup complete! SwiftFormat, SwiftLint, pre-commit hooks, and .keys.json file are ready."
-	@echo ""
+setup: install-tools install-hooks install-agent-skills install-mcps
+	@echo "✅ Setup complete!"
 	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
 # Create .keys.json file with blank integration test key if it doesn't exist
@@ -29,24 +29,21 @@ create-env:
 
 # Install SwiftFormat and SwiftLint via Homebrew
 install-tools:
-	@echo "Checking for SwiftFormat..."
 	@if ! command -v swiftformat > /dev/null; then \
 		echo "Installing SwiftFormat via Homebrew..."; \
 		brew install swiftformat; \
 	else \
-		echo "✅ SwiftFormat is already installed"; \
+		echo "✅ SwiftFormat installed"; \
 	fi
-	@echo "Checking for SwiftLint..."
 	@if ! command -v swiftlint > /dev/null; then \
 		echo "Installing SwiftLint via Homebrew..."; \
 		brew install swiftlint; \
 	else \
-		echo "✅ SwiftLint is already installed"; \
+		echo "✅ SwiftLint installed"; \
 	fi
 
 # Install pre-commit hook
 install-hooks:
-	@echo "Setting up pre-commit hook..."
 	@mkdir -p .git/hooks
 	@cp .githooks/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
@@ -59,17 +56,21 @@ install-1password-cli:
 		echo "Installing 1Password CLI via Homebrew..."; \
 		brew install 1password-cli; \
 	else \
-		echo "✅ 1Password CLI is already installed"; \
+		echo "✅ 1Password CLI installed"; \
 	fi
 
 # Fetch integration test keys from 1Password (optional, for Clerk employees only)
 # Automatically installs 1Password CLI if not present
-fetch-test-keys: install-1password-cli
+fetch-test-keys: install-1password-cli create-env
 	@./scripts/fetch-1password-secrets.sh
 
 # Install agent skills into .codex/skills and .claude/skills
 install-agent-skills:
 	@./scripts/install-agent-skills.sh
+
+# Install Codex MCP servers from .mcp.json into ~/.codex/config.toml
+install-mcps:
+	@./scripts/install-mcps.sh
 
 # Format all Swift files
 format:
@@ -108,4 +109,3 @@ test:
 # OSS contributors: Integration tests will run automatically in CI
 test-integration:
 	@./scripts/run-integration-tests.sh
-

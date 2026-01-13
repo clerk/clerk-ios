@@ -4,9 +4,9 @@
       "command": "npx",
       "args": ["-y", "sosumi-mcp@latest"]
     },
-    "xcodebuildmcp": {
+    "XcodeBuildMCP": {
       "command": "npx",
-      "args": ["-y", "xcodebuild-mcp@latest"]
+      "args": ["-y", "xcodebuildmcp@latest"]
     }
   }
 }

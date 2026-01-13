@@ -102,3 +102,4 @@ buildServer.json
 # Agent skills
 .codex/skills/
 .claude/skills/
+.cursor/skills/

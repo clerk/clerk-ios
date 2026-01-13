@@ -17,8 +17,5 @@ if [ ! -f "$KEYS_FILE" ]; then
   }
 }
 EOF
-  echo "✅ Created .keys.json file."
-else
-  echo "✅ .keys.json file already exists."
 fi
-
+echo "✅ .keys.json installed"
