@@ -9,6 +9,7 @@ import Testing
 struct SessionTokenFetcherTests {
   init() {
     Clerk.configure(publishableKey: testPublishableKey)
+    Clerk.shared.cleanupManagers()
   }
 
   struct FetchTokenScenario: Codable, Sendable, Equatable {

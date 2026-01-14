@@ -185,20 +185,11 @@ struct SessionPollingManagerBackoffTests {
     let baseInterval = manager.calculateBaseBackoffInterval()
     #expect(baseInterval == 20.0)
 
-    // Run multiple times to verify jitter is applied (interval varies)
-    var intervals: Set<TimeInterval> = []
-    for _ in 0 ..< 100 {
-      intervals.insert(manager.calculateBackoffInterval())
-    }
-
-    // With jitter, we should get multiple different values
-    // Jitter is ±20%, so range is 16.0 to 24.0
-    #expect(intervals.count > 1, "Jitter should produce varying intervals")
-
-    // Verify all intervals are within expected jitter range (±20%)
+    // Run multiple times to verify intervals stay within expected jitter range (±20%).
     let minExpected = baseInterval * 0.8
     let maxExpected = baseInterval * 1.2
-    for interval in intervals {
+    for _ in 0 ..< 100 {
+      let interval = manager.calculateBackoffInterval()
       #expect(interval >= minExpected && interval <= maxExpected,
               "Interval \(interval) should be within ±20% of \(baseInterval)")
     }

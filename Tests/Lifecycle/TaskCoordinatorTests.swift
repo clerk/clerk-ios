@@ -48,38 +48,41 @@ struct TaskCoordinatorTests {
 
   @Test
   func cancelAllTasks() async {
-    let coordinator = TaskCoordinator()
-    let task1Completed = LockIsolated(false)
-    let task2Completed = LockIsolated(false)
-    let task1Cancelled = LockIsolated(false)
-    let task2Cancelled = LockIsolated(false)
+    await withMainSerialExecutor {
+      let coordinator = TaskCoordinator()
+      let task1Completed = LockIsolated(false)
+      let task2Completed = LockIsolated(false)
+      let task1Cancelled = LockIsolated(false)
+      let task2Cancelled = LockIsolated(false)
 
-    _ = coordinator.task {
-      // Loop until cancelled
-      while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay for cancellation check
+      _ = coordinator.task {
+        while !Task.isCancelled {
+          await Task.yield()
+        }
+        task1Cancelled.setValue(true)
+        task1Completed.setValue(true)
       }
-      task1Cancelled.setValue(true)
-      task1Completed.setValue(true)
-    }
 
-    _ = coordinator.task {
-      while !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+      _ = coordinator.task {
+        while !Task.isCancelled {
+          await Task.yield()
+        }
+        task2Cancelled.setValue(true)
+        task2Completed.setValue(true)
       }
-      task2Cancelled.setValue(true)
-      task2Completed.setValue(true)
+
+      coordinator.cancelAll()
+
+      for _ in 0 ..< 50 {
+        if task1Cancelled.value, task2Cancelled.value {
+          break
+        }
+        await Task.yield()
+      }
+
+      #expect(task1Cancelled.value == true || task1Completed.value == false)
+      #expect(task2Cancelled.value == true || task2Completed.value == false)
     }
-
-    // Cancel immediately
-    coordinator.cancelAll()
-
-    // Give cancellation a tiny moment to propagate (cancellation is cooperative)
-    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms - minimal wait for cancellation to propagate
-
-    // Verify tasks detected cancellation
-    #expect(task1Cancelled.value == true || task1Completed.value == false)
-    #expect(task2Cancelled.value == true || task2Completed.value == false)
   }
 
   @Test
@@ -122,30 +125,31 @@ struct TaskCoordinatorTests {
 
   @Test
   func deinitCancelsAllTasks() async {
-    let taskCompleted = LockIsolated(false)
-    let taskCancelled = LockIsolated(false)
+    await withMainSerialExecutor {
+      let taskCompleted = LockIsolated(false)
+      let taskCancelled = LockIsolated(false)
 
-    do {
-      let coordinator = TaskCoordinator()
-      let task = coordinator.task {
-        // Loop until cancelled
-        while !Task.isCancelled {
-          try? await Task.sleep(nanoseconds: 1_000_000) // 1ms - minimal delay
+      do {
+        let coordinator = TaskCoordinator()
+        let task = coordinator.task {
+          while !Task.isCancelled {
+            await Task.yield()
+          }
+          taskCancelled.setValue(true)
+          taskCompleted.setValue(true)
         }
-        taskCancelled.setValue(true)
-        taskCompleted.setValue(true)
+
+        #expect(task.isCancelled == false)
       }
 
-      // Verify task exists before deinit
-      #expect(task.isCancelled == false)
+      for _ in 0 ..< 50 {
+        if taskCancelled.value {
+          break
+        }
+        await Task.yield()
+      }
 
-      // Coordinator goes out of scope, should cancel tasks
+      #expect(taskCancelled.value == true || taskCompleted.value == false)
     }
-
-    // Give cancellation a tiny moment to propagate
-    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-
-    // Verify task detected cancellation
-    #expect(taskCancelled.value == true || taskCompleted.value == false)
   }
 }
