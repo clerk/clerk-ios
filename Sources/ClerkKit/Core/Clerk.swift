@@ -225,15 +225,28 @@ public extension Clerk {
     cacheManager.loadCachedData()
 
     // Fire and forget: fetch fresh client and environment from API
+    let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
       do {
         guard let self else { return }
-        async let client = refreshClient()
-        async let environment = refreshEnvironment()
+        async let client = retryingOperation(
+          policy: retryPolicy,
+          operationName: "client refresh"
+        ) {
+          try await self.refreshClient()
+        }
+        async let environment = retryingOperation(
+          policy: retryPolicy,
+          operationName: "environment refresh"
+        ) {
+          try await self.refreshEnvironment()
+        }
 
         let env = try await environment
         _ = try await client
         attestDeviceIfNeeded(environment: env)
+      } catch is CancellationError {
+        return
       } catch {
         ClerkLogger.logError(error, message: "Failed to load client or environment")
       }
@@ -289,6 +302,12 @@ public extension Clerk {
   func refreshEnvironment() async throws -> Environment {
     try await dependencies.environmentService.get()
   }
+
+  private static let startupRefreshRetryPolicy = RetryPolicy(
+    maxAttempts: 3,
+    initialDelay: .milliseconds(500),
+    maximumDelay: .seconds(5)
+  )
 }
 
 extension Clerk: CacheCoordinator {
