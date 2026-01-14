@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkHeaderRequestMiddleware: NetworkRequestMiddleware {
+struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   private var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
 

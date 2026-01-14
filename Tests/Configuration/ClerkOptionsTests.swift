@@ -12,6 +12,10 @@ import Testing
 
 @Suite(.serialized)
 struct ClerkOptionsTests {
+  private struct TestRequestMiddleware: ClerkRequestMiddleware {
+    func prepare(_: inout URLRequest) async throws {}
+  }
+
   @Test
   func defaultInitialization() {
     let options = Clerk.ClerkOptions()
@@ -23,6 +27,7 @@ struct ClerkOptionsTests {
     #expect(options.keychainConfig.accessGroup == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
+    #expect(options.requestMiddleware.isEmpty == true)
   }
 
   @Test
@@ -120,8 +125,18 @@ struct ClerkOptionsTests {
     _ = options.keychainConfig
     _ = options.proxyUrl
     _ = options.redirectConfig
+    _ = options.requestMiddleware
 
     #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
+  }
+
+  @Test
+  func requestMiddlewareInitialization() {
+    let middleware = TestRequestMiddleware()
+    let options = Clerk.ClerkOptions(requestMiddleware: [middleware])
+
+    #expect(options.requestMiddleware.count == 1)
+    #expect(options.requestMiddleware.first is TestRequestMiddleware)
   }
 }

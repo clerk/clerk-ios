@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkURLEncodedFormEncoderMiddleware: NetworkRequestMiddleware {
+struct ClerkURLEncodedFormEncoderMiddleware: ClerkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
     guard let data = request.httpBody else { return }
     let json = try? JSONDecoder.clerkDecoder.decode(JSON.self, from: data)

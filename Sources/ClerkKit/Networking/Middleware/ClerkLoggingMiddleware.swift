@@ -8,7 +8,7 @@
 import Foundation
 
 /// Logs outgoing requests based on log level configuration.
-struct ClerkRequestLoggingMiddleware: NetworkRequestMiddleware {
+struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
     let method = request.httpMethod ?? "GET"
     let url = request.url?.absoluteString ?? "<unknown url>"

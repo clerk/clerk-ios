@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkProxyRequestMiddleware: NetworkRequestMiddleware {
+struct ClerkProxyRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
     let proxyConfiguration = Clerk.shared.proxyConfiguration

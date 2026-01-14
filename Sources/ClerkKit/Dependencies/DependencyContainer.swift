@@ -75,7 +75,7 @@ final class DependencyContainer: Dependencies {
       URL(string: "https://clerk.clerk.dev")!
     }
 
-    networkingPipeline = .clerkDefault
+    networkingPipeline = .clerkDefault.appendingRequestMiddleware(options.requestMiddleware)
     keychain = SystemKeychain(
       service: options.keychainConfig.service,
       accessGroup: options.keychainConfig.accessGroup

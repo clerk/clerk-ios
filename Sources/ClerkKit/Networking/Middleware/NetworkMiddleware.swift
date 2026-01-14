@@ -1,7 +1,10 @@
 import Foundation
 
 /// Shared protocol for middleware that can intercept outgoing requests.
-protocol NetworkRequestMiddleware: Sendable {
+///
+/// Provide implementations via ``Clerk/ClerkOptions/requestMiddleware`` to run logic
+/// immediately before a request is sent.
+public protocol ClerkRequestMiddleware: Sendable {
   func prepare(_ request: inout URLRequest) async throws
 }
 
@@ -22,12 +25,12 @@ protocol NetworkRetryMiddleware: Sendable {
 
 /// Describes the order of execution for networking middleware.
 struct NetworkingPipeline: Sendable {
-  private let requestMiddleware: [any NetworkRequestMiddleware]
+  private let requestMiddleware: [any ClerkRequestMiddleware]
   private let responseMiddleware: [any NetworkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
-    requestMiddleware: [any NetworkRequestMiddleware] = [],
+    requestMiddleware: [any ClerkRequestMiddleware] = [],
     responseMiddleware: [any NetworkResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
@@ -62,6 +65,14 @@ struct NetworkingPipeline: Sendable {
 }
 
 extension NetworkingPipeline {
+  func appendingRequestMiddleware(_ middleware: [any ClerkRequestMiddleware]) -> NetworkingPipeline {
+    NetworkingPipeline(
+      requestMiddleware: requestMiddleware + middleware,
+      responseMiddleware: responseMiddleware,
+      retryMiddleware: retryMiddleware
+    )
+  }
+
   static var clerkDefault: NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: [
