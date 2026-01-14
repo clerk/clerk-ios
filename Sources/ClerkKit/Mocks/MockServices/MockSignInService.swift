@@ -11,7 +11,7 @@ import Foundation
 ///
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
-public final class MockSignInService: SignInServiceProtocol {
+package final class MockSignInService: SignInServiceProtocol {
   /// Custom handler for the `create(params:)` method.
   nonisolated(unsafe) var createHandler: ((SignIn.CreateParams) async throws -> SignIn)?
 

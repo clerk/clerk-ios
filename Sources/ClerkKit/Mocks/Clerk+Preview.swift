@@ -41,23 +41,6 @@ public final class PreviewBuilder {
   /// ```
   public var client: Client?
 
-  /// Advanced mock services configuration for customizing individual service behaviors.
-  ///
-  /// Use this to add delays, custom return values, or other behaviors to mock services.
-  /// This is useful for testing loading states and async behavior in previews.
-  ///
-  /// Example:
-  /// ```swift
-  /// Clerk.preview { builder in
-  ///   builder.services.clientService = MockClientService {
-  ///     try? await Task.sleep(for: .seconds(1))
-  ///     return Client.mock
-  ///   }
-  ///   builder.services.userService.getSessionsHandler = { _ in
-  ///     return [Session.mock, Session.mock2]
-  ///   }
-  /// }
-  /// ```
   package var services: MockServicesBuilder = .init()
 
   /// Creates a new preview builder.
@@ -70,6 +53,8 @@ public extension Clerk {
   /// This method provides a simpler API specifically designed for SwiftUI previews.
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
+  ///
+  // Advanced service customization is available only within this package.
   ///
   /// **Environment Loading:**
   /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.

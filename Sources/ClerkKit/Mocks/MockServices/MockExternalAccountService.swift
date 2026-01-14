@@ -11,16 +11,16 @@ import Foundation
 ///
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
-public final class MockExternalAccountService: ExternalAccountServiceProtocol {
+package final class MockExternalAccountService: ExternalAccountServiceProtocol {
   /// Custom handler for the `destroy(_:)` method.
-  public nonisolated(unsafe) var destroyHandler: ((String) async throws -> DeletedObject)?
+  package nonisolated(unsafe) var destroyHandler: ((String) async throws -> DeletedObject)?
 
-  public init(destroy: ((String) async throws -> DeletedObject)? = nil) {
+  package init(destroy: ((String) async throws -> DeletedObject)? = nil) {
     destroyHandler = destroy
   }
 
   @MainActor
-  public func destroy(_ externalAccountId: String) async throws -> DeletedObject {
+  package func destroy(_ externalAccountId: String) async throws -> DeletedObject {
     if let handler = destroyHandler {
       return try await handler(externalAccountId)
     }

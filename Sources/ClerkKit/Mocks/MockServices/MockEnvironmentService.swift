@@ -11,12 +11,12 @@ import Foundation
 ///
 /// Allows customizing the behavior of `clerk.refreshEnvironment()` through a handler closure.
 /// Returns default mock values if handler is not provided.
-public final class MockEnvironmentService: EnvironmentServiceProtocol {
+package final class MockEnvironmentService: EnvironmentServiceProtocol {
   /// Custom handler for the `get()` method used by `clerk.refreshEnvironment()`.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.
-  public nonisolated(unsafe) var getHandler: (() async throws -> Clerk.Environment)?
+  package nonisolated(unsafe) var getHandler: (() async throws -> Clerk.Environment)?
 
   /// Creates a new mock environment service with an optional implementation of the `get()` method.
   ///
@@ -29,12 +29,12 @@ public final class MockEnvironmentService: EnvironmentServiceProtocol {
   ///   return Clerk.Environment.mock
   /// }
   /// ```
-  public init(get: (() async throws -> Clerk.Environment)? = nil) {
+  package init(get: (() async throws -> Clerk.Environment)? = nil) {
     getHandler = get
   }
 
   @MainActor
-  public func get() async throws -> Clerk.Environment {
+  package func get() async throws -> Clerk.Environment {
     if let handler = getHandler {
       return try await handler()
     }
