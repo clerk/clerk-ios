@@ -402,7 +402,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func prepareOrganizationDomainAffiliationVerificationUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification() async throws {
+  func sendEmailCodeUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
     let service = MockOrganizationService(prepareOrganizationDomainAffiliationVerification: { organizationId, domainId, emailAddress in
@@ -412,7 +412,7 @@ struct OrganizationTests {
 
     configureOrganizationService(service)
 
-    _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "user@example.com")
+    _ = try await domain.sendEmailCode(affiliationEmailAddress: "user@example.com")
 
     let params = try #require(captured.value)
     #expect(params.0 == domain.organizationId)
@@ -421,7 +421,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func attemptOrganizationDomainAffiliationVerificationUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification() async throws {
+  func verifyCodeUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
     let service = MockOrganizationService(attemptOrganizationDomainAffiliationVerification: { organizationId, domainId, code in
@@ -431,7 +431,7 @@ struct OrganizationTests {
 
     configureOrganizationService(service)
 
-    _ = try await domain.attemptAffiliationVerification(code: "123456")
+    _ = try await domain.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == domain.organizationId)

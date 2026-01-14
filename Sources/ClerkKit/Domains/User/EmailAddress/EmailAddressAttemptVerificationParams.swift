@@ -10,11 +10,11 @@ import SwiftUI
 public extension EmailAddress {
   /// Represents the strategy for attempting email address verification.
   ///
-  /// Use this enum to specify the method of verification when calling the ``EmailAddress/attemptVerification(strategy:)`` function.
+  /// Use this enum to specify the method of verification when calling the ``EmailAddress/verifyCode(_:)`` function.
   enum AttemptStrategy: Sendable {
     /// The strategy for email verification using a one-time code.
     ///
-    /// - Parameter code: The one-time code that was sent to the user's email address when calling ``EmailAddress/prepareVerification(strategy:)``.
+    /// - Parameter code: The one-time code that was sent to the user's email address when calling ``EmailAddress/sendCode()``.
     case emailCode(code: String)
 
     /// The request body that will be sent with the verification attempt.

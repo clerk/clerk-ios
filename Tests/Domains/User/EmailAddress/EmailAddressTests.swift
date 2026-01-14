@@ -34,7 +34,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func prepareVerificationUsesEmailAddressServicePrepareVerification() async throws {
+  func sendCodeUsesEmailAddressServicePrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
     let service = MockEmailAddressService(prepareVerification: { id, strategy in
@@ -44,7 +44,7 @@ struct EmailAddressTests {
 
     configureService(service)
 
-    _ = try await emailAddress.prepareVerification(strategy: .emailCode)
+    _ = try await emailAddress.sendCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == emailAddress.id)
@@ -52,7 +52,7 @@ struct EmailAddressTests {
   }
 
   @Test
-  func attemptVerificationUsesEmailAddressServiceAttemptVerification() async throws {
+  func verifyCodeUsesEmailAddressServiceAttemptVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.AttemptStrategy)?>(nil)
     let service = MockEmailAddressService(attemptVerification: { id, strategy in
@@ -62,7 +62,7 @@ struct EmailAddressTests {
 
     configureService(service)
 
-    _ = try await emailAddress.attemptVerification(strategy: .emailCode(code: "123456"))
+    _ = try await emailAddress.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == emailAddress.id)

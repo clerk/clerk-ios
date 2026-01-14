@@ -248,9 +248,9 @@ extension UserProfileVerifyView {
     do {
       switch mode {
       case let .email(emailAddress):
-        try await emailAddress.prepareVerification(strategy: .emailCode)
+        try await emailAddress.sendCode()
       case let .phone(phoneNumber):
-        try await phoneNumber.prepareVerification()
+        try await phoneNumber.sendCode()
       case .totp:
         return
       }
@@ -269,12 +269,12 @@ extension UserProfileVerifyView {
     do {
       switch mode {
       case let .email(emailAddress):
-        try await emailAddress.attemptVerification(strategy: .emailCode(code: code))
+        try await emailAddress.verifyCode(code)
         codeLimiter.clearRecord(for: emailAddress.emailAddress)
         verificationState = .success
         onCompletion(nil)
       case let .phone(phoneNumber):
-        try await phoneNumber.attemptVerification(code: code)
+        try await phoneNumber.verifyCode(code)
         codeLimiter.clearRecord(for: phoneNumber.phoneNumber)
         verificationState = .success
         onCompletion(nil)

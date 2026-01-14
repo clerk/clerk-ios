@@ -14,10 +14,10 @@ import Foundation
 /// Email addresses must be verified to ensure that they can be assigned to their rightful owners.
 /// The `EmailAddress` object holds all necessary state around the verification process.
 ///
-/// The verification process always starts with the ``EmailAddress/prepareVerification(strategy:)`` method,
+/// The verification process always starts with the ``EmailAddress/sendCode()`` method,
 /// which will send a one-time verification code via an email message.
 ///
-/// The second and final step involves an attempt to complete the verification by calling the ``EmailAddress/attemptVerification(strategy:)`` method,
+/// The second and final step involves an attempt to complete the verification by calling the ``EmailAddress/verifyCode(_:)`` method,
 /// passing the one-time code as a parameter.
 public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable {
   /// The unique identifier for this email address.
@@ -66,39 +66,37 @@ public extension EmailAddress {
     try await emailAddressService.create(email: email)
   }
 
-  /// Prepares the verification process for this email address.
+  /// Sends a verification code to this email address.
   ///
   /// An email message with a one-time code or an email link will be sent to the email address box.
   ///
-  /// - Parameters:
-  ///   - strategy: The verification strategy to use. See ``EmailAddress/PrepareStrategy`` for available strategies.
   /// - Returns: ``EmailAddress``
-  /// - Throws: An error if the verification preparation fails.
+  /// - Throws: An error if sending the code fails.
   ///
   /// Example usage:
   /// ```swift
-  /// let emailAddress = try await emailAddress.prepareVerification(strategy: .emailCode)
+  /// let emailAddress = try await emailAddress.sendCode()
   /// ```
   @discardableResult @MainActor
-  func prepareVerification(strategy: PrepareStrategy) async throws -> EmailAddress {
-    try await emailAddressService.prepareVerification(emailAddressId: id, strategy: strategy)
+  func sendCode() async throws -> EmailAddress {
+    try await emailAddressService.prepareVerification(emailAddressId: id, strategy: .emailCode)
   }
 
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
-  /// The code will be sent when calling the ``EmailAddress/prepareVerification(strategy:)`` method.
+  /// The code will be sent when calling the ``EmailAddress/sendCode()`` method.
   ///
   /// - Parameters:
-  ///   - strategy: The verification strategy to use. See ``EmailAddress/AttemptStrategy`` for available strategies.
+  ///   - code: The verification code entered by the user.
   /// - Returns: ``EmailAddress``
   /// - Throws: An error if the verification attempt fails.
   ///
   /// Example usage:
   /// ```swift
-  /// let emailAddress = try await emailAddress.attemptVerification(strategy: .emailCode(code: "123456"))
+  /// let emailAddress = try await emailAddress.verifyCode("123456")
   /// ```
   @discardableResult @MainActor
-  func attemptVerification(strategy: AttemptStrategy) async throws -> EmailAddress {
-    try await emailAddressService.attemptVerification(emailAddressId: id, strategy: strategy)
+  func verifyCode(_ code: String) async throws -> EmailAddress {
+    try await emailAddressService.attemptVerification(emailAddressId: id, strategy: .emailCode(code: code))
   }
 
   /// Deletes this email address.

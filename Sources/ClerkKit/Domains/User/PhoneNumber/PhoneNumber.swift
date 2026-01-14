@@ -14,10 +14,10 @@ import Foundation
 /// Phone numbers must be verified to ensure that they can be assigned to their rightful owners. The `PhoneNumber` object
 /// holds all the necessary state around the verification process.
 ///
-/// - The verification process always starts with the ``PhoneNumber/prepareVerification()`` method, which will send a one-time verification
+/// - The verification process always starts with the ``PhoneNumber/sendCode()`` method, which will send a one-time verification
 /// code via an SMS message.
 /// - The second and final step involves an attempt to complete the verification by calling the
-/// ``PhoneNumber/attemptVerification(code:)`` method, passing the one-time code as a parameter.
+/// ``PhoneNumber/verifyCode(_:)`` method, passing the one-time code as a parameter.
 ///
 /// Finally, phone numbers can be used as part of multi-factor authentication. During sign-in, users can opt in to an extra
 /// verification step where they will receive an SMS message with a one-time code. This code must be entered to complete
@@ -89,19 +89,19 @@ public extension PhoneNumber {
     try await phoneNumberService.delete(phoneNumberId: id)
   }
 
-  /// Kick off the verification process for this phone number.
+  /// Send a verification code to this phone number.
   ///
   /// An SMS message with a one-time code will be sent to the phone number value.
   @discardableResult @MainActor
-  func prepareVerification() async throws -> PhoneNumber {
+  func sendCode() async throws -> PhoneNumber {
     try await phoneNumberService.prepareVerification(phoneNumberId: id)
   }
 
   /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message.
   ///
-  /// The code will be sent when calling the ``PhoneNumber/prepareVerification()`` method.
+  /// The code will be sent when calling the ``PhoneNumber/sendCode()`` method.
   @discardableResult @MainActor
-  func attemptVerification(code: String) async throws -> PhoneNumber {
+  func verifyCode(_ code: String) async throws -> PhoneNumber {
     try await phoneNumberService.attemptVerification(phoneNumberId: id, code: code)
   }
 

@@ -113,7 +113,7 @@ public extension OrganizationDomain {
   /// - Returns: The unverified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
-  func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
+  func sendEmailCode(affiliationEmailAddress: String) async throws -> OrganizationDomain {
     try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
   }
 
@@ -121,13 +121,13 @@ public extension OrganizationDomain {
   ///
   /// This is a required step to complete the registration of a domain under an organization, as the administrator should be verified as a person affiliated with that domain.
   ///
-  /// Make sure that an ``OrganizationDomain`` object already exists before calling this method by first calling ``prepareAffiliationVerification(affiliationEmailAddress:)``.
+  /// Make sure that an ``OrganizationDomain`` object already exists before calling this method by first calling ``sendEmailCode(affiliationEmailAddress:)``.
   ///
   /// - Parameter code: The one-time code sent to the user as part of this verification step.
   /// - Returns: The verified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
-  func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
+  func verifyCode(_ code: String) async throws -> OrganizationDomain {
     try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
   }
 }

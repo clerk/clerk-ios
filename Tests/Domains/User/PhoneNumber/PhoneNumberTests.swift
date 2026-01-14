@@ -50,7 +50,7 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func prepareVerificationUsesPhoneNumberServicePrepareVerification() async throws {
+  func sendCodeUsesPhoneNumberServicePrepareVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
     let service = MockPhoneNumberService(prepareVerification: { phoneNumberId in
@@ -60,13 +60,13 @@ struct PhoneNumberTests {
 
     configureService(service)
 
-    _ = try await phoneNumber.prepareVerification()
+    _ = try await phoneNumber.sendCode()
 
     #expect(captured.value == phoneNumber.id)
   }
 
   @Test
-  func attemptVerificationUsesPhoneNumberServiceAttemptVerification() async throws {
+  func verifyCodeUsesPhoneNumberServiceAttemptVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<(String, String)?>(nil)
     let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code in
@@ -76,7 +76,7 @@ struct PhoneNumberTests {
 
     configureService(service)
 
-    _ = try await phoneNumber.attemptVerification(code: "123456")
+    _ = try await phoneNumber.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == phoneNumber.id)
