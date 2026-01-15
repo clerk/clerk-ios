@@ -31,7 +31,7 @@ public extension Clerk {
   ///
   /// - Example:
   /// ```swift
-  /// await Clerk.clearAllKeychainItems()
+  /// Clerk.clearAllKeychainItems()
   /// ```
   @MainActor
   static func clearAllKeychainItems() {

@@ -32,6 +32,7 @@ import Foundation
 /// ```swift
 /// emitter.send(.signInCompleted(signIn: signIn))
 /// ```
+///
 @MainActor
 public final class EventEmitter<Event: Sendable> {
   /// Active continuations that need to receive events.
@@ -54,6 +55,7 @@ public final class EventEmitter<Event: Sendable> {
   ///     }
   /// }
   /// ```
+  ///
   public var events: AsyncStream<Event> {
     AsyncStream<Event> { continuation in
       let id = UUID()

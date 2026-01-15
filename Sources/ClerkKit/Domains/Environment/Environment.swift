@@ -41,10 +41,10 @@ extension Clerk.Environment {
   /// ```swift
   /// #Preview {
   ///   MyView()
-  ///     .clerkPreview { builder in
+  ///     .environment(Clerk.preview { builder in
   ///       let url = Bundle.main.url(forResource: "environment", withExtension: "json")!
   ///       builder.environment = try! Clerk.Environment(fromFile: url)
-  ///     }
+  ///     })
   /// }
   /// ```
   init(fromFile fileURL: URL) throws {

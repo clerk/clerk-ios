@@ -299,6 +299,7 @@ public extension Clerk {
   }
 
   /// Refreshes the current environment from the API.
+  @discardableResult
   func refreshEnvironment() async throws -> Environment {
     try await dependencies.environmentService.get()
   }

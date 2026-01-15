@@ -16,7 +16,7 @@ import Foundation
 ///
 /// ### Example
 /// ```swift
-/// let result = try await SignIn.authenticateWithRedirect(.oauth(provider: .google))
+/// let result = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
 ///
 /// switch result {
 /// case .signIn(let signIn):

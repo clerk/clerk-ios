@@ -8,21 +8,8 @@
 import AuthenticationServices
 import Foundation
 
-/// The `SignUp` object holds the state of the current sign-up and provides helper methods to navigate and complete the sign-up process.
-/// Once a sign-up is complete, a new user is created.
-///
-/// ### The Sign-Up Process:
-/// 1. **Initiate the Sign-Up**:
-///    Begin the sign-up process by collecting the user's authentication information and passing the appropriate parameters to the `create()` method.
-///
-/// 2. **Prepare the Verification**:
-///    The system will prepare the necessary verification steps to confirm the user's information.
-///
-/// 3. **Complete the Verification**:
-///    Attempt to complete the verification by following the required steps based on the collected authentication data.
-///
-/// 4. **Sign Up Complete**:
-///    If the verification is successful, the newly created session is set as the active session.
+/// The `SignUp` object holds the state of the current sign-up and provides helper methods to
+/// manage verification and session creation.
 public struct SignUp: Codable, Sendable, Equatable {
   /// The unique identifier of the current sign-up.
   public var id: String

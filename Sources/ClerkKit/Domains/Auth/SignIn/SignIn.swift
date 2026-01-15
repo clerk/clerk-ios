@@ -11,37 +11,7 @@ import AuthenticationServices
 import Foundation
 
 /// The `SignIn` object holds the state of the current sign-in process and provides helper methods
-/// to navigate and complete the sign-in lifecycle. This includes managing the first and second factor
-/// verifications, as well as creating a new session.
-///
-/// ### The following steps outline the sign-in process:
-/// 1. **Initiate the Sign-In Process**
-///
-///    Collect the user's authentication information and pass the appropriate parameters
-///    to the `SignIn.create()` method to start the sign-in.
-///
-/// 2. **Prepare for First Factor Verification**
-///
-///    Users **must** complete a first factor verification. This can include:
-///    - Providing a password
-///    - Using an email link
-///    - Entering a one-time code (OTP)
-///    - Authenticating with a Web3 wallet address
-///    - Providing proof of identity through an external social account (SSO/OAuth).
-///
-/// 3. **Complete First Factor Verification**
-///
-///    Attempt to verify the user's first factor authentication details.
-///
-/// 4. **Prepare for Second Factor Verification (Optional)**
-///
-///    If multi-factor authentication (MFA) is enabled for your application, prepare the
-///    second factor verification for users who have set up 2FA for their account.
-///
-/// 5. **Complete Second Factor Verification**
-///
-///    Attempt to verify the user's second factor authentication details if MFA is required.
-
+/// to manage verification and session creation.
 public struct SignIn: Codable, Sendable, Equatable {
   /// Unique identifier for this sign in.
   public var id: String
