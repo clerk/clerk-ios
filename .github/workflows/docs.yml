@@ -15,10 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-docs:
+    name: Build and deploy DocC
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -29,30 +27,46 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Build DocC
+      - name: Build DocC archives
         run: |
           set -euo pipefail
           derived_data_path="$(mktemp -d)"
-          scheme="Clerk"
-          output_path="docs"
+          for scheme in ClerkKit ClerkKitUI; do
+            xcodebuild docbuild \
+              -workspace Clerk.xcworkspace \
+              -scheme "$scheme" \
+              -destination "generic/platform=iOS" \
+              -derivedDataPath "$derived_data_path"
 
-          xcodebuild docbuild \
-            -scheme "$scheme" \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath "$derived_data_path"
+            archive_path="$(find "$derived_data_path" -type d -name "${scheme}.doccarchive" -print -quit)"
+            if [ -z "$archive_path" ]; then
+              echo "❌ DocC archive not found for $scheme in $derived_data_path"
+              exit 1
+            fi
 
-          archive_path="$(find "$derived_data_path" -type d -name "${scheme}.doccarchive" -print -quit)"
-          if [ -z "$archive_path" ]; then
-            echo "❌ DocC archive not found for $scheme in $derived_data_path"
-            exit 1
-          fi
+            xcrun docc process-archive transform-for-static-hosting \
+              "$archive_path" \
+              --output-path "docs/$scheme" \
+              --hosting-base-path "${{ github.event.repository.name }}/$scheme"
+          done
 
-          xcrun docc process-archive transform-for-static-hosting \
-            "$archive_path" \
-            --output-path "$output_path" \
-            --hosting-base-path "${{ github.event.repository.name }}"
-
-          echo '<script>window.location.href += "/documentation/clerk"</script>' > "$output_path/index.html"
+          cat > docs/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Clerk DocC</title>
+            </head>
+            <body>
+              <h1>Clerk DocC</h1>
+              <ul>
+                <li><a href="./ClerkKit/">ClerkKit</a></li>
+                <li><a href="./ClerkKitUI/">ClerkKitUI</a></li>
+              </ul>
+            </body>
+          </html>
+          EOF
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
