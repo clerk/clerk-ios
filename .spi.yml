@@ -1,5 +1,0 @@
-version: 1
-builder:
-  configs:
-  - scheme: Clerk
-  - documentation_targets: [Clerk]
