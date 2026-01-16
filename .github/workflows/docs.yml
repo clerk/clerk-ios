@@ -30,12 +30,24 @@ jobs:
       - name: Build DocC archives
         run: |
           set -euo pipefail
-          swift package --allow-writing-to-directory docs generate-documentation \
-            --target Clerk \
-            --disable-indexing \
-            --transform-for-static-hosting \
-            --output-path docs/Clerk \
-            --hosting-base-path "${{ github.event.repository.name }}/Clerk"
+          derived_data_path="$(mktemp -d)"
+          scheme="Clerk"
+          xcodebuild docbuild \
+            -scheme "$scheme" \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$derived_data_path" \
+            -packagePath "."
+
+          archive_path="$(find "$derived_data_path" -type d -name "${scheme}.doccarchive" -print -quit)"
+          if [ -z "$archive_path" ]; then
+            echo "❌ DocC archive not found for $scheme in $derived_data_path"
+            exit 1
+          fi
+
+          xcrun docc process-archive transform-for-static-hosting \
+            "$archive_path" \
+            --output-path "docs/$scheme" \
+            --hosting-base-path "${{ github.event.repository.name }}/$scheme"
 
           cat > docs/index.html <<'EOF'
           <!doctype html>
