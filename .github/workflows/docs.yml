@@ -1,0 +1,64 @@
+name: Publish DocC to GitHub Pages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build and deploy DocC
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Build DocC archives
+        run: |
+          set -euo pipefail
+          swift package --allow-writing-to-directory docs generate-documentation \
+            --target Clerk \
+            --disable-indexing \
+            --transform-for-static-hosting \
+            --output-path docs/Clerk \
+            --hosting-base-path "${{ github.event.repository.name }}/Clerk"
+
+          cat > docs/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Clerk DocC</title>
+            </head>
+            <body>
+              <h1>Clerk DocC</h1>
+              <ul>
+                <li><a href="./Clerk/">Clerk</a></li>
+              </ul>
+            </body>
+          </html>
+          EOF
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
