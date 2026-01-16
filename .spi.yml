@@ -1,0 +1,6 @@
+version: 1
+builder:
+  configs:
+  - scheme: ClerkKit
+  - scheme: ClerkKitUI
+  - documentation_targets: [ClerkKit, ClerkKitUI]
