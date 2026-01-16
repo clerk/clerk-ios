@@ -15,9 +15,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-docs:
-    name: Build and deploy DocC
-    runs-on: macos-latest
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: macos-12
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,16 +29,17 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Build DocC archives
+      - name: Build DocC
         run: |
           set -euo pipefail
           derived_data_path="$(mktemp -d)"
           scheme="Clerk"
+          output_path="docs"
+
           xcodebuild docbuild \
             -scheme "$scheme" \
             -destination "generic/platform=iOS" \
-            -derivedDataPath "$derived_data_path" \
-            -packagePath "."
+            -derivedDataPath "$derived_data_path"
 
           archive_path="$(find "$derived_data_path" -type d -name "${scheme}.doccarchive" -print -quit)"
           if [ -z "$archive_path" ]; then
@@ -46,25 +49,10 @@ jobs:
 
           xcrun docc process-archive transform-for-static-hosting \
             "$archive_path" \
-            --output-path "docs/$scheme" \
-            --hosting-base-path "${{ github.event.repository.name }}/$scheme"
+            --output-path "$output_path" \
+            --hosting-base-path "${{ github.event.repository.name }}"
 
-          cat > docs/index.html <<'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>Clerk DocC</title>
-            </head>
-            <body>
-              <h1>Clerk DocC</h1>
-              <ul>
-                <li><a href="./Clerk/">Clerk</a></li>
-              </ul>
-            </body>
-          </html>
-          EOF
+          echo '<script>window.location.href += "/documentation/clerk"</script>' > "$output_path/index.html"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
