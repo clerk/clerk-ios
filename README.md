@@ -38,7 +38,7 @@ Alternatively, add the following as a dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/clerk/clerk-ios", from: "0.1.0")
+    .package(url: "https://github.com/clerk/clerk-ios", from: "1.0.0")
 ]
 
 // Then add ClerkKit and/or ClerkKitUI to your target dependencies:
