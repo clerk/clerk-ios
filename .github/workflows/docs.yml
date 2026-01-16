@@ -19,7 +19,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: macos-12
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
