@@ -19,21 +19,6 @@ struct EmailAddressTests {
   }
 
   @Test
-  func createUsesEmailAddressServiceCreate() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockEmailAddressService(create: { email in
-      captured.setValue(email)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await EmailAddress.create("test@example.com")
-
-    #expect(captured.value == "test@example.com")
-  }
-
-  @Test
   func sendCodeUsesEmailAddressServicePrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)

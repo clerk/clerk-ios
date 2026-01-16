@@ -67,16 +67,7 @@ extension Passkey {
 
 public extension Passkey {
   @MainActor
-  private static var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
-
-  @MainActor
   private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
-
-  /// Creates a new passkey
-  @discardableResult @MainActor
-  static func create() async throws -> Passkey {
-    try await passkeyService.create()
-  }
 
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor

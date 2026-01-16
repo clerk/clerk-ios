@@ -19,21 +19,6 @@ struct PasskeyTests {
   }
 
   @Test
-  func createUsesPasskeyServiceCreate() async throws {
-    let called = LockIsolated(false)
-    let service = MockPasskeyService(create: {
-      called.setValue(true)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await Passkey.create()
-
-    #expect(called.value == true)
-  }
-
-  @Test
   func updateUsesPasskeyServiceUpdate() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<(String, String)?>(nil)

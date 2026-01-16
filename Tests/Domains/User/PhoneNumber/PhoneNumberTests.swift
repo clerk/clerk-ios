@@ -19,21 +19,6 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func createUsesPhoneNumberServiceCreate() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(create: { phoneNumber in
-      captured.setValue(phoneNumber)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await PhoneNumber.create("+1234567890")
-
-    #expect(captured.value == "+1234567890")
-  }
-
-  @Test
   func deleteUsesPhoneNumberServiceDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)

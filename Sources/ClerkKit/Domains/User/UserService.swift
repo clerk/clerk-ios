@@ -34,6 +34,14 @@ protocol UserServiceProtocol: Sendable {
 
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
+  @MainActor
+  private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
+  @MainActor
+  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
+  #if canImport(AuthenticationServices) && !os(watchOS)
+  @MainActor
+  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
+  #endif
 
   init(apiClient: APIClient) {
     self.apiClient = apiClient
@@ -75,12 +83,12 @@ final class UserService: UserServiceProtocol {
 
   @MainActor
   func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
-    try await EmailAddress.create(emailAddress)
+    try await emailAddressService.create(email: emailAddress)
   }
 
   @MainActor
   func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
-    try await PhoneNumber.create(phoneNumber)
+    try await phoneNumberService.create(phoneNumber: phoneNumber)
   }
 
   @MainActor
@@ -122,7 +130,7 @@ final class UserService: UserServiceProtocol {
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
   func createPasskey() async throws -> Passkey {
-    let passkey = try await Passkey.create()
+    let passkey = try await passkeyService.create()
 
     guard let challenge = passkey.challenge else {
       throw ClerkClientError(message: "Unable to get the challenge for the passkey.")

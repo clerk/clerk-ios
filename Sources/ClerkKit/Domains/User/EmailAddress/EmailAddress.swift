@@ -53,18 +53,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 
 public extension EmailAddress {
   @MainActor
-  private static var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
-
-  @MainActor
   private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
-
-  /// Creates a new email address for the current user.
-  /// - Parameters:
-  ///     - email: The email address to add to the current user.
-  @discardableResult @MainActor
-  static func create(_ email: String) async throws -> EmailAddress {
-    try await emailAddressService.create(email: email)
-  }
 
   /// Sends a verification code to this email address.
   ///

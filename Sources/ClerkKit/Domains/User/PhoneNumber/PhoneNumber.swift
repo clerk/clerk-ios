@@ -70,18 +70,7 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 
 public extension PhoneNumber {
   @MainActor
-  private static var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
-
-  @MainActor
   private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
-
-  /// Creates a new phone number for the current user.
-  /// - Parameters:
-  ///     - phoneNumber: The phone number to add to the current user.
-  @discardableResult @MainActor
-  static func create(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await phoneNumberService.create(phoneNumber: phoneNumber)
-  }
 
   /// Deletes this phone number.
   @discardableResult @MainActor
