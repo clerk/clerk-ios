@@ -32,7 +32,9 @@ struct SocialButtonLayout: Layout {
     let itemsPerRow = maxFittingItemCount(containerWidth: containerWidth)
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
     let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
-    let useMaxWidth = subviews.count <= itemsPerRow
+
+    // Calculate button width based on full row (fills container width)
+    let buttonWidth = (containerWidth - CGFloat(itemsPerRow - 1) * spacing) / CGFloat(itemsPerRow)
 
     for row in 0 ..< rowCount {
       let startIndex = row * itemsPerRow
@@ -40,14 +42,9 @@ struct SocialButtonLayout: Layout {
       let rowSubviews = subviews[startIndex ..< endIndex]
       let itemCount = rowSubviews.count
 
-      let buttonWidth: CGFloat = if useMaxWidth {
-        (containerWidth - CGFloat(itemCount - 1) * spacing) / CGFloat(itemCount)
-      } else {
-        minItemWidth
-      }
-
       let totalRowWidth = CGFloat(itemCount) * buttonWidth + CGFloat(itemCount - 1) * spacing
 
+      // Center partial rows, full rows naturally fill width
       let xOffset: CGFloat = switch alignment {
       case .leading:
         0
