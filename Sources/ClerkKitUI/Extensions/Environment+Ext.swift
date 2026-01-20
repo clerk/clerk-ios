@@ -114,6 +114,27 @@ public extension Clerk.Environment {
   internal var signUpIsPublic: Bool {
     userSettings.signUp.mode == "public"
   }
+
+  /// Total count of enabled authentication methods.
+  ///
+  /// This counts:
+  /// - First factor identifiers (email, phone, username) excluding passkey and web3
+  /// - Authenticatable OAuth providers
+  ///
+  /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
+  var totalEnabledAuthMethods: Int {
+    let firstFactorCount = userSettings.attributes
+      .filter { key, value in
+        value.usedForFirstFactor &&
+          key != "passkey" &&
+          !key.hasPrefix("web3")
+      }
+      .count
+
+    let oauthCount = authenticatableSocialProviders.count
+
+    return firstFactorCount + oauthCount
+  }
 }
 
 #endif

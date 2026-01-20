@@ -24,6 +24,25 @@ struct AuthStartView: View {
   @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
+  @State private var lastUsedProvider: OAuthProvider?
+  @State private var nonLastUsedProviders: [OAuthProvider] = []
+  @State private var shouldShowEmailUsernameBadge = false
+
+  // MARK: - Init
+
+  init() {
+    let allProviders = Clerk.shared.environment?.authenticatableSocialProviders ?? []
+    let lastUsed = allProviders.first { provider in
+      LastUsedAuthBadge.shouldShow(for: .oauth(provider))
+    }
+    _lastUsedProvider = State(initialValue: lastUsed)
+    _nonLastUsedProviders = State(initialValue: allProviders.filter { $0 != lastUsed })
+    _shouldShowEmailUsernameBadge = State(
+      initialValue: LastUsedAuthBadge.shouldShow(
+        for: FactorStrategy.emailStrategies + FactorStrategy.usernameStrategies
+      )
+    )
+  }
 
   // MARK: - Configuration
 
@@ -206,15 +225,29 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
+      .overlay(alignment: .topTrailing) {
+        if LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies) {
+          Badge(key: "Last Used", style: .secondary)
+            .lastUsedAuthBadgeStyle()
+        }
+      }
     } else {
-      ClerkTextField(
-        emailOrUsernamePlaceholder,
-        text: $authState.authStartIdentifier,
-        fieldState: fieldError != nil ? .error : .default
-      )
-      .textContentType(.username)
-      .keyboardType(.emailAddress)
-      .textInputAutocapitalization(.never)
+      VStack {
+        ClerkTextField(
+          emailOrUsernamePlaceholder,
+          text: $authState.authStartIdentifier,
+          fieldState: fieldError != nil ? .error : .default
+        )
+        .textContentType(.username)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
+        .overlay(alignment: .topTrailing) {
+          if shouldShowEmailUsernameBadge {
+            Badge(key: "Last Used", style: .secondary)
+              .lastUsedAuthBadgeStyle()
+          }
+        }
+      }
       .transition(.blurReplace)
     }
   }
@@ -265,14 +298,27 @@ extension AuthStartView {
   }
 
   private var socialButtonsSection: some View {
-    SocialButtonLayout {
-      ForEach(clerk.environment?.authenticatableSocialProviders ?? []) { provider in
-        SocialButton(provider: provider) { result in
+    VStack(spacing: 8) {
+      if let lastUsedProvider {
+        SocialButton(provider: lastUsedProvider) { result in
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
         }
         .simultaneousGesture(TapGesture())
+      }
+
+      if !nonLastUsedProviders.isEmpty {
+        SocialButtonLayout {
+          ForEach(nonLastUsedProviders) { provider in
+            SocialButton(provider: provider) { result in
+              handleTransferFlowResult(result)
+            } onError: { error in
+              generalError = error
+            }
+            .simultaneousGesture(TapGesture())
+          }
+        }
       }
     }
   }

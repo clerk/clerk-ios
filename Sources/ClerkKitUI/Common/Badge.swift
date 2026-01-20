@@ -114,4 +114,15 @@ struct Badge: View {
   }
 }
 
+// MARK: - Last Used Auth Badge Modifier
+
+extension View {
+  func lastUsedAuthBadgeStyle() -> some View {
+    padding(.trailing, 8)
+      .visualEffect { content, proxy in
+        content.offset(y: -proxy.size.height / 2)
+      }
+  }
+}
+
 #endif

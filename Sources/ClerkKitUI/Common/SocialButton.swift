@@ -92,6 +92,12 @@ struct SocialButton: View {
       .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
+    .overlay(alignment: .topTrailing) {
+      if LastUsedAuthBadge.shouldShow(for: .oauth(provider)) {
+        Badge(key: "Last Used", style: .secondary)
+          .lastUsedAuthBadgeStyle()
+      }
+    }
   }
 }
 
