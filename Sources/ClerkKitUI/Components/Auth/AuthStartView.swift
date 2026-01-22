@@ -25,8 +25,8 @@ struct AuthStartView: View {
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var lastUsedProvider: OAuthProvider?
-  @State private var nonLastUsedProviders: [OAuthProvider] = []
-  @State private var shouldShowEmailUsernameBadge = false
+  @State private var nonLastUsedProviders: [OAuthProvider]
+  @State private var shouldShowEmailUsernameBadge: Bool
 
   // MARK: - Init
 
