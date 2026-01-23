@@ -118,22 +118,49 @@ public extension Clerk.Environment {
   /// Total count of enabled authentication methods.
   ///
   /// This counts:
-  /// - First factor identifiers (email, phone, username) excluding passkey and web3
+  /// - First factor identifiers (email, phone, username) that are enabled
   /// - Authenticatable OAuth providers
   ///
   /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
   var totalEnabledAuthMethods: Int {
+    let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
+
     let firstFactorCount = userSettings.attributes
       .filter { key, value in
-        value.usedForFirstFactor &&
-          key != "passkey" &&
-          !key.hasPrefix("web3")
+        identifierKeys.contains(key) &&
+          value.enabled &&
+          value.usedForFirstFactor
       }
       .count
 
     let oauthCount = authenticatableSocialProviders.count
 
     return firstFactorCount + oauthCount
+  }
+
+  /// Whether the last used authentication badge can be shown based on identifier combinations.
+  ///
+  /// Badge can be shown when:
+  /// - Email and/or username are enabled (without phone)
+  /// - Only phone is enabled
+  ///
+  /// Badge should not be shown when phone is combined with email or username.
+  var canShowLastUsedBadge: Bool {
+    let hasEmail = userSettings.attributes.contains { key, value in
+      key == "email_address" && value.enabled && value.usedForFirstFactor
+    }
+    let hasPhone = userSettings.attributes.contains { key, value in
+      key == "phone_number" && value.enabled && value.usedForFirstFactor
+    }
+    let hasUsername = userSettings.attributes.contains { key, value in
+      key == "username" && value.enabled && value.usedForFirstFactor
+    }
+
+    if hasPhone, hasEmail || hasUsername {
+      return false
+    }
+
+    return true
   }
 }
 
