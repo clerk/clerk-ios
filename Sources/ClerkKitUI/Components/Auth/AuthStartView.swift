@@ -228,7 +228,7 @@ extension AuthStartView {
       .overlay(alignment: .topTrailing) {
         if LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies) {
           Badge(key: "Last Used", style: .secondary)
-            .lastUsedAuthBadgeStyle()
+            .lastUsedAuthBadge()
         }
       }
     } else {
@@ -244,7 +244,7 @@ extension AuthStartView {
         .overlay(alignment: .topTrailing) {
           if shouldShowEmailUsernameBadge {
             Badge(key: "Last Used", style: .secondary)
-              .lastUsedAuthBadgeStyle()
+              .lastUsedAuthBadge()
           }
         }
       }
@@ -304,6 +304,10 @@ extension AuthStartView {
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
+        }
+        .overlay(alignment: .topTrailing) {
+          Badge(key: "Last Used", style: .secondary)
+            .lastUsedAuthBadge()
         }
         .simultaneousGesture(TapGesture())
       }

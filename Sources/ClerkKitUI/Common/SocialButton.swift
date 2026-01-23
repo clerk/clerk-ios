@@ -22,8 +22,6 @@ struct SocialButton: View {
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
 
-  @State private var shouldShowLastUsedBadge: Bool
-
   private var iconImage: some View {
     LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
       if let image = state.image {
@@ -44,7 +42,6 @@ struct SocialButton: View {
     provider: OAuthProvider
   ) {
     self.provider = provider
-    _shouldShowLastUsedBadge = State(initialValue: LastUsedAuthBadge.shouldShow(for: .oauth(provider)))
   }
 
   init(
@@ -53,7 +50,6 @@ struct SocialButton: View {
   ) {
     self.provider = provider
     self.action = action
-    _shouldShowLastUsedBadge = State(initialValue: LastUsedAuthBadge.shouldShow(for: .oauth(provider)))
   }
 
   init(
@@ -64,7 +60,6 @@ struct SocialButton: View {
     self.provider = provider
     self.onSuccess = onSuccess
     self.onError = onError
-    _shouldShowLastUsedBadge = State(initialValue: LastUsedAuthBadge.shouldShow(for: .oauth(provider)))
   }
 
   var body: some View {
@@ -97,12 +92,6 @@ struct SocialButton: View {
       .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
-    .overlay(alignment: .topTrailing) {
-      if shouldShowLastUsedBadge {
-        Badge(key: "Last Used", style: .secondary)
-          .lastUsedAuthBadgeStyle()
-      }
-    }
   }
 }
 
