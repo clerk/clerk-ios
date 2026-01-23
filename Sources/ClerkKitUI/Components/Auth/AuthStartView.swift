@@ -225,12 +225,7 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
-      .overlay(alignment: .topTrailing) {
-        if LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies) {
-          Badge(key: "Last Used", style: .secondary)
-            .lastUsedAuthBadge()
-        }
-      }
+      .lastUsedAuthBadgeOverlay(LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies))
     } else {
       VStack {
         ClerkTextField(
@@ -241,12 +236,7 @@ extension AuthStartView {
         .textContentType(.username)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
-        .overlay(alignment: .topTrailing) {
-          if shouldShowEmailUsernameBadge {
-            Badge(key: "Last Used", style: .secondary)
-              .lastUsedAuthBadge()
-          }
-        }
+        .lastUsedAuthBadgeOverlay(shouldShowEmailUsernameBadge)
       }
       .transition(.blurReplace)
     }
@@ -305,10 +295,7 @@ extension AuthStartView {
         } onError: { error in
           generalError = error
         }
-        .overlay(alignment: .topTrailing) {
-          Badge(key: "Last Used", style: .secondary)
-            .lastUsedAuthBadge()
-        }
+        .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
       }
 
