@@ -24,27 +24,12 @@ struct AuthStartView: View {
   @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
-  @State private var lastUsedProvider: OAuthProvider?
-  @State private var nonLastUsedProviders: [OAuthProvider]
-  @State private var shouldShowEmailUsernameBadge: Bool
-  @State private var shouldShowPhoneBadge: Bool
+  @State private var lastUsedAuth: LastUsedAuth?
 
   // MARK: - Init
 
   init() {
-    let allProviders = Clerk.shared.environment?.authenticatableSocialProviders ?? []
-    let lastUsed = allProviders.first { provider in
-      LastUsedAuthBadge.shouldShow(for: .oauth(provider))
-    }
-    _lastUsedProvider = State(initialValue: lastUsed)
-    _nonLastUsedProviders = State(initialValue: allProviders.filter { $0 != lastUsed })
-    _shouldShowEmailUsernameBadge = State(
-      initialValue: LastUsedAuthBadge.shouldShow(
-        for: FactorStrategy.emailStrategies + FactorStrategy.usernameStrategies
-      )
-    )
-    _shouldShowPhoneBadge = State(initialValue: LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies)
-    )
+    _lastUsedAuth = State(initialValue: LastUsedAuth(environment: Clerk.shared.environment))
   }
 
   // MARK: - Configuration
@@ -96,6 +81,12 @@ struct AuthStartView: View {
     } else {
       authState.authStartIdentifier.isEmpty
     }
+  }
+
+  private var socialProvidersMinusLastUsed: [OAuthProvider] {
+    let providers = clerk.environment?.authenticatableSocialProviders ?? []
+    guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
+    return providers.filter { $0 != lastUsedSocialProvider }
   }
 
   // MARK: - Display Strings
@@ -228,7 +219,7 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
-      .lastUsedAuthBadgeOverlay(shouldShowPhoneBadge)
+      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsPhoneBadge ?? false)
     } else {
       VStack {
         ClerkTextField(
@@ -239,7 +230,7 @@ extension AuthStartView {
         .textContentType(.username)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
-        .lastUsedAuthBadgeOverlay(shouldShowEmailUsernameBadge)
+        .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
       }
       .transition(.blurReplace)
     }
@@ -292,7 +283,7 @@ extension AuthStartView {
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
-      if let lastUsedProvider {
+      if let lastUsedProvider = lastUsedAuth?.socialProvider {
         SocialButton(provider: lastUsedProvider) { result in
           handleTransferFlowResult(result)
         } onError: { error in
@@ -302,9 +293,9 @@ extension AuthStartView {
         .simultaneousGesture(TapGesture())
       }
 
-      if !nonLastUsedProviders.isEmpty {
+      if !socialProvidersMinusLastUsed.isEmpty {
         SocialButtonLayout {
-          ForEach(nonLastUsedProviders) { provider in
+          ForEach(socialProvidersMinusLastUsed) { provider in
             SocialButton(provider: provider) { result in
               handleTransferFlowResult(result)
             } onError: { error in
@@ -392,11 +383,11 @@ extension AuthStartView {
 
   private func storeIdentifierType() {
     if phoneNumberFieldIsActive, phoneNumberIsEnabled {
-      LastUsedIdentifierStorage.store(.phone)
+      LastUsedAuth.storeIdentifierType(.phone)
     } else if authState.authStartIdentifier.isEmailAddress {
-      LastUsedIdentifierStorage.store(.email)
+      LastUsedAuth.storeIdentifierType(.email)
     } else {
-      LastUsedIdentifierStorage.store(.username)
+      LastUsedAuth.storeIdentifierType(.username)
     }
   }
 }

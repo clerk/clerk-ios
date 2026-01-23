@@ -114,57 +114,6 @@ public extension Clerk.Environment {
   internal var signUpIsPublic: Bool {
     userSettings.signUp.mode == "public"
   }
-
-  /// Total count of enabled authentication methods.
-  ///
-  /// This counts:
-  /// - First factor identifiers (email, phone, username) that are enabled
-  /// - Authenticatable OAuth providers
-  ///
-  /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
-  var totalEnabledFirstFactorMethods: Int {
-    let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
-
-    let firstFactorCount = userSettings.attributes
-      .filter { key, value in
-        identifierKeys.contains(key) &&
-          value.enabled &&
-          value.usedForFirstFactor
-      }
-      .count
-
-    let oauthCount = authenticatableSocialProviders.count
-
-    return firstFactorCount + oauthCount
-  }
-
-  /// Whether the last used authentication badge can be shown for identifier-based strategies
-  /// based purely on the enabled identifier combinations.
-  ///
-  /// Returns `true` when the identifier type is unambiguous:
-  /// - Email and/or username are enabled (without phone)
-  /// - Only phone is enabled
-  ///
-  /// Returns `false` when phone is combined with email or username, since the backend
-  /// cannot distinguish which identifier type was used. In this case, the badge can still
-  /// be shown if `LastUsedIdentifierStorage` has a stored value to disambiguate.
-  var canShowLastUsedBadge: Bool {
-    let hasEmail = userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled && value.usedForFirstFactor
-    }
-    let hasPhone = userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForFirstFactor
-    }
-    let hasUsername = userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled && value.usedForFirstFactor
-    }
-
-    if hasPhone, hasEmail || hasUsername {
-      return false
-    }
-
-    return true
-  }
 }
 
 #endif
