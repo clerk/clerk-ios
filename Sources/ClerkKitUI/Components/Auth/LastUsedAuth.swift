@@ -104,59 +104,6 @@ enum LastUsedAuth: Equatable {
   }
 }
 
-private extension Clerk.Environment {
-  /// Total count of enabled authentication methods.
-  ///
-  /// This counts:
-  /// - First factor identifiers (email, phone, username) that are enabled
-  /// - Authenticatable OAuth providers
-  ///
-  /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
-  var totalEnabledFirstFactorMethods: Int {
-    let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
-
-    let firstFactorCount = userSettings.attributes
-      .filter { key, value in
-        identifierKeys.contains(key) &&
-          value.enabled &&
-          value.usedForFirstFactor
-      }
-      .count
-
-    let oauthCount = authenticatableSocialProviders.count
-
-    return firstFactorCount + oauthCount
-  }
-
-  /// Whether the last used authentication badge can be shown for identifier-based strategies
-  /// based purely on the enabled identifier combinations.
-  ///
-  /// Returns `true` when the identifier type is unambiguous:
-  /// - Email and/or username are enabled (without phone)
-  /// - Only phone is enabled
-  ///
-  /// Returns `false` when phone is combined with email or username, since the backend
-  /// cannot distinguish which identifier type was used. In this case, the badge can still
-  /// be shown if `LastUsedAuth` has a stored identifier type to disambiguate.
-  var canShowLastUsedBadge: Bool {
-    let hasEmail = userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled && value.usedForFirstFactor
-    }
-    let hasPhone = userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForFirstFactor
-    }
-    let hasUsername = userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled && value.usedForFirstFactor
-    }
-
-    if hasPhone, hasEmail || hasUsername {
-      return false
-    }
-
-    return true
-  }
-}
-
 private extension LastUsedAuth {
   static let identifierStorageKey = "clerk_last_used_identifier_type"
 
@@ -173,7 +120,7 @@ private extension LastUsedAuth {
       + FactorStrategy.phoneStrategies
       + FactorStrategy.usernameStrategies
 
-    if identifierStrategies.contains(lastAuth), !(environment?.canShowLastUsedBadge ?? false) {
+    if identifierStrategies.contains(lastAuth), !canShowLastUsedBadge(in: environment) {
       return false
     }
 
@@ -192,6 +139,24 @@ private extension LastUsedAuth {
     case .social:
       false
     }
+  }
+
+  static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
+    let hasEmail = environment?.userSettings.attributes.contains { key, value in
+      key == "email_address" && value.enabled && value.usedForFirstFactor
+    } ?? false
+    let hasPhone = environment?.userSettings.attributes.contains { key, value in
+      key == "phone_number" && value.enabled && value.usedForFirstFactor
+    } ?? false
+    let hasUsername = environment?.userSettings.attributes.contains { key, value in
+      key == "username" && value.enabled && value.usedForFirstFactor
+    } ?? false
+
+    if hasPhone, hasEmail || hasUsername {
+      return false
+    }
+
+    return true
   }
 
   var identifierStorageValue: String? {
