@@ -28,11 +28,19 @@ enum LastUsedAuthBadge {
   /// - Returns: True if the badge should be shown
   static func shouldShow(for strategies: [FactorStrategy]) -> Bool {
     guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy,
-          (Clerk.shared.environment?.totalEnabledAuthMethods ?? 0) > 1,
-          Clerk.shared.environment?.canShowLastUsedBadge ?? false
+          (Clerk.shared.environment?.totalEnabledAuthMethods ?? 0) > 1
     else {
       return false
     }
+
+    let identifierStrategies = FactorStrategy.emailStrategies
+      + FactorStrategy.phoneStrategies
+      + FactorStrategy.usernameStrategies
+
+    if identifierStrategies.contains(lastAuth), !(Clerk.shared.environment?.canShowLastUsedBadge ?? false) {
+      return false
+    }
+
     return strategies.contains(lastAuth)
   }
 
