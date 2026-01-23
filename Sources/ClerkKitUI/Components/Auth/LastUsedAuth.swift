@@ -104,7 +104,7 @@ enum LastUsedAuth: Equatable {
   }
 }
 
-extension Clerk.Environment {
+private extension Clerk.Environment {
   /// Total count of enabled authentication methods.
   ///
   /// This counts:
