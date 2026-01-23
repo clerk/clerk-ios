@@ -26,23 +26,23 @@ enum LastUsedAuth: Equatable {
 
     let providers = environment?.authenticatableSocialProviders ?? []
     if let provider = providers.first(where: {
-      shouldShowBadge(for: [.oauth($0)], lastAuth: lastAuth, environment: environment)
+      Self.shouldShowBadge(for: [.oauth($0)], lastAuth: lastAuth, environment: environment)
     }) {
       self = .social(provider)
       return
     }
 
-    if shouldShowBadge(for: FactorStrategy.phoneStrategies, lastAuth: lastAuth, environment: environment) {
+    if Self.shouldShowBadge(for: FactorStrategy.phoneStrategies, lastAuth: lastAuth, environment: environment) {
       self = .phone
       return
     }
 
-    if shouldShowBadge(for: FactorStrategy.emailStrategies, lastAuth: lastAuth, environment: environment) {
+    if Self.shouldShowBadge(for: FactorStrategy.emailStrategies, lastAuth: lastAuth, environment: environment) {
       self = .email
       return
     }
 
-    if shouldShowBadge(for: FactorStrategy.usernameStrategies, lastAuth: lastAuth, environment: environment) {
+    if Self.shouldShowBadge(for: FactorStrategy.usernameStrategies, lastAuth: lastAuth, environment: environment) {
       self = .username
       return
     }
@@ -87,7 +87,7 @@ enum LastUsedAuth: Equatable {
       return nil
     }
 
-    switch rawValue {
+    return switch rawValue {
     case "email":
       .email
     case "phone":
