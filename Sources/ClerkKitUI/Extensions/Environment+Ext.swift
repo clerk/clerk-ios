@@ -44,7 +44,7 @@ public extension Clerk.Environment {
   /// - Authenticatable OAuth providers
   ///
   /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
-  var totalEnabledFirstFactorMethods: Int {
+  internal var totalEnabledFirstFactorMethods: Int {
     let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
 
     let firstFactorCount = userSettings.attributes
