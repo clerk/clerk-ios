@@ -349,6 +349,9 @@ extension AuthStartView {
         ? authState.authStartPhoneNumber
         : authState.authStartIdentifier
 
+      // Store the identifier type for "last used" badge disambiguation
+      storeIdentifierType()
+
       let signIn = try await clerk.auth.signIn(identifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
@@ -394,6 +397,16 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
     case .signUp(let signUp):
       navigation.setToStepForStatus(signUp: signUp)
+    }
+  }
+
+  private func storeIdentifierType() {
+    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+      LastUsedIdentifierStorage.store(.phone)
+    } else if authState.authStartIdentifier.isEmailAddress {
+      LastUsedIdentifierStorage.store(.email)
+    } else {
+      LastUsedIdentifierStorage.store(.username)
     }
   }
 }

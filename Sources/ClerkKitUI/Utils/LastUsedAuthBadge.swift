@@ -33,6 +33,12 @@ enum LastUsedAuthBadge {
       return false
     }
 
+    // When backend returns "password", it's ambiguous (could be email, phone, or username).
+    // Use locally stored identifier type as a fallback, if available.
+    if lastAuth == .password, let storedIdentifier = LastUsedIdentifierStorage.retrieve() {
+      return matchesIdentifierType(strategies: strategies, identifierType: storedIdentifier)
+    }
+
     let identifierStrategies = FactorStrategy.emailStrategies
       + FactorStrategy.phoneStrategies
       + FactorStrategy.usernameStrategies
@@ -50,6 +56,26 @@ enum LastUsedAuthBadge {
   /// - Returns: True if the badge should be shown for this strategy
   static func shouldShow(for strategy: FactorStrategy) -> Bool {
     shouldShow(for: [strategy])
+  }
+
+  /// Checks if the given strategies match the stored identifier type.
+  private static func matchesIdentifierType(
+    strategies: [FactorStrategy],
+    identifierType: LastUsedIdentifierStorage.IdentifierType
+  ) -> Bool {
+    switch identifierType {
+    case .email:
+      // Email strategies contain .emailCode
+      strategies.contains(.emailCode)
+    case .phone:
+      // Phone strategies contain .phoneCode
+      strategies.contains(.phoneCode)
+    case .username:
+      // Username strategies only contain .password, no email/phone-specific codes
+      strategies.contains(.password)
+        && !strategies.contains(.emailCode)
+        && !strategies.contains(.phoneCode)
+    }
   }
 }
 
