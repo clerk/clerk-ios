@@ -43,4 +43,16 @@ enum LastUsedIdentifierStorage {
   }
 }
 
+extension LastUsedIdentifierStorage.IdentifierType {
+  func matches(_ strategies: [FactorStrategy]) -> Bool {
+    switch self {
+    case .email: strategies.contains(.emailCode)
+    case .phone: strategies.contains(.phoneCode)
+    case .username:
+      strategies.contains(.password)
+        && Set(strategies).isDisjoint(with: [.emailCode, .phoneCode])
+    }
+  }
+}
+
 #endif

@@ -27,6 +27,7 @@ struct AuthStartView: View {
   @State private var lastUsedProvider: OAuthProvider?
   @State private var nonLastUsedProviders: [OAuthProvider]
   @State private var shouldShowEmailUsernameBadge: Bool
+  @State private var shouldShowPhoneBadge: Bool
 
   // MARK: - Init
 
@@ -41,6 +42,8 @@ struct AuthStartView: View {
       initialValue: LastUsedAuthBadge.shouldShow(
         for: FactorStrategy.emailStrategies + FactorStrategy.usernameStrategies
       )
+    )
+    _shouldShowPhoneBadge = State(initialValue: LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies)
     )
   }
 
@@ -225,7 +228,7 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
-      .lastUsedAuthBadgeOverlay(LastUsedAuthBadge.shouldShow(for: FactorStrategy.phoneStrategies))
+      .lastUsedAuthBadgeOverlay(shouldShowPhoneBadge)
     } else {
       VStack {
         ClerkTextField(

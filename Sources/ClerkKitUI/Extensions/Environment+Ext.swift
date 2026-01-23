@@ -138,13 +138,16 @@ public extension Clerk.Environment {
     return firstFactorCount + oauthCount
   }
 
-  /// Whether the last used authentication badge can be shown based on identifier combinations.
+  /// Whether the last used authentication badge can be shown for identifier-based strategies
+  /// based purely on the enabled identifier combinations.
   ///
-  /// Badge can be shown when:
+  /// Returns `true` when the identifier type is unambiguous:
   /// - Email and/or username are enabled (without phone)
   /// - Only phone is enabled
   ///
-  /// Badge should not be shown when phone is combined with email or username.
+  /// Returns `false` when phone is combined with email or username, since the backend
+  /// cannot distinguish which identifier type was used. In this case, the badge can still
+  /// be shown if `LastUsedIdentifierStorage` has a stored value to disambiguate.
   var canShowLastUsedBadge: Bool {
     let hasEmail = userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled && value.usedForFirstFactor
