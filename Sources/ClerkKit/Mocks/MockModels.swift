@@ -39,6 +39,7 @@ public extension Client {
       signUp: .mock,
       sessions: [.mock, .mock2],
       lastActiveSessionId: "1",
+      lastAuthenticationStrategy: .password,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }
@@ -50,6 +51,7 @@ public extension Client {
       signUp: .mock,
       sessions: [],
       lastActiveSessionId: nil,
+      lastAuthenticationStrategy: nil,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
   }

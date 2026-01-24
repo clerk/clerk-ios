@@ -37,6 +37,29 @@ public extension Clerk.Environment {
       .map(\.key)
   }
 
+  /// Total count of enabled authentication methods.
+  ///
+  /// This counts:
+  /// - First factor identifiers (email, phone, username) that are enabled
+  /// - Authenticatable OAuth providers
+  ///
+  /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
+  internal var totalEnabledFirstFactorMethods: Int {
+    let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
+
+    let firstFactorCount = userSettings.attributes
+      .filter { key, value in
+        identifierKeys.contains(key) &&
+          value.enabled &&
+          value.usedForFirstFactor
+      }
+      .count
+
+    let oauthCount = authenticatableSocialProviders.count
+
+    return firstFactorCount + oauthCount
+  }
+
   var mutliSessionModeIsEnabled: Bool {
     authConfig.singleSessionMode == false
   }

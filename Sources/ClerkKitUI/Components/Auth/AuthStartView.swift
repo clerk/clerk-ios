@@ -24,6 +24,13 @@ struct AuthStartView: View {
   @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
+  @State private var lastUsedAuth: LastUsedAuth?
+
+  // MARK: - Init
+
+  init() {
+    _lastUsedAuth = State(initialValue: LastUsedAuth(environment: Clerk.shared.environment))
+  }
 
   // MARK: - Configuration
 
@@ -74,6 +81,12 @@ struct AuthStartView: View {
     } else {
       authState.authStartIdentifier.isEmpty
     }
+  }
+
+  private var socialProvidersMinusLastUsed: [OAuthProvider] {
+    let providers = clerk.environment?.authenticatableSocialProviders ?? []
+    guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
+    return providers.filter { $0 != lastUsedSocialProvider }
   }
 
   // MARK: - Display Strings
@@ -206,15 +219,19 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
+      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsPhoneBadge ?? false)
     } else {
-      ClerkTextField(
-        emailOrUsernamePlaceholder,
-        text: $authState.authStartIdentifier,
-        fieldState: fieldError != nil ? .error : .default
-      )
-      .textContentType(.username)
-      .keyboardType(.emailAddress)
-      .textInputAutocapitalization(.never)
+      VStack {
+        ClerkTextField(
+          emailOrUsernamePlaceholder,
+          text: $authState.authStartIdentifier,
+          fieldState: fieldError != nil ? .error : .default
+        )
+        .textContentType(.username)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
+        .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
+      }
       .transition(.blurReplace)
     }
   }
@@ -265,14 +282,28 @@ extension AuthStartView {
   }
 
   private var socialButtonsSection: some View {
-    SocialButtonLayout {
-      ForEach(clerk.environment?.authenticatableSocialProviders ?? []) { provider in
-        SocialButton(provider: provider) { result in
+    VStack(spacing: 8) {
+      if let lastUsedProvider = lastUsedAuth?.socialProvider {
+        SocialButton(provider: lastUsedProvider) { result in
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
         }
+        .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
+      }
+
+      if !socialProvidersMinusLastUsed.isEmpty {
+        SocialButtonLayout {
+          ForEach(socialProvidersMinusLastUsed) { provider in
+            SocialButton(provider: provider) { result in
+              handleTransferFlowResult(result)
+            } onError: { error in
+              generalError = error
+            }
+            .simultaneousGesture(TapGesture())
+          }
+        }
       }
     }
   }
@@ -298,6 +329,9 @@ extension AuthStartView {
       let identifier = phoneNumberFieldIsActive && phoneNumberIsEnabled
         ? authState.authStartPhoneNumber
         : authState.authStartIdentifier
+
+      // Store the identifier type for "last used" badge disambiguation
+      storeIdentifierType()
 
       let signIn = try await clerk.auth.signIn(identifier)
 
@@ -344,6 +378,16 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
     case .signUp(let signUp):
       navigation.setToStepForStatus(signUp: signUp)
+    }
+  }
+
+  private func storeIdentifierType() {
+    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+      LastUsedAuth.storeIdentifierType(.phone)
+    } else if authState.authStartIdentifier.isEmailAddress {
+      LastUsedAuth.storeIdentifierType(.email)
+    } else {
+      LastUsedAuth.storeIdentifierType(.username)
     }
   }
 }

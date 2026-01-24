@@ -31,6 +31,9 @@ public struct Client: Codable, Sendable, Equatable {
   /// The ID of the last active Session on this client.
   public var lastActiveSessionId: String?
 
+  /// The authentication strategy used for the last sign-in attempt, if available.
+  public var lastAuthenticationStrategy: FactorStrategy?
+
   /// Timestamp of last update for the client.
   public var updatedAt: Date
 
@@ -40,6 +43,7 @@ public struct Client: Codable, Sendable, Equatable {
     signUp: SignUp? = nil,
     sessions: [Session],
     lastActiveSessionId: String? = nil,
+    lastAuthenticationStrategy: FactorStrategy? = nil,
     updatedAt: Date
   ) {
     self.id = id
@@ -47,6 +51,7 @@ public struct Client: Codable, Sendable, Equatable {
     self.signUp = signUp
     self.sessions = sessions
     self.lastActiveSessionId = lastActiveSessionId
+    self.lastAuthenticationStrategy = lastAuthenticationStrategy
     self.updatedAt = updatedAt
   }
 }

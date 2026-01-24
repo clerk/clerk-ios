@@ -1,0 +1,176 @@
+//
+//  LastUsedAuth.swift
+//  Clerk
+//
+//  Created by Mike Pitre on 4/9/25.
+//
+
+#if os(iOS)
+
+import ClerkKit
+import Foundation
+
+@MainActor
+enum LastUsedAuth: Equatable {
+  case email
+  case username
+  case phone
+  case social(OAuthProvider)
+
+  init?(environment: Clerk.Environment?) {
+    guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy,
+          (environment?.totalEnabledFirstFactorMethods ?? 0) > 1
+    else {
+      return nil
+    }
+
+    let providers = environment?.authenticatableSocialProviders ?? []
+    if let provider = providers.first(where: {
+      Self.shouldShowBadge(for: [.oauth($0)], lastAuth: lastAuth, environment: environment)
+    }) {
+      self = .social(provider)
+      return
+    }
+
+    if Self.shouldShowBadge(for: FactorStrategy.phoneStrategies, lastAuth: lastAuth, environment: environment) {
+      self = .phone
+      return
+    }
+
+    if Self.shouldShowBadge(for: FactorStrategy.emailStrategies, lastAuth: lastAuth, environment: environment) {
+      self = .email
+      return
+    }
+
+    if Self.shouldShowBadge(for: FactorStrategy.usernameStrategies, lastAuth: lastAuth, environment: environment) {
+      self = .username
+      return
+    }
+
+    return nil
+  }
+
+  var socialProvider: OAuthProvider? {
+    switch self {
+    case .social(let provider):
+      provider
+    case .email, .username, .phone:
+      nil
+    }
+  }
+
+  var showsEmailUsernameBadge: Bool {
+    switch self {
+    case .email, .username:
+      true
+    case .phone, .social:
+      false
+    }
+  }
+
+  var showsPhoneBadge: Bool {
+    switch self {
+    case .phone:
+      true
+    case .email, .username, .social:
+      false
+    }
+  }
+
+  static func storeIdentifierType(_ identifier: LastUsedAuth) {
+    guard let rawValue = identifier.identifierStorageValue else { return }
+    UserDefaults.standard.set(rawValue, forKey: identifierStorageKey)
+  }
+
+  static func retrieveStoredIdentifierType() -> LastUsedAuth? {
+    guard let rawValue = UserDefaults.standard.string(forKey: identifierStorageKey) else {
+      return nil
+    }
+
+    return switch rawValue {
+    case "email":
+      .email
+    case "phone":
+      .phone
+    case "username":
+      .username
+    default:
+      nil
+    }
+  }
+
+  static func clearStoredIdentifierType() {
+    UserDefaults.standard.removeObject(forKey: identifierStorageKey)
+  }
+}
+
+private extension LastUsedAuth {
+  static let identifierStorageKey = "clerk_last_used_identifier_type"
+
+  static func shouldShowBadge(
+    for strategies: [FactorStrategy],
+    lastAuth: FactorStrategy,
+    environment: Clerk.Environment?
+  ) -> Bool {
+    if lastAuth == .password, let storedIdentifier = retrieveStoredIdentifierType() {
+      return storedIdentifier.matches(strategies)
+    }
+
+    let identifierStrategies = FactorStrategy.emailStrategies
+      + FactorStrategy.phoneStrategies
+      + FactorStrategy.usernameStrategies
+
+    if identifierStrategies.contains(lastAuth), !canShowLastUsedBadge(in: environment) {
+      return false
+    }
+
+    return strategies.contains(lastAuth)
+  }
+
+  func matches(_ strategies: [FactorStrategy]) -> Bool {
+    switch self {
+    case .email:
+      strategies.contains(.emailCode)
+    case .phone:
+      strategies.contains(.phoneCode)
+    case .username:
+      strategies.contains(.password)
+        && Set(strategies).isDisjoint(with: [.emailCode, .phoneCode])
+    case .social:
+      false
+    }
+  }
+
+  static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
+    let hasEmail = environment?.userSettings.attributes.contains { key, value in
+      key == "email_address" && value.enabled && value.usedForFirstFactor
+    } ?? false
+    let hasPhone = environment?.userSettings.attributes.contains { key, value in
+      key == "phone_number" && value.enabled && value.usedForFirstFactor
+    } ?? false
+    let hasUsername = environment?.userSettings.attributes.contains { key, value in
+      key == "username" && value.enabled && value.usedForFirstFactor
+    } ?? false
+
+    if hasPhone, hasEmail || hasUsername {
+      return false
+    }
+
+    return true
+  }
+
+  var identifierStorageValue: String? {
+    switch self {
+    case .email:
+      "email"
+    case .phone:
+      "phone"
+    case .username:
+      "username"
+    case .social:
+      nil
+    }
+  }
+}
+
+#endif
