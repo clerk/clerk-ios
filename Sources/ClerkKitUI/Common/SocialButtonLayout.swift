@@ -20,7 +20,7 @@ struct SocialButtonLayout: Layout {
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
     let containerWidth = proposal.width ?? 0
-    let itemsPerRow = maxFittingItemCount(containerWidth: containerWidth)
+    let itemsPerRow = maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
     let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
     let totalHeight = CGFloat(rowCount) * rowHeight + CGFloat(rowCount - 1) * spacing
@@ -29,7 +29,7 @@ struct SocialButtonLayout: Layout {
 
   func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
     let containerWidth = bounds.width
-    let itemsPerRow = maxFittingItemCount(containerWidth: containerWidth)
+    let itemsPerRow = maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
     let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
 
@@ -62,10 +62,11 @@ struct SocialButtonLayout: Layout {
     }
   }
 
-  private func maxFittingItemCount(containerWidth: CGFloat) -> Int {
+  private func maxRowItemCount(containerWidth: CGFloat, subviewCount: Int) -> Int {
+    guard subviewCount > 0 else { return 1 }
     guard containerWidth >= minItemWidth else { return 1 }
     let count = (containerWidth + spacing) / (minItemWidth + spacing)
-    return max(1, Int(count.rounded(.down)))
+    return max(1, min(subviewCount, Int(count.rounded(.down))))
   }
 }
 
