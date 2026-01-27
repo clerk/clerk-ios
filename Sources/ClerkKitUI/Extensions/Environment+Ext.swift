@@ -10,8 +10,8 @@
 import ClerkKit
 import Foundation
 
-public extension Clerk.Environment {
-  var authenticatableSocialProviders: [OAuthProvider] {
+extension Clerk.Environment {
+  public var authenticatableSocialProviders: [OAuthProvider] {
     let authenticatables = userSettings.social.filter { _, value in
       value.authenticatable && value.enabled
     }
@@ -21,7 +21,7 @@ public extension Clerk.Environment {
     }.sorted()
   }
 
-  var allSocialProviders: [OAuthProvider] {
+  public var allSocialProviders: [OAuthProvider] {
     let enabledProviders = userSettings.social.filter { $0.value.enabled }
 
     return enabledProviders.map {
@@ -29,7 +29,7 @@ public extension Clerk.Environment {
     }.sorted()
   }
 
-  var enabledFirstFactorAttributes: [String] {
+  public var enabledFirstFactorAttributes: [String] {
     userSettings.attributes
       .filter { _, value in
         value.enabled && value.usedForFirstFactor
@@ -44,7 +44,7 @@ public extension Clerk.Environment {
   /// - Authenticatable OAuth providers
   ///
   /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
-  internal var totalEnabledFirstFactorMethods: Int {
+  var totalEnabledFirstFactorMethods: Int {
     let identifierKeys: Set<String> = ["email_address", "phone_number", "username"]
 
     let firstFactorCount = userSettings.attributes
@@ -60,81 +60,81 @@ public extension Clerk.Environment {
     return firstFactorCount + oauthCount
   }
 
-  var mutliSessionModeIsEnabled: Bool {
+  public var mutliSessionModeIsEnabled: Bool {
     authConfig.singleSessionMode == false
   }
 
-  var passwordIsEnabled: Bool {
+  public var passwordIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "password" && value.enabled
     }
   }
 
-  var passkeyIsEnabled: Bool {
+  public var passkeyIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "passkey" && value.enabled
     }
   }
 
-  var mfaIsEnabled: Bool {
+  public var mfaIsEnabled: Bool {
     userSettings.attributes.contains { _, value in
       value.enabled && value.usedForSecondFactor
     }
   }
 
-  var mfaAuthenticatorAppIsEnabled: Bool {
+  public var mfaAuthenticatorAppIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "authenticator_app" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  var mfaPhoneCodeIsEnabled: Bool {
+  public var mfaPhoneCodeIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "phone_number" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  var mfaBackupCodeIsEnabled: Bool {
+  public var mfaBackupCodeIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "backup_code" && value.enabled && value.usedForSecondFactor
     }
   }
 
-  var deleteSelfIsEnabled: Bool {
+  public var deleteSelfIsEnabled: Bool {
     userSettings.actions.deleteSelf
   }
 
-  var emailIsEnabled: Bool {
+  public var emailIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled
     }
   }
 
-  var phoneNumberIsEnabled: Bool {
+  public var phoneNumberIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "phone_number" && value.enabled
     }
   }
 
-  var usernameIsEnabled: Bool {
+  public var usernameIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "username" && value.enabled
     }
   }
 
-  var firstNameIsEnabled: Bool {
+  public var firstNameIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "first_name" && value.enabled
     }
   }
 
-  var lastNameIsEnabled: Bool {
+  public var lastNameIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "last_name" && value.enabled
     }
   }
 
-  internal var signUpIsPublic: Bool {
+  var signUpIsPublic: Bool {
     userSettings.signUp.mode == "public"
   }
 }

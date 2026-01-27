@@ -110,7 +110,7 @@ public struct SignUp: Codable, Sendable, Equatable {
   }
 }
 
-public extension SignUp {
+extension SignUp {
   @MainActor
   private var signUpService: any SignUpServiceProtocol { Clerk.shared.dependencies.signUpService }
 
@@ -132,7 +132,7 @@ public extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the changes.
   /// - Throws: An error if the update operation fails, such as due to invalid parameters or network issues.
   @discardableResult @MainActor
-  func update(
+  public func update(
     emailAddress: String? = nil,
     password: String? = nil,
     firstName: String? = nil,
@@ -159,7 +159,7 @@ public extension SignUp {
   /// - Returns: An updated `SignUp` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
-  func sendEmailCode() async throws -> SignUp {
+  public func sendEmailCode() async throws -> SignUp {
     try await signUpService.prepareVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, emailAddressId: nil)
@@ -171,7 +171,7 @@ public extension SignUp {
   /// - Returns: An updated `SignUp` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
-  func sendPhoneCode() async throws -> SignUp {
+  public func sendPhoneCode() async throws -> SignUp {
     try await signUpService.prepareVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: nil)
@@ -184,7 +184,7 @@ public extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification result.
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
-  func verifyEmailCode(_ code: String) async throws -> SignUp {
+  public func verifyEmailCode(_ code: String) async throws -> SignUp {
     try await signUpService.attemptVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, code: code)
@@ -197,7 +197,7 @@ public extension SignUp {
   /// - Returns: The updated `SignUp` object reflecting the verification result.
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
-  func verifyPhoneCode(_ code: String) async throws -> SignUp {
+  public func verifyPhoneCode(_ code: String) async throws -> SignUp {
     try await signUpService.attemptVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, code: code)

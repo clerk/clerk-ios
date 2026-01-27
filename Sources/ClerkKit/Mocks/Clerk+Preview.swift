@@ -47,7 +47,7 @@ public final class PreviewBuilder {
   public init() {}
 }
 
-public extension Clerk {
+extension Clerk {
   /// Configures Clerk for SwiftUI previews with simplified API.
   ///
   /// This method provides a simpler API specifically designed for SwiftUI previews.
@@ -100,7 +100,7 @@ public extension Clerk {
   /// ```
   @MainActor
   @discardableResult
-  static func preview(
+  public static func preview(
     preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
     // Check if running in SwiftUI preview

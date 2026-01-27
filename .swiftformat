@@ -1,6 +1,7 @@
 --indent 2
 --linebreaks lf
 --swiftversion 5.10
+--extension-acl on-declarations
 --disable preferKeyPath
 --disable hoistPatternLet
 --ifdef no-indent

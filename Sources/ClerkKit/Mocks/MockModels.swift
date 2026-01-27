@@ -11,8 +11,8 @@ import Foundation
 
 // MARK: - Clerk
 
-public extension Clerk {
-  static var mock: Clerk {
+extension Clerk {
+  public static var mock: Clerk {
     let clerk = Clerk()
     clerk.client = .mock
     clerk.environment = .mock
@@ -20,7 +20,7 @@ public extension Clerk {
     return clerk
   }
 
-  static var mockSignedOut: Clerk {
+  public static var mockSignedOut: Clerk {
     let clerk = Clerk()
     clerk.client = .mockSignedOut
     clerk.environment = .mock
@@ -31,8 +31,8 @@ public extension Clerk {
 
 // MARK: - Client
 
-public extension Client {
-  static var mock: Client {
+extension Client {
+  public static var mock: Client {
     Client(
       id: "1",
       signIn: .mock,
@@ -44,7 +44,7 @@ public extension Client {
     )
   }
 
-  static var mockSignedOut: Client {
+  public static var mockSignedOut: Client {
     Client(
       id: "2",
       signIn: .mock,
@@ -61,8 +61,8 @@ public extension Client {
 
 // MARK: Session
 
-public extension Session {
-  static var mock: Session {
+extension Session {
+  public static var mock: Session {
     Session(
       id: "1",
       status: .active,
@@ -90,7 +90,7 @@ public extension Session {
     )
   }
 
-  static var mock2: Session {
+  public static var mock2: Session {
     Session(
       id: "2",
       status: .active,
@@ -118,7 +118,7 @@ public extension Session {
     )
   }
 
-  static var mockExpired: Session {
+  public static var mockExpired: Session {
     Session(
       id: "1",
       status: .expired,
@@ -140,8 +140,8 @@ public extension Session {
 
 // MARK: SignIn
 
-public extension SignIn {
-  static var mock: SignIn {
+extension SignIn {
+  public static var mock: SignIn {
     SignIn(
       id: "1",
       status: .needsIdentifier,
@@ -166,8 +166,8 @@ public extension SignIn {
 
 // MARK: SignUp
 
-public extension SignUp {
-  static var mock: SignUp {
+extension SignUp {
+  public static var mock: SignUp {
     SignUp(
       id: "1",
       status: .missingRequirements,
@@ -193,8 +193,8 @@ public extension SignUp {
 
 // MARK: Verification
 
-public extension Verification {
-  static var mockEmailCodeVerifiedVerification: Verification {
+extension Verification {
+  public static var mockEmailCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: .emailCode,
@@ -206,7 +206,7 @@ public extension Verification {
     )
   }
 
-  static var mockEmailCodeUnverifiedVerification: Verification {
+  public static var mockEmailCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .emailCode,
@@ -218,7 +218,7 @@ public extension Verification {
     )
   }
 
-  static var mockPhoneCodeVerifiedVerification: Verification {
+  public static var mockPhoneCodeVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: .phoneCode,
@@ -230,7 +230,7 @@ public extension Verification {
     )
   }
 
-  static var mockPhoneCodeUnverifiedVerification: Verification {
+  public static var mockPhoneCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .phoneCode,
@@ -242,7 +242,7 @@ public extension Verification {
     )
   }
 
-  static var mockPasskeyVerifiedVerification: Verification {
+  public static var mockPasskeyVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: .passkey,
@@ -254,7 +254,7 @@ public extension Verification {
     )
   }
 
-  static var mockPasskeyUnverifiedVerification: Verification {
+  public static var mockPasskeyUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .passkey,
@@ -266,7 +266,7 @@ public extension Verification {
     )
   }
 
-  static var mockTotpUnverifiedVerification: Verification {
+  public static var mockTotpUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .totp,
@@ -278,7 +278,7 @@ public extension Verification {
     )
   }
 
-  static var mockBackupCodeUnverifiedVerification: Verification {
+  public static var mockBackupCodeUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .backupCode,
@@ -290,7 +290,7 @@ public extension Verification {
     )
   }
 
-  static var mockExternalAccountVerifiedVerification: Verification {
+  public static var mockExternalAccountVerifiedVerification: Verification {
     Verification(
       status: .verified,
       strategy: .oauth(.google),
@@ -303,7 +303,7 @@ public extension Verification {
   }
 
   // swiftlint:disable:next identifier_name
-  static var mockExternalAccountUnverifiedVerification: Verification {
+  public static var mockExternalAccountUnverifiedVerification: Verification {
     Verification(
       status: .unverified,
       strategy: .oauth(.google),
@@ -318,52 +318,52 @@ public extension Verification {
 
 // MARK: Factor
 
-public extension Factor {
-  static var mockEmailCode: Factor {
+extension Factor {
+  public static var mockEmailCode: Factor {
     Factor(strategy: .emailCode)
   }
 
-  static var mockPhoneCode: Factor {
+  public static var mockPhoneCode: Factor {
     Factor(strategy: .phoneCode)
   }
 
-  static var mockGoogle: Factor {
+  public static var mockGoogle: Factor {
     Factor(strategy: .oauth(.google))
   }
 
-  static var mockApple: Factor {
+  public static var mockApple: Factor {
     Factor(strategy: .oauth(.apple))
   }
 
-  static var mockPassword: Factor {
+  public static var mockPassword: Factor {
     Factor(strategy: .password)
   }
 
-  static var mockPasskey: Factor {
+  public static var mockPasskey: Factor {
     Factor(strategy: .passkey)
   }
 
-  static var mockResetPasswordEmailCode: Factor {
+  public static var mockResetPasswordEmailCode: Factor {
     Factor(strategy: .resetPasswordEmailCode)
   }
 
-  static var mockResetPasswordPhoneCode: Factor {
+  public static var mockResetPasswordPhoneCode: Factor {
     Factor(strategy: .resetPasswordPhoneCode)
   }
 
-  static var mockTotp: Factor {
+  public static var mockTotp: Factor {
     Factor(strategy: .totp)
   }
 
-  static var mockBackupCode: Factor {
+  public static var mockBackupCode: Factor {
     Factor(strategy: .backupCode)
   }
 }
 
 // MARK: Passkey
 
-public extension Passkey {
-  static var mock: Passkey {
+extension Passkey {
+  public static var mock: Passkey {
     Passkey(
       id: "1",
       name: "iCloud Keychain",
@@ -377,16 +377,16 @@ public extension Passkey {
 
 // MARK: TokenResource
 
-public extension TokenResource {
-  static var mock: TokenResource {
+extension TokenResource {
+  public static var mock: TokenResource {
     .init(jwt: "jwt")
   }
 }
 
 // MARK: TOTPResource
 
-public extension TOTPResource {
-  static var mock: TOTPResource {
+extension TOTPResource {
+  public static var mock: TOTPResource {
     .init(
       id: "1",
       secret: "1234567890",
@@ -401,8 +401,8 @@ public extension TOTPResource {
 
 // MARK: BackupCodeResource
 
-public extension BackupCodeResource {
-  static var mock: Self {
+extension BackupCodeResource {
+  public static var mock: Self {
     .init(
       id: "1",
       codes: [
@@ -422,8 +422,8 @@ public extension BackupCodeResource {
 
 // MARK: - User
 
-public extension User {
-  static var mock: Self {
+extension User {
+  public static var mock: Self {
     .init(
       backupCodeEnabled: true,
       createdAt: .distantPast,
@@ -455,7 +455,7 @@ public extension User {
     )
   }
 
-  static var mock2: Self {
+  public static var mock2: Self {
     .init(
       backupCodeEnabled: true,
       createdAt: .distantPast,
@@ -490,8 +490,8 @@ public extension User {
 
 // MARK: EmailAddress
 
-public extension EmailAddress {
-  static var mock: EmailAddress {
+extension EmailAddress {
+  public static var mock: EmailAddress {
     EmailAddress(
       id: "1",
       emailAddress: "user@email.com",
@@ -500,7 +500,7 @@ public extension EmailAddress {
     )
   }
 
-  static var mock2: EmailAddress {
+  public static var mock2: EmailAddress {
     EmailAddress(
       id: "12",
       emailAddress: "user2@email.com",
@@ -512,8 +512,8 @@ public extension EmailAddress {
 
 // MARK: PhoneNumber
 
-public extension PhoneNumber {
-  static var mock: PhoneNumber {
+extension PhoneNumber {
+  public static var mock: PhoneNumber {
     PhoneNumber(
       id: "1",
       phoneNumber: "+15555550100",
@@ -525,7 +525,7 @@ public extension PhoneNumber {
     )
   }
 
-  static var mock2: PhoneNumber {
+  public static var mock2: PhoneNumber {
     PhoneNumber(
       id: "2",
       phoneNumber: "+15555550101",
@@ -537,7 +537,7 @@ public extension PhoneNumber {
     )
   }
 
-  static var mockMfa: PhoneNumber {
+  public static var mockMfa: PhoneNumber {
     PhoneNumber(
       id: "3",
       phoneNumber: "+15555550102",
@@ -552,8 +552,8 @@ public extension PhoneNumber {
 
 // MARK: ExternalAccount
 
-public extension ExternalAccount {
-  static var mockVerified: ExternalAccount {
+extension ExternalAccount {
+  public static var mockVerified: ExternalAccount {
     .init(
       id: "1",
       identificationId: "1",
@@ -571,7 +571,7 @@ public extension ExternalAccount {
     )
   }
 
-  static var mockUnverified: ExternalAccount {
+  public static var mockUnverified: ExternalAccount {
     .init(
       id: "1",
       identificationId: "1",
@@ -592,8 +592,8 @@ public extension ExternalAccount {
 
 // MARK: - Organization
 
-public extension Organization {
-  static var mock: Self {
+extension Organization {
+  public static var mock: Self {
     .init(
       id: "1",
       name: "Organization Name",
@@ -613,8 +613,8 @@ public extension Organization {
 
 // MARK: OrganizationMembership
 
-public extension OrganizationMembership {
-  static var mockWithUserData: Self {
+extension OrganizationMembership {
+  public static var mockWithUserData: Self {
     .init(
       id: "1",
       publicMetadata: "{}",
@@ -635,7 +635,7 @@ public extension OrganizationMembership {
     )
   }
 
-  static var mockWithoutUserData: Self {
+  public static var mockWithoutUserData: Self {
     .init(
       id: "1",
       publicMetadata: "{}",
@@ -652,8 +652,8 @@ public extension OrganizationMembership {
 
 // MARK: OrganizationInvitation
 
-public extension OrganizationInvitation {
-  static var mock: Self {
+extension OrganizationInvitation {
+  public static var mock: Self {
     .init(
       id: "1",
       emailAddress: EmailAddress.mock.emailAddress,
@@ -669,8 +669,8 @@ public extension OrganizationInvitation {
 
 // MARK: OrganizationDomain
 
-public extension OrganizationDomain {
-  static var mock: Self {
+extension OrganizationDomain {
+  public static var mock: Self {
     .init(
       id: "1",
       name: "name",
@@ -693,8 +693,8 @@ public extension OrganizationDomain {
 
 // MARK: OrganizationMembershipRequest
 
-public extension OrganizationMembershipRequest {
-  static var mock: Self {
+extension OrganizationMembershipRequest {
+  public static var mock: Self {
     .init(
       id: "1",
       organizationId: "1",
@@ -708,8 +708,8 @@ public extension OrganizationMembershipRequest {
 
 // MARK: OrganizationSuggestion
 
-public extension OrganizationSuggestion {
-  static var mock: Self {
+extension OrganizationSuggestion {
+  public static var mock: Self {
     .init(
       id: "1",
       publicOrganizationData: .init(
@@ -728,8 +728,8 @@ public extension OrganizationSuggestion {
 
 // MARK: UserOrganizationInvitation
 
-public extension UserOrganizationInvitation {
-  static var mock: Self {
+extension UserOrganizationInvitation {
+  public static var mock: Self {
     .init(
       id: "1",
       emailAddress: "user@email.com",
@@ -751,8 +751,8 @@ public extension UserOrganizationInvitation {
 
 // MARK: RoleResource
 
-public extension RoleResource {
-  static var mock: Self {
+extension RoleResource {
+  public static var mock: Self {
     .init(
       id: "1",
       key: "key",
@@ -767,8 +767,8 @@ public extension RoleResource {
 
 // MARK: PermissionResource
 
-public extension PermissionResource {
-  static var mock: Self {
+extension PermissionResource {
+  public static var mock: Self {
     .init(
       id: "1",
       key: "key",
@@ -783,8 +783,8 @@ public extension PermissionResource {
 
 // MARK: - Environment
 
-public extension Clerk.Environment {
-  static var mock: Self {
+extension Clerk.Environment {
+  public static var mock: Self {
     .init(
       authConfig: .mock,
       userSettings: .mock,
@@ -796,8 +796,8 @@ public extension Clerk.Environment {
 
 // MARK: AuthConfig
 
-public extension Clerk.Environment.AuthConfig {
-  static var mock: Self {
+extension Clerk.Environment.AuthConfig {
+  public static var mock: Self {
     .init(
       singleSessionMode: false
     )
@@ -806,8 +806,8 @@ public extension Clerk.Environment.AuthConfig {
 
 // MARK: UserSettings
 
-public extension Clerk.Environment.UserSettings {
-  static var mock: Self {
+extension Clerk.Environment.UserSettings {
+  public static var mock: Self {
     .init(
       attributes: [
         "email_address": .init(
@@ -950,8 +950,8 @@ public extension Clerk.Environment.UserSettings {
 
 // MARK: DisplayConfig
 
-public extension Clerk.Environment.DisplayConfig {
-  static var mock: Self {
+extension Clerk.Environment.DisplayConfig {
+  public static var mock: Self {
     .init(
       instanceEnvironmentType: .development,
       applicationName: "Acme Co",
@@ -968,8 +968,8 @@ public extension Clerk.Environment.DisplayConfig {
 
 // MARK: FraudSettings
 
-public extension Clerk.Environment.FraudSettings {
-  static var mock: Self {
+extension Clerk.Environment.FraudSettings {
+  public static var mock: Self {
     .init(
       native: .init(
         deviceAttestationMode: .disabled
@@ -982,8 +982,8 @@ public extension Clerk.Environment.FraudSettings {
 
 // MARK: DeletedObject
 
-public extension DeletedObject {
-  static var mock: DeletedObject {
+extension DeletedObject {
+  public static var mock: DeletedObject {
     .init(
       object: "object",
       id: "1",
@@ -994,16 +994,16 @@ public extension DeletedObject {
 
 // MARK: ClerkClientError
 
-public extension ClerkClientError {
-  static var mock: ClerkClientError {
+extension ClerkClientError {
+  public static var mock: ClerkClientError {
     .init(message: "An unknown error occurred.")
   }
 }
 
 // MARK: ClerkAPIError
 
-public extension ClerkAPIError {
-  static var mock: ClerkAPIError {
+extension ClerkAPIError {
+  public static var mock: ClerkAPIError {
     .init(
       code: "error",
       message: "An unknown error occurred.",

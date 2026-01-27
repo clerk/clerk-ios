@@ -9,8 +9,8 @@
 
 import Foundation
 
-public extension ClerkTheme {
-  struct Design {
+extension ClerkTheme {
+  public struct Design {
     public var borderRadius: CGFloat
 
     public init(
@@ -21,8 +21,8 @@ public extension ClerkTheme {
   }
 }
 
-public extension ClerkTheme.Design {
-  nonisolated static var `default`: Self {
+extension ClerkTheme.Design {
+  public nonisolated static var `default`: Self {
     .init(
       borderRadius: 6.0
     )

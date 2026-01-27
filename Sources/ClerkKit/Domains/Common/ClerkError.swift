@@ -19,10 +19,10 @@ public protocol ClerkError: Error {
   var context: [String: String]? { get }
 }
 
-public extension ClerkError {
+extension ClerkError {
   /// Default implementation returns nil for underlying error if not provided.
-  var underlyingError: Error? { nil }
+  public var underlyingError: Error? { nil }
 
   /// Default implementation returns nil for context if not provided.
-  var context: [String: String]? { nil }
+  public var context: [String: String]? { nil }
 }

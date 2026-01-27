@@ -68,13 +68,13 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
   }
 }
 
-public extension PhoneNumber {
+extension PhoneNumber {
   @MainActor
   private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
 
   /// Deletes this phone number.
   @discardableResult @MainActor
-  func delete() async throws -> DeletedObject {
+  public func delete() async throws -> DeletedObject {
     try await phoneNumberService.delete(phoneNumberId: id)
   }
 
@@ -82,7 +82,7 @@ public extension PhoneNumber {
   ///
   /// An SMS message with a one-time code will be sent to the phone number value.
   @discardableResult @MainActor
-  func sendCode() async throws -> PhoneNumber {
+  public func sendCode() async throws -> PhoneNumber {
     try await phoneNumberService.prepareVerification(phoneNumberId: id)
   }
 
@@ -90,20 +90,20 @@ public extension PhoneNumber {
   ///
   /// The code will be sent when calling the ``PhoneNumber/sendCode()`` method.
   @discardableResult @MainActor
-  func verifyCode(_ code: String) async throws -> PhoneNumber {
+  public func verifyCode(_ code: String) async throws -> PhoneNumber {
     try await phoneNumberService.attemptVerification(phoneNumberId: id, code: code)
   }
 
   /// Marks this phone number as the default second factor for multi-factor authentication(2FA). A user can have exactly one default second factor.
   @discardableResult @MainActor
-  func makeDefaultSecondFactor() async throws -> PhoneNumber {
+  public func makeDefaultSecondFactor() async throws -> PhoneNumber {
     try await phoneNumberService.makeDefaultSecondFactor(phoneNumberId: id)
   }
 
   /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
   /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
   @discardableResult @MainActor
-  func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
+  public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
     try await phoneNumberService.setReservedForSecondFactor(phoneNumberId: id, reserved: reserved)
   }
 }

@@ -7,8 +7,8 @@
 
 import Foundation
 
-public extension Clerk {
-  struct Environment: Codable, Sendable, Equatable {
+extension Clerk {
+  public struct Environment: Codable, Sendable, Equatable {
     public var authConfig: AuthConfig
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig

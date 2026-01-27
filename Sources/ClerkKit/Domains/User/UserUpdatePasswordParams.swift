@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 1/24/25.
 //
 
-public extension User {
-  struct UpdatePasswordParams: Encodable, Sendable {
+extension User {
+  public struct UpdatePasswordParams: Encodable, Sendable {
     public init(
       currentPassword: String? = nil,
       newPassword: String,

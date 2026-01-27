@@ -51,7 +51,7 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
   }
 }
 
-public extension EmailAddress {
+extension EmailAddress {
   @MainActor
   private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
 
@@ -67,7 +67,7 @@ public extension EmailAddress {
   /// let emailAddress = try await emailAddress.sendCode()
   /// ```
   @discardableResult @MainActor
-  func sendCode() async throws -> EmailAddress {
+  public func sendCode() async throws -> EmailAddress {
     try await emailAddressService.prepareVerification(emailAddressId: id, strategy: .emailCode)
   }
 
@@ -84,13 +84,13 @@ public extension EmailAddress {
   /// let emailAddress = try await emailAddress.verifyCode("123456")
   /// ```
   @discardableResult @MainActor
-  func verifyCode(_ code: String) async throws -> EmailAddress {
+  public func verifyCode(_ code: String) async throws -> EmailAddress {
     try await emailAddressService.attemptVerification(emailAddressId: id, strategy: .emailCode(code: code))
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
-  func destroy() async throws -> DeletedObject {
+  public func destroy() async throws -> DeletedObject {
     try await emailAddressService.destroy(emailAddressId: id)
   }
 }

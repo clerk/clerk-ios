@@ -7,9 +7,9 @@
 
 import Foundation
 
-public extension Clerk {
+extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
-  struct ClerkOptions: Sendable {
+  public struct ClerkOptions: Sendable {
     /// The minimum log level for SDK logging. Defaults to `.error` (minimal logging).
     public let logLevel: LogLevel
 

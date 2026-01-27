@@ -298,7 +298,7 @@ package enum ClerkLogger {
 
 // MARK: - Convenience Extensions
 
-package extension ClerkLogger {
+extension ClerkLogger {
   /// Log an error with automatic error extraction
   /// - Parameters:
   ///   - error: The error to log
@@ -306,7 +306,7 @@ package extension ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  static func logError(
+  package static func logError(
     _ error: Error,
     message: String = "An error occurred",
     file: String = #file,
@@ -324,7 +324,7 @@ package extension ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
-  static func logNetworkError(
+  package static func logNetworkError(
     _ error: Error,
     endpoint: String,
     statusCode: Int? = nil,
@@ -342,8 +342,8 @@ package extension ClerkLogger {
 
 // MARK: - DateFormatter Extension
 
-private extension DateFormatter {
-  static let logFormatter: DateFormatter = {
+extension DateFormatter {
+  fileprivate static let logFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
     formatter.locale = Locale(identifier: "en_US_POSIX")

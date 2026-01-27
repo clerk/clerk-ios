@@ -69,7 +69,7 @@ public protocol JWT {
   var expired: Bool { get }
 }
 
-public extension JWT {
+extension JWT {
   /// Returns a claim by its name.
   ///
   /// ```swift
@@ -80,7 +80,7 @@ public extension JWT {
   ///
   /// - Parameter name: Name of the claim in the JWT.
   /// - Returns: A ``Claim`` instance.
-  func claim(name: String) -> Claim {
+  public func claim(name: String) -> Claim {
     let value = body[name]
     return Claim(value: value)
   }
@@ -95,7 +95,7 @@ public extension JWT {
   ///
   /// - Parameter claim: Name of the claim in the JWT.
   /// - Returns: A ``Claim`` instance.
-  subscript(claim: String) -> Claim {
+  public subscript(claim: String) -> Claim {
     self.claim(name: claim)
   }
 }

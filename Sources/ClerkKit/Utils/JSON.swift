@@ -110,14 +110,14 @@ extension JSON: Hashable {}
 
 private struct InitializationError: Error {}
 
-public extension JSON {
+extension JSON {
   /// Create a JSON value from anything.
   ///
   /// Argument has to be a valid JSON structure: A `Double`, `Int`, `String`,
   /// `Bool`, an `Array` of those types or a `Dictionary` of those types.
   ///
   /// You can also pass `nil` or `NSNull`, both will be treated as `.null`.
-  init(_ value: Any) throws {
+  public init(_ value: Any) throws {
     switch value {
     case _ as NSNull:
       self = .null
@@ -143,10 +143,10 @@ public extension JSON {
   }
 }
 
-public extension JSON {
+extension JSON {
   /// Create a JSON value from an `Encodable`. This will give you access to the “raw”
   /// encoded JSON value the `Encodable` is serialized into.
-  init(encodable: some Encodable) throws {
+  public init(encodable: some Encodable) throws {
     let encoded = try JSONEncoder().encode(encodable)
     self = try JSONDecoder().decode(JSON.self, from: encoded)
   }
@@ -200,13 +200,13 @@ extension JSON: ExpressibleByStringLiteral {
 
 // MARK: - NSNumber
 
-private extension NSNumber {
+extension NSNumber {
   /// Boolean value indicating whether this `NSNumber` wraps a boolean.
   ///
   /// For example, when using `NSJSONSerialization` Bool values are converted into `NSNumber` instances.
   ///
   /// - seealso: https://stackoverflow.com/a/49641315/3589408
-  var isBool: Bool {
+  fileprivate var isBool: Bool {
     let objCType = String(cString: objCType)
     if (compare(trueNumber) == .orderedSame && objCType == trueObjCType) || (compare(falseNumber) == .orderedSame && objCType == falseObjCType) {
       return true
@@ -223,7 +223,7 @@ private let falseObjCType = String(cString: falseNumber.objCType)
 
 // MARK: - Merging
 
-public extension JSON {
+extension JSON {
   /// Return a new JSON value by merging two other ones
   ///
   /// If we call the current JSON value `old` and the incoming JSON value
@@ -234,7 +234,7 @@ public extension JSON {
   ///     1. Add keys from `old` not present in `new` (“no change” case).
   ///     2. Add keys from `new` not present in `old` (“create” case).
   ///     3. For keys present in both `old` and `new`, apply merge recursively to their values (“update” case).
-  func merging(with new: JSON) -> JSON {
+  public func merging(with new: JSON) -> JSON {
     // If old or new are anything but an object, return new.
     guard case let .object(lhs) = self, case let .object(rhs) = new else {
       return new
@@ -263,9 +263,9 @@ public extension JSON {
 
 // MARK: - Querying
 
-public extension JSON {
+extension JSON {
   /// Return the string value if this is a `.string`, otherwise `nil`
-  var stringValue: String? {
+  public var stringValue: String? {
     if case let .string(value) = self {
       return value
     }
@@ -273,7 +273,7 @@ public extension JSON {
   }
 
   /// Return the double value if this is a `.number`, otherwise `nil`
-  var doubleValue: Double? {
+  public var doubleValue: Double? {
     if case let .number(value) = self {
       return value
     }
@@ -281,7 +281,7 @@ public extension JSON {
   }
 
   /// Return the bool value if this is a `.bool`, otherwise `nil`
-  var boolValue: Bool? {
+  public var boolValue: Bool? {
     if case let .bool(value) = self {
       return value
     }
@@ -289,7 +289,7 @@ public extension JSON {
   }
 
   /// Return the object value if this is an `.object`, otherwise `nil`
-  var objectValue: [String: JSON]? {
+  public var objectValue: [String: JSON]? {
     if case let .object(value) = self {
       return value
     }
@@ -297,7 +297,7 @@ public extension JSON {
   }
 
   /// Return the array value if this is an `.array`, otherwise `nil`
-  var arrayValue: [JSON]? {
+  public var arrayValue: [JSON]? {
     if case let .array(value) = self {
       return value
     }
@@ -305,7 +305,7 @@ public extension JSON {
   }
 
   /// Return `true` iff this is `.null`
-  var isNull: Bool {
+  public var isNull: Bool {
     if case .null = self {
       return true
     }
@@ -315,7 +315,7 @@ public extension JSON {
   /// If this is an `.array`, return item at index
   ///
   /// If this is not an `.array` or the index is out of bounds, returns `nil`.
-  subscript(index: Int) -> JSON? {
+  public subscript(index: Int) -> JSON? {
     if case let .array(arr) = self, arr.indices.contains(index) {
       return arr[index]
     }
@@ -323,7 +323,7 @@ public extension JSON {
   }
 
   /// If this is an `.object`, return item at key
-  subscript(key: String) -> JSON? {
+  public subscript(key: String) -> JSON? {
     if case let .object(dict) = self {
       return dict[key]
     }
@@ -333,18 +333,18 @@ public extension JSON {
   /// Dynamic member lookup sugar for string subscripts
   ///
   /// This lets you write `json.foo` instead of `json["foo"]`.
-  subscript(dynamicMember member: String) -> JSON? {
+  public subscript(dynamicMember member: String) -> JSON? {
     self[member]
   }
 
   /// Return the JSON type at the keypath if this is an `.object`, otherwise `nil`
   ///
   /// This lets you write `json[keyPath: "foo.bar.jar"]`.
-  subscript(keyPath keyPath: String) -> JSON? {
+  public subscript(keyPath keyPath: String) -> JSON? {
     queryKeyPath(keyPath.components(separatedBy: "."))
   }
 
-  func queryKeyPath(_ path: some Collection<String>) -> JSON? {
+  public func queryKeyPath(_ path: some Collection<String>) -> JSON? {
     // Only object values may be subscripted
     guard case let .object(object) = self else {
       return nil

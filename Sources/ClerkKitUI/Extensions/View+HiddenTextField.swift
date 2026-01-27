@@ -42,8 +42,8 @@ struct HiddenTextFieldModifier: ViewModifier {
   }
 }
 
-public extension View {
-  func hiddenTextField(text: Binding<String>, textContentType: UITextContentType, isSecure: Bool = false) -> some View {
+extension View {
+  public func hiddenTextField(text: Binding<String>, textContentType: UITextContentType, isSecure: Bool = false) -> some View {
     modifier(HiddenTextFieldModifier(text: text, textContentType: textContentType, isSecure: isSecure))
   }
 }

@@ -7,23 +7,23 @@
 
 import Foundation
 
-package extension String {
-  var isEmptyTrimmed: Bool {
+extension String {
+  package var isEmptyTrimmed: Bool {
     trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
-  var nonBreaking: String {
+  package var nonBreaking: String {
     replacingOccurrences(of: " ", with: "\u{00A0}")
       .replacingOccurrences(of: "-", with: "\u{2011}")
   }
 
-  var capitalizedSentence: String {
+  package var capitalizedSentence: String {
     let firstLetter = prefix(1).capitalized
     let remainingLetters = dropFirst().lowercased()
     return firstLetter + remainingLetters
   }
 
-  var isEmailAddress: Bool {
+  package var isEmailAddress: Bool {
     let emailRegex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
     let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
     return emailPredicate.evaluate(with: self)

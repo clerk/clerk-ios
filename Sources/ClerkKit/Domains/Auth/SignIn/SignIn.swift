@@ -82,7 +82,7 @@ public struct SignIn: Codable, Sendable, Equatable {
   }
 }
 
-public extension SignIn {
+extension SignIn {
   @MainActor
   private var signInService: any SignInServiceProtocol { Clerk.shared.dependencies.signInService }
 
@@ -95,7 +95,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
+  public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -110,7 +110,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
+  public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -127,7 +127,7 @@ public extension SignIn {
   /// - Throws: An error if verification fails.
   @discardableResult
   @MainActor
-  func verifyCode(_ code: String) async throws -> SignIn {
+  public func verifyCode(_ code: String) async throws -> SignIn {
     let strategy = firstFactorVerification?.strategy ?? .emailCode
     return try await signInService.attemptFirstFactor(
       signInId: id,
@@ -142,7 +142,7 @@ public extension SignIn {
   /// - Throws: An error if password authentication fails.
   @discardableResult
   @MainActor
-  func authenticateWithPassword(_ password: String) async throws -> SignIn {
+  public func authenticateWithPassword(_ password: String) async throws -> SignIn {
     try await signInService.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .password, password: password)
@@ -163,7 +163,7 @@ public extension SignIn {
   /// - Throws: An error if authentication fails.
   @discardableResult
   @MainActor
-  func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
+  public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
     try await signInService.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .idToken(provider), token: idToken)
@@ -184,7 +184,7 @@ public extension SignIn {
   /// - Throws: An error if the authentication fails.
   @discardableResult
   @MainActor
-  func authenticateWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+  public func authenticateWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
@@ -205,7 +205,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
+  public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
     return try await signInService.prepareSecondFactor(
       signInId: id,
@@ -220,7 +220,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
+  public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
     return try await signInService.prepareSecondFactor(
       signInId: id,
@@ -237,7 +237,7 @@ public extension SignIn {
   /// - Throws: An error if verification fails.
   @discardableResult
   @MainActor
-  func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
+  public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
     try await signInService.attemptSecondFactor(
       signInId: id,
       params: .init(strategy: type.strategy, code: code)
@@ -253,7 +253,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
+  public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -268,7 +268,7 @@ public extension SignIn {
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
-  func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
+  public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -285,7 +285,7 @@ public extension SignIn {
   /// - Throws: An error if password reset fails.
   @discardableResult
   @MainActor
-  func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
+  public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
     try await signInService.resetPassword(
       signInId: id,
       params: .init(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
@@ -306,7 +306,7 @@ public extension SignIn {
   /// - Throws: An error if the enterprise SSO flow fails.
   @discardableResult
   @MainActor
-  func authenticateWithEnterpriseSSO(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func authenticateWithEnterpriseSSO(prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(
@@ -342,7 +342,7 @@ public extension SignIn {
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
   @MainActor
-  func authenticateWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func authenticateWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(
@@ -381,7 +381,7 @@ public extension SignIn {
   /// - Throws: An error if passkey authentication fails.
   @discardableResult
   @MainActor
-  func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
+  public func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)

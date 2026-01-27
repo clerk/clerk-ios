@@ -126,23 +126,23 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
 
 // MARK: - Strategy Groups
 
-package extension FactorStrategy {
+extension FactorStrategy {
   /// Strategies that use email as the identifier
-  static let emailStrategies: [FactorStrategy] = [
+  package static let emailStrategies: [FactorStrategy] = [
     .emailCode,
     .password,
     .resetPasswordEmailCode,
   ]
 
   /// Strategies that use phone number as the identifier
-  static let phoneStrategies: [FactorStrategy] = [
+  package static let phoneStrategies: [FactorStrategy] = [
     .phoneCode,
     .password,
     .resetPasswordPhoneCode,
   ]
 
   /// Strategies that use username as the identifier
-  static let usernameStrategies: [FactorStrategy] = [
+  package static let usernameStrategies: [FactorStrategy] = [
     .password,
   ]
 }

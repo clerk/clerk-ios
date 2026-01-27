@@ -9,8 +9,8 @@
 
 import SwiftUI
 
-public extension ClerkTheme {
-  struct Colors {
+extension ClerkTheme {
+  public struct Colors {
     public var primary: Color
     public var background: Color
     public var input: Color
@@ -93,25 +93,25 @@ public extension ClerkTheme {
   }
 }
 
-public extension ClerkTheme.Colors {
+extension ClerkTheme.Colors {
   // Static properties for default colors to avoid circular reference
-  static let defaultPrimaryColor = Color(.primary)
-  static let defaultBackgroundColor = Color(.background)
-  static let defaultInputColor = Color(.input)
-  static let defaultDangerColor = Color(.danger)
-  static let defaultSuccessColor = Color(.success)
-  static let defaultWarningColor = Color(.warning)
-  static let defaultForegroundColor = Color(.foreground)
-  static let defaultMutedForegroundColor = Color(.mutedForeground)
-  static let defaultPrimaryForegroundColor = Color(.primaryForeground)
-  static let defaultInputForegroundColor = Color(.inputForeground)
-  static let defaultNeutralColor = Color(.neutral)
-  static let defaultRingColor = Color(.neutral)
-  static let defaultMutedColor = Color(.muted)
-  static let defaultShadowColor = Color(.neutral)
-  static let defaultBorderColor = Color(.neutral)
+  public static let defaultPrimaryColor = Color(.primary)
+  public static let defaultBackgroundColor = Color(.background)
+  public static let defaultInputColor = Color(.input)
+  public static let defaultDangerColor = Color(.danger)
+  public static let defaultSuccessColor = Color(.success)
+  public static let defaultWarningColor = Color(.warning)
+  public static let defaultForegroundColor = Color(.foreground)
+  public static let defaultMutedForegroundColor = Color(.mutedForeground)
+  public static let defaultPrimaryForegroundColor = Color(.primaryForeground)
+  public static let defaultInputForegroundColor = Color(.inputForeground)
+  public static let defaultNeutralColor = Color(.neutral)
+  public static let defaultRingColor = Color(.neutral)
+  public static let defaultMutedColor = Color(.muted)
+  public static let defaultShadowColor = Color(.neutral)
+  public static let defaultBorderColor = Color(.neutral)
 
-  nonisolated static var `default`: Self {
+  public nonisolated static var `default`: Self {
     .init(
       primary: defaultPrimaryColor,
       background: defaultBackgroundColor,

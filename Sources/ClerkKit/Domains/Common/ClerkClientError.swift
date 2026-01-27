@@ -29,8 +29,8 @@ public struct ClerkClientError: Error, LocalizedError, ClerkError {
   }
 }
 
-public extension ClerkClientError {
-  var errorDescription: String? {
+extension ClerkClientError {
+  public var errorDescription: String? {
     message
   }
 }

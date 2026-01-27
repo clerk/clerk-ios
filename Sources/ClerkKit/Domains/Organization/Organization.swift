@@ -77,7 +77,7 @@ public struct Organization: Codable, Equatable, Sendable, Identifiable {
   }
 }
 
-public extension Organization {
+extension Organization {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -87,7 +87,7 @@ public extension Organization {
   ///   - name: The organization name.
   ///   - slug: (Optional) The organization slug.
   @discardableResult @MainActor
-  func update(
+  public func update(
     name: String,
     slug: String? = nil
   ) async throws -> Organization {
@@ -98,7 +98,7 @@ public extension Organization {
   ///
   /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
   @discardableResult @MainActor
-  func destroy() async throws -> DeletedObject {
+  public func destroy() async throws -> DeletedObject {
     try await organizationService.destroyOrganization(organizationId: id)
   }
 
@@ -107,7 +107,7 @@ public extension Organization {
   /// The logo must be an image and its size cannot exceed 10MB.
   /// - Returns: ``Organization``
   @discardableResult @MainActor
-  func setLogo(imageData: Data) async throws -> Organization {
+  public func setLogo(imageData: Data) async throws -> Organization {
     try await organizationService.setOrganizationLogo(organizationId: id, imageData: imageData)
   }
 
@@ -119,7 +119,7 @@ public extension Organization {
   /// - Returns:
   ///     A ``ClerkPaginatedResponse`` of ``RoleResource`` objects.
   @MainActor
-  func getRoles(
+  public func getRoles(
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
@@ -137,7 +137,7 @@ public extension Organization {
   /// - Returns:
   ///     A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
   @MainActor
-  func getMemberships(
+  public func getMemberships(
     query: String? = nil,
     role: [String]? = nil,
     initialPage: Int = 0,
@@ -160,7 +160,7 @@ public extension Organization {
   /// - Returns:
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
-  func addMember(
+  public func addMember(
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
@@ -178,7 +178,7 @@ public extension Organization {
   /// - Returns:
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
-  func updateMember(
+  public func updateMember(
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
@@ -193,7 +193,7 @@ public extension Organization {
   /// - Returns:
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
-  func removeMember(userId: String) async throws -> OrganizationMembership {
+  public func removeMember(userId: String) async throws -> OrganizationMembership {
     try await organizationService.removeOrganizationMember(organizationId: id, userId: userId)
   }
 
@@ -208,7 +208,7 @@ public extension Organization {
   /// - Returns:
   ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
   @MainActor
-  func getInvitations(
+  public func getInvitations(
     initialPage: Int = 0,
     pageSize: Int = 20,
     status: String? = nil
@@ -225,7 +225,7 @@ public extension Organization {
   /// - Returns:
   ///   An ``OrganizationInvitation`` object.
   @discardableResult @MainActor
-  func inviteMember(
+  public func inviteMember(
     emailAddress: String,
     role: String
   ) async throws -> OrganizationInvitation {
@@ -238,7 +238,7 @@ public extension Organization {
   ///   - domainName: The domain name that will be added to the organization.
   /// - Returns: An ``OrganizationDomain`` object.
   @discardableResult @MainActor
-  func createDomain(domainName: String) async throws -> OrganizationDomain {
+  public func createDomain(domainName: String) async throws -> OrganizationDomain {
     try await organizationService.createOrganizationDomain(organizationId: id, domainName: domainName)
   }
 
@@ -253,7 +253,7 @@ public extension Organization {
   ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
   @MainActor
-  func getDomains(
+  public func getDomains(
     initialPage: Int = 0,
     pageSize: Int = 20,
     enrollmentMode: String? = nil
@@ -267,7 +267,7 @@ public extension Organization {
   ///   - domainId: The ID of the domain that will be fetched.
   /// - Returns: An ``OrganizationDomain`` object.
   @MainActor
-  func getDomain(domainId: String) async throws -> OrganizationDomain {
+  public func getDomain(domainId: String) async throws -> OrganizationDomain {
     try await organizationService.getOrganizationDomain(organizationId: id, domainId: domainId)
   }
 
@@ -280,7 +280,7 @@ public extension Organization {
   ///   - status: The status of the membership requests that will be included in the response.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembershipRequest`` objects.
   @MainActor
-  func getMembershipRequests(
+  public func getMembershipRequests(
     initialPage: Int = 0,
     pageSize: Int = 20,
     status: String? = nil

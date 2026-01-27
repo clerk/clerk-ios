@@ -205,13 +205,13 @@ public struct User: Codable, Equatable, Sendable, Identifiable {
   }
 }
 
-public extension User {
+extension User {
   @MainActor
   private var userService: any UserServiceProtocol { Clerk.shared.dependencies.userService }
 
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
-  func reload() async throws -> User {
+  public func reload() async throws -> User {
     try await userService.reload()
   }
 
@@ -222,7 +222,7 @@ public extension User {
   /// For example, if you want to use the `update(.init(firstName:))` method, you must enable the Name setting.
   /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
   @discardableResult @MainActor
-  func update(_ params: User.UpdateParams) async throws -> User {
+  public func update(_ params: User.UpdateParams) async throws -> User {
     try await userService.update(params: params)
   }
 
@@ -230,21 +230,21 @@ public extension User {
   ///
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
-  func createBackupCodes() async throws -> BackupCodeResource {
+  public func createBackupCodes() async throws -> BackupCodeResource {
     try await userService.createBackupCodes()
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
   /// - Parameter email: The value of the email address.
   @discardableResult @MainActor
-  func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
+  public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
     try await userService.createEmailAddress(emailAddress: emailAddress)
   }
 
   /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
   /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
   @discardableResult @MainActor
-  func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
+  public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
     try await userService.createPhoneNumber(phoneNumber: phoneNumber)
   }
 
@@ -256,7 +256,7 @@ public extension User {
   ///    - redirectUrl: The full URL or path that the OAuth provider should redirect to, on successful authorization on their part.
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
   @discardableResult @MainActor
-  func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
+  public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
     try await userService.createExternalAccount(provider: provider, redirectUrl: redirectUrl, additionalScopes: additionalScopes)
   }
 
@@ -267,7 +267,7 @@ public extension User {
   ///     - provider: The IDTokenProvider. For example: `.apple`.
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
-  func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
+  public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
     try await userService.createExternalAccountToken(provider: provider, idToken: idToken)
   }
 
@@ -284,7 +284,7 @@ public extension User {
   /// - Returns: The created `ExternalAccount` object.
   /// - Throws: An error if the connection fails.
   @discardableResult @MainActor
-  func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
+  public func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
@@ -300,7 +300,7 @@ public extension User {
   ///
   /// - Returns: ``Passkey``
   @discardableResult @MainActor
-  func createPasskey() async throws -> Passkey {
+  public func createPasskey() async throws -> Passkey {
     try await userService.createPasskey()
   }
   #endif
@@ -309,7 +309,7 @@ public extension User {
   ///
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
-  func createTOTP() async throws -> TOTPResource {
+  public func createTOTP() async throws -> TOTPResource {
     try await userService.createTotp()
   }
 
@@ -319,13 +319,13 @@ public extension User {
   /// This way, correct set up and ownership of the authenticator app can be validated.
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
-  func verifyTOTP(code: String) async throws -> TOTPResource {
+  public func verifyTOTP(code: String) async throws -> TOTPResource {
     try await userService.verifyTotp(code: code)
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
-  func disableTOTP() async throws -> DeletedObject {
+  public func disableTOTP() async throws -> DeletedObject {
     try await userService.disableTotp()
   }
 
@@ -335,7 +335,7 @@ public extension User {
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
-  func getOrganizationInvitations(
+  public func getOrganizationInvitations(
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
@@ -348,7 +348,7 @@ public extension User {
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
   @discardableResult @MainActor
-  func getOrganizationMemberships(
+  public func getOrganizationMemberships(
     initialPage: Int = 0,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
@@ -362,7 +362,7 @@ public extension User {
   ///   - status: The status an invitation can have.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
   @discardableResult @MainActor
-  func getOrganizationSuggestions(
+  public func getOrganizationSuggestions(
     initialPage: Int = 0,
     pageSize: Int = 20,
     status: String? = nil
@@ -374,13 +374,13 @@ public extension User {
   ///
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
-  func getSessions() async throws -> [Session] {
+  public func getSessions() async throws -> [Session] {
     try await userService.getSessions(user: self)
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.
   @discardableResult @MainActor
-  func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
+  public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
     try await userService.updatePassword(params: params)
   }
 
@@ -388,19 +388,19 @@ public extension User {
   /// - Parameters:
   ///     - imageData: The image, in data format, to set as the user's profile image.
   @discardableResult @MainActor
-  func setProfileImage(imageData: Data) async throws -> ImageResource {
+  public func setProfileImage(imageData: Data) async throws -> ImageResource {
     try await userService.setProfileImage(imageData: imageData)
   }
 
   /// Deletes the user's profile image.
   @discardableResult @MainActor
-  func deleteProfileImage() async throws -> DeletedObject {
+  public func deleteProfileImage() async throws -> DeletedObject {
     try await userService.deleteProfileImage()
   }
 
   /// Deletes the current user.
   @discardableResult @MainActor
-  func delete() async throws -> DeletedObject {
+  public func delete() async throws -> DeletedObject {
     try await userService.delete()
   }
 }

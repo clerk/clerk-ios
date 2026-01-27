@@ -7,12 +7,12 @@
 
 import Foundation
 
-public extension SignUp {
+extension SignUp {
   /// Represents a field that can be required, missing, or unverified during sign-up.
   ///
   /// This enum provides type-safe representation of sign-up fields with support for
   /// unknown values to maintain forward compatibility with new fields added by the backend.
-  enum Field: Hashable, Codable, Sendable {
+  public enum Field: Hashable, Codable, Sendable {
     case emailAddress
     case phoneNumber
     case web3Wallet

@@ -5,11 +5,11 @@
 //  Created by Mike Pitre on 1/22/25.
 //
 
-public extension SignUp {
+extension SignUp {
   /// Represents the current status of the sign-up process.
   ///
   /// The `Status` enum defines the possible states of a sign-up flow. Each state indicates a specific requirement or completion level in the sign-up process.
-  enum Status: Codable, Sendable, Equatable, Hashable {
+  public enum Status: Codable, Sendable, Equatable, Hashable {
     /// The sign-up has been inactive for over 24 hours.
     case abandoned
 

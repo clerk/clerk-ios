@@ -5,11 +5,11 @@
 //  Created by Mike Pitre on 1/24/25.
 //
 
-public extension EmailAddress {
+extension EmailAddress {
   /// Represents the strategy for preparing the verification process for an email address.
   ///
   /// Use this enum to specify how the verification email will be sent to the user.
-  enum PrepareStrategy: Sendable {
+  public enum PrepareStrategy: Sendable {
     /// User will receive a one-time authentication code via email.
     case emailCode
 

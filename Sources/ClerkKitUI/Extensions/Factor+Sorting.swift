@@ -10,7 +10,7 @@
 import ClerkKit
 import Foundation
 
-public extension Factor {
+extension Factor {
   private static let strategySortOrderPasswordPref: [FactorStrategy] = [
     .passkey,
     .password,
@@ -38,7 +38,7 @@ public extension Factor {
     .backupCode,
   ]
 
-  struct PasswordPrefComparator: SortComparator {
+  public struct PasswordPrefComparator: SortComparator {
     public typealias Compared = Factor
     public var order: SortOrder = .forward
 
@@ -52,7 +52,7 @@ public extension Factor {
     }
   }
 
-  struct OtpPrefComparator: SortComparator {
+  public struct OtpPrefComparator: SortComparator {
     public typealias Compared = Factor
     public var order: SortOrder = .forward
 
@@ -66,7 +66,7 @@ public extension Factor {
     }
   }
 
-  struct BackupCodePrefComparator: SortComparator {
+  public struct BackupCodePrefComparator: SortComparator {
     public typealias Compared = Factor
     public var order: SortOrder = .forward
 
@@ -80,7 +80,7 @@ public extension Factor {
     }
   }
 
-  struct AllStrategiesButtonsComparator: SortComparator {
+  public struct AllStrategiesButtonsComparator: SortComparator {
     public typealias Compared = Factor
     public var order: SortOrder = .forward
 
@@ -94,10 +94,10 @@ public extension Factor {
     }
   }
 
-  static let passwordPrefComparator = PasswordPrefComparator()
-  static let otpPrefComparator = OtpPrefComparator()
-  static let backupCodePrefComparator = BackupCodePrefComparator()
-  static let allStrategiesButtonsComparator = AllStrategiesButtonsComparator()
+  public static let passwordPrefComparator = PasswordPrefComparator()
+  public static let otpPrefComparator = OtpPrefComparator()
+  public static let backupCodePrefComparator = BackupCodePrefComparator()
+  public static let allStrategiesButtonsComparator = AllStrategiesButtonsComparator()
 }
 
 #endif

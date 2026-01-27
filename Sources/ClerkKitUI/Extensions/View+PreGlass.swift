@@ -26,8 +26,8 @@ struct PreGlassSolidNavBarModifier: ViewModifier {
   }
 }
 
-public extension View {
-  func preGlassSolidNavBar() -> some View {
+extension View {
+  public func preGlassSolidNavBar() -> some View {
     modifier(PreGlassSolidNavBarModifier())
   }
 }
@@ -48,8 +48,8 @@ struct PreGlassDetentSheetBackgroundModifier: ViewModifier {
   }
 }
 
-public extension View {
-  func preGlassDetentSheetBackground() -> some View {
+extension View {
+  public func preGlassDetentSheetBackground() -> some View {
     modifier(PreGlassDetentSheetBackgroundModifier())
   }
 }

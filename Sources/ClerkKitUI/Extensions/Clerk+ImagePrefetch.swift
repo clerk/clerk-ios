@@ -9,7 +9,7 @@ import ClerkKit
 import Nuke
 import SwiftUI
 
-public extension Clerk {
+extension Clerk {
   /// Prefetches environment images (OAuth logos and app brand logo) into the image cache.
   ///
   /// Call this method after Clerk is configured and the environment is loaded
@@ -22,7 +22,7 @@ public extension Clerk {
   /// Clerk.shared.prefetchImages()
   /// ```
   @MainActor
-  func prefetchImages() {
+  public func prefetchImages() {
     guard let environment else { return }
 
     var urls: [URL] = []
@@ -52,7 +52,7 @@ public extension Clerk {
 
 // MARK: - View Modifier
 
-public extension View {
+extension View {
   /// Prefetches Clerk environment images (OAuth logos and app brand logo) when the view appears.
   ///
   /// This modifier automatically waits for the Clerk environment to load before prefetching.
@@ -73,7 +73,7 @@ public extension View {
   /// ```
   ///
   /// - Returns: A view that prefetches Clerk images when it appears.
-  func prefetchClerkImages() -> some View {
+  public func prefetchClerkImages() -> some View {
     modifier(ClerkImagePrefetchModifier())
   }
 }

@@ -5,11 +5,11 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
-public extension SignIn {
+extension SignIn {
   /// Represents the authentication identifiers supported for signing in.
   ///
   /// The `Identifier` enum defines the types of identifiers that can be used during the sign-in process. Each identifier corresponds to a specific authentication method.
-  enum Identifier: Codable, Sendable, Equatable, Hashable {
+  public enum Identifier: Codable, Sendable, Equatable, Hashable {
     /// Represents an email address identifier.
     case emailAddress
 

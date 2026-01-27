@@ -7,9 +7,9 @@
 
 import Foundation
 
-public extension SignIn {
+extension SignIn {
   /// Represents the type of MFA (Multi-Factor Authentication) verification method.
-  enum MfaType: Sendable {
+  public enum MfaType: Sendable {
     /// Phone code verification (SMS).
     case phoneCode
 

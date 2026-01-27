@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension Clerk {
+extension Clerk {
   /// Clears all Clerk-stored keychain items.
   ///
   /// This method deletes all keychain items that Clerk uses to store data, including:
@@ -34,7 +34,7 @@ public extension Clerk {
   /// Clerk.clearAllKeychainItems()
   /// ```
   @MainActor
-  static func clearAllKeychainItems() {
+  public static func clearAllKeychainItems() {
     let keychain = Clerk.shared.dependencies.keychain
 
     // Iterate over all keychain keys and delete each one

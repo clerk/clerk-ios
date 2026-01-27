@@ -60,9 +60,9 @@ extension Color {
   }
 }
 
-private extension CGFloat {
+extension CGFloat {
   /// Converts an sRGB component to its linearized form for luminance calculation.
-  var luminanceComponent: CGFloat {
+  fileprivate var luminanceComponent: CGFloat {
     self <= 0.03928 ? self / 12.92 : pow((self + 0.055) / 1.055, 2.4)
   }
 }

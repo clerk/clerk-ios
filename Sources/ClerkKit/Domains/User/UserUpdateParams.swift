@@ -5,8 +5,8 @@
 //  Created by Mike Pitre on 1/24/25.
 //
 
-public extension User {
-  struct UpdateParams: Encodable, Sendable {
+extension User {
+  public struct UpdateParams: Encodable, Sendable {
     public init(
       username: String? = nil,
       firstName: String? = nil,

@@ -7,8 +7,8 @@
 
 import Foundation
 
-public extension Clerk.Environment {
-  struct FraudSettings: Codable, Sendable, Equatable {
+extension Clerk.Environment {
+  public struct FraudSettings: Codable, Sendable, Equatable {
     public let native: Native
 
     public struct Native: Codable, Sendable, Equatable {

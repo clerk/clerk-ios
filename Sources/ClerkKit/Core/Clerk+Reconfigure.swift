@@ -8,7 +8,7 @@
 import Foundation
 
 @_spi(Internal)
-public extension Clerk {
+extension Clerk {
   /// Reconfigures the shared Clerk instance with a new publishable key.
   ///
   /// This method clears all existing state (keychain data, in-memory state, and managers)
@@ -22,7 +22,7 @@ public extension Clerk {
   ///   - options: Configuration options for the Clerk instance.
   /// - Throws: An error if reconfiguration fails.
   @MainActor
-  static func reconfigure(publishableKey: String, options: ClerkOptions = .init()) throws {
+  public static func reconfigure(publishableKey: String, options: ClerkOptions = .init()) throws {
     // 1. Clear keychain data
     clearAllKeychainItems()
 

@@ -61,7 +61,7 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Identifiable
   }
 }
 
-public extension OrganizationMembership {
+extension OrganizationMembership {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
 
@@ -70,7 +70,7 @@ public extension OrganizationMembership {
   /// - Returns: ``OrganizationMembership``
   /// - Throws: An error if the membership deletion fails.
   @discardableResult @MainActor
-  func destroy() async throws -> OrganizationMembership {
+  public func destroy() async throws -> OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to delete membership: missing userId")
     }
@@ -84,7 +84,7 @@ public extension OrganizationMembership {
   /// - Throws: An error if the membership update fails.
   /// - Returns: ``OrganizationMembership``
   @discardableResult @MainActor
-  func update(role: String) async throws -> OrganizationMembership {
+  public func update(role: String) async throws -> OrganizationMembership {
     guard let userId = publicUserData?.userId else {
       throw ClerkClientError(message: "Unable to update membership: missing userId")
     }

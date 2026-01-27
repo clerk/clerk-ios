@@ -104,10 +104,10 @@ enum LastUsedAuth: Equatable {
   }
 }
 
-private extension LastUsedAuth {
-  static let identifierStorageKey = "clerk_last_used_identifier_type"
+extension LastUsedAuth {
+  fileprivate static let identifierStorageKey = "clerk_last_used_identifier_type"
 
-  static func shouldShowBadge(
+  fileprivate static func shouldShowBadge(
     for strategies: [FactorStrategy],
     lastAuth: FactorStrategy,
     environment: Clerk.Environment?
@@ -127,7 +127,7 @@ private extension LastUsedAuth {
     return strategies.contains(lastAuth)
   }
 
-  func matches(_ strategies: [FactorStrategy]) -> Bool {
+  fileprivate func matches(_ strategies: [FactorStrategy]) -> Bool {
     switch self {
     case .email:
       strategies.contains(.emailCode)
@@ -141,7 +141,7 @@ private extension LastUsedAuth {
     }
   }
 
-  static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
+  fileprivate static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
     let hasEmail = environment?.userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled && value.usedForFirstFactor
     } ?? false
@@ -159,7 +159,7 @@ private extension LastUsedAuth {
     return true
   }
 
-  var identifierStorageValue: String? {
+  fileprivate var identifierStorageValue: String? {
     switch self {
     case .email:
       "email"

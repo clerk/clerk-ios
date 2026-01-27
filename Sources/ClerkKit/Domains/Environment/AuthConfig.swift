@@ -7,8 +7,8 @@
 
 import Foundation
 
-public extension Clerk.Environment {
-  struct AuthConfig: Codable, Sendable, Equatable {
+extension Clerk.Environment {
+  public struct AuthConfig: Codable, Sendable, Equatable {
     public var singleSessionMode: Bool
   }
 }

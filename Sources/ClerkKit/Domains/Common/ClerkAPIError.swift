@@ -37,8 +37,8 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
   }
 }
 
-public extension ClerkAPIError {
-  var errorDescription: String? { longMessage ?? message }
+extension ClerkAPIError {
+  public var errorDescription: String? { longMessage ?? message }
 }
 
 /// Represents the body of Clerk API error responses.

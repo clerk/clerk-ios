@@ -86,7 +86,7 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Equatable {
   }
 }
 
-public extension ExternalAccount {
+extension ExternalAccount {
   @MainActor
   private var externalAccountService: any ExternalAccountServiceProtocol { Clerk.shared.dependencies.externalAccountService }
 
@@ -98,7 +98,7 @@ public extension ExternalAccount {
   ///                                         does not persist cookies or other data between sessions, ensuring
   ///                                         a private browsing experience.
   @discardableResult @MainActor
-  func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
+  public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
     guard
       let redirectUrl = verification?.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
@@ -122,7 +122,7 @@ public extension ExternalAccount {
 
   /// Deletes this external account.
   @discardableResult @MainActor
-  func destroy() async throws -> DeletedObject {
+  public func destroy() async throws -> DeletedObject {
     try await externalAccountService.destroy(id)
   }
 }

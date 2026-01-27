@@ -5,11 +5,11 @@
 //  Created by Mike Pitre on 1/21/25.
 //
 
-public extension SignIn {
+extension SignIn {
   /// Represents the current status of the sign-in process.
   ///
   /// The `Status` enum defines the possible states of a sign-in flow. Each state indicates a specific requirement or completion level in the sign-in process.
-  enum Status: Codable, Sendable, Equatable, Hashable {
+  public enum Status: Codable, Sendable, Equatable, Hashable {
     /// The user is signed in.
     case complete
 

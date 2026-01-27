@@ -9,8 +9,8 @@
 
 import SwiftUI
 
-public extension ClerkTheme {
-  struct Fonts {
+extension ClerkTheme {
+  public struct Fonts {
     // Text styles matching iOS system font styles
     public var largeTitle: Font
     public var title: Font
@@ -68,8 +68,8 @@ public extension ClerkTheme {
   }
 }
 
-public extension ClerkTheme.Fonts {
-  nonisolated static var `default`: Self {
+extension ClerkTheme.Fonts {
+  public nonisolated static var `default`: Self {
     .init(
       largeTitle: .system(.largeTitle),
       title: .system(.title),

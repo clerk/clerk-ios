@@ -10,16 +10,16 @@
 import Foundation
 import SwiftUI
 
-public extension ClerkTheme {
+extension ClerkTheme {
   @MainActor
-  static let `default`: ClerkTheme = .init(
+  public static let `default`: ClerkTheme = .init(
     colors: .default,
     fonts: .default,
     design: .default
   )
 
   @MainActor
-  static let clerk: ClerkTheme = .init(
+  public static let clerk: ClerkTheme = .init(
     colors: .init(
       primary: Color(.clerkPrimary),
       danger: Color(.clerkDanger),
@@ -33,8 +33,8 @@ public extension ClerkTheme {
   )
 }
 
-public extension EnvironmentValues {
-  var clerkTheme: ClerkTheme {
+extension EnvironmentValues {
+  public var clerkTheme: ClerkTheme {
     get { self[ClerkThemeEnvironmentKey.self] }
     set { self[ClerkThemeEnvironmentKey.self] = newValue }
   }

@@ -10,7 +10,7 @@
 import ClerkKit
 import SwiftUI
 
-package extension View {
+extension View {
   /// Injects mock environment values for previews.
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
@@ -33,7 +33,7 @@ package extension View {
   /// }
   /// ```
   @MainActor
-  func clerkPreview(isSignedIn: Bool = true) -> some View {
+  package func clerkPreview(isSignedIn: Bool = true) -> some View {
     if EnvironmentDetection.isRunningInPreviews {
       // Configure Clerk.shared so views that access it directly don't fail
       let clerk = Clerk.preview { builder in

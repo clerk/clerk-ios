@@ -191,7 +191,7 @@ public final class Clerk {
   }
 }
 
-public extension Clerk {
+extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   @MainActor
   package func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
@@ -263,7 +263,7 @@ public extension Clerk {
   /// - Returns: The configured Clerk instance.
   @MainActor
   @discardableResult
-  static func configure(
+  public static func configure(
     publishableKey: String,
     options: Clerk.ClerkOptions = .init()
   ) -> Clerk {
@@ -294,13 +294,13 @@ public extension Clerk {
 
   /// Refreshes the current client from the API.
   @discardableResult
-  func refreshClient() async throws -> Client? {
+  public func refreshClient() async throws -> Client? {
     try await dependencies.clientService.get()
   }
 
   /// Refreshes the current environment from the API.
   @discardableResult
-  func refreshEnvironment() async throws -> Environment {
+  public func refreshEnvironment() async throws -> Environment {
     try await dependencies.environmentService.get()
   }
 
