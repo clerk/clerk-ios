@@ -16,7 +16,8 @@ This command will:
 1. Check if SwiftFormat is installed, and install it via Homebrew if needed
 2. Check if SwiftLint is installed, and install it via Homebrew if needed
 3. Set up the pre-commit hook to automatically format staged Swift files
-4. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
+4. Install agent skills into `.codex/skills`, `.claude/skills`, and `.cursor/skills`
+5. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
 
 After running `make setup`, you're ready to start developing!
 
@@ -61,7 +62,11 @@ After running `make setup`, you're ready to start developing!
 
 ### Available Make Commands
 
-- `make setup` - Install SwiftFormat, SwiftLint, set up pre-commit hook, and create .keys.json file
+- `make setup` - Install tools, hooks, agent skills, and create `.keys.json`
+- `make install-tools` - Install SwiftFormat and SwiftLint via Homebrew
+- `make install-hooks` - Install the pre-commit hook
+- `make install-agent-skills` - Install agent skills into `.codex/skills`, `.claude/skills`, and `.cursor/skills`
+- `make create-env` - Create the `.keys.json` file if missing
 - `make format` - Format all Swift files using SwiftFormat
 - `make format-check` - Check formatting without modifying files (for CI)
 - `make lint` - Run SwiftLint to check code quality
@@ -255,4 +260,3 @@ If you encounter any issues:
 ## Questions?
 
 Feel free to open an issue or reach out to the maintainers if you have questions about contributing!
-

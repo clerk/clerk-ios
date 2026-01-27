@@ -1,10 +1,10 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills install-mcps
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
 
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make setup         - Install tools/hooks, install agent skills, and install MCPs"
+	@echo "  make setup         - Install tools/hooks and install agent skills"
 	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
@@ -16,10 +16,9 @@ help:
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-agent-skills - Install agent skills into .codex/skills and .claude/skills"
-	@echo "  make install-mcps    - Install repo MCP servers into ~/.codex/config.toml"
 
 # Main setup command - installs tools and hooks
-setup: install-tools install-hooks install-agent-skills install-mcps
+setup: install-tools install-hooks install-agent-skills
 	@echo "✅ Setup complete!"
 	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
@@ -67,10 +66,6 @@ fetch-test-keys: install-1password-cli create-env
 # Install agent skills into .codex/skills and .claude/skills
 install-agent-skills:
 	@./scripts/install-agent-skills.sh
-
-# Install Codex MCP servers from .mcp.json into ~/.codex/config.toml
-install-mcps:
-	@./scripts/install-mcps.sh
 
 # Format all Swift files
 format:
