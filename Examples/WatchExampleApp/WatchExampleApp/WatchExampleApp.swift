@@ -5,6 +5,7 @@
 //  Created on 2025-01-27.
 //
 
+import ClerkKit
 import ClerkKitUI
 import SwiftUI
 
