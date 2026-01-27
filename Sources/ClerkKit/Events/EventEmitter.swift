@@ -34,13 +34,13 @@ import Foundation
 /// ```
 ///
 @MainActor
-public final class EventEmitter<Event: Sendable> {
+final class EventEmitter<Event: Sendable> {
   /// Active continuations that need to receive events.
   /// Each call to `events` creates a new continuation that must be retained
   /// until the stream terminates.
   private var continuations: [UUID: AsyncStream<Event>.Continuation] = [:]
 
-  public init() {}
+  init() {}
 
   /// Returns a new `AsyncStream` that receives all future events.
   ///
@@ -56,7 +56,7 @@ public final class EventEmitter<Event: Sendable> {
   /// }
   /// ```
   ///
-  public var events: AsyncStream<Event> {
+  var events: AsyncStream<Event> {
     AsyncStream<Event> { continuation in
       let id = UUID()
       continuations[id] = continuation
@@ -77,7 +77,7 @@ public final class EventEmitter<Event: Sendable> {
   /// ```swift
   /// emitter.send(.signUpCompleted(signUp: signUp))
   /// ```
-  public func send(_ event: Event) {
+  func send(_ event: Event) {
     for continuation in continuations.values {
       continuation.yield(event)
     }
@@ -86,7 +86,7 @@ public final class EventEmitter<Event: Sendable> {
   /// Finishes all active event streams and removes all consumers.
   ///
   /// Use this to cleanly shut down the event emitter.
-  public func finish() {
+  func finish() {
     let activeContinuations = continuations.values
     continuations.removeAll()
 
