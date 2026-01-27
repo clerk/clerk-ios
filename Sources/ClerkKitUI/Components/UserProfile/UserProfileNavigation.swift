@@ -16,7 +16,7 @@ import SwiftUI
 /// It is injected into child views via the environment.
 @MainActor
 @Observable
-public final class UserProfileNavigation {
+final class UserProfileNavigation {
   /// The navigation path for the user profile flow.
   var path = NavigationPath()
 
@@ -33,7 +33,7 @@ public final class UserProfileNavigation {
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 
   /// Creates a new UserProfileNavigation instance.
-  public init() {}
+  init() {}
 }
 
 #endif
