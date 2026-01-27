@@ -1,5 +1,5 @@
 //
-//  Clerk+ImagePrefetch.swift
+//  ClerkImagePrefetch.swift
 //  Clerk
 //
 

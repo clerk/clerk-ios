@@ -38,11 +38,11 @@ extension Factor {
     .backupCode,
   ]
 
-  public struct PasswordPrefComparator: SortComparator {
-    public typealias Compared = Factor
-    public var order: SortOrder = .forward
+  struct PasswordPrefComparator: SortComparator {
+    typealias Compared = Factor
+    var order: SortOrder = .forward
 
-    public func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
+    func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
       guard let order1 = strategySortOrderPasswordPref.firstIndex(of: lhs.strategy),
             let order2 = strategySortOrderPasswordPref.firstIndex(of: rhs.strategy)
       else {
@@ -52,11 +52,11 @@ extension Factor {
     }
   }
 
-  public struct OtpPrefComparator: SortComparator {
-    public typealias Compared = Factor
-    public var order: SortOrder = .forward
+  struct OtpPrefComparator: SortComparator {
+    typealias Compared = Factor
+    var order: SortOrder = .forward
 
-    public func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
+    func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
       guard let order1 = strategySortOrderOtpPref.firstIndex(of: lhs.strategy),
             let order2 = strategySortOrderOtpPref.firstIndex(of: rhs.strategy)
       else {
@@ -66,11 +66,11 @@ extension Factor {
     }
   }
 
-  public struct BackupCodePrefComparator: SortComparator {
-    public typealias Compared = Factor
-    public var order: SortOrder = .forward
+  struct BackupCodePrefComparator: SortComparator {
+    typealias Compared = Factor
+    var order: SortOrder = .forward
 
-    public func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
+    func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
       guard let order1 = strategySortOrderBackupCodePref.firstIndex(of: lhs.strategy),
             let order2 = strategySortOrderBackupCodePref.firstIndex(of: rhs.strategy)
       else {
@@ -80,11 +80,11 @@ extension Factor {
     }
   }
 
-  public struct AllStrategiesButtonsComparator: SortComparator {
-    public typealias Compared = Factor
-    public var order: SortOrder = .forward
+  struct AllStrategiesButtonsComparator: SortComparator {
+    typealias Compared = Factor
+    var order: SortOrder = .forward
 
-    public func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
+    func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
       guard let order1 = strategySortOrderAllStrategies.firstIndex(of: lhs.strategy),
             let order2 = strategySortOrderAllStrategies.firstIndex(of: rhs.strategy)
       else {
@@ -94,10 +94,10 @@ extension Factor {
     }
   }
 
-  public static let passwordPrefComparator = PasswordPrefComparator()
-  public static let otpPrefComparator = OtpPrefComparator()
-  public static let backupCodePrefComparator = BackupCodePrefComparator()
-  public static let allStrategiesButtonsComparator = AllStrategiesButtonsComparator()
+  static let passwordPrefComparator = PasswordPrefComparator()
+  static let otpPrefComparator = OtpPrefComparator()
+  static let backupCodePrefComparator = BackupCodePrefComparator()
+  static let allStrategiesButtonsComparator = AllStrategiesButtonsComparator()
 }
 
 #endif
