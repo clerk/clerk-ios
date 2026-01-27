@@ -62,8 +62,4 @@ sync_repo \
   "DimillianSkills" \
   "https://github.com/Dimillian/Skills"
 
-sync_repo \
-  "Swift-Concurrency-Agent-Skill" \
-  "https://github.com/AvdLee/Swift-Concurrency-Agent-Skill"
-
 echo "✅ Agent skills installed"
