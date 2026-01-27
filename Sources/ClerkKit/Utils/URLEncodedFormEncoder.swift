@@ -53,9 +53,9 @@ import Foundation
 /// replacing spaces with `%20`.
 ///
 /// This type is largely based on Vapor's [`url-encoded-form`](https://github.com/vapor/url-encoded-form) project.
-public final class URLEncodedFormEncoder {
+final class URLEncodedFormEncoder {
   /// Encoding to use for `Array` values.
-  public enum ArrayEncoding {
+  enum ArrayEncoding {
     /// An empty set of square brackets ("[]") are appended to the key for every value. This is the default encoding.
     case brackets
     /// No brackets are appended to the key and the key is encoded as is.
@@ -83,7 +83,7 @@ public final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for `Bool` values.
-  public enum BoolEncoding {
+  enum BoolEncoding {
     /// Encodes `true` as `1`, `false` as `0`.
     case numeric
     /// Encodes `true` as "true", `false` as "false". This is the default encoding.
@@ -103,7 +103,7 @@ public final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for `Data` values.
-  public enum DataEncoding {
+  enum DataEncoding {
     /// Defers encoding to the `Data` type.
     case deferredToData
     /// Encodes `Data` as a Base64-encoded string. This is the default encoding.
@@ -127,7 +127,7 @@ public final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for `Date` values.
-  public enum DateEncoding {
+  enum DateEncoding {
     /// ISO8601 and RFC3339 formatter.
     private static let iso8601Formatter = Protected<ISO8601DateFormatter>(
       {
@@ -178,7 +178,7 @@ public final class URLEncodedFormEncoder {
   ///
   /// This type is derived from [`JSONEncoder`'s `KeyEncodingStrategy`](https://github.com/apple/swift/blob/6aa313b8dd5f05135f7f878eccc1db6f9fbe34ff/stdlib/public/Darwin/Foundation/JSONEncoder.swift#L128)
   /// and [`XMLEncoder`s `KeyEncodingStrategy`](https://github.com/MaxDesiatov/XMLCoder/blob/master/Sources/XMLCoder/Encoder/XMLEncoder.swift#L102).
-  public enum KeyEncoding {
+  enum KeyEncoding {
     /// Use the keys specified by each type. This is the default encoding.
     case useDefaultKeys
     /// Convert from "camelCaseKeys" to "snake_case_keys" before writing a key.
@@ -299,18 +299,18 @@ public final class URLEncodedFormEncoder {
   ///
   /// This encoding affects how the `parent`, `child`, `grandchild` path is encoded. Brackets are used by default.
   /// e.g. `parent[child][grandchild]=value`.
-  public struct KeyPathEncoding: Sendable {
+  struct KeyPathEncoding: Sendable {
     /// Encodes key paths by wrapping each component in brackets. e.g. `parent[child][grandchild]`.
-    public static let brackets = KeyPathEncoding { "[\($0)]" }
+    static let brackets = KeyPathEncoding { "[\($0)]" }
     /// Encodes key paths by separating each component with dots. e.g. `parent.child.grandchild`.
-    public static let dots = KeyPathEncoding { ".\($0)" }
+    static let dots = KeyPathEncoding { ".\($0)" }
 
     private let encoding: @Sendable (_ subkey: String) -> String
 
     /// Creates an instance with the encoding closure called for each sub-key in a key path.
     ///
     /// - Parameter encoding: Closure used to perform the encoding.
-    public init(encoding: @escaping @Sendable (_ subkey: String) -> String) {
+    init(encoding: @escaping @Sendable (_ subkey: String) -> String) {
       self.encoding = encoding
     }
 
@@ -320,20 +320,20 @@ public final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for `nil` values.
-  public struct NilEncoding: Sendable {
+  struct NilEncoding: Sendable {
     /// Encodes `nil` by dropping the entire key / value pair.
-    public static let dropKey = NilEncoding { nil }
+    static let dropKey = NilEncoding { nil }
     /// Encodes `nil` by dropping only the value. e.g. `value1=one&nilValue=&value2=two`.
-    public static let dropValue = NilEncoding { "" }
+    static let dropValue = NilEncoding { "" }
     /// Encodes `nil` as `null`.
-    public static let null = NilEncoding { "null" }
+    static let null = NilEncoding { "null" }
 
     private let encoding: @Sendable () -> String?
 
     /// Creates an instance with the encoding closure called for `nil` values.
     ///
     /// - Parameter encoding: Closure used to perform the encoding.
-    public init(encoding: @escaping @Sendable () -> String?) {
+    init(encoding: @escaping @Sendable () -> String?) {
       self.encoding = encoding
     }
 
@@ -343,7 +343,7 @@ public final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for spaces.
-  public enum SpaceEncoding {
+  enum SpaceEncoding {
     /// Encodes spaces using percent escaping (`%20`).
     case percentEscaped
     /// Encodes spaces as `+`.
@@ -363,7 +363,7 @@ public final class URLEncodedFormEncoder {
   }
 
   /// `URLEncodedFormEncoder` error.
-  public enum Error: Swift.Error {
+  enum Error: Swift.Error {
     /// An invalid root object was created by the encoder. Only keyed values are valid.
     case invalidRootObject(String)
 
@@ -380,25 +380,25 @@ public final class URLEncodedFormEncoder {
   /// - Note: This setting ensures a consistent ordering for all encodings of the same parameters. When set to `false`,
   ///         encoded `Dictionary` values may have a different encoded order each time they're encoded due to
   ///       ` Dictionary`'s random storage order, but `Encodable` types will maintain their encoded order.
-  public let alphabetizeKeyValuePairs: Bool
+  let alphabetizeKeyValuePairs: Bool
   /// The `ArrayEncoding` to use.
-  public let arrayEncoding: ArrayEncoding
+  let arrayEncoding: ArrayEncoding
   /// The `BoolEncoding` to use.
-  public let boolEncoding: BoolEncoding
+  let boolEncoding: BoolEncoding
   /// THe `DataEncoding` to use.
-  public let dataEncoding: DataEncoding
+  let dataEncoding: DataEncoding
   /// The `DateEncoding` to use.
-  public let dateEncoding: DateEncoding
+  let dateEncoding: DateEncoding
   /// The `KeyEncoding` to use.
-  public let keyEncoding: KeyEncoding
+  let keyEncoding: KeyEncoding
   /// The `KeyPathEncoding` to use.
-  public let keyPathEncoding: KeyPathEncoding
+  let keyPathEncoding: KeyPathEncoding
   /// The `NilEncoding` to use.
-  public let nilEncoding: NilEncoding
+  let nilEncoding: NilEncoding
   /// The `SpaceEncoding` to use.
-  public let spaceEncoding: SpaceEncoding
+  let spaceEncoding: SpaceEncoding
   /// The `CharacterSet` of allowed (non-escaped) characters.
-  public var allowedCharacters: CharacterSet
+  var allowedCharacters: CharacterSet
 
   /// Creates an instance from the supplied parameters.
   ///
@@ -413,7 +413,7 @@ public final class URLEncodedFormEncoder {
   ///   - spaceEncoding:            The `SpaceEncoding` to use. `.percentEscaped` by default.
   ///   - allowedCharacters:        The `CharacterSet` of allowed (non-escaped) characters. `.afURLQueryAllowed` by
   ///                               default.
-  public init(
+  init(
     alphabetizeKeyValuePairs: Bool = true,
     arrayEncoding: ArrayEncoding = .brackets,
     boolEncoding: BoolEncoding = .numeric,
@@ -457,7 +457,7 @@ public final class URLEncodedFormEncoder {
   ///
   /// - Returns:         The encoded `String`.
   /// - Throws:          An `Error` or `EncodingError` instance if encoding fails.
-  public func encode(_ value: any Encodable) throws -> String {
+  func encode(_ value: any Encodable) throws -> String {
     let component: URLEncodedFormComponent = try encode(value)
 
     guard case let .object(object) = component else {
@@ -485,7 +485,7 @@ public final class URLEncodedFormEncoder {
   /// - Returns:         The encoded `Data`.
   ///
   /// - Throws:          An `Error` or `EncodingError` instance if encoding fails.
-  public func encode(_ value: any Encodable) throws -> Data {
+  func encode(_ value: any Encodable) throws -> Data {
     let string: String = try encode(value)
 
     return Data(string.utf8)
@@ -1178,7 +1178,7 @@ extension [String] {
   }
 }
 
-public extension CharacterSet {
+extension CharacterSet {
   /// Creates a CharacterSet from RFC 3986 allowed characters.
   ///
   /// RFC 3986 states that the following characters are "reserved" characters.
