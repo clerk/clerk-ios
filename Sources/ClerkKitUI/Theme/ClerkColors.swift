@@ -10,38 +10,101 @@
 import SwiftUI
 
 extension ClerkTheme {
+  /// A palette of semantic colors used by ClerkKitUI.
+  ///
+  /// Many additional tokens (such as borders and state variants) are derived
+  /// from the base colors you provide here.
   public struct Colors {
+    /// The primary color used throughout the views.
     public var primary: Color
+
+    /// The background color for containers.
     public var background: Color
+
+    /// The background color used for input fields.
     public var input: Color
+
+    /// The color used for error states.
     public var danger: Color
+
+    /// The color used for success states.
     public var success: Color
+
+    /// The color used for warning states.
     public var warning: Color
+
+    /// The color used for text.
     public var foreground: Color
+
+    /// The color used for secondary text.
     public var mutedForeground: Color
+
+    /// The color used for text on the primary background.
     public var primaryForeground: Color
+
+    /// The color used for text in input fields.
     public var inputForeground: Color
+
+    /// The color that will be used to generate the neutral shades the views use.
     public var neutral: Color
+
+    /// The color of the ring when an interactive element is focused.
     public var ring: Color
+
+    /// The color used for muted backgrounds.
     public var muted: Color
+
+    /// The base shadow color used in the views.
     public var shadow: Color
 
-    // Generated Colors
+    // MARK: - Generated Colors
+
+    /// A pressed-state variant of `primary`.
     public var primaryPressed: Color
+
+    /// The base border color used in the views.
     public var border: Color
+
+    /// A slightly stronger border color for buttons.
     public var buttonBorder: Color
+
+    /// The default border color for input fields.
     public var inputBorder: Color
+
+    /// The focused border color for input fields.
     public var inputBorderFocused: Color
+
+    /// The default error border color for input fields.
     public var dangerInputBorder: Color
+
+    /// The focused error border color for input fields.
     public var dangerInputBorderFocused: Color
+
+    /// A translucent background color for overlays.
     public var backgroundTransparent: Color
+
+    /// A success background tint.
     public var backgroundSuccess: Color
+
+    /// A success border tint.
     public var borderSuccess: Color
+
+    /// An error background tint.
     public var backgroundDanger: Color
+
+    /// An error border tint.
     public var borderDanger: Color
+
+    /// A warning background tint.
     public var backgroundWarning: Color
+
+    /// A warning border tint.
     public var borderWarning: Color
 
+    /// Creates a semantic color palette and derives ClerkKitUI state colors.
+    ///
+    /// - Note: Derived tokens are computed from the provided base colors, including
+    ///   the `border` base color passed to this initializer.
     public init(
       primary: Color = Self.defaultPrimaryColor,
       background: Color = Self.defaultBackgroundColor,
@@ -74,7 +137,7 @@ extension ClerkTheme {
       self.muted = muted
       self.shadow = shadow
 
-      // Generated Colors
+      // Derived tokens
       primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
       self.border = border.opacity(0.06)
       buttonBorder = border.opacity(0.08)
@@ -94,7 +157,6 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Colors {
-  // Static properties for default colors to avoid circular reference
   public static let defaultPrimaryColor = Color(.primary)
   public static let defaultBackgroundColor = Color(.background)
   public static let defaultInputColor = Color(.input)
@@ -111,6 +173,7 @@ extension ClerkTheme.Colors {
   public static let defaultShadowColor = Color(.neutral)
   public static let defaultBorderColor = Color(.neutral)
 
+  /// The default ClerkKitUI semantic color palette.
   public nonisolated static var `default`: Self {
     .init(
       primary: defaultPrimaryColor,

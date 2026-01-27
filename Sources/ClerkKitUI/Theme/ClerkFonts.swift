@@ -10,21 +10,42 @@
 import SwiftUI
 
 extension ClerkTheme {
+  /// A typography scale aligned with iOS Dynamic Type text styles.
   public struct Fonts {
-    // Text styles matching iOS system font styles
+    /// The large title text style.
     public var largeTitle: Font
+
+    /// The title text style.
     public var title: Font
+
+    /// The secondary title text style.
     public var title2: Font
+
+    /// The tertiary title text style.
     public var title3: Font
+
+    /// The headline text style.
     public var headline: Font
+
+    /// The subheadline text style.
     public var subheadline: Font
+
+    /// The body text style.
     public var body: Font
+
+    /// The callout text style.
     public var callout: Font
+
+    /// The footnote text style.
     public var footnote: Font
+
+    /// The caption text style.
     public var caption: Font
+
+    /// The secondary caption text style.
     public var caption2: Font
 
-    // Initializer with individual fonts
+    /// Creates a typography scale with explicit fonts for each text style.
     public init(
       largeTitle: Font = Self.default.largeTitle,
       title: Font = Self.default.title,
@@ -51,7 +72,9 @@ extension ClerkTheme {
       self.caption2 = caption2
     }
 
-    // Convenience initializer with just a font family
+    /// Creates a typography scale from a single custom font family.
+    ///
+    /// The font sizes remain aligned with Dynamic Type via `relativeTo:`.
     public init(fontFamily: String) {
       largeTitle = .custom(fontFamily, size: 34, relativeTo: .largeTitle)
       title = .custom(fontFamily, size: 28, relativeTo: .title)
@@ -69,6 +92,7 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Fonts {
+  /// The default ClerkKitUI typography scale.
   public nonisolated static var `default`: Self {
     .init(
       largeTitle: .system(.largeTitle),
