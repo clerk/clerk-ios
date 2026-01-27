@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkErrorThrowingResponseMiddleware: NetworkResponseMiddleware {
+struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) throws {
     guard response.isError else { return }
 

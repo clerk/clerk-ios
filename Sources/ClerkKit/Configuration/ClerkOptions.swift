@@ -52,6 +52,23 @@ extension Clerk {
     /// ```
     public let requestMiddleware: [any ClerkRequestMiddleware]
 
+    /// Middleware to run immediately after receiving a response.
+    ///
+    /// Custom response middleware runs before Clerk's built-in response middleware.
+    ///
+    /// ```swift
+    /// struct ResponseDiagnosticsMiddleware: ClerkResponseMiddleware {
+    ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+    ///     // Inspect response or emit diagnostics here.
+    ///   }
+    /// }
+    ///
+    /// let options = Clerk.ClerkOptions(
+    ///   responseMiddleware: [ResponseDiagnosticsMiddleware()]
+    /// )
+    /// ```
+    public let responseMiddleware: [any ClerkResponseMiddleware]
+
     /// Initializes a ``ClerkOptions`` instance.
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
@@ -62,6 +79,7 @@ extension Clerk {
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - requestMiddleware: Middleware to run as the final step before sending a request. Defaults to an empty array.
+    ///   - responseMiddleware: Middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
@@ -70,7 +88,8 @@ extension Clerk {
       redirectConfig: RedirectConfig = .init(),
       watchConnectivityEnabled: Bool = false,
       loggerHandler: (@Sendable (LogEntry) -> Void)? = nil,
-      requestMiddleware: [any ClerkRequestMiddleware] = []
+      requestMiddleware: [any ClerkRequestMiddleware] = [],
+      responseMiddleware: [any ClerkResponseMiddleware] = []
     ) {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
@@ -80,6 +99,7 @@ extension Clerk {
       self.watchConnectivityEnabled = watchConnectivityEnabled
       self.loggerHandler = loggerHandler
       self.requestMiddleware = requestMiddleware
+      self.responseMiddleware = responseMiddleware
     }
   }
 }

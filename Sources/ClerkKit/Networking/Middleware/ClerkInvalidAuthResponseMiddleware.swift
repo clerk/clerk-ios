@@ -8,7 +8,7 @@
 import Foundation
 
 /// When the API indicates authentication is invalid, re-sync the client state unless we already attempted it.
-struct ClerkInvalidAuthResponseMiddleware: NetworkResponseMiddleware {
+struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
   let invalidAuthCodes = ["authentication_invalid", "resource_not_found"]
 
   func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) throws {

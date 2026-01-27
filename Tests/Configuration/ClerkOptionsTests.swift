@@ -16,6 +16,10 @@ struct ClerkOptionsTests {
     func prepare(_: inout URLRequest) async throws {}
   }
 
+  private struct TestResponseMiddleware: ClerkResponseMiddleware {
+    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) throws {}
+  }
+
   @Test
   func defaultInitialization() {
     let options = Clerk.ClerkOptions()
@@ -28,6 +32,7 @@ struct ClerkOptionsTests {
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
     #expect(options.requestMiddleware.isEmpty == true)
+    #expect(options.responseMiddleware.isEmpty == true)
   }
 
   @Test
@@ -126,6 +131,7 @@ struct ClerkOptionsTests {
     _ = options.proxyUrl
     _ = options.redirectConfig
     _ = options.requestMiddleware
+    _ = options.responseMiddleware
 
     #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
@@ -138,5 +144,14 @@ struct ClerkOptionsTests {
 
     #expect(options.requestMiddleware.count == 1)
     #expect(options.requestMiddleware.first is TestRequestMiddleware)
+  }
+
+  @Test
+  func responseMiddlewareInitialization() {
+    let middleware = TestResponseMiddleware()
+    let options = Clerk.ClerkOptions(responseMiddleware: [middleware])
+
+    #expect(options.responseMiddleware.count == 1)
+    #expect(options.responseMiddleware.first is TestResponseMiddleware)
   }
 }

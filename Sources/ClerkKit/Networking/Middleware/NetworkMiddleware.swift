@@ -8,8 +8,11 @@ public protocol ClerkRequestMiddleware: Sendable {
   func prepare(_ request: inout URLRequest) async throws
 }
 
-/// Shared protocol for middleware that can validate responses.
-protocol NetworkResponseMiddleware: Sendable {
+/// Shared protocol for middleware that can validate incoming responses.
+///
+/// Provide implementations via ``Clerk/ClerkOptions/responseMiddleware`` to run logic
+/// immediately after a response is received.
+public protocol ClerkResponseMiddleware: Sendable {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws
 }
 
@@ -26,12 +29,12 @@ protocol NetworkRetryMiddleware: Sendable {
 /// Describes the order of execution for networking middleware.
 struct NetworkingPipeline: Sendable {
   private let requestMiddleware: [any ClerkRequestMiddleware]
-  private let responseMiddleware: [any NetworkResponseMiddleware]
+  private let responseMiddleware: [any ClerkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
     requestMiddleware: [any ClerkRequestMiddleware] = [],
-    responseMiddleware: [any NetworkResponseMiddleware] = [],
+    responseMiddleware: [any ClerkResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
     self.requestMiddleware = requestMiddleware
@@ -69,6 +72,14 @@ extension NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware + middleware,
       responseMiddleware: responseMiddleware,
+      retryMiddleware: retryMiddleware
+    )
+  }
+
+  func appendingResponseMiddleware(_ middleware: [any ClerkResponseMiddleware]) -> NetworkingPipeline {
+    NetworkingPipeline(
+      requestMiddleware: requestMiddleware,
+      responseMiddleware: middleware + responseMiddleware,
       retryMiddleware: retryMiddleware
     )
   }

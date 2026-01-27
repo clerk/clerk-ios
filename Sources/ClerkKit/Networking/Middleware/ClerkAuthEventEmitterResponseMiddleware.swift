@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkAuthEventEmitterResponseMiddleware: NetworkResponseMiddleware {
+struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) throws {
     Task { @MainActor in
       if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,

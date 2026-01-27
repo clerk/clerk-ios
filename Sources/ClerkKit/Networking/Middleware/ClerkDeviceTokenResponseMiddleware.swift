@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ClerkDeviceTokenResponseMiddleware: NetworkResponseMiddleware {
+struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
       // Emit event on MainActor - listeners will handle saving and syncing

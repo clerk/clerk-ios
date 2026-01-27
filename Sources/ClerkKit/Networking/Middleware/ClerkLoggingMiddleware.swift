@@ -41,7 +41,7 @@ struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
 }
 
 /// Logs incoming responses based on log level configuration.
-struct ClerkResponseLoggingMiddleware: NetworkResponseMiddleware {
+struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     let url = response.url?.absoluteString ?? "<unknown url>"
     let status = response.statusCode
