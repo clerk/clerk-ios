@@ -567,6 +567,9 @@
         }
       }
     },
+    "Action Required" : {
+
+    },
     "ACTIVE DEVICES" : {
       "localizations" : {
         "ar" : {
@@ -6517,6 +6520,9 @@
         }
       }
     },
+    "No tasks" : {
+
+    },
     "or" : {
       "localizations" : {
         "ar" : {
@@ -10158,6 +10164,9 @@
         }
       }
     },
+    "This account requires additional verification before you can continue. Please contact support for assistance." : {
+
+    },
     "This device" : {
       "localizations" : {
         "ar" : {
@@ -11628,6 +11637,9 @@
         }
       }
     },
+    "User not found." : {
+
+    },
     "Username" : {
       "localizations" : {
         "ar" : {
@@ -12747,6 +12759,9 @@
           }
         }
       }
+    },
+    "Your password must be reset before you can continue" : {
+
     }
   },
   "version" : "1.1"

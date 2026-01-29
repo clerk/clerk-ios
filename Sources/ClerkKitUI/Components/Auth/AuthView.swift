@@ -109,7 +109,14 @@ public struct AuthView: View {
   }
 
   public var body: some View {
-    NavigationStack(path: $navigation.path) {
+    // Access client property to establish observation
+    let client = clerk.client
+    // Check if there's ANY pending session with tasks (not just the active one)
+    let pendingSession = client?.sessions.first { $0.status == .pending && $0.currentTask != nil }
+    // Check if user is signed in (has an active session)
+    let isSignedIn = clerk.session != nil
+
+    return NavigationStack(path: $navigation.path) {
       AuthStartView()
         .toolbar {
           if isDismissable {
@@ -120,8 +127,8 @@ public struct AuthView: View {
             }
           }
         }
-        .navigationDestination(for: Destination.self) {
-          $0.view
+        .navigationDestination(for: Destination.self) { destination in
+          destination.view
             .toolbar {
               if isDismissable {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -141,16 +148,29 @@ public struct AuthView: View {
     .environment(codeLimiter)
     .task {
       _ = try? await clerk.refreshEnvironment()
+      _ = try? await clerk.refreshClient()
+    }
+    .task(id: pendingSession?.id) {
+      // When a pending session with tasks appears, navigate to it
+      if pendingSession != nil, !navigation.path.contains(.sessionTask) {
+        navigation.path.append(.sessionTask)
+      }
+      // When there are no more pending sessions with tasks, dismiss
+      else if pendingSession == nil, isSignedIn, isDismissable {
+        dismiss()
+      }
     }
     .task {
-      if isDismissable {
-        for await event in clerk.auth.events {
-          switch event {
-          case .signInCompleted, .signUpCompleted:
+      for await event in clerk.auth.events {
+        switch event {
+        case .signInCompleted, .signUpCompleted:
+          // Check if there are no pending sessions with tasks
+          let hasPendingTasks = clerk.client?.sessions.contains { $0.status == .pending && $0.currentTask != nil } ?? false
+          if !hasPendingTasks, isDismissable {
             dismiss()
-          default:
-            break
           }
+        default:
+          break
         }
       }
     }
@@ -170,7 +190,7 @@ public struct AuthView: View {
 
 extension AuthView {
   enum Destination: Hashable {
-    // Auth Start
+    /// Auth Start
     case authStart
 
     // Sign In
@@ -187,6 +207,9 @@ extension AuthView {
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
     case signUpCompleteProfile
+
+    /// Session tasks
+    case sessionTask
 
     @MainActor
     @ViewBuilder
@@ -219,6 +242,8 @@ extension AuthView {
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
+      case .sessionTask:
+        SessionTaskView()
       }
     }
   }

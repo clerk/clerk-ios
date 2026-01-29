@@ -198,6 +198,34 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
       self.key = key
     }
   }
+
+  /// Represents the type of session task that needs to be completed.
+  public enum TaskKey: String, Codable, Sendable, Equatable {
+    /// The user must reset their password.
+    case resetPassword = "reset-password"
+
+    /// Represents an unknown task key.
+    case unknown
+  }
+}
+
+extension Session.Task {
+  /// The typed key for this task.
+  public var taskKey: Session.TaskKey {
+    Session.TaskKey(rawValue: key) ?? .unknown
+  }
+}
+
+extension Session {
+  /// The current pending task that needs to be completed, if any.
+  public var currentTask: Task? {
+    tasks?.first
+  }
+
+  /// The typed key of the current task, if any.
+  public var currentTaskKey: TaskKey? {
+    currentTask?.taskKey
+  }
 }
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
@@ -264,7 +292,9 @@ extension Session {
 
 extension Session {
   @MainActor
-  private var sessionService: any SessionServiceProtocol { Clerk.shared.dependencies.sessionService }
+  private var sessionService: any SessionServiceProtocol {
+    Clerk.shared.dependencies.sessionService
+  }
 
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
