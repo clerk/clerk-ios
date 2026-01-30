@@ -7,6 +7,10 @@ This repository contains an Xcode project written with Swift and SwiftUI. Please
 
 You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
 
+## File headers
+
+- Avoid author-attribution lines in headers (including assistant/AI attributions).
+
 ## Skills usage
 
 - Use the `$swiftui-ui-patterns` skill whenever building, refactoring, or reviewing SwiftUI views, UI components, navigation, or layout patterns.
