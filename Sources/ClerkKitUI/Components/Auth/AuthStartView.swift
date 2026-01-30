@@ -21,7 +21,8 @@ struct AuthStartView: View {
 
   // MARK: - State
 
-  @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
+  @AppStorage("clerk.auth.phoneNumberFieldIsActive") private var phoneNumberFieldIsActiveStorage = false
+  @State private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var lastUsedAuth: LastUsedAuth?
@@ -183,9 +184,13 @@ struct AuthStartView: View {
       $1 != nil
     }
     .taskOnce {
+      phoneNumberFieldIsActive = phoneNumberFieldIsActiveStorage
       if shouldStartOnPhoneNumber {
         phoneNumberFieldIsActive = true
       }
+    }
+    .onChange(of: phoneNumberFieldIsActive) { _, newValue in
+      phoneNumberFieldIsActiveStorage = newValue
     }
   }
 }
