@@ -76,8 +76,8 @@ final class DependencyContainer: Dependencies {
     }
 
     networkingPipeline = .clerkDefault
-      .appendingRequestMiddleware(options.requestMiddleware)
-      .appendingResponseMiddleware(options.responseMiddleware)
+      .appendingRequestMiddleware(options.middleware.request)
+      .appendingResponseMiddleware(options.middleware.response)
     keychain = SystemKeychain(
       service: options.keychainConfig.service,
       accessGroup: options.keychainConfig.accessGroup

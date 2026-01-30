@@ -31,8 +31,8 @@ struct ClerkOptionsTests {
     #expect(options.keychainConfig.accessGroup == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
-    #expect(options.requestMiddleware.isEmpty == true)
-    #expect(options.responseMiddleware.isEmpty == true)
+    #expect(options.middleware.request.isEmpty == true)
+    #expect(options.middleware.response.isEmpty == true)
   }
 
   @Test
@@ -130,8 +130,7 @@ struct ClerkOptionsTests {
     _ = options.keychainConfig
     _ = options.proxyUrl
     _ = options.redirectConfig
-    _ = options.requestMiddleware
-    _ = options.responseMiddleware
+    _ = options.middleware
 
     #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
@@ -140,18 +139,18 @@ struct ClerkOptionsTests {
   @Test
   func requestMiddlewareInitialization() {
     let middleware = TestRequestMiddleware()
-    let options = Clerk.ClerkOptions(requestMiddleware: [middleware])
+    let options = Clerk.ClerkOptions(middleware: .init(request: [middleware]))
 
-    #expect(options.requestMiddleware.count == 1)
-    #expect(options.requestMiddleware.first is TestRequestMiddleware)
+    #expect(options.middleware.request.count == 1)
+    #expect(options.middleware.request.first is TestRequestMiddleware)
   }
 
   @Test
   func responseMiddlewareInitialization() {
     let middleware = TestResponseMiddleware()
-    let options = Clerk.ClerkOptions(responseMiddleware: [middleware])
+    let options = Clerk.ClerkOptions(middleware: .init(response: [middleware]))
 
-    #expect(options.responseMiddleware.count == 1)
-    #expect(options.responseMiddleware.first is TestResponseMiddleware)
+    #expect(options.middleware.response.count == 1)
+    #expect(options.middleware.response.first is TestResponseMiddleware)
   }
 }

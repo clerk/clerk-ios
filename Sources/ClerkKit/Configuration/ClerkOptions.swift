@@ -10,6 +10,28 @@ import Foundation
 extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
   public struct ClerkOptions: Sendable {
+    /// Middleware configuration for networking requests and responses.
+    public struct MiddlewareConfig: Sendable {
+      /// Middleware to run as the final step before sending a request.
+      public let request: [any ClerkRequestMiddleware]
+
+      /// Middleware to run immediately after receiving a response.
+      /// Custom response middleware runs before Clerk's built-in response middleware.
+      public let response: [any ClerkResponseMiddleware]
+
+      /// Initializes a ``MiddlewareConfig`` instance.
+      /// - Parameters:
+      ///   - request: Middleware to run as the final step before sending a request. Defaults to an empty array.
+      ///   - response: Middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
+      public init(
+        request: [any ClerkRequestMiddleware] = [],
+        response: [any ClerkResponseMiddleware] = []
+      ) {
+        self.request = request
+        self.response = response
+      }
+    }
+
     /// The minimum log level for SDK logging. Defaults to `.error` (minimal logging).
     public let logLevel: LogLevel
 
@@ -35,9 +57,9 @@ extension Clerk {
     /// Only error-level logs will trigger the closure.
     public let loggerHandler: (@Sendable (LogEntry) -> Void)?
 
-    /// Middleware to run as the final step before sending a request.
+    /// Middleware to run around networking requests and responses.
     ///
-    /// Use this to inject custom headers or diagnostics after Clerk has prepared the request.
+    /// Use this to inject custom headers, diagnostics, or response validation around Clerk's networking stack.
     ///
     /// ```swift
     /// struct CustomHeaderMiddleware: ClerkRequestMiddleware {
@@ -46,17 +68,6 @@ extension Clerk {
     ///   }
     /// }
     ///
-    /// let options = Clerk.ClerkOptions(
-    ///   requestMiddleware: [CustomHeaderMiddleware()]
-    /// )
-    /// ```
-    public let requestMiddleware: [any ClerkRequestMiddleware]
-
-    /// Middleware to run immediately after receiving a response.
-    ///
-    /// Custom response middleware runs before Clerk's built-in response middleware.
-    ///
-    /// ```swift
     /// struct ResponseDiagnosticsMiddleware: ClerkResponseMiddleware {
     ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
     ///     // Inspect response or emit diagnostics here.
@@ -64,10 +75,13 @@ extension Clerk {
     /// }
     ///
     /// let options = Clerk.ClerkOptions(
-    ///   responseMiddleware: [ResponseDiagnosticsMiddleware()]
+    ///   middleware: .init(
+    ///     request: [CustomHeaderMiddleware()],
+    ///     response: [ResponseDiagnosticsMiddleware()]
+    ///   )
     /// )
     /// ```
-    public let responseMiddleware: [any ClerkResponseMiddleware]
+    public let middleware: MiddlewareConfig
 
     /// Initializes a ``ClerkOptions`` instance.
     /// - Parameters:
@@ -78,8 +92,7 @@ extension Clerk {
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
-    ///   - requestMiddleware: Middleware to run as the final step before sending a request. Defaults to an empty array.
-    ///   - responseMiddleware: Middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
+    ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
@@ -88,8 +101,7 @@ extension Clerk {
       redirectConfig: RedirectConfig = .init(),
       watchConnectivityEnabled: Bool = false,
       loggerHandler: (@Sendable (LogEntry) -> Void)? = nil,
-      requestMiddleware: [any ClerkRequestMiddleware] = [],
-      responseMiddleware: [any ClerkResponseMiddleware] = []
+      middleware: MiddlewareConfig = .init()
     ) {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
@@ -98,8 +110,7 @@ extension Clerk {
       self.redirectConfig = redirectConfig
       self.watchConnectivityEnabled = watchConnectivityEnabled
       self.loggerHandler = loggerHandler
-      self.requestMiddleware = requestMiddleware
-      self.responseMiddleware = responseMiddleware
+      self.middleware = middleware
     }
   }
 }
