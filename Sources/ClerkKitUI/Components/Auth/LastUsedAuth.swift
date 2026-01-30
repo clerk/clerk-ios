@@ -116,11 +116,7 @@ extension LastUsedAuth {
       return storedIdentifier.matches(strategies)
     }
 
-    let identifierStrategies = FactorStrategy.emailStrategies
-      + FactorStrategy.phoneStrategies
-      + FactorStrategy.usernameStrategies
-
-    if identifierStrategies.contains(lastAuth), !canShowLastUsedBadge(in: environment) {
+    if lastAuth == .password, !canShowLastUsedBadge(in: environment) {
       return false
     }
 
