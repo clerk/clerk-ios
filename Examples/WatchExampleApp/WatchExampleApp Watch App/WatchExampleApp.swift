@@ -12,7 +12,7 @@ import SwiftUI
 struct WatchExampleAppWatchApp: App {
   init() {
     // Configure Clerk with Watch Connectivity sync enabled
-    let options = Clerk.ClerkOptions(
+    let options = Clerk.Options(
       watchConnectivityEnabled: true
     )
 

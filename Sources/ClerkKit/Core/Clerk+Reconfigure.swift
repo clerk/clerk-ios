@@ -22,7 +22,7 @@ extension Clerk {
   ///   - options: Configuration options for the Clerk instance.
   /// - Throws: An error if reconfiguration fails.
   @MainActor
-  public static func reconfigure(publishableKey: String, options: ClerkOptions = .init()) throws {
+  public static func reconfigure(publishableKey: String, options: Clerk.Options = .init()) throws {
     // 1. Clear keychain data
     clearAllKeychainItems()
 

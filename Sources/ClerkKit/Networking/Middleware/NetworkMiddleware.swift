@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared protocol for middleware that can intercept outgoing requests.
 ///
-/// Provide implementations via ``Clerk/ClerkOptions/middleware`` to run logic
+/// Provide implementations via ``Clerk/Options/middleware`` to run logic
 /// immediately before a request is sent.
 public protocol ClerkRequestMiddleware: Sendable {
   func prepare(_ request: inout URLRequest) async throws
@@ -10,7 +10,7 @@ public protocol ClerkRequestMiddleware: Sendable {
 
 /// Shared protocol for middleware that can validate incoming responses.
 ///
-/// Provide implementations via ``Clerk/ClerkOptions/middleware`` to run logic
+/// Provide implementations via ``Clerk/Options/middleware`` to run logic
 /// immediately after a response is received.
 public protocol ClerkResponseMiddleware: Sendable {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws

@@ -9,7 +9,7 @@ import Foundation
 
 extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
-  public struct ClerkOptions: Sendable {
+  public struct Options: Sendable {
     /// Configuration object that customizes keychain behavior.
     public struct KeychainConfig: Sendable {
       /// Name of the service under which to save items. Defaults to the bundle identifier.
@@ -116,7 +116,7 @@ extension Clerk {
     ///   }
     /// }
     ///
-    /// let options = Clerk.ClerkOptions(
+    /// let options = Clerk.Options(
     ///   middleware: .init(
     ///     request: [CustomHeaderMiddleware()],
     ///     response: [ResponseDiagnosticsMiddleware()]
@@ -125,7 +125,7 @@ extension Clerk {
     /// ```
     public let middleware: MiddlewareConfig
 
-    /// Initializes a ``ClerkOptions`` instance.
+    /// Initializes a ``Options`` instance.
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
     ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.

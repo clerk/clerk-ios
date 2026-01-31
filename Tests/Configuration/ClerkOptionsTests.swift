@@ -22,7 +22,7 @@ struct ClerkOptionsTests {
 
   @Test
   func defaultInitialization() {
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     #expect(options.logLevel == .error)
     #expect(options.telemetryEnabled == true)
@@ -37,10 +37,10 @@ struct ClerkOptionsTests {
 
   @Test
   func initializationWithAllParameters() {
-    let keychainConfig = Clerk.ClerkOptions.KeychainConfig(service: "test.service", accessGroup: "test.group")
-    let redirectConfig = Clerk.ClerkOptions.RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
+    let keychainConfig = Clerk.Options.KeychainConfig(service: "test.service", accessGroup: "test.group")
+    let redirectConfig = Clerk.Options.RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
-    let options = Clerk.ClerkOptions(
+    let options = Clerk.Options(
       logLevel: .debug,
       telemetryEnabled: false,
       keychainConfig: keychainConfig,
@@ -59,7 +59,7 @@ struct ClerkOptionsTests {
 
   @Test
   func proxyUrlConversionValidURL() {
-    let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk")
+    let options = Clerk.Options(proxyUrl: "https://proxy.example.com/__clerk")
 
     #expect(options.proxyUrl != nil)
     #expect(options.proxyUrl?.scheme == "https")
@@ -71,7 +71,7 @@ struct ClerkOptionsTests {
   func proxyUrlConversionInvalidURL() {
     // URL(string:) can be lenient, so use a string that definitely won't create a valid URL
     // Using a string without a scheme should work
-    let options = Clerk.ClerkOptions(proxyUrl: "://invalid")
+    let options = Clerk.Options(proxyUrl: "://invalid")
 
     // URL(string:) with "://invalid" may still create a URL with nil scheme
     // So we check if it's actually a valid proxy URL by checking scheme
@@ -85,14 +85,14 @@ struct ClerkOptionsTests {
 
   @Test
   func proxyUrlConversionNil() {
-    let options = Clerk.ClerkOptions(proxyUrl: nil)
+    let options = Clerk.Options(proxyUrl: nil)
 
     #expect(options.proxyUrl == nil)
   }
 
   @Test
   func proxyUrlConversionWithPort() {
-    let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com:8080/__clerk")
+    let options = Clerk.Options(proxyUrl: "https://proxy.example.com:8080/__clerk")
 
     #expect(options.proxyUrl != nil)
     #expect(options.proxyUrl?.port == 8080)
@@ -100,7 +100,7 @@ struct ClerkOptionsTests {
 
   @Test
   func proxyUrlConversionWithQueryParams() {
-    let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk?param=value")
+    let options = Clerk.Options(proxyUrl: "https://proxy.example.com/__clerk?param=value")
 
     #expect(options.proxyUrl != nil)
     #expect(options.proxyUrl?.query == "param=value")
@@ -109,7 +109,7 @@ struct ClerkOptionsTests {
   @Test
   func partialInitialization() {
     // Test with only some parameters
-    let options = Clerk.ClerkOptions(logLevel: .debug)
+    let options = Clerk.Options(logLevel: .debug)
 
     #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == true) // Default
@@ -118,7 +118,7 @@ struct ClerkOptionsTests {
 
   @Test
   func propertyAccess() {
-    let options = Clerk.ClerkOptions(
+    let options = Clerk.Options(
       logLevel: .debug,
       telemetryEnabled: false,
       proxyUrl: "https://proxy.example.com/__clerk"
@@ -139,7 +139,7 @@ struct ClerkOptionsTests {
   @Test
   func requestMiddlewareInitialization() {
     let middleware = TestRequestMiddleware()
-    let options = Clerk.ClerkOptions(middleware: .init(request: [middleware]))
+    let options = Clerk.Options(middleware: .init(request: [middleware]))
 
     #expect(options.middleware.request.count == 1)
     #expect(options.middleware.request.first is TestRequestMiddleware)
@@ -148,7 +148,7 @@ struct ClerkOptionsTests {
   @Test
   func responseMiddlewareInitialization() {
     let middleware = TestResponseMiddleware()
-    let options = Clerk.ClerkOptions(middleware: .init(response: [middleware]))
+    let options = Clerk.Options(middleware: .init(response: [middleware]))
 
     #expect(options.middleware.response.count == 1)
     #expect(options.middleware.response.first is TestResponseMiddleware)

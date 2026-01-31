@@ -50,7 +50,7 @@ final class DependencyContainer: Dependencies {
   @MainActor
   init(
     publishableKey: String,
-    options: Clerk.ClerkOptions
+    options: Clerk.Options
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
     // Create and configure ConfigurationManager first (needed to determine baseURL)
@@ -117,7 +117,7 @@ final class DependencyContainer: Dependencies {
   @MainActor
   private static func createTelemetryCollector(
     publishableKey: String,
-    options: Clerk.ClerkOptions
+    options: Clerk.Options
   ) -> any TelemetryCollectorProtocol {
     guard options.telemetryEnabled else {
       return NoOpTelemetryCollector()

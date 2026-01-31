@@ -43,7 +43,7 @@ Both your iOS app and watchOS app must be configured with Watch Connectivity:
 Both apps need to enable Watch Connectivity sync by setting `watchConnectivityEnabled: true`:
 
 ```swift
-let options = Clerk.ClerkOptions(
+let options = Clerk.Options(
   watchConnectivityEnabled: true
 )
 

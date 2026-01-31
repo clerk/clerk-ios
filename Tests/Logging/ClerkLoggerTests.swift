@@ -21,7 +21,7 @@ struct ClerkLoggerTests {
   @Test
   func info_WithDefaultForce_RespectsLogLevel() async {
     // Configure with error log level (default)
-    let options = Clerk.ClerkOptions(logLevel: .error)
+    let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
 
     // info() with default force: false should not log when log level is .error
@@ -33,7 +33,7 @@ struct ClerkLoggerTests {
   @Test
   func info_WithForceTrue_AlwaysLogs() async {
     // Configure with error log level
-    let options = Clerk.ClerkOptions(logLevel: .error)
+    let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
 
     // Even with .error log level, force: true should bypass the check
@@ -52,7 +52,7 @@ struct ClerkLoggerTests {
   @Test
   func info_WithForceFalse_RespectsLogLevel() async {
     // Configure with error log level
-    let options = Clerk.ClerkOptions(logLevel: .error)
+    let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
 
     // info() with force: false should respect log level
@@ -94,7 +94,7 @@ struct ClerkLoggerTests {
     }
 
     // Reconfigure Clerk with our test handler (tests allow reconfiguration)
-    let options = Clerk.ClerkOptions(
+    let options = Clerk.Options(
       logLevel: .error,
       loggerHandler: errorHandler
     )
@@ -111,7 +111,7 @@ struct ClerkLoggerTests {
   @Test
   func error_AlwaysLogsRegardlessOfLogLevel() async {
     // Configure with verbose log level (most restrictive)
-    let options = Clerk.ClerkOptions(logLevel: .verbose)
+    let options = Clerk.Options(logLevel: .verbose)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
 
     // error() should always log regardless of log level (uses forceLog: true)

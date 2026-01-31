@@ -40,7 +40,7 @@ struct ConfigurationManagerTests {
   func configureWithValidTestKey() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -54,7 +54,7 @@ struct ConfigurationManagerTests {
   func configureWithValidLiveKey() throws {
     let manager = ConfigurationManager()
     let liveKey = createLivePublishableKey(for: "clerk.production.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: liveKey, options: options)
 
@@ -66,7 +66,7 @@ struct ConfigurationManagerTests {
   @Test
   func configureWithEmptyKey() {
     let manager = ConfigurationManager()
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     do {
       try manager.configure(publishableKey: "", options: options)
@@ -85,7 +85,7 @@ struct ConfigurationManagerTests {
   @Test
   func configureWithWhitespaceOnlyKey() {
     let manager = ConfigurationManager()
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     do {
       try manager.configure(publishableKey: "   ", options: options)
@@ -104,7 +104,7 @@ struct ConfigurationManagerTests {
   @Test
   func configureWithInvalidFormatKey() {
     let manager = ConfigurationManager()
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     do {
       try manager.configure(publishableKey: "invalid_key", options: options)
@@ -123,7 +123,7 @@ struct ConfigurationManagerTests {
   @Test
   func configureWithKeyStartingWithWrongPrefix() {
     let manager = ConfigurationManager()
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     do {
       try manager.configure(publishableKey: "pk_invalid_something", options: options)
@@ -142,7 +142,7 @@ struct ConfigurationManagerTests {
   @Test
   func configureWithInvalidBase64InKey() {
     let manager = ConfigurationManager()
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     do {
       try manager.configure(publishableKey: "pk_test_invalid!!!", options: options)
@@ -162,7 +162,7 @@ struct ConfigurationManagerTests {
   func instanceTypeDevelopment() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -173,7 +173,7 @@ struct ConfigurationManagerTests {
   func instanceTypeProduction() throws {
     let manager = ConfigurationManager()
     let liveKey = createLivePublishableKey(for: "clerk.production.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: liveKey, options: options)
 
@@ -184,7 +184,7 @@ struct ConfigurationManagerTests {
   func frontendApiUrlExtraction() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -195,7 +195,7 @@ struct ConfigurationManagerTests {
   func testUpdateProxyUrl() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -211,7 +211,7 @@ struct ConfigurationManagerTests {
   func updateProxyUrlToNil() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions(proxyUrl: "https://proxy.example.com/__clerk")
+    let options = Clerk.Options(proxyUrl: "https://proxy.example.com/__clerk")
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -227,7 +227,7 @@ struct ConfigurationManagerTests {
   func testUpdateFrontendApiUrl() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -241,7 +241,7 @@ struct ConfigurationManagerTests {
   func configureWithCustomOptions() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let customOptions = Clerk.ClerkOptions(
+    let customOptions = Clerk.Options(
       logLevel: .debug,
       telemetryEnabled: false,
       proxyUrl: "https://proxy.example.com/__clerk"
@@ -258,7 +258,7 @@ struct ConfigurationManagerTests {
   func propertyAccessors() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -274,7 +274,7 @@ struct ConfigurationManagerTests {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let proxyURL = URL(string: "https://proxy.example.com/__clerk")
-    let options = Clerk.ClerkOptions(proxyUrl: proxyURL?.absoluteString)
+    let options = Clerk.Options(proxyUrl: proxyURL?.absoluteString)
 
     try manager.configure(publishableKey: testKey, options: options)
 
@@ -289,7 +289,7 @@ struct ConfigurationManagerTests {
     // Key with leading/trailing whitespace will pass validation (trims internally)
     // but will fail extraction because extraction uses the original key
     let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.ClerkOptions()
+    let options = Clerk.Options()
 
     let keyWithWhitespace = "  \(testKey)  "
 

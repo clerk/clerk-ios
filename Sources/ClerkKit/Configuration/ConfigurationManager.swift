@@ -20,7 +20,7 @@ final class ConfigurationManager {
     var frontendApiUrl: String = ""
     var proxyUrl: URL?
     var proxyConfiguration: ProxyConfiguration?
-    var options: Clerk.ClerkOptions = .init()
+    var options: Clerk.Options = .init()
     var isConfigured: Bool = false
   }
 
@@ -33,7 +33,7 @@ final class ConfigurationManager {
   ///   - options: Configuration options for the Clerk instance.
   ///
   /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
-  func configure(publishableKey: String, options: Clerk.ClerkOptions) throws {
+  func configure(publishableKey: String, options: Clerk.Options) throws {
     // Validate publishable key early for fail-fast behavior
     try validatePublishableKey(publishableKey)
 
@@ -86,7 +86,7 @@ final class ConfigurationManager {
   }
 
   /// Returns the current configuration options.
-  var options: Clerk.ClerkOptions {
+  var options: Clerk.Options {
     state.options
   }
 

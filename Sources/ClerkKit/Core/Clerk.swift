@@ -110,7 +110,7 @@ public final class Clerk {
   }
 
   /// The configuration options for this Clerk instance.
-  public var options: Clerk.ClerkOptions {
+  public var options: Clerk.Options {
     dependencies.configurationManager.options
   }
 
@@ -194,7 +194,7 @@ public final class Clerk {
 extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   @MainActor
-  package func performConfiguration(publishableKey: String, options: Clerk.ClerkOptions) throws {
+  package func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
@@ -265,7 +265,7 @@ extension Clerk {
   @discardableResult
   public static func configure(
     publishableKey: String,
-    options: Clerk.ClerkOptions = .init()
+    options: Clerk.Options = .init()
   ) -> Clerk {
     // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
