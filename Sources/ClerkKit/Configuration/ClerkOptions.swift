@@ -10,6 +10,48 @@ import Foundation
 extension Clerk {
   /// A configuration object that can be passed to `Clerk.configure()` to customize various aspects of the Clerk SDK behavior.
   public struct ClerkOptions: Sendable {
+    /// Configuration object that customizes keychain behavior.
+    public struct KeychainConfig: Sendable {
+      /// Name of the service under which to save items. Defaults to the bundle identifier.
+      public let service: String
+
+      /// Access group for sharing Keychain items.
+      public let accessGroup: String?
+
+      /// Initializes a ``KeychainConfig`` instance.
+      /// - Parameters:
+      ///   - service: Name of the service under which to save items. Defaults to the bundle identifier.
+      ///   - accessGroup: Access group for sharing Keychain items.
+      public init(
+        service: String = Bundle.main.bundleIdentifier ?? "",
+        accessGroup: String? = nil
+      ) {
+        self.service = service
+        self.accessGroup = accessGroup
+      }
+    }
+
+    /// Configuration object that customizes redirect behavior for OAuth flows and deep linking.
+    public struct RedirectConfig: Sendable {
+      /// The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
+      public let redirectUrl: String
+
+      /// The URL scheme used for handling callbacks from OAuth providers. Defaults to the bundle identifier.
+      public let callbackUrlScheme: String
+
+      /// Initializes a ``RedirectConfig`` instance.
+      /// - Parameters:
+      ///   - redirectUrl: The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
+      ///   - callbackUrlScheme: The URL scheme used for handling callbacks from OAuth providers. Defaults to the bundle identifier.
+      public init(
+        redirectUrl: String = "\(Bundle.main.bundleIdentifier ?? "")://callback",
+        callbackUrlScheme: String = Bundle.main.bundleIdentifier ?? ""
+      ) {
+        self.redirectUrl = redirectUrl
+        self.callbackUrlScheme = callbackUrlScheme
+      }
+    }
+
     /// Middleware configuration for networking requests and responses.
     public struct MiddlewareConfig: Sendable {
       /// Middleware to run as the final step before sending a request.
@@ -112,47 +154,5 @@ extension Clerk {
       self.loggerHandler = loggerHandler
       self.middleware = middleware
     }
-  }
-}
-
-/// A configuration object that can be passed to `Clerk.configure()` to customize keychain behavior.
-public struct KeychainConfig: Sendable {
-  /// Name of the service under which to save items. Defaults to the bundle identifier.
-  public let service: String
-
-  /// Access group for sharing Keychain items.
-  public let accessGroup: String?
-
-  /// Initializes a ``KeychainConfig`` instance.
-  /// - Parameters:
-  ///   - service: Name of the service under which to save items. Defaults to the bundle identifier.
-  ///   - accessGroup: Access group for sharing Keychain items.
-  public init(
-    service: String = Bundle.main.bundleIdentifier ?? "",
-    accessGroup: String? = nil
-  ) {
-    self.service = service
-    self.accessGroup = accessGroup
-  }
-}
-
-/// A configuration object that can be passed to `Clerk.configure()` to customize redirect behavior for OAuth flows and deep linking.
-public struct RedirectConfig: Sendable {
-  /// The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
-  public let redirectUrl: String
-
-  /// The URL scheme used for handling callbacks from OAuth providers. Defaults to the bundle identifier.
-  public let callbackUrlScheme: String
-
-  /// Initializes a ``RedirectConfig`` instance.
-  /// - Parameters:
-  ///   - redirectUrl: The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
-  ///   - callbackUrlScheme: The URL scheme used for handling callbacks from OAuth providers. Defaults to the bundle identifier.
-  public init(
-    redirectUrl: String = "\(Bundle.main.bundleIdentifier ?? "")://callback",
-    callbackUrlScheme: String = Bundle.main.bundleIdentifier ?? ""
-  ) {
-    self.redirectUrl = redirectUrl
-    self.callbackUrlScheme = callbackUrlScheme
   }
 }

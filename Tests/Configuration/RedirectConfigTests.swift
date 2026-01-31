@@ -14,7 +14,7 @@ import Testing
 struct RedirectConfigTests {
   @Test
   func defaultInitialization() {
-    let config = RedirectConfig()
+    let config = Clerk.ClerkOptions.RedirectConfig()
     let bundleId = Bundle.main.bundleIdentifier ?? ""
 
     #expect(config.redirectUrl == "\(bundleId)://callback")
@@ -23,7 +23,7 @@ struct RedirectConfigTests {
 
   @Test
   func initializationWithRedirectUrl() {
-    let config = RedirectConfig(redirectUrl: "test://redirect")
+    let config = Clerk.ClerkOptions.RedirectConfig(redirectUrl: "test://redirect")
 
     #expect(config.redirectUrl == "test://redirect")
     #expect(config.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
@@ -31,7 +31,7 @@ struct RedirectConfigTests {
 
   @Test
   func initializationWithCallbackUrlScheme() {
-    let config = RedirectConfig(callbackUrlScheme: "test")
+    let config = Clerk.ClerkOptions.RedirectConfig(callbackUrlScheme: "test")
 
     #expect(config.redirectUrl == "\(Bundle.main.bundleIdentifier ?? "")://callback")
     #expect(config.callbackUrlScheme == "test")
@@ -39,7 +39,7 @@ struct RedirectConfigTests {
 
   @Test
   func initializationWithAllParameters() {
-    let config = RedirectConfig(
+    let config = Clerk.ClerkOptions.RedirectConfig(
       redirectUrl: "test://redirect",
       callbackUrlScheme: "test"
     )
@@ -50,7 +50,7 @@ struct RedirectConfigTests {
 
   @Test
   func propertyAccess() {
-    let config = RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
+    let config = Clerk.ClerkOptions.RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
     _ = config.redirectUrl
     _ = config.callbackUrlScheme

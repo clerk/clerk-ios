@@ -37,8 +37,8 @@ struct ClerkOptionsTests {
 
   @Test
   func initializationWithAllParameters() {
-    let keychainConfig = KeychainConfig(service: "test.service", accessGroup: "test.group")
-    let redirectConfig = RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
+    let keychainConfig = Clerk.ClerkOptions.KeychainConfig(service: "test.service", accessGroup: "test.group")
+    let redirectConfig = Clerk.ClerkOptions.RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
     let options = Clerk.ClerkOptions(
       logLevel: .debug,

@@ -14,7 +14,7 @@ import Testing
 struct KeychainConfigTests {
   @Test
   func defaultInitialization() {
-    let config = KeychainConfig()
+    let config = Clerk.ClerkOptions.KeychainConfig()
 
     #expect(config.service == Bundle.main.bundleIdentifier ?? "")
     #expect(config.accessGroup == nil)
@@ -22,7 +22,7 @@ struct KeychainConfigTests {
 
   @Test
   func initializationWithService() {
-    let config = KeychainConfig(service: "com.example.service")
+    let config = Clerk.ClerkOptions.KeychainConfig(service: "com.example.service")
 
     #expect(config.service == "com.example.service")
     #expect(config.accessGroup == nil)
@@ -30,7 +30,7 @@ struct KeychainConfigTests {
 
   @Test
   func initializationWithAccessGroup() {
-    let config = KeychainConfig(accessGroup: "group.com.example")
+    let config = Clerk.ClerkOptions.KeychainConfig(accessGroup: "group.com.example")
 
     #expect(config.service == Bundle.main.bundleIdentifier ?? "")
     #expect(config.accessGroup == "group.com.example")
@@ -38,7 +38,7 @@ struct KeychainConfigTests {
 
   @Test
   func initializationWithAllParameters() {
-    let config = KeychainConfig(
+    let config = Clerk.ClerkOptions.KeychainConfig(
       service: "com.example.service",
       accessGroup: "group.com.example"
     )
@@ -49,7 +49,7 @@ struct KeychainConfigTests {
 
   @Test
   func propertyAccess() {
-    let config = KeychainConfig(service: "test", accessGroup: "group")
+    let config = Clerk.ClerkOptions.KeychainConfig(service: "test", accessGroup: "group")
 
     _ = config.service
     _ = config.accessGroup
