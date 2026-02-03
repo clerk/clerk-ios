@@ -44,9 +44,9 @@ public final class Clerk {
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
-      // Emit session change event if the session changed
+      // Emit session change event if the signed-in session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        auth.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
+        auth.send(.sessionChanged(session: SessionUtils.signedInSession(from: client)))
       }
 
       if let client {
@@ -80,12 +80,14 @@ public final class Clerk {
     }
   }
 
-  /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
+  /// The currently signed-in Session, which is guaranteed to be one of the sessions in Client.sessions.
+  ///
+  /// Signed-in sessions include both `active` and `pending` sessions. If there is no signed-in session, this field will be nil.
   public var session: Session? {
-    client?.activeSession
+    client?.signedInSession
   }
 
-  /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
+  /// A shortcut to Session.user which holds the currently signed-in User object. If the session is nil, the user field will match.
   public var user: User? {
     session?.user
   }
@@ -325,7 +327,12 @@ extension Clerk: CacheCoordinator {
   }
 }
 
-extension Clerk: SessionProviding {}
+extension Clerk: SessionProviding {
+  @MainActor
+  var activeSession: Session? {
+    client?.activeSession
+  }
+}
 
 extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.

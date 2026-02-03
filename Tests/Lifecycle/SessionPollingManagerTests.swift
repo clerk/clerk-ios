@@ -15,7 +15,7 @@ import Testing
 final class MockSessionProvider: SessionProviding {
   var sessionToReturn: Session?
 
-  var session: Session? {
+  var activeSession: Session? {
     sessionToReturn
   }
 

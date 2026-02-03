@@ -28,8 +28,28 @@ public struct Client: Codable, Sendable, Equatable {
     sessions.filter { $0.status == .active }
   }
 
+  /// A list of signed-in sessions on this client.
+  ///
+  /// Signed-in sessions include both `active` and `pending` sessions.
+  public var signedInSessions: [Session] {
+    sessions.filter { $0.status == .active || $0.status == .pending }
+  }
+
   /// The ID of the last active Session on this client.
   public var lastActiveSessionId: String?
+
+  /// The current signed-in session for this client.
+  ///
+  /// If `lastActiveSessionId` matches a signed-in session, that session is returned.
+  /// Otherwise, the first signed-in session (if any) is returned.
+  public var signedInSession: Session? {
+    if let sessionId = lastActiveSessionId,
+       let currentSession = signedInSessions.first(where: { $0.id == sessionId })
+    {
+      return currentSession
+    }
+    return signedInSessions.first
+  }
 
   /// The authentication strategy used for the last sign-in attempt, if available.
   public var lastAuthenticationStrategy: FactorStrategy?

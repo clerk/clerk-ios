@@ -13,7 +13,7 @@ import Foundation
 /// for token refresh operations.
 protocol SessionProviding: Sendable {
   /// Returns the current active session, if available.
-  @MainActor var session: Session? { get }
+  @MainActor var activeSession: Session? { get }
 }
 
 /// Manages periodic polling of session tokens to keep them refreshed.
@@ -150,7 +150,7 @@ final class SessionPollingManager {
   ///
   /// - Returns: `true` if the refresh succeeded or no session exists, `false` if it failed.
   private func refreshTokenIfNeeded() async -> Bool {
-    guard let session = sessionProvider.session else {
+    guard let session = sessionProvider.activeSession else {
       return true // No session = not a failure
     }
 

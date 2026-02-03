@@ -23,9 +23,9 @@ extension Client {
 }
 
 enum SessionUtils {
-  /// Determines if the active session changed between two client states.
+  /// Determines if the signed-in session changed between two client states.
   ///
-  /// This function compares the active sessions from two client states
+  /// This function compares the signed-in sessions from two client states
   /// and returns `true` if they differ (including nil transitions).
   ///
   /// - Parameters:
@@ -33,16 +33,16 @@ enum SessionUtils {
   ///   - currentClient: The current client state, or `nil` if the client was cleared.
   /// - Returns: `true` if the active session changed, `false` otherwise.
   static func sessionChanged(previousClient: Client?, currentClient: Client?) -> Bool {
-    let oldSession = previousClient?.activeSession
-    let newSession = currentClient?.activeSession
+    let oldSession = previousClient?.signedInSession
+    let newSession = currentClient?.signedInSession
     return oldSession != newSession
   }
 
-  /// Returns the active session from a client state.
+  /// Returns the signed-in session from a client state.
   ///
   /// - Parameter client: The client to extract the active session from, or `nil`.
   /// - Returns: The active session if one exists, otherwise `nil`.
-  static func activeSession(from client: Client?) -> Session? {
-    client?.activeSession
+  static func signedInSession(from client: Client?) -> Session? {
+    client?.signedInSession
   }
 }

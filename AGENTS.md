@@ -17,3 +17,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Use the `$swiftui-view-refactor` skill when refactoring SwiftUI views for consistent structure, dependency injection, or Observation usage.
 - Use the `$swift-concurrency` skill whenever touching Swift concurrency, async/await, actors, Sendable, or fixing concurrency warnings/errors.
 - Skills can be installed automatically by running `make install-agent-skills`.
+
+## Testing
+
+- Unit tests are run with `make test`.

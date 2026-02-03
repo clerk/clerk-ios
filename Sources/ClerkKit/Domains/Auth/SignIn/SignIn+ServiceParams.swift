@@ -98,11 +98,6 @@ extension SignIn {
   struct AttemptSecondFactorParams: Encodable, Sendable {
     let strategy: FactorStrategy
     let code: String
-
-    init(strategy: FactorStrategy, code: String) {
-      self.strategy = strategy
-      self.code = code
-    }
   }
 
   struct ResetPasswordParams: Encodable, Sendable {

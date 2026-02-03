@@ -18,9 +18,9 @@ public enum AuthEvent: Sendable {
   case signUpCompleted(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)
-  /// The active session changed.
+  /// The signed-in session changed.
   ///
-  /// This event is emitted whenever the active session changes, including:
+  /// This event is emitted whenever the signed-in session changes, including:
   /// - When a user signs in (nil → session)
   /// - When a user signs out (session → nil)
   /// - When the active session changes (session → different session)

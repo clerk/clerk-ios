@@ -200,6 +200,13 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   }
 }
 
+extension Session {
+  /// The current pending task for the session, if any.
+  public var currentTask: Task? {
+    tasks?.first
+  }
+}
+
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
 public struct SessionActivity: Codable, Equatable, Sendable {
   /// A unique identifier for the session activity record.

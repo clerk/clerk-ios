@@ -94,31 +94,73 @@ struct SessionUtilsTests {
     #expect(activeSession?.id == "session2")
   }
 
-  // MARK: - SessionUtils.activeSession(from:) Tests
+  // MARK: - SessionUtils.signedInSession(from:) Tests
 
   @Test
-  func activeSessionFrom_NilClient() {
-    let session = SessionUtils.activeSession(from: nil)
+  func signedInSessionFrom_NilClient() {
+    let session = SessionUtils.signedInSession(from: nil)
     #expect(session == nil)
   }
 
   @Test
-  func activeSessionFrom_ClientWithActiveSession() {
+  func signedInSessionFrom_ClientWithActiveSession() {
     let session = createSession(id: "session1", status: .active)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let activeSession = SessionUtils.activeSession(from: client)
-    #expect(activeSession != nil)
-    #expect(activeSession?.id == "session1")
+    let signedInSession = SessionUtils.signedInSession(from: client)
+    #expect(signedInSession != nil)
+    #expect(signedInSession?.id == "session1")
   }
 
   @Test
-  func activeSessionFrom_ClientWithoutActiveSession() {
+  func signedInSessionFrom_ClientWithPendingSession() {
     let session = createSession(id: "session1", status: .pending)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let activeSession = SessionUtils.activeSession(from: client)
-    #expect(activeSession == nil)
+    let signedInSession = SessionUtils.signedInSession(from: client)
+    #expect(signedInSession != nil)
+    #expect(signedInSession?.id == "session1")
+  }
+
+  @Test
+  func signedInSessionFrom_FallsBackToFirstSignedInSession() {
+    let session1 = createSession(id: "session1", status: .pending)
+    let session2 = createSession(id: "session2", status: .active)
+    let client = createClient(id: "client1", sessions: [session1, session2], lastActiveSessionId: nil)
+
+    let signedInSession = SessionUtils.signedInSession(from: client)
+    #expect(signedInSession != nil)
+    #expect(signedInSession?.id == "session1")
+  }
+
+  @Test
+  func signedInSessionFrom_MissingLastActiveSessionIdFallsBack() {
+    let session1 = createSession(id: "session1", status: .active)
+    let session2 = createSession(id: "session2", status: .pending)
+    let client = createClient(id: "client1", sessions: [session1, session2], lastActiveSessionId: "unknown")
+
+    let signedInSession = SessionUtils.signedInSession(from: client)
+    #expect(signedInSession != nil)
+    #expect(signedInSession?.id == "session1")
+  }
+
+  // MARK: - Client.signedInSessions Tests
+
+  @Test
+  func signedInSessions_ReturnsActiveAndPendingOnly() {
+    let activeSession = createSession(id: "session1", status: .active)
+    let pendingSession = createSession(id: "session2", status: .pending)
+    let endedSession = createSession(id: "session3", status: .ended)
+    let client = createClient(
+      id: "client1",
+      sessions: [activeSession, pendingSession, endedSession],
+      lastActiveSessionId: "session1"
+    )
+
+    let signedInSessions = client.signedInSessions
+    #expect(signedInSessions.count == 2)
+    #expect(signedInSessions.contains(activeSession))
+    #expect(signedInSessions.contains(pendingSession))
   }
 
   // MARK: - SessionUtils.sessionChanged Tests
@@ -132,6 +174,15 @@ struct SessionUtilsTests {
   @Test
   func sessionChanged_NilToSession() {
     let session = createSession(id: "session1", status: .active)
+    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
+
+    let changed = SessionUtils.sessionChanged(previousClient: nil, currentClient: client)
+    #expect(changed == true)
+  }
+
+  @Test
+  func sessionChanged_NilToPendingSession() {
+    let session = createSession(id: "session1", status: .pending)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
     let changed = SessionUtils.sessionChanged(previousClient: nil, currentClient: client)

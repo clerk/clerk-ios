@@ -70,6 +70,13 @@ public struct Auth {
     Clerk.shared.client?.activeSessions ?? []
   }
 
+  /// The signed-in sessions on the current client.
+  ///
+  /// Signed-in sessions include both `active` and `pending` sessions.
+  public var signedInSessions: [Session] {
+    Clerk.shared.client?.signedInSessions ?? []
+  }
+
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.
