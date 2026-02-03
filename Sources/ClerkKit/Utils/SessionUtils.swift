@@ -31,7 +31,7 @@ enum SessionUtils {
   /// - Parameters:
   ///   - previousClient: The previous client state, or `nil` if this is the first client.
   ///   - currentClient: The current client state, or `nil` if the client was cleared.
-  /// - Returns: `true` if the active session changed, `false` otherwise.
+  /// - Returns: `true` if the signed-in session changed, `false` otherwise.
   static func sessionChanged(previousClient: Client?, currentClient: Client?) -> Bool {
     let oldSession = previousClient?.signedInSession
     let newSession = currentClient?.signedInSession

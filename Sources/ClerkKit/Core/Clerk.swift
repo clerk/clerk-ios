@@ -87,7 +87,7 @@ public final class Clerk {
     client?.signedInSession
   }
 
-  /// A shortcut to Session.user which holds the currently signed-in User object. If the session is nil, the user field will match.
+  /// A shortcut to Session.user which holds the currently signed-in User object. If the session is nil, this property is nil.
   public var user: User? {
     session?.user
   }
