@@ -30,9 +30,10 @@ public struct Client: Codable, Sendable, Equatable {
 
   /// A list of signed-in sessions on this client.
   ///
-  /// Signed-in sessions include both `active` and `pending` sessions.
+  /// By default, signed-in sessions include only `active` sessions. Use
+  /// `signedInSessions(treatPendingAsSignedOut:)` to include pending sessions.
   public var signedInSessions: [Session] {
-    sessions.filter { $0.status == .active || $0.status == .pending }
+    signedInSessions(treatPendingAsSignedOut: true)
   }
 
   /// The ID of the last active Session on this client.
@@ -40,9 +41,29 @@ public struct Client: Codable, Sendable, Equatable {
 
   /// The current signed-in session for this client.
   ///
+  /// By default, signed-in sessions include only `active` sessions. Use
+  /// `signedInSession(treatPendingAsSignedOut:)` to include pending sessions.
+  public var signedInSession: Session? {
+    signedInSession(treatPendingAsSignedOut: true)
+  }
+
+  /// A list of signed-in sessions on this client.
+  ///
+  /// When `treatPendingAsSignedOut` is `true`, only `active` sessions are included.
+  /// When `false`, both `active` and `pending` sessions are included.
+  public func signedInSessions(treatPendingAsSignedOut: Bool) -> [Session] {
+    if treatPendingAsSignedOut {
+      return activeSessions
+    }
+    return sessions.filter { $0.status == .active || $0.status == .pending }
+  }
+
+  /// The current signed-in session for this client.
+  ///
   /// If `lastActiveSessionId` matches a signed-in session, that session is returned.
   /// Otherwise, the first signed-in session (if any) is returned.
-  public var signedInSession: Session? {
+  func signedInSession(treatPendingAsSignedOut: Bool) -> Session? {
+    let signedInSessions = signedInSessions(treatPendingAsSignedOut: treatPendingAsSignedOut)
     if let sessionId = lastActiveSessionId,
        let currentSession = signedInSessions.first(where: { $0.id == sessionId })
     {

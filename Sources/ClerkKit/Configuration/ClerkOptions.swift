@@ -80,6 +80,11 @@ extension Clerk {
     /// Enable development telemetry collection. Defaults to true.
     public let telemetryEnabled: Bool
 
+    /// Treat pending sessions as signed-out when resolving the current session and user.
+    ///
+    /// Defaults to `true`. Set to `false` to treat pending sessions as signed-in.
+    public let treatPendingAsSignedOut: Bool
+
     /// Configuration for keychain storage behavior.
     public let keychainConfig: KeychainConfig
 
@@ -129,6 +134,7 @@ extension Clerk {
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
     ///   - telemetryEnabled: Enable development telemetry collection. Defaults to true.
+    ///   - treatPendingAsSignedOut: Treat pending sessions as signed-out when resolving the current session and user. Defaults to true.
     ///   - keychainConfig: Configuration for keychain storage behavior.
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
@@ -138,6 +144,7 @@ extension Clerk {
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
+      treatPendingAsSignedOut: Bool = true,
       keychainConfig: KeychainConfig = .init(),
       proxyUrl: String? = nil,
       redirectConfig: RedirectConfig = .init(),
@@ -147,6 +154,7 @@ extension Clerk {
     ) {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
+      self.treatPendingAsSignedOut = treatPendingAsSignedOut
       self.keychainConfig = keychainConfig
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
       self.redirectConfig = redirectConfig

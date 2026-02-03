@@ -45,8 +45,19 @@ public final class Clerk {
   public internal(set) var client: Client? {
     didSet {
       // Emit session change event if the signed-in session changed
-      if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        auth.send(.sessionChanged(session: SessionUtils.signedInSession(from: client)))
+      if SessionUtils.sessionChanged(
+        previousClient: oldValue,
+        currentClient: client,
+        treatPendingAsSignedOut: options.treatPendingAsSignedOut
+      ) {
+        auth.send(
+          .sessionChanged(
+            session: SessionUtils.signedInSession(
+              from: client,
+              treatPendingAsSignedOut: options.treatPendingAsSignedOut
+            )
+          )
+        )
       }
 
       if let client {
@@ -82,9 +93,11 @@ public final class Clerk {
 
   /// The currently signed-in Session, which is guaranteed to be one of the sessions in Client.sessions.
   ///
-  /// Signed-in sessions include both `active` and `pending` sessions. If there is no signed-in session, this field will be nil.
+  /// By default, signed-in sessions include only `active` sessions. Set
+  /// `Clerk.Options.treatPendingAsSignedOut` to `false` to include pending sessions.
+  /// If there is no signed-in session, this field will be nil.
   public var session: Session? {
-    client?.signedInSession
+    client?.signedInSession(treatPendingAsSignedOut: options.treatPendingAsSignedOut)
   }
 
   /// A shortcut to Session.user which holds the currently signed-in User object. If the session is nil, this property is nil.

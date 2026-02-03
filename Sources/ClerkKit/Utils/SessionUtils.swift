@@ -31,18 +31,28 @@ enum SessionUtils {
   /// - Parameters:
   ///   - previousClient: The previous client state, or `nil` if this is the first client.
   ///   - currentClient: The current client state, or `nil` if the client was cleared.
+  ///   - treatPendingAsSignedOut: Whether pending sessions should be treated as signed-out.
   /// - Returns: `true` if the signed-in session changed, `false` otherwise.
-  static func sessionChanged(previousClient: Client?, currentClient: Client?) -> Bool {
-    let oldSession = previousClient?.signedInSession
-    let newSession = currentClient?.signedInSession
+  static func sessionChanged(
+    previousClient: Client?,
+    currentClient: Client?,
+    treatPendingAsSignedOut: Bool
+  ) -> Bool {
+    let oldSession = previousClient?.signedInSession(
+      treatPendingAsSignedOut: treatPendingAsSignedOut
+    )
+    let newSession = currentClient?.signedInSession(
+      treatPendingAsSignedOut: treatPendingAsSignedOut
+    )
     return oldSession != newSession
   }
 
   /// Returns the signed-in session from a client state.
   ///
-  /// - Parameter client: The client to extract the active session from, or `nil`.
-  /// - Returns: The active session if one exists, otherwise `nil`.
-  static func signedInSession(from client: Client?) -> Session? {
-    client?.signedInSession
+  /// - Parameter client: The client to extract the signed-in session from, or `nil`.
+  /// - Parameter treatPendingAsSignedOut: Whether pending sessions should be treated as signed-out.
+  /// - Returns: The signed-in session if one exists, otherwise `nil`.
+  static func signedInSession(from client: Client?, treatPendingAsSignedOut: Bool) -> Session? {
+    client?.signedInSession(treatPendingAsSignedOut: treatPendingAsSignedOut)
   }
 }

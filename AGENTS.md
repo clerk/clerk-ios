@@ -10,6 +10,8 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 ## File headers
 
 - Avoid author-attribution lines in headers (including assistant/AI attributions).
+- Do not add comments that reference matching JavaScript behavior.
+- Use the minimum required access level for new APIs (prefer internal unless public is required).
 
 ## Skills usage
 

@@ -98,7 +98,7 @@ struct SessionUtilsTests {
 
   @Test
   func signedInSessionFrom_NilClient() {
-    let session = SessionUtils.signedInSession(from: nil)
+    let session = SessionUtils.signedInSession(from: nil, treatPendingAsSignedOut: true)
     #expect(session == nil)
   }
 
@@ -107,28 +107,48 @@ struct SessionUtilsTests {
     let session = createSession(id: "session1", status: .active)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let signedInSession = SessionUtils.signedInSession(from: client)
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: true)
     #expect(signedInSession != nil)
     #expect(signedInSession?.id == "session1")
   }
 
   @Test
-  func signedInSessionFrom_ClientWithPendingSession() {
+  func signedInSessionFrom_ClientWithPendingSession_DefaultsToNil() {
     let session = createSession(id: "session1", status: .pending)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let signedInSession = SessionUtils.signedInSession(from: client)
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: true)
+    #expect(signedInSession == nil)
+  }
+
+  @Test
+  func signedInSessionFrom_ClientWithPendingSession_IncludesPendingWhenConfigured() {
+    let session = createSession(id: "session1", status: .pending)
+    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
+
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: false)
     #expect(signedInSession != nil)
     #expect(signedInSession?.id == "session1")
   }
 
   @Test
-  func signedInSessionFrom_FallsBackToFirstSignedInSession() {
+  func signedInSessionFrom_FallsBackToFirstSignedInSession_DefaultsToActive() {
     let session1 = createSession(id: "session1", status: .pending)
     let session2 = createSession(id: "session2", status: .active)
     let client = createClient(id: "client1", sessions: [session1, session2], lastActiveSessionId: nil)
 
-    let signedInSession = SessionUtils.signedInSession(from: client)
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: true)
+    #expect(signedInSession != nil)
+    #expect(signedInSession?.id == "session2")
+  }
+
+  @Test
+  func signedInSessionFrom_FallsBackToFirstSignedInSession_IncludesPendingWhenConfigured() {
+    let session1 = createSession(id: "session1", status: .pending)
+    let session2 = createSession(id: "session2", status: .active)
+    let client = createClient(id: "client1", sessions: [session1, session2], lastActiveSessionId: nil)
+
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: false)
     #expect(signedInSession != nil)
     #expect(signedInSession?.id == "session1")
   }
@@ -139,7 +159,7 @@ struct SessionUtilsTests {
     let session2 = createSession(id: "session2", status: .pending)
     let client = createClient(id: "client1", sessions: [session1, session2], lastActiveSessionId: "unknown")
 
-    let signedInSession = SessionUtils.signedInSession(from: client)
+    let signedInSession = SessionUtils.signedInSession(from: client, treatPendingAsSignedOut: true)
     #expect(signedInSession != nil)
     #expect(signedInSession?.id == "session1")
   }
@@ -147,7 +167,7 @@ struct SessionUtilsTests {
   // MARK: - Client.signedInSessions Tests
 
   @Test
-  func signedInSessions_ReturnsActiveAndPendingOnly() {
+  func signedInSessions_ReturnsActiveOnlyByDefault() {
     let activeSession = createSession(id: "session1", status: .active)
     let pendingSession = createSession(id: "session2", status: .pending)
     let endedSession = createSession(id: "session3", status: .ended)
@@ -158,6 +178,22 @@ struct SessionUtilsTests {
     )
 
     let signedInSessions = client.signedInSessions
+    #expect(signedInSessions.count == 1)
+    #expect(signedInSessions.contains(activeSession))
+  }
+
+  @Test
+  func signedInSessions_IncludesPendingWhenConfigured() {
+    let activeSession = createSession(id: "session1", status: .active)
+    let pendingSession = createSession(id: "session2", status: .pending)
+    let endedSession = createSession(id: "session3", status: .ended)
+    let client = createClient(
+      id: "client1",
+      sessions: [activeSession, pendingSession, endedSession],
+      lastActiveSessionId: "session1"
+    )
+
+    let signedInSessions = client.signedInSessions(treatPendingAsSignedOut: false)
     #expect(signedInSessions.count == 2)
     #expect(signedInSessions.contains(activeSession))
     #expect(signedInSessions.contains(pendingSession))
@@ -167,7 +203,11 @@ struct SessionUtilsTests {
 
   @Test
   func sessionChanged_NilToNil() {
-    let changed = SessionUtils.sessionChanged(previousClient: nil, currentClient: nil)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: nil,
+      currentClient: nil,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == false)
   }
 
@@ -176,16 +216,37 @@ struct SessionUtilsTests {
     let session = createSession(id: "session1", status: .active)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: nil, currentClient: client)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: nil,
+      currentClient: client,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
   @Test
-  func sessionChanged_NilToPendingSession() {
+  func sessionChanged_NilToPendingSession_DefaultsToFalse() {
     let session = createSession(id: "session1", status: .pending)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: nil, currentClient: client)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: nil,
+      currentClient: client,
+      treatPendingAsSignedOut: true
+    )
+    #expect(changed == false)
+  }
+
+  @Test
+  func sessionChanged_NilToPendingSession_IncludesPendingWhenConfigured() {
+    let session = createSession(id: "session1", status: .pending)
+    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
+
+    let changed = SessionUtils.sessionChanged(
+      previousClient: nil,
+      currentClient: client,
+      treatPendingAsSignedOut: false
+    )
     #expect(changed == true)
   }
 
@@ -194,7 +255,11 @@ struct SessionUtilsTests {
     let session = createSession(id: "session1", status: .active)
     let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: client, currentClient: nil)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: client,
+      currentClient: nil,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -204,7 +269,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == false)
   }
 
@@ -215,7 +284,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [session1], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [session2], lastActiveSessionId: "session2")
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -226,7 +299,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -245,7 +322,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -254,7 +335,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
     let currentClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == false)
   }
 
@@ -264,7 +349,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
     let currentClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -274,7 +363,11 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
 
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 
@@ -286,7 +379,11 @@ struct SessionUtilsTests {
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
     // When session becomes inactive, it's no longer in activeSessions, so activeSession becomes nil
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
+    let changed = SessionUtils.sessionChanged(
+      previousClient: previousClient,
+      currentClient: currentClient,
+      treatPendingAsSignedOut: true
+    )
     #expect(changed == true)
   }
 }
