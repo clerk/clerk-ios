@@ -25,9 +25,13 @@ struct SessionTaskView: View {
       switch taskKey {
       case .resetPassword:
         SessionTaskResetPasswordView()
+      case .setupMfa:
+        SetupMfaStartView()
       case .unknown:
         unknownTaskView
       }
+    } else {
+      unknownTaskView
     }
   }
 

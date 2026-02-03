@@ -21,6 +21,9 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
+  /// Closure to dismiss the entire auth flow (set by AuthView)
+  var dismissAuthFlow: (() -> Void)?
+
   /// Creates a new AuthNavigation instance.
   init() {}
 

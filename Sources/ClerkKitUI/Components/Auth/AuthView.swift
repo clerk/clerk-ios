@@ -127,6 +127,14 @@ public struct AuthView: View {
             }
           }
         }
+        .onAppear {
+          // Set the dismiss closure so child views can dismiss the entire auth flow
+          navigation.dismissAuthFlow = {
+            if isDismissable {
+              dismiss()
+            }
+          }
+        }
         .navigationDestination(for: Destination.self) { destination in
           destination.view
             .toolbar {
@@ -138,6 +146,12 @@ public struct AuthView: View {
                 }
               }
             }
+        }
+        .onAppear {
+          // On initial appear, if there's a pending session with tasks, navigate immediately
+          if pendingSession != nil, navigation.path.isEmpty {
+            navigation.path.append(.sessionTask)
+          }
         }
     }
     .background(theme.colors.background)
@@ -156,7 +170,8 @@ public struct AuthView: View {
         navigation.path.append(.sessionTask)
       }
       // When there are no more pending sessions with tasks, dismiss
-      else if pendingSession == nil, isSignedIn, isDismissable {
+      // But don't auto-dismiss if we came from a session task (those have explicit completion screens)
+      else if pendingSession == nil, isSignedIn, isDismissable, !navigation.path.contains(.sessionTask) {
         dismiss()
       }
     }
@@ -210,6 +225,15 @@ extension AuthView {
 
     /// Session tasks
     case sessionTask
+    case setupMfaPhone
+    case setupMfaPhoneAdd
+    case setupMfaPhoneVerify(ClerkKit.PhoneNumber)
+    case setupMfaPhoneBackupCodes([String])
+    case setupMfaPhoneSuccess
+    case setupMfaTotp(TOTPResource)
+    case setupMfaTotpVerify(TOTPResource)
+    case setupMfaTotpBackupCodes([String])
+    case setupMfaTotpSuccess
 
     @MainActor
     @ViewBuilder
@@ -244,6 +268,24 @@ extension AuthView {
         SignUpCompleteProfileView()
       case .sessionTask:
         SessionTaskView()
+      case .setupMfaPhone:
+        SetupMfaPhoneSelectionView()
+      case .setupMfaPhoneAdd:
+        SetupMfaAddPhoneView()
+      case .setupMfaPhoneVerify(let phoneNumber):
+        SetupMfaVerifyPhoneView(phoneNumber: phoneNumber)
+      case .setupMfaPhoneBackupCodes(let codes):
+        SetupMfaBackupCodesView(backupCodes: codes, mfaType: .phoneCode)
+      case .setupMfaPhoneSuccess:
+        SetupMfaSuccessView(mfaType: .phoneCode)
+      case .setupMfaTotp(let totp):
+        SetupMfaTotpSecretView(totp: totp)
+      case .setupMfaTotpVerify(let totp):
+        SetupMfaVerifyTotpView(totp: totp)
+      case .setupMfaTotpBackupCodes(let codes):
+        SetupMfaBackupCodesView(backupCodes: codes, mfaType: .authenticatorApp)
+      case .setupMfaTotpSuccess:
+        SetupMfaSuccessView(mfaType: .authenticatorApp)
       }
     }
   }

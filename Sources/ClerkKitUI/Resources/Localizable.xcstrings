@@ -427,6 +427,9 @@
         }
       }
     },
+    "A text message containing a verification code will be sent to this phone number" : {
+
+    },
     "A text message containing a verification code will be sent to this phone number. Message and data rates may apply." : {
       "localizations" : {
         "ar" : {
@@ -1410,6 +1413,9 @@
         }
       }
     },
+    "Authenticator app enabled" : {
+
+    },
     "Authenticator application" : {
       "localizations" : {
         "ar" : {
@@ -2109,6 +2115,9 @@
           }
         }
       }
+    },
+    "Choose how you'd like to receive your two-step verification code" : {
+
     },
     "Choose how you'd like to receive your two-step verification code." : {
       "localizations" : {
@@ -4350,6 +4359,9 @@
         }
       }
     },
+    "Enter the verification code from your authenticator application" : {
+
+    },
     "Enter the verification code from your authenticator application." : {
       "localizations" : {
         "ar" : {
@@ -6519,9 +6531,6 @@
           }
         }
       }
-    },
-    "No tasks" : {
-
     },
     "or" : {
       "localizations" : {
@@ -8904,6 +8913,9 @@
         }
       }
     },
+    "Select an existing phone number to register for SMS code two-step verification or add a new one" : {
+
+    },
     "Select an existing phone number to register for SMS code two-step verification or add a new one." : {
       "localizations" : {
         "ar" : {
@@ -9254,6 +9266,9 @@
         }
       }
     },
+    "Set up a new sign-in method in your authenticator and enter the Key provided below" : {
+
+    },
     "Set up a new sign-in method in your authenticator and enter the Key provided below.\n\nMake sure Time-based or One-time passwords is enabled, then finish linking your account." : {
       "localizations" : {
         "ar" : {
@@ -9323,6 +9338,9 @@
           }
         }
       }
+    },
+    "Set up two-step verification" : {
+
     },
     "Sign in with your passkey" : {
       "localizations" : {
@@ -9883,6 +9901,9 @@
           }
         }
       }
+    },
+    "SMS code verification enabled" : {
+
     },
     "Success" : {
       "localizations" : {
@@ -10656,6 +10677,12 @@
           }
         }
       }
+    },
+    "Two-step verification is now enabled. When signing in, you will need to enter a verification code from your authenticator app as an additional step." : {
+
+    },
+    "Two-step verification is now enabled. When signing in, you will need to enter a verification code sent to your phone number as an additional step." : {
+
     },
     "Type \"DELETE\" to continue" : {
       "localizations" : {
@@ -11989,6 +12016,9 @@
           }
         }
       }
+    },
+    "Verify authenticator code" : {
+
     },
     "Verify email address" : {
       "localizations" : {

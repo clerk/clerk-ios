@@ -204,6 +204,9 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     /// The user must reset their password.
     case resetPassword = "reset-password"
 
+    /// The user must set up multi-factor authentication.
+    case setupMfa = "setup-mfa"
+
     /// Represents an unknown task key.
     case unknown
   }
