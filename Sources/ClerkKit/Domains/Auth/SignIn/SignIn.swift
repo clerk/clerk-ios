@@ -180,7 +180,7 @@ extension SignIn {
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
-  ///   - allowSignUpTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
@@ -188,7 +188,7 @@ extension SignIn {
   @MainActor
   public func authenticateWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
-    allowSignUpTransfer: Bool = true
+    allowOAuthSSOTransfer: Bool = true
   ) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
@@ -197,7 +197,7 @@ extension SignIn {
     }
 
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
-    return try await signIn.handleTransferFlow(transferable: allowSignUpTransfer)
+    return try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
   }
   #endif
 
@@ -308,7 +308,7 @@ extension SignIn {
   ///
   /// - Parameters:
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - allowSignUpTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the enterprise SSO flow fails.
@@ -316,7 +316,7 @@ extension SignIn {
   @MainActor
   public func authenticateWithEnterpriseSSO(
     prefersEphemeralWebBrowserSession: Bool = false,
-    allowSignUpTransfer: Bool = true
+    allowOAuthSSOTransfer: Bool = true
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
@@ -337,7 +337,7 @@ extension SignIn {
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: allowSignUpTransfer)
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: allowOAuthSSOTransfer)
   }
 
   /// Authenticates with OAuth using the specified provider.
@@ -349,7 +349,7 @@ extension SignIn {
   /// - Parameters:
   ///   - provider: The OAuth provider to use (e.g., `.google`, `.github`).
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - allowSignUpTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
@@ -358,7 +358,7 @@ extension SignIn {
   public func authenticateWithOAuth(
     provider: OAuthProvider,
     prefersEphemeralWebBrowserSession: Bool = false,
-    allowSignUpTransfer: Bool = true
+    allowOAuthSSOTransfer: Bool = true
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
@@ -379,7 +379,7 @@ extension SignIn {
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: allowSignUpTransfer)
+    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: allowOAuthSSOTransfer)
   }
   #endif
 

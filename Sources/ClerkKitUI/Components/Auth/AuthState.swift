@@ -20,17 +20,18 @@ final class AuthState {
   /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
 
-  /// Indicates whether a transferable sign-in should be converted into a sign-up.
-  private let allowSignUpTransfer: Bool
-
-  init(mode: AuthView.Mode = .signInOrUp, transferable: Bool = true) {
+  init(mode: AuthView.Mode = .signInOrUp()) {
     self.mode = mode
-    allowSignUpTransfer = transferable
   }
 
   /// Whether this UI flow should allow transfer from sign-in to sign-up.
   var transferable: Bool {
-    mode != .signIn && allowSignUpTransfer
+    switch mode {
+    case .signIn, .signUp:
+      false
+    case .signInOrUp(let allowOAuthSSOTransfer):
+      allowOAuthSSOTransfer
+    }
   }
 
   // Auth Start Fields
