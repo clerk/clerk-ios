@@ -20,7 +20,7 @@ final class AuthState {
   /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
 
-  init(mode: AuthView.Mode = .signInOrUp()) {
+  init(mode: AuthView.Mode = .signInOrUp) {
     self.mode = mode
   }
 
@@ -29,10 +29,8 @@ final class AuthState {
     switch mode {
     case .signIn:
       false
-    case .signUp:
+    case .signUp, .signInOrUp:
       true
-    case .signInOrUp(let allowOAuthSSOTransfer):
-      allowOAuthSSOTransfer
     }
   }
 

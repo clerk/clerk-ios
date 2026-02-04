@@ -159,9 +159,9 @@ extension SignInFactorAlternativeMethodsView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple(allowOAuthSSOTransfer: authState.transferable)
+          try await signIn.authenticateWithApple(transferable: authState.transferable)
         } else {
-          try await signIn.authenticateWithOAuth(provider: provider, allowOAuthSSOTransfer: authState.transferable)
+          try await signIn.authenticateWithOAuth(provider: provider, transferable: authState.transferable)
         }
 
       switch result {

@@ -126,7 +126,7 @@ public struct Auth {
   /// - Parameters:
   ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
@@ -135,25 +135,17 @@ public struct Auth {
   public func signInWithOAuth(
     provider: OAuthProvider,
     prefersEphemeralWebBrowserSession: Bool = false,
-    allowOAuthSSOTransfer: Bool = true
+    transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    if allowOAuthSSOTransfer {
-      // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
-      return try await signUpWithOAuth(
-        provider: provider,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      )
-    } else {
-      let signIn = try await signInService.create(params: .init(
-        strategy: .oauth(provider),
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      ))
-      return try await signIn.authenticateWithOAuth(
-        provider: provider,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-        allowOAuthSSOTransfer: allowOAuthSSOTransfer
-      )
-    }
+    let signIn = try await signInService.create(params: .init(
+      strategy: .oauth(provider),
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
+    return try await signIn.authenticateWithOAuth(
+      provider: provider,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
+    )
   }
   #endif
 
@@ -162,15 +154,15 @@ public struct Auth {
   /// - Parameters:
   ///   - idToken: The ID token from the provider.
   ///   - provider: The ID token provider (e.g., `.apple`).
-  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, allowOAuthSSOTransfer: Bool = true) async throws -> TransferFlowResult {
+  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, transferable: Bool = true) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
-    let result = try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+    let result = try await signIn.handleTransferFlow(transferable: transferable)
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
     }
@@ -188,14 +180,14 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
-  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
   public func signInWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
-    allowOAuthSSOTransfer: Bool = true
+    transferable: Bool = true
   ) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
@@ -203,7 +195,7 @@ public struct Auth {
       throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
     }
 
-    if allowOAuthSSOTransfer {
+    if transferable {
       return try await signUpWithIdToken(
         idToken,
         provider: .apple,
@@ -212,7 +204,7 @@ public struct Auth {
       )
     } else {
       let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
-      let result = try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+      let result = try await signIn.handleTransferFlow(transferable: transferable)
       if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
         throw error
       }
@@ -237,7 +229,7 @@ public struct Auth {
   /// - Parameters:
   ///   - emailAddress: The user's enterprise email address.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - allowOAuthSSOTransfer: Indicates whether a transferable sign-in should be converted into a sign-up.
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
@@ -246,25 +238,17 @@ public struct Auth {
   public func signInWithEnterpriseSSO(
     emailAddress: String,
     prefersEphemeralWebBrowserSession: Bool = false,
-    allowOAuthSSOTransfer: Bool = true
+    transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    if allowOAuthSSOTransfer {
-      // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
-      return try await signUpWithEnterpriseSSO(
-        emailAddress: emailAddress,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      )
-    } else {
-      let signIn = try await signInService.create(params: .init(
-        identifier: emailAddress,
-        strategy: .enterpriseSSO,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      ))
-      return try await signIn.authenticateWithEnterpriseSSO(
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-        allowOAuthSSOTransfer: allowOAuthSSOTransfer
-      )
-    }
+    let signIn = try await signInService.create(params: .init(
+      identifier: emailAddress,
+      strategy: .enterpriseSSO,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
+    return try await signIn.authenticateWithEnterpriseSSO(
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
+    )
   }
   #endif
 

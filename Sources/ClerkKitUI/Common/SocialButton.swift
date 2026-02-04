@@ -99,9 +99,9 @@ struct SocialButton: View {
 extension SocialButton {
   func defaultAction() async throws {
     let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple(allowOAuthSSOTransfer: authState.transferable)
+      try await clerk.auth.signInWithApple(transferable: authState.transferable)
     } else {
-      try await clerk.auth.signInWithOAuth(provider: provider, allowOAuthSSOTransfer: authState.transferable)
+      try await clerk.auth.signInWithOAuth(provider: provider, transferable: authState.transferable)
     }
     onSuccess?(result)
   }

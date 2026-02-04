@@ -78,14 +78,10 @@ public struct AuthView: View {
   @State private var codeLimiter = CodeLimiter()
 
   /// The authentication mode that determines which flows are available to the user.
-  public enum Mode {
+  public enum Mode: String {
     /// Allows users to choose between signing in to existing accounts or creating new accounts.
     /// This is the default mode that provides the most flexibility for users.
-    ///
-    /// - Parameter allowOAuthSSOTransfer: Indicates whether OAuth/SSO sign-in attempts that return
-    ///   `firstFactorVerification.status == .transferable` should be converted into a sign-up.
-    ///   Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-    case signInOrUp(allowOAuthSSOTransfer: Bool = true)
+    case signInOrUp
 
     /// Restricts the interface to sign-in flows only. Users can only authenticate with existing accounts.
     /// Useful when you want to prevent new account creation in specific contexts.
@@ -107,7 +103,7 @@ public struct AuthView: View {
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
-  public init(mode: Mode = .signInOrUp(), isDismissable: Bool = true) {
+  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
   }
@@ -163,24 +159,11 @@ public struct AuthView: View {
         TelemetryEvents.viewDidAppear(
           "AuthView",
           payload: [
-            "mode": .string(authState.mode.telemetryValue),
+            "mode": .string(authState.mode.rawValue),
             "isDismissable": .bool(isDismissable),
           ]
         )
       )
-    }
-  }
-}
-
-extension AuthView.Mode {
-  var telemetryValue: String {
-    switch self {
-    case .signIn:
-      "signIn"
-    case .signUp:
-      "signUp"
-    case .signInOrUp:
-      "signInOrUp"
     }
   }
 }

@@ -66,15 +66,15 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithOAuthUsesSignUpServiceCreate() async throws {
-    let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
+  func signInWithOAuthUsesSignInServiceCreate() async throws {
+    let signUpCalled = LockIsolated(false)
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
+    let signUpService = MockSignUpService(create: { _ in
+      signUpCalled.setValue(true)
       return .mock
     })
 
@@ -86,21 +86,21 @@ struct AuthTests {
       // Expected to fail in unit tests due to missing external verification data.
     }
 
-    #expect(signInCalled.value == false)
-    let params = try #require(signUpParams.value)
+    #expect(signUpCalled.value == false)
+    let params = try #require(signInParams.value)
     #expect(params.strategy?.rawValue == OAuthProvider.google.strategy)
   }
 
   @Test
-  func signInWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
-    let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
+  func signInWithEnterpriseSSOUsesSignInServiceCreate() async throws {
+    let signUpCalled = LockIsolated(false)
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
+    let signUpService = MockSignUpService(create: { _ in
+      signUpCalled.setValue(true)
       return .mock
     })
 
@@ -112,9 +112,9 @@ struct AuthTests {
       // Expected to fail in unit tests due to missing external verification data.
     }
 
-    #expect(signInCalled.value == false)
-    let params = try #require(signUpParams.value)
-    #expect(params.emailAddress == "user@enterprise.com")
+    #expect(signUpCalled.value == false)
+    let params = try #require(signInParams.value)
+    #expect(params.identifier == "user@enterprise.com")
   }
 
   @Test
@@ -165,7 +165,7 @@ struct AuthTests {
       _ = try await Clerk.shared.auth.signInWithIdToken(
         "mock_id_token",
         provider: .apple,
-        allowOAuthSSOTransfer: false
+        transferable: false
       )
       #expect(Bool(false))
     } catch {

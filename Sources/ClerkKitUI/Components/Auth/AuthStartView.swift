@@ -336,7 +336,7 @@ extension AuthStartView {
       let signIn = try await clerk.auth.signIn(identifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO(allowOAuthSSOTransfer: authState.transferable)
+        let result = try await signIn.authenticateWithEnterpriseSSO(transferable: authState.transferable)
         handleTransferFlowResult(result)
         return
       }
