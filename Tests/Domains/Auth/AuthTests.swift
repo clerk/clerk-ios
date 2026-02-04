@@ -141,6 +141,42 @@ struct AuthTests {
   }
 
   @Test
+  func signInWithIdTokenThrowsWhenTransferableButDisallowed() async throws {
+    let signUpCalled = LockIsolated(false)
+    let didThrow = LockIsolated(false)
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(
+      status: .transferable,
+      strategy: .idToken(.apple),
+      error: .mock
+    )
+
+    let signInService = MockSignInService(create: { _ in
+      signIn
+    })
+    let signUpService = MockSignUpService(create: { _ in
+      signUpCalled.setValue(true)
+      return .mock
+    })
+
+    configureDependencies(signInService: signInService, signUpService: signUpService)
+
+    do {
+      _ = try await Clerk.shared.auth.signInWithIdToken(
+        "mock_id_token",
+        provider: .apple,
+        allowOAuthSSOTransfer: false
+      )
+      #expect(Bool(false))
+    } catch {
+      didThrow.setValue(true)
+    }
+
+    #expect(signUpCalled.value == false)
+    #expect(didThrow.value == true)
+  }
+
+  @Test
   func signInWithPasskeyUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in

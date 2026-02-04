@@ -170,7 +170,11 @@ public struct Auth {
   @discardableResult
   public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, allowOAuthSSOTransfer: Bool = true) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
-    return try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+    let result = try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+      throw error
+    }
+    return result
   }
   #endif
 
@@ -208,7 +212,11 @@ public struct Auth {
       )
     } else {
       let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
-      return try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+      let result = try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+      if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+        throw error
+      }
+      return result
     }
   }
   #endif
