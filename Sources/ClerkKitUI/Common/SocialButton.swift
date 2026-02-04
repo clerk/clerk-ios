@@ -13,6 +13,7 @@ import SwiftUI
 
 struct SocialButton: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AuthState.self) private var authState
   @Environment(\.clerkTheme) private var theme
   @Environment(\.colorScheme) private var colorScheme
 
@@ -98,9 +99,9 @@ struct SocialButton: View {
 extension SocialButton {
   func defaultAction() async throws {
     let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple()
+      try await clerk.auth.signInWithApple(allowSignUpTransfer: authState.transferable)
     } else {
-      try await clerk.auth.signInWithOAuth(provider: provider)
+      try await clerk.auth.signInWithOAuth(provider: provider, allowSignUpTransfer: authState.transferable)
     }
     onSuccess?(result)
   }

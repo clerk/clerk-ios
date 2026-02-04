@@ -103,8 +103,11 @@ public struct AuthView: View {
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: AuthState(mode: mode))
+  ///   - allowSignUpTransfer: Indicates whether OAuth/SSO sign-in attempts that return
+  ///     `firstFactorVerification.status == .transferable` should be converted into a sign-up.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true, allowSignUpTransfer: Bool = true) {
+    _authState = State(initialValue: AuthState(mode: mode, transferable: allowSignUpTransfer))
     self.isDismissable = isDismissable
   }
 
