@@ -12,7 +12,7 @@ struct ContentView: View {
   @Environment(Clerk.self) private var clerk
 
   var fullName: String? {
-    let name = [clerk.user?.firstName, clerk.user?.lastName]
+    let name = [clerk.activeUser?.firstName, clerk.activeUser?.lastName]
       .compactMap(\.self)
       .joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -23,7 +23,7 @@ struct ContentView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 16) {
-        if let user = clerk.user {
+        if let user = clerk.activeUser {
           VStack(spacing: 8) {
             AsyncImage(url: URL(string: user.imageUrl)) { phase in
               switch phase {

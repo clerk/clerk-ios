@@ -13,6 +13,8 @@ import Foundation
 /// providing helpful debug information to developers about session status.
 @MainActor
 final class SessionStatusLogger {
+  private var lastAccessLoggedClient: Client?
+
   /// Logs pending session status if the session state has changed.
   ///
   /// This method checks if logging is needed based on session state changes
@@ -26,6 +28,22 @@ final class SessionStatusLogger {
       return
     }
 
+    logPendingSessionStatus(currentClient: currentClient)
+  }
+
+  /// Logs pending session status when accessing active-only APIs.
+  ///
+  /// Uses internal state to avoid logging repeatedly for the same pending session.
+  func logPendingSessionAccessIfNeeded(currentClient: Client) {
+    guard shouldLogPendingSessionStatus(previousClient: lastAccessLoggedClient, currentClient: currentClient) else {
+      return
+    }
+
+    logPendingSessionStatus(currentClient: currentClient)
+    lastAccessLoggedClient = currentClient
+  }
+
+  private func logPendingSessionStatus(currentClient: Client) {
     let tasksDescription: String
     if let sessionId = currentClient.lastActiveSessionId,
        let session = currentClient.sessions.first(where: { $0.id == sessionId }),

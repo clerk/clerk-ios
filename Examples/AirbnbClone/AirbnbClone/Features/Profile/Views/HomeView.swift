@@ -28,8 +28,8 @@ struct HomeView: View {
           .padding(.top, 24)
 
         ProfileCardView(
-          displayName: clerk.user?.firstName ?? "N/A",
-          imageUrl: clerk.user?.imageUrl
+          displayName: clerk.activeUser?.firstName ?? "N/A",
+          imageUrl: clerk.activeUser?.imageUrl
         )
 
         LogoutRowView {

@@ -13,7 +13,7 @@ struct ProfileView: View {
 
   var body: some View {
     VStack(spacing: 24) {
-      if let imageUrl = clerk.user?.imageUrl, let url = URL(string: imageUrl) {
+      if let imageUrl = clerk.activeUser?.imageUrl, let url = URL(string: imageUrl) {
         AsyncImage(
           url: url,
           transaction: Transaction(animation: .default)
@@ -28,7 +28,7 @@ struct ProfileView: View {
         .clipShape(.circle)
       }
 
-      Text(clerk.user?.id ?? "No user ID")
+      Text(clerk.activeUser?.id ?? "No user ID")
 
       Button("Sign Out") {
         signOut()
