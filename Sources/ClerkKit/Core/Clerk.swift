@@ -46,7 +46,7 @@ public final class Clerk {
     didSet {
       // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        auth.send(.sessionChanged(session: SessionUtils.activeSession(from: client)))
+        auth.send(.sessionChanged(session: session))
       }
 
       if let client {
@@ -80,14 +80,35 @@ public final class Clerk {
     }
   }
 
-  /// The currently active Session, which is guaranteed to be one of the sessions in Client.sessions. If there is no active session, this field will be nil.
+  /// The current Session for the device, if one exists.
   public var session: Session? {
-    client?.activeSession
+    client?.currentSession
   }
 
-  /// A shortcut to Session.user which holds the currently active User object. If the session is nil, the user field will match.
+  /// A shortcut to Session.user which holds the current User object, regardless of session status.
   public var user: User? {
     session?.user
+  }
+
+  /// Returns the current session if the session's status is `.active`.
+  public var activeSession: Session? {
+    guard let session else {
+      return nil
+    }
+
+    guard session.status == .active else {
+      if let client, session.status == .pending {
+        dependencies.sessionStatusLogger.logPendingSessionAccessIfNeeded(currentClient: client)
+      }
+      return nil
+    }
+
+    return session
+  }
+
+  /// The user for the active session, if one exists.
+  public var activeUser: User? {
+    activeSession?.user
   }
 
   /// A dictionary of a user's active sessions on all devices.

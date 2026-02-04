@@ -12,6 +12,30 @@ struct ClerkTests {
     configureClerkForTesting()
   }
 
+  func createSession(
+    id: String,
+    status: Session.SessionStatus,
+    user: User? = .mock
+  ) -> Session {
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
+    return Session(
+      id: id,
+      status: status,
+      expireAt: date,
+      abandonAt: date,
+      lastActiveAt: date,
+      latestActivity: nil,
+      lastActiveOrganizationId: nil,
+      actor: nil,
+      user: user,
+      publicUserData: nil,
+      createdAt: date,
+      updatedAt: date,
+      tasks: nil,
+      lastActiveToken: nil
+    )
+  }
+
   @Test
   func clearAllKeychainItemsDeletesAllKeys() async throws {
     // Set up with InMemoryKeychain for testing
@@ -172,5 +196,59 @@ struct ClerkTests {
     // Clear client - should become false again
     Clerk.shared.client = nil
     #expect(Clerk.shared.isLoaded == false)
+  }
+
+  // MARK: - Current / Active Session Tests
+
+  @Test
+  func sessionReturnsPendingSession() {
+    let pendingSession = createSession(id: "session1", status: .pending)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [pendingSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.session?.id == "session1")
+  }
+
+  @Test
+  func userReturnsUserForPendingSession() {
+    let pendingSession = createSession(id: "session1", status: .pending, user: .mock)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [pendingSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.user?.id == User.mock.id)
+  }
+
+  @Test
+  func activeSessionIsNilForPendingSession() {
+    let pendingSession = createSession(id: "session1", status: .pending)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [pendingSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.activeSession == nil)
+  }
+
+  @Test
+  func activeUserMatchesActiveSessionUser() {
+    let activeSession = createSession(id: "session1", status: .active, user: .mock)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [activeSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.activeUser?.id == User.mock.id)
   }
 }

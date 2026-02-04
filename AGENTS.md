@@ -11,6 +11,11 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 
 - Avoid author-attribution lines in headers (including assistant/AI attributions).
 
+## Access control
+
+- Internal is the default access level; do not specify it redundantly.
+- Prefer access control on functions and properties, not on the extension.
+
 ## Skills usage
 
 - Use the `$swiftui-ui-patterns` skill whenever building, refactoring, or reviewing SwiftUI views, UI components, navigation, or layout patterns.
