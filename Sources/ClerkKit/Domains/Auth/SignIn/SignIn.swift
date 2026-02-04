@@ -197,7 +197,11 @@ extension SignIn {
     }
 
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
-    return try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+    let result = try await signIn.handleTransferFlow(transferable: allowOAuthSSOTransfer)
+    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+      throw error
+    }
+    return result
   }
   #endif
 

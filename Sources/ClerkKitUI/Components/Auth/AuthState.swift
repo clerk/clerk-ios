@@ -27,8 +27,10 @@ final class AuthState {
   /// Whether this UI flow should allow transfer from sign-in to sign-up.
   var transferable: Bool {
     switch mode {
-    case .signIn, .signUp:
+    case .signIn:
       false
+    case .signUp:
+      true
     case .signInOrUp(let allowOAuthSSOTransfer):
       allowOAuthSSOTransfer
     }
