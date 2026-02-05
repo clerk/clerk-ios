@@ -80,35 +80,14 @@ public final class Clerk {
     }
   }
 
-  /// The current Session for the device, if one exists.
+  /// The current session for the device.
   public var session: Session? {
     client?.currentSession
   }
 
-  /// A shortcut to Session.user which holds the current User object, regardless of session status.
+  /// The current user for the device.
   public var user: User? {
     session?.user
-  }
-
-  /// Returns the current session if the session's status is `.active`.
-  public var activeSession: Session? {
-    guard let session else {
-      return nil
-    }
-
-    guard session.status == .active else {
-      if let client, session.status == .pending {
-        dependencies.sessionStatusLogger.logPendingSessionAccessIfNeeded(currentClient: client)
-      }
-      return nil
-    }
-
-    return session
-  }
-
-  /// The user for the active session, if one exists.
-  public var activeUser: User? {
-    activeSession?.user
   }
 
   /// A dictionary of a user's active sessions on all devices.

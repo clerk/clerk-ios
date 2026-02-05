@@ -9,10 +9,10 @@ import Foundation
 
 /// Protocol defining an interface for providing the current session.
 ///
-/// Implementations of this protocol can provide the current active session
+/// Implementations of this protocol can provide the current session
 /// for token refresh operations.
 protocol SessionProviding: Sendable {
-  /// Returns the current active session, if available.
+  /// Returns the current session, if available.
   @MainActor var session: Session? { get }
 }
 
@@ -52,7 +52,7 @@ final class SessionPollingManager {
   /// Creates a new session polling manager.
   ///
   /// - Parameters:
-  ///   - sessionProvider: The object that provides the current active session.
+  ///   - sessionProvider: The object that provides the current session.
   ///   - pollInterval: The interval between polling attempts. Defaults to 5 seconds.
   ///   - pollTolerance: The tolerance for the polling interval. Defaults to 0.1 seconds.
   ///   - maxPollInterval: The maximum interval when backing off due to failures. Defaults to 60 seconds.
@@ -146,12 +146,16 @@ final class SessionPollingManager {
     return calculateBackoffInterval()
   }
 
-  /// Refreshes the token for the current session if one exists.
+  /// Refreshes the token for the current session when it is active.
   ///
-  /// - Returns: `true` if the refresh succeeded or no session exists, `false` if it failed.
+  /// - Returns: `true` if the refresh succeeded or no active session exists, `false` if it failed.
   private func refreshTokenIfNeeded() async -> Bool {
     guard let session = sessionProvider.session else {
       return true // No session = not a failure
+    }
+
+    guard shouldRefresh(session: session) else {
+      return true
     }
 
     do {
@@ -160,6 +164,13 @@ final class SessionPollingManager {
     } catch {
       return false
     }
+  }
+
+  func shouldRefresh(session: Session?) -> Bool {
+    guard let session else {
+      return false
+    }
+    return session.status == .active
   }
 
   /// Cancels polling and cleans up resources if the manager is released unexpectedly.

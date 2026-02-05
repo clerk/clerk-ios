@@ -12,7 +12,7 @@ struct ContentView: View {
   @Environment(Clerk.self) private var clerk
 
   var body: some View {
-    if clerk.activeUser != nil {
+    if clerk.user != nil {
       ProfileView()
     } else {
       AuthFlowListView()

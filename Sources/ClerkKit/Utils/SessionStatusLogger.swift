@@ -13,8 +13,6 @@ import Foundation
 /// providing helpful debug information to developers about session status.
 @MainActor
 final class SessionStatusLogger {
-  private var lastAccessLoggedClient: Client?
-
   /// Logs pending session status if the session state has changed.
   ///
   /// This method checks if logging is needed based on session state changes
@@ -31,22 +29,9 @@ final class SessionStatusLogger {
     logPendingSessionStatus(currentClient: currentClient)
   }
 
-  /// Logs pending session status when accessing active-only APIs.
-  ///
-  /// Uses internal state to avoid logging repeatedly for the same pending session.
-  func logPendingSessionAccessIfNeeded(currentClient: Client) {
-    guard shouldLogPendingSessionStatus(previousClient: lastAccessLoggedClient, currentClient: currentClient) else {
-      return
-    }
-
-    logPendingSessionStatus(currentClient: currentClient)
-    lastAccessLoggedClient = currentClient
-  }
-
   private func logPendingSessionStatus(currentClient: Client) {
     let tasksDescription: String
-    if let sessionId = currentClient.lastActiveSessionId,
-       let session = currentClient.sessions.first(where: { $0.id == sessionId }),
+    if let session = currentClient.currentSession,
        let tasks = session.tasks,
        !tasks.isEmpty
     {
@@ -74,9 +59,7 @@ final class SessionStatusLogger {
   ///   - currentClient: The current client state.
   /// - Returns: `true` if logging should occur, `false` otherwise.
   func shouldLogPendingSessionStatus(previousClient: Client?, currentClient: Client) -> Bool {
-    guard let sessionId = currentClient.lastActiveSessionId,
-          let session = currentClient.sessions.first(where: { $0.id == sessionId })
-    else {
+    guard let session = currentClient.currentSession else {
       return false
     }
 
@@ -86,8 +69,7 @@ final class SessionStatusLogger {
 
     // Log if this is the first client or if there's no previous session
     guard let previousClient,
-          let previousId = previousClient.lastActiveSessionId,
-          let previousSession = previousClient.sessions.first(where: { $0.id == previousId })
+          let previousSession = previousClient.currentSession
     else {
       return true
     }

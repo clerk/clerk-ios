@@ -24,6 +24,22 @@ final class MockSessionProvider: SessionProviding {
   }
 }
 
+private func createSession(
+  id: String,
+  status: Session.SessionStatus
+) -> Session {
+  let date = Date(timeIntervalSince1970: 1_609_459_200)
+  return Session(
+    id: id,
+    status: status,
+    expireAt: date,
+    abandonAt: date,
+    lastActiveAt: date,
+    createdAt: date,
+    updatedAt: date
+  )
+}
+
 /// Tests for SessionPollingManager ensuring proper polling behavior and cleanup.
 @MainActor
 @Suite(.serialized)
@@ -67,6 +83,32 @@ struct SessionPollingManagerTests {
 
     // Should be able to stop after multiple starts
     manager.stopPolling()
+  }
+
+  @Test
+  func shouldRefreshReturnsFalseForNilSession() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    #expect(manager.shouldRefresh(session: nil) == false)
+  }
+
+  @Test
+  func shouldRefreshReturnsFalseForPendingSession() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    let session = createSession(id: "session1", status: .pending)
+    #expect(manager.shouldRefresh(session: session) == false)
+  }
+
+  @Test
+  func shouldRefreshReturnsTrueForActiveSession() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    let session = createSession(id: "session1", status: .active)
+    #expect(manager.shouldRefresh(session: session) == true)
   }
 }
 

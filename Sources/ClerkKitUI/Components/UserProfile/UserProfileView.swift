@@ -58,7 +58,6 @@ public struct UserProfileView: View {
   @Environment(\.dismiss) private var dismiss
 
   let isDismissable: Bool
-  let treatPendingAsSignedOut: Bool
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
@@ -74,19 +73,12 @@ public struct UserProfileView: View {
   ///   can be used in sheets or other dismissable contexts. When `false`, no
   ///   dismiss button is shown, making it suitable for full-screen usage.
   ///   Defaults to `true`.
-  ///   - treatPendingAsSignedOut: Whether pending sessions should be treated as signed out.
-  ///   Defaults to `true`.
-  public init(isDismissable: Bool = true, treatPendingAsSignedOut: Bool = true) {
+  public init(isDismissable: Bool = true) {
     self.isDismissable = isDismissable
-    self.treatPendingAsSignedOut = treatPendingAsSignedOut
-  }
-
-  private var user: User? {
-    clerk.resolvedUser(treatPendingAsSignedOut: treatPendingAsSignedOut)
   }
 
   public var body: some View {
-    if let user {
+    if let user = clerk.user {
       NavigationStack(path: $navigation.path) {
         VStack(spacing: 0) {
           ScrollView {
