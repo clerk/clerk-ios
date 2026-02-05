@@ -202,23 +202,18 @@ struct SessionPollingManagerTests {
   }
 
   @Test
-  func sessionChangedWhenStoppedRefreshesOnStart() async {
+  func sessionChangedWhenStoppedDoesNotResetBackoff() {
     let provider = MockSessionProvider()
-    provider.sessionToReturn = createSession(id: "session1", status: .pending)
-    let manager = SessionPollingManager(
-      sessionProvider: provider,
-      pollInterval: 60
-    )
+    let manager = SessionPollingManager(sessionProvider: provider)
 
     manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .pending)))
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
     manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .active)))
-
-    manager.startPolling()
-    await Task.yield()
-
-    #expect(manager.consecutiveFailures == 0)
-
-    manager.stopPolling()
+    #expect(manager.consecutiveFailures == 2)
   }
 
   @Test
@@ -245,6 +240,20 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
+  }
+
+  @Test
+  func refreshNowIfNeededResetsBackoffWhenSessionDoesNotRequireRefresh() async {
+    let provider = MockSessionProvider()
+    provider.sessionToReturn = createSession(id: "session1", status: .pending)
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    await manager.refreshNowIfNeeded()
+    #expect(manager.consecutiveFailures == 0)
   }
 }
 

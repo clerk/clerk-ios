@@ -56,7 +56,6 @@ final class SessionPollingManager {
   private(set) var consecutiveFailures: Int = 0
   private var lastObservedSessionId: String?
   private var lastObservedSessionStatus: Session.SessionStatus?
-  private var shouldRefreshOnStart: Bool = false
   private var isPollingActive: Bool {
     pollingTask != nil && pollingTask?.isCancelled == false
   }
@@ -102,8 +101,6 @@ final class SessionPollingManager {
         try await Task.sleep(for: .seconds(interval), tolerance: .seconds(tolerance))
       } while !Task.isCancelled
     }
-
-    refreshOnStartIfNeeded()
   }
 
   /// Stops polling for session tokens.
@@ -222,6 +219,14 @@ final class SessionPollingManager {
     return session.status == .active
   }
 
+  /// Immediately evaluates the current session and refreshes its token when needed.
+  ///
+  /// This is used for deterministic refresh points (for example, after foreground client refresh).
+  func refreshNowIfNeeded() async {
+    let success = await refreshTokenIfNeeded()
+    updateBackoffState(success: success)
+  }
+
   private func handleSessionChange(_ session: Session?) {
     guard shouldTriggerRefreshOnSessionChange(newSession: session) else {
       return
@@ -232,8 +237,6 @@ final class SessionPollingManager {
       Task { [weak self] in
         _ = await self?.refreshTokenIfNeeded()
       }
-    } else {
-      shouldRefreshOnStart = true
     }
   }
 
@@ -256,18 +259,6 @@ final class SessionPollingManager {
     }
 
     return previousStatus != .active && newStatus == .active
-  }
-
-  private func refreshOnStartIfNeeded() {
-    guard shouldRefreshOnStart else {
-      return
-    }
-
-    shouldRefreshOnStart = false
-    consecutiveFailures = 0
-    Task { [weak self] in
-      _ = await self?.refreshTokenIfNeeded()
-    }
   }
 
   private func updateLastObservedSession(_ session: Session?) {

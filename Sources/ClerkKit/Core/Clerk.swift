@@ -300,13 +300,17 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    try await dependencies.clientService.get()
+    let client = try await dependencies.clientService.get()
+    self.client = client
+    return client
   }
 
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
-    try await dependencies.environmentService.get()
+    let environment = try await dependencies.environmentService.get()
+    self.environment = environment
+    return environment
   }
 
   private static let startupRefreshRetryPolicy = RetryPolicy(
@@ -348,6 +352,10 @@ extension Clerk: LifecycleEventHandling {
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
+
+      // Force an immediate token evaluation after foreground client refresh
+      // rather than waiting for the next polling interval.
+      await sessionPollingManager?.refreshNowIfNeeded()
     }
 
     taskCoordinator?.task { [weak self] in
