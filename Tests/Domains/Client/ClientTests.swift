@@ -14,9 +14,15 @@ struct ClientTests {
   @Test
   func refreshClientUsesClientServiceGet() async throws {
     let called = LockIsolated(false)
+    let expectedClient = Client(
+      id: "refresh-client-test",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
     let service = MockClientService(get: {
       called.setValue(true)
-      return .mock
+      return expectedClient
     })
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -27,5 +33,6 @@ struct ClientTests {
     _ = try await Clerk.shared.refreshClient()
 
     #expect(called.value == true)
+    #expect(Clerk.shared.client?.id == expectedClient.id)
   }
 }

@@ -58,7 +58,6 @@ public struct UserProfileView: View {
   @Environment(\.dismiss) private var dismiss
 
   let isDismissable: Bool
-  let treatPendingAsSignedOut: Bool
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
@@ -74,19 +73,12 @@ public struct UserProfileView: View {
   ///   can be used in sheets or other dismissable contexts. When `false`, no
   ///   dismiss button is shown, making it suitable for full-screen usage.
   ///   Defaults to `true`.
-  ///   - treatPendingAsSignedOut: Whether pending sessions should be treated as signed out.
-  ///   Defaults to `true`.
-  public init(isDismissable: Bool = true, treatPendingAsSignedOut: Bool = true) {
+  public init(isDismissable: Bool = true) {
     self.isDismissable = isDismissable
-    self.treatPendingAsSignedOut = treatPendingAsSignedOut
-  }
-
-  private var user: User? {
-    clerk.resolvedUser(treatPendingAsSignedOut: treatPendingAsSignedOut)
   }
 
   public var body: some View {
-    if let user {
+    if let user = clerk.user {
       NavigationStack(path: $navigation.path) {
         VStack(spacing: 0) {
           ScrollView {
@@ -201,8 +193,7 @@ extension UserProfileView {
   private var accountSection: some View {
     VStack(spacing: 0) {
       if clerk.environment?.mutliSessionModeIsEnabled == true {
-        let activeSessions = clerk.auth.activeSessions
-        if activeSessions.count > 1 {
+        if clerk.auth.sessions.count > 1 {
           row(icon: "icon-switch", text: "Switch account") {
             navigation.accountSwitcherIsPresented = true
           }
@@ -264,7 +255,7 @@ extension UserProfileView {
   }
 
   func getSessionsOnAllDevices() async {
-    guard let user else { return }
+    guard let user = clerk.user else { return }
     do {
       try await user.getSessions()
     } catch {

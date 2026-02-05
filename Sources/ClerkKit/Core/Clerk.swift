@@ -80,35 +80,14 @@ public final class Clerk {
     }
   }
 
-  /// The current Session for the device, if one exists.
+  /// The current session for the device.
   public var session: Session? {
     client?.currentSession
   }
 
-  /// A shortcut to Session.user which holds the current User object, regardless of session status.
+  /// The current user for the device.
   public var user: User? {
     session?.user
-  }
-
-  /// Returns the current session if the session's status is `.active`.
-  public var activeSession: Session? {
-    guard let session else {
-      return nil
-    }
-
-    guard session.status == .active else {
-      if let client, session.status == .pending {
-        dependencies.sessionStatusLogger.logPendingSessionAccessIfNeeded(currentClient: client)
-      }
-      return nil
-    }
-
-    return session
-  }
-
-  /// The user for the active session, if one exists.
-  public var activeUser: User? {
-    activeSession?.user
   }
 
   /// A dictionary of a user's active sessions on all devices.
@@ -226,7 +205,12 @@ extension Clerk {
     )
 
     // Set up session polling and lifecycle management
-    sessionPollingManager = SessionPollingManager(sessionProvider: self)
+    sessionPollingManager = SessionPollingManager(
+      sessionProvider: self,
+      authEventsProvider: { [weak self] in
+        self?.auth.events ?? AsyncStream { $0.finish() }
+      }
+    )
     lifecycleManager = LifecycleManager(handler: self)
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
@@ -316,13 +300,17 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    try await dependencies.clientService.get()
+    let client = try await dependencies.clientService.get()
+    self.client = client
+    return client
   }
 
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
-    try await dependencies.environmentService.get()
+    let environment = try await dependencies.environmentService.get()
+    self.environment = environment
+    return environment
   }
 
   private static let startupRefreshRetryPolicy = RetryPolicy(
@@ -364,6 +352,10 @@ extension Clerk: LifecycleEventHandling {
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
+
+      // Force an immediate token evaluation after foreground client refresh
+      // rather than waiting for the next polling interval.
+      await sessionPollingManager?.refreshNowIfNeeded()
     }
 
     taskCoordinator?.task { [weak self] in

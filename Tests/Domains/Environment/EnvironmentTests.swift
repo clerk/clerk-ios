@@ -14,9 +14,10 @@ struct EnvironmentTests {
   @Test
   func refreshEnvironmentUsesEnvironmentServiceGet() async throws {
     let called = LockIsolated(false)
+    let expectedEnvironment = Clerk.Environment.mock
     let service = MockEnvironmentService(get: {
       called.setValue(true)
-      return .mock
+      return expectedEnvironment
     })
 
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -27,5 +28,6 @@ struct EnvironmentTests {
     _ = try await Clerk.shared.refreshEnvironment()
 
     #expect(called.value == true)
+    #expect(Clerk.shared.environment == expectedEnvironment)
   }
 }

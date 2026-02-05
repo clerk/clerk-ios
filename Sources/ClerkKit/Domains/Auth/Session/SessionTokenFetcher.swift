@@ -58,6 +58,7 @@ actor SessionTokenFetcher {
 
     if let token {
       await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
+      Clerk.shared.auth.send(.tokenRefreshed(token: token.jwt))
     }
 
     return token

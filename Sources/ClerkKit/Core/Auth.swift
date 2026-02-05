@@ -65,11 +65,6 @@ public struct Auth {
     Clerk.shared.client?.sessions ?? []
   }
 
-  /// The active sessions on the current client.
-  public var activeSessions: [Session] {
-    Clerk.shared.client?.activeSessions ?? []
-  }
-
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.
@@ -472,7 +467,8 @@ public struct Auth {
 
   /// An `AsyncStream` of authentication events.
   ///
-  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion, sign-out, and session changes.
+  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion,
+  /// sign-out, session changes, and token refreshes.
   ///
   /// ### Example:
   /// ```swift
@@ -487,6 +483,8 @@ public struct Auth {
   ///             print("Signed out: \(session)")
   ///         case .sessionChanged(let session):
   ///             print("Session changed: \(session?.id ?? "nil")")
+  ///         case .tokenRefreshed(let token):
+  ///             print("Token refreshed: \(token)")
   ///         }
   ///     }
   /// }

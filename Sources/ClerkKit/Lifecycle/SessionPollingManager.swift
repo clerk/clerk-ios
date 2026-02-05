@@ -9,10 +9,10 @@ import Foundation
 
 /// Protocol defining an interface for providing the current session.
 ///
-/// Implementations of this protocol can provide the current active session
+/// Implementations of this protocol can provide the current session
 /// for token refresh operations.
 protocol SessionProviding: Sendable {
-  /// Returns the current active session, if available.
+  /// Returns the current session, if available.
   @MainActor var session: Session? { get }
 }
 
@@ -34,8 +34,14 @@ final class SessionPollingManager {
   /// Task that performs the periodic token polling.
   private var pollingTask: Task<Void, Error>?
 
+  /// Task that listens for auth events.
+  private var authEventTask: Task<Void, Never>?
+
   /// The provider that supplies the current session for token retrieval.
   private let sessionProvider: any SessionProviding
+
+  /// Provider for auth event streams used to reset backoff when tokens refresh.
+  private let authEventsProvider: (() -> AsyncStream<AuthEvent>)?
 
   /// The interval between polling attempts.
   private let pollInterval: TimeInterval
@@ -48,21 +54,29 @@ final class SessionPollingManager {
 
   /// The number of consecutive failures for backoff calculation.
   private(set) var consecutiveFailures: Int = 0
+  private var lastObservedSessionId: String?
+  private var lastObservedSessionStatus: Session.SessionStatus?
+  private var isPollingActive: Bool {
+    pollingTask != nil && pollingTask?.isCancelled == false
+  }
 
   /// Creates a new session polling manager.
   ///
   /// - Parameters:
-  ///   - sessionProvider: The object that provides the current active session.
+  ///   - sessionProvider: The object that provides the current session.
+  ///   - authEventsProvider: Provides a stream of auth events to observe for token refreshes.
   ///   - pollInterval: The interval between polling attempts. Defaults to 5 seconds.
   ///   - pollTolerance: The tolerance for the polling interval. Defaults to 0.1 seconds.
   ///   - maxPollInterval: The maximum interval when backing off due to failures. Defaults to 60 seconds.
   init(
     sessionProvider: any SessionProviding,
+    authEventsProvider: (() -> AsyncStream<AuthEvent>)? = nil,
     pollInterval: TimeInterval = defaultPollInterval,
     pollTolerance: TimeInterval = defaultPollTolerance,
     maxPollInterval: TimeInterval = defaultMaxPollInterval
   ) {
     self.sessionProvider = sessionProvider
+    self.authEventsProvider = authEventsProvider
     self.pollInterval = pollInterval
     self.pollTolerance = pollTolerance
     self.maxPollInterval = maxPollInterval
@@ -76,6 +90,8 @@ final class SessionPollingManager {
     guard pollingTask == nil || pollingTask?.isCancelled == true else {
       return
     }
+
+    startObservingAuthEvents()
 
     let tolerance = pollTolerance
 
@@ -93,6 +109,8 @@ final class SessionPollingManager {
   func stopPolling() {
     pollingTask?.cancel()
     pollingTask = nil
+    authEventTask?.cancel()
+    authEventTask = nil
   }
 
   /// Calculates the backoff interval based on consecutive failures.
@@ -146,12 +164,44 @@ final class SessionPollingManager {
     return calculateBackoffInterval()
   }
 
-  /// Refreshes the token for the current session if one exists.
+  func handleAuthEvent(_ event: AuthEvent) {
+    switch event {
+    case .tokenRefreshed:
+      // Clear backoff after any successful token refresh.
+      consecutiveFailures = 0
+    case .sessionChanged(let session):
+      handleSessionChange(session)
+    default:
+      // No polling changes for other auth events.
+      break
+    }
+  }
+
+  private func startObservingAuthEvents() {
+    guard authEventTask == nil || authEventTask?.isCancelled == true else {
+      return
+    }
+    guard let authEventsProvider else {
+      return
+    }
+
+    authEventTask = Task { @MainActor [weak self] in
+      for await event in authEventsProvider() {
+        self?.handleAuthEvent(event)
+      }
+    }
+  }
+
+  /// Refreshes the token for the current session when it is active.
   ///
-  /// - Returns: `true` if the refresh succeeded or no session exists, `false` if it failed.
+  /// - Returns: `true` if the refresh succeeded or no active session exists, `false` if it failed.
   private func refreshTokenIfNeeded() async -> Bool {
     guard let session = sessionProvider.session else {
       return true // No session = not a failure
+    }
+
+    guard shouldRefresh(session: session) else {
+      return true
     }
 
     do {
@@ -160,6 +210,60 @@ final class SessionPollingManager {
     } catch {
       return false
     }
+  }
+
+  func shouldRefresh(session: Session?) -> Bool {
+    guard let session else {
+      return false
+    }
+    return session.status == .active
+  }
+
+  /// Immediately evaluates the current session and refreshes its token when needed.
+  ///
+  /// This is used for deterministic refresh points (for example, after foreground client refresh).
+  func refreshNowIfNeeded() async {
+    let success = await refreshTokenIfNeeded()
+    updateBackoffState(success: success)
+  }
+
+  private func handleSessionChange(_ session: Session?) {
+    guard shouldTriggerRefreshOnSessionChange(newSession: session) else {
+      return
+    }
+
+    if isPollingActive {
+      consecutiveFailures = 0
+      Task { [weak self] in
+        _ = await self?.refreshTokenIfNeeded()
+      }
+    }
+  }
+
+  private func shouldTriggerRefreshOnSessionChange(newSession: Session?) -> Bool {
+    let previousId = lastObservedSessionId
+    let previousStatus = lastObservedSessionStatus
+    let newId = newSession?.id
+    let newStatus = newSession?.status
+
+    defer {
+      updateLastObservedSession(newSession)
+    }
+
+    guard let newStatus else {
+      return false
+    }
+
+    if previousId != newId {
+      return newStatus == .active
+    }
+
+    return previousStatus != .active && newStatus == .active
+  }
+
+  private func updateLastObservedSession(_ session: Session?) {
+    lastObservedSessionId = session?.id
+    lastObservedSessionStatus = session?.status
   }
 
   /// Cancels polling and cleans up resources if the manager is released unexpectedly.

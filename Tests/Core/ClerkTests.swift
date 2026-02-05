@@ -225,30 +225,4 @@ struct ClerkTests {
 
     #expect(Clerk.shared.user?.id == User.mock.id)
   }
-
-  @Test
-  func activeSessionIsNilForPendingSession() {
-    let pendingSession = createSession(id: "session1", status: .pending)
-    Clerk.shared.client = Client(
-      id: "client1",
-      sessions: [pendingSession],
-      lastActiveSessionId: "session1",
-      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
-    )
-
-    #expect(Clerk.shared.activeSession == nil)
-  }
-
-  @Test
-  func activeUserMatchesActiveSessionUser() {
-    let activeSession = createSession(id: "session1", status: .active, user: .mock)
-    Clerk.shared.client = Client(
-      id: "client1",
-      sessions: [activeSession],
-      lastActiveSessionId: "session1",
-      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
-    )
-
-    #expect(Clerk.shared.activeUser?.id == User.mock.id)
-  }
 }

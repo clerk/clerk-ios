@@ -58,34 +58,24 @@ public struct UserButton<SignedOutContent: View>: View {
   @Environment(\.clerkTheme) private var theme
 
   @State private var userProfileIsPresented: Bool = false
-  private let treatPendingAsSignedOut: Bool
   private let signedOutContent: () -> SignedOutContent
-
-  private var user: User? {
-    clerk.resolvedUser(treatPendingAsSignedOut: treatPendingAsSignedOut)
-  }
 
   /// Creates a new user button.
   ///
   /// The button will automatically display the current user's profile image
   /// and handle presenting the user profile sheet when tapped.
-  public init(
-    treatPendingAsSignedOut: Bool = true,
-    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
-  ) {
-    self.treatPendingAsSignedOut = treatPendingAsSignedOut
+  public init(@ViewBuilder signedOutContent: @escaping () -> SignedOutContent) {
     self.signedOutContent = signedOutContent
   }
 
   /// Creates a new user button with no signed-out content.
-  public init(treatPendingAsSignedOut: Bool = true) where SignedOutContent == EmptyView {
-    self.treatPendingAsSignedOut = treatPendingAsSignedOut
+  public init() where SignedOutContent == EmptyView {
     signedOutContent = { EmptyView() }
   }
 
   public var body: some View {
     ZStack {
-      if let user {
+      if let user = clerk.user {
         Button {
           userProfileIsPresented = true
         } label: {
@@ -111,10 +101,10 @@ public struct UserButton<SignedOutContent: View>: View {
       }
     }
     .sheet(isPresented: $userProfileIsPresented) {
-      UserProfileView(treatPendingAsSignedOut: treatPendingAsSignedOut)
+      UserProfileView()
         .presentationDragIndicator(.visible)
     }
-    .onChange(of: user) { _, newValue in
+    .onChange(of: clerk.user) { _, newValue in
       if newValue == nil {
         userProfileIsPresented = false
       }

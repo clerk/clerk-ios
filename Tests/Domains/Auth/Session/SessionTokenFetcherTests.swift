@@ -46,4 +46,33 @@ struct SessionTokenFetcherTests {
     #expect(values.sessionId == session.id)
     #expect(values.template == scenario.template)
   }
+
+  @Test
+  func fetchTokenEmitsTokenRefreshedEvent() async throws {
+    let session = Session.mock
+    let tokenResource = TokenResource(jwt: "jwt_123")
+    let service = MockSessionService(fetchToken: { _, _ in
+      tokenResource
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    var events = Clerk.shared.auth.events.makeAsyncIterator()
+
+    _ = try await SessionTokenFetcher.shared.fetchToken(
+      session,
+      options: .init(skipCache: true)
+    )
+
+    let event = try #require(await events.next())
+    switch event {
+    case .tokenRefreshed(let token):
+      #expect(token == tokenResource.jwt)
+    default:
+      #expect(Bool(false))
+    }
+  }
 }

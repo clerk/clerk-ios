@@ -15,7 +15,7 @@ struct ContentView: View {
 
   var body: some View {
     ZStack {
-      if clerk.activeUser != nil {
+      if clerk.user != nil {
         HomeView()
       } else {
         WelcomeView(showLoginSheet: $showLoginSheet)
