@@ -19,7 +19,7 @@ struct UserButtonPopover: View {
   @State private var error: Error?
 
   var sessions: [Session] {
-    clerk.auth.activeSessions
+    clerk.auth.sessions
   }
 
   var body: some View {

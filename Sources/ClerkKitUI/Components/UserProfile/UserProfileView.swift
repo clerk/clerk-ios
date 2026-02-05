@@ -193,8 +193,7 @@ extension UserProfileView {
   private var accountSection: some View {
     VStack(spacing: 0) {
       if clerk.environment?.mutliSessionModeIsEnabled == true {
-        let activeSessions = clerk.auth.activeSessions
-        if activeSessions.count > 1 {
+        if clerk.auth.sessions.count > 1 {
           row(icon: "icon-switch", text: "Switch account") {
             navigation.accountSwitcherIsPresented = true
           }
