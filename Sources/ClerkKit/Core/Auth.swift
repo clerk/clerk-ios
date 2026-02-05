@@ -472,7 +472,8 @@ public struct Auth {
 
   /// An `AsyncStream` of authentication events.
   ///
-  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion, sign-out, and session changes.
+  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion,
+  /// sign-out, session changes, and token refreshes.
   ///
   /// ### Example:
   /// ```swift
@@ -487,6 +488,8 @@ public struct Auth {
   ///             print("Signed out: \(session)")
   ///         case .sessionChanged(let session):
   ///             print("Session changed: \(session?.id ?? "nil")")
+  ///         case .tokenRefreshed(let token):
+  ///             print("Token refreshed: \(token)")
   ///         }
   ///     }
   /// }

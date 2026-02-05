@@ -26,4 +26,6 @@ public enum AuthEvent: Sendable {
   /// - When the current session changes (session → different session)
   /// - When the same session is updated (e.g., status, updatedAt changed)
   case sessionChanged(session: Session?)
+  /// A session token was refreshed.
+  case tokenRefreshed(token: String)
 }

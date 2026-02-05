@@ -110,6 +110,142 @@ struct SessionPollingManagerTests {
     let session = createSession(id: "session1", status: .active)
     #expect(manager.shouldRefresh(session: session) == true)
   }
+
+  @Test
+  func tokenRefreshedResetsBackoff() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    manager.handleAuthEvent(.tokenRefreshed(token: "token"))
+    #expect(manager.consecutiveFailures == 0)
+  }
+
+  @Test
+  func sessionChangedActiveResetsBackoff() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    manager.startPolling()
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    let session = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(session: session))
+    #expect(manager.consecutiveFailures == 0)
+
+    manager.stopPolling()
+  }
+
+  @Test
+  func sessionChangedSameActiveDoesNotResetBackoff() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    let session = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(session: session))
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    manager.handleAuthEvent(.sessionChanged(session: session))
+    #expect(manager.consecutiveFailures == 2)
+  }
+
+  @Test
+  func sessionChangedPendingToActiveResetsBackoff() {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    manager.startPolling()
+
+    let pendingSession = createSession(id: "session1", status: .pending)
+    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    #expect(manager.consecutiveFailures == 0)
+
+    manager.stopPolling()
+  }
+
+  @Test
+  func startPollingDoesNotOverrideObservedSessionState() {
+    let provider = MockSessionProvider()
+    provider.sessionToReturn = createSession(id: "session1", status: .pending)
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    let pendingSession = createSession(id: "session1", status: .pending)
+    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    manager.startPolling()
+
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    #expect(manager.consecutiveFailures == 0)
+
+    manager.stopPolling()
+  }
+
+  @Test
+  func sessionChangedWhenStoppedRefreshesOnStart() async {
+    let provider = MockSessionProvider()
+    provider.sessionToReturn = createSession(id: "session1", status: .pending)
+    let manager = SessionPollingManager(
+      sessionProvider: provider,
+      pollInterval: 60
+    )
+
+    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .pending)))
+    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .active)))
+
+    manager.startPolling()
+    await Task.yield()
+
+    #expect(manager.consecutiveFailures == 0)
+
+    manager.stopPolling()
+  }
+
+  @Test
+  func restartPollingReceivesAuthEvents() async {
+    let provider = MockSessionProvider()
+    let emitter = EventEmitter<AuthEvent>()
+    let manager = SessionPollingManager(
+      sessionProvider: provider,
+      authEventsProvider: { emitter.events }
+    )
+
+    manager.startPolling()
+    manager.stopPolling()
+    manager.startPolling()
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    let activeSession = createSession(id: "session1", status: .active)
+    emitter.send(.sessionChanged(session: activeSession))
+    await Task.yield()
+
+    #expect(manager.consecutiveFailures == 0)
+
+    manager.stopPolling()
+  }
 }
 
 // MARK: - Backoff Tests

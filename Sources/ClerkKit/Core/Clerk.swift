@@ -205,7 +205,12 @@ extension Clerk {
     )
 
     // Set up session polling and lifecycle management
-    sessionPollingManager = SessionPollingManager(sessionProvider: self)
+    sessionPollingManager = SessionPollingManager(
+      sessionProvider: self,
+      authEventsProvider: { [weak self] in
+        self?.auth.events ?? AsyncStream { $0.finish() }
+      }
+    )
     lifecycleManager = LifecycleManager(handler: self)
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()

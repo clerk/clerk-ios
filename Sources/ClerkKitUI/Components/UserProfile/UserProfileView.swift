@@ -256,7 +256,7 @@ extension UserProfileView {
   }
 
   func getSessionsOnAllDevices() async {
-    guard let user else { return }
+    guard let user = clerk.user else { return }
     do {
       try await user.getSessions()
     } catch {
