@@ -18,6 +18,13 @@ struct SignInTests {
     )
   }
 
+  private func configureServices(signUpService: MockSignUpService) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      signUpService: signUpService
+    )
+  }
+
   @Test
   func sendEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
     let signIn = SignIn.mock
@@ -225,6 +232,57 @@ struct SignInTests {
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
     #expect(params.1.strategy == .resetPasswordEmailCode)
+  }
+
+  @Test
+  func handleTransferFlowCreatesSignUpWhenTransferable() async throws {
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(status: .transferable)
+
+    let captured = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      captured.setValue(params)
+      return .mock
+    })
+
+    configureServices(signUpService: signUpService)
+
+    let result = try await signIn.handleTransferFlow(transferable: true)
+
+    switch result {
+    case .signUp:
+      break
+    case .signIn:
+      #expect(Bool(false))
+    }
+
+    let params = try #require(captured.value)
+    #expect(params.transfer == true)
+  }
+
+  @Test
+  func handleTransferFlowSkipsSignUpWhenNotTransferable() async throws {
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(status: .transferable)
+
+    let captured = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      captured.setValue(params)
+      return .mock
+    })
+
+    configureServices(signUpService: signUpService)
+
+    let result = try await signIn.handleTransferFlow(transferable: false)
+
+    switch result {
+    case .signIn:
+      break
+    case .signUp:
+      #expect(Bool(false))
+    }
+
+    #expect(captured.value == nil)
   }
 
   @Test

@@ -98,7 +98,7 @@ public struct AuthView: View {
   ///
   /// - Parameters:
   ///   - mode: The authentication mode that determines available flows.
-  ///     Defaults to `.signInOrUp` which allows both sign-in and sign-up.
+  ///     Defaults to `.signInOrUp()` which allows both sign-in and sign-up.
   ///   - isDismissable: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss

@@ -93,7 +93,7 @@ struct SignInFactorAlternativeMethodsView: View {
         VStack(spacing: 16) {
           SocialButtonLayout {
             ForEach(socialProviders) { provider in
-              SocialButton(provider: provider) {
+              SocialButton(provider: provider, transferable: authState.transferable) {
                 await signInWithProvider(provider)
               }
               .simultaneousGesture(TapGesture())
@@ -159,9 +159,9 @@ extension SignInFactorAlternativeMethodsView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple()
+          try await signIn.authenticateWithApple(transferable: authState.transferable)
         } else {
-          try await signIn.authenticateWithOAuth(provider: provider)
+          try await signIn.authenticateWithOAuth(provider: provider, transferable: authState.transferable)
         }
 
       switch result {

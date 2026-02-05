@@ -284,7 +284,7 @@ extension AuthStartView {
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
       if let lastUsedProvider = lastUsedAuth?.socialProvider {
-        SocialButton(provider: lastUsedProvider) { result in
+        SocialButton(provider: lastUsedProvider, transferable: authState.transferable) { result in
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
@@ -296,7 +296,7 @@ extension AuthStartView {
       if !socialProvidersMinusLastUsed.isEmpty {
         SocialButtonLayout {
           ForEach(socialProvidersMinusLastUsed) { provider in
-            SocialButton(provider: provider) { result in
+            SocialButton(provider: provider, transferable: authState.transferable) { result in
               handleTransferFlowResult(result)
             } onError: { error in
               generalError = error
@@ -336,7 +336,7 @@ extension AuthStartView {
       let signIn = try await clerk.auth.signIn(identifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO()
+        let result = try await signIn.authenticateWithEnterpriseSSO(transferable: authState.transferable)
         handleTransferFlowResult(result)
         return
       }

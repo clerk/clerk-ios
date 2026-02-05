@@ -17,6 +17,7 @@ struct SocialButton: View {
   @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
+  let transferable: Bool
   var action: (() async -> Void)?
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
@@ -39,25 +40,31 @@ struct SocialButton: View {
   }
 
   init(
-    provider: OAuthProvider
+    provider: OAuthProvider,
+    transferable: Bool = true
   ) {
     self.provider = provider
+    self.transferable = transferable
   }
 
   init(
     provider: OAuthProvider,
+    transferable: Bool = true,
     action: (() async -> Void)? = nil
   ) {
     self.provider = provider
+    self.transferable = transferable
     self.action = action
   }
 
   init(
     provider: OAuthProvider,
+    transferable: Bool = true,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
     onError: ((Error) -> Void)? = nil
   ) {
     self.provider = provider
+    self.transferable = transferable
     self.onSuccess = onSuccess
     self.onError = onError
   }
@@ -98,9 +105,9 @@ struct SocialButton: View {
 extension SocialButton {
   func defaultAction() async throws {
     let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple()
+      try await clerk.auth.signInWithApple(transferable: transferable)
     } else {
-      try await clerk.auth.signInWithOAuth(provider: provider)
+      try await clerk.auth.signInWithOAuth(provider: provider, transferable: transferable)
     }
     onSuccess?(result)
   }

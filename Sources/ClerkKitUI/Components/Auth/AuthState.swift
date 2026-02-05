@@ -24,6 +24,16 @@ final class AuthState {
     self.mode = mode
   }
 
+  /// Whether this UI flow should allow transfer from sign-in to sign-up.
+  var transferable: Bool {
+    switch mode {
+    case .signIn:
+      false
+    case .signUp, .signInOrUp:
+      true
+    }
+  }
+
   // Auth Start Fields
   var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
     didSet {

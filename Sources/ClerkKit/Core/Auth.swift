@@ -126,15 +126,25 @@ public struct Auth {
   /// - Parameters:
   ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signInWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
-    try await signUpWithOAuth(
+  public func signInWithOAuth(
+    provider: OAuthProvider,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true
+  ) async throws -> TransferFlowResult {
+    let signIn = try await signInService.create(params: .init(
+      strategy: .oauth(provider),
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
+    return try await signIn.authenticateWithOAuth(
       provider: provider,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
     )
   }
   #endif
@@ -144,13 +154,19 @@ public struct Auth {
   /// - Parameters:
   ///   - idToken: The ID token from the provider.
   ///   - provider: The ID token provider (e.g., `.apple`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> TransferFlowResult {
+  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, transferable: Bool = true) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
-    return try await signIn.handleTransferFlow()
+    let result = try await signIn.handleTransferFlow(transferable: transferable)
+    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+      throw error
+    }
+    return result
   }
   #endif
 
@@ -164,22 +180,36 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
-  public func signInWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+  public func signInWithApple(
+    requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
+    transferable: Bool = true
+  ) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
       throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
     }
 
-    return try await signUpWithIdToken(
-      idToken,
-      provider: .apple,
-      firstName: credential.fullName?.givenName,
-      lastName: credential.fullName?.familyName
-    )
+    if transferable {
+      return try await signUpWithIdToken(
+        idToken,
+        provider: .apple,
+        firstName: credential.fullName?.givenName,
+        lastName: credential.fullName?.familyName
+      )
+    } else {
+      let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
+      let result = try await signIn.handleTransferFlow(transferable: transferable)
+      if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+        throw error
+      }
+      return result
+    }
   }
   #endif
 
@@ -199,15 +229,25 @@ public struct Auth {
   /// - Parameters:
   ///   - emailAddress: The user's enterprise email address.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signInWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
-    // Use the sign-up endpoint to preserve profile details (e.g., names) when available.
-    try await signUpWithEnterpriseSSO(
-      emailAddress: emailAddress,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+  public func signInWithEnterpriseSSO(
+    emailAddress: String,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true
+  ) async throws -> TransferFlowResult {
+    let signIn = try await signInService.create(params: .init(
+      identifier: emailAddress,
+      strategy: .enterpriseSSO,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
+    return try await signIn.authenticateWithEnterpriseSSO(
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
     )
   }
   #endif

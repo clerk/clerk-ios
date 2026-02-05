@@ -90,7 +90,7 @@ struct SignInFactorOneForgotPasswordView: View {
 
           SocialButtonLayout {
             ForEach(socialProviders) { provider in
-              SocialButton(provider: provider) {
+              SocialButton(provider: provider, transferable: authState.transferable) {
                 await signInWithProvider(provider)
               }
               .simultaneousGesture(TapGesture())
@@ -157,9 +157,9 @@ extension SignInFactorOneForgotPasswordView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple()
+          try await signIn.authenticateWithApple(transferable: authState.transferable)
         } else {
-          try await signIn.authenticateWithOAuth(provider: provider)
+          try await signIn.authenticateWithOAuth(provider: provider, transferable: authState.transferable)
         }
 
       switch result {
