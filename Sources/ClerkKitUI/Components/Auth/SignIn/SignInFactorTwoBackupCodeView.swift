@@ -2,8 +2,6 @@
 //  SignInFactorTwoBackupCodeView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/14/25.
-//
 
 #if os(iOS)
 

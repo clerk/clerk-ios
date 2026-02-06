@@ -2,8 +2,6 @@
 //  DisplayConfig.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 8/2/24.
-//
 
 import Foundation
 

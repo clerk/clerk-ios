@@ -2,8 +2,6 @@
 //  ClientResponse.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/23/25.
-//
 
 import Foundation
 

@@ -1,9 +1,6 @@
 //
 //  WebAuthentication.swift
 //
-//
-//  Created by Mike Pitre on 10/19/23.
-//
 
 import AuthenticationServices
 

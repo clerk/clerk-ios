@@ -2,8 +2,6 @@
 //  UserProfileView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/8/25.
-//
 
 #if os(iOS)
 

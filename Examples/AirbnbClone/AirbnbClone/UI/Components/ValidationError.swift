@@ -2,8 +2,6 @@
 //  ValidationError.swift
 //  AirbnbClone
 //
-//  Created by Mike Pitre on 12/16/25.
-//
 
 import SwiftUI
 

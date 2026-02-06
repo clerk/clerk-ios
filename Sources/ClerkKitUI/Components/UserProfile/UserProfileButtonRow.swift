@@ -2,8 +2,6 @@
 //  UserProfileButtonRow.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/12/25.
-//
 
 #if os(iOS)
 

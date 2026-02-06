@@ -2,8 +2,6 @@
 //  EmailAddressPrepareVerificationParams.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/24/25.
-//
 
 extension EmailAddress {
   /// Represents the strategy for preparing the verification process for an email address.

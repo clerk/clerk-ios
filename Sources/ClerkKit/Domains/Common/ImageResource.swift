@@ -1,9 +1,6 @@
 //
 //  ImageResource.swift
 //
-//
-//  Created by Mike Pitre on 11/28/23.
-//
 
 import Foundation
 

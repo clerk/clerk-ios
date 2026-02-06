@@ -2,8 +2,6 @@
 //  EmailAddressAttemptVerificationParams.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/24/25.
-//
 
 import SwiftUI
 

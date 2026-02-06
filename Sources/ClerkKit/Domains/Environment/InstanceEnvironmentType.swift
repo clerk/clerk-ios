@@ -2,8 +2,6 @@
 //  InstanceEnvironmentType.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/27/25.
-//
 
 /// An enumeration representing the type of environment for an instance.
 ///

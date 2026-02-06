@@ -2,8 +2,6 @@
 //  SignIn+Status.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/21/25.
-//
 
 extension SignIn {
   /// Represents the current status of the sign-in process.

@@ -1,9 +1,6 @@
 //
 //  Verification.swift
 //
-//
-//  Created by Mike Pitre on 10/26/23.
-//
 
 import Foundation
 

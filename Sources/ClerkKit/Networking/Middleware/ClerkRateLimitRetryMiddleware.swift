@@ -2,8 +2,6 @@
 //  ClerkRateLimitRetryMiddleware.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 10/23/25.
-//
 
 import Foundation
 

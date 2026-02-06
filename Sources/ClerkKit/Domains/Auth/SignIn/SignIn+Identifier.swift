@@ -2,8 +2,6 @@
 //  SignIn+Identifier.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/21/25.
-//
 
 extension SignIn {
   /// Represents the authentication identifiers supported for signing in.

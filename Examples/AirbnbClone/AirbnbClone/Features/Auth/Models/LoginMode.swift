@@ -2,8 +2,6 @@
 //  LoginMode.swift
 //  AirbnbClone
 //
-//  Created by Mike Pitre on 12/16/25.
-//
 
 /// The login modes supported by this app.
 enum LoginMode: Hashable {

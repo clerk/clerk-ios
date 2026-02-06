@@ -2,8 +2,6 @@
 //  UserProfileMfaAddTotpView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/12/25.
-//
 
 #if os(iOS)
 

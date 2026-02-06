@@ -2,8 +2,6 @@
 //  DeviceHelper.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/8/25.
-//
 
 import Foundation
 

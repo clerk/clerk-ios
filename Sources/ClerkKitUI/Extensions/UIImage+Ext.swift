@@ -2,8 +2,6 @@
 //  UIImage+Ext.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/15/25.
-//
 
 #if os(iOS)
 

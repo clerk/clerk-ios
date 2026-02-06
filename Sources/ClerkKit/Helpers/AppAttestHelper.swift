@@ -2,8 +2,6 @@
 //  AppAttestHelper.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/29/25.
-//
 
 import CryptoKit
 import DeviceCheck

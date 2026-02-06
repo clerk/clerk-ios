@@ -2,8 +2,6 @@
 //  SignIn+UserData.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/21/25.
-//
 
 extension SignIn {
   /// An object containing information about the user of the current sign-in. This property is populated only once an identifier is given to the SignIn object.

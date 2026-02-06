@@ -2,8 +2,6 @@
 //  ClerkOptions.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/30/25.
-//
 
 import Foundation
 

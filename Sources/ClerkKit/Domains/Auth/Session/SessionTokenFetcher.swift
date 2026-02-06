@@ -2,8 +2,6 @@
 //  SessionTokenFetcher.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/19/25.
-//
 
 import Foundation
 

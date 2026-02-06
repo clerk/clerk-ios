@@ -2,8 +2,6 @@
 //  View+DismissKeyboard.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/28/25.
-//
 
 #if os(iOS)
 import SwiftUI

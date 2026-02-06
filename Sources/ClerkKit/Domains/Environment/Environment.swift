@@ -1,9 +1,6 @@
 //
 //  Environment.swift
 //
-//
-//  Created by Mike Pitre on 10/5/23.
-//
 
 import Foundation
 

@@ -2,8 +2,6 @@
 //  Organization.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/6/25.
-//
 
 import Foundation
 

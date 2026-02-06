@@ -1,9 +1,6 @@
 //
 //  SignInWithAppleHelper.swift
 //
-//
-//  Created by Mike Pitre on 5/28/24.
-//
 
 #if canImport(AuthenticationServices) && !os(watchOS)
 

@@ -2,8 +2,6 @@
 //  ClerkLogger.swift
 //  Clerk
 //
-//  Created by Assistant on 1/21/25.
-//
 
 import Foundation
 import os.log

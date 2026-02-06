@@ -1,9 +1,6 @@
 //
 //  Factor.swift
 //
-//
-//  Created by Mike Pitre on 2/9/24.
-//
 
 import Foundation
 

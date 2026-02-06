@@ -2,8 +2,6 @@
 //  TelemetryCollector.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 8/8/25.
-//
 
 import Foundation
 

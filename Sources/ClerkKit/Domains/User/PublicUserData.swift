@@ -2,8 +2,6 @@
 //  PublicUserData.swift
 //  ClerkDemo
 //
-//  Created by Mike Pitre on 2/12/25.
-//
 
 import Foundation
 

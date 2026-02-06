@@ -2,8 +2,6 @@
 //  SignInFactorCodeView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/21/25.
-//
 
 #if os(iOS)
 

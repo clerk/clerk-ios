@@ -2,8 +2,6 @@
 //  LegalAcceptanceView.swift
 //  CustomFlows
 //
-//  Created by Mike Pitre on 12/15/25.
-//
 
 import ClerkKit
 import SwiftUI

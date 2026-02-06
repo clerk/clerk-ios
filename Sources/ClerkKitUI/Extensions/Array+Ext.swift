@@ -2,8 +2,6 @@
 //  Array+Ext.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/25/25.
-//
 
 #if os(iOS)
 

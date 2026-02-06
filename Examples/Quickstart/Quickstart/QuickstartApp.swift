@@ -2,8 +2,6 @@
 //  QuickstartApp.swift
 //  Quickstart
 //
-//  Created by Mike Pitre on 7/30/25.
-//
 
 import ClerkKit
 import ClerkKitUI

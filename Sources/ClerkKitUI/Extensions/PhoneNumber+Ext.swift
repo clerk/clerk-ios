@@ -2,8 +2,6 @@
 //  PhoneNumber+Ext.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/29/25.
-//
 
 #if os(iOS)
 

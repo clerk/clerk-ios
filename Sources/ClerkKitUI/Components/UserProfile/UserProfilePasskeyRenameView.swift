@@ -2,8 +2,6 @@
 //  UserProfilePasskeyRenameView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/30/25.
-//
 
 #if os(iOS)
 

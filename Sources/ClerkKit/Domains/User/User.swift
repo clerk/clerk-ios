@@ -1,9 +1,6 @@
 //
 //  User.swift
 //
-//
-//  Created by Mike Pitre on 10/16/23.
-//
 
 import Foundation
 #if canImport(AuthenticationServices)

@@ -2,8 +2,6 @@
 //  ClerkClientSyncResponseMiddleware.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/31/25.
-//
 
 import Foundation
 
