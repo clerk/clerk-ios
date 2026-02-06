@@ -2,8 +2,6 @@
 //  SignInFactorOnePasskeyView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/22/25.
-//
 
 #if os(iOS)
 

@@ -1,9 +1,6 @@
 //
 //  String+JSON.swift
 //
-//
-//  Created by Mike Pitre on 10/23/23.
-//
 
 import Foundation
 

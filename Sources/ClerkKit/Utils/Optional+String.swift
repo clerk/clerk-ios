@@ -2,8 +2,6 @@
 //  Optional+String.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/17/24.
-//
 
 import Foundation
 

@@ -2,8 +2,6 @@
 //  UserProfileDeleteAccountConfirmationView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/2/25.
-//
 
 #if os(iOS)
 

@@ -2,8 +2,6 @@
 //  UserButtonAccountSwitcher.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/6/25.
-//
 
 #if os(iOS)
 

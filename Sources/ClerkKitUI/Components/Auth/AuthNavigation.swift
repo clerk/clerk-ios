@@ -2,8 +2,6 @@
 //  AuthNavigation.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/9/26.
-//
 
 #if os(iOS)
 

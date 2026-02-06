@@ -2,8 +2,6 @@
 //  SecuredByClerkView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/15/25.
-//
 
 #if os(iOS)
 

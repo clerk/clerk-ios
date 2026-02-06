@@ -2,8 +2,6 @@
 //  BackupCodeResource.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/12/25.
-//
 
 import Foundation
 

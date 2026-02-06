@@ -1,9 +1,6 @@
 //
 //  TOTPResource.swift
 //
-//
-//  Created by Mike Pitre on 2/13/24.
-//
 
 import Foundation
 

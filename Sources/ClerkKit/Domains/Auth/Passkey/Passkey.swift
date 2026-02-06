@@ -2,8 +2,6 @@
 //  Passkey.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 9/6/24.
-//
 
 import Foundation
 

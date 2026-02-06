@@ -2,8 +2,6 @@
 //  Dependencies.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2025-01-27.
-//
 
 import Foundation
 

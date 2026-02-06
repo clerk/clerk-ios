@@ -2,8 +2,6 @@
 //  UserProfileMfaAddSmsView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/4/25.
-//
 
 #if os(iOS)
 

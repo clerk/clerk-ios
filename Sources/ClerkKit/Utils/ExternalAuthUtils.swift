@@ -1,9 +1,6 @@
 //
 //  ExternalAuthUtils.swift
 //
-//
-//  Created by Mike Pitre on 7/2/24.
-//
 
 import AuthenticationServices
 import Foundation

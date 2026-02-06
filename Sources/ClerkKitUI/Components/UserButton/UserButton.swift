@@ -2,8 +2,6 @@
 //  UserButton.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/1/25.
-//
 
 #if os(iOS)
 

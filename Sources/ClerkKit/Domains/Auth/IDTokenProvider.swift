@@ -1,9 +1,6 @@
 //
 //  IDTokenProvider.swift
 //
-//
-//  Created by Mike Pitre on 9/16/24.
-//
 
 import Foundation
 

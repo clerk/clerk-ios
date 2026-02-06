@@ -2,8 +2,6 @@
 //  BackupCodesView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/6/25.
-//
 
 #if os(iOS)
 

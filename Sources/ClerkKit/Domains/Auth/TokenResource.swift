@@ -1,9 +1,6 @@
 //
 //  TokenResource.swift
 //
-//
-//  Created by Mike Pitre on 12/13/23.
-//
 
 import Foundation
 

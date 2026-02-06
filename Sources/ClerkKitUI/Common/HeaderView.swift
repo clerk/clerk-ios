@@ -2,8 +2,6 @@
 //  HeaderView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/18/25.
-//
 
 #if os(iOS)
 

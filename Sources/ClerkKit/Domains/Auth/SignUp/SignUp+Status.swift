@@ -2,8 +2,6 @@
 //  SignUp+Status.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/22/25.
-//
 
 extension SignUp {
   /// Represents the current status of the sign-up process.

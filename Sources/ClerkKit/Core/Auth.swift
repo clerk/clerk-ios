@@ -2,8 +2,6 @@
 //  Auth.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/30/25.
-//
 
 import AuthenticationServices
 import Foundation

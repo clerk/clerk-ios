@@ -1,9 +1,6 @@
 //
 //  View+ErrorPresenting.swift
 //
-//
-//  Created by Mike Pitre on 05/08/25.
-//
 
 #if os(iOS)
 

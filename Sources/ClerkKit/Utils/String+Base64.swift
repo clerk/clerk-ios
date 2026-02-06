@@ -1,9 +1,6 @@
 //
 //  String+Base64.swift
 //
-//
-//  Created by Mike Pitre on 2/28/24.
-//
 
 import Foundation
 

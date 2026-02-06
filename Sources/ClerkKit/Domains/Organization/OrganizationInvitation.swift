@@ -2,8 +2,6 @@
 //  OrganizationInvitation.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/11/25.
-//
 
 import Foundation
 

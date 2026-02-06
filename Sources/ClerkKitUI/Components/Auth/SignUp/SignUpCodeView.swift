@@ -2,8 +2,6 @@
 //  SignUpCodeView.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/20/25.
-//
 
 #if os(iOS)
 

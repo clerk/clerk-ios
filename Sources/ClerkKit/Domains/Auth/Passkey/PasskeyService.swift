@@ -2,8 +2,6 @@
 //  PasskeyService.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 7/28/25.
-//
 
 import AuthenticationServices
 import Foundation

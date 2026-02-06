@@ -2,8 +2,6 @@
 //  UserProfileDeviceRow.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 5/13/25.
-//
 
 #if os(iOS)
 

@@ -2,8 +2,6 @@
 //  View+PreGlass.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 6/11/25.
-//
 
 #if os(iOS)
 

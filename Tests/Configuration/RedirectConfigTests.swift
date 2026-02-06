@@ -1,9 +1,6 @@
 //
 //  RedirectConfigTests.swift
 //
-//
-//  Created by Assistant on 2025-01-27.
-//
 
 import Foundation
 import Testing

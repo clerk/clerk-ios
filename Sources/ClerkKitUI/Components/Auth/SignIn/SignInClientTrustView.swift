@@ -2,8 +2,6 @@
 //  SignInClientTrustView.swift
 //  Clerk
 //
-//  Created by Tom Milewski on 12/15/25.
-//
 
 #if os(iOS)
 

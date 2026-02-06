@@ -2,8 +2,6 @@
 //  UserUpdateParams.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 1/24/25.
-//
 
 extension User {
   public struct UpdateParams: Encodable, Sendable {

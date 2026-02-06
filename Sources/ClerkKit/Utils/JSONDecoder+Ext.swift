@@ -1,9 +1,6 @@
 //
 //  JSONDecoder+Ext.swift
 //
-//
-//  Created by Mike Pitre on 10/4/23.
-//
 
 import Foundation
 

@@ -2,8 +2,6 @@
 //  SocialButton.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 4/11/25.
-//
 
 #if os(iOS)
 

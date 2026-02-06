@@ -2,8 +2,6 @@
 //  FraudSettings.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 2/3/25.
-//
 
 import Foundation
 

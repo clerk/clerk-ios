@@ -2,8 +2,6 @@
 //  KeyboardDismissal.swift
 //  AirbnbClone
 //
-//  Created by Mike Pitre on 12/15/25.
-//
 
 #if canImport(UIKit)
 import SwiftUI

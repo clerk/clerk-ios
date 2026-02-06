@@ -1,9 +1,6 @@
 //
 //  PasskeyHelper.swift
 //
-//
-//  Created by Mike Pitre on 9/5/24.
-//
 
 #if canImport(AuthenticationServices) && !os(watchOS)
 

@@ -2,8 +2,6 @@
 //  TelemetryEnvironment.swift
 //  Clerk
 //
-//  Created by Mike Pitre on 8/13/25.
-//
 
 import Foundation
 
