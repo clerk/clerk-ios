@@ -16,9 +16,12 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Internal is the default access level; do not specify it redundantly.
 - Prefer access control on functions and properties, not on the extension.
 
+## Documentation edits
+
+- Do not add historical/contextual commentary in docs (for example, notes about why a line used to exist or past setup behavior).
+
 ## Skills usage
 
-- Use the `$swiftui-ui-patterns` skill whenever building, refactoring, or reviewing SwiftUI views, UI components, navigation, or layout patterns.
-- Use the `$swiftui-view-refactor` skill when refactoring SwiftUI views for consistent structure, dependency injection, or Observation usage.
-- Use the `$swift-concurrency` skill whenever touching Swift concurrency, async/await, actors, Sendable, or fixing concurrency warnings/errors.
-- Skills can be installed automatically by running `make install-agent-skills`.
+- Use the `$swiftui-expert-skill` skill by default for SwiftUI feature work, reviews, and modern API adoption.
+- Use the `$swiftui-view-refactor` skill for SwiftUI view structure work, including organizing view layout/sections, dependency injection, Observation usage, and refactors.
+- Use the `$swift-concurrency` skill for general async/await, actor, `Sendable`, and isolation architecture guidance.

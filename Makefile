@@ -1,10 +1,10 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros test test-integration help create-env install-1password-cli fetch-test-keys
 
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make setup         - Install tools/hooks/agent skills and configure Xcode file headers"
+	@echo "  make setup         - Install tools/hooks and configure Xcode file headers"
 	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
@@ -16,10 +16,9 @@ help:
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
-	@echo "  make install-agent-skills - Install agent skills into .codex/skills and .claude/skills"
 
 # Main setup command - installs tools and hooks
-setup: install-tools install-hooks install-agent-skills install-xcode-template-macros
+setup: install-tools install-hooks install-xcode-template-macros
 	@echo "✅ Setup complete!"
 	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
@@ -73,10 +72,6 @@ install-1password-cli:
 # Automatically installs 1Password CLI if not present
 fetch-test-keys: install-1password-cli create-env
 	@./scripts/fetch-1password-secrets.sh
-
-# Install agent skills into .codex/skills and .claude/skills
-install-agent-skills:
-	@./scripts/install-agent-skills.sh
 
 # Format all Swift files
 format:
