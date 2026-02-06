@@ -17,7 +17,8 @@ This command will:
 2. Check if SwiftLint is installed, and install it via Homebrew if needed
 3. Set up the pre-commit hook to automatically format staged Swift files
 4. Install agent skills into `.codex/skills`, `.claude/skills`, and `.cursor/skills`
-5. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
+5. Configure Xcode file header templates for both `Clerk.xcworkspace` and Swift package workspace views
+6. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
 
 After running `make setup`, you're ready to start developing!
 
@@ -62,9 +63,10 @@ After running `make setup`, you're ready to start developing!
 
 ### Available Make Commands
 
-- `make setup` - Install tools, hooks, agent skills, and create `.keys.json`
+- `make setup` - Install tools, hooks, agent skills, and configure Xcode file headers
 - `make install-tools` - Install SwiftFormat and SwiftLint via Homebrew
 - `make install-hooks` - Install the pre-commit hook
+- `make install-xcode-template-macros` - Sync Xcode file header templates for both workspace and package views
 - `make install-agent-skills` - Install agent skills into `.codex/skills`, `.claude/skills`, and `.cursor/skills`
 - `make create-env` - Create the `.keys.json` file if missing
 - `make format` - Format all Swift files using SwiftFormat

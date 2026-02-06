@@ -1,10 +1,10 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros test test-integration help create-env install-1password-cli fetch-test-keys install-agent-skills
 
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make setup         - Install tools/hooks and install agent skills"
+	@echo "  make setup         - Install tools/hooks/agent skills and configure Xcode file headers"
 	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
@@ -15,10 +15,11 @@ help:
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
+	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
 	@echo "  make install-agent-skills - Install agent skills into .codex/skills and .claude/skills"
 
 # Main setup command - installs tools and hooks
-setup: install-tools install-hooks install-agent-skills
+setup: install-tools install-hooks install-agent-skills install-xcode-template-macros
 	@echo "✅ Setup complete!"
 	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
@@ -47,6 +48,16 @@ install-hooks:
 	@cp .githooks/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "✅ Pre-commit hook installed"
+
+# Install Xcode file header macros in both workspace and Swift package workspace
+install-xcode-template-macros:
+	@if [ ! -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
+		echo "❌ Missing Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist"; \
+		exit 1; \
+	fi
+	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
+	@cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist
+	@echo "✅ Xcode file header macros configured"
 
 # Install 1Password CLI via Homebrew (optional, for Clerk employees)
 install-1password-cli:
