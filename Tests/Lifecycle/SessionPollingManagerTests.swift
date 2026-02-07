@@ -133,7 +133,7 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 2)
 
     let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    manager.handleAuthEvent(.sessionChanged(.activated(session: session)))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -144,15 +144,19 @@ struct SessionPollingManagerTests {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
+    manager.startPolling()
+
     let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    manager.handleAuthEvent(.sessionChanged(.activated(session: session)))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    manager.handleAuthEvent(.sessionChanged(.updated(session: session)))
     #expect(manager.consecutiveFailures == 2)
+
+    manager.stopPolling()
   }
 
   @Test
@@ -163,27 +167,23 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let pendingSession = createSession(id: "session1", status: .pending)
-    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
+    manager.handleAuthEvent(.sessionChanged(.pending(session: pendingSession)))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
   }
 
   @Test
-  func startPollingDoesNotOverrideObservedSessionState() {
+  func activatedWhilePollingResetsBackoff() {
     let provider = MockSessionProvider()
-    provider.sessionToReturn = createSession(id: "session1", status: .pending)
     let manager = SessionPollingManager(sessionProvider: provider)
-
-    let pendingSession = createSession(id: "session1", status: .pending)
-    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
@@ -192,7 +192,7 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -203,13 +203,12 @@ struct SessionPollingManagerTests {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
-    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .pending)))
-
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .active)))
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
     #expect(manager.consecutiveFailures == 2)
   }
 
@@ -231,7 +230,7 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    emitter.send(.sessionChanged(session: activeSession))
+    emitter.send(.sessionChanged(.activated(session: activeSession)))
     await Task.yield()
 
     #expect(manager.consecutiveFailures == 0)
