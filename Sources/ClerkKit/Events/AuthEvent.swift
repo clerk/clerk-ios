@@ -18,8 +18,11 @@ public enum AuthEvent: Sendable {
   case signedOut(session: Session)
   /// The current session changed.
   ///
-  /// The associated ``SessionTransition`` describes what kind of change occurred,
-  /// letting consumers pattern-match directly instead of tracking previous state.
+  /// This event is emitted whenever the current session changes, including:
+  /// - When a user signs in (`.activated`)
+  /// - When a user signs out (`.unauthenticated`)
+  /// - When the current session changes to a different session (`.activated` or `.pending`)
+  /// - When the same session is updated, e.g. status or metadata changed (`.updated`)
   case sessionChanged(SessionTransition)
   /// A session token was refreshed.
   case tokenRefreshed(token: String)

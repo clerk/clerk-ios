@@ -5,9 +5,9 @@
 
 /// Describes how the current session changed between two `Client` snapshots.
 ///
-/// The SDK computes this once inside `Clerk.client.didSet` so that every
-/// consumer can pattern-match on the result instead of tracking
-/// `previousSession` state themselves.
+/// The SDK computes the transition once and emits it via
+/// ``AuthEvent/sessionChanged(_:)`` so consumers can pattern-match
+/// directly on the result.
 public enum SessionTransition: Sendable, Equatable {
   /// A session became active (or switched to a different active session).
   /// A valid JWT is now available.
