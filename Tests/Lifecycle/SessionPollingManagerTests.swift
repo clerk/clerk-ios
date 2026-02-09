@@ -132,8 +132,8 @@ struct SessionPollingManagerTests {
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -144,15 +144,20 @@ struct SessionPollingManagerTests {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
+    manager.startPolling()
+
     let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: session))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    manager.handleAuthEvent(.sessionChanged(session: session))
+    // Same active session updated (e.g. metadata change)
+    manager.handleAuthEvent(.sessionChanged(old: session, new: session))
     #expect(manager.consecutiveFailures == 2)
+
+    manager.stopPolling()
   }
 
   @Test
@@ -163,27 +168,23 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let pendingSession = createSession(id: "session1", status: .pending)
-    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: pendingSession))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    manager.handleAuthEvent(.sessionChanged(old: pendingSession, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
   }
 
   @Test
-  func startPollingDoesNotOverrideObservedSessionState() {
+  func activatedWhilePollingResetsBackoff() {
     let provider = MockSessionProvider()
-    provider.sessionToReturn = createSession(id: "session1", status: .pending)
     let manager = SessionPollingManager(sessionProvider: provider)
-
-    let pendingSession = createSession(id: "session1", status: .pending)
-    manager.handleAuthEvent(.sessionChanged(session: pendingSession))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
@@ -192,7 +193,7 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(session: activeSession))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -203,13 +204,12 @@ struct SessionPollingManagerTests {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
-    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .pending)))
-
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    manager.handleAuthEvent(.sessionChanged(session: createSession(id: "session1", status: .active)))
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 2)
   }
 
@@ -231,7 +231,7 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    emitter.send(.sessionChanged(session: activeSession))
+    emitter.send(.sessionChanged(old: nil, new: activeSession))
     await Task.yield()
 
     #expect(manager.consecutiveFailures == 0)

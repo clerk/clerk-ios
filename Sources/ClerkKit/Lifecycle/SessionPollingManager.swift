@@ -54,8 +54,6 @@ final class SessionPollingManager {
 
   /// The number of consecutive failures for backoff calculation.
   private(set) var consecutiveFailures: Int = 0
-  private var lastObservedSessionId: String?
-  private var lastObservedSessionStatus: Session.SessionStatus?
   private var isPollingActive: Bool {
     pollingTask != nil && pollingTask?.isCancelled == false
   }
@@ -169,8 +167,14 @@ final class SessionPollingManager {
     case .tokenRefreshed:
       // Clear backoff after any successful token refresh.
       consecutiveFailures = 0
-    case .sessionChanged(let session):
-      handleSessionChange(session)
+    case .sessionChanged(let old, let new):
+      let becameActive = new?.status == .active && (old?.status != .active || old?.id != new?.id)
+      if becameActive, isPollingActive {
+        consecutiveFailures = 0
+        Task { [weak self] in
+          _ = await self?.refreshTokenIfNeeded()
+        }
+      }
     default:
       // No polling changes for other auth events.
       break
@@ -225,45 +229,6 @@ final class SessionPollingManager {
   func refreshNowIfNeeded() async {
     let success = await refreshTokenIfNeeded()
     updateBackoffState(success: success)
-  }
-
-  private func handleSessionChange(_ session: Session?) {
-    guard shouldTriggerRefreshOnSessionChange(newSession: session) else {
-      return
-    }
-
-    if isPollingActive {
-      consecutiveFailures = 0
-      Task { [weak self] in
-        _ = await self?.refreshTokenIfNeeded()
-      }
-    }
-  }
-
-  private func shouldTriggerRefreshOnSessionChange(newSession: Session?) -> Bool {
-    let previousId = lastObservedSessionId
-    let previousStatus = lastObservedSessionStatus
-    let newId = newSession?.id
-    let newStatus = newSession?.status
-
-    defer {
-      updateLastObservedSession(newSession)
-    }
-
-    guard let newStatus else {
-      return false
-    }
-
-    if previousId != newId {
-      return newStatus == .active
-    }
-
-    return previousStatus != .active && newStatus == .active
-  }
-
-  private func updateLastObservedSession(_ session: Session?) {
-    lastObservedSessionId = session?.id
-    lastObservedSessionStatus = session?.status
   }
 
   /// Cancels polling and cleans up resources if the manager is released unexpectedly.
