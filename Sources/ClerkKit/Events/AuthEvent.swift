@@ -19,11 +19,11 @@ public enum AuthEvent: Sendable {
   /// The current session changed.
   ///
   /// This event is emitted whenever the current session changes, including:
-  /// - When a user signs in (`.activated`)
-  /// - When a user signs out (`.unauthenticated`)
-  /// - When the current session changes to a different session (`.activated` or `.pending`)
-  /// - When the same session is updated, e.g. status or metadata changed (`.updated`)
-  case sessionChanged(SessionTransition)
+  /// - When a user signs in (nil → session)
+  /// - When a user signs out (session → nil)
+  /// - When the current session changes (session → different session)
+  /// - When the same session is updated (e.g., status, updatedAt changed)
+  case sessionChanged(old: Session?, new: Session?)
   /// A session token was refreshed.
   case tokenRefreshed(token: String)
 }

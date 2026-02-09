@@ -43,8 +43,7 @@ public final class Clerk {
     didSet {
       // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        let transition = SessionTransition(from: oldValue?.currentSession, to: client?.currentSession)
-        auth.send(.sessionChanged(transition))
+        auth.send(.sessionChanged(old: oldValue?.currentSession, new: client?.currentSession))
       }
 
       if let client {

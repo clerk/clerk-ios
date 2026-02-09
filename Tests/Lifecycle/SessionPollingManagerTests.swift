@@ -132,8 +132,8 @@ struct SessionPollingManagerTests {
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(.activated(session: session)))
+    let activeSession = createSession(id: "session1", status: .active)
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -147,13 +147,14 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let session = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(.activated(session: session)))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: session))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
-    manager.handleAuthEvent(.sessionChanged(.updated(session: session)))
+    // Same active session updated (e.g. metadata change)
+    manager.handleAuthEvent(.sessionChanged(old: session, new: session))
     #expect(manager.consecutiveFailures == 2)
 
     manager.stopPolling()
@@ -167,14 +168,14 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let pendingSession = createSession(id: "session1", status: .pending)
-    manager.handleAuthEvent(.sessionChanged(.pending(session: pendingSession)))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: pendingSession))
 
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
+    manager.handleAuthEvent(.sessionChanged(old: pendingSession, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -192,7 +193,7 @@ struct SessionPollingManagerTests {
     manager.startPolling()
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 0)
 
     manager.stopPolling()
@@ -208,7 +209,7 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    manager.handleAuthEvent(.sessionChanged(.activated(session: activeSession)))
+    manager.handleAuthEvent(.sessionChanged(old: nil, new: activeSession))
     #expect(manager.consecutiveFailures == 2)
   }
 
@@ -230,7 +231,7 @@ struct SessionPollingManagerTests {
     #expect(manager.consecutiveFailures == 2)
 
     let activeSession = createSession(id: "session1", status: .active)
-    emitter.send(.sessionChanged(.activated(session: activeSession)))
+    emitter.send(.sessionChanged(old: nil, new: activeSession))
     await Task.yield()
 
     #expect(manager.consecutiveFailures == 0)
