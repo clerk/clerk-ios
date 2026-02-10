@@ -1,9 +1,8 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Mocker
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -37,7 +36,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDeletesAllKeys() async throws {
+  func clearAllKeychainItemsDeletesAllKeys() throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -47,8 +46,8 @@ struct ClerkTests {
     )
 
     // Add test data for all keychain keys
-    try keychain.set("test-client-data".data(using: .utf8)!, forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set("test-environment-data".data(using: .utf8)!, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
@@ -68,7 +67,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsHandlesMissingKeysGracefully() async throws {
+  func clearAllKeychainItemsHandlesMissingKeysGracefully() throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -91,7 +90,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsWorksWhenClerkNotConfigured() async throws {
+  func clearAllKeychainItemsWorksWhenClerkNotConfigured() throws {
     // Note: This test verifies that clearAllKeychainItems can be called even when Clerk is configured.
     // When Clerk is not configured, clearAllKeychainItems creates a temporary SystemKeychain instance.
     // Since we can't easily test the unconfigured state without accessing private properties,
@@ -117,7 +116,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDoesNotThrow() async throws {
+  func clearAllKeychainItemsDoesNotThrow() throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -179,7 +178,7 @@ struct ClerkTests {
   }
 
   @Test
-  func isLoadedBecomesTrue() async {
+  func isLoadedBecomesTrue() {
     // Clear both client and environment first
     Clerk.shared.client = nil
     Clerk.shared.environment = nil

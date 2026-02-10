@@ -5,11 +5,10 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Tests for TaskCoordinator task tracking and cancellation.
 @MainActor

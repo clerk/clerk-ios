@@ -134,7 +134,6 @@ struct UserProfileUpdateProfileView: View {
     .background(theme.colors.background)
   }
 
-  @ViewBuilder
   private var menu: some View {
     LazyImage(url: URL(string: user.imageUrl)) { state in
       if let image = state.image {

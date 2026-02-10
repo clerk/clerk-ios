@@ -1,8 +1,7 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)

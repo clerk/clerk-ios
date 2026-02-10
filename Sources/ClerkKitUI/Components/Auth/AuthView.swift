@@ -168,7 +168,7 @@ public struct AuthView: View {
 
 extension AuthView {
   enum Destination: Hashable {
-    // Auth Start
+    /// Auth Start
     case authStart
 
     // Sign In

@@ -38,7 +38,9 @@ struct UserProfileChangePasswordView: View {
     newPassword.isEmptyTrimmed || confirmNewPassword.isEmptyTrimmed || newPassword != confirmNewPassword
   }
 
-  var user: User? { clerk.user }
+  var user: User? {
+    clerk.user
+  }
 
   var isAddingPassword: Bool = false
 
@@ -60,7 +62,6 @@ struct UserProfileChangePasswordView: View {
     .background(theme.colors.background)
   }
 
-  @ViewBuilder
   private var currentPasswordView: some View {
     ScrollView {
       VStack(spacing: 24) {
@@ -106,7 +107,6 @@ struct UserProfileChangePasswordView: View {
     }
   }
 
-  @ViewBuilder
   private var updatePasswordView: some View {
     ScrollView {
       VStack(spacing: 24) {
@@ -176,7 +176,6 @@ struct UserProfileChangePasswordView: View {
     }
   }
 
-  @ViewBuilder
   private var signOutOfOtherDevicesView: some View {
     VStack(spacing: 8) {
       Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)

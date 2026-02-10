@@ -185,7 +185,6 @@ struct AddMfaSmsRow: View {
     }
   }
 
-  @ViewBuilder
   var selectedIndicator: some View {
     Image(systemName: isSelected ? "record.circle.fill" : "record.circle")
       .resizable()

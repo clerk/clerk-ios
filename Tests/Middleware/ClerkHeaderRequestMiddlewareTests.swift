@@ -5,10 +5,9 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Tests for ClerkHeaderRequestMiddleware header injection.
 @MainActor
@@ -39,7 +38,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     try keychain.set("test-device-token", forKey: "clerkDeviceToken")
 
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -51,7 +50,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     _ = createTestKeychain()
 
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -64,7 +63,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     Clerk.shared.client = .mock
 
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -77,7 +76,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     Clerk.shared.client = nil
 
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -87,7 +86,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   @Test
   func addsNativeDeviceIdHeaderWhenAvailable() async throws {
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -104,7 +103,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   @Test
   func addsDeviceTypeHeader() async throws {
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
@@ -116,7 +115,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   @Test
   func addsDeviceInfoHeaders() async throws {
     let middleware = ClerkHeaderRequestMiddleware()
-    var request = URLRequest(url: URL(string: "https://example.com")!)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 

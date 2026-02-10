@@ -67,7 +67,9 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 
 extension PhoneNumber {
   @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
+  private var phoneNumberService: any PhoneNumberServiceProtocol {
+    Clerk.shared.dependencies.phoneNumberService
+  }
 
   /// Deletes this phone number.
   @discardableResult @MainActor

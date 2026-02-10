@@ -25,7 +25,9 @@ struct UserProfileVerifyView: View {
     codeLimiter.remainingCooldown(for: codeLimiterIdentifier)
   }
 
-  var user: User? { clerk.user }
+  var user: User? {
+    clerk.user
+  }
 
   @State var mode: Mode
   let onCompletion: (_ backupCodes: [String]?) -> Void

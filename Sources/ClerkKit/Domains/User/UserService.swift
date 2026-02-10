@@ -33,12 +33,20 @@ protocol UserServiceProtocol: Sendable {
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
   @MainActor
-  private var emailAddressService: any EmailAddressServiceProtocol { Clerk.shared.dependencies.emailAddressService }
+  private var emailAddressService: any EmailAddressServiceProtocol {
+    Clerk.shared.dependencies.emailAddressService
+  }
+
   @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol { Clerk.shared.dependencies.phoneNumberService }
+  private var phoneNumberService: any PhoneNumberServiceProtocol {
+    Clerk.shared.dependencies.phoneNumberService
+  }
+
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
-  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
+  private var passkeyService: any PasskeyServiceProtocol {
+    Clerk.shared.dependencies.passkeyService
+  }
   #endif
 
   init(apiClient: APIClient) {

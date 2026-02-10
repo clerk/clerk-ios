@@ -5,11 +5,10 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -19,7 +18,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithDefaultForce_RespectsLogLevel() async {
+  func info_WithDefaultForce_RespectsLogLevel() {
     // Configure with error log level (default)
     let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
@@ -31,7 +30,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithForceTrue_AlwaysLogs() async {
+  func info_WithForceTrue_AlwaysLogs() {
     // Configure with error log level
     let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
@@ -50,7 +49,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithForceFalse_RespectsLogLevel() async {
+  func info_WithForceFalse_RespectsLogLevel() {
     // Configure with error log level
     let options = Clerk.Options(logLevel: .error)
     Clerk.configure(publishableKey: testPublishableKey, options: options)
@@ -66,7 +65,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithInfoLogLevel_LogsWithoutForce() async {
+  func info_WithInfoLogLevel_LogsWithoutForce() {
     // Note: Clerk.configure() can only be called once per test run
     // So we test with the default configuration from configureClerkForTesting()
     // which uses testPublishableKey. We verify the current log level behavior.
@@ -85,7 +84,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithForceTrue_DoesNotTriggerErrorCallback() async {
+  func info_WithForceTrue_DoesNotTriggerErrorCallback() {
     // Use LockIsolated for thread-safe mutation in async context
     let errorCallbackInvoked = LockIsolated(false)
 
@@ -109,7 +108,7 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func error_AlwaysLogsRegardlessOfLogLevel() async {
+  func error_AlwaysLogsRegardlessOfLogLevel() {
     // Configure with verbose log level (most restrictive)
     let options = Clerk.Options(logLevel: .verbose)
     Clerk.configure(publishableKey: testPublishableKey, options: options)

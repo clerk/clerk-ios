@@ -1,6 +1,5 @@
-import Testing
-
 @testable import ClerkKit
+import Testing
 
 struct OptionalStringExtensionsTests {
   @Test func nilIfEmptyTrimsWhitespaceAndFiltersEmptyResults() {

@@ -261,7 +261,9 @@ extension Session {
 
 extension Session {
   @MainActor
-  private var sessionService: any SessionServiceProtocol { Clerk.shared.dependencies.sessionService }
+  private var sessionService: any SessionServiceProtocol {
+    Clerk.shared.dependencies.sessionService
+  }
 
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor

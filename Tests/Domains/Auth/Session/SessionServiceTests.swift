@@ -1,9 +1,8 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Mocker
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -17,10 +16,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+        .delete: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
       ]
     )
 
@@ -40,10 +39,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
       ]
     )
 
@@ -63,10 +62,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/touch")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
       ]
     )
 
@@ -91,10 +90,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/touch")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
       ]
     )
 
@@ -121,10 +120,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
       ]
     )
 
@@ -145,10 +144,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens/\(template)")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
       ]
     )
 
@@ -168,10 +167,10 @@ struct SessionServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/\(session.id)/revoke")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock)),
       ]
     )
 

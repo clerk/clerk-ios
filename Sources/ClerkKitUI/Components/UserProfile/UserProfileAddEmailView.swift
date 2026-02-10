@@ -22,7 +22,9 @@ struct UserProfileAddEmailView: View {
     case add // should never be added to the path
     case verify(EmailAddress)
 
-    var id: Self { self }
+    var id: Self {
+      self
+    }
   }
 
   var user: User? {

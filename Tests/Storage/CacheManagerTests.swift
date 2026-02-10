@@ -5,11 +5,10 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Mock coordinator for testing CacheManager behavior.
 @MainActor
@@ -61,7 +60,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testSaveClient() async throws {
+  func testSaveClient() throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     cacheManager.saveClient(Client.mock)
@@ -71,12 +70,12 @@ struct CacheManagerTests {
     #expect(clientData != nil)
 
     let decoder = JSONDecoder.clerkDecoder
-    let decodedClient = try decoder.decode(Client.self, from: clientData!)
+    let decodedClient = try decoder.decode(Client.self, from: #require(clientData))
     #expect(decodedClient.id == Client.mock.id)
   }
 
   @Test
-  func testSaveEnvironment() async throws {
+  func testSaveEnvironment() throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     cacheManager.saveEnvironment(Clerk.Environment.mock)
@@ -86,12 +85,12 @@ struct CacheManagerTests {
     #expect(envData != nil)
 
     let decoder = JSONDecoder.clerkDecoder
-    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: envData!)
+    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: #require(envData))
     #expect(decodedEnv == Clerk.Environment.mock)
   }
 
   @Test
-  func loadCachedClient() async throws {
+  func loadCachedClient() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save a client to keychain
@@ -106,7 +105,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func loadCachedEnvironment() async throws {
+  func loadCachedEnvironment() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save an environment to keychain
@@ -121,7 +120,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func doesNotLoadClientWhenAlreadyExists() async throws {
+  func doesNotLoadClientWhenAlreadyExists() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save a client to keychain
@@ -140,7 +139,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func doesNotLoadEnvironmentWhenAlreadyExists() async throws {
+  func doesNotLoadEnvironmentWhenAlreadyExists() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
     // Save an environment to keychain
@@ -159,7 +158,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testDeleteClient() async throws {
+  func testDeleteClient() throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     // Save a client first
@@ -175,7 +174,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func handlesMissingCachedData() async throws {
+  func handlesMissingCachedData() {
     let (_, coordinator, cacheManager) = createTestSetup()
 
     // Should not crash when no cached data exists

@@ -2,10 +2,9 @@
 //  SessionPollingManagerTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Mock session provider for testing polling behavior
 @MainActor

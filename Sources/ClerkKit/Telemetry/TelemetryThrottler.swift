@@ -105,7 +105,7 @@ actor TelemetryEventThrottler {
   }
 
   private func stableJSONString(_ value: [String: JSON]) -> String {
-    // Convert to a stable JSON string with sorted keys
+    /// Convert to a stable JSON string with sorted keys
     func encodeJSON(_ value: JSON) -> Any {
       switch value {
       case let .string(stringValue): return stringValue

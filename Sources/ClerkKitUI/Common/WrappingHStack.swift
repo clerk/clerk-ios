@@ -121,7 +121,7 @@ struct WrappingHStack: Layout {
   }
 }
 
-// Helper structures
+/// Helper structures
 private struct SubviewData {
   let subview: LayoutSubview
   let size: CGSize

@@ -1,9 +1,8 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Mocker
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -17,10 +16,10 @@ struct EnvironmentServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
+        .get: JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
       ]
     )
 

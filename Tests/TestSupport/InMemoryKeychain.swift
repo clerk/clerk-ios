@@ -1,6 +1,5 @@
-import Foundation
-
 @testable import ClerkKit
+import Foundation
 
 /// An in-memory keychain storage implementation for testing.
 /// Data is stored in a dictionary and cleared when the test completes.

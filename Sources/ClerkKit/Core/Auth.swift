@@ -116,15 +116,15 @@ public struct Auth {
     try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
   }
 
-  /// Signs in with OAuth using the specified provider.
-  ///
-  /// - Parameters:
-  ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
-  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the OAuth flow fails.
+  // Signs in with OAuth using the specified provider.
+  //
+  // - Parameters:
+  //   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  // - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
   public func signInWithOAuth(
@@ -144,15 +144,15 @@ public struct Auth {
   }
   #endif
 
-  /// Signs in with an ID token from a provider (e.g., Sign in with Apple).
-  ///
-  /// - Parameters:
-  ///   - idToken: The ID token from the provider.
-  ///   - provider: The ID token provider (e.g., `.apple`).
-  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the authentication fails.
+  // Signs in with an ID token from a provider (e.g., Sign in with Apple).
+  //
+  // - Parameters:
+  //   - idToken: The ID token from the provider.
+  //   - provider: The ID token provider (e.g., `.apple`).
+  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, transferable: Bool = true) async throws -> TransferFlowResult {
@@ -208,10 +208,10 @@ public struct Auth {
   }
   #endif
 
-  /// Signs in with a passkey.
-  ///
-  /// - Returns: A `SignIn` object representing the sign-in attempt.
-  /// - Throws: An error if the passkey sign-in fails.
+  // Signs in with a passkey.
+  //
+  // - Returns: A `SignIn` object representing the sign-in attempt.
+  // - Throws: An error if the passkey sign-in fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
@@ -219,15 +219,15 @@ public struct Auth {
   }
   #endif
 
-  /// Signs in with Enterprise SSO using an email address.
-  ///
-  /// - Parameters:
-  ///   - emailAddress: The user's enterprise email address.
-  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the Enterprise SSO flow fails.
+  // Signs in with Enterprise SSO using an email address.
+  //
+  // - Parameters:
+  //   - emailAddress: The user's enterprise email address.
+  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
   public func signInWithEnterpriseSSO(
@@ -346,15 +346,15 @@ public struct Auth {
   }
   #endif
 
-  /// Signs up with an ID token from a provider (e.g., Sign in with Apple).
-  ///
-  /// - Parameters:
-  ///   - idToken: The ID token from the provider.
-  ///   - provider: The ID token provider (e.g., `.apple`).
-  ///   - firstName: The user's first name (optional).
-  ///   - lastName: The user's last name (optional).
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the authentication fails.
+  // Signs up with an ID token from a provider (e.g., Sign in with Apple).
+  //
+  // - Parameters:
+  //   - idToken: The ID token from the provider.
+  //   - provider: The ID token provider (e.g., `.apple`).
+  //   - firstName: The user's first name (optional).
+  //   - lastName: The user's last name (optional).
+  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signUpWithIdToken(_ idToken: String, provider: IDTokenProvider, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
@@ -368,13 +368,13 @@ public struct Auth {
   }
   #endif
 
-  /// Signs up with Enterprise SSO using an email address.
-  ///
-  /// - Parameters:
-  ///   - emailAddress: The user's enterprise email address.
-  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  /// - Throws: An error if the Enterprise SSO flow fails.
+  // Signs up with Enterprise SSO using an email address.
+  //
+  // - Parameters:
+  //   - emailAddress: The user's enterprise email address.
+  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
   public func signUpWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {

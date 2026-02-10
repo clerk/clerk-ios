@@ -2,10 +2,9 @@
 //  HTTPURLResponseExtensionsTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @Suite(.serialized)
 struct HTTPURLResponseExtensionsTests {
@@ -159,34 +158,34 @@ struct HTTPURLResponseExtensionsTests {
   }
 
   @Test
-  func testStatusDescription() {
+  func testStatusDescription() throws {
     // Informational
-    let infoResponse = createResponse(statusCode: 100)!
+    let infoResponse = try #require(createResponse(statusCode: 100))
     #expect(infoResponse.statusDescription.contains("Informational"))
     #expect(infoResponse.statusDescription.contains("100"))
 
     // Success
-    let successResponse = createResponse(statusCode: 200)!
+    let successResponse = try #require(createResponse(statusCode: 200))
     #expect(successResponse.statusDescription.contains("Success"))
     #expect(successResponse.statusDescription.contains("200"))
 
     // Redirection
-    let redirectResponse = createResponse(statusCode: 301)!
+    let redirectResponse = try #require(createResponse(statusCode: 301))
     #expect(redirectResponse.statusDescription.contains("Redirection"))
     #expect(redirectResponse.statusDescription.contains("301"))
 
     // Client Error
-    let clientErrorResponse = createResponse(statusCode: 404)!
+    let clientErrorResponse = try #require(createResponse(statusCode: 404))
     #expect(clientErrorResponse.statusDescription.contains("Client Error"))
     #expect(clientErrorResponse.statusDescription.contains("404"))
 
     // Server Error
-    let serverErrorResponse = createResponse(statusCode: 500)!
+    let serverErrorResponse = try #require(createResponse(statusCode: 500))
     #expect(serverErrorResponse.statusDescription.contains("Server Error"))
     #expect(serverErrorResponse.statusDescription.contains("500"))
 
     // Unknown
-    let unknownResponse = createResponse(statusCode: 999)!
+    let unknownResponse = try #require(createResponse(statusCode: 999))
     #expect(unknownResponse.statusDescription.contains("Unknown Status"))
     #expect(unknownResponse.statusDescription.contains("999"))
   }

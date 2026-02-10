@@ -81,7 +81,9 @@ public struct SignIn: Codable, Sendable, Equatable {
 
 extension SignIn {
   @MainActor
-  private var signInService: any SignInServiceProtocol { Clerk.shared.dependencies.signInService }
+  private var signInService: any SignInServiceProtocol {
+    Clerk.shared.dependencies.signInService
+  }
 
   // MARK: - First Factor Verification
 

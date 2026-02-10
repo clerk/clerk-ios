@@ -13,7 +13,7 @@ extension EnvironmentValues {
   }
 }
 
-// Create a custom environment key
+/// Create a custom environment key
 private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
   @MainActor static let defaultValue: @MainActor () -> Void = {
     DispatchQueue.main.async {

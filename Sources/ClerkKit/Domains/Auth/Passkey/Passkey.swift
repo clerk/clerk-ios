@@ -65,7 +65,9 @@ extension Passkey {
 
 extension Passkey {
   @MainActor
-  private var passkeyService: any PasskeyServiceProtocol { Clerk.shared.dependencies.passkeyService }
+  private var passkeyService: any PasskeyServiceProtocol {
+    Clerk.shared.dependencies.passkeyService
+  }
 
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor

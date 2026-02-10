@@ -1,9 +1,8 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Mocker
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -17,10 +16,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
       ]
     )
 
@@ -39,10 +38,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .patch: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
       ]
     )
 
@@ -63,10 +62,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/backup_codes")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<BackupCodeResource>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BackupCodeResource>(response: .mock, client: .mock)),
       ]
     )
 
@@ -85,10 +84,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
       ]
     )
 
@@ -108,10 +107,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
       ]
     )
 
@@ -132,10 +131,10 @@ struct UserServiceTests {
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
     let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
       ]
     )
 
@@ -161,10 +160,10 @@ struct UserServiceTests {
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
     let explicitRedirectUrl = "custom://redirect"
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
       ]
     )
 
@@ -190,10 +189,10 @@ struct UserServiceTests {
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
     let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
       ]
     )
 
@@ -219,10 +218,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
       ]
     )
 
@@ -246,10 +245,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
       ]
     )
 
@@ -268,10 +267,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp/attempt_verification")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<TOTPResource>(response: .mock, client: .mock)),
       ]
     )
 
@@ -291,10 +290,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/totp")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
       ]
     )
 
@@ -313,10 +312,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_invitations")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
+        .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
@@ -342,10 +341,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_memberships")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
+        .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>(
             response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1),
             client: .mock
@@ -372,10 +371,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
+        .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
@@ -401,10 +400,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
+        .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>(
             response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
             client: .mock
@@ -432,10 +431,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/active")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode([Session.mock]),
+        .get: JSONEncoder.clerkEncoder.encode([Session.mock]),
       ]
     )
 
@@ -454,10 +453,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/change_password")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
       ]
     )
 
@@ -481,10 +480,10 @@ struct UserServiceTests {
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/profile_image")!
     let imageData = Data("fake image data".utf8)
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder.clerkEncoder.encode(
+        .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ImageResource>(
             response: ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg"),
             client: .mock
@@ -509,10 +508,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/profile_image")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
       ]
     )
 
@@ -531,10 +530,10 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
       ]
     )
 

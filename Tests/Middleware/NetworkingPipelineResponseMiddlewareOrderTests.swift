@@ -1,7 +1,6 @@
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @Suite(.serialized)
 struct NetworkingPipelineResponseMiddlewareOrderTests {
@@ -41,13 +40,15 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
     let pipeline = NetworkingPipeline(responseMiddleware: [builtIn])
       .appendingResponseMiddleware([custom])
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let url = try #require(URL(string: "https://example.com"))
+    let request = URLRequest(url: url)
+    let requestURL = try #require(request.url)
+    let response = try #require(HTTPURLResponse(
+      url: requestURL,
       statusCode: 200,
       httpVersion: nil,
       headerFields: nil
-    )!
+    ))
 
     try pipeline.validate(response, data: Data(), for: request)
 

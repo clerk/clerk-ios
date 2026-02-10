@@ -7,7 +7,7 @@ import AuthenticationServices
 import Foundation
 
 protocol SignInServiceProtocol: Sendable {
-  // Create
+  /// Create
   @MainActor func create(params: SignIn.CreateParams) async throws -> SignIn
 
   // First factor
@@ -18,10 +18,10 @@ protocol SignInServiceProtocol: Sendable {
   @MainActor func prepareSecondFactor(signInId: String, params: SignIn.PrepareSecondFactorParams) async throws -> SignIn
   @MainActor func attemptSecondFactor(signInId: String, params: SignIn.AttemptSecondFactorParams) async throws -> SignIn
 
-  // Password reset
+  /// Password reset
   @MainActor func resetPassword(signInId: String, params: SignIn.ResetPasswordParams) async throws -> SignIn
 
-  // Get/reload
+  /// Get/reload
   @MainActor func get(signInId: String, params: SignIn.GetParams) async throws -> SignIn
 }
 

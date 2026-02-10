@@ -15,7 +15,9 @@ enum AuthFlow: Identifiable, CaseIterable, Hashable {
   case enterpriseConnections
   case legalAcceptance
 
-  var id: Self { self }
+  var id: Self {
+    self
+  }
 
   var displayName: String {
     switch self {

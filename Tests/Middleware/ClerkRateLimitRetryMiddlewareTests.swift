@@ -5,11 +5,10 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Tests for ClerkRateLimitRetryMiddleware retry logic and delay calculations.
 @MainActor
@@ -29,9 +28,9 @@ struct ClerkRateLimitRetryMiddlewareTests {
       sleepDelay.setValue(delay)
     }
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
       headerFields: nil
@@ -53,9 +52,9 @@ struct ClerkRateLimitRetryMiddlewareTests {
   func shouldRetryForServerError500() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 500,
       httpVersion: nil,
       headerFields: nil
@@ -74,13 +73,13 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func shouldRetryForRetryableStatusCodes() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
-    let request = URLRequest(url: URL(string: "https://example.com")!)
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableCodes = [408, 425, 429, 500, 502, 503, 504]
 
     for statusCode in retryableCodes {
-      let response = HTTPURLResponse(
-        url: request.url!,
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
         statusCode: statusCode,
         httpVersion: nil,
         headerFields: nil
@@ -100,13 +99,13 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func shouldNotRetryForNonRetryableStatusCodes() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
-    let request = URLRequest(url: URL(string: "https://example.com")!)
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableCodes = [400, 401, 403, 404, 422]
 
     for statusCode in nonRetryableCodes {
-      let response = HTTPURLResponse(
-        url: request.url!,
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
         statusCode: statusCode,
         httpVersion: nil,
         headerFields: nil
@@ -126,9 +125,9 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func shouldNotRetryOnSecondAttempt() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
       headerFields: nil
@@ -152,9 +151,9 @@ struct ClerkRateLimitRetryMiddlewareTests {
       sleepDelay.setValue(delay)
     }
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
       headerFields: ["Retry-After": "2"]
@@ -184,11 +183,11 @@ struct ClerkRateLimitRetryMiddlewareTests {
       sleepDelay.setValue(delay)
     }
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     // Set reset time to 2 seconds in the future
     let resetTime = Date().timeIntervalSince1970 + 2.0
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
       headerFields: ["X-RateLimit-Reset": String(format: "%.0f", resetTime)]
@@ -220,9 +219,9 @@ struct ClerkRateLimitRetryMiddlewareTests {
       sleepDelay.setValue(delay)
     }
 
-    let request = URLRequest(url: URL(string: "https://example.com")!)
-    let response = HTTPURLResponse(
-      url: request.url!,
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
       headerFields: nil
@@ -245,7 +244,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func shouldRetryForRetryableURLErrors() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
-    let request = URLRequest(url: URL(string: "https://example.com")!)
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableErrors: [URLError.Code] = [
       .timedOut,
@@ -272,7 +271,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func shouldNotRetryForNonRetryableURLErrors() async throws {
     let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
-    let request = URLRequest(url: URL(string: "https://example.com")!)
+    let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableErrors: [URLError.Code] = [
       .badURL,

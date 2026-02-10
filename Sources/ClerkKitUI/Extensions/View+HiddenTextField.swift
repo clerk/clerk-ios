@@ -8,10 +8,10 @@
 import Foundation
 import SwiftUI
 
-// Apple uses heuristics to determine when to show the save to
-// keychain prompt based on present textfield content types.
-// This means we often need to "fake" having a certain textfields
-// in the view, in order for the prompt to appear when they disappear.
+/// Apple uses heuristics to determine when to show the save to
+/// keychain prompt based on present textfield content types.
+/// This means we often need to "fake" having a certain textfields
+/// in the view, in order for the prompt to appear when they disappear.
 struct HiddenTextFieldModifier: ViewModifier {
   @Binding var text: String
   let textContentType: UITextContentType

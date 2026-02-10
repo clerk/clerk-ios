@@ -283,11 +283,9 @@ final class URLEncodedFormEncoder {
         searchRange = lowerCaseRange.upperBound ..< searchRange.upperBound
       }
       words.append(wordStart ..< searchRange.upperBound)
-      let result = words.map { range in
+      return words.map { range in
         key[range].lowercased()
       }.joined(separator: separator)
-
-      return result
     }
   }
 
@@ -472,9 +470,7 @@ final class URLEncodedFormEncoder {
       spaceEncoding: spaceEncoding,
       allowedCharacters: allowedCharacters
     )
-    let query = serializer.serialize(object)
-
-    return query
+    return serializer.serialize(object)
   }
 
   /// Encodes the value as `Data`. This is performed by first creating an encoded `String` and then returning the
@@ -494,8 +490,10 @@ final class URLEncodedFormEncoder {
 
 final class _URLEncodedFormEncoder {
   var codingPath: [any CodingKey]
-  // Returns an empty dictionary, as this encoder doesn't support userInfo.
-  var userInfo: [CodingUserInfoKey: Any] { [:] }
+  /// Returns an empty dictionary, as this encoder doesn't support userInfo.
+  var userInfo: [CodingUserInfoKey: Any] {
+    [:]
+  }
 
   let context: URLEncodedFormContext
 
@@ -522,7 +520,7 @@ final class _URLEncodedFormEncoder {
 }
 
 extension _URLEncodedFormEncoder: Encoder {
-  func container<Key>(keyedBy _: Key.Type) -> KeyedEncodingContainer<Key> where Key: CodingKey {
+  func container<Key: CodingKey>(keyedBy _: Key.Type) -> KeyedEncodingContainer<Key> {
     let container = _URLEncodedFormEncoder.KeyedContainer<Key>(
       context: context,
       codingPath: codingPath,
@@ -677,7 +675,7 @@ struct AnyCodingKey: CodingKey, Hashable {
 }
 
 extension _URLEncodedFormEncoder {
-  final class KeyedContainer<Key> where Key: CodingKey {
+  final class KeyedContainer<Key: CodingKey> {
     var codingPath: [any CodingKey]
 
     private let context: URLEncodedFormContext
@@ -789,7 +787,7 @@ extension _URLEncodedFormEncoder.KeyedContainer: KeyedEncodingContainerProtocol 
   }
 
   func nestedSingleValueEncoder(for key: Key) -> any SingleValueEncodingContainer {
-    let container = _URLEncodedFormEncoder.SingleValueContainer(
+    _URLEncodedFormEncoder.SingleValueContainer(
       context: context,
       codingPath: nestedCodingPath(for: key),
       boolEncoding: boolEncoding,
@@ -797,12 +795,10 @@ extension _URLEncodedFormEncoder.KeyedContainer: KeyedEncodingContainerProtocol 
       dateEncoding: dateEncoding,
       nilEncoding: nilEncoding
     )
-
-    return container
   }
 
   func nestedUnkeyedContainer(forKey key: Key) -> any UnkeyedEncodingContainer {
-    let container = _URLEncodedFormEncoder.UnkeyedContainer(
+    _URLEncodedFormEncoder.UnkeyedContainer(
       context: context,
       codingPath: nestedCodingPath(for: key),
       boolEncoding: boolEncoding,
@@ -810,11 +806,9 @@ extension _URLEncodedFormEncoder.KeyedContainer: KeyedEncodingContainerProtocol 
       dateEncoding: dateEncoding,
       nilEncoding: nilEncoding
     )
-
-    return container
   }
 
-  func nestedContainer<NestedKey>(keyedBy _: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey {
+  func nestedContainer<NestedKey: CodingKey>(keyedBy _: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> {
     let container = _URLEncodedFormEncoder.KeyedContainer<NestedKey>(
       context: context,
       codingPath: nestedCodingPath(for: key),
@@ -1058,7 +1052,7 @@ extension _URLEncodedFormEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
     )
   }
 
-  func nestedContainer<NestedKey>(keyedBy _: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey {
+  func nestedContainer<NestedKey: CodingKey>(keyedBy _: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> {
     defer { count += 1 }
     let container = _URLEncodedFormEncoder.KeyedContainer<NestedKey>(
       context: context,
@@ -1166,9 +1160,7 @@ final class URLEncodedFormSerializer {
     var allowedCharactersWithSpace = allowedCharacters
     allowedCharactersWithSpace.insert(charactersIn: " ")
     let escapedQuery = query.addingPercentEncoding(withAllowedCharacters: allowedCharactersWithSpace) ?? query
-    let spaceEncodedQuery = spaceEncoding.encode(escapedQuery)
-
-    return spaceEncodedQuery
+    return spaceEncoding.encode(escapedQuery)
   }
 }
 
@@ -1226,7 +1218,7 @@ extension Lock {
 }
 
 #if canImport(Darwin)
-// Number of Apple engineers who insisted on inspecting this: 5
+/// Number of Apple engineers who insisted on inspecting this: 5
 /// An `os_unfair_lock` wrapper.
 final class UnfairLock: Lock, @unchecked Sendable {
   private let unfairLock: os_unfair_lock_t

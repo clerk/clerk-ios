@@ -32,7 +32,7 @@ final class AuthState {
     }
   }
 
-  // Auth Start Fields
+  /// Auth Start Fields
   var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
     didSet {
       UserDefaults.standard.set(authStartIdentifier, forKey: "authStartIdentifier")

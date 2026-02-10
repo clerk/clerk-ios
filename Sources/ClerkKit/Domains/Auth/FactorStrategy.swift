@@ -27,13 +27,13 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
   case saml
   case enterpriseSSO
 
-  // OAuth strategies (uses OAuthProvider enum)
+  /// OAuth strategies (uses OAuthProvider enum)
   case oauth(OAuthProvider)
 
-  // ID token strategies (uses IDTokenProvider enum)
+  /// ID token strategies (uses IDTokenProvider enum)
   case idToken(IDTokenProvider)
 
-  // Unknown for forward compatibility
+  /// Unknown for forward compatibility
   case unknown(String)
 
   /// The raw string value used in the API.

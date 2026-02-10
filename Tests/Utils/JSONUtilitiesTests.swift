@@ -2,10 +2,9 @@
 //  JSONUtilitiesTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @Suite(.serialized)
 struct JSONUtilitiesTests {
@@ -228,7 +227,7 @@ struct JSONUtilitiesTests {
     let jsonString = """
     {"key":"value","number":42,"bool":true,"null":null}
     """
-    let data = jsonString.data(using: .utf8)!
+    let data = try #require(jsonString.data(using: .utf8))
     let decoder = JSONDecoder()
     let json = try decoder.decode(JSON.self, from: data)
 
@@ -278,7 +277,7 @@ struct JSONUtilitiesTests {
     let jsonString = """
     {"first_name":"John","last_name":"Doe"}
     """
-    let data = jsonString.data(using: .utf8)!
+    let data = try #require(jsonString.data(using: .utf8))
     let decoder = JSONDecoder.clerkDecoder
     let result = try decoder.decode(TestStruct.self, from: data)
 
@@ -296,7 +295,7 @@ struct JSONUtilitiesTests {
     let jsonString = """
     {"timestamp":1609459200000}
     """
-    let data = jsonString.data(using: .utf8)!
+    let data = try #require(jsonString.data(using: .utf8))
     let decoder = JSONDecoder.clerkDecoder
     let result = try decoder.decode(TestStruct.self, from: data)
 
@@ -337,7 +336,7 @@ struct JSONUtilitiesTests {
     let value = TestStruct(firstName: "John", lastName: "Doe")
     let encoder = JSONEncoder.clerkEncoder
     let data = try encoder.encode(value)
-    let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
     #expect(json["first_name"] as? String == "John")
     #expect(json["last_name"] as? String == "Doe")
@@ -353,10 +352,10 @@ struct JSONUtilitiesTests {
     let value = TestStruct(timestamp: date)
     let encoder = JSONEncoder.clerkEncoder
     let data = try encoder.encode(value)
-    let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
     // Should be encoded as milliseconds
-    let timestamp = json["timestamp"] as! Double
+    let timestamp = try #require(json["timestamp"] as? Double)
     #expect(timestamp == 1_609_459_200_000.0)
   }
 }

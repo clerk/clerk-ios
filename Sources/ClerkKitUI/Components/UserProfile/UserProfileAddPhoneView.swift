@@ -22,7 +22,9 @@ struct UserProfileAddPhoneView: View {
     case add // should never be added to the path
     case verify(PhoneNumber)
 
-    var id: Self { self }
+    var id: Self {
+      self
+    }
   }
 
   var user: User? {

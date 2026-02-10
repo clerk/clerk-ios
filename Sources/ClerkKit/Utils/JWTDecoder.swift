@@ -137,13 +137,33 @@ struct DecodedJWT: JWT {
     string = jwt
   }
 
-  var expiresAt: Date? { claim(name: "exp").date }
-  var issuer: String? { claim(name: "iss").string }
-  var subject: String? { claim(name: "sub").string }
-  var audience: [String]? { claim(name: "aud").array }
-  var issuedAt: Date? { claim(name: "iat").date }
-  var notBefore: Date? { claim(name: "nbf").date }
-  var identifier: String? { claim(name: "jti").string }
+  var expiresAt: Date? {
+    claim(name: "exp").date
+  }
+
+  var issuer: String? {
+    claim(name: "iss").string
+  }
+
+  var subject: String? {
+    claim(name: "sub").string
+  }
+
+  var audience: [String]? {
+    claim(name: "aud").array
+  }
+
+  var issuedAt: Date? {
+    claim(name: "iat").date
+  }
+
+  var notBefore: Date? {
+    claim(name: "nbf").date
+  }
+
+  var identifier: String? {
+    claim(name: "jti").string
+  }
 
   var expired: Bool {
     guard let date = expiresAt else {
@@ -270,12 +290,16 @@ public enum JWTDecodeError: LocalizedError, CustomDebugStringConvertible {
   /// Description of the error.
   ///
   /// - Important: You should avoid displaying the error description to the user, it's meant for **debugging** only.
-  public var localizedDescription: String { debugDescription }
+  public var localizedDescription: String {
+    debugDescription
+  }
 
   /// Description of the error.
   ///
   /// - Important: You should avoid displaying the error description to the user, it's meant for **debugging** only.
-  public var errorDescription: String? { debugDescription }
+  public var errorDescription: String? {
+    debugDescription
+  }
 
   /// Description of the error.
   ///

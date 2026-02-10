@@ -21,8 +21,12 @@ public protocol ClerkError: Error {
 
 extension ClerkError {
   /// Default implementation returns nil for underlying error if not provided.
-  public var underlyingError: Error? { nil }
+  public var underlyingError: Error? {
+    nil
+  }
 
   /// Default implementation returns nil for context if not provided.
-  public var context: [String: String]? { nil }
+  public var context: [String: String]? {
+    nil
+  }
 }

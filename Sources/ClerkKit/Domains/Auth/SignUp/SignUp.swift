@@ -109,7 +109,9 @@ public struct SignUp: Codable, Sendable, Equatable {
 
 extension SignUp {
   @MainActor
-  private var signUpService: any SignUpServiceProtocol { Clerk.shared.dependencies.signUpService }
+  private var signUpService: any SignUpServiceProtocol {
+    Clerk.shared.dependencies.signUpService
+  }
 
   /// This method is used to update the current sign-up.
   ///

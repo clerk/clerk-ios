@@ -14,11 +14,15 @@ enum AppAttestHelper {
 
   /// The API client for making network requests.
   @MainActor
-  private static var apiClient: APIClient { Clerk.shared.dependencies.apiClient }
+  private static var apiClient: APIClient {
+    Clerk.shared.dependencies.apiClient
+  }
 
   /// The keychain storage for secure data persistence.
   @MainActor
-  private static var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
+  private static var keychain: any KeychainStorage {
+    Clerk.shared.dependencies.keychain
+  }
 
   /// Errors that can occur during the attestation process.
   enum AttestationError: Error {

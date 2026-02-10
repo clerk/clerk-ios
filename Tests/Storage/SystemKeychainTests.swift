@@ -5,10 +5,9 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Tests for KeychainStorage protocol operations.
 /// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.

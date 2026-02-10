@@ -2,10 +2,9 @@
 //  StringExtensionsTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @Suite(.serialized)
 struct StringExtensionsTests {

@@ -5,9 +5,8 @@
 //  Created on 2025-01-27.
 //
 
-import Foundation
-
 @testable import ClerkKit
+import Foundation
 
 /// Gets the publishable key for integration tests.
 ///

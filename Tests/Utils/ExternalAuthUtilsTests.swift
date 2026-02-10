@@ -2,17 +2,16 @@
 //  ExternalAuthUtilsTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 @Suite(.serialized)
 struct ExternalAuthUtilsTests {
   @Test
-  func nonceFromCallbackUrlWithNonce() {
+  func nonceFromCallbackUrlWithNonce() throws {
     let urlString = "https://example.com/callback?rotating_token_nonce=abc123&other=param"
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 
@@ -20,9 +19,9 @@ struct ExternalAuthUtilsTests {
   }
 
   @Test
-  func nonceFromCallbackUrlWithoutNonce() {
+  func nonceFromCallbackUrlWithoutNonce() throws {
     let urlString = "https://example.com/callback?other=param&another=value"
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 
@@ -30,9 +29,9 @@ struct ExternalAuthUtilsTests {
   }
 
   @Test
-  func nonceFromCallbackUrlWithMultipleQueryParams() {
+  func nonceFromCallbackUrlWithMultipleQueryParams() throws {
     let urlString = "https://example.com/callback?first=value&rotating_token_nonce=xyz789&last=value"
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 
@@ -40,9 +39,9 @@ struct ExternalAuthUtilsTests {
   }
 
   @Test
-  func nonceFromCallbackUrlWithEmptyNonce() {
+  func nonceFromCallbackUrlWithEmptyNonce() throws {
     let urlString = "https://example.com/callback?rotating_token_nonce="
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 
@@ -50,9 +49,9 @@ struct ExternalAuthUtilsTests {
   }
 
   @Test
-  func nonceFromCallbackUrlWithoutQueryParams() {
+  func nonceFromCallbackUrlWithoutQueryParams() throws {
     let urlString = "https://example.com/callback"
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 
@@ -60,10 +59,10 @@ struct ExternalAuthUtilsTests {
   }
 
   @Test
-  func nonceFromCallbackUrlWithFragment() {
+  func nonceFromCallbackUrlWithFragment() throws {
     // Query params should still work even with fragment
     let urlString = "https://example.com/callback?rotating_token_nonce=test123#fragment"
-    let url = URL(string: urlString)!
+    let url = try #require(URL(string: urlString))
 
     let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url)
 

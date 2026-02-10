@@ -125,7 +125,6 @@ struct OTPField: View {
     )
   }
 
-  @ViewBuilder
   private var cursorOverlay: some View {
     Rectangle()
       .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)

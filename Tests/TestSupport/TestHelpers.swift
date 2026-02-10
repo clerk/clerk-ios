@@ -1,7 +1,6 @@
+@testable import ClerkKit
 import Foundation
 import Mocker
-
-@testable import ClerkKit
 
 let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 

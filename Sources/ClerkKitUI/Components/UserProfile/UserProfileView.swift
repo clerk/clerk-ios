@@ -217,7 +217,6 @@ extension UserProfileView {
     }
   }
 
-  @ViewBuilder
   private func row(
     icon: String,
     text: LocalizedStringKey,

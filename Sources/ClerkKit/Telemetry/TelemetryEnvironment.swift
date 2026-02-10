@@ -22,8 +22,13 @@ protocol TelemetryEnvironmentProviding: Sendable {
 
 /// Default environment provider backed by the `Clerk` singleton.
 struct ClerkTelemetryEnvironment: TelemetryEnvironmentProviding {
-  var sdkName: String { "clerk-ios" }
-  var sdkVersion: String { Clerk.sdkVersion }
+  var sdkName: String {
+    "clerk-ios"
+  }
+
+  var sdkVersion: String {
+    Clerk.sdkVersion
+  }
 
   func instanceTypeString() async -> String {
     await Clerk.shared.instanceType.rawValue
@@ -46,8 +51,13 @@ struct StandaloneTelemetryEnvironment: TelemetryEnvironmentProviding {
   let instanceType: InstanceEnvironmentType
   let telemetryEnabled: Bool
 
-  var sdkName: String { "clerk-ios" }
-  var sdkVersion: String { Clerk.sdkVersion }
+  var sdkName: String {
+    "clerk-ios"
+  }
+
+  var sdkVersion: String {
+    Clerk.sdkVersion
+  }
 
   func instanceTypeString() async -> String {
     instanceType.rawValue

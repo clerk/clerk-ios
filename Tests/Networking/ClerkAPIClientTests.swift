@@ -1,9 +1,8 @@
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Mocker
 import Testing
-
-@testable import ClerkKit
 
 @MainActor
 @Suite(.serialized)
@@ -17,10 +16,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true]),
+        .post: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -47,10 +46,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true]),
+        .get: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -76,10 +75,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true]),
+        .get: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -103,10 +102,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true]),
+        .post: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -132,10 +131,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .patch: try! JSONEncoder().encode(["success": true]),
+        .patch: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -161,10 +160,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: try! JSONEncoder().encode(["success": true]),
+        .delete: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -188,10 +187,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: try! JSONEncoder().encode(["success": true]),
+        .get: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -220,16 +219,16 @@ struct ClerkAPIClientTests {
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
     let boundary = UUID().uuidString
     var data = Data()
-    data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-    data.append("Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n".data(using: .utf8)!)
-    data.append("Content-Type: text/plain\r\n\r\n".data(using: .utf8)!)
-    data.append("test content".data(using: .utf8)!)
-    data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+    try data.append(#require("\r\n--\(boundary)\r\n".data(using: .utf8)))
+    try data.append(#require("Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n".data(using: .utf8)))
+    try data.append(#require("Content-Type: text/plain\r\n\r\n".data(using: .utf8)))
+    try data.append(#require("test content".data(using: .utf8)))
+    try data.append(#require("\r\n--\(boundary)--\r\n".data(using: .utf8)))
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: try! JSONEncoder().encode(["success": true]),
+        .post: JSONEncoder().encode(["success": true]),
       ]
     )
 
@@ -255,10 +254,10 @@ struct ClerkAPIClientTests {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
 
-    var mock = Mock(
+    var mock = try Mock(
       url: testURL, ignoreQuery: true, contentType: .json, statusCode: 400,
       data: [
-        .get: try! JSONEncoder.clerkEncoder.encode(
+        .get: JSONEncoder.clerkEncoder.encode(
           ClerkErrorResponse(
             errors: [.mock],
             clerkTraceId: nil

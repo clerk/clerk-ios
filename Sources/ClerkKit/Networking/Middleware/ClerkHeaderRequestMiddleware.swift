@@ -7,7 +7,9 @@ import Foundation
 
 struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
-  private var keychain: any KeychainStorage { Clerk.shared.dependencies.keychain }
+  private var keychain: any KeychainStorage {
+    Clerk.shared.dependencies.keychain
+  }
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {

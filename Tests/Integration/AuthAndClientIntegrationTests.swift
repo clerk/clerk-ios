@@ -5,10 +5,9 @@
 //  Created on 2025-01-27.
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
-
-@testable import ClerkKit
 
 /// Integration tests for SignIn and SignUp domains.
 ///

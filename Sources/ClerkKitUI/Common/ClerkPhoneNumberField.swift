@@ -110,7 +110,6 @@ struct ClerkPhoneNumberField: View {
     self.text = phoneNumberModel.phoneNumberFormattedForData(text: rawText)
   }
 
-  @ViewBuilder
   var countrySelector: some View {
     Menu {
       Section("Default") {

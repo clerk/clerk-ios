@@ -40,7 +40,9 @@ struct UserProfileMfaAddTotpView: View {
     }
   }
 
-  private var user: User? { clerk.user }
+  private var user: User? {
+    clerk.user
+  }
 
   var body: some View {
     NavigationStack(path: $path) {
@@ -130,7 +132,6 @@ struct UserProfileMfaAddTotpView: View {
     .background(theme.colors.background)
   }
 
-  @ViewBuilder
   func copyableText(_ string: String) -> some View {
     Text(verbatim: string)
       .font(theme.fonts.subheadline)

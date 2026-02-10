@@ -6,12 +6,11 @@
 //
 
 #if canImport(UIKit)
+@testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
 import UIKit
-
-@testable import ClerkKit
 
 /// Mock lifecycle event handler for testing.
 @MainActor

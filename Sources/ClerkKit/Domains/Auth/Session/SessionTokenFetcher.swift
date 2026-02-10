@@ -5,12 +5,12 @@
 
 import Foundation
 
-// The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
-// This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
+/// The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
+/// This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
 actor SessionTokenFetcher {
   static let shared = SessionTokenFetcher()
 
-  // Key is `tokenCacheKey` property of a `session`
+  /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {

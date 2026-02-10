@@ -74,7 +74,9 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   }
 
   @_documentation(visibility: internal)
-  public var id: String { providerData.strategy }
+  public var id: String {
+    providerData.strategy
+  }
 
   public init(strategy: String) {
     if let provider = Self.allCases.first(where: { $0.providerData.strategy == strategy }) {

@@ -21,7 +21,9 @@ struct UserProfileAddMfaView: View {
   enum PresentedView: Identifiable, Hashable {
     case sms
     case authApp(TOTPResource)
-    var id: Self { self }
+    var id: Self {
+      self
+    }
 
     @MainActor
     @ViewBuilder
@@ -43,8 +45,13 @@ struct UserProfileAddMfaView: View {
     }
   }
 
-  var environment: Clerk.Environment? { clerk.environment }
-  var user: User? { clerk.user }
+  var environment: Clerk.Environment? {
+    clerk.environment
+  }
+
+  var user: User? {
+    clerk.user
+  }
 
   init(
     contentHeight: Binding<CGFloat> = .constant(0)

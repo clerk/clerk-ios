@@ -15,12 +15,16 @@ struct UserProfilePasswordSection: View {
 
   enum PasswordAction: Hashable, Identifiable {
     case add, reset
-    var id: Self { self }
+    var id: Self {
+      self
+    }
   }
 
   @State private var passwordAction: PasswordAction?
 
-  var user: User? { clerk.user }
+  var user: User? {
+    clerk.user
+  }
 
   var body: some View {
     Section {

@@ -2,14 +2,13 @@
 //  JWTDecoderTests.swift
 //
 
+@testable import ClerkKit
 import Foundation
 import Testing
 
-@testable import ClerkKit
-
 @Suite(.serialized)
 struct JWTDecoderTests {
-  // Helper to create a valid JWT for testing
+  /// Helper to create a valid JWT for testing
   func createTestJWT(header: [String: Any] = ["alg": "HS256", "typ": "JWT"],
                      body: [String: Any]) -> String
   {
@@ -109,15 +108,15 @@ struct JWTDecoderTests {
   }
 
   @Test
-  func jWTDecodeErrorInvalidJSON() {
+  func jWTDecodeErrorInvalidJSON() throws {
     // Create invalid JSON in body
     let invalidBody = "not_valid_json"
-    let bodyBase64 = invalidBody.data(using: .utf8)!.base64EncodedString()
+    let bodyBase64 = try #require(invalidBody.data(using: .utf8)?.base64EncodedString()
       .replacingOccurrences(of: "+", with: "-")
       .replacingOccurrences(of: "/", with: "_")
-      .replacingOccurrences(of: "=", with: "")
+      .replacingOccurrences(of: "=", with: ""))
 
-    let headerBase64 = try! JSONSerialization.data(withJSONObject: ["alg": "HS256"])
+    let headerBase64 = try JSONSerialization.data(withJSONObject: ["alg": "HS256"])
       .base64EncodedString()
       .replacingOccurrences(of: "+", with: "-")
       .replacingOccurrences(of: "/", with: "_")

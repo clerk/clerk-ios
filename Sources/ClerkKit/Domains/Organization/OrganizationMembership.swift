@@ -61,7 +61,9 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Identifiable
 
 extension OrganizationMembership {
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol { Clerk.shared.dependencies.organizationService }
+  private var organizationService: any OrganizationServiceProtocol {
+    Clerk.shared.dependencies.organizationService
+  }
 
   /// Deletes the membership from the organization it belongs to.
   ///
