@@ -112,6 +112,11 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
     // First sync: iOS always wins if both have tokens
     if !hasSyncedBefore, currentToken != nil {
+      do {
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
+      }
       // iOS always wins on first sync - don't accept watch token
       return
     }

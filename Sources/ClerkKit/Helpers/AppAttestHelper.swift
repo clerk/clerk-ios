@@ -144,12 +144,9 @@ enum AppAttestHelper {
     try await apiClient.send(request)
   }
 
-  /// Checks whether a key ID is stored in the keychain.
-  ///
-  /// This is nonisolated to allow checking from background threads.
-  /// Uses a default keychain instance with the bundle identifier as service.
-  nonisolated static var hasKeyId: Bool {
-    let keychain = SystemKeychain(service: Bundle.main.bundleIdentifier ?? "")
+  /// Checks whether a key ID is stored in the configured keychain.
+  @MainActor
+  static var hasKeyId: Bool {
     do {
       return try keychain.hasItem(forKey: keychainKey)
     } catch {
