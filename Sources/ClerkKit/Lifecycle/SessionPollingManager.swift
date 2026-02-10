@@ -232,8 +232,10 @@ final class SessionPollingManager {
   }
 
   /// Cancels polling and cleans up resources if the manager is released unexpectedly.
-  @MainActor
   deinit {
-    stopPolling()
+    pollingTask?.cancel()
+    pollingTask = nil
+    authEventTask?.cancel()
+    authEventTask = nil
   }
 }

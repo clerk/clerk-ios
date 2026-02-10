@@ -66,12 +66,12 @@ jobs:
           set -euo pipefail
           echo "Building for ${{ matrix.platform }} using xcodebuild..."
           case "${{ matrix.platform }}" in
-            iOS) destination="platform=iOS Simulator,name=iPhone 16,OS=18.6" ;;
+            iOS) destination="generic/platform=iOS Simulator" ;;
             macOS) destination="platform=macOS" ;;
             macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
-            watchOS) destination="platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5" ;;
-            tvOS) destination="platform=tvOS Simulator,name=Apple TV,OS=18.5" ;;
-            visionOS) destination="platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5" ;;
+            watchOS) destination="generic/platform=watchOS Simulator" ;;
+            tvOS) destination="generic/platform=tvOS Simulator" ;;
+            visionOS) destination="generic/platform=visionOS Simulator" ;;
           esac
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 

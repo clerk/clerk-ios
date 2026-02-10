@@ -53,7 +53,7 @@ struct RetryPolicy: Sendable {
 func retryingOperation<T>(
   policy: RetryPolicy,
   operationName: String,
-  operation: @escaping @Sendable () async throws -> T
+  operation: @escaping @MainActor @Sendable () async throws -> T
 ) async throws -> T {
   var attempt = 0
 

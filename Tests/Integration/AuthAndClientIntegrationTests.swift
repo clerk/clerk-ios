@@ -22,10 +22,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AuthAndClientIntegrationTests {
-  /// Shared test email used across SignUp and SignIn tests.
-  /// Using a fixed email so SignIn can authenticate with the account created by SignUp.
-  private static let testEmail = "test+clerk_test@example.com"
-
   /// Shared test password used across SignUp and SignIn tests.
   private static let testPassword = "Clerk_iOS_Test_2025_XyZ9#mK2$pL7"
 
@@ -39,52 +35,70 @@ struct AuthAndClientIntegrationTests {
   @Test
   func signUpAndSignIn() async throws {
     configureClerkForIntegrationTesting(keyName: "with-email-codes")
-    // Delete any existing test account to ensure a clean slate
-    await deleteTestAccountIfExists()
+    let testEmail = Self.makeUniqueTestEmail()
+    var capturedError: Error?
+    var didCreateSignUp = false
 
-    // MARK: - SignUp Flow
+    do {
+      // MARK: - SignUp Flow
 
-    // Step 1: Create a SignUp with an email address and password
-    // Using test email format - test+clerk_test@email.com emails are test emails
-    let signUp = try await Clerk.shared.auth.signUp(emailAddress: Self.testEmail, password: Self.testPassword)
+      // Step 1: Create a SignUp with an email address and password
+      // Use a unique test email to avoid collisions across concurrent CI runs.
+      let signUp = try await Clerk.shared.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
+      didCreateSignUp = true
 
-    // Step 2: Prepare verification (email_code)
-    // This will send a code to the email address
-    let preparedSignUp = try await signUp.sendEmailCode()
+      // Step 2: Prepare verification (email_code)
+      // This will send a code to the email address
+      let preparedSignUp = try await signUp.sendEmailCode()
 
-    // Step 3: Attempt verification with the test verification code
-    try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
+      // Step 3: Attempt verification with the test verification code
+      try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
 
-    // Sign out so that SignIn can sign in with the new account
-    try await Clerk.shared.auth.signOut()
+      // Sign out so that SignIn can sign in with the new account
+      try await Clerk.shared.auth.signOut()
 
-    // MARK: - SignIn Flow
+      // MARK: - SignIn Flow
 
-    // Step 1: Create a SignIn with the same email used in SignUp
-    let signIn = try await Clerk.shared.auth.signIn(Self.testEmail)
+      // Step 1: Create a SignIn with the same email used in SignUp
+      let signIn = try await Clerk.shared.auth.signIn(testEmail)
 
-    // Step 2: Prepare first factor verification (email_code)
-    // This will send a code to the email address
-    let preparedSignIn = try await signIn.sendEmailCode()
+      // Step 2: Prepare first factor verification (email_code)
+      // This will send a code to the email address
+      let preparedSignIn = try await signIn.sendEmailCode()
 
-    // Step 3: Attempt first factor with the test verification code
-    try await preparedSignIn.verifyCode(Self.testVerificationCode)
+      // Step 3: Attempt first factor with the test verification code
+      try await preparedSignIn.verifyCode(Self.testVerificationCode)
+    } catch {
+      capturedError = error
+    }
 
-    // Sign out after completing sign in
-    try await Clerk.shared.user?.delete()
+    await deleteTestAccountIfExists(email: testEmail, allowPasswordCleanup: didCreateSignUp)
+
+    if let capturedError {
+      throw capturedError
+    }
   }
 
-  // MARK: - Helper Methods
+  private static func makeUniqueTestEmail() -> String {
+    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    return "test+clerk_test_\(suffix)@example.com"
+  }
 
-  /// Deletes the test account if it exists by attempting to sign in and then deleting.
-  /// This ensures a clean slate before starting sign up.
-  private func deleteTestAccountIfExists() async {
-    // Try to sign in with the test email
+  private func deleteTestAccountIfExists(email: String, allowPasswordCleanup: Bool) async {
     do {
-      _ = try await Clerk.shared.auth.signInWithPassword(identifier: Self.testEmail, password: Self.testPassword)
+      if let currentUser = Clerk.shared.user {
+        try await currentUser.delete()
+        return
+      }
+
+      guard allowPasswordCleanup else {
+        return
+      }
+
+      _ = try await Clerk.shared.auth.signInWithPassword(identifier: email, password: Self.testPassword)
       try await Clerk.shared.user?.delete()
     } catch {
-      // Account doesn't exist or sign in failed, which is fine
+      // Best-effort cleanup. Some failure paths may not produce a deletable account.
     }
   }
 }
