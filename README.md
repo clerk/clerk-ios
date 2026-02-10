@@ -57,7 +57,9 @@ targets: [
 
 - [Quickstart](https://clerk.com/docs/quickstarts/ios)
 - [Prebuilt Views](https://clerk.com/docs/reference/components/authentication/auth-view)
-- [Custom Flows](https://clerk.com/docs/custom-flows/overview)
+- [Authentication Flows](https://clerk.com/docs/ios/reference/native-mobile/auth)
+- [User Management](https://clerk.com/docs/ios/reference/native-mobile/user)
+- [Organization Management](https://clerk.com/docs/ios/reference/native-mobile/organizations)
 - [iOS SDK Reference](https://clerk.github.io/clerk-ios/documentation/clerk/)
 
 ## 🚢 Release Notes
