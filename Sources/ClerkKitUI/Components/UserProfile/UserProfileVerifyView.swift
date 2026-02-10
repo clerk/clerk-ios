@@ -1,0 +1,315 @@
+//
+//  UserProfileVerifyView.swift
+//  Clerk
+//
+
+#if os(iOS)
+
+import ClerkKit
+import SwiftUI
+
+struct UserProfileVerifyView: View {
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(CodeLimiter.self) private var codeLimiter
+  @Environment(\.dismiss) private var environmentDismiss
+
+  @State private var code = ""
+  @State private var error: Error?
+  @State private var verificationState = VerificationState.default
+  @State private var otpFieldState = OTPField.FieldState.default
+
+  @FocusState private var otpFieldIsFocused: Bool
+
+  private var remainingSeconds: Int {
+    codeLimiter.remainingCooldown(for: codeLimiterIdentifier)
+  }
+
+  var user: User? {
+    clerk.user
+  }
+
+  @State var mode: Mode
+  let onCompletion: (_ backupCodes: [String]?) -> Void
+  let customDismiss: (() -> Void)?
+
+  enum Mode {
+    case email(EmailAddress)
+    case phone(PhoneNumber)
+    case totp
+  }
+
+  private var titleKey: LocalizedStringKey {
+    switch mode {
+    case .email:
+      "Verify email address"
+    case .phone:
+      "Verify phone number"
+    case .totp:
+      "Verify authenticator app"
+    }
+  }
+
+  private var instructionsText: Text {
+    switch mode {
+    case let .email(emailAddress):
+      Text("Enter the verification code sent to \(emailAddress.emailAddress)", bundle: .module)
+    case let .phone(phoneNumber):
+      Text("Enter the verification code sent to \(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)", bundle: .module)
+    case .totp:
+      Text("Enter the verification code from your authenticator application.", bundle: .module)
+    }
+  }
+
+  private func dismiss() {
+    if let customDismiss {
+      customDismiss()
+    } else {
+      environmentDismiss()
+    }
+  }
+
+  private var hasCancelAction: Bool {
+    switch mode {
+    case .email, .phone:
+      true
+    case .totp:
+      false
+    }
+  }
+
+  private var codeLimiterIdentifier: String {
+    switch mode {
+    case let .email(emailAddress):
+      emailAddress.emailAddress
+    case let .phone(phoneNumber):
+      phoneNumber.phoneNumber
+    case .totp:
+      ""
+    }
+  }
+
+  enum VerificationState {
+    case `default`
+    case verifying
+    case success
+    case error(Error)
+
+    var showResend: Bool {
+      switch self {
+      case .default, .error:
+        true
+      case .verifying, .success:
+        false
+      }
+    }
+  }
+
+  var showResend: Bool {
+    switch mode {
+    case .email, .phone:
+      true
+    case .totp:
+      false
+    }
+  }
+
+  var resendString: LocalizedStringKey {
+    if remainingSeconds > 0 {
+      "Resend (\(remainingSeconds))"
+    } else {
+      "Resend"
+    }
+  }
+
+  init(
+    mode: Mode,
+    onCompletion: @escaping (_ backupCodes: [String]?) -> Void,
+    customDismiss: (() -> Void)? = nil
+  ) {
+    _mode = .init(initialValue: mode)
+    self.onCompletion = onCompletion
+    self.customDismiss = customDismiss
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 24) {
+        instructionsText
+          .font(theme.fonts.subheadline)
+          .foregroundStyle(theme.colors.mutedForeground)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .fixedSize(horizontal: false, vertical: true)
+
+        OTPField(
+          code: $code,
+          fieldState: $otpFieldState,
+          isFocused: $otpFieldIsFocused
+        ) { _ in
+          await attempt()
+        }
+        .onAppear {
+          verificationState = .default
+          otpFieldIsFocused = true
+        }
+
+        Group {
+          switch verificationState {
+          case .verifying:
+            HStack(spacing: 4) {
+              SpinnerView()
+                .frame(width: 16, height: 16)
+              Text("Verifying...", bundle: .module)
+            }
+            .foregroundStyle(theme.colors.mutedForeground)
+          case .success:
+            HStack(spacing: 4) {
+              Image("icon-check-circle", bundle: .module)
+                .foregroundStyle(theme.colors.success)
+              Text("Success", bundle: .module)
+                .foregroundStyle(theme.colors.mutedForeground)
+            }
+          case let .error(error):
+            ErrorText(error: error)
+          default:
+            EmptyView()
+          }
+        }
+        .font(theme.fonts.subheadline)
+
+        if showResend {
+          AsyncButton {
+            await prepare()
+          } label: { isRunning in
+            HStack(spacing: 2) {
+              Text("Didn't receive a code?", bundle: .module)
+              Text(resendString, bundle: .module)
+                .foregroundStyle(
+                  remainingSeconds > 0
+                    ? theme.colors.mutedForeground
+                    : theme.colors.primary
+                )
+                .monospacedDigit()
+                .contentTransition(.numericText(countsDown: true))
+                .animation(.default, value: remainingSeconds)
+            }
+            .overlayProgressView(isActive: isRunning)
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(
+            .secondary(
+              config: .init(
+                emphasis: .none,
+                size: .small
+              )
+            )
+          )
+          .disabled(remainingSeconds > 0)
+          .simultaneousGesture(TapGesture())
+        }
+      }
+      .padding(24)
+    }
+    .clerkErrorPresenting($error)
+    .presentationBackground(theme.colors.background)
+    .background(theme.colors.background)
+    .navigationBarTitleDisplayMode(.inline)
+    .preGlassSolidNavBar()
+    .navigationBarBackButtonHidden(hasCancelAction)
+    .toolbar {
+      if hasCancelAction {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
+      }
+
+      ToolbarItem(placement: .principal) {
+        Text(titleKey, bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
+      }
+    }
+    .taskOnce {
+      if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
+        await prepare()
+      }
+    }
+  }
+}
+
+extension UserProfileVerifyView {
+  func prepare() async {
+    code = ""
+    verificationState = .default
+
+    do {
+      switch mode {
+      case let .email(emailAddress):
+        try await emailAddress.sendCode()
+      case let .phone(phoneNumber):
+        try await phoneNumber.sendCode()
+      case .totp:
+        return
+      }
+
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
+    } catch {
+      otpFieldIsFocused = false
+      self.error = error
+      ClerkLogger.error("Failed to prepare verification", error: error)
+    }
+  }
+
+  func attempt() async {
+    verificationState = .verifying
+
+    do {
+      switch mode {
+      case let .email(emailAddress):
+        try await emailAddress.verifyCode(code)
+        codeLimiter.clearRecord(for: emailAddress.emailAddress)
+        verificationState = .success
+        onCompletion(nil)
+      case let .phone(phoneNumber):
+        try await phoneNumber.verifyCode(code)
+        codeLimiter.clearRecord(for: phoneNumber.phoneNumber)
+        verificationState = .success
+        onCompletion(nil)
+      case .totp:
+        guard let user else { return }
+        let totp = try await user.verifyTOTP(code: code)
+        verificationState = .success
+        onCompletion(totp.backupCodes)
+      }
+    } catch {
+      otpFieldState = .error
+      verificationState = .error(error)
+
+      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
+        self.error = clerkError
+        otpFieldIsFocused = false
+      }
+    }
+  }
+}
+
+#Preview("Email") {
+  NavigationStack {
+    UserProfileVerifyView(mode: .email(.mock)) { _ in }
+  }
+  .environment(CodeLimiter())
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Phone") {
+  NavigationStack {
+    UserProfileVerifyView(mode: .phone(.mock)) { _ in }
+  }
+  .environment(CodeLimiter())
+  .environment(\.clerkTheme, .clerk)
+}
+
+#endif

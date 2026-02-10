@@ -1,0 +1,14 @@
+//
+//  ClerkURLEncodedFormEncoderMiddleware.swift
+//  Clerk
+//
+
+import Foundation
+
+struct ClerkURLEncodedFormEncoderMiddleware: ClerkRequestMiddleware {
+  func prepare(_ request: inout URLRequest) async throws {
+    guard let data = request.httpBody else { return }
+    let json = try? JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
+    request.httpBody = try? URLEncodedFormEncoder(keyEncoding: .convertToSnakeCase).encode(json)
+  }
+}

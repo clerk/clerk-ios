@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Pre-commit hook to format staged Swift files
+
+# Check if swiftformat is installed
+if ! command -v swiftformat > /dev/null; then
+    echo "Error: SwiftFormat is not installed. Run 'make setup' to install it."
+    exit 1
+fi
+
+# Filter staged Swift files (null-delimited for safe handling of special characters)
+# Store filtered files in a temporary file to avoid reading git output multiple times
+temp_file=$(mktemp)
+trap 'rm -f "$temp_file"' EXIT
+
+git diff --cached --name-only --diff-filter=ACM -z | while IFS= read -r -d '' file; do
+    if [[ "$file" == *.swift ]]; then
+        printf '%s\0' "$file" >> "$temp_file"
+    fi
+done
+
+# Check if any Swift files were found
+if [ ! -s "$temp_file" ]; then
+    exit 0
+fi
+
+# Format staged Swift files (using null-delimited input)
+echo "Formatting staged Swift files..."
+cat "$temp_file" | xargs -0 swiftformat
+
+# Re-stage the formatted files (using null-delimited input)
+cat "$temp_file" | xargs -0 git add
+
+echo "✅ Swift files formatted and re-staged"
+

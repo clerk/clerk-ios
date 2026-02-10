@@ -1,0 +1,125 @@
+//
+//  CountryPickerView.swift
+//  AirbnbClone
+//
+
+import PhoneNumberKit
+import SwiftUI
+
+struct CountryPickerView: View {
+  typealias Country = CountryCodePickerViewController.Country
+
+  @Environment(\.dismiss) private var dismiss
+  @Binding var selectedCountry: Country
+
+  @State private var scrolledID: String?
+
+  private static let countries: [Country] = phoneNumberUtility
+    .allCountries()
+    .compactMap { Country(for: $0, with: phoneNumberUtility) }
+    .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+
+  var body: some View {
+    NavigationStack {
+      ScrollView {
+        LazyVStack(spacing: 0) {
+          ForEach(Self.countries, id: \.code) { country in
+            CountryRow(
+              country: country,
+              isSelected: country.code == selectedCountry.code
+            ) {
+              selectedCountry = country
+              dismiss()
+            }
+
+            if country.code != Self.countries.last?.code {
+              CountryRowDivider()
+            }
+          }
+        }
+        .scrollTargetLayout()
+      }
+      .scrollPosition(id: $scrolledID, anchor: .center)
+      .task {
+        guard scrolledID == nil else { return }
+        scrolledID = selectedCountry.code
+      }
+      .navigationTitle("Country/Region")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(.visible, for: .navigationBar)
+      .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          CloseButton {
+            dismiss()
+          }
+        }
+      }
+    }
+  }
+}
+
+// MARK: - CountryRow
+
+private struct CountryRow: View {
+  let country: CountryCodePickerViewController.Country
+  let isSelected: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      HStack {
+        Text("\(country.name) (\(country.prefix))")
+          .font(.system(size: 15, weight: .light))
+          .foregroundStyle(Color(uiColor: .label))
+
+        Spacer()
+
+        CountrySelectionIndicator(isSelected: isSelected)
+      }
+      .padding(.horizontal, 24)
+      .padding(.vertical, 20)
+      .contentShape(.rect)
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+// MARK: - CountrySelectionIndicator
+
+private struct CountrySelectionIndicator: View {
+  let isSelected: Bool
+
+  var body: some View {
+    ZStack {
+      Circle()
+        .strokeBorder(
+          isSelected ? Color(uiColor: .label) : Color(uiColor: .systemGray4),
+          lineWidth: isSelected ? 2 : 0.5
+        )
+        .frame(width: 22, height: 22)
+
+      if isSelected {
+        Circle()
+          .fill(Color(uiColor: .label))
+          .frame(width: 14, height: 14)
+      }
+    }
+  }
+}
+
+// MARK: - CountryRowDivider
+
+private struct CountryRowDivider: View {
+  var body: some View {
+    Divider()
+      .padding(.horizontal, 24)
+  }
+}
+
+// MARK: - Preview
+
+#Preview {
+  let country = CountryCodePickerViewController.Country(for: "US", with: phoneNumberUtility)!
+  CountryPickerView(selectedCountry: .constant(country))
+}

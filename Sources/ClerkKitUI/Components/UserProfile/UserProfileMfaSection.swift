@@ -1,0 +1,88 @@
+//
+//  UserProfileMfaSection.swift
+//  Clerk
+//
+
+#if os(iOS)
+
+import ClerkKit
+import SwiftUI
+
+struct UserProfileMfaSection: View {
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(UserProfileNavigation.self) private var navigation
+
+  @State private var addMfaHeight: CGFloat = 400
+
+  var user: User? {
+    clerk.user
+  }
+
+  var mfaPhoneNumbers: [PhoneNumber] {
+    (user?.phoneNumbers ?? [])
+      .filter { phoneNumber in
+        phoneNumber.reservedForSecondFactor
+      }
+      .sorted { lhs, rhs in
+        if lhs.defaultSecondFactor {
+          true
+        } else if rhs.defaultSecondFactor {
+          false
+        } else {
+          lhs.createdAt < rhs.createdAt
+        }
+      }
+  }
+
+  var body: some View {
+    @Bindable var navigation = navigation
+
+    Section {
+      VStack(spacing: 0) {
+        if user?.totpEnabled == true {
+          UserProfileMfaRow(
+            style: .authenticatorApp,
+            isDefault: true
+          )
+        }
+
+        if clerk.environment?.mfaPhoneCodeIsEnabled == true {
+          ForEach(mfaPhoneNumbers) { phoneNumber in
+            UserProfileMfaRow(
+              style: .sms(phoneNumber: phoneNumber),
+              isDefault: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
+            )
+          }
+        }
+
+        if clerk.environment?.mfaBackupCodeIsEnabled == true {
+          if user?.backupCodeEnabled == true {
+            UserProfileMfaRow(
+              style: .backupCodes
+            )
+          }
+        }
+
+        UserProfileButtonRow(text: "Add two-step verification") {
+          navigation.chooseMfaTypeIsPresented = true
+        }
+      }
+      .background(theme.colors.background)
+    } header: {
+      UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
+    }
+    .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
+      UserProfileAddMfaView(contentHeight: $addMfaHeight)
+        .presentationDetents([.height(addMfaHeight)])
+    }
+  }
+}
+
+#Preview {
+  UserProfileMfaSection()
+    .clerkPreview()
+    .environment(\.clerkTheme, .clerk)
+}
+
+#endif

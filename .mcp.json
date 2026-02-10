@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sosumi": {
+      "command": "npx",
+      "args": ["-y", "sosumi-mcp@latest"]
+    },
+    "XcodeBuildMCP": {
+      "command": "npx",
+      "args": ["-y", "xcodebuildmcp@latest"]
+    }
+  }
+}

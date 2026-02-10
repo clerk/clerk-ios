@@ -1,0 +1,24 @@
+//
+//  ClientService.swift
+//  Clerk
+//
+
+import Foundation
+
+protocol ClientServiceProtocol: Sendable {
+  @MainActor func get() async throws -> Client?
+}
+
+final class ClientService: ClientServiceProtocol {
+  private let apiClient: APIClient
+
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  @MainActor
+  func get() async throws -> Client? {
+    let request = Request<ClientResponse<Client?>>(path: "/v1/client")
+    return try await apiClient.send(request).value.response
+  }
+}

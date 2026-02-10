@@ -12,43 +12,52 @@ let package = Package(
     .macOS(.v14),
     .watchOS(.v10),
     .tvOS(.v17),
-    .visionOS(.v1)
+    .visionOS(.v1),
   ],
   products: [
-    .library(name: "Clerk", targets: ["Clerk"])
+    .library(name: "ClerkKit", targets: ["ClerkKit"]),
+    .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/hmlongco/Factory", from: "2.5.3"),
-    .package(url: "https://github.com/kean/Get", .upToNextMajor(from: "2.2.1")),
-    .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.0.0")),
-    .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
+    .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "12.0.0")),
     .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
-    .package(url: "https://github.com/auth0/SimpleKeychain", .upToNextMajor(from: "1.0.0")),
-    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", .upToNextMajor(from: "1.3.1"))
+    .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
+    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0"),
   ],
   targets: [
     .target(
-      name: "Clerk",
+      name: "ClerkKit",
+      dependencies: [],
+      path: "Sources/ClerkKit",
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency"),
+      ]
+    ),
+    .target(
+      name: "ClerkKitUI",
       dependencies: [
-        .product(name: "FactoryKit", package: "Factory"),
-        .product(name: "Get", package: "Get"),
-        .product(name: "Kingfisher", package: "Kingfisher"),
+        "ClerkKit",
+        .product(name: "Nuke", package: "Nuke"),
+        .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
-        .product(name: "SimpleKeychain", package: "SimpleKeychain")
+      ],
+      path: "Sources/ClerkKitUI",
+      resources: [
+        .process("Resources"),
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
+        .enableExperimentalFeature("StrictConcurrency"),
       ]
     ),
     .testTarget(
-      name: "ClerkTests",
+      name: "Tests",
       dependencies: [
-        "Clerk",
+        "ClerkKit",
+        .product(name: "Mocker", package: "Mocker"),
         .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
-        .product(name: "Mocker", package: "Mocker")
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency")
+        .enableExperimentalFeature("StrictConcurrency"),
       ]
     ),
   ]

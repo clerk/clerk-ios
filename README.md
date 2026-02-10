@@ -38,7 +38,18 @@ Alternatively, add the following as a dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/clerk/clerk-ios", from: "0.1.0")
+    .package(url: "https://github.com/clerk/clerk-ios", from: "1.0.0")
+]
+
+// Then add ClerkKit and/or ClerkKitUI to your target dependencies:
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [
+            .product(name: "ClerkKit", package: "clerk-ios"),
+            .product(name: "ClerkKitUI", package: "clerk-ios")
+        ]
+    )
 ]
 ```
 
@@ -53,11 +64,9 @@ dependencies: [
 
 Curious what we shipped recently? Check out our [changelog](https://clerk.com/changelog)!
 
-<!---
 ## 🤝 How to Contribute
 
-We're open to all community contributions! If you'd like to contribute in any way, please read [our contribution guidelines](https://github.com/clerk/javascript/blob/main/docs/CONTRIBUTING.md). We'd love to have you as part of the Clerk community!
--->
+We're open to all community contributions! If you'd like to contribute in any way, please read [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines. We'd love to have you as part of the Clerk community!
 
 ## 📝 License
 

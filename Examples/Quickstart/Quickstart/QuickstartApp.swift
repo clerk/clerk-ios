@@ -2,34 +2,23 @@
 //  QuickstartApp.swift
 //  Quickstart
 //
-//  Created by Mike Pitre on 7/30/25.
-//
 
-#if DEBUG
-import Atlantis
-#endif
-
-import Clerk
+import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 @main
 struct QuickstartApp: App {
-    @State private var clerk = Clerk.shared
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .task {
-                    clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
-                    do {
-                        try await clerk.load()
-                    } catch {
-                        dump(error)
-                    }
-                }
-                #if DEBUG
-                .task { Atlantis.start() }
-                #endif
-        }
+  init() {
+    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+  }
+
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .prefetchClerkImages()
+        .environment(Clerk.shared)
+        .atlantisProxy()
     }
+  }
 }

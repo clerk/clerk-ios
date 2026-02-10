@@ -1,0 +1,41 @@
+//
+//  SignInFactorTwoView.swift
+//  Clerk
+//
+
+#if os(iOS)
+
+import ClerkKit
+import SwiftUI
+
+struct SignInFactorTwoView: View {
+  @Environment(\.clerkTheme) private var theme
+
+  let factor: Factor
+
+  @ViewBuilder
+  var viewForFactor: some View {
+    switch factor.strategy {
+    case .totp, .phoneCode, .emailCode:
+      SignInFactorCodeView(factor: factor, mode: .secondFactor)
+    case .backupCode:
+      SignInFactorTwoBackupCodeView(factor: factor)
+    default:
+      GetHelpView(context: .signIn)
+    }
+  }
+
+  var body: some View {
+    viewForFactor
+  }
+}
+
+#Preview {
+  SignInFactorTwoView(
+    factor: .init(
+      strategy: .totp
+    )
+  )
+}
+
+#endif

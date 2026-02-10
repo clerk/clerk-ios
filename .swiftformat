@@ -1,0 +1,8 @@
+--indent 2
+--linebreaks lf
+--swiftversion 5.10
+--minversion 0.59.1
+--extension-acl on-declarations
+--disable preferKeyPath
+--disable hoistPatternLet
+--ifdef no-indent

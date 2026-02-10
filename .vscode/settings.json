@@ -1,0 +1,15 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "[swift]": {
+    "editor.defaultFormatter": "vknabel.vscode-swiftformat",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true
+  },
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "window.title": "${activeRepositoryBranchName}${separator}${rootName}${separator}${profileName}"
+}

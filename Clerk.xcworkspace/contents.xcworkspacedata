@@ -5,6 +5,15 @@
       location = "group:">
    </FileRef>
    <FileRef
+      location = "group:Examples/AirbnbClone/AirbnbClone.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:Examples/Quickstart/Quickstart.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Examples/WatchExampleApp/WatchExampleApp.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Examples/CustomFlows/CustomFlows.xcodeproj">
    </FileRef>
 </Workspace>
