@@ -46,8 +46,8 @@ targets: [
     .target(
         name: "YourApp",
         dependencies: [
-            .product(name: "ClerkKit", package: "clerk-ios"),
-            .product(name: "ClerkKitUI", package: "clerk-ios")
+            .product(name: "ClerkKit", package: "Clerk"),
+            .product(name: "ClerkKitUI", package: "Clerk")
         ]
     )
 ]
