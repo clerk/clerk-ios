@@ -75,11 +75,6 @@ extension SignUp {
   struct AttemptVerificationParams: Encodable, Sendable {
     let strategy: FactorStrategy
     let code: String
-
-    init(strategy: FactorStrategy, code: String) {
-      self.strategy = strategy
-      self.code = code
-    }
   }
 
   struct GetParams: Sendable {

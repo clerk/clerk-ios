@@ -183,7 +183,11 @@ public final class Clerk {
     } catch {
       // This should never happen, but handle it just in case
       assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
-      dependencies = try! DependencyContainer(publishableKey: "", options: .init())
+      if let fallbackDependencies = try? DependencyContainer(publishableKey: "", options: .init()) {
+        dependencies = fallbackDependencies
+      } else {
+        fatalError("Failed to create temporary dependency container")
+      }
     }
   }
 }

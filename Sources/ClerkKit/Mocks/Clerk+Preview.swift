@@ -54,7 +54,7 @@ extension Clerk {
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
   ///
-  // Advanced service customization is available only within this package.
+  /// Advanced service customization is available only within this package.
   ///
   /// **Environment Loading:**
   /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.

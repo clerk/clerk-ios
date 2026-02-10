@@ -2,6 +2,8 @@
 //  User.swift
 //
 
+// swiftlint:disable file_length
+
 import Foundation
 #if canImport(AuthenticationServices)
 import AuthenticationServices
