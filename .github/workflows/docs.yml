@@ -35,6 +35,7 @@ jobs:
           derived_data_path="$(mktemp -d)"
           output_path="docs"
           schemes=("ClerkKit" "ClerkKitUI")
+          archives=()
 
           for scheme in "${schemes[@]}"; do
             xcodebuild docbuild \
@@ -48,11 +49,29 @@ jobs:
               exit 1
             fi
 
-            xcrun docc process-archive transform-for-static-hosting \
-              "$archive_path" \
-              --output-path "$output_path" \
-              --hosting-base-path "${{ github.event.repository.name }}"
+            archives+=("$archive_path")
           done
+
+          merged_archive_path="$derived_data_path/ClerkCombined.doccarchive"
+          xcrun docc merge "${archives[@]}" \
+            --synthesized-landing-page-name "Clerk iOS" \
+            --synthesized-landing-page-kind "Package" \
+            --output-path "$merged_archive_path"
+
+          xcrun docc process-archive transform-for-static-hosting \
+            "$merged_archive_path" \
+            --output-path "$output_path" \
+            --hosting-base-path "${{ github.event.repository.name }}"
+
+          if [ ! -d "$output_path/documentation/clerkkit" ]; then
+            echo "❌ Missing /documentation/clerkkit in generated docs output"
+            exit 1
+          fi
+
+          if [ ! -d "$output_path/documentation/clerkkitui" ]; then
+            echo "❌ Missing /documentation/clerkkitui in generated docs output"
+            exit 1
+          fi
 
           echo '<script>window.location.href += "/documentation/clerkkit"</script>' > "$output_path/index.html"
           mkdir -p "$output_path/documentation/clerk"
