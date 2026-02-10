@@ -23,7 +23,7 @@ public enum AuthEvent: Sendable {
   /// - When a user signs out (session → nil)
   /// - When the current session changes (session → different session)
   /// - When the same session is updated (e.g., status, updatedAt changed)
-  case sessionChanged(old: Session?, new: Session?)
+  case sessionChanged(oldValue: Session?, newValue: Session?)
   /// A session token was refreshed.
   case tokenRefreshed(token: String)
 }

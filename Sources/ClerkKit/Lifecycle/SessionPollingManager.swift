@@ -167,8 +167,8 @@ final class SessionPollingManager {
     case .tokenRefreshed:
       // Clear backoff after any successful token refresh.
       consecutiveFailures = 0
-    case .sessionChanged(let old, let new):
-      let becameActive = new?.status == .active && (old?.status != .active || old?.id != new?.id)
+    case .sessionChanged(let oldValue, let newValue):
+      let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
       if becameActive, isPollingActive {
         consecutiveFailures = 0
         Task { [weak self] in
