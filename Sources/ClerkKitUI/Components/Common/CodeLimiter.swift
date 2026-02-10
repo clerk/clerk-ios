@@ -49,9 +49,13 @@ final class CodeLimiter {
   /// Starts the countdown timer if not already running.
   private func startTimerIfNeeded() {
     guard timer == nil else { return }
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+      guard let self else {
+        timer.invalidate()
+        return
+      }
       Task { @MainActor in
-        self?.onTick()
+        self.onTick()
       }
     }
     RunLoop.current.add(timer!, forMode: .common)
@@ -111,12 +115,6 @@ final class CodeLimiter {
   /// - Returns: `true` if enough time has passed since the last code was sent.
   func canSendCode(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Bool {
     remainingCooldown(for: identifier, cooldown: cooldown) == 0
-  }
-
-  /// Ensures the timer is invalidated if the limiter is released.
-  @MainActor
-  deinit {
-    stopTimer()
   }
 }
 
