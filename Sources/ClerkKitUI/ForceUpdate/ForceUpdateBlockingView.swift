@@ -16,47 +16,57 @@ struct ForceUpdateBlockingView: View {
 
   var body: some View {
     ZStack {
-      theme.colors.muted
+      theme.colors.background
         .ignoresSafeArea()
 
-      VStack(spacing: 20) {
-        Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-          .font(.system(size: 56))
-          .foregroundStyle(theme.colors.primary)
+      VStack(spacing: 0) {
+        VStack(spacing: 0) {
+          AppLogoView()
+            .frame(maxHeight: 44)
+            .padding(.bottom, 24)
 
-        Text("Update required")
-          .font(theme.fonts.title)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-          .multilineTextAlignment(.center)
-
-        Text(message)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.mutedForeground)
-          .multilineTextAlignment(.center)
-      }
-      .padding(24)
-      .frame(maxWidth: 420)
-      .background(theme.colors.background)
-      .clipShape(RoundedRectangle(cornerRadius: theme.design.borderRadius))
-      .overlay(
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(theme.colors.border, lineWidth: 1)
-      )
-      .padding(24)
-      .safeAreaInset(edge: .bottom) {
-        if let updateURL = status.updateURL {
-          Button {
-            openURL(updateURL)
-          } label: {
-            Text("Update now")
-              .frame(maxWidth: .infinity)
+          VStack(spacing: 8) {
+            HeaderView(style: .title, text: "Update required")
+            HeaderView(style: .subtitle, text: "A newer version of this app is required to continue.")
           }
-          .buttonStyle(.primary(config: .init(emphasis: .high, size: .large)))
-          .padding(24)
-          .background(theme.colors.muted)
+          .padding(.bottom, 32)
+
+          HStack(alignment: .top, spacing: 12) {
+            Image("icon-warning", bundle: .module)
+              .resizable()
+              .scaledToFit()
+              .frame(width: 20, height: 20)
+              .foregroundStyle(theme.colors.warning)
+              .padding(10)
+              .background(theme.colors.backgroundWarning, in: .circle)
+
+            Text(message)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.foreground)
+              .fixedSize(horizontal: false, vertical: true)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+          .padding(16)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(theme.colors.backgroundWarning)
+          .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+          .overlay {
+            RoundedRectangle(cornerRadius: theme.design.borderRadius)
+              .strokeBorder(theme.colors.borderWarning, lineWidth: 1)
+          }
+
+          SecuredByClerkView()
+            .padding(.top, 32)
         }
+        .padding(16)
+        .frame(maxWidth: 420)
+        .frame(maxWidth: .infinity)
+
+        Spacer(minLength: 0)
       }
+    }
+    .safeAreaInset(edge: .bottom) {
+      bottomAction
     }
   }
 
@@ -66,6 +76,27 @@ struct ForceUpdateBlockingView: View {
     }
 
     return "This version of the app is no longer supported. Please update to continue."
+  }
+
+  @ViewBuilder
+  private var bottomAction: some View {
+    if let updateURL = status.updateURL {
+      VStack(spacing: 0) {
+        Rectangle()
+          .fill(theme.colors.border)
+          .frame(height: 1)
+
+        Button {
+          openURL(updateURL)
+        } label: {
+          Text("Update now")
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.primary(config: .init(emphasis: .high, size: .large)))
+        .padding(16)
+      }
+      .background(theme.colors.background)
+    }
   }
 }
 
@@ -101,6 +132,32 @@ extension View {
   func clerkForceUpdateOverlay() -> some View {
     modifier(ForceUpdateBlockingOverlayModifier())
   }
+}
+
+#Preview("With update link") {
+  ForceUpdateBlockingView(
+    status: .init(
+      isSupported: false,
+      currentVersion: "1.0.0",
+      minimumVersion: "1.2.0",
+      updateURL: URL(string: "https://apps.apple.com/app/id1234567890"),
+      reason: .belowMinimum
+    )
+  )
+  .clerkPreview()
+}
+
+#Preview("Without update link") {
+  ForceUpdateBlockingView(
+    status: .init(
+      isSupported: false,
+      currentVersion: "1.0.0",
+      minimumVersion: "1.2.0",
+      updateURL: nil,
+      reason: .serverRejected
+    )
+  )
+  .clerkPreview()
 }
 
 #endif
