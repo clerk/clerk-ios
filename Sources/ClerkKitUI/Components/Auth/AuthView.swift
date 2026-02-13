@@ -187,6 +187,7 @@ public struct AuthView: View {
         )
       )
     }
+    .clerkForceUpdateOverlay()
   }
 }
 

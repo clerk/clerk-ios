@@ -103,8 +103,15 @@ public final class Clerk {
         // Sync to watch app if enabled
         watchConnectivityCoordinator?.sync()
       }
+
+      refreshForceUpdateStatus()
     }
   }
+
+  /// The currently evaluated force-update state for this app build.
+  ///
+  /// Consumers can use this to manually implement custom force-update UI.
+  public internal(set) var forceUpdateStatus: ForceUpdateStatus = .supportedDefault
 
   /// The configuration options for this Clerk instance.
   public var options: Clerk.Options {
@@ -392,6 +399,25 @@ extension Clerk {
         }
       }
     }
+  }
+
+  func refreshForceUpdateStatus() {
+    forceUpdateStatus = ForceUpdateStatusResolver.resolve(
+      environment: environment,
+      bundleID: DeviceHelper.bundleID,
+      currentVersion: DeviceHelper.appVersion
+    )
+  }
+
+  func applyUnsupportedAppVersionMeta(_ meta: JSON?) {
+    guard let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+      meta,
+      bundleID: DeviceHelper.bundleID
+    ) else {
+      return
+    }
+
+    forceUpdateStatus = status
   }
 
   /// Starts listening for general Clerk events and handles them.
