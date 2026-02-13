@@ -92,10 +92,12 @@ enum ForceUpdateStatusResolver {
       return nil
     }
 
-    if let appIdentifier = meta["app_identifier"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines),
-       !appIdentifier.isEmpty,
-       !bundleID.isEmpty,
-       appIdentifier != bundleID
+    let normalizedBundleID = normalizeIdentifier(bundleID)
+
+    if let appIdentifier = meta["app_identifier"]?.stringValue,
+       let normalizedAppIdentifier = normalizeIdentifier(appIdentifier),
+       normalizedBundleID != nil,
+       normalizedAppIdentifier != normalizedBundleID
     {
       return nil
     }
@@ -117,10 +119,14 @@ enum ForceUpdateStatusResolver {
     for bundleID: String,
     environment: Clerk.Environment?
   ) -> Clerk.Environment.ForceUpdate.IOSPolicy? {
-    let normalizedBundleID = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !normalizedBundleID.isEmpty else { return nil }
+    guard let normalizedBundleID = normalizeIdentifier(bundleID) else { return nil }
     return environment?.forceUpdate?.ios.first { policy in
-      policy.bundleId == normalizedBundleID
+      normalizeIdentifier(policy.bundleId) == normalizedBundleID
     }
+  }
+
+  private static func normalizeIdentifier(_ value: String) -> String? {
+    let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    return normalized.isEmpty ? nil : normalized
   }
 }

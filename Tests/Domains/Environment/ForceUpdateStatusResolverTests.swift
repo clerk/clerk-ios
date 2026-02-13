@@ -30,6 +30,18 @@ struct ForceUpdateStatusResolverTests {
   }
 
   @Test
+  func policyMatchingIsCaseInsensitive() {
+    let status = ForceUpdateStatusResolver.resolve(
+      environment: environmentWithPolicy(minimumVersion: "2.3.0", updateURL: nil),
+      bundleID: "Com.Example.App",
+      currentVersion: "2.2.9"
+    )
+
+    #expect(status.isSupported == false)
+    #expect(status.reason == .belowMinimum)
+  }
+
+  @Test
   func invalidCurrentVersionFailsOpen() {
     let status = ForceUpdateStatusResolver.resolve(
       environment: environmentWithPolicy(minimumVersion: "2.0.0", updateURL: nil),
@@ -70,6 +82,21 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status == nil)
+  }
+
+  @Test
+  func unsupportedMetaAppIdentifierMatchingIsCaseInsensitive() {
+    let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+      [
+        "platform": "ios",
+        "app_identifier": "Com.Example.App",
+        "minimum_version": "2.0.0",
+      ],
+      bundleID: "com.example.app"
+    )
+
+    #expect(status?.isSupported == false)
+    #expect(status?.reason == .serverRejected)
   }
 
   private func environmentWithPolicy(
