@@ -145,7 +145,6 @@ public struct UserButton<SignedOutContent: View>: View {
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
     }
-    .clerkForceUpdateOverlay()
   }
 }
 

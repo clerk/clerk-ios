@@ -26,8 +26,8 @@ struct WatchExampleApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
+        .clerkRootView()
         .environment(Clerk.shared)
-        .prefetchClerkImages()
         .atlantisProxy()
     }
   }

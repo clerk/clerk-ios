@@ -165,7 +165,6 @@ public struct UserProfileView: View {
       }
       .environment(navigation)
       .environment(codeLimiter)
-      .clerkForceUpdateOverlay()
     }
   }
 }

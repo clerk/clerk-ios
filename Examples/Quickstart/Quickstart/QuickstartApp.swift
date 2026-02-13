@@ -16,7 +16,7 @@ struct QuickstartApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
-        .prefetchClerkImages()
+        .clerkRootView()
         .environment(Clerk.shared)
         .atlantisProxy()
     }
