@@ -481,6 +481,8 @@ public struct Auth {
   ///             print("Sign up completed: \(signUp)")
   ///         case .signedOut(let session):
   ///             print("Signed out: \(session)")
+  ///         case .accountDeleted:
+  ///             print("Account deleted")
   ///         case .sessionChanged(let oldValue, let newValue):
   ///             print("Session changed from \(oldValue?.id ?? "nil") to \(newValue?.id ?? "nil")")
   ///         case .tokenRefreshed(let token):

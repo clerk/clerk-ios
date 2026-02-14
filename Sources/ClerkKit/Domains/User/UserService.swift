@@ -329,6 +329,8 @@ final class UserService: UserServiceProtocol {
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
     )
 
-    return try await apiClient.send(request).value.response
+    let deletedObject = try await apiClient.send(request).value.response
+    Clerk.shared.auth.send(.accountDeleted)
+    return deletedObject
   }
 }
