@@ -1348,7 +1348,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Authentifizierungs-App"
+            "value" : "Authenticator-App"
           }
         },
         "el" : {
@@ -7439,7 +7439,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Rückruf-URL fehlt oder ist ungültig. Es ist nicht möglich, den externen Authentifizierungsfluss zu starten."
+            "value" : "Die Weiterleitungs-URL fehlt oder ist ungültig. Es ist nicht möglich, die externe Authentifizierung zu starten."
           }
         },
         "el" : {
@@ -8769,7 +8769,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sichergestellt von"
+            "value" : "Gesichert von"
           }
         },
         "el" : {
@@ -8909,7 +8909,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie eine vorhandene Telefonnummer für die SMS-Code-Zwei-Schritt-Verifizierung aus oder fügen Sie eine neue hinzu."
+            "value" : "Wählen Sie eine vorhandene Telefonnummer für die Zwei-Schritt-Verifizierung via SMS-Code aus oder fügen Sie eine neue hinzu."
           }
         },
         "el" : {
@@ -10449,7 +10449,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei-Faktor-Authentifizierung"
+            "value" : "Zwei-Schritt-Authentifizierung"
           }
         },
         "el" : {
@@ -10519,7 +10519,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ZWEI-FACH-VERIFIZIERUNG"
+            "value" : "ZWEI-FAKTOR-VERIFIZIERUNG"
           }
         },
         "el" : {
@@ -11079,7 +11079,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein Sicherungscode verwenden"
+            "value" : "Einen Sicherungscode verwenden"
           }
         },
         "el" : {
@@ -12689,7 +12689,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ihr Backup-Code ist der, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben."
+            "value" : "Ihr Backup-Code ist der Code, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben."
           }
         },
         "el" : {
