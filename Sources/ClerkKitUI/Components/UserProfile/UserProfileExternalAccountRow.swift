@@ -35,6 +35,21 @@ struct UserProfileExternalAccountRow: View {
                 image
                   .resizable()
                   .scaledToFit()
+              } else if state.error != nil, colorScheme == .dark {
+                // Dark variant failed to load, fall back to light variant
+                LazyImage(url: externalAccount.oauthProvider.iconImageUrl(darkMode: false)) { fallbackState in
+                  if let image = fallbackState.image {
+                    image
+                      .resizable()
+                      .scaledToFit()
+                  } else {
+                    #if DEBUG
+                    Image(systemName: "globe")
+                      .resizable()
+                      .scaledToFit()
+                    #endif
+                  }
+                }
               } else {
                 #if DEBUG
                 Image(systemName: "globe")

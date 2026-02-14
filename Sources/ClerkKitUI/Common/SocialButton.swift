@@ -27,6 +27,19 @@ struct SocialButton: View {
         image
           .resizable()
           .scaledToFit()
+      } else if state.error != nil, colorScheme == .dark {
+        // Dark variant failed to load, fall back to light variant
+        LazyImage(url: provider.iconImageUrl(darkMode: false)) { fallbackState in
+          if let image = fallbackState.image {
+            image
+              .resizable()
+              .scaledToFit()
+          } else {
+            Image(systemName: "globe")
+              .resizable()
+              .scaledToFit()
+          }
+        }
       } else {
         Image(systemName: "globe")
           .resizable()
