@@ -14,14 +14,12 @@ struct AuthOptionButton: View {
   let title: String
   let action: () -> Void
 
-  @Environment(\.colorScheme) private var colorScheme
-
   private var resolvedIconURL: URL? {
     if let iconURL {
       return iconURL
     }
     if let provider {
-      return provider.iconImageUrl(darkMode: colorScheme == .dark)
+      return provider.iconImageUrl
     }
     return nil
   }

@@ -12,7 +12,6 @@ import SwiftUI
 struct SocialButton: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
   let transferable: Bool
@@ -21,12 +20,25 @@ struct SocialButton: View {
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
 
+  @ViewBuilder
+  private func styledProviderIcon(_ image: Image) -> some View {
+    if provider.supportsTintedIconMask {
+      image
+        .resizable()
+        .renderingMode(.template)
+        .scaledToFit()
+        .foregroundStyle(theme.colors.foreground)
+    } else {
+      image
+        .resizable()
+        .scaledToFit()
+    }
+  }
+
   private var iconImage: some View {
-    LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+    LazyImage(url: provider.iconImageUrl) { state in
       if let image = state.image {
-        image
-          .resizable()
-          .scaledToFit()
+        styledProviderIcon(image)
       } else {
         Image(systemName: "globe")
           .resizable()

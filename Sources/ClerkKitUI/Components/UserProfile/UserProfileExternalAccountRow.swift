@@ -12,7 +12,6 @@ import SwiftUI
 struct UserProfileExternalAccountRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.colorScheme) private var colorScheme
 
   @State private var removeResource: RemoveResource?
   @State private var isConfirmingRemoval = false
@@ -25,16 +24,29 @@ struct UserProfileExternalAccountRow: View {
 
   let externalAccount: ExternalAccount
 
+  @ViewBuilder
+  private func styledProviderIcon(_ image: Image) -> some View {
+    if externalAccount.oauthProvider.supportsTintedIconMask {
+      image
+        .resizable()
+        .renderingMode(.template)
+        .scaledToFit()
+        .foregroundStyle(theme.colors.foreground)
+    } else {
+      image
+        .resizable()
+        .scaledToFit()
+    }
+  }
+
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
         WrappingHStack(alignment: .leading) {
           HStack(spacing: 8) {
-            LazyImage(url: externalAccount.oauthProvider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+            LazyImage(url: externalAccount.oauthProvider.iconImageUrl) { state in
               if let image = state.image {
-                image
-                  .resizable()
-                  .scaledToFit()
+                styledProviderIcon(image)
               } else {
                 #if DEBUG
                 Image(systemName: "globe")

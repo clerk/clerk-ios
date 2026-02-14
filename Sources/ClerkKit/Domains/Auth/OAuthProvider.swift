@@ -3,7 +3,6 @@
 //
 
 import Foundation
-import RegexBuilder
 
 /// A type that represents the OAuth provider.
 public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifiable, Hashable { // swiftlint:disable:this type_body_length
@@ -116,39 +115,26 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   }
 
   /// The url to an the icon for the provider.
-  ///
-  /// - Parameters:
-  ///     - darkMode: Will return the dark mode variant of the image. Does not apply to custom providers.
   @MainActor
-  public func iconImageUrl(darkMode: Bool = false) -> URL? {
+  public var iconImageUrl: URL? {
+    guard let environment = Clerk.shared.environment,
+          let socialConfig = environment.userSettings.social.first(where: { socialConfig in
+            socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
+          })
+    else {
+      return nil
+    }
+
+    return URL(string: socialConfig.value.logoUrl ?? "")
+  }
+
+  /// Indicates whether this provider icon can be rendered as a tinted template mask.
+  public var supportsTintedIconMask: Bool {
     switch self {
-    case let .custom(strategy):
-      if let environment = Clerk.shared.environment,
-         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
-           socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
-         })
-      {
-        return URL(string: socialConfig.value.logoUrl ?? "")
-      }
-
-      return nil
-
+    case .apple, .github, .vercel:
+      true
     default:
-      if let environment = Clerk.shared.environment,
-         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
-           socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
-         })
-      {
-        if var logoUrl = socialConfig.value.logoUrl {
-          if darkMode {
-            logoUrl = logoUrl.replacingOccurrences(of: ".png", with: "-dark.png")
-          }
-
-          return URL(string: logoUrl)
-        }
-      }
-
-      return nil
+      false
     }
   }
 
