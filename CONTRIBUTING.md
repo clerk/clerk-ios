@@ -191,10 +191,10 @@ SDK releases can be published through the **Release SDK** GitHub Actions workflo
 
 The workflow automatically:
 - Verifies the workflow actor has GitHub `maintain` or `admin` permission
-- Updates `Clerk.sdkVersion` in `Sources/ClerkKit/Utils/Version.swift`
-- Runs formatting, linting, unit tests, integration tests, and multi-platform builds
+- Runs formatting, linting, unit tests, integration tests, and multi-platform builds in the `checks` job
+- Updates `Clerk.sdkVersion` in `Sources/ClerkKit/Utils/Version.swift` in the `publish` job
 - Commits the version bump to `main`
-- Creates and pushes tag `v<version>`
+- Creates and pushes tag `v<version>` in the `publish` job
 - Publishes a GitHub Release with auto-generated release notes
 
 ## Questions?

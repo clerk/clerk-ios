@@ -26,7 +26,7 @@ jobs:
           script: |
             const owner = context.repo.owner
             const repo = context.repo.repo
-            const actor = context.actor
+            const actor = context.payload.triggering_actor || context.actor
             const refName = context.ref.replace("refs/heads/", "")
 
             if (refName !== "main") {
@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
             echo "❌ Invalid version: '$RELEASE_VERSION'. Expected SemVer (for example 1.2.3 or 1.2.3-rc.1)."
             exit 1
           fi
@@ -111,14 +111,14 @@ jobs:
           sed -i '' -E "s/(sdkVersion: String = \").*(\")/\\1$RELEASE_VERSION\\2/" "$version_file"
 
           echo "Updated version file:"
-          rg -n "sdkVersion" "$version_file"
+          grep -n "sdkVersion" "$version_file"
 
       - name: Verify version change is present
         run: |
           set -euo pipefail
 
           version_file="Sources/ClerkKit/Utils/Version.swift"
-          if ! rg -q "sdkVersion: String = \"$RELEASE_VERSION\"" "$version_file"; then
+          if ! grep -q "sdkVersion: String = \"$RELEASE_VERSION\"" "$version_file"; then
             echo "❌ Failed to apply SDK version update in $version_file"
             exit 1
           fi

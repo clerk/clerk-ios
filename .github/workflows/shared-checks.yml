@@ -77,15 +77,17 @@ jobs:
 
       - name: Setup integration test keys
         if: inputs.run_integration_tests
+        env:
+          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
         run: |
           set +x
-          if [ -z "${{ secrets.CLERK_TEST_KEYS_JSON }}" ]; then
+          if [ -z "$CLERK_TEST_KEYS_JSON" ]; then
             echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
             echo "   Please configure CLERK_TEST_KEYS_JSON secret in repository settings"
             exit 1
           fi
 
-          echo '${{ secrets.CLERK_TEST_KEYS_JSON }}' > .keys.json
+          printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
           chmod 600 .keys.json
           echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
 
@@ -128,5 +130,6 @@ jobs:
             watchOS) destination="generic/platform=watchOS Simulator" ;;
             tvOS) destination="generic/platform=tvOS Simulator" ;;
             visionOS) destination="generic/platform=visionOS Simulator" ;;
+            *) echo "❌ Unknown platform: ${{ matrix.platform }}"; exit 1 ;;
           esac
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
