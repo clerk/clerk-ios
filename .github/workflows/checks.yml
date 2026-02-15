@@ -1,0 +1,16 @@
+name: Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checks:
+    name: Shared checks
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      run_integration_tests: false

@@ -1,0 +1,166 @@
+name: Release SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SDK version to release (SemVer, for example 1.2.3)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-sdk
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    name: Authorize release actor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure actor is maintainer or admin on main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const actor = context.actor
+            const refName = context.ref.replace("refs/heads/", "")
+
+            if (refName !== "main") {
+              core.setFailed(`Release workflow must be run from 'main'. Current ref is '${refName}'.`)
+              return
+            }
+
+            const response = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner,
+              repo,
+              username: actor
+            })
+
+            const permission = response.data.permission
+            const allowed = new Set(["maintain", "admin"])
+
+            core.info(`Actor '${actor}' has '${permission}' permission`)
+            if (!allowed.has(permission)) {
+              core.setFailed(
+                `Only maintainers/admins can run this workflow. Actor '${actor}' has '${permission}'.`
+              )
+            }
+
+  checks:
+    name: Shared checks (with integration tests)
+    needs: authorize
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      run_integration_tests: true
+    secrets: inherit
+
+  publish:
+    name: Bump, tag, and publish release
+    needs: checks
+    runs-on: macos-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+
+    steps:
+      - name: Checkout triggering commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Validate version input and tag availability
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "❌ Invalid version: '$RELEASE_VERSION'. Expected SemVer (for example 1.2.3 or 1.2.3-rc.1)."
+            exit 1
+          fi
+
+          current_version="$(sed -n 's/.*sdkVersion: String = "\([^"]*\)".*/\1/p' Sources/ClerkKit/Utils/Version.swift)"
+          if [ -z "$current_version" ]; then
+            echo "❌ Could not read current SDK version from Sources/ClerkKit/Utils/Version.swift"
+            exit 1
+          fi
+
+          if [ "$current_version" = "$RELEASE_VERSION" ]; then
+            echo "❌ Requested release version matches current SDK version ($current_version)."
+            exit 1
+          fi
+
+          release_tag="v$RELEASE_VERSION"
+          if git rev-parse "$release_tag" >/dev/null 2>&1; then
+            echo "❌ Tag '$release_tag' already exists locally."
+            exit 1
+          fi
+
+          if git ls-remote --tags origin "refs/tags/$release_tag" | grep -q "$release_tag"; then
+            echo "❌ Tag '$release_tag' already exists on origin."
+            exit 1
+          fi
+
+      - name: Update SDK version constant
+        run: |
+          set -euo pipefail
+
+          version_file="Sources/ClerkKit/Utils/Version.swift"
+          sed -i '' -E "s/(sdkVersion: String = \").*(\")/\\1$RELEASE_VERSION\\2/" "$version_file"
+
+          echo "Updated version file:"
+          rg -n "sdkVersion" "$version_file"
+
+      - name: Verify version change is present
+        run: |
+          set -euo pipefail
+
+          version_file="Sources/ClerkKit/Utils/Version.swift"
+          if ! rg -q "sdkVersion: String = \"$RELEASE_VERSION\"" "$version_file"; then
+            echo "❌ Failed to apply SDK version update in $version_file"
+            exit 1
+          fi
+
+      - name: Commit release version bump to main
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add Sources/ClerkKit/Utils/Version.swift
+
+          if git diff --cached --quiet; then
+            echo "❌ No changes to commit for release version bump"
+            exit 1
+          fi
+
+          git commit -m "chore(release): v$RELEASE_VERSION"
+          git push origin HEAD:main
+
+      - name: Create and push release tag
+        run: |
+          set -euo pipefail
+
+          release_tag="v$RELEASE_VERSION"
+          git tag "$release_tag"
+          git push origin "$release_tag"
+
+      - name: Determine prerelease flag
+        id: prerelease
+        run: |
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release with generated notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ steps.prerelease.outputs.value }}

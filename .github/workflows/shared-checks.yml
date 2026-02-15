@@ -1,0 +1,132 @@
+name: Shared Checks
+
+on:
+  workflow_call:
+    inputs:
+      run_integration_tests:
+        description: Run integration tests as part of shared checks
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CLERK_TEST_KEYS_JSON:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  format-and-lint:
+    name: Check formatting and linting
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: |
+          brew update
+          if brew list --versions swiftformat > /dev/null; then
+            brew upgrade swiftformat
+          else
+            brew install swiftformat
+          fi
+
+      - name: Install SwiftLint
+        run: |
+          if brew list --versions swiftlint > /dev/null; then
+            brew upgrade swiftlint
+          else
+            brew install swiftlint
+          fi
+
+      - name: Show formatter and linter versions
+        run: |
+          swiftformat --version
+          swiftlint version
+
+      - name: Check formatting and linting
+        run: |
+          set -euo pipefail
+          git config core.autocrlf false
+          git config core.eol lf
+          make check
+
+  test:
+    name: Run unit tests on macOS
+    needs: format-and-lint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-macOS-
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Setup integration test keys
+        if: inputs.run_integration_tests
+        run: |
+          set +x
+          if [ -z "${{ secrets.CLERK_TEST_KEYS_JSON }}" ]; then
+            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
+            echo "   Please configure CLERK_TEST_KEYS_JSON secret in repository settings"
+            exit 1
+          fi
+
+          echo '${{ secrets.CLERK_TEST_KEYS_JSON }}' > .keys.json
+          chmod 600 .keys.json
+          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+
+      - name: Run integration tests
+        if: inputs.run_integration_tests
+        run: |
+          set -euo pipefail
+          make test-integration
+
+      - name: Cleanup integration test keys
+        if: always() && inputs.run_integration_tests
+        run: |
+          rm -f .keys.json
+          echo "✅ Cleaned up .keys.json"
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: [test]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Build for ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          echo "Building for ${{ matrix.platform }} using xcodebuild..."
+          case "${{ matrix.platform }}" in
+            iOS) destination="generic/platform=iOS Simulator" ;;
+            macOS) destination="platform=macOS" ;;
+            macCatalyst) destination="platform=macOS,variant=Mac Catalyst" ;;
+            watchOS) destination="generic/platform=watchOS Simulator" ;;
+            tvOS) destination="generic/platform=tvOS Simulator" ;;
+            visionOS) destination="generic/platform=visionOS Simulator" ;;
+          esac
+          xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"

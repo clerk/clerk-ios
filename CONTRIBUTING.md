@@ -130,7 +130,7 @@ make test  # Run unit tests
 
 Integration tests are located in `Tests/Integration/` and make real API calls to Clerk instances. They verify end-to-end functionality and require network access.
 
-**Important:** Integration tests can only be run locally by **Clerk employees** who have access to the 1Password Shared vault. **OSS contributors** will have integration tests run automatically in CI - you don't need to run them locally.
+**Important:** Integration tests can only be run locally by **Clerk employees** who have access to the 1Password Shared vault. They are not part of the regular pull request CI workflow and are executed in the maintainer-only **Release SDK** workflow.
 
 **Running integration tests (Clerk employees only):**
 ```bash
@@ -161,7 +161,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
    ```
 
 **OSS contributors:**
-- Integration tests will run automatically in CI for your pull requests
+- Integration tests are not run automatically for pull requests
 - You don't need to configure anything locally
 - The `.keys.json` file created by `make setup` will remain empty, which is expected
 
@@ -170,7 +170,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - Clerk employees can run `make fetch-test-keys` to populate it from 1Password (only includes `pk` values)
 - Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
 - Tests read keys directly from `.keys.json` file
-- In CI, the entire `.keys.json` content is provided via `CLERK_TEST_KEYS_JSON` GitHub Actions secret (written to `.keys.json` file before tests run)
+- In the maintainer-only **Release SDK** workflow, the `.keys.json` content is provided via `CLERK_TEST_KEYS_JSON` GitHub Actions secret (written to `.keys.json` before tests run)
 
 **Troubleshooting:**
 - If integration tests fail with network errors, check your internet connection
@@ -179,6 +179,23 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - If `make fetch-test-keys` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
 - Integration tests may be slower than unit tests due to real network calls
 - Some tests may be flaky due to network conditions - consider retrying
+
+## Releasing (Maintainers)
+
+SDK releases can be published through the **Release SDK** GitHub Actions workflow:
+
+1. Open **Actions** in GitHub and select **Release SDK**
+2. Click **Run workflow**
+3. Ensure the selected branch is `main`
+4. Provide the target SemVer version (for example `1.2.3`)
+
+The workflow automatically:
+- Verifies the workflow actor has GitHub `maintain` or `admin` permission
+- Updates `Clerk.sdkVersion` in `Sources/ClerkKit/Utils/Version.swift`
+- Runs formatting, linting, unit tests, integration tests, and multi-platform builds
+- Commits the version bump to `main`
+- Creates and pushes tag `v<version>`
+- Publishes a GitHub Release with auto-generated release notes
 
 ## Questions?
 
