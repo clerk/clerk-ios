@@ -16,6 +16,8 @@ public enum AuthEvent: Sendable {
   case signUpCompleted(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)
+  /// The current account was deleted.
+  case accountDeleted
   /// The current session changed.
   ///
   /// This event is emitted whenever the current session changes, including:
