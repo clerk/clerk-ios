@@ -25,8 +25,7 @@ struct SocialButton: View {
       if let image = state.image {
         ProviderIconView(
           provider: provider,
-          image: image,
-          foregroundColor: theme.colors.foreground
+          image: image
         )
       } else {
         Image(systemName: "globe")

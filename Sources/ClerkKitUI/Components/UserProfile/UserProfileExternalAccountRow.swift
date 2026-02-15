@@ -33,8 +33,7 @@ struct UserProfileExternalAccountRow: View {
               if let image = state.image {
                 ProviderIconView(
                   provider: externalAccount.oauthProvider,
-                  image: image,
-                  foregroundColor: theme.colors.foreground
+                  image: image
                 )
               } else {
                 #if DEBUG
