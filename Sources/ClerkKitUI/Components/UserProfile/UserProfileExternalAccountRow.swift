@@ -24,21 +24,6 @@ struct UserProfileExternalAccountRow: View {
 
   let externalAccount: ExternalAccount
 
-  @ViewBuilder
-  private func styledProviderIcon(_ image: Image) -> some View {
-    if externalAccount.oauthProvider.supportsTintedIconMask {
-      image
-        .resizable()
-        .renderingMode(.template)
-        .scaledToFit()
-        .foregroundStyle(theme.colors.foreground)
-    } else {
-      image
-        .resizable()
-        .scaledToFit()
-    }
-  }
-
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
@@ -46,7 +31,11 @@ struct UserProfileExternalAccountRow: View {
           HStack(spacing: 8) {
             LazyImage(url: externalAccount.oauthProvider.iconImageUrl) { state in
               if let image = state.image {
-                styledProviderIcon(image)
+                ProviderIconView(
+                  provider: externalAccount.oauthProvider,
+                  image: image,
+                  foregroundColor: theme.colors.foreground
+                )
               } else {
                 #if DEBUG
                 Image(systemName: "globe")

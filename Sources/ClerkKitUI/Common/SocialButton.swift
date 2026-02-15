@@ -20,25 +20,14 @@ struct SocialButton: View {
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
 
-  @ViewBuilder
-  private func styledProviderIcon(_ image: Image) -> some View {
-    if provider.supportsTintedIconMask {
-      image
-        .resizable()
-        .renderingMode(.template)
-        .scaledToFit()
-        .foregroundStyle(theme.colors.foreground)
-    } else {
-      image
-        .resizable()
-        .scaledToFit()
-    }
-  }
-
   private var iconImage: some View {
     LazyImage(url: provider.iconImageUrl) { state in
       if let image = state.image {
-        styledProviderIcon(image)
+        ProviderIconView(
+          provider: provider,
+          image: image,
+          foregroundColor: theme.colors.foreground
+        )
       } else {
         Image(systemName: "globe")
           .resizable()
