@@ -12,7 +12,6 @@ import SwiftUI
 struct SocialButton: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.colorScheme) private var colorScheme
 
   let provider: OAuthProvider
   let transferable: Bool
@@ -22,11 +21,12 @@ struct SocialButton: View {
   var onError: ((Error) -> Void)?
 
   private var iconImage: some View {
-    LazyImage(url: provider.iconImageUrl(darkMode: colorScheme == .dark)) { state in
+    LazyImage(url: provider.iconImageUrl) { state in
       if let image = state.image {
-        image
-          .resizable()
-          .scaledToFit()
+        ProviderIconView(
+          provider: provider,
+          image: image
+        )
       } else {
         Image(systemName: "globe")
           .resizable()
