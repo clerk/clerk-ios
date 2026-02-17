@@ -31,6 +31,10 @@ struct AuthTests {
     let organizationId: String?
   }
 
+  private enum MockError: Error {
+    case mock
+  }
+
   @Test
   func signInWithIdentifierUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
