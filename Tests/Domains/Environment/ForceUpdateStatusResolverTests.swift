@@ -12,7 +12,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status.isSupported == false)
-    #expect(status.reason == .belowMinimum)
     #expect(status.minimumVersion == "2.3.0")
     #expect(status.updateURL?.absoluteString == "https://apps.apple.com/app/id123")
   }
@@ -26,7 +25,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status.isSupported == true)
-    #expect(status.reason == .noPolicy)
   }
 
   @Test
@@ -38,7 +36,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status.isSupported == false)
-    #expect(status.reason == .belowMinimum)
   }
 
   @Test
@@ -50,7 +47,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status.isSupported == true)
-    #expect(status.reason == .invalidCurrentVersion)
   }
 
   @Test
@@ -67,7 +63,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status?.isSupported == false)
-    #expect(status?.reason == .serverRejected)
     #expect(status?.minimumVersion == "2.0.0")
   }
 
@@ -96,7 +91,6 @@ struct ForceUpdateStatusResolverTests {
     )
 
     #expect(status?.isSupported == false)
-    #expect(status?.reason == .serverRejected)
   }
 
   private func environmentWithPolicy(

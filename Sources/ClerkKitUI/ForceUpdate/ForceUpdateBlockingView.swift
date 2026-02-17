@@ -138,10 +138,8 @@ extension View {
   ForceUpdateBlockingView(
     status: .init(
       isSupported: false,
-      currentVersion: "1.0.0",
       minimumVersion: "1.2.0",
-      updateURL: URL(string: "https://apps.apple.com/app/id1234567890"),
-      reason: .belowMinimum
+      updateURL: URL(string: "https://apps.apple.com/app/id1234567890")
     )
   )
   .clerkPreview()
@@ -151,10 +149,8 @@ extension View {
   ForceUpdateBlockingView(
     status: .init(
       isSupported: false,
-      currentVersion: "1.0.0",
       minimumVersion: "1.2.0",
-      updateURL: nil,
-      reason: .serverRejected
+      updateURL: nil
     )
   )
   .clerkPreview()

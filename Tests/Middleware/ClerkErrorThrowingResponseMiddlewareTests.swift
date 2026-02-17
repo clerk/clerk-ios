@@ -51,7 +51,6 @@ struct ClerkErrorThrowingResponseMiddlewareTests {
     try await Task.sleep(nanoseconds: 100_000_000)
 
     #expect(Clerk.shared.forceUpdateStatus.isSupported == false)
-    #expect(Clerk.shared.forceUpdateStatus.reason == .serverRejected)
     #expect(Clerk.shared.forceUpdateStatus.minimumVersion == "2.0.0")
   }
 }

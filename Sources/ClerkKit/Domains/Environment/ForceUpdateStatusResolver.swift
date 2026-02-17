@@ -16,10 +16,8 @@ enum ForceUpdateStatusResolver {
     guard let policy = policy(for: bundleID, environment: environment) else {
       return .init(
         isSupported: true,
-        currentVersion: normalizedCurrentVersion,
         minimumVersion: nil,
-        updateURL: nil,
-        reason: .noPolicy
+        updateURL: nil
       )
     }
 
@@ -29,40 +27,32 @@ enum ForceUpdateStatusResolver {
     guard let minimumVersion else {
       return .init(
         isSupported: true,
-        currentVersion: normalizedCurrentVersion,
         minimumVersion: nil,
-        updateURL: updateURL,
-        reason: .noPolicy
+        updateURL: updateURL
       )
     }
 
     guard let normalizedCurrentVersion else {
       return .init(
         isSupported: true,
-        currentVersion: nil,
         minimumVersion: minimumVersion,
-        updateURL: updateURL,
-        reason: .missingCurrentVersion
+        updateURL: updateURL
       )
     }
 
     guard AppVersionComparator.isValid(normalizedCurrentVersion) else {
       return .init(
         isSupported: true,
-        currentVersion: normalizedCurrentVersion,
         minimumVersion: minimumVersion,
-        updateURL: updateURL,
-        reason: .invalidCurrentVersion
+        updateURL: updateURL
       )
     }
 
     guard AppVersionComparator.isValid(minimumVersion) else {
       return .init(
         isSupported: true,
-        currentVersion: normalizedCurrentVersion,
         minimumVersion: minimumVersion,
-        updateURL: updateURL,
-        reason: .invalidMinimumVersion
+        updateURL: updateURL
       )
     }
 
@@ -73,10 +63,8 @@ enum ForceUpdateStatusResolver {
 
     return .init(
       isSupported: isSupported,
-      currentVersion: normalizedCurrentVersion,
       minimumVersion: minimumVersion,
-      updateURL: updateURL,
-      reason: isSupported ? .supported : .belowMinimum
+      updateURL: updateURL
     )
   }
 
@@ -102,16 +90,13 @@ enum ForceUpdateStatusResolver {
       return nil
     }
 
-    let currentVersion = meta["current_version"]?.stringValue.nilIfEmpty
     let minimumVersion = meta["minimum_version"]?.stringValue.nilIfEmpty
     let updateURL = meta["update_url"]?.stringValue.nilIfEmpty.flatMap { URL(string: $0) }
 
     return .init(
       isSupported: false,
-      currentVersion: currentVersion,
       minimumVersion: minimumVersion,
-      updateURL: updateURL,
-      reason: .serverRejected
+      updateURL: updateURL
     )
   }
 
