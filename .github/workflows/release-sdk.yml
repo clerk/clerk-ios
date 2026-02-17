@@ -75,38 +75,47 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
 
-      - name: Validate version input and tag availability
+      - name: Validate version input and detect rerun state
+        id: release_state
         run: |
           set -euo pipefail
+
+          version_file="Sources/ClerkKit/Utils/Version.swift"
 
           if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
             echo "❌ Invalid version: '$RELEASE_VERSION'. Expected SemVer (for example 1.2.3 or 1.2.3-rc.1)."
             exit 1
           fi
 
-          current_version="$(sed -n 's/.*sdkVersion: String = "\([^"]*\)".*/\1/p' Sources/ClerkKit/Utils/Version.swift)"
+          current_version="$(sed -n 's/.*sdkVersion: String = "\([^"]*\)".*/\1/p' "$version_file")"
           if [ -z "$current_version" ]; then
-            echo "❌ Could not read current SDK version from Sources/ClerkKit/Utils/Version.swift"
+            echo "❌ Could not read current SDK version from $version_file"
             exit 1
           fi
 
+          version_already_set="false"
           if [ "$current_version" = "$RELEASE_VERSION" ]; then
-            echo "❌ Requested release version matches current SDK version ($current_version)."
-            exit 1
+            version_already_set="true"
+            echo "ℹ️ $version_file already contains sdkVersion: String = \"$RELEASE_VERSION\"."
           fi
 
           release_tag="v$RELEASE_VERSION"
-          if git rev-parse "$release_tag" >/dev/null 2>&1; then
-            echo "❌ Tag '$release_tag' already exists locally."
-            exit 1
+          tag_already_exists="false"
+          if git rev-parse --verify "refs/tags/$release_tag" >/dev/null 2>&1; then
+            tag_already_exists="true"
+            echo "ℹ️ Tag '$release_tag' already exists locally; skipping git tag \"$release_tag\"."
           fi
 
           if git ls-remote --tags origin "refs/tags/$release_tag" | grep -q "$release_tag"; then
-            echo "❌ Tag '$release_tag' already exists on origin."
-            exit 1
+            tag_already_exists="true"
+            echo "ℹ️ Tag '$release_tag' already exists on origin; skipping git push origin \"$release_tag\"."
           fi
 
+          echo "version_already_set=$version_already_set" >> "$GITHUB_OUTPUT"
+          echo "tag_already_exists=$tag_already_exists" >> "$GITHUB_OUTPUT"
+
       - name: Update SDK version constant
+        if: steps.release_state.outputs.version_already_set != 'true'
         run: |
           set -euo pipefail
 
@@ -130,6 +139,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ "${{ steps.release_state.outputs.version_already_set }}" = "true" ]; then
+            echo "ℹ️ Skipping commit because Sources/ClerkKit/Utils/Version.swift already matches $RELEASE_VERSION."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -148,6 +162,12 @@ jobs:
           set -euo pipefail
 
           release_tag="v$RELEASE_VERSION"
+
+          if [ "${{ steps.release_state.outputs.tag_already_exists }}" = "true" ]; then
+            echo "ℹ️ Skipping git tag \"$release_tag\" and push because tag already exists."
+            exit 0
+          fi
+
           git tag "$release_tag"
           git push origin "$release_tag"
 
