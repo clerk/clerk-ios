@@ -176,18 +176,34 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithPasskeyUsesSignInServiceCreate() async throws {
+  func signInWithPasskeyStartsOneShotPasskeyFlow() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let preparedSignInId = LockIsolated<String?>(nil)
+    let preparedParams = LockIsolated<SignIn.PrepareFirstFactorParams?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
       return .mock
+    }, prepareFirstFactor: { signInId, params in
+      preparedSignInId.setValue(signInId)
+      preparedParams.setValue(params)
+      throw MockError.mock
     })
 
     configureDependencies(signInService: signInService)
 
-    _ = try await Clerk.shared.auth.signInWithPasskey()
+    do {
+      _ = try await Clerk.shared.auth.signInWithPasskey()
+      #expect(Bool(false))
+    } catch {
+      #expect(error as? MockError == .mock)
+    }
 
-    _ = try #require(signInParams.value)
+    let createParams = try #require(signInParams.value)
+    #expect(createParams.strategy == .passkey)
+    #expect(preparedSignInId.value == SignIn.mock.id)
+
+    let prepareParams = try #require(preparedParams.value)
+    #expect(prepareParams.strategy == .passkey)
   }
 
   @Test
