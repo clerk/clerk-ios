@@ -73,6 +73,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
 
       - name: Validate version input and tag availability
         run: |
