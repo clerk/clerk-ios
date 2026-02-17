@@ -102,29 +102,17 @@ struct ForceUpdateBlockingView: View {
 
 struct ForceUpdateBlockingOverlayModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
-  @ObservedObject private var controller = ForceUpdateBlockingOverlayController.shared
+  @Environment(\.clerkTheme) private var theme
+  private let controller = ForceUpdateBlockingOverlayController.shared
 
   func body(content: Content) -> some View {
     content
       .task {
-        controller.update(with: clerk.forceUpdateStatus)
+        controller.update(with: clerk.forceUpdateStatus, theme: theme, clerk: clerk)
       }
       .onChange(of: clerk.forceUpdateStatus) { _, newValue in
-        controller.update(with: newValue)
+        controller.update(with: newValue, theme: theme, clerk: clerk)
       }
-      .fullScreenCover(isPresented: isPresentedBinding) {
-        if let status = controller.status {
-          ForceUpdateBlockingView(status: status)
-            .interactiveDismissDisabled(true)
-        }
-      }
-  }
-
-  private var isPresentedBinding: Binding<Bool> {
-    Binding(
-      get: { controller.status != nil },
-      set: { _ in }
-    )
   }
 }
 
