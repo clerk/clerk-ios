@@ -76,11 +76,14 @@ extension View {
 
 private struct ClerkImagePrefetchModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkAppIcon) private var appIconOverride
 
   func body(content: Content) -> some View {
     content
       .onChange(of: clerk.environment, initial: true) {
-        clerk.prefetchImages()
+        if appIconOverride == nil {
+          clerk.prefetchImages()
+        }
       }
   }
 }

@@ -61,6 +61,13 @@ import SwiftUI
 ///   }
 /// }
 /// ```
+///
+/// Override the app icon shown in auth screens:
+///
+/// ```swift
+/// AuthView()
+///   .clerkAppIcon(Image("AppIcon"))
+/// ```
 public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
