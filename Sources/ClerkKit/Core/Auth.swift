@@ -215,7 +215,8 @@ public struct Auth {
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .passkey))
+    let signIn = try await signInService.create(params: .init(strategy: .passkey))
+    return try await signIn.authenticateWithPasskey()
   }
   #endif
 
