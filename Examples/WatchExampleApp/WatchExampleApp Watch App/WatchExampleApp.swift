@@ -17,7 +17,7 @@ struct WatchExampleAppWatchApp: App {
     )
 
     Clerk.configure(
-      publishableKey: "YOUR_PUBLISHABLE_KEY",
+      publishableKey: WatchExampleLocalSecrets.load().publishableKey ?? "",
       options: options
     )
   }

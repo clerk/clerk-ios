@@ -19,16 +19,15 @@ This quickstart example demonstrates how to use the Prebuilt Clerk Views:
 2. Create a new application in your Clerk Dashboard
 3. Copy your **Publishable Key** from the API Keys section
 
-### 2. Add Your Publishable Key
+### 2. Add Local Secrets (one-time)
 
-1. Open `Quickstart/QuickstartApp.swift`
-2. Replace `"pk_test_..."` with your actual Clerk publishable key:
+1. Copy `Quickstart/LocalSecrets.template.plist` to `Quickstart/LocalSecrets.plist`
+2. Set your values in `LocalSecrets.plist`:
+   - `CLERK_PUBLISHABLE_KEY`
 
-```swift
-Clerk.configure(
-  publishableKey: "YOUR_PUBLISHABLE_KEY"
-)
-```
+`LocalSecrets.plist` is gitignored, so it will not be committed.
+
+You can also provide the same keys as Run environment variables in the scheme. Environment variables take precedence over `LocalSecrets.plist`.
 
 ## Running the Example
 
