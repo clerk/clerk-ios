@@ -323,7 +323,7 @@ private struct UserProfileHeaderView: View {
       Button {
         onUpdateProfile()
       } label: {
-        Text("Update profile", bundle: .module)
+        Text("Edit profile", bundle: .module)
       }
       .buttonStyle(.secondary(config: .init(size: .small)))
       .simultaneousGesture(TapGesture())
