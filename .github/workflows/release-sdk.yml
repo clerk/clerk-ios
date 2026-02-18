@@ -99,7 +99,7 @@ jobs:
             echo "ℹ️ $version_file already contains sdkVersion: String = \"$RELEASE_VERSION\"."
           fi
 
-          release_tag="v$RELEASE_VERSION"
+          release_tag="$RELEASE_VERSION"
           tag_already_exists="false"
           if git rev-parse --verify "refs/tags/$release_tag" >/dev/null 2>&1; then
             tag_already_exists="true"
@@ -154,14 +154,14 @@ jobs:
             exit 1
           fi
 
-          git commit -m "chore(release): v$RELEASE_VERSION"
+          git commit -m "chore(release): $RELEASE_VERSION"
           git push origin HEAD:main
 
       - name: Create and push release tag
         run: |
           set -euo pipefail
 
-          release_tag="v$RELEASE_VERSION"
+          release_tag="$RELEASE_VERSION"
 
           if [ "${{ steps.release_state.outputs.tag_already_exists }}" = "true" ]; then
             echo "ℹ️ Skipping git tag \"$release_tag\" and push because tag already exists."
@@ -183,7 +183,7 @@ jobs:
       - name: Publish GitHub Release with generated notes
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: v${{ inputs.version }}
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
           generate_release_notes: true
           prerelease: ${{ steps.prerelease.outputs.value }}
