@@ -11003,67 +11003,67 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تحديث الملف الشخصي"
+            "value" : "تعديل الملف الشخصي"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profil aktualisieren"
+            "value" : "Profil bearbeiten"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ενημέρωση προφίλ"
+            "value" : "Επεξεργασία προφίλ"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Actualizar perfil"
+            "value" : "Editar perfil"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mettre à jour le profil"
+            "value" : "Modifier le profil"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "प्रोफ़ाइल अपडेट करें"
+            "value" : "प्रोफ़ाइल संपादित करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiorna profilo"
+            "value" : "Modifica profilo"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プロフィールを更新"
+            "value" : "プロフィールを編集"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "프로필 업데이트"
+            "value" : "프로필 편집"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atualizar perfil"
+            "value" : "Editar perfil"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更新个人资料"
+            "value" : "编辑个人资料"
           }
         }
       }
