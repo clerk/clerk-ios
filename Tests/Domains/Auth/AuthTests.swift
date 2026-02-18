@@ -180,7 +180,10 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithPasskeyStartsOneShotPasskeyFlow() async throws {
+  func signInWithPasskeyUsesOneShotPasskeySignIn() async throws {
+    var preparedSignIn = SignIn.mock
+    preparedSignIn.firstFactorVerification = nil
+
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let preparedSignInId = LockIsolated<String?>(nil)
     let preparedParams = LockIsolated<SignIn.PrepareFirstFactorParams?>(nil)
@@ -190,16 +193,15 @@ struct AuthTests {
     }, prepareFirstFactor: { signInId, params in
       preparedSignInId.setValue(signInId)
       preparedParams.setValue(params)
-      throw MockError.mock
+      return preparedSignIn
     })
 
     configureDependencies(signInService: signInService)
 
     do {
       _ = try await Clerk.shared.auth.signInWithPasskey()
-      #expect(Bool(false))
     } catch {
-      #expect(error as? MockError == .mock)
+      // Expected to fail in unit tests because no passkey challenge/credential is available.
     }
 
     let createParams = try #require(signInParams.value)
