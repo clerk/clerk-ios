@@ -9,7 +9,7 @@ import SwiftUI
 @main
 struct CustomFlowsApp: App {
   init() {
-    Clerk.configure(publishableKey: "YOUR_PUBLISHABLE_KEY")
+    Clerk.configure(publishableKey: CustomFlowsLocalSecrets.load().publishableKey ?? "")
   }
 
   var body: some Scene {

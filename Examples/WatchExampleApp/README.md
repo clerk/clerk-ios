@@ -31,12 +31,16 @@ Both your iOS app and watchOS app must be configured with Watch Connectivity:
 3. Add the **Watch Connectivity** capability (if not already present)
 4. Ensure the watchOS app target has the companion capability enabled
 
-### 3. Add Your Publishable Key
+### 3. Add Local Secrets (one-time)
 
-1. Open `WatchExampleApp/WatchExampleApp.swift`
-2. Replace `"pk_test_..."` with your actual Clerk publishable key
-3. Open `WatchExampleApp Watch App/WatchExampleApp.swift`
-4. Replace `"pk_test_..."` with the same publishable key
+1. Copy `WatchExampleApp/LocalSecrets.template.plist` to `WatchExampleApp/LocalSecrets.plist`
+2. Set `CLERK_PUBLISHABLE_KEY` in `WatchExampleApp/LocalSecrets.plist`
+3. Copy `WatchExampleApp Watch App/LocalSecrets.template.plist` to `WatchExampleApp Watch App/LocalSecrets.plist`
+4. Set `CLERK_PUBLISHABLE_KEY` in `WatchExampleApp Watch App/LocalSecrets.plist`
+
+Both `LocalSecrets.plist` files are gitignored, so they will not be committed.
+
+You can also provide the same key as a Run environment variable (`CLERK_PUBLISHABLE_KEY`) in each scheme. Environment variables take precedence over `LocalSecrets.plist`.
 
 ### 4. Enable Watch Connectivity Sync
 
@@ -48,7 +52,7 @@ let options = Clerk.Options(
 )
 
 Clerk.configure(
-  publishableKey: "YOUR_PUBLISHABLE_KEY",
+  publishableKey: WatchExampleLocalSecrets.load().publishableKey ?? "",
   options: options
 )
 ```
