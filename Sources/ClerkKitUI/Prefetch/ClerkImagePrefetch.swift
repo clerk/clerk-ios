@@ -22,13 +22,15 @@ extension Clerk {
   /// Clerk.shared.prefetchImages()
   /// ```
   @MainActor
-  public func prefetchImages() {
+  public func prefetchImages(includeAppLogo: Bool = true) {
     guard let environment else { return }
 
     var urls = Set<URL>()
 
     // App brand logo
-    if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
+    if includeAppLogo,
+      let logoUrl = URL(string: environment.displayConfig.logoImageUrl)
+    {
       urls.insert(logoUrl)
     }
 
@@ -81,9 +83,7 @@ private struct ClerkImagePrefetchModifier: ViewModifier {
   func body(content: Content) -> some View {
     content
       .onChange(of: clerk.environment, initial: true) {
-        if appIconOverride == nil {
-          clerk.prefetchImages()
-        }
+        clerk.prefetchImages(includeAppLogo: appIconOverride == nil)
       }
   }
 }
