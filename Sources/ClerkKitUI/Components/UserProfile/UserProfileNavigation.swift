@@ -39,11 +39,13 @@ final class UserProfileNavigation {
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 
   /// Creates a new UserProfileNavigation instance.
-  /// - Parameter externalPath: An optional binding to a parent's `NavigationPath`.
-  ///   When provided, navigation pushes are forwarded to the parent's path.
-  init(externalPath: Binding<NavigationPath>? = nil) {
+  init() {}
+
+  /// Configures the navigation to use an external path from a parent `NavigationStack`.
+  /// When configured, navigation pushes are forwarded to the parent's path.
+  func configure(externalPath: Binding<NavigationPath>) {
     self.externalPath = externalPath
-    self.externalPathBaseCount = externalPath?.wrappedValue.count
+    self.externalPathBaseCount = externalPath.wrappedValue.count
   }
 
   /// Navigates to the specified destination.
