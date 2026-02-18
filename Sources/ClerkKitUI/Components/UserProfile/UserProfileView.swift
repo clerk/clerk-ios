@@ -52,6 +52,30 @@ import SwiftUI
 ///   }
 /// }
 /// ```
+///
+/// Embedded in a parent `NavigationStack`:
+///
+/// ```swift
+/// struct ContentView: View {
+///   @Environment(Clerk.self) private var clerk
+///   @State private var path = NavigationPath()
+///
+///   var body: some View {
+///     NavigationStack(path: $path) {
+///       HomeView()
+///         .navigationDestination(for: AppRoute.self) { route in
+///           switch route {
+///           case .profile:
+///             UserProfileView(isDismissable: false, navigationPath: $path)
+///           }
+///         }
+///     }
+///     .onChange(of: clerk.user) { _, newValue in
+///       if newValue == nil { path = NavigationPath() }
+///     }
+///   }
+/// }
+/// ```
 public struct UserProfileView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -61,7 +85,7 @@ public struct UserProfileView: View {
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var navigation = UserProfileNavigation()
+  @State private var navigation: UserProfileNavigation
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
@@ -73,52 +97,24 @@ public struct UserProfileView: View {
   ///   can be used in sheets or other dismissable contexts. When `false`, no
   ///   dismiss button is shown, making it suitable for full-screen usage.
   ///   Defaults to `true`.
-  public init(isDismissable: Bool = true) {
+  ///   - navigationPath: An optional binding to a parent `NavigationPath`. When provided,
+  ///   the view skips creating its own `NavigationStack` and pushes destinations onto the
+  ///   parent's path instead. Use this when embedding `UserProfileView` inside your own
+  ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
+  public init(isDismissable: Bool = true, navigationPath: Binding<NavigationPath>? = nil) {
     self.isDismissable = isDismissable
+    _navigation = State(initialValue: .init(externalPath: navigationPath))
   }
 
   public var body: some View {
     if let user = clerk.user {
-      NavigationStack(path: $navigation.path) {
-        VStack(spacing: 0) {
-          ScrollView {
-            LazyVStack(spacing: 0) {
-              UserProfileHeaderView(
-                user: user,
-                onUpdateProfile: {
-                  updateProfileIsPresented = true
-                }
-              )
-
-              VStack(spacing: 48) {
-                profileSection
-
-                accountSection
-              }
-            }
+      Group {
+        if navigation.externalPath == nil {
+          NavigationStack(path: $navigation.path) {
+            profileContent(user: user)
           }
-          .background(theme.colors.muted)
-
-          SecuredByClerkFooter()
-        }
-        .animation(.default, value: user)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .principal) {
-            Text("Account", bundle: .module)
-              .font(theme.fonts.headline)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.foreground)
-          }
-
-          if isDismissable {
-            ToolbarItem(placement: .topBarTrailing) {
-              DismissButton()
-            }
-          }
-        }
-        .navigationDestination(for: Destination.self) {
-          $0.view
+        } else {
+          profileContent(user: user)
         }
       }
       .tint(theme.colors.primary)
@@ -159,12 +155,61 @@ public struct UserProfileView: View {
         await clerk.telemetry.record(
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
-            payload: ["isDismissable": .bool(isDismissable)]
+            payload: [
+              "isDismissable": .bool(isDismissable),
+              "isEmbedded": .bool(navigation.externalPath != nil),
+            ]
           )
         )
       }
       .environment(navigation)
       .environment(codeLimiter)
+    }
+  }
+
+  @ViewBuilder
+  private func profileContent(user: User) -> some View {
+    VStack(spacing: 0) {
+      ScrollView {
+        LazyVStack(spacing: 0) {
+          UserProfileHeaderView(
+            user: user,
+            onUpdateProfile: {
+              updateProfileIsPresented = true
+            }
+          )
+
+          VStack(spacing: 48) {
+            profileSection
+
+            accountSection
+          }
+        }
+      }
+      .background(theme.colors.muted)
+
+      SecuredByClerkFooter()
+    }
+    .animation(.default, value: user)
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Account", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
+      }
+
+      if isDismissable {
+        ToolbarItem(placement: .topBarTrailing) {
+          DismissButton()
+        }
+      }
+    }
+    .navigationDestination(for: Destination.self) { destination in
+      destination.view
+        .environment(navigation)
+        .environment(codeLimiter)
     }
   }
 }
@@ -175,11 +220,11 @@ extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
       row(icon: "icon-profile", text: "Manage account") {
-        navigation.path.append(Destination.profileDetail)
+        navigation.path.append(.profileDetail)
       }
 
       row(icon: "icon-security", text: "Security") {
-        navigation.path.append(Destination.security)
+        navigation.navigate(to: .security)
       }
     }
     .background(theme.colors.background)
