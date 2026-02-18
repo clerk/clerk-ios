@@ -7,15 +7,8 @@
 
 import SwiftUI
 
-private struct ClerkAppIconEnvironmentKey: EnvironmentKey {
-  static let defaultValue: Image? = nil
-}
-
 extension EnvironmentValues {
-  var clerkAppIcon: Image? {
-    get { self[ClerkAppIconEnvironmentKey.self] }
-    set { self[ClerkAppIconEnvironmentKey.self] = newValue }
-  }
+  @Entry var clerkAppIcon: Image? = nil
 }
 
 extension View {
