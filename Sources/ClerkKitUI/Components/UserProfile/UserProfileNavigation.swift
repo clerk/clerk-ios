@@ -71,8 +71,9 @@ final class UserProfileNavigation {
   ///   has been deleted and there are no remaining sessions to display.
   func popToRoot(includingSelf: Bool = false) {
     if let externalPath, let baseCount = externalPathBaseCount {
-      let adjustedBase = includingSelf ? baseCount - 1 : baseCount
-      let entriesToRemove = externalPath.wrappedValue.count - adjustedBase
+      let adjustedBase = max(includingSelf ? baseCount - 1 : baseCount, 0)
+      let currentCount = externalPath.wrappedValue.count
+      let entriesToRemove = min(max(currentCount - adjustedBase, 0), currentCount)
       if entriesToRemove > 0 {
         externalPath.wrappedValue.removeLast(entriesToRemove)
       }
