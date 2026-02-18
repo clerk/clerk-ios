@@ -81,11 +81,12 @@ public struct UserProfileView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  let isDismissable: Bool
+  private let isDismissable: Bool
+  private let navigationPath: Binding<NavigationPath>?
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var navigation: UserProfileNavigation
+  @State private var navigation = UserProfileNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
@@ -103,13 +104,13 @@ public struct UserProfileView: View {
   ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
   public init(isDismissable: Bool = true, navigationPath: Binding<NavigationPath>? = nil) {
     self.isDismissable = isDismissable
-    _navigation = State(initialValue: .init(externalPath: navigationPath))
+    self.navigationPath = navigationPath
   }
 
   public var body: some View {
     if let user = clerk.user {
       Group {
-        if navigation.externalPath == nil {
+        if navigationPath == nil {
           NavigationStack(path: $navigation.path) {
             profileContent(user: user)
           }
@@ -152,12 +153,16 @@ public struct UserProfileView: View {
         _ = try? await clerk.refreshClient()
       }
       .taskOnce {
+        if let navigationPath {
+          navigation.configure(externalPath: navigationPath)
+        }
+
         await clerk.telemetry.record(
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
             payload: [
               "isDismissable": .bool(isDismissable),
-              "isEmbedded": .bool(navigation.externalPath != nil),
+              "isEmbedded": .bool(navigationPath != nil),
             ]
           )
         )
