@@ -13,6 +13,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @Environment(UserProfileNavigation.self) private var navigation
+  @Environment(\.userProfileRouter) private var router
 
   @State private var deleteAccount = ""
   @State private var error: Error?
@@ -96,7 +97,7 @@ extension UserProfileDeleteAccountConfirmationView {
     do {
       try await user.delete()
       dismiss()
-      navigation.popToRoot(includingSelf: clerk.user == nil)
+      router.popToRoot(clerk.user == nil)
       if clerk.auth.sessions.count > 1 {
         navigation.accountSwitcherIsPresented = true
       }

@@ -82,6 +82,7 @@ public struct UserProfileView: View {
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
+  @State private var embeddedPushCount = 0
   @State private var navigation = UserProfileNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
@@ -148,11 +149,17 @@ public struct UserProfileView: View {
       .task {
         _ = try? await clerk.refreshClient()
       }
-      .taskOnce {
-        if let navigationPath {
-          navigation.configure(externalPath: navigationPath)
+      .onChange(of: navigationPath?.wrappedValue.count) { oldValue, newValue in
+        guard let oldValue, let newValue else {
+          embeddedPushCount = 0
+          return
         }
 
+        if newValue < oldValue {
+          embeddedPushCount = max(embeddedPushCount - (oldValue - newValue), 0)
+        }
+      }
+      .taskOnce {
         await clerk.telemetry.record(
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
@@ -165,7 +172,34 @@ public struct UserProfileView: View {
       }
       .environment(navigation)
       .environment(codeLimiter)
+      .environment(\.userProfileRouter, router)
     }
+  }
+
+  private var router: UserProfileRouter {
+    UserProfileRouter(
+      push: { destination in
+        if let navigationPath {
+          navigationPath.wrappedValue.append(destination)
+          embeddedPushCount += 1
+        } else {
+          navigation.path.append(destination)
+        }
+      },
+      popToRoot: { includingSelf in
+        if let navigationPath {
+          let currentCount = navigationPath.wrappedValue.count
+          let requestedRemovals = embeddedPushCount + (includingSelf ? 1 : 0)
+          let entriesToRemove = min(max(requestedRemovals, 0), currentCount)
+          if entriesToRemove > 0 {
+            navigationPath.wrappedValue.removeLast(entriesToRemove)
+          }
+          embeddedPushCount = 0
+        } else {
+          navigation.path = NavigationPath()
+        }
+      }
+    )
   }
 
   @ViewBuilder
@@ -211,6 +245,7 @@ public struct UserProfileView: View {
       destination.view
         .environment(navigation)
         .environment(codeLimiter)
+        .environment(\.userProfileRouter, router)
     }
   }
 }
@@ -221,11 +256,11 @@ extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
       row(icon: "icon-profile", text: "Manage account") {
-        navigation.path.append(.profileDetail)
+        router.push(.profileDetail)
       }
 
       row(icon: "icon-security", text: "Security") {
-        navigation.navigate(to: .security)
+        router.push(.security)
       }
     }
     .background(theme.colors.background)
@@ -382,7 +417,7 @@ private struct UserProfileHeaderView: View {
 // MARK: - Destination
 
 extension UserProfileView {
-  enum Destination: Hashable {
+  enum Destination: Hashable, Sendable {
     case profileDetail
     case security
 
