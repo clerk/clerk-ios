@@ -96,7 +96,7 @@ extension UserProfileDeleteAccountConfirmationView {
     do {
       try await user.delete()
       dismiss()
-      navigation.popToRoot()
+      navigation.popToRoot(includingSelf: clerk.user == nil)
       if clerk.auth.sessions.count > 1 {
         navigation.accountSwitcherIsPresented = true
       }

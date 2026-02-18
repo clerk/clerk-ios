@@ -57,7 +57,6 @@ import SwiftUI
 ///
 /// ```swift
 /// struct ContentView: View {
-///   @Environment(Clerk.self) private var clerk
 ///   @State private var path = NavigationPath()
 ///
 ///   var body: some View {
@@ -69,9 +68,6 @@ import SwiftUI
 ///             UserProfileView(isDismissable: false, navigationPath: $path)
 ///           }
 ///         }
-///     }
-///     .onChange(of: clerk.user) { _, newValue in
-///       if newValue == nil { path = NavigationPath() }
 ///     }
 ///   }
 /// }
