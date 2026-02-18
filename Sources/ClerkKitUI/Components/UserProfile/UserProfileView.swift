@@ -174,7 +174,7 @@ public struct UserProfileView: View {
 extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
-      row(icon: "icon-profile", text: "Profile") {
+      row(icon: "icon-profile", text: "Account") {
         navigation.path.append(Destination.profileDetail)
       }
 
