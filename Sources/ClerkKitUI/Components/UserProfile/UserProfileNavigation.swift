@@ -8,16 +8,13 @@
 import Foundation
 import SwiftUI
 
-/// Manages navigation and presentation state for the user profile flow.
+/// Manages presentation state for the user profile flow.
 ///
-/// This class handles navigation path management and sheet presentation state.
+/// This class handles sheet presentation state for the user profile.
 /// It is injected into child views via the environment.
 @MainActor
 @Observable
 final class UserProfileNavigation {
-  /// The internal navigation path for standalone `UserProfileView` usage.
-  var path = NavigationPath()
-  
   /// Whether the account switcher sheet is presented.
   var accountSwitcherIsPresented = false
   
@@ -40,18 +37,11 @@ struct UserProfileRouter: Sendable {
   let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
 }
 
-private struct UserProfileRouterKey: EnvironmentKey {
-  static let defaultValue = UserProfileRouter(
+extension EnvironmentValues {
+  @Entry var userProfileRouter = UserProfileRouter(
     push: { _ in },
     popToRoot: { _ in }
   )
-}
-
-extension EnvironmentValues {
-  var userProfileRouter: UserProfileRouter {
-    get { self[UserProfileRouterKey.self] }
-    set { self[UserProfileRouterKey.self] = newValue }
-  }
 }
 
 #endif

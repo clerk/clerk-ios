@@ -83,6 +83,7 @@ public struct UserProfileView: View {
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
   @State private var embeddedPushCount = 0
+  @State private var internalPath = NavigationPath()
   @State private var navigation = UserProfileNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
@@ -108,7 +109,7 @@ public struct UserProfileView: View {
     if let user = clerk.user {
       Group {
         if navigationPath == nil {
-          NavigationStack(path: $navigation.path) {
+          NavigationStack(path: $internalPath) {
             profileContent(user: user)
           }
         } else {
@@ -183,7 +184,7 @@ public struct UserProfileView: View {
           navigationPath.wrappedValue.append(destination)
           embeddedPushCount += 1
         } else {
-          navigation.path.append(destination)
+          internalPath.append(destination)
         }
       },
       popToRoot: { includingSelf in
@@ -196,7 +197,7 @@ public struct UserProfileView: View {
           }
           embeddedPushCount = 0
         } else {
-          navigation.path = NavigationPath()
+          internalPath = NavigationPath()
         }
       }
     )
