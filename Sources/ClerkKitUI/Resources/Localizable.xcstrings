@@ -12608,6 +12608,9 @@
         }
       }
     },
+    "Your account requires additional security. You need to set up two-step verification to continue." : {
+
+    },
     "Your backup code is the one you got when setting up two-step authentication." : {
       "localizations" : {
         "ar" : {

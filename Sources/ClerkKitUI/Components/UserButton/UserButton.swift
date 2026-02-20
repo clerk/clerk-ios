@@ -73,7 +73,7 @@ public struct UserButton<SignedOutContent: View>: View {
 
   public var body: some View {
     ZStack {
-      if let user = clerk.user {
+      if let user = clerk.user, clerk.session?.requiresForcedMfa != true {
         Button {
           userProfileIsPresented = true
         } label: {

@@ -110,7 +110,7 @@ public struct AuthView: View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
         .toolbar {
-          if isDismissable {
+          if showDismissButton {
             ToolbarItem(placement: .topBarTrailing) {
               DismissButton {
                 dismiss()
@@ -121,7 +121,7 @@ public struct AuthView: View {
         .navigationDestination(for: Destination.self) {
           $0.view
             .toolbar {
-              if isDismissable {
+              if showDismissButton {
                 ToolbarItem(placement: .topBarTrailing) {
                   DismissButton {
                     dismiss()
@@ -133,6 +133,7 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
+    .interactiveDismissDisabled(navigation.path.last == .sessionTaskMfa)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -144,12 +145,21 @@ public struct AuthView: View {
       if isDismissable {
         for await event in clerk.auth.events {
           switch event {
-          case .signInCompleted, .signUpCompleted:
+          case .signInCompleted(let signIn):
+            guard !sessionRequiresForcedMfa(createdSessionId: signIn.createdSessionId) else { break }
+            dismiss()
+          case .signUpCompleted(let signUp):
+            guard !sessionRequiresForcedMfa(createdSessionId: signUp.createdSessionId) else { break }
             dismiss()
           default:
             break
           }
         }
+      }
+    }
+    .onChange(of: navigation.sessionTaskComplete) { _, isComplete in
+      if isComplete {
+        dismiss()
       }
     }
     .taskOnce {
@@ -163,6 +173,20 @@ public struct AuthView: View {
         )
       )
     }
+  }
+}
+
+extension AuthView {
+  /// Whether the created session requires forced MFA enrollment.
+  private func sessionRequiresForcedMfa(createdSessionId: String?) -> Bool {
+    guard let sessionId = createdSessionId else { return false }
+    let session = clerk.client?.sessions.first { $0.id == sessionId }
+    return session?.requiresForcedMfa == true
+  }
+
+  /// Whether the dismiss button should be shown, accounting for Force MFA blocking dismissal.
+  private var showDismissButton: Bool {
+    isDismissable && navigation.path.last != .sessionTaskMfa
   }
 }
 
@@ -185,6 +209,9 @@ extension AuthView {
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
     case signUpCompleteProfile
+
+    // Session tasks
+    case sessionTaskMfa
 
     @MainActor
     @ViewBuilder
@@ -217,6 +244,8 @@ extension AuthView {
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
+      case .sessionTaskMfa:
+        SessionTaskMfaView()
       }
     }
   }

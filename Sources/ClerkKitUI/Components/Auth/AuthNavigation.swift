@@ -19,6 +19,9 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
+  /// Set to `true` when a session task flow completes and the auth view should dismiss.
+  var sessionTaskComplete = false
+
   /// Creates a new AuthNavigation instance.
   init() {}
 
@@ -29,6 +32,9 @@ final class AuthNavigation {
   func setToStepForStatus(signIn: SignIn) {
     switch signIn.status {
     case .complete:
+      if let destination = sessionTaskDestination(createdSessionId: signIn.createdSessionId) {
+        path.append(destination)
+      }
       return
     case .needsIdentifier:
       path = []
@@ -71,9 +77,23 @@ final class AuthNavigation {
       path = []
     case .missingRequirements:
       handleMissingRequirements(signUp: signUp)
-    case .complete, .unknown:
+    case .complete:
+      if let destination = sessionTaskDestination(createdSessionId: signUp.createdSessionId) {
+        path.append(destination)
+      }
+      return
+    case .unknown:
       return
     }
+  }
+
+  /// Returns a session task destination if the created session requires forced MFA.
+  @MainActor
+  private func sessionTaskDestination(createdSessionId: String?) -> AuthView.Destination? {
+    guard let sessionId = createdSessionId else { return nil }
+    let session = Clerk.shared.client?.sessions.first { $0.id == sessionId }
+    guard session?.requiresForcedMfa == true else { return nil }
+    return .sessionTaskMfa
   }
 
   @MainActor
