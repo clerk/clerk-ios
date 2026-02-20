@@ -129,7 +129,7 @@ struct UserProfileDetailView: View {
     }
     .toolbar {
       ToolbarItem(placement: .principal) {
-        Text("Profile", bundle: .module)
+        Text("Manage account", bundle: .module)
           .font(theme.fonts.headline)
           .fontWeight(.semibold)
           .foregroundStyle(theme.colors.foreground)

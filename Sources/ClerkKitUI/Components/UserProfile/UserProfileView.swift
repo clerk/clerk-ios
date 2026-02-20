@@ -174,7 +174,7 @@ public struct UserProfileView: View {
 extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
-      row(icon: "icon-profile", text: "Profile") {
+      row(icon: "icon-profile", text: "Manage account") {
         navigation.path.append(Destination.profileDetail)
       }
 
@@ -323,7 +323,7 @@ private struct UserProfileHeaderView: View {
       Button {
         onUpdateProfile()
       } label: {
-        Text("Update profile", bundle: .module)
+        Text("Edit profile", bundle: .module)
       }
       .buttonStyle(.secondary(config: .init(size: .small)))
       .simultaneousGesture(TapGesture())

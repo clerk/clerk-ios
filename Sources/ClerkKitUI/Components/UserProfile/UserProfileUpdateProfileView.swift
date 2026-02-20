@@ -93,7 +93,7 @@ struct UserProfileUpdateProfileView: View {
         }
 
         ToolbarItem(placement: .principal) {
-          Text("Update profile", bundle: .module)
+          Text("Edit profile", bundle: .module)
             .font(theme.fonts.headline)
             .foregroundStyle(theme.colors.foreground)
         }
