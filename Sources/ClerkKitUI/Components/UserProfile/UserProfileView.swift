@@ -84,7 +84,7 @@ public struct UserProfileView: View {
   @State private var accountSwitcherHeight: CGFloat = 400
   @State private var embeddedPushCount = 0
   @State private var internalPath = NavigationPath()
-  @State private var navigation = UserProfileNavigation()
+  @State private var navigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
@@ -456,7 +456,7 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileNavigation())
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 
@@ -481,7 +481,7 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileNavigation())
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 
