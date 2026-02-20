@@ -18,7 +18,7 @@ extension View {
   /// - `AuthState()` for `@Environment(AuthState.self)`
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
-  /// - `UserProfileNavigation()` for `@Environment(UserProfileNavigation.self)`
+  /// - `UserProfileSheetNavigation()` for `@Environment(UserProfileSheetNavigation.self)`
   ///
   /// Note: `ClerkTheme` has a default value and doesn't need to be injected.
   ///
@@ -45,7 +45,7 @@ extension View {
           .environment(AuthState())
           .environment(AuthNavigation())
           .environment(CodeLimiter())
-          .environment(UserProfileNavigation())
+          .environment(UserProfileSheetNavigation())
       )
     }
     return AnyView(self)

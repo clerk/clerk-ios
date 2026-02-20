@@ -1,5 +1,5 @@
 //
-//  UserProfileNavigation.swift
+//  UserProfileSheetNavigation.swift
 //  Clerk
 //
 
@@ -14,7 +14,7 @@ import SwiftUI
 /// It is injected into child views via the environment.
 @MainActor
 @Observable
-final class UserProfileNavigation {
+final class UserProfileSheetNavigation {
   /// Whether the account switcher sheet is presented.
   var accountSwitcherIsPresented = false
   
@@ -27,7 +27,7 @@ final class UserProfileNavigation {
   /// The currently presented MFA add view type.
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
   
-  /// Creates a new UserProfileNavigation instance.
+  /// Creates a new UserProfileSheetNavigation instance.
   init() {}
 }
 

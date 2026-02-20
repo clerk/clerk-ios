@@ -12,7 +12,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(UserProfileNavigation.self) private var navigation
+  @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.userProfileRouter) private var router
 
   @State private var deleteAccount = ""
