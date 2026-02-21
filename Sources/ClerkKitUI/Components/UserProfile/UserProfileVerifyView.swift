@@ -16,7 +16,7 @@ struct UserProfileVerifyView: View {
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var verificationState = VerificationState.default
+  @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
 
   @FocusState private var otpFieldIsFocused: Bool
@@ -89,22 +89,6 @@ struct UserProfileVerifyView: View {
     }
   }
 
-  enum VerificationState {
-    case `default`
-    case verifying
-    case success
-    case error(Error)
-
-    var showResend: Bool {
-      switch self {
-      case .default, .error:
-        true
-      case .verifying, .success:
-        false
-      }
-    }
-  }
-
   var showResend: Bool {
     switch mode {
     case .email, .phone:
@@ -153,29 +137,7 @@ struct UserProfileVerifyView: View {
           otpFieldIsFocused = true
         }
 
-        Group {
-          switch verificationState {
-          case .verifying:
-            HStack(spacing: 4) {
-              SpinnerView()
-                .frame(width: 16, height: 16)
-              Text("Verifying...", bundle: .module)
-            }
-            .foregroundStyle(theme.colors.mutedForeground)
-          case .success:
-            HStack(spacing: 4) {
-              Image("icon-check-circle", bundle: .module)
-                .foregroundStyle(theme.colors.success)
-              Text("Success", bundle: .module)
-                .foregroundStyle(theme.colors.mutedForeground)
-            }
-          case let .error(error):
-            ErrorText(error: error)
-          default:
-            EmptyView()
-          }
-        }
-        .font(theme.fonts.subheadline)
+        CodeVerificationStatusView(state: verificationState)
 
         if showResend {
           AsyncButton {

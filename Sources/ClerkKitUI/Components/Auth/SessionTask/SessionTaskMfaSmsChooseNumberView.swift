@@ -19,12 +19,8 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   let onDone: () -> Void
 
-  private var user: User? {
-    clerk.user
-  }
-
   private var availablePhoneNumbers: [ClerkKit.PhoneNumber] {
-    (user?.phoneNumbersAvailableForMfa ?? [])
+    (clerk.user?.phoneNumbersAvailableForMfa ?? [])
       .filter { $0.verification?.status == .verified }
       .sorted { $0.createdAt < $1.createdAt }
   }
@@ -88,13 +84,11 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     .navigationDestination(isPresented: $showAddPhone) {
       SessionTaskMfaAddPhoneView(onDone: onDone)
     }
-    .navigationDestination(isPresented: $showVerifySms) {
-      if let phoneNumberToVerify {
-        SessionTaskMfaVerifySmsView(
-          phoneNumber: phoneNumberToVerify,
-          onDone: onDone
-        )
-      }
+    .navigationDestination(item: $phoneNumberToVerify) { phoneNumberToVerify in
+      SessionTaskMfaVerifySmsView(
+        phoneNumber: phoneNumberToVerify,
+        onDone: onDone
+      )
     }
   }
 
@@ -103,7 +97,6 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       try await phoneNumber.sendCode()
       codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
       phoneNumberToVerify = phoneNumber
-      showVerifySms = true
     } catch {
       self.error = error
       ClerkLogger.error("Failed to send SMS code", error: error)

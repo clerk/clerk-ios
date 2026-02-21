@@ -15,22 +15,14 @@ struct SessionTaskMfaVerifySmsView: View {
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var verificationState = VerificationState.default
+  @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var backupCodes: [String]?
-  @State private var showBackupCodes = false
+  @State private var backupCodesToShow: [String]?
 
   @FocusState private var otpFieldIsFocused: Bool
 
   let phoneNumber: ClerkKit.PhoneNumber
   let onDone: () -> Void
-
-  enum VerificationState {
-    case `default`
-    case verifying
-    case success
-    case error(Error)
-  }
 
   private var codeLimiterIdentifier: String {
     phoneNumber.phoneNumber
@@ -82,60 +74,40 @@ struct SessionTaskMfaVerifySmsView: View {
         }
         .padding(.bottom, 16)
 
-        Group {
-          switch verificationState {
-          case .verifying:
-            HStack(spacing: 4) {
-              SpinnerView()
-                .frame(width: 16, height: 16)
-              Text("Verifying...", bundle: .module)
-            }
-            .foregroundStyle(theme.colors.mutedForeground)
-          case .success:
-            HStack(spacing: 4) {
-              Image("icon-check-circle", bundle: .module)
-                .foregroundStyle(theme.colors.success)
-              Text("Success", bundle: .module)
-                .foregroundStyle(theme.colors.mutedForeground)
-            }
-          case let .error(error):
-            ErrorText(error: error)
-          default:
-            EmptyView()
-          }
-        }
-        .font(theme.fonts.subheadline)
+        CodeVerificationStatusView(state: verificationState)
         .padding(.bottom, 16)
 
-        AsyncButton {
-          await resend()
-        } label: { isRunning in
-          HStack(spacing: 2) {
-            Text("Didn't receive a code?", bundle: .module)
-            Text(resendString, bundle: .module)
-              .foregroundStyle(
-                remainingSeconds > 0
-                  ? theme.colors.mutedForeground
-                  : theme.colors.primary
-              )
-              .monospacedDigit()
-              .contentTransition(.numericText(countsDown: true))
-              .animation(.default, value: remainingSeconds)
+        if verificationState.showResend {
+          AsyncButton {
+            await resend()
+          } label: { isRunning in
+            HStack(spacing: 2) {
+              Text("Didn't receive a code?", bundle: .module)
+              Text(resendString, bundle: .module)
+                .foregroundStyle(
+                  remainingSeconds > 0
+                    ? theme.colors.mutedForeground
+                    : theme.colors.primary
+                )
+                .monospacedDigit()
+                .contentTransition(.numericText(countsDown: true))
+                .animation(.default, value: remainingSeconds)
+            }
+            .overlayProgressView(isActive: isRunning)
+            .frame(maxWidth: .infinity)
           }
-          .overlayProgressView(isActive: isRunning)
-          .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(
-          .secondary(
-            config: .init(
-              emphasis: .none,
-              size: .small
+          .buttonStyle(
+            .secondary(
+              config: .init(
+                emphasis: .none,
+                size: .small
+              )
             )
           )
-        )
-        .disabled(remainingSeconds > 0)
-        .simultaneousGesture(TapGesture())
-        .padding(.bottom, 32)
+          .disabled(remainingSeconds > 0)
+          .simultaneousGesture(TapGesture())
+          .padding(.bottom, 32)
+        }
 
         SecuredByClerkView()
       }
@@ -150,11 +122,9 @@ struct SessionTaskMfaVerifySmsView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(isPresented: $showBackupCodes) {
-      if let backupCodes {
-        SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode) {
-          onDone()
-        }
+    .navigationDestination(item: $backupCodesToShow) { backupCodes in
+      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode) {
+        onDone()
       }
     }
   }
@@ -167,8 +137,7 @@ struct SessionTaskMfaVerifySmsView: View {
       let reserved = try await phoneNumber.setReservedForSecondFactor()
       codeLimiter.clearRecord(for: codeLimiterIdentifier)
       verificationState = .success
-      backupCodes = reserved.backupCodes ?? []
-      showBackupCodes = true
+      backupCodesToShow = reserved.backupCodes
     } catch {
       otpFieldState = .error
       verificationState = .error(error)

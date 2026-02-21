@@ -14,7 +14,6 @@ struct SessionTaskMfaAddPhoneView: View {
 
   @State private var phoneNumber = ""
   @State private var phoneNumberToVerify: ClerkKit.PhoneNumber?
-  @State private var showVerifySms = false
   @State private var error: Error?
 
   @FocusState private var isFocused: Bool
@@ -86,13 +85,11 @@ struct SessionTaskMfaAddPhoneView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(isPresented: $showVerifySms) {
-      if let phoneNumberToVerify {
-        SessionTaskMfaVerifySmsView(
-          phoneNumber: phoneNumberToVerify,
-          onDone: onDone
-        )
-      }
+    .navigationDestination(item: $phoneNumberToVerify) { phoneNumberToVerify in
+      SessionTaskMfaVerifySmsView(
+        phoneNumber: phoneNumberToVerify,
+        onDone: onDone
+      )
     }
   }
 
@@ -104,7 +101,6 @@ struct SessionTaskMfaAddPhoneView: View {
       try await newPhoneNumber.sendCode()
       codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
       phoneNumberToVerify = newPhoneNumber
-      showVerifySms = true
     } catch {
       self.error = error
       ClerkLogger.error("Failed to add phone number", error: error)

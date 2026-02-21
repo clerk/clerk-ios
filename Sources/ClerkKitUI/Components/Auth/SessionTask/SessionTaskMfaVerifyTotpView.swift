@@ -13,20 +13,13 @@ struct SessionTaskMfaVerifyTotpView: View {
 
   @State private var code = ""
   @State private var error: Error?
-  @State private var verificationState = VerificationState.default
+  @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var showConfirmation = false
+  @State private var backupCodesToShow: [String]?
 
   @FocusState private var otpFieldIsFocused: Bool
 
   let onDone: () -> Void
-
-  enum VerificationState {
-    case `default`
-    case verifying
-    case success
-    case error(Error)
-  }
 
   var body: some View {
     ScrollView {
@@ -50,7 +43,7 @@ struct SessionTaskMfaVerifyTotpView: View {
         }
         .padding(.bottom, 24)
 
-        verificationStatusView
+        CodeVerificationStatusView(state: verificationState)
           .padding(.bottom, 32)
 
         SecuredByClerkView()
@@ -67,35 +60,11 @@ struct SessionTaskMfaVerifyTotpView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(isPresented: $showConfirmation) {
-      SessionTaskMfaTotpConfirmationView(onDone: onDone)
-    }
-  }
-
-  private var verificationStatusView: some View {
-    Group {
-      switch verificationState {
-      case .verifying:
-        HStack(spacing: 4) {
-          SpinnerView()
-            .frame(width: 16, height: 16)
-          Text("Verifying...", bundle: .module)
-        }
-        .foregroundStyle(theme.colors.mutedForeground)
-      case .success:
-        HStack(spacing: 4) {
-          Image("icon-check-circle", bundle: .module)
-            .foregroundStyle(theme.colors.success)
-          Text("Success", bundle: .module)
-            .foregroundStyle(theme.colors.mutedForeground)
-        }
-      case let .error(error):
-        ErrorText(error: error)
-      default:
-        EmptyView()
+    .navigationDestination(item: $backupCodesToShow) { backupCodes in
+      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp) {
+        onDone()
       }
     }
-    .font(theme.fonts.subheadline)
   }
 
   private func attempt() async {
@@ -103,9 +72,13 @@ struct SessionTaskMfaVerifyTotpView: View {
     verificationState = .verifying
 
     do {
-      _ = try await user.verifyTOTP(code: code)
+      let totp = try await user.verifyTOTP(code: code)
       verificationState = .success
-      showConfirmation = true
+      if let backupCodes = totp.backupCodes, !backupCodes.isEmpty {
+        backupCodesToShow = backupCodes
+      } else {
+        onDone()
+      }
     } catch {
       otpFieldState = .error
       verificationState = .error(error)

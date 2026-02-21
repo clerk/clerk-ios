@@ -16,7 +16,7 @@ struct SignUpCodeView: View {
   @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var code = ""
-  @State private var verificationState = VerificationState.default
+  @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
   @State private var error: Error?
 
@@ -54,28 +54,16 @@ struct SignUpCodeView: View {
     }
   }
 
-  enum VerificationState {
-    case `default`
-    case verifying
-    case success
-    case error(Error)
-
-    var showResend: Bool {
-      switch self {
-      case .default, .error:
-        true
-      case .verifying, .success:
-        false
-      }
-    }
-  }
-
   var resendString: LocalizedStringKey {
     if remainingSeconds > 0 {
       "Resend (\(remainingSeconds))"
     } else {
       "Resend"
     }
+  }
+
+  private var showResend: Bool {
+    verificationState.showResend
   }
 
   private func codeLimiterIdentifier(_ signUp: SignUp) -> String {
@@ -107,31 +95,9 @@ struct SignUpCodeView: View {
             otpFieldIsFocused = true
           }
 
-          Group {
-            switch verificationState {
-            case .verifying:
-              HStack(spacing: 4) {
-                SpinnerView()
-                  .frame(width: 16, height: 16)
-                Text("Verifying...", bundle: .module)
-              }
-              .foregroundStyle(theme.colors.mutedForeground)
-            case .success:
-              HStack(spacing: 4) {
-                Image("icon-check-circle", bundle: .module)
-                  .foregroundStyle(theme.colors.success)
-                Text("Success", bundle: .module)
-                  .foregroundStyle(theme.colors.mutedForeground)
-              }
-            case let .error(error):
-              ErrorText(error: error)
-            default:
-              EmptyView()
-            }
-          }
-          .font(theme.fonts.subheadline)
+          CodeVerificationStatusView(state: verificationState)
 
-          if verificationState.showResend {
+          if showResend {
             AsyncButton {
               await prepare()
             } label: { isRunning in

@@ -150,7 +150,8 @@ public struct AuthView: View {
         case .sessionChanged(let oldValue, let newValue):
           guard !routeToSessionTaskMfaIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
-          if becameActive, isDismissable {
+          let isHandlingSessionTask = navigation.path.contains(.sessionTaskMfa)
+          if becameActive, isDismissable, !isHandlingSessionTask {
             dismiss()
           }
         default:

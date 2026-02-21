@@ -73,6 +73,11 @@ struct SessionTaskMfaTotpView: View {
     .background(theme.colors.background)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        UserButton(presentationContext: .sessionTaskToolbar)
+      }
+    }
     .navigationDestination(isPresented: $showVerify) {
       SessionTaskMfaVerifyTotpView(onDone: onDone)
     }
