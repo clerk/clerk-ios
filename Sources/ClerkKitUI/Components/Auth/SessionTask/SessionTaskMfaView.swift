@@ -109,7 +109,7 @@ struct SessionTaskMfaView: View {
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        UserButton()
+        UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
     .clerkErrorPresenting($error)
@@ -433,7 +433,7 @@ private struct SessionTaskMfaSmsChooseNumberView: View {
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        UserButton()
+        UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
     .navigationDestination(isPresented: $showAddPhone) {
@@ -540,7 +540,7 @@ private struct SessionTaskMfaAddPhoneView: View {
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        UserButton()
+        UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
     .navigationDestination(isPresented: $showVerifySms) {
@@ -711,7 +711,7 @@ private struct SessionTaskMfaVerifySmsView: View {
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        UserButton()
+        UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
     .navigationDestination(isPresented: $showBackupCodes) {

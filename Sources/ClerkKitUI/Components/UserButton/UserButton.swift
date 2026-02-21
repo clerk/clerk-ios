@@ -55,20 +55,38 @@ public struct UserButton<SignedOutContent: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  @State private var userProfileIsPresented = false
-  @State private var signOutSheetIsPresented = false
+  public enum PresentationContext {
+    case standard
+    case sessionTaskToolbar
+  }
+
+  @State private var presentedSheet: PresentedSheet?
+  private let presentationContext: PresentationContext
   private let signedOutContent: () -> SignedOutContent
+
+  private enum PresentedSheet: String, Identifiable {
+    case userProfile
+    case forcedMfaAuth
+    case signOut
+
+    var id: String { rawValue }
+  }
 
   /// Creates a new user button.
   ///
   /// The button will automatically display the current user's profile image
   /// and handle presenting the user profile sheet when tapped.
-  public init(@ViewBuilder signedOutContent: @escaping () -> SignedOutContent) {
+  public init(
+    presentationContext: PresentationContext = .standard,
+    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
+  ) {
+    self.presentationContext = presentationContext
     self.signedOutContent = signedOutContent
   }
 
   /// Creates a new user button with no signed-out content.
-  public init() where SignedOutContent == EmptyView {
+  public init(presentationContext: PresentationContext = .standard) where SignedOutContent == EmptyView {
+    self.presentationContext = presentationContext
     signedOutContent = { EmptyView() }
   }
 
@@ -80,11 +98,7 @@ public struct UserButton<SignedOutContent: View>: View {
     ZStack {
       if let user = clerk.user {
         Button {
-          if requiresForcedMfa {
-            signOutSheetIsPresented = true
-          } else {
-            userProfileIsPresented = true
-          }
+          handleTap()
         } label: {
           LazyImage(url: URL(string: user.imageUrl)) { state in
             if let image = state.image {
@@ -103,27 +117,42 @@ public struct UserButton<SignedOutContent: View>: View {
           .clipShape(.circle)
           .transition(.opacity.animation(.easeInOut(duration: 0.2)))
         }
+        .buttonStyle(.plain)
       } else {
         signedOutContent()
       }
     }
-    .sheet(isPresented: $userProfileIsPresented) {
-      UserProfileView()
-        .presentationDragIndicator(.visible)
-    }
-    .sheet(isPresented: $signOutSheetIsPresented) {
-      UserButtonSignOutView()
-        .presentationDetents([.height(208)])
-        .presentationDragIndicator(.visible)
-    }
-    .onChange(of: clerk.user) { _, newValue in
-      if newValue == nil {
-        userProfileIsPresented = false
-        signOutSheetIsPresented = false
+    .sheet(item: $presentedSheet) { sheet in
+      switch sheet {
+      case .userProfile:
+        UserProfileView()
+          .presentationDragIndicator(.visible)
+      case .forcedMfaAuth:
+        AuthView(isDismissable: false)
+          .presentationDragIndicator(.visible)
+      case .signOut:
+        UserButtonSignOutView()
+          .presentationDetents([.height(208)])
+          .presentationDragIndicator(.visible)
       }
     }
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+    }
+  }
+}
+
+extension UserButton {
+  private func handleTap() {
+    switch presentationContext {
+    case .sessionTaskToolbar:
+      presentedSheet = .signOut
+    case .standard:
+      if requiresForcedMfa {
+        presentedSheet = .forcedMfaAuth
+      } else {
+        presentedSheet = .userProfile
+      }
     }
   }
 }
