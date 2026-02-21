@@ -95,13 +95,7 @@ struct UserProfileMfaAddTotpView: View {
           Button {
             path.append(Destination.verify)
           } label: {
-            HStack(spacing: 4) {
-              Text("Continue", bundle: .module)
-              Image("icon-triangle-right", bundle: .module)
-                .foregroundStyle(theme.colors.primaryForeground)
-                .opacity(0.6)
-            }
-            .frame(maxWidth: .infinity)
+            ContinueButtonLabelView()
           }
           .buttonStyle(.primary())
         }
