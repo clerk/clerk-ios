@@ -132,8 +132,7 @@ public struct UserButton<SignedOutContent: View>: View {
           .presentationDragIndicator(.visible)
       case .signOut:
         UserButtonSignOutView()
-          .presentationDetents([.height(208)])
-          .presentationDragIndicator(.visible)
+          .contentSizingDetent()
       }
     }
     .onChange(of: clerk.user) { _, newValue in

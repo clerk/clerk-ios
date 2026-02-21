@@ -43,6 +43,7 @@ struct UserButtonSignOutView: View {
       .buttonStyle(.pressedBackground)
       .simultaneousGesture(TapGesture())
     }
+    .padding(.top, 16)
     .preGlassDetentSheetBackground()
     .clerkErrorPresenting($error)
   }

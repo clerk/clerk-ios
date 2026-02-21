@@ -8,21 +8,9 @@ import ClerkKit
 import SwiftUI
 
 struct ClerkErrorViewModifier: ViewModifier {
-  @Environment(\.clerkTheme) private var theme
-
   @Binding var error: Error?
   var onDismiss: ((Error?) -> Void)?
   var actionProvider: ((Error) -> ErrorView.ActionConfig?)?
-
-  @State private var sheetHeight: CGFloat?
-
-  var detents: Set<PresentationDetent> {
-    if let sheetHeight {
-      [PresentationDetent.height(sheetHeight)]
-    } else {
-      [.medium]
-    }
-  }
 
   func body(content: Content) -> some View {
     content
@@ -42,17 +30,7 @@ struct ClerkErrorViewModifier: ViewModifier {
           if let error {
             ErrorView(error: error, action: actionProvider?(error))
               .padding()
-              .onGeometryChange(
-                for: CGFloat.self,
-                of: { geometry in
-                  geometry.size.height
-                },
-                action: { newValue in
-                  sheetHeight = newValue
-                }
-              )
-              .presentationDetents(detents)
-              .presentationDragIndicator(.visible)
+              .contentSizingDetent()
           }
         }
       )
