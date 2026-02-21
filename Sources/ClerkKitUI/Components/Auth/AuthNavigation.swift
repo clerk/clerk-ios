@@ -32,9 +32,7 @@ final class AuthNavigation {
   func setToStepForStatus(signIn: SignIn) {
     switch signIn.status {
     case .complete:
-      if let destination = sessionTaskDestination(createdSessionId: signIn.createdSessionId) {
-        path.append(destination)
-      }
+      routeToSessionTaskMfaIfNeeded(createdSessionId: signIn.createdSessionId)
       return
     case .needsIdentifier:
       path = []
@@ -78,22 +76,47 @@ final class AuthNavigation {
     case .missingRequirements:
       handleMissingRequirements(signUp: signUp)
     case .complete:
-      if let destination = sessionTaskDestination(createdSessionId: signUp.createdSessionId) {
-        path.append(destination)
-      }
+      routeToSessionTaskMfaIfNeeded(createdSessionId: signUp.createdSessionId)
       return
     case .unknown:
       return
     }
   }
 
-  /// Returns a session task destination if the created session requires forced MFA.
+  /// Routes to the forced MFA task flow for the created session when required.
   @MainActor
-  private func sessionTaskDestination(createdSessionId: String?) -> AuthView.Destination? {
-    guard let sessionId = createdSessionId else { return nil }
+  private func routeToSessionTaskMfaIfNeeded(createdSessionId: String?) {
+    guard let sessionId = createdSessionId else { return }
+
+    if sessionRequiresForcedMfa(sessionId: sessionId) {
+      appendSessionTaskMfaIfNeeded()
+      return
+    }
+
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+
+      do {
+        _ = try await Clerk.shared.refreshClient()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh client while routing to session task MFA")
+      }
+
+      guard self.sessionRequiresForcedMfa(sessionId: sessionId) else { return }
+      self.appendSessionTaskMfaIfNeeded()
+    }
+  }
+
+  @MainActor
+  private func sessionRequiresForcedMfa(sessionId: String) -> Bool {
     let session = Clerk.shared.client?.sessions.first { $0.id == sessionId }
-    guard session?.requiresForcedMfa == true else { return nil }
-    return .sessionTaskMfa
+    return session?.requiresForcedMfa == true
+  }
+
+  @MainActor
+  private func appendSessionTaskMfaIfNeeded() {
+    guard !path.contains(.sessionTaskMfa) else { return }
+    path.append(.sessionTaskMfa)
   }
 
   @MainActor

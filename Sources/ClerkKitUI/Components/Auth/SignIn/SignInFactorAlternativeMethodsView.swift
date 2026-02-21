@@ -115,21 +115,16 @@ struct SignInFactorAlternativeMethodsView: View {
                   )
                 }
               } label: {
-                HStack(spacing: 6) {
-                  if let iconName = iconName(factor: factor) {
-                    Image(iconName, bundle: .module)
-                      .resizable()
-                      .frame(width: 16, height: 16)
-                      .scaledToFit()
-                      .foregroundStyle(theme.colors.mutedForeground)
-                  }
+                if let iconName = iconName(factor: factor) {
+                  StrategyOptionButton(iconName: iconName, text: actionText)
+                } else {
                   Text(actionText, bundle: .module)
                     .font(theme.fonts.body)
                     .foregroundStyle(theme.colors.foreground)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
               }
               .buttonStyle(.secondary())
               .simultaneousGesture(TapGesture())

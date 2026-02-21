@@ -142,15 +142,20 @@ public struct AuthView: View {
       _ = try? await clerk.refreshEnvironment()
     }
     .task {
+      routeToSessionTaskIfNeeded()
+    }
+    .task {
       if isDismissable {
         for await event in clerk.auth.events {
           switch event {
           case .signInCompleted(let signIn):
-            guard !sessionRequiresForcedMfa(createdSessionId: signIn.createdSessionId) else { break }
-            dismiss()
+            if await shouldDismissAfterAuthCompletion(createdSessionId: signIn.createdSessionId) {
+              dismiss()
+            }
           case .signUpCompleted(let signUp):
-            guard !sessionRequiresForcedMfa(createdSessionId: signUp.createdSessionId) else { break }
-            dismiss()
+            if await shouldDismissAfterAuthCompletion(createdSessionId: signUp.createdSessionId) {
+              dismiss()
+            }
           default:
             break
           }
@@ -160,6 +165,19 @@ public struct AuthView: View {
     .onChange(of: navigation.sessionTaskComplete) { _, isComplete in
       if isComplete {
         dismiss()
+      }
+    }
+    .onChange(of: clerk.session?.requiresForcedMfa) { _, requiresForcedMfa in
+      if requiresForcedMfa == true {
+        routeToSessionTaskIfNeeded()
+      }
+    }
+    .onChange(of: clerk.user) { _, newUser in
+      guard newUser == nil, navigation.path.contains(.sessionTaskMfa) else { return }
+      if isDismissable {
+        dismiss()
+      } else {
+        navigation.path = []
       }
     }
     .taskOnce {
@@ -177,9 +195,42 @@ public struct AuthView: View {
 }
 
 extension AuthView {
+  @MainActor
+  private func routeToSessionTaskIfNeeded() {
+    guard clerk.session?.requiresForcedMfa == true else { return }
+    guard !navigation.path.contains(.sessionTaskMfa) else { return }
+    navigation.path.append(.sessionTaskMfa)
+  }
+
+  /// Whether the auth view should dismiss after sign-in/sign-up completion.
+  @MainActor
+  private func shouldDismissAfterAuthCompletion(createdSessionId: String?) async -> Bool {
+    !(await sessionRequiresForcedMfaWithRefresh(createdSessionId: createdSessionId))
+  }
+
   /// Whether the created session requires forced MFA enrollment.
-  private func sessionRequiresForcedMfa(createdSessionId: String?) -> Bool {
+  ///
+  /// This refreshes the client once when the created session is not yet present
+  /// in local state to avoid dismissing before task routing can happen.
+  @MainActor
+  private func sessionRequiresForcedMfaWithRefresh(createdSessionId: String?) async -> Bool {
     guard let sessionId = createdSessionId else { return false }
+
+    if sessionRequiresForcedMfa(sessionId: sessionId) {
+      return true
+    }
+
+    do {
+      _ = try await clerk.refreshClient()
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to refresh client while resolving forced MFA completion routing")
+    }
+
+    return sessionRequiresForcedMfa(sessionId: sessionId)
+  }
+
+  @MainActor
+  private func sessionRequiresForcedMfa(sessionId: String) -> Bool {
     let session = clerk.client?.sessions.first { $0.id == sessionId }
     return session?.requiresForcedMfa == true
   }

@@ -55,7 +55,8 @@ public struct UserButton<SignedOutContent: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  @State private var userProfileIsPresented: Bool = false
+  @State private var userProfileIsPresented = false
+  @State private var signOutSheetIsPresented = false
   private let signedOutContent: () -> SignedOutContent
 
   /// Creates a new user button.
@@ -71,11 +72,19 @@ public struct UserButton<SignedOutContent: View>: View {
     signedOutContent = { EmptyView() }
   }
 
+  private var requiresForcedMfa: Bool {
+    clerk.session?.requiresForcedMfa == true
+  }
+
   public var body: some View {
     ZStack {
-      if let user = clerk.user, clerk.session?.requiresForcedMfa != true {
+      if let user = clerk.user {
         Button {
-          userProfileIsPresented = true
+          if requiresForcedMfa {
+            signOutSheetIsPresented = true
+          } else {
+            userProfileIsPresented = true
+          }
         } label: {
           LazyImage(url: URL(string: user.imageUrl)) { state in
             if let image = state.image {
@@ -102,9 +111,15 @@ public struct UserButton<SignedOutContent: View>: View {
       UserProfileView()
         .presentationDragIndicator(.visible)
     }
+    .sheet(isPresented: $signOutSheetIsPresented) {
+      UserButtonSignOutView()
+        .presentationDetents([.height(208)])
+        .presentationDragIndicator(.visible)
+    }
     .onChange(of: clerk.user) { _, newValue in
       if newValue == nil {
         userProfileIsPresented = false
+        signOutSheetIsPresented = false
       }
     }
     .taskOnce {
