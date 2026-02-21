@@ -128,13 +128,18 @@ public struct UserButton<SignedOutContent: View>: View {
         UserProfileView()
           .presentationDragIndicator(.visible)
       case .forcedMfaAuth:
-        AuthView(isDismissable: false)
+        AuthView()
           .presentationDragIndicator(.visible)
       case .signOut:
         UserButtonSignOutView()
           .presentationDetents([.height(208)])
           .presentationDragIndicator(.visible)
       }
+    }
+    .onChange(of: clerk.user) { _, newValue in
+      guard newValue == nil else { return }
+      guard presentedSheet != .forcedMfaAuth else { return }
+      presentedSheet = nil
     }
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
