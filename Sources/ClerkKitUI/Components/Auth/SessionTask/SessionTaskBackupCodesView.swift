@@ -8,10 +8,15 @@ import SwiftUI
 
 struct SessionTaskBackupCodesView: View {
   @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
 
   let backupCodes: [String]
-  let mfaType: SessionTaskMfaView.BackupCodesMfaType
-  let onDone: () -> Void
+  let mfaType: BackupCodesMfaType
+  
+  enum BackupCodesMfaType {
+    case phoneCode
+    case authenticatorApp
+  }
 
   private var title: LocalizedStringKey {
     switch mfaType {
@@ -105,7 +110,7 @@ struct SessionTaskBackupCodesView: View {
         .padding(.bottom, 32)
 
         Button {
-          onDone()
+          navigation.sessionTaskComplete = true
         } label: {
           HStack {
             Text("Continue", bundle: .module)

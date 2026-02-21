@@ -9,16 +9,14 @@ import SwiftUI
 
 struct SessionTaskMfaAddPhoneView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(\.clerkTheme) private var theme
   @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var phoneNumber = ""
-  @State private var phoneNumberToVerify: ClerkKit.PhoneNumber?
   @State private var error: Error?
 
   @FocusState private var isFocused: Bool
-
-  let onDone: () -> Void
 
   private var user: User? {
     clerk.user
@@ -85,12 +83,6 @@ struct SessionTaskMfaAddPhoneView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(item: $phoneNumberToVerify) { phoneNumberToVerify in
-      SessionTaskMfaVerifySmsView(
-        phoneNumber: phoneNumberToVerify,
-        onDone: onDone
-      )
-    }
   }
 
   private func addPhoneNumber() async {
@@ -100,7 +92,7 @@ struct SessionTaskMfaAddPhoneView: View {
       let newPhoneNumber = try await user.createPhoneNumber(phoneNumber)
       try await newPhoneNumber.sendCode()
       codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
-      phoneNumberToVerify = newPhoneNumber
+      navigation.path.append(.taskVerifySms(phoneNumber: newPhoneNumber))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to add phone number", error: error)

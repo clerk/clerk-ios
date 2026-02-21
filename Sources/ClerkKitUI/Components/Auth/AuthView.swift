@@ -133,7 +133,7 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.path.last == .sessionTaskMfa)
+    .interactiveDismissDisabled(navigation.path.last == .taskMfaStart)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -150,7 +150,7 @@ public struct AuthView: View {
         case .sessionChanged(let oldValue, let newValue):
           guard !routeToSessionTaskMfaIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
-          let isHandlingSessionTask = navigation.path.contains(.sessionTaskMfa)
+          let isHandlingSessionTask = navigation.path.contains(.taskMfaStart)
           if becameActive, isDismissable, !isHandlingSessionTask {
             dismiss()
           }
@@ -169,7 +169,7 @@ public struct AuthView: View {
       routeToSessionTaskMfaIfNeeded(session: clerk.session)
     }
     .onChange(of: clerk.user) { _, newUser in
-      guard newUser == nil, navigation.path.contains(.sessionTaskMfa) else { return }
+      guard newUser == nil, navigation.path.contains(.taskMfaStart) else { return }
       if isDismissable {
         dismiss()
       } else {
@@ -200,7 +200,7 @@ extension AuthView {
 
   /// Whether the dismiss button should be shown, accounting for Force MFA blocking dismissal.
   private var showDismissButton: Bool {
-    isDismissable && navigation.path.last != .sessionTaskMfa
+    isDismissable && navigation.path.last != .taskMfaStart
   }
 }
 
@@ -225,7 +225,14 @@ extension AuthView {
     case signUpCompleteProfile
 
     // Session tasks
-    case sessionTaskMfa
+    case taskMfaStart
+    case taskMfaSmsChooseNumber
+    case taskMfaAddPhone
+    case taskVerifySms(phoneNumber: PhoneNumber)
+    case taskMfaTotp(totpResource: TOTPResource)
+    case taskVerifyTotp
+    
+    case backupCodes(backupCodes: [String], mfaType: SessionTaskBackupCodesView.BackupCodesMfaType)
 
     @MainActor
     @ViewBuilder
@@ -258,8 +265,23 @@ extension AuthView {
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
-      case .sessionTaskMfa:
-        SessionTaskMfaView()
+      case .taskMfaStart:
+        SessionTaskMfaStartView()
+      case .taskMfaSmsChooseNumber:
+        SessionTaskMfaSmsChooseNumberView()
+      case .taskMfaAddPhone:
+        SessionTaskMfaAddPhoneView()
+      case .taskVerifySms(let phoneNumber):
+        SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
+      case .taskMfaTotp(let totpResource):
+        SessionTaskMfaTotpView(totp: totpResource)
+      case .taskVerifyTotp:
+        SessionTaskMfaVerifyTotpView()
+      case .backupCodes(let backupCodes, let mfaType):
+        SessionTaskBackupCodesView(
+          backupCodes: backupCodes,
+          mfaType: mfaType
+        )
       }
     }
   }

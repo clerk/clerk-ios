@@ -9,11 +9,9 @@ import SwiftUI
 
 struct SessionTaskMfaTotpView: View {
   @Environment(\.clerkTheme) private var theme
-
-  @State private var showVerify = false
+  @Environment(AuthNavigation.self) private var navigation
 
   let totp: TOTPResource
-  let onDone: () -> Void
 
   var body: some View {
     ScrollView {
@@ -58,7 +56,7 @@ struct SessionTaskMfaTotpView: View {
         }
 
         Button {
-          showVerify = true
+          navigation.path.append(.taskVerifyTotp)
         } label: {
           ContinueButtonLabelView()
         }
@@ -77,9 +75,6 @@ struct SessionTaskMfaTotpView: View {
       ToolbarItem(placement: .topBarTrailing) {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
-    }
-    .navigationDestination(isPresented: $showVerify) {
-      SessionTaskMfaVerifyTotpView(onDone: onDone)
     }
   }
 

@@ -22,7 +22,6 @@ struct SessionTaskMfaVerifySmsView: View {
   @FocusState private var otpFieldIsFocused: Bool
 
   let phoneNumber: ClerkKit.PhoneNumber
-  let onDone: () -> Void
 
   private var codeLimiterIdentifier: String {
     phoneNumber.phoneNumber
@@ -123,9 +122,7 @@ struct SessionTaskMfaVerifySmsView: View {
       }
     }
     .navigationDestination(item: $backupCodesToShow) { backupCodes in
-      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode) {
-        onDone()
-      }
+      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
     }
   }
 

@@ -1,5 +1,5 @@
 //
-//  SessionTaskMfaView.swift
+//  SessionTaskMfaStartView.swift
 //
 
 #if os(iOS)
@@ -11,21 +11,12 @@ import SwiftUI
 ///
 /// This view is presented after sign-in/sign-up completes when the backend requires
 /// the user to enroll in at least one MFA method before the session can become active.
-struct SessionTaskMfaView: View {
+struct SessionTaskMfaStartView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  @State private var showSmsChooseNumber = false
-  @State private var showSmsAddPhone = false
-  @State private var showTotpSetup = false
-  @State private var totpResource: TOTPResource?
   @State private var error: Error?
-
-  enum BackupCodesMfaType {
-    case phoneCode
-    case authenticatorApp
-  }
 
   private var environment: Clerk.Environment? {
     clerk.environment
@@ -76,9 +67,9 @@ struct SessionTaskMfaView: View {
           if phoneCodeIsEnabled {
             Button {
               if hasAvailablePhoneNumbers {
-                showSmsChooseNumber = true
+                navigation.path.append(.taskMfaSmsChooseNumber)
               } else {
-                showSmsAddPhone = true
+                navigation.path.append(.taskMfaAddPhone)
               }
             } label: {
               StrategyOptionButton(iconName: "icon-phone", text: "SMS code")
@@ -111,23 +102,6 @@ struct SessionTaskMfaView: View {
       }
     }
     .clerkErrorPresenting($error)
-    .navigationDestination(isPresented: $showSmsChooseNumber) {
-      SessionTaskMfaSmsChooseNumberView {
-        navigation.sessionTaskComplete = true
-      }
-    }
-    .navigationDestination(isPresented: $showSmsAddPhone) {
-      SessionTaskMfaAddPhoneView {
-        navigation.sessionTaskComplete = true
-      }
-    }
-    .navigationDestination(isPresented: $showTotpSetup) {
-      if let totpResource {
-        SessionTaskMfaTotpView(totp: totpResource) {
-          navigation.sessionTaskComplete = true
-        }
-      }
-    }
   }
 
   private func createTotp() async {
@@ -135,8 +109,7 @@ struct SessionTaskMfaView: View {
 
     do {
       let totp = try await user.createTOTP()
-      totpResource = totp
-      showTotpSetup = true
+      navigation.path.append(.taskMfaTotp(totpResource: totp))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)
@@ -145,7 +118,7 @@ struct SessionTaskMfaView: View {
 }
 
 #Preview("Choose Method") {
-  SessionTaskMfaView()
+  SessionTaskMfaStartView()
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

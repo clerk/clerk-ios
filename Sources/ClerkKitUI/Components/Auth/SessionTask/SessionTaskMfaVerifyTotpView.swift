@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SessionTaskMfaVerifyTotpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(\.clerkTheme) private var theme
 
   @State private var code = ""
@@ -18,8 +19,6 @@ struct SessionTaskMfaVerifyTotpView: View {
   @State private var backupCodesToShow: [String]?
 
   @FocusState private var otpFieldIsFocused: Bool
-
-  let onDone: () -> Void
 
   var body: some View {
     ScrollView {
@@ -61,9 +60,7 @@ struct SessionTaskMfaVerifyTotpView: View {
       }
     }
     .navigationDestination(item: $backupCodesToShow) { backupCodes in
-      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp) {
-        onDone()
-      }
+      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp)
     }
   }
 
@@ -77,7 +74,7 @@ struct SessionTaskMfaVerifyTotpView: View {
       if let backupCodes = totp.backupCodes, !backupCodes.isEmpty {
         backupCodesToShow = backupCodes
       } else {
-        onDone()
+        navigation.sessionTaskComplete = true
       }
     } catch {
       otpFieldState = .error

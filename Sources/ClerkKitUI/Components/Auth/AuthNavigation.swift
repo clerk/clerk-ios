@@ -83,8 +83,8 @@ final class AuthNavigation {
 
   @MainActor
   func appendSessionTaskMfaIfNeeded() {
-    guard !path.contains(.sessionTaskMfa) else { return }
-    path.append(.sessionTaskMfa)
+    guard !path.contains(.taskMfaStart) else { return }
+    path.append(.taskMfaStart)
   }
 
   @MainActor

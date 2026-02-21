@@ -9,15 +9,11 @@ import SwiftUI
 
 struct SessionTaskMfaSmsChooseNumberView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(\.clerkTheme) private var theme
   @Environment(CodeLimiter.self) private var codeLimiter
 
-  @State private var phoneNumberToVerify: ClerkKit.PhoneNumber?
-  @State private var showVerifySms = false
-  @State private var showAddPhone = false
   @State private var error: Error?
-
-  let onDone: () -> Void
 
   private var availablePhoneNumbers: [ClerkKit.PhoneNumber] {
     (clerk.user?.phoneNumbersAvailableForMfa ?? [])
@@ -54,7 +50,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         .padding(.bottom, 24)
 
         Button {
-          showAddPhone = true
+          navigation.path.append(.taskMfaAddPhone)
         } label: {
           Text("Add phone number", bundle: .module)
         }
@@ -81,22 +77,13 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(isPresented: $showAddPhone) {
-      SessionTaskMfaAddPhoneView(onDone: onDone)
-    }
-    .navigationDestination(item: $phoneNumberToVerify) { phoneNumberToVerify in
-      SessionTaskMfaVerifySmsView(
-        phoneNumber: phoneNumberToVerify,
-        onDone: onDone
-      )
-    }
   }
 
-  private func sendCode(to phoneNumber: ClerkKit.PhoneNumber) async {
+  private func sendCode(to phoneNumber: PhoneNumber) async {
     do {
       try await phoneNumber.sendCode()
       codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
-      phoneNumberToVerify = phoneNumber
+      navigation.path.append(.taskVerifySms(phoneNumber: phoneNumber))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to send SMS code", error: error)
