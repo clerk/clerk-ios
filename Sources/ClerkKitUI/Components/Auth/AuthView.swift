@@ -224,8 +224,10 @@ extension AuthView {
     case taskVerifySms(phoneNumber: PhoneNumber)
     case taskMfaTotp(totpResource: TOTPResource)
     case taskVerifyTotp
-    
-    case backupCodes(backupCodes: [String], mfaType: SessionTaskBackupCodesView.BackupCodesMfaType)
+    case backupCodes(
+      backupCodes: [String],
+      mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
+    )
 
     @MainActor
     @ViewBuilder

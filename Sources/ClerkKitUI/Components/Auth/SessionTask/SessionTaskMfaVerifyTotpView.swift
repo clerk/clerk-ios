@@ -16,7 +16,7 @@ struct SessionTaskMfaVerifyTotpView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var backupCodesToShow: [String]?
+  @State private var backupCodes = [String]()
 
   @FocusState private var otpFieldIsFocused: Bool
 
@@ -50,7 +50,18 @@ struct SessionTaskMfaVerifyTotpView: View {
       }
       .padding(16)
     }
-    .clerkErrorPresenting($error)
+    .clerkErrorPresenting(
+      $error,
+      action: { error in
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified" {
+          return .init(text: "Continue") {
+            verificationState = .verifying
+            handleSuccessfulVerification()
+          }
+        }
+        return nil
+      }
+    )
     .background(theme.colors.background)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
@@ -58,9 +69,6 @@ struct SessionTaskMfaVerifyTotpView: View {
       ToolbarItem(placement: .topBarTrailing) {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
-    }
-    .navigationDestination(item: $backupCodesToShow) { backupCodes in
-      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp)
     }
   }
 
@@ -70,12 +78,8 @@ struct SessionTaskMfaVerifyTotpView: View {
 
     do {
       let totp = try await user.verifyTOTP(code: code)
-      verificationState = .success
-      if let backupCodes = totp.backupCodes, !backupCodes.isEmpty {
-        backupCodesToShow = backupCodes
-      } else {
-        navigation.handleSessionTaskCompletion(session: clerk.session)
-      }
+      backupCodes = totp.backupCodes ?? []
+      handleSuccessfulVerification()
     } catch {
       otpFieldState = .error
       verificationState = .error(error)
@@ -84,6 +88,15 @@ struct SessionTaskMfaVerifyTotpView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+    }
+  }
+  
+  private func handleSuccessfulVerification() {
+    verificationState = .success
+    if !backupCodes.isEmpty {
+      navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .authenticatorApp))
+    } else {
+      navigation.handleSessionTaskCompletion(session: clerk.session)
     }
   }
 }

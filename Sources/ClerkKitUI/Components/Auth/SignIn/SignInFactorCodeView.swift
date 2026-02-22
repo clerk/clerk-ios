@@ -108,7 +108,7 @@ extension SignInFactorCodeView {
     VStack(spacing: 24) {
       otpInputSection
 
-      verificationStatusView
+      CodeVerificationStatusView(state: verificationState)
 
       if showResend {
         resendSection
@@ -132,10 +132,6 @@ extension SignInFactorCodeView {
       verificationState = .default
       otpFieldIsFocused = true
     }
-  }
-
-  private var verificationStatusView: some View {
-    CodeVerificationStatusView(state: verificationState)
   }
 
   private var resendSection: some View {

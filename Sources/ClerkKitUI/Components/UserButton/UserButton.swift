@@ -66,7 +66,7 @@ public struct UserButton<SignedOutContent: View>: View {
 
   private enum PresentedSheet: String, Identifiable {
     case userProfile
-    case forcedMfaAuth
+    case sessionTaskAuth
     case signOut
 
     var id: String { rawValue }
@@ -90,8 +90,8 @@ public struct UserButton<SignedOutContent: View>: View {
     signedOutContent = { EmptyView() }
   }
 
-  private var requiresForcedMfa: Bool {
-    clerk.session?.requiresForcedMfa == true
+  private var hasPendingSessionTasks: Bool {
+    return clerk.session?.pendingTasks.isEmpty == false
   }
 
   public var body: some View {
@@ -127,7 +127,7 @@ public struct UserButton<SignedOutContent: View>: View {
       case .userProfile:
         UserProfileView()
           .presentationDragIndicator(.visible)
-      case .forcedMfaAuth:
+      case .sessionTaskAuth:
         AuthView()
           .presentationDragIndicator(.visible)
       case .signOut:
@@ -137,7 +137,7 @@ public struct UserButton<SignedOutContent: View>: View {
     }
     .onChange(of: clerk.user) { _, newValue in
       guard newValue == nil else { return }
-      guard presentedSheet != .forcedMfaAuth else { return }
+      guard presentedSheet != .sessionTaskAuth else { return }
       presentedSheet = nil
     }
     .taskOnce {
@@ -152,8 +152,8 @@ extension UserButton {
     case .sessionTaskToolbar:
       presentedSheet = .signOut
     case .standard:
-      if requiresForcedMfa {
-        presentedSheet = .forcedMfaAuth
+      if hasPendingSessionTasks {
+        presentedSheet = .sessionTaskAuth
       } else {
         presentedSheet = .userProfile
       }

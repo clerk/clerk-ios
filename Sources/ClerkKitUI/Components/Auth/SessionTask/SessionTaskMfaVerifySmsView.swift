@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SessionTaskMfaVerifySmsView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AuthNavigation.self) private var navigation
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @Environment(CodeLimiter.self) private var codeLimiter
@@ -17,7 +18,6 @@ struct SessionTaskMfaVerifySmsView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var backupCodesToShow: [String]?
 
   @FocusState private var otpFieldIsFocused: Bool
 
@@ -112,6 +112,24 @@ struct SessionTaskMfaVerifySmsView: View {
       }
       .padding(16)
     }
+    .clerkErrorPresenting(
+      $error,
+      action: { error in
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified" {
+          return .init(text: "Continue") {
+            Task {
+              do {
+                verificationState = .verifying
+                try await handleSuccessfulVerification()
+              } catch {
+                self.error = error
+              }
+            }
+          }
+        }
+        return nil
+      }
+    )
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .navigationBarTitleDisplayMode(.inline)
@@ -121,9 +139,6 @@ struct SessionTaskMfaVerifySmsView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-    .navigationDestination(item: $backupCodesToShow) { backupCodes in
-      SessionTaskBackupCodesView(backupCodes: backupCodes, mfaType: .phoneCode)
-    }
   }
 
   private func attempt() async {
@@ -131,10 +146,7 @@ struct SessionTaskMfaVerifySmsView: View {
 
     do {
       try await phoneNumber.verifyCode(code)
-      let reserved = try await phoneNumber.setReservedForSecondFactor()
-      codeLimiter.clearRecord(for: codeLimiterIdentifier)
-      verificationState = .success
-      backupCodesToShow = reserved.backupCodes
+      try await handleSuccessfulVerification()
     } catch {
       otpFieldState = .error
       verificationState = .error(error)
@@ -146,6 +158,17 @@ struct SessionTaskMfaVerifySmsView: View {
     }
   }
 
+  private func handleSuccessfulVerification() async throws {
+    let reserved = try await phoneNumber.setReservedForSecondFactor()
+    codeLimiter.clearRecord(for: codeLimiterIdentifier)
+    verificationState = .success
+    if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
+      navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
+    } else {
+      navigation.handleSessionTaskCompletion(session: clerk.session)
+    }
+  }
+  
   private func resend() async {
     code = ""
     verificationState = .default

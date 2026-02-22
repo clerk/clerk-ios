@@ -7,7 +7,7 @@
 import ClerkKit
 import SwiftUI
 
-/// A simplified user sheet shown during forced MFA enrollment, displaying the user preview and a sign out option.
+/// A simplified user sheet shown during session tasks, displaying the user preview and a sign out option.
 struct UserButtonSignOutView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
