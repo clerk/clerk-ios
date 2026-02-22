@@ -42,13 +42,14 @@ jobs:
               username: actor
             })
 
-            const permission = response.data.permission
+            const permission = String(response.data.permission || "").toLowerCase()
+            const role = String(response.data.role_name || permission).toLowerCase()
             const allowed = new Set(["maintain", "admin"])
 
-            core.info(`Actor '${actor}' has '${permission}' permission`)
-            if (!allowed.has(permission)) {
+            core.info(`Actor '${actor}' has role='${role}', permission='${permission}'`)
+            if (!allowed.has(role)) {
               core.setFailed(
-                `Only maintainers/admins can run this workflow. Actor '${actor}' has '${permission}'.`
+                `Only maintainers/admins can run this workflow. Actor '${actor}' has role '${role}' (permission '${permission}').`
               )
             }
 
