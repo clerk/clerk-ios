@@ -154,7 +154,7 @@ struct ClerkAPIClientTests {
       path: "/v1/test",
       method: .post,
       headers: ["Content-Type": "application/json"],
-      body: Payload(unsafeMetadata: ["token": "some-value"]),
+      body: Payload(unsafeMetadata: ["token": "some-value"])
     )
 
     _ = try await Clerk.shared.dependencies.apiClient.send(request)

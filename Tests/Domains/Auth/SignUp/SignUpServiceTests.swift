@@ -258,7 +258,7 @@ struct SignUpServiceTests {
   }
 
   @Test
-  func testUpdateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+  func updateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups/\(signUp.id)")!

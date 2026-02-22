@@ -59,7 +59,7 @@ struct UserServiceTests {
   }
 
   @Test
-  func testUpdateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+  func updateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
 
