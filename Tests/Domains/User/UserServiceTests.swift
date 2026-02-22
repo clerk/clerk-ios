@@ -47,6 +47,7 @@ struct UserServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
+      #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
       #expect(request.urlEncodedFormBody!["first_name"] == "John")
       #expect(request.urlEncodedFormBody!["last_name"] == "Doe")
       requestHandled.setValue(true)
@@ -54,6 +55,32 @@ struct UserServiceTests {
     mock.register()
 
     _ = try await Clerk.shared.dependencies.userService.update(params: .init(firstName: "John", lastName: "Doe"))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let metadata: JSON = ["token": "some-value"]
+    _ = try await Clerk.shared.dependencies.userService.update(params: .init(unsafeMetadata: metadata))
     #expect(requestHandled.value)
   }
 

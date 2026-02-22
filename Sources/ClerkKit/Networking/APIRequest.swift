@@ -132,6 +132,15 @@ struct Request<Response: Decodable & Sendable>: Sendable {
 
     if let bodyData = try body?.encoded(using: encoder) {
       urlRequest.httpBody = bodyData
+
+      let hasContentTypeHeader = urlRequest
+        .allHTTPHeaderFields?
+        .keys
+        .contains { $0.caseInsensitiveCompare("Content-Type") == .orderedSame } ?? false
+
+      if !hasContentTypeHeader {
+        urlRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+      }
     }
 
     return urlRequest
