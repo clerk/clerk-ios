@@ -133,7 +133,7 @@ public final class Clerk {
   private var lifecycleManager: LifecycleManager?
 
   /// Coordinates watch connectivity syncing.
-  package var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
   /// Task that listens for general Clerk events and handles them.
   private var clerkEventListenerTask: Task<Void, Never>?
