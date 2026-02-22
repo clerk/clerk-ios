@@ -4,9 +4,11 @@
 
 #if os(iOS)
 
+import ClerkKit
 import SwiftUI
 
 struct SessionTaskBackupCodesView: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
@@ -110,7 +112,7 @@ struct SessionTaskBackupCodesView: View {
         .padding(.bottom, 32)
 
         Button {
-          navigation.sessionTaskComplete = true
+          navigation.handleSessionTaskCompletion(session: clerk.session)
         } label: {
           HStack {
             Text("Continue", bundle: .module)

@@ -19,8 +19,8 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
-  /// Set to `true` when a session task flow completes and the auth view should dismiss.
-  var sessionTaskComplete = false
+  /// Set to `true` when a session task flow completes and auth navigation should continue.
+  private(set) var allTasksComplete = false
 
   /// Creates a new AuthNavigation instance.
   init() {}
@@ -82,9 +82,41 @@ final class AuthNavigation {
   }
 
   @MainActor
-  func appendSessionTaskMfaIfNeeded() {
-    guard !path.contains(.taskMfaStart) else { return }
-    path.append(.taskMfaStart)
+  func nextPendingSessionTask(from session: Session?) -> Session.Task? {
+    return session?.pendingTasks.first
+  }
+
+  @discardableResult @MainActor
+  func routeToSessionTaskStartIfNeeded(session: Session?) -> Bool {
+    guard let nextTask = nextPendingSessionTask(from: session) else {
+      return false
+    }
+    guard !hasSessionTaskStartInPath else { return true }
+    path.append(.sessionTaskStart(task: nextTask))
+    return true
+  }
+
+  /// Handles a completed session task by routing to the next task if present.
+  ///
+  /// - Returns: `true` when auth should dismiss because there are no more pending tasks.
+  @MainActor
+  func handleSessionTaskCompletion(session: Session?) {
+    guard let nextTask = nextPendingSessionTask(from: session) else {
+      allTasksComplete = true
+      return
+    }
+
+    path.append(.sessionTaskStart(task: nextTask))
+  }
+
+  var hasSessionTaskStartInPath: Bool {
+    path.contains { destination in
+      if case .sessionTaskStart = destination {
+        true
+      } else {
+        false
+      }
+    }
   }
 
   @MainActor

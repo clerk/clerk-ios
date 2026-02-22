@@ -1,5 +1,5 @@
 //
-//  SessionTaskMfaStartView.swift
+//  SessionTaskMfaSetupView.swift
 //
 
 #if os(iOS)
@@ -11,7 +11,7 @@ import SwiftUI
 ///
 /// This view is presented after sign-in/sign-up completes when the backend requires
 /// the user to enroll in at least one MFA method before the session can become active.
-struct SessionTaskMfaStartView: View {
+struct SessionTaskMfaSetupView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
@@ -118,7 +118,7 @@ struct SessionTaskMfaStartView: View {
 }
 
 #Preview("Choose Method") {
-  SessionTaskMfaStartView()
+  SessionTaskMfaSetupView()
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

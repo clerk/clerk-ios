@@ -35,8 +35,8 @@ final class SessionStatusLogger {
        let tasks = session.tasks,
        !tasks.isEmpty
     {
-      let taskKeys = tasks.map(\.key).joined(separator: ", ")
-      tasksDescription = " Remaining session tasks: [\(taskKeys)]."
+      let taskList = tasks.map(\.rawValue).joined(separator: ", ")
+      tasksDescription = " Remaining session tasks: [\(taskList)]."
     } else {
       tasksDescription = ""
     }

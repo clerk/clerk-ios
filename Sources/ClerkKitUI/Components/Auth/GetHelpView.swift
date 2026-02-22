@@ -17,6 +17,7 @@ struct GetHelpView: View {
   enum Context: Hashable {
     case signIn
     case signUp
+    case sessionTask
 
     var subtitleText: LocalizedStringKey {
       switch self {
@@ -24,6 +25,8 @@ struct GetHelpView: View {
         "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible."
       case .signUp:
         "If you have trouble creating your account, email us and we will work with you to complete your registration as soon as possible."
+      case .sessionTask:
+        "If you have trouble completing required account setup, email us and we will help you finish as soon as possible."
       }
     }
   }
@@ -75,6 +78,12 @@ extension GetHelpView {
 
 #Preview("Sign Up") {
   GetHelpView(context: .signUp)
+    .clerkPreview()
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Session Task") {
+  GetHelpView(context: .sessionTask)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

@@ -133,13 +133,13 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.path.last == .taskMfaStart)
+    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
     .onAppear {
-      routeToSessionTaskMfaIfNeeded(session: clerk.session)
+      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
     }
     .task {
       _ = try? await clerk.refreshEnvironment()
@@ -148,9 +148,9 @@ public struct AuthView: View {
       for await event in clerk.auth.events {
         switch event {
         case .sessionChanged(let oldValue, let newValue):
-          guard !routeToSessionTaskMfaIfNeeded(session: newValue) else { break }
+          guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
-          let isHandlingSessionTask = navigation.path.contains(.taskMfaStart)
+          let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
           if becameActive, isDismissable, !isHandlingSessionTask {
             dismiss()
           }
@@ -159,17 +159,17 @@ public struct AuthView: View {
         }
       }
     }
-    .onChange(of: navigation.sessionTaskComplete) { _, isComplete in
-      if isComplete {
+    .onChange(of: navigation.allTasksComplete) { _, isComplete in
+      guard isComplete else { return }
+      if isDismissable {
         dismiss()
       }
     }
-    .onChange(of: clerk.session?.requiresForcedMfa) { _, requiresForcedMfa in
-      guard requiresForcedMfa == true else { return }
-      routeToSessionTaskMfaIfNeeded(session: clerk.session)
+    .onChange(of: clerk.session?.tasks) { _, _ in
+      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
     }
     .onChange(of: clerk.user) { _, newUser in
-      guard newUser == nil, navigation.path.contains(.taskMfaStart) else { return }
+      guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
       if isDismissable {
         dismiss()
       } else {
@@ -191,16 +191,9 @@ public struct AuthView: View {
 }
 
 extension AuthView {
-  @discardableResult @MainActor
-  private func routeToSessionTaskMfaIfNeeded(session: Session?) -> Bool {
-    guard session?.requiresForcedMfa == true else { return false }
-    navigation.appendSessionTaskMfaIfNeeded()
-    return true
-  }
-
-  /// Whether the dismiss button should be shown, accounting for Force MFA blocking dismissal.
+  /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
-    isDismissable && navigation.path.last != .taskMfaStart
+    isDismissable && !navigation.hasSessionTaskStartInPath
   }
 }
 
@@ -225,7 +218,7 @@ extension AuthView {
     case signUpCompleteProfile
 
     // Session tasks
-    case taskMfaStart
+    case sessionTaskStart(task: Session.Task)
     case taskMfaSmsChooseNumber
     case taskMfaAddPhone
     case taskVerifySms(phoneNumber: PhoneNumber)
@@ -265,8 +258,8 @@ extension AuthView {
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
-      case .taskMfaStart:
-        SessionTaskMfaStartView()
+      case .sessionTaskStart(let task):
+        SessionTaskStartView(task: task)
       case .taskMfaSmsChooseNumber:
         SessionTaskMfaSmsChooseNumberView()
       case .taskMfaAddPhone:

@@ -66,7 +66,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
   public init(
     id: String,
-    status: Session.SessionStatus,
+    status: SessionStatus,
     expireAt: Date,
     abandonAt: Date,
     lastActiveAt: Date,
@@ -187,12 +187,47 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     }
   }
 
-  public struct Task: Codable, Equatable, Sendable {
-    /// The key of the task.
-    public var key: String
+  public enum Task: Codable, Equatable, Hashable, Sendable {
+    case setupMfa
+    case unknown(String)
+
+    private enum CodingKeys: String, CodingKey {
+      case key
+    }
+
+    /// The raw string value used in the API.
+    public var rawValue: String {
+      switch self {
+      case .setupMfa:
+        "setup-mfa"
+      case .unknown(let value):
+        value
+      }
+    }
+
+    /// Creates a `Task` from its raw string value.
+    public init(rawValue: String) {
+      switch rawValue.lowercased() {
+      case "setup-mfa":
+        self = .setupMfa
+      default:
+        self = .unknown(rawValue)
+      }
+    }
 
     public init(key: String) {
-      self.key = key
+      self.init(rawValue: key)
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      let rawValue = try container.decode(String.self, forKey: .key)
+      self.init(rawValue: rawValue)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(rawValue, forKey: .key)
     }
   }
 }

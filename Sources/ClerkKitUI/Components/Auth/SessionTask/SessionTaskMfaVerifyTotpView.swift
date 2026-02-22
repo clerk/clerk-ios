@@ -74,7 +74,7 @@ struct SessionTaskMfaVerifyTotpView: View {
       if let backupCodes = totp.backupCodes, !backupCodes.isEmpty {
         backupCodesToShow = backupCodes
       } else {
-        navigation.sessionTaskComplete = true
+        navigation.handleSessionTaskCompletion(session: clerk.session)
       }
     } catch {
       otpFieldState = .error
