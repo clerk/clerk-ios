@@ -63,37 +63,41 @@ func createMockAPIClient() -> APIClient {
 }
 
 extension URLRequest {
+  /// Returns request body data from `httpBody` or `httpBodyStream`.
+  private var requestBodyData: Data? {
+    if let body = httpBody {
+      return body
+    }
+
+    guard let bodyStream = httpBodyStream else {
+      return nil
+    }
+
+    var data = Data()
+    bodyStream.open()
+    defer { bodyStream.close() }
+    let bufferSize = 4096
+    let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+    defer { buffer.deallocate() }
+    while bodyStream.hasBytesAvailable {
+      let read = bodyStream.read(buffer, maxLength: bufferSize)
+      if read > 0 {
+        data.append(buffer, count: read)
+      } else {
+        break
+      }
+    }
+
+    return data.isEmpty ? nil : data
+  }
+
   /// Extracts the URL-encoded form data from the request body as a dictionary.
   ///
   /// Handles both `httpBody` and `httpBodyStream` properties, as URLSession may use either.
   /// Returns `nil` if the body cannot be read or parsed.
   var urlEncodedFormBody: [String: String]? {
-    // Try to get body data from either httpBody or httpBodyStream
-    let bodyData: Data?
-    if let body = httpBody {
-      bodyData = body
-    } else if let bodyStream = httpBodyStream {
-      var data = Data()
-      bodyStream.open()
-      defer { bodyStream.close() }
-      let bufferSize = 4096
-      let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
-      defer { buffer.deallocate() }
-      while bodyStream.hasBytesAvailable {
-        let read = bodyStream.read(buffer, maxLength: bufferSize)
-        if read > 0 {
-          data.append(buffer, count: read)
-        } else {
-          break
-        }
-      }
-      bodyData = data.isEmpty ? nil : data
-    } else {
-      bodyData = nil
-    }
-
-    guard let bodyData,
-          let bodyString = String(data: bodyData, encoding: .utf8)
+    guard let requestBodyData,
+          let bodyString = String(data: requestBodyData, encoding: .utf8)
     else {
       return nil
     }
@@ -112,5 +116,11 @@ extension URLRequest {
     }
 
     return bodyDict.isEmpty ? nil : bodyDict
+  }
+
+  /// Decodes request body as `JSON`.
+  var jsonBody: JSON? {
+    guard let requestBodyData else { return nil }
+    return try? JSONDecoder.clerkDecoder.decode(JSON.self, from: requestBodyData)
   }
 }

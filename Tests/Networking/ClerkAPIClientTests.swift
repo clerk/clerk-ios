@@ -127,6 +127,41 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func postRequestWithExplicitJSONContentType() async throws {
+    struct Payload: Encodable, Sendable {
+      let unsafeMetadata: JSON
+    }
+
+    let requestHandled = LockIsolated(false)
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+
+    var mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder().encode(["success": true]),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/json")
+      #expect(request.jsonBody?["unsafe_metadata"]?["token"]?.stringValue == "some-value")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let request = Request<EmptyResponse>(
+      path: "/v1/test",
+      method: .post,
+      headers: ["Content-Type": "application/json"],
+      body: Payload(unsafeMetadata: ["token": "some-value"]),
+    )
+
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func patchRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!

@@ -204,6 +204,32 @@ struct SignUpServiceTests {
   }
 
   @Test
+  func createWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signUpService.create(
+      params: .init(unsafeMetadata: ["token": "some-value"])
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func testUpdate() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -227,6 +253,34 @@ struct SignUpServiceTests {
     _ = try await Clerk.shared.dependencies.signUpService.update(
       signUpId: signUp.id,
       params: .init(firstName: "John", lastName: "Doe")
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func testUpdateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+    let signUp = SignUp.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups/\(signUp.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signUpService.update(
+      signUpId: signUp.id,
+      params: .init(unsafeMetadata: ["token": "some-value"])
     )
     #expect(requestHandled.value)
   }
