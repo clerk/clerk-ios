@@ -110,7 +110,7 @@ public struct AuthView: View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
         .toolbar {
-          if isDismissable {
+          if showDismissButton {
             ToolbarItem(placement: .topBarTrailing) {
               DismissButton {
                 dismiss()
@@ -121,7 +121,7 @@ public struct AuthView: View {
         .navigationDestination(for: Destination.self) {
           $0.view
             .toolbar {
-              if isDismissable {
+              if showDismissButton {
                 ToolbarItem(placement: .topBarTrailing) {
                   DismissButton {
                     dismiss()
@@ -133,23 +133,47 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
+    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
+    .onAppear {
+      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+    }
     .task {
       _ = try? await clerk.refreshEnvironment()
     }
     .task {
-      if isDismissable {
-        for await event in clerk.auth.events {
-          switch event {
-          case .signInCompleted, .signUpCompleted:
+      for await event in clerk.auth.events {
+        switch event {
+        case .sessionChanged(let oldValue, let newValue):
+          guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
+          let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
+          let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
+          if becameActive, isDismissable, !isHandlingSessionTask {
             dismiss()
-          default:
-            break
           }
+        default:
+          break
         }
+      }
+    }
+    .onChange(of: navigation.allTasksComplete) { _, isComplete in
+      guard isComplete else { return }
+      if isDismissable {
+        dismiss()
+      }
+    }
+    .onChange(of: clerk.session?.tasks) { _, _ in
+      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+    }
+    .onChange(of: clerk.user) { _, newUser in
+      guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
+      if isDismissable {
+        dismiss()
+      } else {
+        navigation.path = []
       }
     }
     .taskOnce {
@@ -163,6 +187,13 @@ public struct AuthView: View {
         )
       )
     }
+  }
+}
+
+extension AuthView {
+  /// Whether the dismiss button should be shown, accounting for required session tasks.
+  private var showDismissButton: Bool {
+    isDismissable && !navigation.hasSessionTaskStartInPath
   }
 }
 
@@ -185,6 +216,18 @@ extension AuthView {
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
     case signUpCompleteProfile
+
+    // Session tasks
+    case sessionTaskStart(task: Session.Task)
+    case taskMfaSmsChooseNumber
+    case taskMfaAddPhone
+    case taskVerifySms(phoneNumber: PhoneNumber)
+    case taskMfaTotp(totpResource: TOTPResource)
+    case taskVerifyTotp
+    case backupCodes(
+      backupCodes: [String],
+      mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
+    )
 
     @MainActor
     @ViewBuilder
@@ -217,6 +260,23 @@ extension AuthView {
         SignUpCodeView(field: field)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
+      case .sessionTaskStart(let task):
+        SessionTaskStartView(task: task)
+      case .taskMfaSmsChooseNumber:
+        SessionTaskMfaSmsChooseNumberView()
+      case .taskMfaAddPhone:
+        SessionTaskMfaAddPhoneView()
+      case .taskVerifySms(let phoneNumber):
+        SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
+      case .taskMfaTotp(let totpResource):
+        SessionTaskMfaTotpView(totp: totpResource)
+      case .taskVerifyTotp:
+        SessionTaskMfaVerifyTotpView()
+      case .backupCodes(let backupCodes, let mfaType):
+        SessionTaskBackupCodesView(
+          backupCodes: backupCodes,
+          mfaType: mfaType
+        )
       }
     }
   }

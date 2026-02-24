@@ -54,7 +54,7 @@ struct UserProfileMfaAddTotpView: View {
               .foregroundStyle(theme.colors.mutedForeground)
 
             VStack(spacing: 12) {
-              copyableText(secret)
+              CopyableTextView(text: secret)
 
               Button {
                 copyToClipboard(secret)
@@ -76,7 +76,7 @@ struct UserProfileMfaAddTotpView: View {
               .foregroundStyle(theme.colors.mutedForeground)
 
             VStack(spacing: 12) {
-              copyableText(uri)
+              CopyableTextView(text: uri)
 
               Button {
                 copyToClipboard(uri)
@@ -95,13 +95,7 @@ struct UserProfileMfaAddTotpView: View {
           Button {
             path.append(Destination.verify)
           } label: {
-            HStack(spacing: 4) {
-              Text("Continue", bundle: .module)
-              Image("icon-triangle-right", bundle: .module)
-                .foregroundStyle(theme.colors.primaryForeground)
-                .opacity(0.6)
-            }
-            .frame(maxWidth: .infinity)
+            ContinueButtonLabelView()
           }
           .buttonStyle(.primary())
         }
@@ -130,22 +124,6 @@ struct UserProfileMfaAddTotpView: View {
     }
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
-  }
-
-  func copyableText(_ string: String) -> some View {
-    Text(verbatim: string)
-      .font(theme.fonts.subheadline)
-      .foregroundStyle(theme.colors.foreground)
-      .frame(maxWidth: .infinity, minHeight: 20)
-      .lineLimit(1)
-      .padding(.vertical, 18)
-      .padding(.horizontal, 16)
-      .background(theme.colors.muted)
-      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(theme.colors.border, lineWidth: 1)
-      }
   }
 }
 

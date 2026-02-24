@@ -1,0 +1,82 @@
+//
+//  SessionTaskMfaTotpView.swift
+//
+
+#if os(iOS)
+
+import ClerkKit
+import SwiftUI
+
+struct SessionTaskMfaTotpView: View {
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
+
+  let totp: TOTPResource
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 0) {
+        SessionTaskHeaderSection(
+          title: "Add authenticator application",
+          subtitle: "Set up a new sign-in method in your authenticator app using the manual setup key below to link it to your account."
+        )
+        .padding(.bottom, 32)
+
+        if let secret = totp.secret {
+          VStack(spacing: 12) {
+            VStack(spacing: 6) {
+              Text("Manual setup key", bundle: .module)
+                .font(theme.fonts.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.foreground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+              Text("Make sure Time-based or One-time passwords is enabled, then finish linking your account.", bundle: .module)
+                .font(theme.fonts.subheadline)
+                .foregroundStyle(theme.colors.mutedForeground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            CopyableTextView(text: secret)
+
+            Button {
+              UIPasteboard.general.string = secret
+            } label: {
+              HStack(spacing: 6) {
+                Image("icon-clipboard", bundle: .module)
+                  .foregroundStyle(theme.colors.mutedForeground)
+                Text("Copy to clipboard", bundle: .module)
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.secondary())
+          }
+          .padding(.bottom, 32)
+        }
+
+        Button {
+          navigation.path.append(.taskVerifyTotp)
+        } label: {
+          ContinueButtonLabelView()
+        }
+        .buttonStyle(.primary())
+        .padding(.bottom, 32)
+
+        SecuredByClerkView()
+          .frame(maxWidth: .infinity, alignment: .center)
+      }
+      .padding(16)
+    }
+    .background(theme.colors.background)
+    .navigationBarTitleDisplayMode(.inline)
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        UserButton(presentationContext: .sessionTaskToolbar)
+      }
+    }
+  }
+}
+
+#endif

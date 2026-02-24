@@ -2,9 +2,145 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      },
       "shouldTranslate" : false
     },
     " " : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        }
+      },
       "shouldTranslate" : false
     },
     " and " : {
@@ -438,7 +574,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An diese Telefonnummer wird eine SMS mit einem Verifizierungscode gesendet. Es können Kosten für Nachrichten und Daten anfallen."
+            "value" : "An diese Telefonnummer wird eine SMS mit einem Bestätigungscode gesendet. Es können Kosten für Nachrichten und Daten anfallen."
           }
         },
         "el" : {
@@ -1138,7 +1274,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei-Faktor-Authentifizierung hinzufügen"
+            "value" : "Zwei-Schritt-Authentifizierung hinzufügen"
           }
         },
         "el" : {
@@ -1403,6 +1539,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "身份验证器应用"
+          }
+        }
+      }
+    },
+    "Authenticator app verification enabled" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تمكين التحقق من تطبيق Authenticator"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authentifizierungs-App-Verifizierung aktiviert"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επαλήθευση εφαρμογής Authenticator ενεργοποιήθηκε"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificación de la aplicación de autenticación habilitada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérification de l'application d'authentification activée"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रमाणक ऐप सत्यापन सक्षम किया गया"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica dell'app di autenticazione abilitata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリの検証が有効になっています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OTP 앱 확인이 활성화되었습니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificação do aplicativo autenticador ativada"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证器应用程序验证已启用"
           }
         }
       }
@@ -2118,7 +2324,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie aus, wie Sie Ihren Zwei-Faktor-Verifizierungscode erhalten möchten."
+            "value" : "Wählen Sie aus, wie Sie Ihren Bestätigungscode für die Zwei-Schritt-Authentifizierung erhalten möchten."
           }
         },
         "el" : {
@@ -2173,6 +2379,148 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择您希望如何接收两步验证码。"
+          }
+        }
+      }
+    },
+    "Choose the phone number you want to use for SMS code two-step verification" : {
+      "comment" : "Title of a section that instructs the user to choose a phone number for two-step verification via SMS.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر رقم الهاتف الذي تريد استخدامه للتحقق بخطوتين من رمز الرسائل القصيرة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie die Telefonnummer aus, die Sie für die Zwei-Schritt-Authentifizierung per SMS-Code verwenden möchten"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιλέξτε τον αριθμό τηλεφώνου που θέλετε να χρησιμοποιήσετε για την επαλήθευση κωδικού SMS σε δύο βήματα"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elija el número de teléfono que desea utilizar para la verificación en dos pasos del código SMS"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez le numéro de téléphone que vous souhaitez utiliser pour la vérification en deux étapes du code SMS"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वह फ़ोन नंबर चुनें जिसका उपयोग आप एसएमएस कोड द्वि-चरणीय सत्यापन के लिए करना चाहते हैं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli il numero di telefono che desideri utilizzare per la verifica in due passaggi del codice SMS"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS コードの 2 段階認証に使用する電話番号を選択してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS 코드 2단계 인증에 사용할 전화번호를 선택하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha o número de telefone que deseja usar para a verificação em duas etapas do código SMS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您要用于短信代码两步验证的电话号码"
+          }
+        }
+      }
+    },
+    "Choose which method you prefer to protect your account with an extra layer of security" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر الطريقة التي تفضلها لحماية حسابك بطبقة إضافية من الأمان"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie die Methode aus, die Sie bevorzugen, um Ihr Konto mit einer zusätzlichen Sicherheitsebene zu schützen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιλέξτε ποια μέθοδο προτιμάτε για την προστασία του λογαριασμού σας με ένα επιπλέον επίπεδο ασφάλειας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué método prefieres para proteger tu cuenta con una capa adicional de seguridad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez la méthode que vous préférez pour protéger votre compte avec une couche de sécurité supplémentaire"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सुरक्षा की एक अतिरिक्त परत के साथ अपने खाते को सुरक्षित रखने के लिए आप कौन सा तरीका पसंद करते हैं चुनें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli il metodo che preferisci per proteggere il tuo account con un ulteriore livello di sicurezza"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加のセキュリティ層でアカウントを保護する方法を選択してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "추가 보안 계층으로 계정을 보호하기 위해 선호하는 방법을 선택하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha qual método você prefere para proteger sua conta com uma camada extra de segurança"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您喜欢的方法来保护您的帐户并提供额外的安全层"
           }
         }
       }
@@ -3717,6 +4065,78 @@
         }
       }
     },
+    "Download" : {
+      "comment" : "A button label that says \"Download\" and is used in a view that allows a user to download some data.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحميل"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herunterladen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λήψη"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Télécharger"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डाउनलोड करना"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scaricamento"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载"
+          }
+        }
+      }
+    },
     "Edit profile" : {
       "localizations" : {
         "ar" : {
@@ -4413,6 +4833,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您想要使用的电话号码。"
+          }
+        }
+      }
+    },
+    "Enter the verification code from authenticator application" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل رمز التحقق من تطبيق المصادقة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie den Bestätigungscode aus der Authentifizierungsanwendung ein"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εισαγάγετε τον κωδικό επαλήθευσης από την εφαρμογή ελέγχου ταυτότητας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingrese el código de verificación de la aplicación de autenticación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrez le code de vérification de l'application d'authentification"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रमाणक एप्लिकेशन से सत्यापन कोड दर्ज करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci il codice di verifica dall'applicazione di autenticazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリケーションから確認コードを入力します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증신청에서 받은 인증번호를 입력하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira o código de verificação do aplicativo autenticador"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入验证器应用程序中的验证码"
           }
         }
       }
@@ -5537,6 +6027,78 @@
         }
       }
     },
+    "If you have trouble completing required account setup, email us and we will help you finish as soon as possible." : {
+      "comment" : "Subtitle text for the \"Session Task\" context in the \"Get help\" view.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إذا كانت لديك مشكلة في إكمال إعداد الحساب المطلوب، راسلنا عبر البريد الإلكتروني وسنساعدك على الانتهاء في أقرب وقت ممكن."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn Sie Probleme bei der Einrichtung des erforderlichen Kontos haben, senden Sie uns eine E-Mail. Wir helfen Ihnen dann, die Einrichtung so schnell wie möglich abzuschließen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εάν αντιμετωπίζετε προβλήματα με την ολοκλήρωση της απαιτούμενης ρύθμισης λογαριασμού, στείλτε μας email και θα σας βοηθήσουμε να ολοκληρώσετε το συντομότερο δυνατό."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si tiene problemas para completar la configuración de cuenta requerida, envíenos un correo electrónico y lo ayudaremos a terminar lo antes posible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vous rencontrez des difficultés pour terminer la configuration de compte requise, envoyez-nous un e-mail et nous vous aiderons à terminer dès que possible."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यदि आपको आवश्यक खाता सेटअप पूरा करने में परेशानी हो रही है, तो हमें ईमेल करें और हम इसे जल्द से जल्द पूरा करने में आपकी सहायता करेंगे।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se riscontri problemi nel completare la configurazione dell'account richiesta, inviaci un'e-mail e ti aiuteremo a completare il prima possibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "必要なアカウント設定を完了できない場合は、メールでお問い合わせください。できるだけ早く完了するようお手伝いいたします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필수 계정 설정을 완료하는 데 문제가 있는 경우 이메일을 보내주시면 최대한 빨리 완료하도록 도와드리겠습니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se você tiver problemas para concluir a configuração necessária da conta, envie-nos um e-mail e nós o ajudaremos a terminar o mais rápido possível."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果您在完成所需的帐户设置时遇到困难，请给我们发送电子邮件，我们将帮助您尽快完成。"
+          }
+        }
+      }
+    },
     "If you have trouble creating your account, email us and we will work with you to complete your registration as soon as possible." : {
       "localizations" : {
         "ar" : {
@@ -6167,6 +6729,78 @@
         }
       }
     },
+    "Make sure Time-based or One-time passwords is enabled, then finish linking your account." : {
+      "comment" : "A description of the steps to complete the MFA setup.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأكد من تمكين كلمات المرور المستندة إلى الوقت أو لمرة واحدة، ثم قم بإنهاء ربط حسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stellen Sie sicher, dass zeitbasierte Passwörter oder Einmalpasswörter aktiviert sind, und schließen Sie dann die Verknüpfung Ihres Kontos ab."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Βεβαιωθείτε ότι είναι ενεργοποιημένοι οι κωδικοί πρόσβασης βάσει χρόνου ή μιας χρήσης και, στη συνέχεια, ολοκληρώστε τη σύνδεση του λογαριασμού σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asegúrese de que las contraseñas basadas en tiempo o de un solo uso estén habilitadas y luego termine de vincular su cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assurez-vous que les mots de passe basés sur le temps ou à usage unique sont activés, puis terminez de lier votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सुनिश्चित करें कि समय-आधारित या वन-टाइम पासवर्ड सक्षम है, फिर अपना खाता लिंक करना समाप्त करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assicurati che le password basate sul tempo o una tantum siano abilitate, quindi completa il collegamento del tuo account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間ベースのパスワードまたはワンタイム パスワードが有効になっていることを確認し、アカウントのリンクを完了します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시간 기반 또는 일회용 비밀번호가 활성화되어 있는지 확인한 다음 계정 연결을 완료하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certifique-se de que as senhas baseadas em tempo ou de uso único estejam ativadas e termine de vincular sua conta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确保启用基于时间或一次性的密码，然后完成帐户关联。"
+          }
+        }
+      }
+    },
     "Manage account" : {
       "localizations" : {
         "ar" : {
@@ -6233,6 +6867,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "管理账户"
+          }
+        }
+      }
+    },
+    "Manual setup key" : {
+      "comment" : "A label describing the text that appears when a user scans a QR code to link their account to a two-factor authentication app.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتاح الإعداد اليدوي"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manueller Setup-Schlüssel"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Χειροκίνητο κλειδί ρύθμισης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tecla de configuración manual"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clé de configuration manuelle"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैन्युअल सेटअप कुंजी"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiave di configurazione manuale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手動設定キー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "수동 설정 키"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chave de configuração manual"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手动设置键"
           }
         }
       }
@@ -8209,7 +8915,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei-Schritt-Verifizierung entfernen"
+            "value" : "Zwei-Schritt-Authentifizierung entfernen"
           }
         },
         "el" : {
@@ -8758,6 +9464,78 @@
         }
       }
     },
+    "Save these codes somewhere safe. If you lose access to your authentication device, you can use a backup code to sign in." : {
+      "comment" : "A description of how to store and use backup codes for two-step verification.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ هذه الرموز في مكان آمن. إذا فقدت إمكانية الوصول إلى جهاز المصادقة الخاص بك، فيمكنك استخدام رمز احتياطي لتسجيل الدخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewahren Sie diese Codes an einem sicheren Ort auf. Wenn Sie den Zugriff auf Ihr Authentifizierungsgerät verlieren, können Sie sich mit einem Ersatzcode anmelden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αποθηκεύστε αυτούς τους κωδικούς σε ασφαλές μέρος. Εάν χάσετε την πρόσβαση στη συσκευή ελέγχου ταυτότητας, μπορείτε να χρησιμοποιήσετε έναν εφεδρικό κωδικό για να συνδεθείτε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarde estos códigos en un lugar seguro. Si pierde el acceso a su dispositivo de autenticación, puede usar un código de respaldo para iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrez ces codes dans un endroit sûr. Si vous perdez l'accès à votre dispositif d'authentification, vous pouvez utiliser un code de secours pour vous connecter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इन कोडों को किसी सुरक्षित स्थान पर सहेजें। यदि आप अपने प्रमाणीकरण डिवाइस तक पहुंच खो देते हैं, तो आप साइन इन करने के लिए बैकअप कोड का उपयोग कर सकते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva questi codici in un posto sicuro. Se perdi l'accesso al tuo dispositivo di autenticazione, puoi utilizzare un codice di backup per accedere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "これらのコードを安全な場所に保存してください。認証デバイスにアクセスできなくなった場合は、バックアップ コードを使用してサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 코드를 안전한 곳에 저장하세요. 인증 장치에 접근할 수 없는 경우 백업 코드를 사용하여 로그인할 수 있습니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salve esses códigos em algum lugar seguro. Se você perder o acesso ao seu dispositivo de autenticação, poderá usar um código alternativo para fazer login."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将这些代码保存在安全的地方。如果您无法访问身份验证设备，您可以使用备份代码登录。"
+          }
+        }
+      }
+    },
     "Secured by" : {
       "localizations" : {
         "ar" : {
@@ -8909,7 +9687,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie eine vorhandene Telefonnummer für die Zwei-Schritt-Verifizierung via SMS-Code aus oder fügen Sie eine neue hinzu."
+            "value" : "Wählen Sie eine vorhandene Telefonnummer für die Zwei-Schritt-Authentifizierung per SMS-Code aus oder fügen Sie eine neue hinzu."
           }
         },
         "el" : {
@@ -9314,6 +10092,223 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在您的身份验证器中设置新的登录方法，并输入下面提供的密钥。\n\n确保启用基于时间或一次性密码，然后完成账户链接。"
+          }
+        }
+      }
+    },
+    "Set up a new sign-in method in your authenticator app and scan the following QR code to link it to your account." : {
+      "comment" : "Text displayed in a VStack below the header section, providing instructions on how to set up a TOTP authenticator app and link it to the user's account.",
+      "extractionState" : "stale",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم بإعداد طريقة تسجيل دخول جديدة في تطبيق المصادقة الخاص بك وقم بمسح رمز الاستجابة السريعة التالي لربطه بحسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richten Sie in Ihrer Authentifizierungs-App eine neue Anmeldemethode ein und scannen Sie den folgenden QR-Code, um ihn mit Ihrem Konto zu verknüpfen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ρυθμίστε μια νέα μέθοδο σύνδεσης στην εφαρμογή ελέγχου ταυτότητας και σαρώστε τον παρακάτω κωδικό QR για να τον συνδέσετε με τον λογαριασμό σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure un nuevo método de inicio de sesión en su aplicación de autenticación y escanee el siguiente código QR para vincularlo a su cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurez une nouvelle méthode de connexion dans votre application d'authentification et scannez le code QR suivant pour le lier à votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने प्रमाणक ऐप में एक नई साइन-इन विधि सेट करें और इसे अपने खाते से लिंक करने के लिए निम्नलिखित क्यूआर कोड को स्कैन करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura un nuovo metodo di accesso nella tua app di autenticazione e scansiona il seguente codice QR per collegarlo al tuo account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリで新しいサインイン方法を設定し、次の QR コードをスキャンしてアカウントにリンクします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 앱에서 새로운 로그인 방법을 설정하고 다음 QR 코드를 스캔하여 계정에 연결하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure um novo método de login em seu aplicativo autenticador e leia o código QR a seguir para vinculá-lo à sua conta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的身份验证器应用程序中设置新的登录方法，然后扫描以下二维码将其链接到您的帐户。"
+          }
+        }
+      }
+    },
+    "Set up a new sign-in method in your authenticator app using the manual setup key below to link it to your account." : {
+      "comment" : "Toolbar item that presents a user menu.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم بإعداد طريقة تسجيل دخول جديدة في تطبيق المصادقة الخاص بك باستخدام مفتاح الإعداد اليدوي أدناه لربطها بحسابك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richten Sie in Ihrer Authentifizierungs-App eine neue Anmeldemethode ein, indem Sie den manuellen Einrichtungsschlüssel unten verwenden, um sie mit Ihrem Konto zu verknüpfen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ρυθμίστε μια νέα μέθοδο σύνδεσης στην εφαρμογή ελέγχου ταυτότητας χρησιμοποιώντας το παρακάτω κλειδί μη αυτόματης ρύθμισης για να τη συνδέσετε με τον λογαριασμό σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure un nuevo método de inicio de sesión en su aplicación de autenticación usando la clave de configuración manual a continuación para vincularlo a su cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurez une nouvelle méthode de connexion dans votre application d'authentification en utilisant la clé de configuration manuelle ci-dessous pour la lier à votre compte."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने ऑथेंटिकेटर ऐप में एक नई साइन-इन विधि सेट करें और इसे अपने खाते से लिंक करने के लिए नीचे दी गई मैन्युअल सेटअप कुंजी का उपयोग करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura un nuovo metodo di accesso nella tua app di autenticazione utilizzando la chiave di configurazione manuale qui sotto per collegarlo al tuo account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認証アプリで新しいサインイン方法を設定し、下記の手動セットアップキーを使用してアカウントにリンクします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인증 앱에서 새로운 로그인 방법을 설정하고 아래의 수동 설정 키를 사용하여 계정에 연결하세요."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure um novo método de login no seu aplicativo autenticador usando a chave de configuração manual abaixo para vinculá-lo à sua conta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的身份验证器应用中设置新的登录方式，并使用下方的手动设置密钥将其关联到您的帐户。"
+          }
+        }
+      }
+    },
+    "Set up two-step verification" : {
+      "comment" : "Title of a view that instructs the user to set up two-step verification.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم بإعداد التحقق بخطوتين"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richten Sie die Zwei-Schritt-Authentifizierung ein"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ρυθμίστε την επαλήθευση σε δύο βήματα"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar la verificación en dos pasos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurer la vérification en deux étapes"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "दो-चरणीय सत्यापन सेट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imposta la verifica in due passaggi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2段階認証を設定する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2단계 인증 설정"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure a verificação em duas etapas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置两步验证"
           }
         }
       }
@@ -9874,6 +10869,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "短信验证码"
+          }
+        }
+      }
+    },
+    "SMS code verification enabled" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تمكين التحقق من رمز الرسائل القصيرة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS-Code-Verifizierung aktiviert"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επαλήθευση κωδικού SMS ενεργοποιήθηκε"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificación de código SMS habilitada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérification du code SMS activée"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "एसएमएस कोड सत्यापन सक्षम किया गया"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica del codice SMS abilitata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMSコード認証が有効になりました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS 코드 확인이 활성화되었습니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificação de código SMS ativada"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "短信验证码已启用"
           }
         }
       }
@@ -10519,7 +11584,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ZWEI-FAKTOR-VERIFIZIERUNG"
+            "value" : "ZWEI-SCHRITT-AUTHENTIFIZIERUNG"
           }
         },
         "el" : {
@@ -10589,7 +11654,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode aus dieser Authenticator-App eingeben.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
+            "value" : "Die Zwei-Schritt-Authentifizierung ist jetzt aktiviert. Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode aus dieser Authenticator-App eingeben.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
           }
         },
         "el" : {
@@ -10644,6 +11709,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "两步验证现已启用。登录时，您需要输入来自此身份验证应用的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
+          }
+        }
+      }
+    },
+    "Two-step verification setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد التحقق بخطوتين"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einrichtung der Zwei-Schritt-Authentifizierung"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ρύθμιση επαλήθευσης σε δύο βήματα"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración de verificación en dos pasos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuration de la vérification en deux étapes"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "दो-चरणीय सत्यापन सेटअप"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurazione della verifica in due passaggi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2段階認証の設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2단계 인증 설정"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuração da verificação em duas etapas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证设置"
           }
         }
       }
@@ -10729,7 +11864,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unbekannte Code-Überprüfungsmethode. Bitte verwenden Sie eine andere Methode."
+            "value" : "Unbekannte Code-Verifizierungsmethode. Bitte verwenden Sie eine andere Methode."
           }
         },
         "el" : {
@@ -12048,6 +13183,78 @@
         }
       }
     },
+    "Verify your phone number" : {
+      "comment" : "Title of a view that instructs the user to verify their phone number.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التحقق من رقم هاتفك"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestätigen Sie Ihre Telefonnummer"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επαληθεύστε τον αριθμό τηλεφώνου σας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica tu número de teléfono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez votre numéro de téléphone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपना फोन का नंबर जांच लें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica il tuo numero di telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電話番号を確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전화번호를 확인하세요"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique seu número de telefone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证您的电话号码"
+          }
+        }
+      }
+    },
     "Verifying..." : {
       "localizations" : {
         "ar" : {
@@ -12324,6 +13531,146 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "登录时，您需要输入发送到此电话号码的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
+          }
+        }
+      }
+    },
+    "When you sign in, you'll be asked for a verification code sent to this phone number." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تسجيل الدخول، سيُطلب منك إرسال رمز التحقق إلى رقم الهاتف هذا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn Sie sich anmelden, werden Sie nach einem Bestätigungscode gefragt, der an diese Telefonnummer gesendet wird."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Όταν συνδεθείτε, θα σας ζητηθεί ένας κωδικός επαλήθευσης που θα σταλεί σε αυτόν τον αριθμό τηλεφώνου."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando inicie sesión, se le pedirá que envíe un código de verificación a este número de teléfono."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lorsque vous vous connectez, il vous sera demandé un code de vérification envoyé à ce numéro de téléphone."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "जब आप साइन इन करेंगे, तो आपसे इस फ़ोन नंबर पर भेजे गए सत्यापन कोड के लिए पूछा जाएगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando accedi, ti verrà chiesto un codice di verifica inviato a questo numero di telefono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインインすると、この電話番号に送信される確認コードの入力が求められます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인하면 이 전화번호로 전송된 인증 코드를 입력하라는 메시지가 표시됩니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao fazer login, será solicitado um código de verificação enviado para este número de telefone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，系统会要求您提供发送到该电话号码的验证码。"
+          }
+        }
+      }
+    },
+    "When you sign in, you'll need to enter a verification code from this authenticator app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تسجيل الدخول، ستحتاج إلى إدخال رمز التحقق من تطبيق المصادقة هذا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn Sie sich anmelden, müssen Sie einen Bestätigungscode aus dieser Authentifizierungs-App eingeben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Όταν συνδέεστε, θα πρέπει να εισαγάγετε έναν κωδικό επαλήθευσης από αυτήν την εφαρμογή ελέγχου ταυτότητας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando inicie sesión, deberá ingresar un código de verificación desde esta aplicación de autenticación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lorsque vous vous connectez, vous devrez saisir un code de vérification à partir de cette application d'authentification."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "जब आप साइन इन करते हैं, तो आपको इस प्रमाणक ऐप से एक सत्यापन कोड दर्ज करना होगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando accedi, dovrai inserire un codice di verifica da questa app di autenticazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインインするときは、この認証アプリからの確認コードを入力する必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인할 때 이 인증 앱의 인증 코드를 입력해야 합니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao fazer login, você precisará inserir um código de verificação deste aplicativo autenticador."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，您需要输入此身份验证器应用程序中的验证码。"
           }
         }
       }
@@ -12608,6 +13955,77 @@
         }
       }
     },
+    "Your account requires additional security. You need to set up two-step verification to continue." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتطلب حسابك أمانًا إضافيًا. تحتاج إلى إعداد التحقق على خطوتين للمتابعة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Konto erfordert zusätzliche Sicherheit. Um fortfahren zu können, müssen Sie die Zwei-Schritt-Authentifizierung einrichten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο λογαριασμός σας απαιτεί πρόσθετη ασφάλεια. Πρέπει να ρυθμίσετε την επαλήθευση σε δύο βήματα για να συνεχίσετε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su cuenta requiere seguridad adicional. Debes configurar la verificación en dos pasos para continuar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre compte nécessite une sécurité supplémentaire. Vous devez configurer la vérification en deux étapes pour continuer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपके खाते को अतिरिक्त सुरक्षा की आवश्यकता है. जारी रखने के लिए आपको दो-चरणीय सत्यापन सेट करना होगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo account richiede ulteriore sicurezza. È necessario impostare la verifica in due passaggi per continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントには追加のセキュリティが必要です。続行するには、2 段階認証を設定する必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "귀하의 계정에는 추가 보안이 필요합니다. 계속하려면 2단계 인증을 설정해야 합니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua conta requer segurança adicional. Você precisa configurar a verificação em duas etapas para continuar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的帐户需要额外的安全保障。您需要设置两步验证才能继续。"
+          }
+        }
+      }
+    },
     "Your backup code is the one you got when setting up two-step authentication." : {
       "localizations" : {
         "ar" : {
@@ -12619,7 +14037,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ihr Backup-Code ist der Code, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben."
+            "value" : "Ihr Backup-Code ist der Code, den Sie bei der Einrichtung der Zwei-Schritt-Authentifizierung erhalten haben."
           }
         },
         "el" : {

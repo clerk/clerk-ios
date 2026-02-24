@@ -55,27 +55,52 @@ public struct UserButton<SignedOutContent: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  @State private var userProfileIsPresented: Bool = false
+  public enum PresentationContext {
+    case standard
+    case sessionTaskToolbar
+  }
+
+  @State private var presentedSheet: PresentedSheet?
+  private let presentationContext: PresentationContext
   private let signedOutContent: () -> SignedOutContent
+
+  private enum PresentedSheet: String, Identifiable {
+    case userProfile
+    case sessionTaskAuth
+    case signOut
+
+    var id: String {
+      rawValue
+    }
+  }
 
   /// Creates a new user button.
   ///
   /// The button will automatically display the current user's profile image
   /// and handle presenting the user profile sheet when tapped.
-  public init(@ViewBuilder signedOutContent: @escaping () -> SignedOutContent) {
+  public init(
+    presentationContext: PresentationContext = .standard,
+    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
+  ) {
+    self.presentationContext = presentationContext
     self.signedOutContent = signedOutContent
   }
 
   /// Creates a new user button with no signed-out content.
-  public init() where SignedOutContent == EmptyView {
+  public init(presentationContext: PresentationContext = .standard) where SignedOutContent == EmptyView {
+    self.presentationContext = presentationContext
     signedOutContent = { EmptyView() }
+  }
+
+  private var hasPendingSessionTasks: Bool {
+    clerk.session?.pendingTasks.isEmpty == false
   }
 
   public var body: some View {
     ZStack {
       if let user = clerk.user {
         Button {
-          userProfileIsPresented = true
+          handleTap()
         } label: {
           LazyImage(url: URL(string: user.imageUrl)) { state in
             if let image = state.image {
@@ -94,21 +119,46 @@ public struct UserButton<SignedOutContent: View>: View {
           .clipShape(.circle)
           .transition(.opacity.animation(.easeInOut(duration: 0.2)))
         }
+        .buttonStyle(.plain)
       } else {
         signedOutContent()
       }
     }
-    .sheet(isPresented: $userProfileIsPresented) {
-      UserProfileView()
-        .presentationDragIndicator(.visible)
+    .sheet(item: $presentedSheet) { sheet in
+      switch sheet {
+      case .userProfile:
+        UserProfileView()
+          .presentationDragIndicator(.visible)
+      case .sessionTaskAuth:
+        AuthView()
+          .presentationDragIndicator(.visible)
+      case .signOut:
+        UserButtonSignOutView()
+          .contentSizingDetent()
+      }
     }
     .onChange(of: clerk.user) { _, newValue in
-      if newValue == nil {
-        userProfileIsPresented = false
-      }
+      guard newValue == nil else { return }
+      guard presentedSheet != .sessionTaskAuth else { return }
+      presentedSheet = nil
     }
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+    }
+  }
+}
+
+extension UserButton {
+  private func handleTap() {
+    switch presentationContext {
+    case .sessionTaskToolbar:
+      presentedSheet = .signOut
+    case .standard:
+      if hasPendingSessionTasks {
+        presentedSheet = .sessionTaskAuth
+      } else {
+        presentedSheet = .userProfile
+      }
     }
   }
 }

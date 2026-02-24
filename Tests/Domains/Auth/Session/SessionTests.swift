@@ -28,4 +28,16 @@ struct SessionTests {
 
     #expect(captured.value == session.id)
   }
+
+  @Test
+  func taskKeyParsesSetupMfa() {
+    let task = Session.Task(key: "setup-mfa")
+    #expect(task == .setupMfa)
+  }
+
+  @Test
+  func taskKeyParsesUnknownTask() {
+    let task = Session.Task(key: "another-task")
+    #expect(task == .unknown("another-task"))
+  }
 }
