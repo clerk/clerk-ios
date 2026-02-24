@@ -82,7 +82,7 @@ public struct UserProfileView: View {
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var embeddedPushCount = 0
+  @State private var initialPathCount: Int
   @State private var internalPath = NavigationPath()
   @State private var navigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
@@ -103,6 +103,7 @@ public struct UserProfileView: View {
   public init(isDismissable: Bool = true, navigationPath: Binding<NavigationPath>? = nil) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
+    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
   }
 
   public var body: some View {
@@ -150,16 +151,6 @@ public struct UserProfileView: View {
       .task {
         _ = try? await clerk.refreshClient()
       }
-      .onChange(of: navigationPath?.wrappedValue.count) { oldValue, newValue in
-        guard let oldValue, let newValue else {
-          embeddedPushCount = 0
-          return
-        }
-
-        if newValue < oldValue {
-          embeddedPushCount = max(embeddedPushCount - (oldValue - newValue), 0)
-        }
-      }
       .taskOnce {
         await clerk.telemetry.record(
           TelemetryEvents.viewDidAppear(
@@ -182,7 +173,6 @@ public struct UserProfileView: View {
       push: { destination in
         if let navigationPath {
           navigationPath.wrappedValue.append(destination)
-          embeddedPushCount += 1
         } else {
           internalPath.append(destination)
         }
@@ -190,9 +180,9 @@ public struct UserProfileView: View {
       popToRoot: {
         let extraRemoval = clerk.user == nil ? 1 : 0
         if let navigationPath {
-          let entriesToRemove = min(embeddedPushCount + extraRemoval, navigationPath.wrappedValue.count)
+          let currentCount = navigationPath.wrappedValue.count
+          let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
           navigationPath.wrappedValue.removeLast(entriesToRemove)
-          embeddedPushCount = 0
         } else {
           internalPath = NavigationPath()
         }
