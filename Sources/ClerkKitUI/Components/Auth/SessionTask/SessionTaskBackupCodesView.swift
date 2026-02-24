@@ -14,7 +14,7 @@ struct SessionTaskBackupCodesView: View {
 
   let backupCodes: [String]
   let mfaType: BackupCodesMfaType
-  
+
   enum BackupCodesMfaType {
     case phoneCode
     case authenticatorApp
