@@ -90,7 +90,7 @@ struct SessionTaskMfaVerifyTotpView: View {
       }
     }
   }
-  
+
   private func handleSuccessfulVerification() {
     verificationState = .success
     if !backupCodes.isEmpty {

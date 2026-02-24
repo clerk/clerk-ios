@@ -92,7 +92,7 @@ struct UserProfileVerifyView: View {
   var showResend: Bool {
     switch mode {
     case .email, .phone:
-      true
+      verificationState.showResend
     case .totp:
       false
     }

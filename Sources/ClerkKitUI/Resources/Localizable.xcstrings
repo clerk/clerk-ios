@@ -574,7 +574,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An diese Telefonnummer wird eine SMS mit einem Verifizierungscode gesendet. Es können Kosten für Nachrichten und Daten anfallen."
+            "value" : "An diese Telefonnummer wird eine SMS mit einem Bestätigungscode gesendet. Es können Kosten für Nachrichten und Daten anfallen."
           }
         },
         "el" : {
@@ -1274,7 +1274,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei-Faktor-Authentifizierung hinzufügen"
+            "value" : "Zwei-Schritt-Authentifizierung hinzufügen"
           }
         },
         "el" : {
@@ -1554,7 +1554,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Authentifizierungs-App-Überprüfung aktiviert"
+            "value" : "Authentifizierungs-App-Verifizierung aktiviert"
           }
         },
         "el" : {
@@ -2324,7 +2324,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie aus, wie Sie Ihren Zwei-Faktor-Verifizierungscode erhalten möchten."
+            "value" : "Wählen Sie aus, wie Sie Ihren Bestätigungscode für die Zwei-Schritt-Authentifizierung erhalten möchten."
           }
         },
         "el" : {
@@ -2396,7 +2396,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie die Telefonnummer aus, die Sie für die zweistufige Bestätigung des SMS-Codes verwenden möchten"
+            "value" : "Wählen Sie die Telefonnummer aus, die Sie für die Zwei-Schritt-Authentifizierung per SMS-Code verwenden möchten"
           }
         },
         "el" : {
@@ -8915,7 +8915,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei-Schritt-Verifizierung entfernen"
+            "value" : "Zwei-Schritt-Authentifizierung entfernen"
           }
         },
         "el" : {
@@ -9687,7 +9687,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie eine vorhandene Telefonnummer für die Zwei-Schritt-Verifizierung via SMS-Code aus oder fügen Sie eine neue hinzu."
+            "value" : "Wählen Sie eine vorhandene Telefonnummer für die Zwei-Schritt-Authentifizierung per SMS-Code aus oder fügen Sie eine neue hinzu."
           }
         },
         "el" : {
@@ -10181,7 +10181,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Richten Sie die zweistufige Verifizierung ein"
+            "value" : "Richten Sie die Zwei-Schritt-Authentifizierung ein"
           }
         },
         "el" : {
@@ -11511,7 +11511,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ZWEI-FAKTOR-VERIFIZIERUNG"
+            "value" : "ZWEI-SCHRITT-AUTHENTIFIZIERUNG"
           }
         },
         "el" : {
@@ -11581,7 +11581,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode aus dieser Authenticator-App eingeben.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
+            "value" : "Die Zwei-Schritt-Authentifizierung ist jetzt aktiviert. Bei der Anmeldung müssen Sie als zusätzlichen Schritt einen Bestätigungscode aus dieser Authenticator-App eingeben.\n\nSpeichern Sie diese Backup-Codes und bewahren Sie sie an einem sicheren Ort auf. Wenn Sie den Zugang zu Ihrem Authentifizierungsgerät verlieren, können Sie Backup-Codes zur Anmeldung verwenden."
           }
         },
         "el" : {
@@ -11651,7 +11651,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Einrichtung der zweistufigen Verifizierung"
+            "value" : "Einrichtung der Zwei-Schritt-Authentifizierung"
           }
         },
         "el" : {
@@ -11791,7 +11791,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unbekannte Code-Überprüfungsmethode. Bitte verwenden Sie eine andere Methode."
+            "value" : "Unbekannte Code-Verifizierungsmethode. Bitte verwenden Sie eine andere Methode."
           }
         },
         "el" : {
@@ -13893,7 +13893,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ihr Konto erfordert zusätzliche Sicherheit. Um fortfahren zu können, müssen Sie die Bestätigung in zwei Schritten einrichten."
+            "value" : "Ihr Konto erfordert zusätzliche Sicherheit. Um fortfahren zu können, müssen Sie die Zwei-Schritt-Authentifizierung einrichten."
           }
         },
         "el" : {
@@ -13963,7 +13963,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ihr Backup-Code ist der Code, den Sie bei der Einrichtung der Zwei-Faktor-Authentifizierung erhalten haben."
+            "value" : "Ihr Backup-Code ist der Code, den Sie bei der Einrichtung der Zwei-Schritt-Authentifizierung erhalten haben."
           }
         },
         "el" : {

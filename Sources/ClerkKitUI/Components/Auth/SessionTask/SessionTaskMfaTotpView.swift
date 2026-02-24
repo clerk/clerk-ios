@@ -18,7 +18,7 @@ struct SessionTaskMfaTotpView: View {
       VStack(spacing: 0) {
         SessionTaskHeaderSection(
           title: "Add authenticator application",
-          subtitle: "Set up a new sign-in method in your authenticator app and scan the following QR code to link it to your account."
+          subtitle: "Set up a new sign-in method in your authenticator app using the manual setup key below to link it to your account."
         )
         .padding(.bottom, 32)
 
@@ -38,7 +38,7 @@ struct SessionTaskMfaTotpView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            copyableText(secret)
+            CopyableTextView(text: secret)
 
             Button {
               UIPasteboard.general.string = secret
@@ -76,22 +76,6 @@ struct SessionTaskMfaTotpView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-  }
-
-  private func copyableText(_ string: String) -> some View {
-    Text(verbatim: string)
-      .font(theme.fonts.subheadline)
-      .foregroundStyle(theme.colors.foreground)
-      .frame(maxWidth: .infinity, minHeight: 20)
-      .lineLimit(1)
-      .padding(.vertical, 18)
-      .padding(.horizontal, 16)
-      .background(theme.colors.muted)
-      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(theme.colors.inputBorder, lineWidth: 1)
-      }
   }
 }
 

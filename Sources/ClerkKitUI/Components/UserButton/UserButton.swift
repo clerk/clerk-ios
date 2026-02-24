@@ -69,7 +69,9 @@ public struct UserButton<SignedOutContent: View>: View {
     case sessionTaskAuth
     case signOut
 
-    var id: String { rawValue }
+    var id: String {
+      rawValue
+    }
   }
 
   /// Creates a new user button.
@@ -91,7 +93,7 @@ public struct UserButton<SignedOutContent: View>: View {
   }
 
   private var hasPendingSessionTasks: Bool {
-    return clerk.session?.pendingTasks.isEmpty == false
+    clerk.session?.pendingTasks.isEmpty == false
   }
 
   public var body: some View {

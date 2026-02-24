@@ -83,7 +83,7 @@ final class AuthNavigation {
 
   @MainActor
   func nextPendingSessionTask(from session: Session?) -> Session.Task? {
-    return session?.pendingTasks.first
+    session?.pendingTasks.first
   }
 
   @discardableResult @MainActor

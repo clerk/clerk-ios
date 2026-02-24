@@ -22,6 +22,7 @@ struct StrategyOptionButton: View {
         .frame(width: 16, height: 16)
         .scaledToFit()
         .foregroundStyle(theme.colors.mutedForeground)
+        .accessibilityHidden(true)
       Text(text, bundle: .module)
         .font(theme.fonts.body)
         .foregroundStyle(theme.colors.foreground)

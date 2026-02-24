@@ -47,7 +47,7 @@ struct CodeVerificationStatusView: View {
         }
       case let .error(error):
         ErrorText(error: error)
-      default:
+      case .default:
         EmptyView()
       }
     }
