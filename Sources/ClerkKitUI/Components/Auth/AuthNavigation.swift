@@ -98,7 +98,8 @@ final class AuthNavigation {
 
   /// Handles a completed session task by routing to the next task if present.
   ///
-  /// - Returns: `true` when auth should dismiss because there are no more pending tasks.
+  /// Sets `allTasksComplete` when there are no more pending tasks;
+  /// otherwise appends the next task start destination to `path`.
   @MainActor
   func handleSessionTaskCompletion(session: Session?) {
     guard let nextTask = nextPendingSessionTask(from: session) else {
