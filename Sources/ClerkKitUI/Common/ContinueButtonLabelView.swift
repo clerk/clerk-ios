@@ -8,7 +8,7 @@ import SwiftUI
 
 struct ContinueButtonLabelView: View {
   @Environment(\.clerkTheme) private var theme
-  let isActive: Bool = false
+  var isActive: Bool = false
 
   var body: some View {
     HStack(spacing: 4) {
