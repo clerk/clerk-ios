@@ -130,7 +130,6 @@ struct SessionTaskMfaVerifySmsView: View {
         return nil
       }
     )
-    .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
