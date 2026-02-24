@@ -177,8 +177,8 @@ public struct UserProfileView: View {
           internalPath.append(destination)
         }
       },
-      popToRoot: {
-        let extraRemoval = clerk.user == nil ? 1 : 0
+      popToRoot: { includingSelf in
+        let extraRemoval = includingSelf ? 1 : 0
         if let navigationPath {
           let currentCount = navigationPath.wrappedValue.count
           let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
