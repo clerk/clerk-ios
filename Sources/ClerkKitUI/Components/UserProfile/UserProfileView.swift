@@ -187,7 +187,8 @@ public struct UserProfileView: View {
           internalPath.append(destination)
         }
       },
-      popToRoot: { includingSelf in
+      popToRoot: {
+        let includingSelf = clerk.user == nil
         if let navigationPath {
           let currentCount = navigationPath.wrappedValue.count
           let requestedRemovals = embeddedPushCount + (includingSelf ? 1 : 0)
@@ -203,7 +204,6 @@ public struct UserProfileView: View {
     )
   }
 
-  @ViewBuilder
   private func profileContent(user: User) -> some View {
     VStack(spacing: 0) {
       ScrollView {
