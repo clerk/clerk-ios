@@ -1,5 +1,5 @@
 //
-//  UserProfileSheetNavigation.swift
+//  UserProfileNavigation.swift
 //  Clerk
 //
 
@@ -17,16 +17,16 @@ import SwiftUI
 final class UserProfileSheetNavigation {
   /// Whether the account switcher sheet is presented.
   var accountSwitcherIsPresented = false
-  
+
   /// Whether the auth view sheet is presented.
   var authViewIsPresented = false
-  
+
   /// Whether the MFA type chooser sheet is presented.
   var chooseMfaTypeIsPresented = false
-  
+
   /// The currently presented MFA add view type.
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
-  
+
   /// Creates a new UserProfileSheetNavigation instance.
   init() {}
 }
@@ -34,13 +34,13 @@ final class UserProfileSheetNavigation {
 /// Routing API for navigating inside `UserProfileView` and nested destinations.
 struct UserProfileRouter: Sendable {
   let push: @MainActor @Sendable (UserProfileView.Destination) -> Void
-  let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
+  let popToRoot: @MainActor @Sendable () -> Void
 }
 
 extension EnvironmentValues {
   @Entry var userProfileRouter = UserProfileRouter(
     push: { _ in },
-    popToRoot: { _ in }
+    popToRoot: {}
   )
 }
 
