@@ -196,7 +196,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     }
 
     /// The raw string value used in the API.
-    public var rawValue: String {
+    var rawValue: String {
       switch self {
       case .setupMfa:
         "setup-mfa"
@@ -206,7 +206,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     }
 
     /// Creates a `Task` from its raw string value.
-    public init(rawValue: String) {
+    init(rawValue: String) {
       switch rawValue.lowercased() {
       case "setup-mfa":
         self = .setupMfa
