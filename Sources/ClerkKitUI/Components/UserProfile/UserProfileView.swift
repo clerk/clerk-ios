@@ -188,14 +188,10 @@ public struct UserProfileView: View {
         }
       },
       popToRoot: {
-        let includingSelf = clerk.user == nil
+        let extraRemoval = clerk.user == nil ? 1 : 0
         if let navigationPath {
-          let currentCount = navigationPath.wrappedValue.count
-          let requestedRemovals = embeddedPushCount + (includingSelf ? 1 : 0)
-          let entriesToRemove = min(max(requestedRemovals, 0), currentCount)
-          if entriesToRemove > 0 {
-            navigationPath.wrappedValue.removeLast(entriesToRemove)
-          }
+          let entriesToRemove = min(embeddedPushCount + extraRemoval, navigationPath.wrappedValue.count)
+          navigationPath.wrappedValue.removeLast(entriesToRemove)
           embeddedPushCount = 0
         } else {
           internalPath = NavigationPath()
