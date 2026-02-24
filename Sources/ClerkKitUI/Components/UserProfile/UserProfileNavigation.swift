@@ -34,13 +34,13 @@ final class UserProfileSheetNavigation {
 /// Routing API for navigating inside `UserProfileView` and nested destinations.
 struct UserProfileRouter: Sendable {
   let push: @MainActor @Sendable (UserProfileView.Destination) -> Void
-  let popToRoot: @MainActor @Sendable () -> Void
+  let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
 }
 
 extension EnvironmentValues {
   @Entry var userProfileRouter = UserProfileRouter(
     push: { _ in },
-    popToRoot: {}
+    popToRoot: { _ in }
   )
 }
 
