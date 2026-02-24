@@ -74,7 +74,7 @@ struct SessionTaskMfaVerifySmsView: View {
         .padding(.bottom, 16)
 
         CodeVerificationStatusView(state: verificationState)
-        .padding(.bottom, 16)
+          .padding(.bottom, 16)
 
         if verificationState.showResend {
           AsyncButton {
@@ -168,7 +168,7 @@ struct SessionTaskMfaVerifySmsView: View {
       navigation.handleSessionTaskCompletion(session: clerk.session)
     }
   }
-  
+
   private func resend() async {
     code = ""
     verificationState = .default

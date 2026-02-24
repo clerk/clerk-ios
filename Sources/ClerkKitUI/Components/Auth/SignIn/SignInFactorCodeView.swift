@@ -227,7 +227,6 @@ extension SignInFactorCodeView {
       }
     }
   }
-
 }
 
 // MARK: - Helpers
