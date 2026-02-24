@@ -34,4 +34,30 @@ struct ClientTests {
     #expect(called.value == true)
     #expect(Clerk.shared.client?.id == expectedClient.id)
   }
+
+  @Test
+  func prepareAuthenticatedWebURLUsesClientService() async throws {
+    let called = LockIsolated(false)
+    let expectedURL = try #require(URL(string: "https://example.com/v1/client/initialize_webview?token=abc"))
+    let service = MockClientService(
+      get: {
+        .mock
+      },
+      prepareAuthenticatedWebURL: { redirectURL in
+        called.setValue(true)
+        #expect(redirectURL.absoluteString == "https://example.com/checkout")
+        return expectedURL
+      }
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    let url = try await Clerk.shared.prepareAuthenticatedWebURL(for: #require(URL(string: "https://example.com/checkout")))
+
+    #expect(called.value == true)
+    #expect(url == expectedURL)
+  }
 }

@@ -17,6 +17,7 @@ package final class MockClientService: ClientServiceProtocol {
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.
   package nonisolated(unsafe) var getHandler: (() async throws -> Client?)?
+  package nonisolated(unsafe) var prepareAuthenticatedWebURLHandler: ((URL) async throws -> URL)?
 
   /// Creates a new mock client service with an optional implementation of the `get()` method.
   ///
@@ -29,8 +30,12 @@ package final class MockClientService: ClientServiceProtocol {
   ///   return Client.mock
   /// }
   /// ```
-  package init(get: (() async throws -> Client?)? = nil) {
+  package init(
+    get: (() async throws -> Client?)? = nil,
+    prepareAuthenticatedWebURL: ((URL) async throws -> URL)? = nil
+  ) {
     getHandler = get
+    prepareAuthenticatedWebURLHandler = prepareAuthenticatedWebURL
   }
 
   @MainActor
@@ -39,5 +44,13 @@ package final class MockClientService: ClientServiceProtocol {
       return try await handler()
     }
     return .mock
+  }
+
+  @MainActor
+  package func prepareAuthenticatedWebURL(for destinationURL: URL) async throws -> URL {
+    if let handler = prepareAuthenticatedWebURLHandler {
+      return try await handler(destinationURL)
+    }
+    return destinationURL
   }
 }

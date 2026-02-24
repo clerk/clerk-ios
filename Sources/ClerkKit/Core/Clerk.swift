@@ -314,6 +314,18 @@ extension Clerk {
     return environment
   }
 
+  /// Returns a one-time authenticated URL for opening an allowed web destination.
+  ///
+  /// Use this to launch Clerk-authenticated web flows in your preferred container
+  /// (for example, in-app web view, Safari view controller, or external browser).
+  ///
+  /// - Parameter destinationURL: The destination URL to open after authentication handoff.
+  /// - Returns: A one-time URL that initializes web authentication and redirects to `destinationURL`.
+  @discardableResult
+  public func prepareAuthenticatedWebURL(for destinationURL: URL) async throws -> URL {
+    try await dependencies.clientService.prepareAuthenticatedWebURL(for: destinationURL)
+  }
+
   private static let startupRefreshRetryPolicy = RetryPolicy(
     maxAttempts: 3,
     initialDelay: .milliseconds(500),
