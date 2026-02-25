@@ -21,7 +21,7 @@ This quickstart example demonstrates how to use the Prebuilt Clerk Views:
 
 ### 2. Add Local Secrets (one-time)
 
-1. Copy `Quickstart/LocalSecrets.template.plist` to `Quickstart/LocalSecrets.plist`
+1. From the repo root, run `make setup` (or `make create-example-local-secrets-plists`) to generate `Quickstart/LocalSecrets.plist` from the template.
 2. Set your values in `LocalSecrets.plist`:
    - `CLERK_PUBLISHABLE_KEY`
 
