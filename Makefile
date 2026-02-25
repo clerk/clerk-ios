@@ -48,7 +48,8 @@ install-tools:
 
 # Install pre-commit hook
 install-hooks:
-	@hooks_dir="$$(git rev-parse --git-path hooks)"; \
+	@set -e; \
+	hooks_dir="$$(git rev-parse --git-path hooks)"; \
 	source_hook=".githooks/pre-commit"; \
 	if [ -e "$$hooks_dir" ] && [ ! -d "$$hooks_dir" ]; then \
 		echo "⚠️  Skipping pre-commit hook install because hooks path is not a directory: $$hooks_dir"; \
