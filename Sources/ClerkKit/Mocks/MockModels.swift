@@ -789,7 +789,8 @@ extension Clerk.Environment {
       authConfig: .mock,
       userSettings: .mock,
       displayConfig: .mock,
-      fraudSettings: .mock
+      fraudSettings: .mock,
+      nativeAppSettings: .init()
     )
   }
 }

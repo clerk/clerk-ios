@@ -10,9 +10,14 @@ import Testing
 @MainActor
 final class MockSessionProvider: SessionProviding {
   var sessionToReturn: Session?
+  var appVersionSupportStatusToReturn: Clerk.AppVersionSupportStatus = .supportedDefault
 
   var session: Session? {
     sessionToReturn
+  }
+
+  var appVersionSupportStatus: Clerk.AppVersionSupportStatus {
+    appVersionSupportStatusToReturn
   }
 
   init(session: Session? = nil) {
@@ -242,6 +247,25 @@ struct SessionPollingManagerTests {
   func refreshNowIfNeededResetsBackoffWhenSessionDoesNotRequireRefresh() async {
     let provider = MockSessionProvider()
     provider.sessionToReturn = createSession(id: "session1", status: .pending)
+    let manager = SessionPollingManager(sessionProvider: provider)
+
+    manager.updateBackoffState(success: false)
+    manager.updateBackoffState(success: false)
+    #expect(manager.consecutiveFailures == 2)
+
+    await manager.refreshNowIfNeeded()
+    #expect(manager.consecutiveFailures == 0)
+  }
+
+  @Test
+  func refreshNowIfNeededResetsBackoffWhenAppVersionIsUnsupported() async {
+    let provider = MockSessionProvider()
+    provider.sessionToReturn = createSession(id: "session1", status: .active)
+    provider.appVersionSupportStatusToReturn = .init(
+      isSupported: false,
+      minimumVersion: "2.0.0",
+      updateURL: URL(string: "https://apps.apple.com/app/id123")
+    )
     let manager = SessionPollingManager(sessionProvider: provider)
 
     manager.updateBackoffState(success: false)

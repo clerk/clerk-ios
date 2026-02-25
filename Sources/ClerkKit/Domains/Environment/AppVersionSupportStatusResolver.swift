@@ -1,16 +1,16 @@
 //
-//  ForceUpdateStatusResolver.swift
+//  AppVersionSupportStatusResolver.swift
 //  Clerk
 //
 
 import Foundation
 
-enum ForceUpdateStatusResolver {
+enum AppVersionSupportStatusResolver {
   static func resolve(
     environment: Clerk.Environment?,
     bundleID: String,
     currentVersion: String
-  ) -> Clerk.ForceUpdateStatus {
+  ) -> Clerk.AppVersionSupportStatus {
     let normalizedCurrentVersion = (currentVersion as String?).nilIfEmpty
 
     guard let policy = policy(for: bundleID, environment: environment) else {
@@ -71,7 +71,7 @@ enum ForceUpdateStatusResolver {
   static func resolveFromUnsupportedAppVersionMeta(
     _ meta: JSON?,
     bundleID: String
-  ) -> Clerk.ForceUpdateStatus? {
+  ) -> Clerk.AppVersionSupportStatus? {
     guard let meta else { return nil }
 
     if let platform = meta["platform"]?.stringValue?.lowercased(),
@@ -103,9 +103,9 @@ enum ForceUpdateStatusResolver {
   private static func policy(
     for bundleID: String,
     environment: Clerk.Environment?
-  ) -> Clerk.Environment.ForceUpdate.IOSPolicy? {
+  ) -> Clerk.Environment.MinimumSupportedVersion.IOSPolicy? {
     guard let normalizedBundleID = normalizeIdentifier(bundleID) else { return nil }
-    return environment?.forceUpdate?.ios.first { policy in
+    return environment?.nativeAppSettings.minimumSupportedVersion.ios.first { policy in
       normalizeIdentifier(policy.bundleId) == normalizedBundleID
     }
   }

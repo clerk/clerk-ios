@@ -1,5 +1,5 @@
 //
-//  ForceUpdateBlockingView.swift
+//  AppVersionSupportBlockingView.swift
 //  Clerk
 //
 
@@ -8,11 +8,11 @@
 import ClerkKit
 import SwiftUI
 
-struct ForceUpdateBlockingView: View {
+struct AppVersionSupportBlockingView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.openURL) private var openURL
 
-  let status: Clerk.ForceUpdateStatus
+  let status: Clerk.AppVersionSupportStatus
 
   var body: some View {
     ZStack {
@@ -100,30 +100,30 @@ struct ForceUpdateBlockingView: View {
   }
 }
 
-struct ForceUpdateBlockingOverlayModifier: ViewModifier {
+struct AppVersionSupportBlockingOverlayModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  private let controller = ForceUpdateBlockingOverlayController.shared
+  private let controller = AppVersionSupportBlockingOverlayController.shared
 
   func body(content: Content) -> some View {
     content
       .task {
-        controller.update(with: clerk.forceUpdateStatus, theme: theme, clerk: clerk)
+        controller.update(with: clerk.appVersionSupportStatus, theme: theme, clerk: clerk)
       }
-      .onChange(of: clerk.forceUpdateStatus) { _, newValue in
+      .onChange(of: clerk.appVersionSupportStatus) { _, newValue in
         controller.update(with: newValue, theme: theme, clerk: clerk)
       }
   }
 }
 
 extension View {
-  func clerkForceUpdateOverlay() -> some View {
-    modifier(ForceUpdateBlockingOverlayModifier())
+  func clerkAppVersionSupportOverlay() -> some View {
+    modifier(AppVersionSupportBlockingOverlayModifier())
   }
 }
 
 #Preview("With update link") {
-  ForceUpdateBlockingView(
+  AppVersionSupportBlockingView(
     status: .init(
       isSupported: false,
       minimumVersion: "1.2.0",
@@ -134,7 +134,7 @@ extension View {
 }
 
 #Preview("Without update link") {
-  ForceUpdateBlockingView(
+  AppVersionSupportBlockingView(
     status: .init(
       isSupported: false,
       minimumVersion: "1.2.0",

@@ -10,20 +10,20 @@ extension Clerk {
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
     public var fraudSettings: FraudSettings
-    public var forceUpdate: ForceUpdate?
+    public var nativeAppSettings: NativeAppSettings
 
     public init(
       authConfig: AuthConfig,
       userSettings: UserSettings,
       displayConfig: DisplayConfig,
       fraudSettings: FraudSettings,
-      forceUpdate: ForceUpdate? = nil
+      nativeAppSettings: NativeAppSettings
     ) {
       self.authConfig = authConfig
       self.userSettings = userSettings
       self.displayConfig = displayConfig
       self.fraudSettings = fraudSettings
-      self.forceUpdate = forceUpdate
+      self.nativeAppSettings = nativeAppSettings
     }
   }
 }

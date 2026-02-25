@@ -53,6 +53,7 @@ struct RetryPolicy: Sendable {
 func retryingOperation<T>(
   policy: RetryPolicy,
   operationName: String,
+  shouldRetry: @MainActor @Sendable (Error) -> Bool = { _ in true },
   operation: @escaping @MainActor @Sendable () async throws -> T
 ) async throws -> T {
   var attempt = 0
@@ -66,7 +67,7 @@ func retryingOperation<T>(
     } catch is CancellationError {
       throw CancellationError()
     } catch {
-      guard attempt < policy.maxAttempts else {
+      guard attempt < policy.maxAttempts, shouldRetry(error) else {
         throw error
       }
 

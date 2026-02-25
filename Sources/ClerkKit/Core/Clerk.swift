@@ -104,14 +104,14 @@ public final class Clerk {
         watchConnectivityCoordinator?.sync()
       }
 
-      refreshForceUpdateStatus()
+      refreshAppVersionSupportStatus()
     }
   }
 
-  /// The currently evaluated force-update state for this app build.
+  /// The currently evaluated app-version-support state for this app build.
   ///
-  /// Consumers can use this to manually implement custom force-update UI.
-  public internal(set) var forceUpdateStatus: ForceUpdateStatus = .supportedDefault
+  /// Consumers can use this to manually implement custom update-required UI.
+  public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supportedDefault
 
   /// The configuration options for this Clerk instance.
   public var options: Clerk.Options {
@@ -244,13 +244,25 @@ extension Clerk {
         guard let self else { return }
         async let client = retryingOperation(
           policy: retryPolicy,
-          operationName: "client refresh"
+          operationName: "client refresh",
+          shouldRetry: { error in
+            guard let apiError = error as? ClerkAPIError else {
+              return true
+            }
+            return apiError.code != "unsupported_app_version"
+          }
         ) {
           try await self.refreshClient()
         }
         async let environment = retryingOperation(
           policy: retryPolicy,
-          operationName: "environment refresh"
+          operationName: "environment refresh",
+          shouldRetry: { error in
+            guard let apiError = error as? ClerkAPIError else {
+              return true
+            }
+            return apiError.code != "unsupported_app_version"
+          }
         ) {
           try await self.refreshEnvironment()
         }
@@ -401,8 +413,8 @@ extension Clerk {
     }
   }
 
-  func refreshForceUpdateStatus() {
-    forceUpdateStatus = ForceUpdateStatusResolver.resolve(
+  func refreshAppVersionSupportStatus() {
+    appVersionSupportStatus = AppVersionSupportStatusResolver.resolve(
       environment: environment,
       bundleID: DeviceHelper.bundleID,
       currentVersion: DeviceHelper.appVersion
@@ -410,14 +422,14 @@ extension Clerk {
   }
 
   func applyUnsupportedAppVersionMeta(_ meta: JSON?) {
-    guard let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+    guard let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       meta,
       bundleID: DeviceHelper.bundleID
     ) else {
       return
     }
 
-    forceUpdateStatus = status
+    appVersionSupportStatus = status
   }
 
   /// Starts listening for general Clerk events and handles them.

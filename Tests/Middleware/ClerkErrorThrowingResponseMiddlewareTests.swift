@@ -10,7 +10,7 @@ struct ClerkErrorThrowingResponseMiddlewareTests {
   }
 
   @Test
-  func unsupportedAppVersionErrorUpdatesForceUpdateStatus() async throws {
+  func unsupportedAppVersionErrorUpdatesAppVersionSupportStatus() async throws {
     let middleware = ClerkErrorThrowingResponseMiddleware()
     let url = try #require(URL(string: "https://example.com/v1/client"))
     let request = URLRequest(url: url)
@@ -50,7 +50,7 @@ struct ClerkErrorThrowingResponseMiddlewareTests {
 
     try await Task.sleep(nanoseconds: 100_000_000)
 
-    #expect(Clerk.shared.forceUpdateStatus.isSupported == false)
-    #expect(Clerk.shared.forceUpdateStatus.minimumVersion == "2.0.0")
+    #expect(Clerk.shared.appVersionSupportStatus.isSupported == false)
+    #expect(Clerk.shared.appVersionSupportStatus.minimumVersion == "2.0.0")
   }
 }

@@ -1,5 +1,5 @@
 //
-//  ForceUpdateBlockingOverlayController.swift
+//  AppVersionSupportBlockingOverlayController.swift
 //  Clerk
 //
 
@@ -11,10 +11,10 @@ import SwiftUI
 import UIKit
 
 @MainActor
-final class ForceUpdateBlockingOverlayController {
-  static let shared = ForceUpdateBlockingOverlayController()
+final class AppVersionSupportBlockingOverlayController {
+  static let shared = AppVersionSupportBlockingOverlayController()
 
-  private var status: Clerk.ForceUpdateStatus?
+  private var status: Clerk.AppVersionSupportStatus?
   private var theme: ClerkTheme = .default
   private weak var clerk: Clerk?
   private var overlayWindow: UIWindow?
@@ -23,7 +23,7 @@ final class ForceUpdateBlockingOverlayController {
 
   private init() {}
 
-  func update(with status: Clerk.ForceUpdateStatus, theme: ClerkTheme, clerk: Clerk) {
+  func update(with status: Clerk.AppVersionSupportStatus, theme: ClerkTheme, clerk: Clerk) {
     self.theme = theme
     self.clerk = clerk
     self.status = status.isSupported ? nil : status
@@ -41,7 +41,7 @@ final class ForceUpdateBlockingOverlayController {
     }
 
     let content =
-      ForceUpdateBlockingView(status: status)
+      AppVersionSupportBlockingView(status: status)
         .environment(clerk ?? Clerk.shared)
         .environment(\.clerkTheme, theme)
         .environment(

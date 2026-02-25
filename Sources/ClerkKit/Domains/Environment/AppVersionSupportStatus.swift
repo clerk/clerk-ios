@@ -1,12 +1,12 @@
 //
-//  ForceUpdateStatus.swift
+//  AppVersionSupportStatus.swift
 //  Clerk
 //
 
 import Foundation
 
 extension Clerk {
-  public struct ForceUpdateStatus: Sendable, Equatable {
+  public struct AppVersionSupportStatus: Sendable, Equatable {
     public let isSupported: Bool
     public let minimumVersion: String?
     public let updateURL: URL?
@@ -23,7 +23,7 @@ extension Clerk {
   }
 }
 
-extension Clerk.ForceUpdateStatus {
+extension Clerk.AppVersionSupportStatus {
   static let supportedDefault: Self = .init(
     isSupported: true,
     minimumVersion: nil,

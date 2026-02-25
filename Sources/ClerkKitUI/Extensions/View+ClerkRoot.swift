@@ -11,7 +11,7 @@ private struct ClerkRootViewModifier: ViewModifier {
   func body(content: Content) -> some View {
     content
       .prefetchClerkImages()
-      .clerkForceUpdateOverlay()
+      .clerkAppVersionSupportOverlay()
   }
 }
 

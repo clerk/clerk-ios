@@ -2,10 +2,10 @@
 import Foundation
 import Testing
 
-struct ForceUpdateStatusResolverTests {
+struct AppVersionSupportStatusResolverTests {
   @Test
   func outdatedVersionIsUnsupported() {
-    let status = ForceUpdateStatusResolver.resolve(
+    let status = AppVersionSupportStatusResolver.resolve(
       environment: environmentWithPolicy(minimumVersion: "2.3.0", updateURL: "https://apps.apple.com/app/id123"),
       bundleID: "com.example.app",
       currentVersion: "2.2.9"
@@ -18,7 +18,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func missingPolicyIsSupported() {
-    let status = ForceUpdateStatusResolver.resolve(
+    let status = AppVersionSupportStatusResolver.resolve(
       environment: environmentWithPolicy(minimumVersion: "2.3.0", updateURL: nil),
       bundleID: "com.other.app",
       currentVersion: "1.0.0"
@@ -29,7 +29,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func policyMatchingIsCaseInsensitive() {
-    let status = ForceUpdateStatusResolver.resolve(
+    let status = AppVersionSupportStatusResolver.resolve(
       environment: environmentWithPolicy(minimumVersion: "2.3.0", updateURL: nil),
       bundleID: "Com.Example.App",
       currentVersion: "2.2.9"
@@ -40,7 +40,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func invalidCurrentVersionFailsOpen() {
-    let status = ForceUpdateStatusResolver.resolve(
+    let status = AppVersionSupportStatusResolver.resolve(
       environment: environmentWithPolicy(minimumVersion: "2.0.0", updateURL: nil),
       bundleID: "com.example.app",
       currentVersion: "2.0.0-beta"
@@ -51,7 +51,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func unsupportedMetaMapsToUnsupportedStatus() {
-    let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+    let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       [
         "platform": "ios",
         "app_identifier": "com.example.app",
@@ -68,7 +68,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func unsupportedMetaIgnoresDifferentPlatform() {
-    let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+    let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       [
         "platform": "android",
         "app_identifier": "com.example.app",
@@ -81,7 +81,7 @@ struct ForceUpdateStatusResolverTests {
 
   @Test
   func unsupportedMetaAppIdentifierMatchingIsCaseInsensitive() {
-    let status = ForceUpdateStatusResolver.resolveFromUnsupportedAppVersionMeta(
+    let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       [
         "platform": "ios",
         "app_identifier": "Com.Example.App",
@@ -98,15 +98,16 @@ struct ForceUpdateStatusResolverTests {
     updateURL: String?
   ) -> Clerk.Environment {
     var environment = Clerk.Environment.mock
-    environment.forceUpdate = .init(
-      ios: [
-        .init(
-          bundleId: "com.example.app",
-          minimumVersion: minimumVersion,
-          updateUrl: updateURL
-        ),
-      ],
-      android: []
+    environment.nativeAppSettings = .init(
+      minimumSupportedVersion: .init(
+        ios: [
+          .init(
+            bundleId: "com.example.app",
+            minimumVersion: minimumVersion,
+            updateUrl: updateURL
+          ),
+        ]
+      )
     )
     return environment
   }
