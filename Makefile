@@ -48,10 +48,22 @@ install-tools:
 
 # Install pre-commit hook
 install-hooks:
-	@mkdir -p .git/hooks
-	@cp .githooks/pre-commit .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "✅ Pre-commit hook installed"
+	@set -e; \
+	hooks_dir="$$(git rev-parse --git-path hooks)"; \
+	source_hook=".githooks/pre-commit"; \
+	if [ -e "$$hooks_dir" ] && [ ! -d "$$hooks_dir" ]; then \
+		echo "⚠️  Skipping pre-commit hook install because hooks path is not a directory: $$hooks_dir"; \
+		exit 0; \
+	fi; \
+	target_hook="$$hooks_dir/pre-commit"; \
+	mkdir -p "$$hooks_dir"; \
+	source_abs="$$(cd "$$(dirname "$$source_hook")" && pwd)/$$(basename "$$source_hook")"; \
+	target_abs="$$(cd "$$(dirname "$$target_hook")" && pwd)/$$(basename "$$target_hook")"; \
+	if [ "$$source_abs" != "$$target_abs" ]; then \
+		cp "$$source_hook" "$$target_hook"; \
+	fi; \
+	chmod +x "$$target_hook"; \
+	echo "✅ Pre-commit hook installed"
 
 # Install Xcode file header macros in both workspace and Swift package workspace
 install-xcode-template-macros:
