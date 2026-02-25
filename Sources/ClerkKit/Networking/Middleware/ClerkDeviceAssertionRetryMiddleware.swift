@@ -23,7 +23,7 @@ struct ClerkDeviceAssertionRetryMiddleware: NetworkRetryMiddleware {
     attempts: Int
   ) async throws -> Bool {
     guard attempts == 1 else { return false }
-    guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.code == "requires_assertion" else {
+    guard let clerkAPIError = error as? ClerkAPIError, clerkAPIError.apiCode == .requiresAssertion else {
       return false
     }
 
@@ -47,7 +47,7 @@ private actor AssertionManager {
 
       do {
         try await AppAttestHelper.performAssertion()
-      } catch let error as ClerkAPIError where error.code == "requires_device_attestation" {
+      } catch let error as ClerkAPIError where error.apiCode == .requiresDeviceAttestation {
         try await AppAttestHelper.performDeviceAttestation()
         try await AppAttestHelper.performAssertion()
       }

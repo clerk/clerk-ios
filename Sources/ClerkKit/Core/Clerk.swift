@@ -242,27 +242,27 @@ extension Clerk {
     taskCoordinator?.task { @MainActor [weak self] in
       do {
         guard let self else { return }
+        let shouldRetryStartupRefresh: @MainActor @Sendable (Error) -> Bool = { error in
+          guard let apiError = error as? ClerkAPIError else {
+            return true
+          }
+          guard let apiCode = apiError.apiCode else {
+            return true
+          }
+          return !Self.startupRefreshNonRetryableErrorCodes.contains(apiCode)
+        }
+
         async let client = retryingOperation(
           policy: retryPolicy,
           operationName: "client refresh",
-          shouldRetry: { error in
-            guard let apiError = error as? ClerkAPIError else {
-              return true
-            }
-            return apiError.code != "unsupported_app_version"
-          }
+          shouldRetry: shouldRetryStartupRefresh
         ) {
           try await self.refreshClient()
         }
         async let environment = retryingOperation(
           policy: retryPolicy,
           operationName: "environment refresh",
-          shouldRetry: { error in
-            guard let apiError = error as? ClerkAPIError else {
-              return true
-            }
-            return apiError.code != "unsupported_app_version"
-          }
+          shouldRetry: shouldRetryStartupRefresh
         ) {
           try await self.refreshEnvironment()
         }
@@ -338,6 +338,10 @@ extension Clerk {
     initialDelay: .milliseconds(500),
     maximumDelay: .seconds(5)
   )
+
+  private static let startupRefreshNonRetryableErrorCodes: Set<ClerkAPIError.Code> = [
+    .unsupportedAppVersion,
+  ]
 }
 
 extension Clerk: CacheCoordinator {

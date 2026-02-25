@@ -14,7 +14,7 @@ struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
     {
       clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
 
-      if clerkAPIError.code == "unsupported_app_version" {
+      if clerkAPIError.apiCode == .unsupportedAppVersion {
         Task { @MainActor in
           Clerk.shared.applyUnsupportedAppVersionMeta(clerkAPIError.meta)
         }

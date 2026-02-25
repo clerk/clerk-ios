@@ -334,7 +334,11 @@ extension AuthStartView {
 
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
-      if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
+      if withSignUp,
+         let clerkApiError = error as? ClerkAPIError,
+         let code = clerkApiError.apiCode,
+         code == .formIdentifierNotFound || code == .invitationAccountNotExists
+      {
         await signUp()
       } else {
         fieldError = error

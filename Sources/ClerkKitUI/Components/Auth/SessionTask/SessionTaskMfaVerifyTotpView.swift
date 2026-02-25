@@ -53,7 +53,7 @@ struct SessionTaskMfaVerifyTotpView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified" {
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.apiCode == .verificationAlreadyVerified {
           return .init(text: "Continue") {
             verificationState = .verifying
             handleSuccessfulVerification()

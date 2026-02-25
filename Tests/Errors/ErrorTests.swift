@@ -131,6 +131,74 @@ struct ErrorTests {
   }
 
   @Test
+  func clerkAPIErrorClassifiesUnsupportedAppVersionCode() {
+    let error = ClerkAPIError(
+      code: "unsupported_app_version",
+      message: "unsupported app version",
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+
+    #expect(error.apiCode == .unsupportedAppVersion)
+  }
+
+  @Test
+  func clerkAPIErrorUnknownCodeRemainsRetryableForStartupRefresh() {
+    let error = ClerkAPIError(
+      code: "some_other_error",
+      message: "other error",
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+
+    #expect(error.apiCode == nil)
+  }
+
+  @Test
+  func clerkAPIErrorClassifiesDeviceAssertionCodes() {
+    let assertionError = ClerkAPIError(
+      code: "requires_assertion",
+      message: nil,
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+    let attestationError = ClerkAPIError(
+      code: "requires_device_attestation",
+      message: nil,
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+
+    #expect(assertionError.apiCode == .requiresAssertion)
+    #expect(attestationError.apiCode == .requiresDeviceAttestation)
+  }
+
+  @Test
+  func clerkAPIErrorClassifiesAuthFallbackAndResyncCodes() {
+    let signUpFallback = ClerkAPIError(
+      code: "form_identifier_not_found",
+      message: nil,
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+    let invalidAuth = ClerkAPIError(
+      code: "authentication_invalid",
+      message: nil,
+      longMessage: nil,
+      meta: nil,
+      clerkTraceId: nil
+    )
+
+    #expect(signUpFallback.apiCode == .formIdentifierNotFound)
+    #expect(invalidAuth.apiCode == .authenticationInvalid)
+  }
+
+  @Test
   func clerkErrorResponse() throws {
     let response = ClerkErrorResponse(
       errors: [

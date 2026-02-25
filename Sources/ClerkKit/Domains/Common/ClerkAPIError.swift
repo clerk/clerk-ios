@@ -52,3 +52,20 @@ public struct ClerkErrorResponse: Codable, Equatable {
   /// A unique identifier for tracing the specific request, useful for debugging.
   public var clerkTraceId: String?
 }
+
+extension ClerkAPIError {
+  package enum Code: String, Sendable {
+    case unsupportedAppVersion = "unsupported_app_version"
+    case requiresAssertion = "requires_assertion"
+    case requiresDeviceAttestation = "requires_device_attestation"
+    case verificationAlreadyVerified = "verification_already_verified"
+    case formIdentifierNotFound = "form_identifier_not_found"
+    case invitationAccountNotExists = "invitation_account_not_exists"
+    case authenticationInvalid = "authentication_invalid"
+    case resourceNotFound = "resource_not_found"
+  }
+
+  package var apiCode: Code? {
+    Code(rawValue: code)
+  }
+}

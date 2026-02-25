@@ -146,7 +146,7 @@ struct SignUpCodeView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.apiCode == .verificationAlreadyVerified, let signUp {
           return .init(text: "Continue") {
             navigation.setToStepForStatus(signUp: signUp)
           }
