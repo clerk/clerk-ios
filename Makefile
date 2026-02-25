@@ -1,4 +1,4 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros test test-integration help create-env install-1password-cli fetch-test-keys
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists test test-integration help create-env install-1password-cli fetch-test-keys
 
 
 # Default target
@@ -16,15 +16,20 @@ help:
 	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
+	@echo "  make create-example-local-secrets-plists - Create LocalSecrets.plist files for examples from templates"
 
 # Main setup command - installs tools and hooks
-setup: install-tools install-hooks install-xcode-template-macros
+setup: install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists
 	@echo "✅ Setup complete!"
 	@echo "   Clerk employees: Run 'make fetch-test-keys' to populate integration test keys from 1Password"
 
 # Create .keys.json file with blank integration test key if it doesn't exist
 create-env:
 	@./scripts/create-keys-json.sh
+
+# Create LocalSecrets.plist files for all example apps from templates if missing
+create-example-local-secrets-plists:
+	@./scripts/create-example-local-secrets-plists.sh
 
 # Install SwiftFormat and SwiftLint via Homebrew
 install-tools:

@@ -33,10 +33,9 @@ Both your iOS app and watchOS app must be configured with Watch Connectivity:
 
 ### 3. Add Local Secrets (one-time)
 
-1. Copy `WatchExampleApp/LocalSecrets.template.plist` to `WatchExampleApp/LocalSecrets.plist`
+1. From the repo root, run `make setup` (or `make create-example-local-secrets-plists`) to generate both `LocalSecrets.plist` files from templates.
 2. Set `CLERK_PUBLISHABLE_KEY` in `WatchExampleApp/LocalSecrets.plist`
-3. Copy `WatchExampleApp Watch App/LocalSecrets.template.plist` to `WatchExampleApp Watch App/LocalSecrets.plist`
-4. Set `CLERK_PUBLISHABLE_KEY` in `WatchExampleApp Watch App/LocalSecrets.plist`
+3. Set `CLERK_PUBLISHABLE_KEY` in `WatchExampleApp Watch App/LocalSecrets.plist`
 
 Both `LocalSecrets.plist` files are gitignored, so they will not be committed.
 
