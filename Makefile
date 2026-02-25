@@ -1,4 +1,4 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists test test-integration help create-env install-1password-cli fetch-test-keys
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-publishable-key test test-integration help create-env install-1password-cli fetch-test-keys
 
 
 # Default target
@@ -17,6 +17,7 @@ help:
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
 	@echo "  make create-example-local-secrets-plists - Create LocalSecrets.plist files for examples from templates"
+	@echo "  make set-example-publishable-key PUBLISHABLE_KEY=pk_test_... - Set CLERK_PUBLISHABLE_KEY for all example LocalSecrets.plist files"
 
 # Main setup command - installs tools and hooks
 setup: install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists
@@ -30,6 +31,14 @@ create-env:
 # Create LocalSecrets.plist files for all example apps from templates if missing
 create-example-local-secrets-plists:
 	@./scripts/create-example-local-secrets-plists.sh
+
+# Set CLERK_PUBLISHABLE_KEY in all example LocalSecrets.plist files
+set-example-publishable-key: create-example-local-secrets-plists
+	@if [ -z "$(PUBLISHABLE_KEY)" ]; then \
+		echo "Usage: make set-example-publishable-key PUBLISHABLE_KEY=pk_test_..."; \
+		exit 1; \
+	fi
+	@./scripts/set-example-publishable-key.sh "$(PUBLISHABLE_KEY)"
 
 # Install SwiftFormat and SwiftLint via Homebrew
 install-tools:
