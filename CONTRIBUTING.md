@@ -18,6 +18,7 @@ This command will:
 3. Set up the pre-commit hook to automatically format staged Swift files
 4. Configure Xcode file header templates for both `Clerk.xcworkspace` and Swift package workspace views
 5. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
+6. Create `LocalSecrets.plist` files for example apps from `LocalSecrets.template.plist` files (if missing)
 
 After running `make setup`, you're ready to start developing!
 
@@ -62,10 +63,11 @@ After running `make setup`, you're ready to start developing!
 
 ### Available Make Commands
 
-- `make setup` - Install tools, hooks, and configure Xcode file headers
+- `make setup` - Install tools/hooks, configure Xcode file headers, and create example LocalSecrets plists
 - `make install-tools` - Install SwiftFormat and SwiftLint via Homebrew
 - `make install-hooks` - Install the pre-commit hook
 - `make install-xcode-template-macros` - Sync Xcode file header templates for both workspace and package views
+- `make create-example-local-secrets-plists` - Create `LocalSecrets.plist` files for examples if missing
 - `make create-env` - Create the `.keys.json` file if missing
 - `make format` - Format all Swift files using SwiftFormat
 - `make format-check` - Check formatting without modifying files (for CI)
