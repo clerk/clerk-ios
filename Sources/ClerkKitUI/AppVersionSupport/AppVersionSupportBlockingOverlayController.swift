@@ -6,7 +6,6 @@
 #if os(iOS)
 
 import ClerkKit
-import Foundation
 import SwiftUI
 import UIKit
 
@@ -20,8 +19,15 @@ final class AppVersionSupportBlockingOverlayController {
   private var overlayWindow: UIWindow?
   private weak var previousKeyWindow: UIWindow?
   private var isDismissing = false
+  private var presentationRetryObservers: [NSObjectProtocol] = []
 
   private init() {}
+
+  func clear() {
+    status = nil
+    cancelPresentationRetry()
+    dismissOverlay(animated: true)
+  }
 
   func update(with status: Clerk.AppVersionSupportStatus, theme: ClerkTheme, clerk: Clerk) {
     self.theme = theme
@@ -32,13 +38,16 @@ final class AppVersionSupportBlockingOverlayController {
 
   private func render() {
     guard let status else {
+      cancelPresentationRetry()
       dismissOverlay(animated: true)
       return
     }
 
     guard let windowScene = activeWindowScene() else {
+      schedulePresentationRetry()
       return
     }
+    cancelPresentationRetry()
 
     let content =
       AppVersionSupportBlockingView(status: status)
@@ -72,29 +81,13 @@ final class AppVersionSupportBlockingOverlayController {
     }
 
     window.rootViewController = hostingController
-    presentOverlay(window: window, animated: true)
+    presentOverlay(window: window)
   }
 
-  private func presentOverlay(window: UIWindow, animated: Bool) {
+  private func presentOverlay(window: UIWindow) {
     isDismissing = false
     window.isHidden = false
     window.makeKey()
-
-    guard animated, let view = window.rootViewController?.view else {
-      return
-    }
-
-    view.layer.removeAllAnimations()
-    view.transform = .identity
-    view.alpha = 0
-
-    UIView.animate(
-      withDuration: 0.22,
-      delay: 0,
-      options: [.curveEaseOut, .beginFromCurrentState, .allowUserInteraction]
-    ) {
-      view.alpha = 1
-    }
   }
 
   private func dismissOverlay(animated: Bool) {
@@ -136,6 +129,45 @@ final class AppVersionSupportBlockingOverlayController {
     previousKeyWindow = nil
   }
 
+  private func schedulePresentationRetry() {
+    guard presentationRetryObservers.isEmpty else {
+      return
+    }
+
+    let center = NotificationCenter.default
+    let names: [NSNotification.Name] = [
+      UIScene.didActivateNotification,
+      UIScene.willEnterForegroundNotification,
+      UIApplication.didBecomeActiveNotification,
+    ]
+
+    presentationRetryObservers = names.map { name in
+      center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+        self?.attemptPresentationRetry()
+      }
+    }
+  }
+
+  private func cancelPresentationRetry() {
+    let center = NotificationCenter.default
+    presentationRetryObservers.forEach { center.removeObserver($0) }
+    presentationRetryObservers.removeAll()
+  }
+
+  private func attemptPresentationRetry() {
+    guard status != nil else {
+      cancelPresentationRetry()
+      return
+    }
+
+    guard activeWindowScene() != nil else {
+      return
+    }
+
+    cancelPresentationRetry()
+    render()
+  }
+
   private func activeWindowScene() -> UIWindowScene? {
     let scenes = UIApplication.shared.connectedScenes
     let windowScenes = scenes.compactMap { $0 as? UIWindowScene }
@@ -144,7 +176,11 @@ final class AppVersionSupportBlockingOverlayController {
       return activeScene
     }
 
-    return windowScenes.first(where: { $0.activationState == .foregroundInactive })
+    if let inactiveScene = windowScenes.first(where: { $0.activationState == .foregroundInactive }) {
+      return inactiveScene
+    }
+
+    return windowScenes.first
   }
 }
 

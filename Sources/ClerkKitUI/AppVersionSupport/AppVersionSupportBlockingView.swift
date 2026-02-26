@@ -11,6 +11,8 @@ import SwiftUI
 struct AppVersionSupportBlockingView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.openURL) private var openURL
+  @State private var isContentVisible = false
+  @State private var entranceAnimationTask: Task<Void, Never>?
 
   let status: Clerk.AppVersionSupportStatus
 
@@ -64,9 +66,29 @@ struct AppVersionSupportBlockingView: View {
 
         Spacer(minLength: 0)
       }
+      .opacity(isContentVisible ? 1 : 0)
+      .offset(y: isContentVisible ? 0 : 12)
+    }
+    .onAppear {
+      entranceAnimationTask?.cancel()
+      isContentVisible = false
+      entranceAnimationTask = Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(90))
+        guard !Task.isCancelled else { return }
+        withAnimation(.easeOut(duration: 0.22)) {
+          isContentVisible = true
+        }
+      }
+    }
+    .onDisappear {
+      entranceAnimationTask?.cancel()
+      entranceAnimationTask = nil
+      isContentVisible = false
     }
     .safeAreaInset(edge: .bottom) {
       bottomAction
+        .opacity(isContentVisible ? 1 : 0)
+        .offset(y: isContentVisible ? 0 : 12)
     }
   }
 
@@ -106,13 +128,26 @@ struct AppVersionSupportBlockingOverlayModifier: ViewModifier {
   private let controller = AppVersionSupportBlockingOverlayController.shared
 
   func body(content: Content) -> some View {
-    content
-      .task {
-        controller.update(with: clerk.appVersionSupportStatus, theme: theme, clerk: clerk)
+    ZStack {
+      content
+      if clerk.appVersionSupportStatus.isSupported == false {
+        theme.colors.background
+          .ignoresSafeArea()
+          .allowsHitTesting(false)
+          .zIndex(1)
       }
-      .onChange(of: clerk.appVersionSupportStatus) { _, newValue in
-        controller.update(with: newValue, theme: theme, clerk: clerk)
-      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .onChange(of: clerk.appVersionSupportStatus, initial: true) { _, _ in
+      syncOverlay()
+    }
+    .onDisappear {
+      controller.clear()
+    }
+  }
+
+  private func syncOverlay() {
+    controller.update(with: clerk.appVersionSupportStatus, theme: theme, clerk: clerk)
   }
 }
 
