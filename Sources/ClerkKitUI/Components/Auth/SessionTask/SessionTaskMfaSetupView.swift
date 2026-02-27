@@ -38,12 +38,6 @@ struct SessionTaskMfaSetupView: View {
     !phoneCodeIsEnabled && !authenticatorAppIsEnabled
   }
 
-  private var hasAvailablePhoneNumbers: Bool {
-    let phoneNumbers = (user?.phoneNumbersAvailableForMfa ?? [])
-      .filter { $0.verification?.status == .verified }
-    return !phoneNumbers.isEmpty
-  }
-
   var body: some View {
     if noMethodsAvailable {
       GetHelpView(context: .sessionTask)
@@ -66,11 +60,7 @@ struct SessionTaskMfaSetupView: View {
         VStack(spacing: 16) {
           if phoneCodeIsEnabled {
             Button {
-              if hasAvailablePhoneNumbers {
-                navigation.path.append(.taskMfaSmsChooseNumber)
-              } else {
-                navigation.path.append(.taskMfaAddPhone)
-              }
+              navigation.path.append(.taskMfaSmsChooseNumber)
             } label: {
               StrategyOptionButton(iconName: "icon-phone", text: "SMS code")
             }

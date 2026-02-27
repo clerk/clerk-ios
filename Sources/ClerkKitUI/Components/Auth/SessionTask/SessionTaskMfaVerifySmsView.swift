@@ -21,7 +21,7 @@ struct SessionTaskMfaVerifySmsView: View {
 
   @FocusState private var otpFieldIsFocused: Bool
 
-  let phoneNumber: ClerkKit.PhoneNumber
+  let phoneNumber: PhoneNumber
 
   private var codeLimiterIdentifier: String {
     phoneNumber.phoneNumber

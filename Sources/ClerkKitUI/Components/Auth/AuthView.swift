@@ -133,7 +133,7 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath)
+    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -220,7 +220,6 @@ extension AuthView {
     // Session tasks
     case sessionTaskStart(task: Session.Task)
     case taskMfaSmsChooseNumber
-    case taskMfaAddPhone
     case taskVerifySms(phoneNumber: PhoneNumber)
     case taskMfaTotp(totpResource: TOTPResource)
     case taskVerifyTotp
@@ -264,8 +263,6 @@ extension AuthView {
         SessionTaskStartView(task: task)
       case .taskMfaSmsChooseNumber:
         SessionTaskMfaSmsChooseNumberView()
-      case .taskMfaAddPhone:
-        SessionTaskMfaAddPhoneView()
       case .taskVerifySms(let phoneNumber):
         SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
       case .taskMfaTotp(let totpResource):
