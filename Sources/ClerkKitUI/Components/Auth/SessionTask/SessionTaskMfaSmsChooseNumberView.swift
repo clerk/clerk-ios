@@ -15,6 +15,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   @State private var error: Error?
   @State private var isSubmittingPhone = false
+  @State private var didNavigateAway = false
   @State private var addPhoneNumberIsPresented = false
 
   private var user: User? {
@@ -43,7 +44,14 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
+    .onChange(of: navigation.path) { oldPath, newPath in
+      if newPath.count > oldPath.count {
+        didNavigateAway = true
+      }
+    }
     .onDisappear {
+      guard didNavigateAway else { return }
+      didNavigateAway = false
       isSubmittingPhone = false
     }
     .sheet(isPresented: $addPhoneNumberIsPresented) {
