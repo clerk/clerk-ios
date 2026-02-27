@@ -67,7 +67,8 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   private var addPhoneContent: some View {
     SessionTaskAddPhoneForm(
-      onBeginSubmit: { isSubmittingPhone = true }
+      onBeginSubmit: { isSubmittingPhone = true },
+      onError: { isSubmittingPhone = false }
     ) { newPhoneNumber in
       try await newPhoneNumber.sendCode()
       codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)

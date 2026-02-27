@@ -17,6 +17,7 @@ struct SessionTaskAddPhoneForm: View {
   @FocusState private var isFocused: Bool
 
   var onBeginSubmit: (() -> Void)?
+  var onError: (() -> Void)?
   let onPhoneNumberCreated: (PhoneNumber) async throws -> Void
 
   private var user: User? {
@@ -72,6 +73,7 @@ struct SessionTaskAddPhoneForm: View {
       try await onPhoneNumberCreated(newPhoneNumber)
     } catch {
       self.error = error
+      onError?()
       ClerkLogger.error("Failed to add phone number", error: error)
     }
   }
