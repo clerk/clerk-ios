@@ -80,6 +80,83 @@ struct SignInTests {
   }
 
   @Test
+  func verifyCodeUsesExistingFirstFactorVerificationCodeStrategy() async throws {
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(
+      status: .unverified,
+      strategy: .resetPasswordPhoneCode
+    )
+
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await signIn.verifyCode("123456")
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.strategy == .resetPasswordPhoneCode)
+    #expect(params.1.code == "123456")
+  }
+
+  @Test
+  func verifyCodeThrowsWhenFirstFactorVerificationStrategyIsNotCodeBased() async throws {
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(
+      status: .unverified,
+      strategy: .password
+    )
+
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    do {
+      _ = try await signIn.verifyCode("123456")
+      Issue.record("Expected ClerkClientError.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Unable to verify code for strategy 'password'.")
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+
+    #expect(captured.value == nil)
+  }
+
+  @Test
+  func verifyCodeThrowsWhenFirstFactorVerificationStrategyIsMissing() async throws {
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = nil
+
+    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let service = MockSignInService(attemptFirstFactor: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    configureService(service)
+
+    do {
+      _ = try await signIn.verifyCode("123456")
+      Issue.record("Expected ClerkClientError.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Unable to verify code because no first factor strategy is set.")
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+
+    #expect(captured.value == nil)
+  }
+
+  @Test
   func authenticateWithPasswordUsesSignInServiceAttemptFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)

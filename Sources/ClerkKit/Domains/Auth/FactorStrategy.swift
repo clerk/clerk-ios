@@ -125,6 +125,15 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
 // MARK: - Strategy Groups
 
 extension FactorStrategy {
+  var canAttemptFirstFactorCode: Bool {
+    switch self {
+    case .emailCode, .phoneCode, .resetPasswordEmailCode, .resetPasswordPhoneCode:
+      true
+    default:
+      false
+    }
+  }
+
   /// Strategies that use email as the identifier
   package static let emailStrategies: [FactorStrategy] = [
     .emailCode,
