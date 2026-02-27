@@ -39,9 +39,7 @@ struct SessionTaskMfaSetupView: View {
   }
 
   private var hasAvailablePhoneNumbers: Bool {
-    let phoneNumbers = (user?.phoneNumbersAvailableForMfa ?? [])
-      .filter { $0.verification?.status == .verified }
-    return !phoneNumbers.isEmpty
+    !(user?.phoneNumbersAvailableForMfa ?? []).isEmpty
   }
 
   var body: some View {

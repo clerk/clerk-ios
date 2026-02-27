@@ -15,6 +15,7 @@ struct SessionTaskMfaVerifySmsView: View {
   @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var code = ""
+  @State private var backupCodes = [String]()
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
@@ -161,7 +162,10 @@ struct SessionTaskMfaVerifySmsView: View {
     let reserved = try await phoneNumber.setReservedForSecondFactor()
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success
-    if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
+    if let newCodes = reserved.backupCodes, !newCodes.isEmpty {
+      backupCodes = newCodes
+    }
+    if !backupCodes.isEmpty {
       navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
     } else {
       navigation.handleSessionTaskCompletion(session: clerk.session)

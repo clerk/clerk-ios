@@ -133,7 +133,7 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath)
+    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)

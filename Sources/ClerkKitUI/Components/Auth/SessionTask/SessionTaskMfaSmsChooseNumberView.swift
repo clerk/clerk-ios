@@ -17,7 +17,6 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   private var availablePhoneNumbers: [ClerkKit.PhoneNumber] {
     (clerk.user?.phoneNumbersAvailableForMfa ?? [])
-      .filter { $0.verification?.status == .verified }
       .sorted { $0.createdAt < $1.createdAt }
   }
 
