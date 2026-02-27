@@ -130,6 +130,19 @@ struct SessionTaskBackupCodesView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    .navigationBarBackButtonHidden()
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        if navigation.nextPendingSessionTask(from: clerk.session) != nil {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        } else {
+          DismissButton {
+            navigation.handleSessionTaskCompletion(session: clerk.session)
+          }
+        }
+      }
+    }
   }
 }
 
