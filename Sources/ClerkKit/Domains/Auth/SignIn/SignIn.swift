@@ -127,10 +127,19 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyCode(_ code: String) async throws -> SignIn {
-    let strategy = firstFactorVerification?.strategy ?? .emailCode
+    guard let resolvedStrategy = firstFactorVerification?.strategy else {
+      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.")
+    }
+
+    guard resolvedStrategy.canAttemptFirstFactorCode else {
+      throw ClerkClientError(
+        message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'."
+      )
+    }
+
     return try await signInService.attemptFirstFactor(
       signInId: id,
-      params: .init(strategy: strategy, code: code)
+      params: .init(strategy: resolvedStrategy, code: code)
     )
   }
 
