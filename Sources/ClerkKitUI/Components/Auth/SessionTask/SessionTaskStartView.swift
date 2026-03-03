@@ -15,6 +15,11 @@ struct SessionTaskStartView: View {
     switch task {
     case .setupMfa:
       SessionTaskMfaSetupView()
+    case .resetPassword:
+      SignInSetNewPasswordView(mode: .sessionTask)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .preGlassSolidNavBar()
     case .unknown:
       GetHelpView(context: .sessionTask)
         .navigationBarBackButtonHidden()

@@ -9,6 +9,8 @@ import ClerkKit
 import SwiftUI
 
 struct SignInSetNewPasswordView: View {
+  let mode: Mode
+
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
@@ -29,6 +31,15 @@ struct SignInSetNewPasswordView: View {
 
   enum Field {
     case new, confirm
+  }
+
+  enum Mode {
+    case signIn
+    case sessionTask
+  }
+
+  init(mode: Mode = .signIn) {
+    self.mode = mode
   }
 
   var body: some View {
@@ -54,9 +65,8 @@ struct SignInSetNewPasswordView: View {
           .onFirstAppear {
             focusedField = .new
 
-            // we need to create a local copy of this to keep around because
-            // once the reset flow is complete the sign in identifier gets cleared out
-            identifier = signIn?.identifier ?? ""
+            // Keep a local copy because sign-in identifier can be cleared after reset completion.
+            identifier = initialIdentifier
           }
 
           VStack(spacing: 8) {
@@ -118,6 +128,15 @@ struct SignInSetNewPasswordView: View {
 }
 
 extension SignInSetNewPasswordView {
+  var initialIdentifier: String {
+    switch mode {
+    case .signIn:
+      signIn?.identifier ?? ""
+    case .sessionTask:
+      clerk.user?.usernameForPasswordKeeper ?? ""
+    }
+  }
+
   func setNewPassword() async {
     fieldError = nil
     focusedField = nil
@@ -127,20 +146,46 @@ extension SignInSetNewPasswordView {
         throw ClerkClientError(message: "Passwords don't match.")
       }
 
-      guard var signIn else {
-        navigation.path = []
-        return
+      switch mode {
+      case .signIn:
+        try await resetPasswordFromSignIn()
+      case .sessionTask:
+        try await resetPasswordFromSessionTask()
       }
-
-      signIn = try await signIn.resetPassword(
-        newPassword: authState.signInNewPassword,
-        signOutOfOtherSessions: signOutOfOtherDevices
-      )
-
-      navigation.setToStepForStatus(signIn: signIn)
     } catch {
       fieldError = error
     }
+  }
+
+  private func resetPasswordFromSignIn() async throws {
+    guard var signIn else {
+      navigation.path = []
+      return
+    }
+
+    signIn = try await signIn.resetPassword(
+      newPassword: authState.signInNewPassword,
+      signOutOfOtherSessions: signOutOfOtherDevices
+    )
+
+    navigation.setToStepForStatus(signIn: signIn)
+  }
+
+  private func resetPasswordFromSessionTask() async throws {
+    guard let user = clerk.user else {
+      navigation.path = []
+      return
+    }
+
+    try await user.updatePassword(
+      .init(
+        currentPassword: nil,
+        newPassword: authState.signInNewPassword,
+        signOutOfOtherSessions: signOutOfOtherDevices
+      )
+    )
+
+    navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .resetPassword)
   }
 }
 
