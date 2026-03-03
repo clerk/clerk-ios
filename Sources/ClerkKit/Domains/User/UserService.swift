@@ -12,6 +12,7 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func createBackupCodes() async throws -> BackupCodeResource
   @MainActor func createEmailAddress(emailAddress: String) async throws -> EmailAddress
   @MainActor func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber
+  @MainActor func createOrganization(name: String) async throws -> Organization
   @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount
   @MainActor func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount
   #if canImport(AuthenticationServices) && !os(watchOS)
@@ -95,6 +96,18 @@ final class UserService: UserServiceProtocol {
   @MainActor
   func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
     try await phoneNumberService.create(phoneNumber: phoneNumber)
+  }
+
+  @MainActor
+  func createOrganization(name: String) async throws -> Organization {
+    let request = Request<ClientResponse<Organization>>(
+      path: "/v1/organizations",
+      method: .post,
+      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: ["name": name]
+    )
+
+    return try await apiClient.send(request).value.response
   }
 
   @MainActor
