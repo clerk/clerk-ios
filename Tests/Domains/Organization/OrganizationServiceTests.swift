@@ -12,6 +12,29 @@ struct OrganizationServiceTests {
   }
 
   @Test
+  func createOrganization() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["name"] == "My Org")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org")
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func updateOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)

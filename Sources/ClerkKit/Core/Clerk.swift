@@ -158,6 +158,13 @@ public final class Clerk {
     )
   }
 
+  /// The main entry point for organization operations.
+  ///
+  /// Use this property to create organizations.
+  public var organizations: Organizations {
+    Organizations(organizationService: dependencies.organizationService)
+  }
+
   /// The event emitter for general Clerk events.
   let clerkEventEmitter = EventEmitter<ClerkEvent>()
 

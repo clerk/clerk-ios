@@ -249,15 +249,6 @@ extension User {
     try await userService.createPhoneNumber(phoneNumber: phoneNumber)
   }
 
-  /// Creates an organization and makes the current user its administrator.
-  ///
-  /// - Parameter name: The organization name.
-  /// - Returns: The newly created ``Organization``.
-  @discardableResult @MainActor
-  public func createOrganization(name: String) async throws -> Organization {
-    try await userService.createOrganization(name: name)
-  }
-
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
   ///
   /// This method is useful if you want to allow an already signed-in user to connect their account with an external OAuth provider, such as Facebook, GitHub, etc., so that they can sign in with that provider in the future.

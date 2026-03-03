@@ -12,6 +12,9 @@ import Foundation
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
 package final class MockOrganizationService: OrganizationServiceProtocol {
+  /// Custom handler for the `createOrganization(name:)` method.
+  package nonisolated(unsafe) var createOrganizationHandler: ((String) async throws -> Organization)?
+
   /// Custom handler for the `updateOrganization(organizationId:name:slug:)` method.
   package nonisolated(unsafe) var updateOrganizationHandler: ((String, String, String?) async throws -> Organization)?
 
@@ -82,6 +85,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   package nonisolated(unsafe) var rejectOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)? // swiftlint:disable:this identifier_name
 
   package init(
+    createOrganization: ((String) async throws -> Organization)? = nil,
     updateOrganization: ((String, String, String?) async throws -> Organization)? = nil,
     destroyOrganization: ((String) async throws -> DeletedObject)? = nil,
     setOrganizationLogo: ((String, Data) async throws -> Organization)? = nil,
@@ -108,6 +112,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     acceptOrganizationMembershipRequest: ((String, String) async throws -> OrganizationMembershipRequest)? = nil,
     rejectOrganizationMembershipRequest: ((String, String) async throws -> OrganizationMembershipRequest)? = nil
   ) {
+    createOrganizationHandler = createOrganization
     updateOrganizationHandler = updateOrganization
     destroyOrganizationHandler = destroyOrganization
     setOrganizationLogoHandler = setOrganizationLogo
@@ -131,6 +136,14 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     acceptOrganizationSuggestionHandler = acceptOrganizationSuggestion
     acceptOrganizationMembershipRequestHandler = acceptOrganizationMembershipRequest
     rejectOrganizationMembershipRequestHandler = rejectOrganizationMembershipRequest
+  }
+
+  @MainActor
+  package func createOrganization(name: String) async throws -> Organization {
+    if let handler = createOrganizationHandler {
+      return try await handler(name)
+    }
+    return .mock
   }
 
   @MainActor
