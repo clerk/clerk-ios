@@ -188,3 +188,4 @@ jobs:
           name: ${{ inputs.version }}
           generate_release_notes: true
           prerelease: ${{ steps.prerelease.outputs.value }}
+          token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
