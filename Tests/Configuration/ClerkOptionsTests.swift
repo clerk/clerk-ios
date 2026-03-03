@@ -13,10 +13,6 @@ struct ClerkOptionsTests {
   }
 
   private struct TestResponseMiddleware: ClerkResponseMiddleware {
-    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) throws {}
-  }
-
-  private struct TestAsyncResponseMiddleware: ClerkAsyncResponseMiddleware {
     func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {}
   }
 
@@ -33,7 +29,6 @@ struct ClerkOptionsTests {
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
     #expect(options.middleware.request.isEmpty == true)
     #expect(options.middleware.response.isEmpty == true)
-    #expect(options.middleware.responseAsync.isEmpty == true)
   }
 
   @Test
@@ -153,14 +148,5 @@ struct ClerkOptionsTests {
 
     #expect(options.middleware.response.count == 1)
     #expect(options.middleware.response.first is TestResponseMiddleware)
-  }
-
-  @Test
-  func asyncResponseMiddlewareInitialization() {
-    let middleware = TestAsyncResponseMiddleware()
-    let options = Clerk.Options(middleware: .init(responseAsync: [middleware]))
-
-    #expect(options.middleware.responseAsync.count == 1)
-    #expect(options.middleware.responseAsync.first is TestAsyncResponseMiddleware)
   }
 }

@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ClerkErrorThrowingResponseMiddleware: ClerkAsyncResponseMiddleware {
+struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
     guard response.isError else { return }
 

@@ -55,27 +55,20 @@ extension Clerk {
       /// Middleware to run as the final step before sending a request.
       public let request: [any ClerkRequestMiddleware]
 
-      /// Legacy response middleware to run immediately after receiving a response.
+      /// Response middleware to run immediately after receiving a response.
       /// Custom response middleware runs before Clerk's built-in response middleware.
       public let response: [any ClerkResponseMiddleware]
-
-      /// Async response middleware to run immediately after receiving a response.
-      /// Custom response middleware runs before Clerk's built-in response middleware.
-      public let responseAsync: [any ClerkAsyncResponseMiddleware]
 
       /// Initializes a ``MiddlewareConfig`` instance.
       /// - Parameters:
       ///   - request: Middleware to run as the final step before sending a request. Defaults to an empty array.
-      ///   - response: Legacy response middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
-      ///   - responseAsync: Async response middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
+      ///   - response: Response middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
       public init(
         request: [any ClerkRequestMiddleware] = [],
-        response: [any ClerkResponseMiddleware] = [],
-        responseAsync: [any ClerkAsyncResponseMiddleware] = []
+        response: [any ClerkResponseMiddleware] = []
       ) {
         self.request = request
         self.response = response
-        self.responseAsync = responseAsync
       }
     }
 
@@ -116,7 +109,7 @@ extension Clerk {
     /// }
     ///
     /// struct ResponseDiagnosticsMiddleware: ClerkResponseMiddleware {
-    ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+    ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     ///     // Inspect response or emit diagnostics here.
     ///   }
     /// }

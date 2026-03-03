@@ -5,47 +5,52 @@
 
 import Foundation
 
-struct ClerkClientSyncResponseMiddleware: ClerkAsyncResponseMiddleware {
+struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
-    switch decodeClientSyncState(from: data) {
-    case let .set(client):
-      await MainActor.run {
-        Clerk.shared.client = client
+    if let envelope = try? JSONDecoder.clerkDecoder.decode(ClientEnvelope.self, from: data) {
+      // `/v1/client` can return a full client in `response` while `client` is null.
+      // Prioritize the concrete `response` value to avoid transient clears.
+      if let responseClient = envelope.responseClient {
+        await setClient(responseClient)
+        return
       }
-    case .clear:
-      await MainActor.run {
-        Clerk.shared.client = nil
+
+      switch envelope.clientState {
+      case let .value(client):
+        await setClient(client)
+        return
+      case .null:
+        await setClient(nil)
+        return
+      case .missing:
+        break
       }
-    case .skip:
-      break
+    }
+
+    if let client = try? JSONDecoder.clerkDecoder.decode(Client.self, from: data) {
+      await setClient(client)
+      return
     }
   }
 
-  private enum ClientSyncState {
-    case set(Client)
-    case clear
-    case skip
+  @MainActor
+  private func setClient(_ client: Client?) {
+    Clerk.shared.client = client
   }
 
-  private enum Field<T> {
-    case value(T)
+  /// Distinguishes explicit null from an absent key on the envelope `client` field:
+  /// - `.value`: key exists and decoded as `Client`.
+  /// - `.null`: key exists and is explicitly null (intentional clear signal).
+  /// - `.missing`: key absent or undecodable (no signal; do not clear by itself).
+  private enum ClientState {
+    case value(Client)
     case null
     case missing
-
-    static func decode<K: CodingKey>(
-      from container: KeyedDecodingContainer<K>,
-      forKey key: K
-    ) -> Self where T: Decodable {
-      guard container.contains(key) else { return .missing }
-      if (try? container.decodeNil(forKey: key)) == true { return .null }
-      if let value = try? container.decode(T.self, forKey: key) { return .value(value) }
-      return .missing
-    }
   }
 
   private struct ClientEnvelope: Decodable {
-    let response: Field<Client>
-    let client: Field<Client>
+    let responseClient: Client?
+    let clientState: ClientState
 
     enum CodingKeys: String, CodingKey {
       case response, client
@@ -53,33 +58,19 @@ struct ClerkClientSyncResponseMiddleware: ClerkAsyncResponseMiddleware {
 
     init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      response = .decode(from: container, forKey: .response)
-      client = .decode(from: container, forKey: .client)
-    }
-  }
+      responseClient = try? container.decode(Client.self, forKey: .response)
 
-  private func decodeClientSyncState(from jsonData: Data) -> ClientSyncState {
-    if let envelope = try? JSONDecoder.clerkDecoder.decode(ClientEnvelope.self, from: jsonData) {
-      // `/v1/client` can return a full client in `response` while `client` is null.
-      // Prioritize the concrete `response` value to avoid transient clears.
-      if case let .value(client) = envelope.response {
-        return .set(client)
+      guard container.contains(.client) else {
+        clientState = .missing
+        return
       }
 
-      switch envelope.client {
-      case let .value(client):
-        return .set(client)
-      case .null:
-        return .clear
-      case .missing:
-        break
+      do {
+        let client = try container.decodeIfPresent(Client.self, forKey: .client)
+        clientState = client.map(ClientState.value) ?? .null
+      } catch {
+        clientState = .missing
       }
     }
-
-    if let client = try? JSONDecoder.clerkDecoder.decode(Client.self, from: jsonData) {
-      return .set(client)
-    }
-
-    return .skip
   }
 }

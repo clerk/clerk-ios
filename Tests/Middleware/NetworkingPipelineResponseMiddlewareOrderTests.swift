@@ -26,7 +26,7 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
     let name: String
     let recorder: OrderRecorder
 
-    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) throws {
+    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {
       recorder.record(name)
     }
   }
