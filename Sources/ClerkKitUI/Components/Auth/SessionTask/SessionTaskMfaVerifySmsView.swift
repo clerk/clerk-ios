@@ -164,7 +164,7 @@ struct SessionTaskMfaVerifySmsView: View {
     if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
       navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
     } else {
-      navigation.handleSessionTaskCompletion(session: clerk.session)
+      navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .setupMfa)
     }
   }
 

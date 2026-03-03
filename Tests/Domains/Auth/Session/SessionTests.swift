@@ -36,6 +36,12 @@ struct SessionTests {
   }
 
   @Test
+  func taskKeyParsesResetPassword() {
+    let task = Session.Task(key: "reset-password")
+    #expect(task == .resetPassword)
+  }
+
+  @Test
   func taskKeyParsesUnknownTask() {
     let task = Session.Task(key: "another-task")
     #expect(task == .unknown("another-task"))
