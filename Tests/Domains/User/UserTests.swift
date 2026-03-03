@@ -94,21 +94,6 @@ struct UserTests {
     #expect(captured.value == "+1234567890")
   }
 
-  @Test
-  func createOrganizationUsesUserServiceCreateOrganization() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createOrganization: { name in
-      captured.setValue(name)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createOrganization(name: "My Org")
-
-    #expect(captured.value == "My Org")
-  }
-
   struct ExternalAccountScenario: Codable, Sendable, Equatable {
     let redirectUrl: String?
     let additionalScopes: [String]?

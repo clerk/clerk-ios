@@ -30,9 +30,6 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `createPhoneNumber(phoneNumber:)` method.
   package nonisolated(unsafe) var createPhoneNumberHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `createOrganization(name:)` method.
-  package nonisolated(unsafe) var createOrganizationHandler: ((String) async throws -> Organization)?
-
   /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:)` method.
   package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String]?) async throws -> ExternalAccount)?
 
@@ -86,7 +83,6 @@ package final class MockUserService: UserServiceProtocol {
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
   ///   - createEmailAddress: Optional implementation of the `createEmailAddress(emailAddress:)` method.
   ///   - createPhoneNumber: Optional implementation of the `createPhoneNumber(phoneNumber:)` method.
-  ///   - createOrganization: Optional implementation of the `createOrganization(name:)` method.
   ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:)` method.
   ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:)` method.
   ///   - createPasskey: Optional implementation of the `createPasskey()` method (iOS only).
@@ -121,7 +117,6 @@ package final class MockUserService: UserServiceProtocol {
     createBackupCodes: (() async throws -> BackupCodeResource)? = nil,
     createEmailAddress: ((String) async throws -> EmailAddress)? = nil,
     createPhoneNumber: ((String) async throws -> PhoneNumber)? = nil,
-    createOrganization: ((String) async throws -> Organization)? = nil,
     createExternalAccount: ((OAuthProvider, String?, [String]?) async throws -> ExternalAccount)? = nil,
     createExternalAccountToken: ((IDTokenProvider, String) async throws -> ExternalAccount)? = nil,
     createTotp: (() async throws -> TOTPResource)? = nil,
@@ -141,7 +136,6 @@ package final class MockUserService: UserServiceProtocol {
     createBackupCodesHandler = createBackupCodes
     createEmailAddressHandler = createEmailAddress
     createPhoneNumberHandler = createPhoneNumber
-    createOrganizationHandler = createOrganization
     createExternalAccountHandler = createExternalAccount
     createExternalAccountTokenHandler = createExternalAccountToken
     createTotpHandler = createTotp
@@ -201,14 +195,6 @@ package final class MockUserService: UserServiceProtocol {
   package func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
     if let handler = createPhoneNumberHandler {
       return try await handler(phoneNumber)
-    }
-    return .mock
-  }
-
-  @MainActor
-  package func createOrganization(name: String) async throws -> Organization {
-    if let handler = createOrganizationHandler {
-      return try await handler(name)
     }
     return .mock
   }
