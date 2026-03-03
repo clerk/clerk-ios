@@ -32,7 +32,7 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
   }
 
   @Test
-  func customResponseMiddlewareRunsFirst() throws {
+  func customResponseMiddlewareRunsFirst() async throws {
     let recorder = OrderRecorder()
     let builtIn = RecordingResponseMiddleware(name: "builtIn", recorder: recorder)
     let custom = RecordingResponseMiddleware(name: "custom", recorder: recorder)
@@ -50,7 +50,7 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
       headerFields: nil
     ))
 
-    try pipeline.validate(response, data: Data(), for: request)
+    try await pipeline.validate(response, data: Data(), for: request)
 
     #expect(recorder.snapshot() == ["custom", "builtIn"])
   }

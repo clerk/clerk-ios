@@ -5,45 +5,81 @@
 
 import Foundation
 
-struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) throws {
-    if let client = Self.decodeClient(from: data) {
-      Task { @MainActor in
-        Clerk.shared.clerkEventEmitter.send(.clientReceived(client: client))
+struct ClerkClientSyncResponseMiddleware: ClerkAsyncResponseMiddleware {
+  func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
+    switch decodeClientSyncState(from: data) {
+    case let .set(client):
+      await MainActor.run {
+        Clerk.shared.client = client
       }
+    case .clear:
+      await MainActor.run {
+        Clerk.shared.client = nil
+      }
+    case .skip:
+      break
     }
   }
 
-  private static func decodeClient(from jsonData: Data) -> Client? {
-    struct ClientWrapper: Decodable {
-      let client: Client?
+  private enum ClientSyncState {
+    case set(Client)
+    case clear
+    case skip
+  }
 
-      enum CodingKeys: String, CodingKey {
-        case response, client
+  private enum Field<T> {
+    case value(T)
+    case null
+    case missing
+
+    static func decode<K: CodingKey>(
+      from container: KeyedDecodingContainer<K>,
+      forKey key: K
+    ) -> Self where T: Decodable {
+      guard container.contains(key) else { return .missing }
+      if (try? container.decodeNil(forKey: key)) == true { return .null }
+      if let value = try? container.decode(T.self, forKey: key) { return .value(value) }
+      return .missing
+    }
+  }
+
+  private struct ClientEnvelope: Decodable {
+    let response: Field<Client>
+    let client: Field<Client>
+
+    enum CodingKeys: String, CodingKey {
+      case response, client
+    }
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      response = .decode(from: container, forKey: .response)
+      client = .decode(from: container, forKey: .client)
+    }
+  }
+
+  private func decodeClientSyncState(from jsonData: Data) -> ClientSyncState {
+    if let envelope = try? JSONDecoder.clerkDecoder.decode(ClientEnvelope.self, from: jsonData) {
+      // `/v1/client` can return a full client in `response` while `client` is null.
+      // Prioritize the concrete `response` value to avoid transient clears.
+      if case let .value(client) = envelope.response {
+        return .set(client)
       }
 
-      init(from decoder: Decoder) throws {
-        let container = try? decoder.container(keyedBy: CodingKeys.self)
-
-        if let responseClient = try? container?.decode(Client.self, forKey: .response) {
-          client = responseClient
-          return
-        }
-
-        if let clientClient = try? container?.decode(Client.self, forKey: .client) {
-          client = clientClient
-          return
-        }
-
-        if let topLevelClient = try? Client(from: decoder) {
-          client = topLevelClient
-          return
-        }
-
-        client = nil
+      switch envelope.client {
+      case let .value(client):
+        return .set(client)
+      case .null:
+        return .clear
+      case .missing:
+        break
       }
     }
 
-    return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
+    if let client = try? JSONDecoder.clerkDecoder.decode(Client.self, from: jsonData) {
+      return .set(client)
+    }
+
+    return .skip
   }
 }

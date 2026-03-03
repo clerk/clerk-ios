@@ -16,6 +16,14 @@ public protocol ClerkResponseMiddleware: Sendable {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws
 }
 
+/// Shared protocol for middleware that can asynchronously validate incoming responses.
+///
+/// Prefer this protocol for new middleware so response side effects can be awaited
+/// before the request returns.
+public protocol ClerkAsyncResponseMiddleware: Sendable {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws
+}
+
 /// Allows middleware to influence retry decisions.
 protocol NetworkRetryMiddleware: Sendable {
   func shouldRetry(
@@ -26,20 +34,44 @@ protocol NetworkRetryMiddleware: Sendable {
   ) async throws -> Bool
 }
 
+private struct ClerkResponseMiddlewareAdapter: ClerkAsyncResponseMiddleware {
+  private let middleware: any ClerkResponseMiddleware
+
+  init(_ middleware: any ClerkResponseMiddleware) {
+    self.middleware = middleware
+  }
+
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    try middleware.validate(response, data: data, for: request)
+  }
+}
+
 /// Describes the order of execution for networking middleware.
 struct NetworkingPipeline: Sendable {
   private let requestMiddleware: [any ClerkRequestMiddleware]
-  private let responseMiddleware: [any ClerkResponseMiddleware]
+  private let responseMiddleware: [any ClerkAsyncResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
     requestMiddleware: [any ClerkRequestMiddleware] = [],
-    responseMiddleware: [any ClerkResponseMiddleware] = [],
+    responseMiddleware: [any ClerkAsyncResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
     self.requestMiddleware = requestMiddleware
     self.responseMiddleware = responseMiddleware
     self.retryMiddleware = retryMiddleware
+  }
+
+  init(
+    requestMiddleware: [any ClerkRequestMiddleware] = [],
+    responseMiddleware: [any ClerkResponseMiddleware],
+    retryMiddleware: [any NetworkRetryMiddleware] = []
+  ) {
+    self.init(
+      requestMiddleware: requestMiddleware,
+      responseMiddleware: responseMiddleware.map(ClerkResponseMiddlewareAdapter.init),
+      retryMiddleware: retryMiddleware
+    )
   }
 
   func prepare(_ request: inout URLRequest) async throws {
@@ -48,9 +80,9 @@ struct NetworkingPipeline: Sendable {
     }
   }
 
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     for middleware in responseMiddleware {
-      try middleware.validate(response, data: data, for: request)
+      try await middleware.validate(response, data: data, for: request)
     }
   }
 
@@ -77,6 +109,14 @@ extension NetworkingPipeline {
   }
 
   func appendingResponseMiddleware(_ middleware: [any ClerkResponseMiddleware]) -> NetworkingPipeline {
+    NetworkingPipeline(
+      requestMiddleware: requestMiddleware,
+      responseMiddleware: middleware.map(ClerkResponseMiddlewareAdapter.init) + responseMiddleware,
+      retryMiddleware: retryMiddleware
+    )
+  }
+
+  func appendingAsyncResponseMiddleware(_ middleware: [any ClerkAsyncResponseMiddleware]) -> NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
       responseMiddleware: middleware + responseMiddleware,

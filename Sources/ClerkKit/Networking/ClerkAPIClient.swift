@@ -73,7 +73,7 @@ actor APIClient {
         }
 
         do {
-          try pipeline.validate(httpResponse, data: data, for: urlRequest)
+          try await pipeline.validate(httpResponse, data: data, for: urlRequest)
         } catch {
           if try await pipeline.shouldRetry(
             request: urlRequest,

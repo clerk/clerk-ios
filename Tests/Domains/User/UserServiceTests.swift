@@ -556,13 +556,13 @@ struct UserServiceTests {
   func testDelete() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
-    Clerk.shared.client = nil
+    Clerk.shared.client = .mock
     var authEvents = Clerk.shared.auth.events.makeAsyncIterator()
 
-    var mock = try Mock(
+    var mock = Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: nil)),
+        .delete: Data(#"{"response":{},"client":null}"#.utf8),
       ]
     )
 
@@ -574,11 +574,16 @@ struct UserServiceTests {
 
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
+    #expect(Clerk.shared.client == nil)
 
-    let event = try #require(await authEvents.next())
-    guard case .accountDeleted = event else {
-      Issue.record("Expected accountDeleted event, got \(event)")
-      return
+    var receivedAccountDeleted = false
+    for _ in 0 ..< 3 {
+      guard let event = await authEvents.next() else { break }
+      if case .accountDeleted = event {
+        receivedAccountDeleted = true
+        break
+      }
     }
+    #expect(receivedAccountDeleted)
   }
 }
