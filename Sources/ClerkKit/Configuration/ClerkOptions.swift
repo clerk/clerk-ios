@@ -55,14 +55,14 @@ extension Clerk {
       /// Middleware to run as the final step before sending a request.
       public let request: [any ClerkRequestMiddleware]
 
-      /// Response middleware to run immediately after receiving a response.
+      /// Middleware to run immediately after receiving a response.
       /// Custom response middleware runs before Clerk's built-in response middleware.
       public let response: [any ClerkResponseMiddleware]
 
       /// Initializes a ``MiddlewareConfig`` instance.
       /// - Parameters:
       ///   - request: Middleware to run as the final step before sending a request. Defaults to an empty array.
-      ///   - response: Response middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
+      ///   - response: Middleware to run immediately after receiving a response. Custom response middleware runs before Clerk's built-in response middleware. Defaults to an empty array.
       public init(
         request: [any ClerkRequestMiddleware] = [],
         response: [any ClerkResponseMiddleware] = []
