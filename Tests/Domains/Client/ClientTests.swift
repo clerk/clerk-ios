@@ -7,11 +7,12 @@ import Testing
 @Suite(.serialized)
 struct ClientTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   @Test
   func refreshClientUsesClientServiceGet() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
     Clerk.shared.client = nil
 
     let called = LockIsolated(false)
@@ -40,6 +41,7 @@ struct ClientTests {
 
   @Test
   func refreshClientDoesNotOverrideNewerClientSnapshot() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
     var currentClient = Client.mock
     currentClient.id = "current-client"
     currentClient.updatedAt = Date(timeIntervalSince1970: 300)
@@ -64,5 +66,66 @@ struct ClientTests {
     #expect(Clerk.shared.client?.updatedAt == currentClient.updatedAt)
     #expect(refreshedClient?.id == currentClient.id)
     #expect(refreshedClient?.updatedAt == currentClient.updatedAt)
+  }
+
+  @Test
+  func refreshClientNilResponseClearsState() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = .mock
+
+    let service = MockClientService()
+    service.getResponseHandler = {
+      ClientServiceResponse(
+        client: nil,
+        requestSequence: 10
+      )
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    let refreshedClient = try await Clerk.shared.refreshClient()
+
+    #expect(refreshedClient == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func refreshClientIgnoresStaleNilResponse() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+
+    let service = MockClientService()
+    var calls = 0
+    service.getResponseHandler = {
+      calls += 1
+      if calls == 1 {
+        var client = Client.mock
+        client.id = "fresh-client"
+        client.updatedAt = Date(timeIntervalSince1970: 300)
+        return ClientServiceResponse(
+          client: client,
+          requestSequence: 2
+        )
+      }
+
+      return ClientServiceResponse(
+        client: nil,
+        requestSequence: 1
+      )
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    _ = try await Clerk.shared.refreshClient()
+    let refreshedClient = try await Clerk.shared.refreshClient()
+
+    let currentClient = try #require(Clerk.shared.client)
+    #expect(currentClient.id == "fresh-client")
+    #expect(refreshedClient?.id == "fresh-client")
   }
 }

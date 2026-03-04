@@ -15,6 +15,7 @@ struct SessionServiceTests {
   func signOut() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
+    Clerk.shared.client = .mock
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -31,13 +32,17 @@ struct SessionServiceTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
     #expect(requestHandled.value)
+    #expect(Clerk.shared.client == nil)
   }
 
   @Test
   func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
-    let requestHandled = LockIsolated(false)
+    let removeRequestHandled = LockIsolated(false)
+    let refreshRequestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
+    let refreshURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
+    Clerk.shared.client = .mock
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -48,12 +53,27 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
-      requestHandled.setValue(true)
+      removeRequestHandled.setValue(true)
     }
     mock.register()
 
+    var refreshMock = try Mock(
+      url: refreshURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
+      ]
+    )
+
+    refreshMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      refreshRequestHandled.setValue(true)
+    }
+    refreshMock.register()
+
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
-    #expect(requestHandled.value)
+    #expect(removeRequestHandled.value)
+    #expect(refreshRequestHandled.value)
+    #expect(Clerk.shared.client?.id == Client.mock.id)
   }
 
   @Test

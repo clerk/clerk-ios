@@ -128,6 +128,9 @@ public final class Clerk {
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
+  /// Latest accepted sequence for client updates that originated from network responses.
+  private var latestClientResponseSequence: UInt64 = 0
+
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
@@ -286,10 +289,24 @@ extension Clerk {
   }
 
   /// Refreshes the current client from the API.
+  ///
+  /// Returns the in-memory client after merge/clear policy is applied. This may
+  /// differ from the raw API payload when a response is rejected as stale or
+  /// blocked by sequence ordering.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    let fetchedClient = try await dependencies.clientService.get()
-    mergeClientFromResponse(fetchedClient)
+    let response = try await dependencies.clientService.getResponse()
+
+    if let client = response.client {
+      mergeClientFromResponse(client, responseSequence: response.requestSequence)
+    } else {
+      await applyAuthoritativeClear(
+        responseSequence: response.requestSequence,
+        flush: false,
+        requiresOrderingProof: true
+      )
+    }
+
     return client
   }
 
@@ -305,11 +322,43 @@ extension Clerk {
   ///
   /// Uses `updatedAt` to avoid regressing to stale client snapshots when
   /// multiple requests complete out of order.
-  func mergeClientFromResponse(_ incomingClient: Client?) {
-    guard shouldApplyClientFromResponse(incomingClient) else {
+  func mergeClientFromResponse(_ incomingClient: Client, responseSequence: UInt64? = nil) {
+    guard shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence) else {
       return
     }
+
+    if let responseSequence {
+      latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
+    }
+
     client = incomingClient
+  }
+
+  /// Applies an authoritative client clear.
+  ///
+  /// This method is reserved for flows that definitively invalidate client state
+  /// (for example full sign-out, account deletion, or an authoritative `/v1/client`
+  /// response of `null`).
+  func applyAuthoritativeClear(
+    responseSequence: UInt64? = nil,
+    flush: Bool = false,
+    requiresOrderingProof: Bool = false
+  ) async {
+    if requiresOrderingProof,
+       !shouldApplyAuthoritativeClear(responseSequence: responseSequence)
+    {
+      return
+    }
+
+    if let responseSequence {
+      latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
+    }
+
+    client = nil
+
+    if flush {
+      await flushClientPersistence()
+    }
   }
 
   /// Waits for the latest client cache mutation to persist to keychain.
@@ -320,9 +369,19 @@ extension Clerk {
     await cacheManager?.flushClientPersistence()
   }
 
-  private func shouldApplyClientFromResponse(_ incomingClient: Client?) -> Bool {
-    guard let incomingClient else {
-      return true
+  /// Resets response-sequence ordering state.
+  ///
+  /// Intended only for controlled lifecycle resets (for example test setup and
+  /// runtime reconfigure flows). Do not call from normal auth flows.
+  func resetClientResponseSequenceTracking() {
+    latestClientResponseSequence = 0
+  }
+
+  private func shouldApplyClientFromResponse(_ incomingClient: Client, responseSequence: UInt64?) -> Bool {
+    if let responseSequence,
+       responseSequence <= latestClientResponseSequence
+    {
+      return false
     }
 
     guard let currentClient = client else {
@@ -330,6 +389,14 @@ extension Clerk {
     }
 
     return incomingClient.updatedAt >= currentClient.updatedAt
+  }
+
+  private func shouldApplyAuthoritativeClear(responseSequence: UInt64?) -> Bool {
+    guard let responseSequence else {
+      return false
+    }
+
+    return responseSequence > latestClientResponseSequence
   }
 
   private func applyClientObservers(previousClient: Client?, currentClient: Client?) {

@@ -6,8 +6,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkClientSyncResponseMiddlewareTests {
+  @MainActor
+  private static var requestSequence: UInt64 = 0
+
   init() {
     configureClerkForTesting()
+    Clerk.shared.resetClientResponseSequenceTracking()
   }
 
   @Test
@@ -32,10 +36,10 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
-  func explicitNullClientClearsState() async throws {
+  func explicitNullClientDoesNotClearState() async throws {
     try await withMainSerialExecutor {
-      var stateCleared = false
-      for _ in 0 ..< 3 where !stateCleared {
+      var statePreserved = false
+      for _ in 0 ..< 3 where !statePreserved {
         Clerk.shared.client = .mock
 
         let middleware = ClerkClientSyncResponseMiddleware()
@@ -43,10 +47,10 @@ struct ClerkClientSyncResponseMiddlewareTests {
         let payload = Data(#"{"response":{},"client":null}"#.utf8)
 
         try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-        stateCleared = Clerk.shared.client == nil
+        statePreserved = Clerk.shared.client?.id == Client.mock.id
       }
 
-      #expect(stateCleared)
+      #expect(statePreserved)
     }
   }
 
@@ -93,11 +97,54 @@ struct ClerkClientSyncResponseMiddlewareTests {
     }
   }
 
-  private func clientRequestResponseFixture(path: String) throws
+  @Test
+  func olderNullSnapshotDoesNotClearNewerState() async throws {
+    try await withMainSerialExecutor {
+      var currentClient = Client.mock
+      currentClient.updatedAt = Date(timeIntervalSince1970: 300)
+      currentClient.lastActiveSessionId = "current-session"
+      Clerk.shared.client = currentClient
+
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let staleFixture = try clientRequestResponseFixture(
+        path: "/v1/me",
+        requestSequence: 1
+      )
+      let staleClearPayload = Data(#"{"response":{},"client":null}"#.utf8)
+
+      let freshFixture = try clientRequestResponseFixture(
+        path: "/v1/me",
+        requestSequence: 2
+      )
+      var newerClient = Client.mock
+      newerClient.updatedAt = Date(timeIntervalSince1970: 400)
+      newerClient.lastActiveSessionId = "newer-session"
+      let newerPayload = try JSONEncoder.clerkEncoder.encode(newerClient)
+
+      try await middleware.validate(freshFixture.response, data: newerPayload, for: freshFixture.request)
+      try await middleware.validate(staleFixture.response, data: staleClearPayload, for: staleFixture.request)
+
+      let resultingClient = try #require(Clerk.shared.client)
+      #expect(resultingClient.updatedAt == newerClient.updatedAt)
+      #expect(resultingClient.lastActiveSessionId == newerClient.lastActiveSessionId)
+    }
+  }
+
+  @MainActor
+  private static func nextRequestSequence() -> UInt64 {
+    requestSequence &+= 1
+    return requestSequence
+  }
+
+  private func clientRequestResponseFixture(
+    path: String,
+    requestSequence: UInt64? = nil
+  ) throws
     -> (request: URLRequest, response: HTTPURLResponse)
   {
     let requestURL = try #require(URL(string: "https://example.com\(path)"))
-    let request = URLRequest(url: requestURL)
+    var request = URLRequest(url: requestURL)
+    request.setRequestSequence(requestSequence ?? Self.nextRequestSequence())
     let response = try #require(HTTPURLResponse(
       url: requestURL,
       statusCode: 200,

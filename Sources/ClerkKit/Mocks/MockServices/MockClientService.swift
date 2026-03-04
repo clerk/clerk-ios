@@ -12,11 +12,15 @@ import Foundation
 /// Allows customizing the behavior of `clerk.refreshClient()` through a handler closure.
 /// Returns default mock values if handler is not provided.
 package final class MockClientService: ClientServiceProtocol {
+  @MainActor
+  private var responseSequence: UInt64 = 0
+
   /// Custom handler for the `get()` method used by `clerk.refreshClient()`.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.
   package nonisolated(unsafe) var getHandler: (() async throws -> Client?)?
+  package nonisolated(unsafe) var getResponseHandler: (() async throws -> ClientServiceResponse)?
 
   /// Creates a new mock client service with an optional implementation of the `get()` method.
   ///
@@ -35,9 +39,28 @@ package final class MockClientService: ClientServiceProtocol {
 
   @MainActor
   package func get() async throws -> Client? {
-    if let handler = getHandler {
+    let response = try await getResponse()
+    return response.client
+  }
+
+  @MainActor
+  package func getResponse() async throws -> ClientServiceResponse {
+    if let handler = getResponseHandler {
       return try await handler()
     }
-    return .mock
+
+    let client: Client? = if let handler = getHandler {
+      try await handler()
+    } else {
+      .mock
+    }
+
+    responseSequence &+= 1
+    let requestSequence = responseSequence
+
+    return ClientServiceResponse(
+      client: client,
+      requestSequence: requestSequence
+    )
   }
 }

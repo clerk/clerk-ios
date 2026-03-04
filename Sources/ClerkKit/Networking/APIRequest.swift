@@ -167,4 +167,5 @@ enum RequestError: Error {
 /// Wraps a decoded response value from the API client.
 struct APIResponse<Value: Sendable> {
   let value: Value
+  let requestSequence: UInt64
 }

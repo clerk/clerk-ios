@@ -52,13 +52,21 @@ final class SessionService: SessionServiceProtocol {
       )
 
       try await apiClient.send(request)
+      let refreshedClient = try await Clerk.shared.refreshClient()
+      if refreshedClient == nil {
+        await Clerk.shared.flushClientPersistence()
+      }
     } else {
       let request = Request<EmptyResponse>(
         path: "/v1/client/sessions",
         method: .delete
       )
 
-      try await apiClient.send(request)
+      let response = try await apiClient.send(request)
+      await Clerk.shared.applyAuthoritativeClear(
+        responseSequence: response.requestSequence,
+        flush: true
+      )
     }
   }
 

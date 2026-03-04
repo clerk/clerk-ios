@@ -18,6 +18,7 @@ func configureClerkForTesting() {
   Clerk.shared.cleanupManagers()
   Clerk.shared.client = nil
   Clerk.shared.environment = nil
+  Clerk.shared.resetClientResponseSequenceTracking()
 
   // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()

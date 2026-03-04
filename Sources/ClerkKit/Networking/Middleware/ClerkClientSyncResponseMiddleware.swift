@@ -6,40 +6,40 @@
 import Foundation
 
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
+  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     if let envelope = try? JSONDecoder.clerkDecoder.decode(ClientPayload.self, from: data) {
       // `/v1/client` can return a full client in `response` while `client` is null.
       // Prioritize the concrete `response` value to avoid transient clears.
       if let responseClient = envelope.responseClient {
-        await setClient(responseClient)
+        await setClient(responseClient, responseSequence: request.requestSequence)
         return
       }
 
       switch envelope.clientState {
-      case let .value(client):
-        await setClient(client)
+      case let .value(client?):
+        await setClient(client, responseSequence: request.requestSequence)
         return
       case .missing:
+        break
+      case .value(nil):
         break
       }
     }
 
     if let client = try? JSONDecoder.clerkDecoder.decode(Client.self, from: data) {
-      await setClient(client)
+      await setClient(client, responseSequence: request.requestSequence)
       return
     }
   }
 
   @MainActor
-  private func setClient(_ client: Client?) async {
-    Clerk.shared.mergeClientFromResponse(client)
-    guard client == nil else { return }
-    await Clerk.shared.flushClientPersistence()
+  private func setClient(_ client: Client, responseSequence: UInt64?) {
+    Clerk.shared.mergeClientFromResponse(client, responseSequence: responseSequence)
   }
 
   /// Distinguishes explicit null from an absent key on the envelope `client` field:
-  /// - `.value`: key exists and decoded as `Client?` (`nil` means explicit clear signal).
-  /// - `.missing`: key absent or undecodable (no signal; do not clear by itself).
+  /// - `.value`: key exists and decoded as `Client?` (`nil` is intentionally ignored here).
+  /// - `.missing`: key absent or undecodable (no signal).
   private enum ClientState {
     case value(Client?)
     case missing

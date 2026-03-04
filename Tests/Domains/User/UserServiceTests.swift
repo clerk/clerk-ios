@@ -574,6 +574,7 @@ struct UserServiceTests {
 
       _ = try await Clerk.shared.dependencies.userService.delete()
       #expect(requestHandled.value)
+      #expect(Clerk.shared.client == nil)
     }
   }
 }
