@@ -572,8 +572,32 @@ struct UserServiceTests {
       }
       mock.register()
 
-      _ = try await Clerk.shared.dependencies.userService.delete()
+      var accountDeletedEmitted = false
+      for _ in 0 ..< 3 where !accountDeletedEmitted {
+        let accountDeletedEventTask = Task { @MainActor in
+          for await event in Clerk.shared.auth.events {
+            if case .accountDeleted = event {
+              return true
+            }
+          }
+          return false
+        }
+
+        _ = try await Clerk.shared.dependencies.userService.delete()
+        accountDeletedEmitted = await withTaskGroup(of: Bool.self) { group in
+          group.addTask { await accountDeletedEventTask.value }
+          group.addTask {
+            try? await Task.sleep(for: .milliseconds(500))
+            return false
+          }
+          defer { group.cancelAll() }
+          return await group.next() ?? false
+        }
+        accountDeletedEventTask.cancel()
+      }
+
       #expect(requestHandled.value)
+      #expect(accountDeletedEmitted)
     }
   }
 }

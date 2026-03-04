@@ -16,6 +16,8 @@ func configureClerkForTesting() {
   // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
   Clerk.shared.cleanupManagers()
+  Clerk.shared.client = nil
+  Clerk.shared.environment = nil
 
   // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()

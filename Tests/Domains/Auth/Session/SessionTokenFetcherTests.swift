@@ -62,7 +62,21 @@ struct SessionTokenFetcherTests {
         sessionService: service
       )
 
-      var events = Clerk.shared.auth.events.makeAsyncIterator()
+      let tokenEventTask = Task<String?, Never> { @MainActor in
+        var events = Clerk.shared.auth.events.makeAsyncIterator()
+        for _ in 0 ..< 1200 {
+          guard let event = await events.next() else {
+            events = Clerk.shared.auth.events.makeAsyncIterator()
+            continue
+          }
+
+          if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
+            return token
+          }
+        }
+        return nil
+      }
+      defer { tokenEventTask.cancel() }
 
       var refreshedToken: String?
       for _ in 0 ..< 3 where refreshedToken == nil {
@@ -71,17 +85,14 @@ struct SessionTokenFetcherTests {
           options: .init(skipCache: true)
         )
 
-        for _ in 0 ..< 400 {
-          if let event = await events.next() {
-            if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
-              refreshedToken = token
-              break
-            }
-            continue
+        refreshedToken = await withTaskGroup(of: String?.self) { group in
+          group.addTask { await tokenEventTask.value }
+          group.addTask {
+            try? await Task.sleep(for: .milliseconds(300))
+            return nil
           }
-
-          // Reconfiguration can finish the stream; reattach and continue waiting.
-          events = Clerk.shared.auth.events.makeAsyncIterator()
+          defer { group.cancelAll() }
+          return await group.next() ?? nil
         }
       }
       #expect(refreshedToken == tokenResource.jwt)
