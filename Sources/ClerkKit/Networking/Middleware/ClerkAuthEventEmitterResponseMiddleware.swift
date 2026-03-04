@@ -12,16 +12,16 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
   }
 
   private func authEvent(from data: Data) -> AuthEvent? {
-    if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,
-       signIn.status == .complete
-    {
-      return .signInCompleted(signIn: signIn)
-    }
-
     if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,
        signUp.status == .complete
     {
       return .signUpCompleted(signUp: signUp)
+    }
+
+    if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,
+       signIn.status == .complete
+    {
+      return .signInCompleted(signIn: signIn)
     }
 
     if let session = try? JSONDecoder.clerkDecoder.decode(ClientResponse<Session>.self, from: data).response,
