@@ -24,54 +24,60 @@ struct SessionTokenFetcherTests {
   func fetchTokenUsesSessionServiceFetchToken(
     scenario: FetchTokenScenario
   ) async throws {
-    let session = Session.mock
-    let captured = LockIsolated<(sessionId: String, template: String?)?>(nil)
-    let service = MockSessionService(fetchToken: { sessionId, template in
-      captured.setValue((sessionId: sessionId, template: template))
-      return .mock
-    })
+    try await withMainSerialExecutor {
+      let session = Session.mock
+      let captured = LockIsolated<(sessionId: String, template: String?)?>(nil)
+      let service = MockSessionService(fetchToken: { sessionId, template in
+        captured.setValue((sessionId: sessionId, template: template))
+        return .mock
+      })
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
-    )
+      Clerk.shared.dependencies = MockDependencyContainer(
+        apiClient: createMockAPIClient(),
+        sessionService: service
+      )
 
-    _ = try await SessionTokenFetcher.shared.fetchToken(
-      session,
-      options: .init(template: scenario.template, skipCache: true)
-    )
+      _ = try await SessionTokenFetcher.shared.fetchToken(
+        session,
+        options: .init(template: scenario.template, skipCache: true)
+      )
 
-    let values = try #require(captured.value)
-    #expect(values.sessionId == session.id)
-    #expect(values.template == scenario.template)
+      let values = try #require(captured.value)
+      #expect(values.sessionId == session.id)
+      #expect(values.template == scenario.template)
+    }
   }
 
   @Test
   func fetchTokenEmitsTokenRefreshedEvent() async throws {
-    let session = Session.mock
-    let tokenResource = TokenResource(jwt: "jwt_123")
-    let service = MockSessionService(fetchToken: { _, _ in
-      tokenResource
-    })
+    try await withMainSerialExecutor {
+      let session = Session.mock
+      let tokenResource = TokenResource(jwt: "jwt_123")
+      let service = MockSessionService(fetchToken: { _, _ in
+        tokenResource
+      })
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
-    )
+      Clerk.shared.dependencies = MockDependencyContainer(
+        apiClient: createMockAPIClient(),
+        sessionService: service
+      )
 
-    var events = Clerk.shared.auth.events.makeAsyncIterator()
+      var events = Clerk.shared.auth.events.makeAsyncIterator()
 
-    _ = try await SessionTokenFetcher.shared.fetchToken(
-      session,
-      options: .init(skipCache: true)
-    )
+      _ = try await SessionTokenFetcher.shared.fetchToken(
+        session,
+        options: .init(skipCache: true)
+      )
 
-    let event = try #require(await events.next())
-    switch event {
-    case .tokenRefreshed(let token):
-      #expect(token == tokenResource.jwt)
-    default:
-      #expect(Bool(false))
+      var refreshedToken: String?
+      for _ in 0 ..< 200 {
+        guard let event = await events.next() else { break }
+        if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
+          refreshedToken = token
+          break
+        }
+      }
+      #expect(refreshedToken == tokenResource.jwt)
     }
   }
 }

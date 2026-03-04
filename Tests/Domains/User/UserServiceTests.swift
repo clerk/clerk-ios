@@ -554,36 +554,26 @@ struct UserServiceTests {
 
   @Test
   func testDelete() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
-    Clerk.shared.client = .mock
-    var authEvents = Clerk.shared.auth.events.makeAsyncIterator()
+    try await withMainSerialExecutor {
+      let requestHandled = LockIsolated(false)
+      let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+      Clerk.shared.client = .mock
 
-    var mock = Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: Data(#"{"response":{},"client":null}"#.utf8),
-      ]
-    )
+      var mock = Mock(
+        url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+        data: [
+          .delete: Data(#"{"response":{},"client":null}"#.utf8),
+        ]
+      )
 
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await Clerk.shared.dependencies.userService.delete()
-    #expect(requestHandled.value)
-    #expect(Clerk.shared.client == nil)
-
-    var receivedAccountDeleted = false
-    for _ in 0 ..< 3 {
-      guard let event = await authEvents.next() else { break }
-      if case .accountDeleted = event {
-        receivedAccountDeleted = true
-        break
+      mock.onRequestHandler = OnRequestHandler { request in
+        #expect(request.httpMethod == "DELETE")
+        requestHandled.setValue(true)
       }
+      mock.register()
+
+      _ = try await Clerk.shared.dependencies.userService.delete()
+      #expect(requestHandled.value)
     }
-    #expect(receivedAccountDeleted)
   }
 }

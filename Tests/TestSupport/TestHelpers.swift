@@ -15,6 +15,7 @@ let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 func configureClerkForTesting() {
   // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
+  Clerk.shared.cleanupManagers()
 
   // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()
