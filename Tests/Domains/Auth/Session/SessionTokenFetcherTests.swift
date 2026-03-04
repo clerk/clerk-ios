@@ -11,7 +11,7 @@ struct SessionTokenFetcherTests {
     Clerk.shared.cleanupManagers()
   }
 
-  struct FetchTokenScenario: Codable, Sendable, Equatable {
+  struct FetchTokenScenario: Codable, Equatable {
     let template: String?
   }
 

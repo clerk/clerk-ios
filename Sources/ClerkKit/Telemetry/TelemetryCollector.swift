@@ -47,7 +47,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     let reason: String
   }
 
-  private struct Config: Sendable {
+  private struct Config {
     var samplingRate: Double
     var maxBufferSize: Int
     var endpoint: URL
@@ -56,7 +56,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     var flushInterval: TimeInterval
   }
 
-  private struct Metadata: Sendable {
+  private struct Metadata {
     var sdk: String
     var sdkVersion: String
   }

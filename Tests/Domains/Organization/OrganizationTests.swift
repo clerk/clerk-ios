@@ -17,20 +17,20 @@ struct OrganizationTests {
     )
   }
 
-  struct MembershipsScenario: Codable, Sendable, Equatable {
+  struct MembershipsScenario: Codable, Equatable {
     let query: String?
     let role: [String]?
   }
 
-  struct InvitationsScenario: Codable, Sendable, Equatable {
+  struct InvitationsScenario: Codable, Equatable {
     let status: String?
   }
 
-  struct DomainsScenario: Codable, Sendable, Equatable {
+  struct DomainsScenario: Codable, Equatable {
     let enrollmentMode: String?
   }
 
-  struct MembershipRequestsScenario: Codable, Sendable, Equatable {
+  struct MembershipRequestsScenario: Codable, Equatable {
     let status: String?
   }
 

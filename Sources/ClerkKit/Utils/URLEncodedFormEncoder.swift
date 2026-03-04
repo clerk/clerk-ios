@@ -297,7 +297,7 @@ final class URLEncodedFormEncoder {
   ///
   /// This encoding affects how the `parent`, `child`, `grandchild` path is encoded. Brackets are used by default.
   /// e.g. `parent[child][grandchild]=value`.
-  struct KeyPathEncoding: Sendable {
+  struct KeyPathEncoding {
     /// Encodes key paths by wrapping each component in brackets. e.g. `parent[child][grandchild]`.
     static let brackets = KeyPathEncoding { "[\($0)]" }
     /// Encodes key paths by separating each component with dots. e.g. `parent.child.grandchild`.
@@ -318,7 +318,7 @@ final class URLEncodedFormEncoder {
   }
 
   /// Encoding to use for `nil` values.
-  struct NilEncoding: Sendable {
+  struct NilEncoding {
     /// Encodes `nil` by dropping the entire key / value pair.
     static let dropKey = NilEncoding { nil }
     /// Encodes `nil` by dropping only the value. e.g. `value1=one&nilValue=&value2=two`.
