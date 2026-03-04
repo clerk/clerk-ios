@@ -62,37 +62,41 @@ struct SessionTokenFetcherTests {
         sessionService: service
       )
 
-      var refreshedToken: String?
-      for _ in 0 ..< 3 where refreshedToken == nil {
-        let tokenEventTask = Task<String?, Never> { @MainActor in
-          var events = Clerk.shared.auth.events.makeAsyncIterator()
-          for _ in 0 ..< 200 {
-            guard let event = await events.next() else { break }
-            if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
-              return token
-            }
-          }
-          return nil
-        }
-
-        _ = try await SessionTokenFetcher.shared.fetchToken(
-          session,
-          options: .init(skipCache: true)
-        )
-
-        refreshedToken = await withTaskGroup(of: String?.self) { group in
-          group.addTask { await tokenEventTask.value }
-          group.addTask {
-            try? await Task.sleep(for: .milliseconds(300))
-            return nil
-          }
-          defer { group.cancelAll() }
-          return await group.next() ?? nil
-        }
-
-        tokenEventTask.cancel()
+      let eventStream = Clerk.shared.auth.events
+      let tokenEventTask = Task<AuthEvent?, Never> {
+        var events = eventStream.makeAsyncIterator()
+        return await events.next()
       }
-      #expect(refreshedToken == tokenResource.jwt)
+
+      _ = try await SessionTokenFetcher.shared.fetchToken(
+        session,
+        options: .init(skipCache: true)
+      )
+
+      let event = await waitForAuthEvent(tokenEventTask)
+      tokenEventTask.cancel()
+
+      let emittedEvent = try #require(event)
+      switch emittedEvent {
+      case .tokenRefreshed(let token):
+        #expect(token == tokenResource.jwt)
+      default:
+        Issue.record("Expected .tokenRefreshed event after fetching a new token.")
+      }
+    }
+  }
+
+  private func waitForAuthEvent(_ eventTask: Task<AuthEvent?, Never>) async -> AuthEvent? {
+    await withTaskGroup(of: AuthEvent?.self) { group in
+      group.addTask {
+        await eventTask.value
+      }
+      group.addTask {
+        try? await Task.sleep(for: .seconds(1))
+        return nil
+      }
+      defer { group.cancelAll() }
+      return await group.next() ?? nil
     }
   }
 }
