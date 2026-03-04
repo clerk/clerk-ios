@@ -22,10 +22,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         ClientResponse<SignUp>(response: signUp, client: nil)
       )
 
-      let eventTask = Task<AuthEvent?, Never> { @MainActor in
-        var events = Clerk.shared.auth.events.makeAsyncIterator()
-        return await events.next()
-      }
+      let eventTask = await startAuthEventListenerTask()
 
       try await middleware.validate(fixture.response, data: payload, for: fixture.request)
       let event = await waitForAuthEvent(eventTask)
@@ -53,10 +50,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         ClientResponse<SignIn>(response: signIn, client: nil)
       )
 
-      let eventTask = Task<AuthEvent?, Never> { @MainActor in
-        var events = Clerk.shared.auth.events.makeAsyncIterator()
-        return await events.next()
-      }
+      let eventTask = await startAuthEventListenerTask()
 
       try await middleware.validate(fixture.response, data: payload, for: fixture.request)
       let event = await waitForAuthEvent(eventTask)
@@ -84,6 +78,25 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
       defer { group.cancelAll() }
       return await group.next() ?? nil
     }
+  }
+
+  @MainActor
+  private func startAuthEventListenerTask() async -> Task<AuthEvent?, Never> {
+    var task: Task<AuthEvent?, Never>?
+
+    await withCheckedContinuation { (ready: CheckedContinuation<Void, Never>) in
+      task = Task { @MainActor in
+        var events = Clerk.shared.auth.events.makeAsyncIterator()
+        ready.resume()
+        return await events.next()
+      }
+    }
+
+    guard let task else {
+      fatalError("Failed to start auth event listener task.")
+    }
+
+    return task
   }
 
   private func requestResponseFixture(path: String) throws -> (request: URLRequest, response: HTTPURLResponse) {

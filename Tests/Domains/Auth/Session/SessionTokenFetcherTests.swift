@@ -62,23 +62,7 @@ struct SessionTokenFetcherTests {
         sessionService: service
       )
 
-      let listenerReady = LockIsolated(false)
-      let tokenEventTask = Task<String?, Never> { @MainActor in
-        var events = Clerk.shared.auth.events.makeAsyncIterator()
-        listenerReady.setValue(true)
-
-        while let event = await events.next() {
-          if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
-            return token
-          }
-        }
-
-        return nil
-      }
-
-      while listenerReady.value == false {
-        await Task.yield()
-      }
+      let tokenEventTask = await startTokenRefreshedListenerTask(expectedToken: tokenResource.jwt)
 
       _ = try await SessionTokenFetcher.shared.fetchToken(
         session,
@@ -103,5 +87,31 @@ struct SessionTokenFetcherTests {
       defer { group.cancelAll() }
       return await group.next() ?? nil
     }
+  }
+
+  @MainActor
+  private func startTokenRefreshedListenerTask(expectedToken: String) async -> Task<String?, Never> {
+    var task: Task<String?, Never>?
+
+    await withCheckedContinuation { (ready: CheckedContinuation<Void, Never>) in
+      task = Task { @MainActor in
+        var events = Clerk.shared.auth.events.makeAsyncIterator()
+        ready.resume()
+
+        while let event = await events.next() {
+          if case .tokenRefreshed(let token) = event, token == expectedToken {
+            return token
+          }
+        }
+
+        return nil
+      }
+    }
+
+    guard let task else {
+      fatalError("Failed to start token refreshed listener task.")
+    }
+
+    return task
   }
 }
