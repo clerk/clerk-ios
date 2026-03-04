@@ -13,7 +13,10 @@ enum ClerkEvent {
   /// The device token was received from the API.
   case deviceTokenReceived(token: String)
   /// The client was received from the API.
-  case clientReceived(client: Client)
+  ///
+  /// `requestSequence` is an optional monotonic ordering token that can be
+  /// used to reject stale snapshots.
+  case clientReceived(client: Client, requestSequence: UInt64?)
   /// The environment was received from the API.
   case environmentReceived(environment: Clerk.Environment)
 }

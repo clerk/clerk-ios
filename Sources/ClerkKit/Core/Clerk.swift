@@ -509,8 +509,8 @@ extension Clerk {
 
           watchConnectivityCoordinator?.sync()
 
-        case .clientReceived(let client):
-          mergeClientFromResponse(client)
+        case .clientReceived(let client, let requestSequence):
+          mergeClientFromResponse(client, responseSequence: requestSequence)
 
         case .environmentReceived(let environment):
           self.environment = environment
