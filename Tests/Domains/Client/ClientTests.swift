@@ -12,6 +12,8 @@ struct ClientTests {
 
   @Test
   func refreshClientUsesClientServiceGet() async throws {
+    Clerk.shared.client = nil
+
     let called = LockIsolated(false)
     let expectedClient = Client(
       id: "refresh-client-test",

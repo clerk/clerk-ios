@@ -135,7 +135,7 @@ check: format-check lint
 # Run unit tests
 test:
 	@echo "Running unit tests..."
-	swift test --skip Integration
+	swift test --no-parallel --skip Integration
 	@echo "✅ Unit tests completed!"
 
 # Run only integration tests
