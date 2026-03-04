@@ -69,6 +69,30 @@ struct ClerkClientSyncResponseMiddlewareTests {
     }
   }
 
+  @Test
+  func olderClientSnapshotDoesNotOverrideNewerState() async throws {
+    try await withMainSerialExecutor {
+      var newerClient = Client.mock
+      newerClient.updatedAt = Date(timeIntervalSince1970: 200)
+      newerClient.lastActiveSessionId = "newer-session"
+      Clerk.shared.client = newerClient
+
+      var olderClient = Client.mock
+      olderClient.updatedAt = Date(timeIntervalSince1970: 100)
+      olderClient.lastActiveSessionId = "older-session"
+
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/me")
+      let payload = try JSONEncoder.clerkEncoder.encode(olderClient)
+
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+
+      let currentClient = try #require(Clerk.shared.client)
+      #expect(currentClient.updatedAt == newerClient.updatedAt)
+      #expect(currentClient.lastActiveSessionId == newerClient.lastActiveSessionId)
+    }
+  }
+
   private func clientRequestResponseFixture(path: String) throws
     -> (request: URLRequest, response: HTTPURLResponse)
   {

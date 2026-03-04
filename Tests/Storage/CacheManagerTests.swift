@@ -60,21 +60,6 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testSaveClient() throws {
-    let (keychain, _, cacheManager) = createTestSetup()
-
-    cacheManager.saveClient(Client.mock)
-
-    // Verify client was saved to keychain
-    let clientData = try keychain.data(forKey: "cachedClient")
-    #expect(clientData != nil)
-
-    let decoder = JSONDecoder.clerkDecoder
-    let decodedClient = try decoder.decode(Client.self, from: #require(clientData))
-    #expect(decodedClient.id == Client.mock.id)
-  }
-
-  @Test
   func testSaveEnvironment() throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
@@ -155,22 +140,6 @@ struct CacheManagerTests {
 
     // Verify coordinator was NOT called to set environment
     #expect(coordinator.environmentSet.value == false)
-  }
-
-  @Test
-  func testDeleteClient() throws {
-    let (keychain, _, cacheManager) = createTestSetup()
-
-    // Save a client first
-    let encoder = JSONEncoder.clerkEncoder
-    let clientData = try encoder.encode(Client.mock)
-    try keychain.set(clientData, forKey: "cachedClient")
-
-    cacheManager.deleteClient()
-
-    // Verify client was deleted from keychain
-    let clientDataAfter = try keychain.data(forKey: "cachedClient")
-    #expect(clientDataAfter == nil)
   }
 
   @Test

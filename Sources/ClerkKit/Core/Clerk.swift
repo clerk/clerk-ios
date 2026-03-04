@@ -41,20 +41,7 @@ public final class Clerk {
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
-      // Emit session change event if the session changed
-      if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
-        auth.send(.sessionChanged(oldValue: oldValue?.currentSession, newValue: client?.currentSession))
-      }
-
-      if let client {
-        cacheManager?.saveClient(client)
-        dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
-      } else {
-        cacheManager?.deleteClient()
-      }
-
-      // Sync to watch app if enabled (sync both when client is set and when it's cleared)
-      watchConnectivityCoordinator?.sync()
+      applyClientObservers(previousClient: oldValue, currentClient: client)
     }
   }
 
@@ -301,8 +288,8 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    let client = try await dependencies.clientService.get()
-    self.client = client
+    let fetchedClient = try await dependencies.clientService.get()
+    mergeClientFromResponse(fetchedClient)
     return client
   }
 
@@ -312,6 +299,44 @@ extension Clerk {
     let environment = try await dependencies.environmentService.get()
     self.environment = environment
     return environment
+  }
+
+  /// Applies a client update decoded from API responses.
+  ///
+  /// Uses `updatedAt` to avoid regressing to stale client snapshots when
+  /// multiple requests complete out of order.
+  func mergeClientFromResponse(_ incomingClient: Client?) {
+    guard shouldApplyClientFromResponse(incomingClient) else {
+      return
+    }
+    client = incomingClient
+  }
+
+  private func shouldApplyClientFromResponse(_ incomingClient: Client?) -> Bool {
+    guard let incomingClient else {
+      return true
+    }
+
+    guard let currentClient = client else {
+      return true
+    }
+
+    return incomingClient.updatedAt >= currentClient.updatedAt
+  }
+
+  private func applyClientObservers(previousClient: Client?, currentClient: Client?) {
+    if SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient) {
+      auth.send(.sessionChanged(oldValue: previousClient?.currentSession, newValue: currentClient?.currentSession))
+    }
+
+    if let currentClient {
+      dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: previousClient, currentClient: currentClient)
+      cacheManager?.saveClient(currentClient)
+    } else {
+      cacheManager?.deleteClient()
+    }
+
+    watchConnectivityCoordinator?.sync()
   }
 
   private static let startupRefreshRetryPolicy = RetryPolicy(
@@ -410,7 +435,7 @@ extension Clerk {
           watchConnectivityCoordinator?.sync()
 
         case .clientReceived(let client):
-          self.client = client
+          mergeClientFromResponse(client)
 
         case .environmentReceived(let environment):
           self.environment = environment

@@ -35,6 +35,12 @@ final class CacheManager {
   /// The keychain storage for persisting cached data.
   private let keychain: any KeychainStorage
 
+  /// Monotonic sequence used to order client persistence writes.
+  private var clientMutationSequence: UInt64 = 0
+
+  /// Persists client cache writes off the MainActor.
+  private let clientPersistenceWorker = ClientPersistenceWorker()
+
   /// Creates a new cache manager.
   ///
   /// - Parameters:
@@ -107,14 +113,12 @@ final class CacheManager {
   ///
   /// - Parameter client: The client to save.
   func saveClient(_ client: Client) {
-    do {
-      try saveClientToKeychain(client)
-    } catch {
-      // Log keychain errors but don't fail - saving is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
-      )
+    clientMutationSequence &+= 1
+    let mutationSequence = clientMutationSequence
+    let storage = keychain
+    let persistenceWorker = clientPersistenceWorker
+    Task(priority: .utility) {
+      await persistenceWorker.persist(client: client, sequence: mutationSequence, keychain: storage)
     }
   }
 
@@ -135,24 +139,16 @@ final class CacheManager {
 
   /// Deletes cached client data from keychain.
   func deleteClient() {
-    do {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
-    } catch {
-      // Log keychain errors but don't fail - deletion is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to delete cached client from keychain. This is non-critical."
-      )
+    clientMutationSequence &+= 1
+    let mutationSequence = clientMutationSequence
+    let storage = keychain
+    let persistenceWorker = clientPersistenceWorker
+    Task(priority: .utility) {
+      await persistenceWorker.persist(client: nil, sequence: mutationSequence, keychain: storage)
     }
   }
 
   // MARK: - Private Keychain Operations
-
-  /// Saves client data to keychain.
-  private func saveClientToKeychain(_ client: Client) throws {
-    let clientData = try JSONEncoder.clerkEncoder.encode(client)
-    try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
-  }
 
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {

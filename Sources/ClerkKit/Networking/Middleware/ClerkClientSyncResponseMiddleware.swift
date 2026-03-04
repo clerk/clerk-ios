@@ -32,7 +32,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
 
   @MainActor
   private func setClient(_ client: Client?) {
-    Clerk.shared.client = client
+    Clerk.shared.mergeClientFromResponse(client)
   }
 
   /// Distinguishes explicit null from an absent key on the envelope `client` field:
