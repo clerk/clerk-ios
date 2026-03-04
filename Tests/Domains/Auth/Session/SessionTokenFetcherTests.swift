@@ -64,17 +64,24 @@ struct SessionTokenFetcherTests {
 
       var events = Clerk.shared.auth.events.makeAsyncIterator()
 
-      _ = try await SessionTokenFetcher.shared.fetchToken(
-        session,
-        options: .init(skipCache: true)
-      )
-
       var refreshedToken: String?
-      for _ in 0 ..< 200 {
-        guard let event = await events.next() else { break }
-        if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
-          refreshedToken = token
-          break
+      for _ in 0 ..< 3 where refreshedToken == nil {
+        _ = try await SessionTokenFetcher.shared.fetchToken(
+          session,
+          options: .init(skipCache: true)
+        )
+
+        for _ in 0 ..< 400 {
+          if let event = await events.next() {
+            if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
+              refreshedToken = token
+              break
+            }
+            continue
+          }
+
+          // Reconfiguration can finish the stream; reattach and continue waiting.
+          events = Clerk.shared.auth.events.makeAsyncIterator()
         }
       }
       #expect(refreshedToken == tokenResource.jwt)
