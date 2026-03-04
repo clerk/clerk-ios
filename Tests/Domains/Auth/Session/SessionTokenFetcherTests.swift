@@ -62,31 +62,33 @@ struct SessionTokenFetcherTests {
         sessionService: service
       )
 
-      var events = Clerk.shared.auth.events.makeAsyncIterator()
-      let tokenEventTask = Task<String?, Never> { @MainActor in
-        while let event = await events.next() {
-          if case .tokenRefreshed(let token) = event, token == tokenResource.jwt {
-            return token
-          }
-        }
-        return nil
-      }
+      let eventStream = Clerk.shared.auth.events
 
       _ = try await SessionTokenFetcher.shared.fetchToken(
         session,
         options: .init(skipCache: true)
       )
 
-      let refreshedToken = await waitForRefreshedToken(tokenEventTask)
-      tokenEventTask.cancel()
+      let refreshedToken = await waitForRefreshedToken(
+        in: eventStream,
+        expectedToken: tokenResource.jwt
+      )
       #expect(refreshedToken == tokenResource.jwt)
     }
   }
 
-  private func waitForRefreshedToken(_ eventTask: Task<String?, Never>) async -> String? {
+  private func waitForRefreshedToken(in stream: AsyncStream<AuthEvent>, expectedToken: String) async -> String? {
     await withTaskGroup(of: String?.self) { group in
       group.addTask {
-        await eventTask.value
+        var events = stream.makeAsyncIterator()
+
+        while let event = await events.next() {
+          if case .tokenRefreshed(let token) = event, token == expectedToken {
+            return token
+          }
+        }
+
+        return nil
       }
       group.addTask {
         try? await Task.sleep(for: .seconds(1))

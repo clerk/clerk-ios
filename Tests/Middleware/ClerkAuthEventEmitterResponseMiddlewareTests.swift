@@ -22,14 +22,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         ClientResponse<SignUp>(response: signUp, client: nil)
       )
 
-      var events = Clerk.shared.auth.events.makeAsyncIterator()
-      let eventTask = Task<AuthEvent?, Never> { @MainActor in
-        await events.next()
-      }
+      let eventStream = Clerk.shared.auth.events
 
       try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-      let event = await waitForAuthEvent(eventTask)
-      eventTask.cancel()
+      let event = await waitForAuthEvent(in: eventStream)
 
       let emittedEvent = try #require(event)
       switch emittedEvent {
@@ -53,14 +49,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         ClientResponse<SignIn>(response: signIn, client: nil)
       )
 
-      var events = Clerk.shared.auth.events.makeAsyncIterator()
-      let eventTask = Task<AuthEvent?, Never> { @MainActor in
-        await events.next()
-      }
+      let eventStream = Clerk.shared.auth.events
 
       try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-      let event = await waitForAuthEvent(eventTask)
-      eventTask.cancel()
+      let event = await waitForAuthEvent(in: eventStream)
 
       let emittedEvent = try #require(event)
       switch emittedEvent {
@@ -72,10 +64,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     }
   }
 
-  private func waitForAuthEvent(_ eventTask: Task<AuthEvent?, Never>) async -> AuthEvent? {
+  private func waitForAuthEvent(in stream: AsyncStream<AuthEvent>) async -> AuthEvent? {
     await withTaskGroup(of: AuthEvent?.self) { group in
       group.addTask {
-        await eventTask.value
+        var events = stream.makeAsyncIterator()
+        return await events.next()
       }
       group.addTask {
         try? await Task.sleep(for: .milliseconds(500))
