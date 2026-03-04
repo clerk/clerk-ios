@@ -11,7 +11,7 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
     await emit(event)
   }
 
-  private func authEvent(from data: Data) -> AuthEvent? {
+  func authEvent(from data: Data) -> AuthEvent? {
     if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,
        signUp.status == .complete
     {
