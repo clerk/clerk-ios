@@ -113,13 +113,7 @@ final class CacheManager {
   ///
   /// - Parameter client: The client to save.
   func saveClient(_ client: Client) {
-    clientMutationSequence &+= 1
-    let mutationSequence = clientMutationSequence
-    let storage = keychain
-    let persistenceWorker = clientPersistenceWorker
-    Task(priority: .utility) {
-      await persistenceWorker.persist(client: client, sequence: mutationSequence, keychain: storage)
-    }
+    enqueueClientMutation(client)
   }
 
   /// Saves environment data to keychain.
@@ -139,16 +133,34 @@ final class CacheManager {
 
   /// Deletes cached client data from keychain.
   func deleteClient() {
+    enqueueClientMutation(nil)
+  }
+
+  /// Waits until the latest enqueued client cache mutation has been applied.
+  ///
+  /// This is intended for auth-critical flows (for example sign-out/account deletion),
+  /// where returning before keychain persistence completes can resurrect stale state
+  /// on the next app launch.
+  func flushClientPersistence() async {
+    let targetSequence = clientMutationSequence
+    guard targetSequence > 0 else {
+      return
+    }
+
+    await clientPersistenceWorker.waitForPersistence(upTo: targetSequence)
+  }
+
+  // MARK: - Private Keychain Operations
+
+  private func enqueueClientMutation(_ client: Client?) {
     clientMutationSequence &+= 1
     let mutationSequence = clientMutationSequence
     let storage = keychain
     let persistenceWorker = clientPersistenceWorker
     Task(priority: .utility) {
-      await persistenceWorker.persist(client: nil, sequence: mutationSequence, keychain: storage)
+      await persistenceWorker.persist(client: client, sequence: mutationSequence, keychain: storage)
     }
   }
-
-  // MARK: - Private Keychain Operations
 
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {

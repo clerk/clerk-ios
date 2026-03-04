@@ -312,6 +312,14 @@ extension Clerk {
     client = incomingClient
   }
 
+  /// Waits for the latest client cache mutation to persist to keychain.
+  ///
+  /// Use this barrier for auth-critical transitions that must not return before
+  /// cached auth state has been durably updated.
+  func flushClientPersistence() async {
+    await cacheManager?.flushClientPersistence()
+  }
+
   private func shouldApplyClientFromResponse(_ incomingClient: Client?) -> Bool {
     guard let incomingClient else {
       return true

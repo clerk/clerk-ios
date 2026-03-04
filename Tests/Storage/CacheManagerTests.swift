@@ -33,6 +33,62 @@ final class MockCacheCoordinator: CacheCoordinator {
   }
 }
 
+final class BlockingDeleteKeychain: @unchecked Sendable, KeychainStorage {
+  private let lock = NSLock()
+  private var items: [String: Data] = [:]
+  private var shouldBlockDelete = false
+  private let deleteBlocker = DispatchSemaphore(value: 0)
+
+  func blockDelete() {
+    lock.lock()
+    shouldBlockDelete = true
+    lock.unlock()
+  }
+
+  func unblockDelete() {
+    lock.lock()
+    let wasBlocking = shouldBlockDelete
+    shouldBlockDelete = false
+    lock.unlock()
+
+    if wasBlocking {
+      deleteBlocker.signal()
+    }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    items[key] = data
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key]
+  }
+
+  func deleteItem(forKey key: String) throws {
+    lock.lock()
+    let shouldBlock = shouldBlockDelete
+    lock.unlock()
+
+    if shouldBlock {
+      deleteBlocker.wait()
+    }
+
+    lock.lock()
+    defer { lock.unlock() }
+    items.removeValue(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key] != nil
+  }
+}
+
 /// Tests for CacheManager caching operations.
 @MainActor
 @Suite(.serialized)
@@ -151,5 +207,33 @@ struct CacheManagerTests {
 
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.environmentSet.value == false)
+  }
+
+  @Test
+  func flushClientPersistenceWaitsForDeleteMutation() async throws {
+    let keychain = BlockingDeleteKeychain()
+    let coordinator = MockCacheCoordinator()
+    let cacheManager = CacheManager(coordinator: coordinator, keychain: keychain)
+
+    let clientData = try JSONEncoder.clerkEncoder.encode(Client.mock)
+    try keychain.set(clientData, forKey: "cachedClient")
+
+    keychain.blockDelete()
+    cacheManager.deleteClient()
+
+    let flushCompleted = LockIsolated(false)
+    let flushTask = Task { @MainActor in
+      await cacheManager.flushClientPersistence()
+      flushCompleted.setValue(true)
+    }
+
+    try? await Task.sleep(for: .milliseconds(50))
+    #expect(flushCompleted.value == false)
+
+    keychain.unblockDelete()
+    await flushTask.value
+
+    #expect(flushCompleted.value == true)
+    #expect(try keychain.data(forKey: "cachedClient") == nil)
   }
 }

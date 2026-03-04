@@ -31,8 +31,10 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   @MainActor
-  private func setClient(_ client: Client?) {
+  private func setClient(_ client: Client?) async {
     Clerk.shared.mergeClientFromResponse(client)
+    guard client == nil else { return }
+    await Clerk.shared.flushClientPersistence()
   }
 
   /// Distinguishes explicit null from an absent key on the envelope `client` field:

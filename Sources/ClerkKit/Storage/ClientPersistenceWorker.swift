@@ -7,18 +7,20 @@ import Foundation
 
 /// Persists client cache updates off the MainActor while preserving write order.
 actor ClientPersistenceWorker {
-  private var latestAppliedSequence: UInt64 = 0
+  private var latestScheduledSequence: UInt64 = 0
+  private var latestCompletedSequence: UInt64 = 0
+  private var waiters: [(sequence: UInt64, continuation: CheckedContinuation<Void, Never>)] = []
 
   func persist(
     client: Client?,
     sequence: UInt64,
     keychain: any KeychainStorage
   ) {
-    guard sequence > latestAppliedSequence else {
+    guard sequence > latestScheduledSequence else {
       return
     }
 
-    latestAppliedSequence = sequence
+    latestScheduledSequence = sequence
 
     do {
       if let client {
@@ -35,5 +37,32 @@ actor ClientPersistenceWorker {
       }
       ClerkLogger.logError(error, message: message)
     }
+
+    latestCompletedSequence = max(latestCompletedSequence, sequence)
+    resumeEligibleWaiters()
+  }
+
+  func waitForPersistence(upTo sequence: UInt64) async {
+    guard sequence > latestCompletedSequence else {
+      return
+    }
+
+    await withCheckedContinuation { continuation in
+      waiters.append((sequence: sequence, continuation: continuation))
+    }
+  }
+
+  private func resumeEligibleWaiters() {
+    var pendingWaiters: [(sequence: UInt64, continuation: CheckedContinuation<Void, Never>)] = []
+
+    for waiter in waiters {
+      if waiter.sequence <= latestCompletedSequence {
+        waiter.continuation.resume()
+      } else {
+        pendingWaiters.append(waiter)
+      }
+    }
+
+    waiters = pendingWaiters
   }
 }
