@@ -331,11 +331,11 @@ final class UserService: UserServiceProtocol {
 
     let response = try await apiClient.send(request)
     let deletedObject = response.value.response
-    Clerk.shared.auth.send(.accountDeleted)
     await Clerk.shared.applyAuthoritativeClear(
       responseSequence: response.requestSequence,
       flush: true
     )
+    Clerk.shared.auth.send(.accountDeleted)
     return deletedObject
   }
 }
