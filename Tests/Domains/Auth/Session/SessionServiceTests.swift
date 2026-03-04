@@ -77,6 +77,53 @@ struct SessionServiceTests {
   }
 
   @Test
+  func signOutWithSessionIdSucceedsWhenRefreshFails() async throws {
+    let sessionId = "sess_test123"
+    let removeRequestHandled = LockIsolated(false)
+    let refreshRequestHandled = LockIsolated(false)
+    let removeURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
+    let refreshURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
+    Clerk.shared.client = .mock
+
+    var removeMock = try Mock(
+      url: removeURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
+
+    removeMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      removeRequestHandled.setValue(true)
+    }
+    removeMock.register()
+
+    var refreshMock = try Mock(
+      url: refreshURL, ignoreQuery: true, contentType: .json, statusCode: 500,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [.mock],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+
+    refreshMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      refreshRequestHandled.setValue(true)
+    }
+    refreshMock.register()
+
+    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
+
+    #expect(removeRequestHandled.value)
+    #expect(refreshRequestHandled.value)
+    #expect(Clerk.shared.client?.id == Client.mock.id)
+  }
+
+  @Test
   func setActive() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)

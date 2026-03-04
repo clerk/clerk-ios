@@ -10,6 +10,16 @@ package struct ClientServiceResponse {
   let requestSequence: UInt64?
 }
 
+@MainActor
+private enum CompatibilityRequestSequence {
+  static var nextValue: UInt64 = 0
+
+  static func next() -> UInt64 {
+    nextValue &+= 1
+    return nextValue
+  }
+}
+
 protocol ClientServiceProtocol: Sendable {
   @MainActor func get() async throws -> Client?
   /// Returns the client payload alongside an ordering token.
@@ -23,13 +33,14 @@ protocol ClientServiceProtocol: Sendable {
 extension ClientServiceProtocol {
   /// Compatibility fallback for legacy/test conformers that only implement `get()`.
   ///
-  /// This does not provide ordering metadata, so responses produced by this
-  /// default path bypass sequence-based stale guards.
+  /// This synthesizes a local monotonic `requestSequence` so sequence-based
+  /// stale guards continue to apply.
   @MainActor
   func getResponse() async throws -> ClientServiceResponse {
-    try await ClientServiceResponse(
+    let requestSequence = CompatibilityRequestSequence.next()
+    return try await ClientServiceResponse(
       client: get(),
-      requestSequence: nil
+      requestSequence: requestSequence
     )
   }
 }

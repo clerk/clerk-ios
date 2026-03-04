@@ -52,9 +52,14 @@ final class SessionService: SessionServiceProtocol {
       )
 
       try await apiClient.send(request)
-      let refreshedClient = try await Clerk.shared.refreshClient()
-      if refreshedClient == nil {
-        await Clerk.shared.flushClientPersistence()
+      do {
+        let refreshedClient = try await Clerk.shared.refreshClient()
+        if refreshedClient == nil {
+          await Clerk.shared.flushClientPersistence()
+        }
+      } catch {
+        // Session removal already succeeded server-side; keep sign-out success semantics.
+        ClerkLogger.logError(error, message: "Failed to refresh client after session removal")
       }
     } else {
       let request = Request<EmptyResponse>(
