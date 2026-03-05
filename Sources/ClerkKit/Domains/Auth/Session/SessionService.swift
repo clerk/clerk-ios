@@ -52,6 +52,8 @@ final class SessionService: SessionServiceProtocol {
       )
 
       let response = try await apiClient.send(request)
+      // The response middleware pipeline runs before `send` returns, so this
+      // reads the already-merged client snapshot for this response sequence.
       if Clerk.shared.client?.sessions.isEmpty ?? true {
         await Clerk.shared.applyAuthoritativeClear(
           responseSequence: response.requestSequence,

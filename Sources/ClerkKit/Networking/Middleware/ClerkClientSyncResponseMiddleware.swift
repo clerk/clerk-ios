@@ -22,6 +22,9 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       case .missing:
         break
       case .value(nil):
+        // Intentional: do not clear client state from middleware on explicit
+        // `client: null` payloads. Authoritative clears are handled explicitly
+        // by auth-critical flows (for example refresh/sign-out/account delete).
         break
       }
     }

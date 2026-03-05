@@ -6,6 +6,15 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClientTests {
+  private struct LegacyClientService: ClientServiceProtocol {
+    let client: Client?
+
+    @MainActor
+    func get() async throws -> Client? {
+      client
+    }
+  }
+
   private struct LegacyNilClientService: ClientServiceProtocol {
     @MainActor
     func get() async throws -> Client? {
@@ -295,5 +304,25 @@ struct ClientTests {
 
     #expect(refreshedClient == nil)
     #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func refreshClientWithLegacyGetOnlyServiceCanApplyClient() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = nil
+
+    var legacyClient = Client.mock
+    legacyClient.id = "legacy-get-client"
+    legacyClient.updatedAt = Date(timeIntervalSince1970: 1_900_000_000)
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: LegacyClientService(client: legacyClient)
+    )
+
+    let refreshedClient = try await Clerk.shared.refreshClient()
+
+    #expect(refreshedClient?.id == legacyClient.id)
+    #expect(Clerk.shared.client?.id == legacyClient.id)
   }
 }
