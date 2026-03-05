@@ -579,15 +579,15 @@ struct UserServiceTests {
   }
 
   @Test
-  func deleteAppliesClearWhenResponseSequenceIsOlderThanLatestAccepted() async throws {
+  func deleteRejectsStaleClearWhenResponseSequenceIsOlderThanLatestAccepted() async throws {
     try await withMainSerialExecutor {
       let requestHandled = LockIsolated(false)
       let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
 
       var latestClient = Client.mock
       latestClient.id = "latest-client"
-      latestClient.updatedAt = Date(timeIntervalSince1970: 2000)
-      Clerk.shared.client = .mock
+      latestClient.updatedAt = Date(timeIntervalSince1970: 2_000_000_000)
+      Clerk.shared.client = nil
       Clerk.shared.mergeClientFromResponse(latestClient, responseSequence: 10)
 
       var mock = Mock(
@@ -605,7 +605,9 @@ struct UserServiceTests {
 
       _ = try await Clerk.shared.dependencies.userService.delete()
       #expect(requestHandled.value)
-      #expect(Clerk.shared.client == nil)
+      let currentClient = try #require(Clerk.shared.client)
+      #expect(currentClient.id == latestClient.id)
+      #expect(currentClient.updatedAt == latestClient.updatedAt)
     }
   }
 }
