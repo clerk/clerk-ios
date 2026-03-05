@@ -51,28 +51,14 @@ final class SessionService: SessionServiceProtocol {
         method: .post
       )
 
-      let response = try await apiClient.send(request)
-      // The response middleware pipeline runs before `send` returns, so this
-      // reads the already-merged client snapshot for this response sequence.
-      if Clerk.shared.client?.sessions.isEmpty ?? true {
-        await Clerk.shared.applyAuthoritativeClear(
-          responseSequence: response.requestSequence,
-          flush: true,
-          requiresOrderingProof: true
-        )
-      }
+      try await apiClient.send(request)
     } else {
       let request = Request<EmptyResponse>(
         path: "/v1/client/sessions",
         method: .delete
       )
 
-      let response = try await apiClient.send(request)
-      await Clerk.shared.applyAuthoritativeClear(
-        responseSequence: response.requestSequence,
-        flush: true,
-        requiresOrderingProof: true
-      )
+      try await apiClient.send(request)
     }
   }
 

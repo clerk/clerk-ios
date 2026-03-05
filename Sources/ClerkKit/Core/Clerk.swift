@@ -551,5 +551,8 @@ extension Clerk {
     watchConnectivityCoordinator = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
+    // Prevent follow-up test state resets from scheduling keychain mutations
+    // via `client`/`environment` observers after manager cleanup.
+    cacheManager = nil
   }
 }

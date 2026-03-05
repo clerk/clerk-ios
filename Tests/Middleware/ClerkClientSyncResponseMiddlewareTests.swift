@@ -59,6 +59,39 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func deleteSessionsRouteClearsClientState() async throws {
+    try await withMainSerialExecutor {
+      Clerk.shared.client = .mock
+
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/client/sessions", method: "DELETE")
+
+      try await middleware.validate(fixture.response, data: Data("{}".utf8), for: fixture.request)
+      #expect(Clerk.shared.client == nil)
+    }
+  }
+
+  @Test
+  func removeSessionRouteClearsWhenMergedClientHasNoSessions() async throws {
+    try await withMainSerialExecutor {
+      Clerk.shared.client = .mock
+
+      var signedOutClient = Client.mock
+      signedOutClient.sessions = []
+      signedOutClient.lastActiveSessionId = nil
+
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/client/sessions/sess_test/remove", method: "POST")
+      let payload = try JSONEncoder.clerkEncoder.encode(
+        ClientResponse<Client?>(response: signedOutClient, client: nil)
+      )
+
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+      #expect(Clerk.shared.client == nil)
+    }
+  }
+
+  @Test
   func olderClientSnapshotDoesNotOverrideNewerState() async throws {
     try await withMainSerialExecutor {
       var newerClient = Client.mock
@@ -123,12 +156,14 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   private func clientRequestResponseFixture(
     path: String,
+    method: String = "GET",
     requestSequence: UInt64? = nil
   ) throws
     -> (request: URLRequest, response: HTTPURLResponse)
   {
     let requestURL = try #require(URL(string: "https://example.com\(path)"))
     var request = URLRequest(url: requestURL)
+    request.httpMethod = method
     request.setRequestSequence(requestSequence ?? Self.nextRequestSequence())
     let response = try #require(HTTPURLResponse(
       url: requestURL,

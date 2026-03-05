@@ -6,38 +6,35 @@
 import Foundation
 
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     if let envelope = try? JSONDecoder.clerkDecoder.decode(ClientPayload.self, from: data) {
       // `/v1/client` can return a full client in `response` while `client` is null.
       // Prioritize the concrete `response` value to avoid transient clears.
       if let responseClient = envelope.responseClient {
         await setClient(responseClient, responseSequence: request.requestSequence)
+        await applyAuthoritativeClearIfNeeded(response: response, request: request)
         return
       }
 
       switch envelope.clientState {
       case let .value(client?):
         await setClient(client, responseSequence: request.requestSequence)
+        await applyAuthoritativeClearIfNeeded(response: response, request: request)
         return
       case .missing:
         break
       case .value(nil):
-        // Intentional: do not clear client state from middleware on explicit
-        // `client: null` payloads. Authoritative clears are handled explicitly
-        // by auth-critical flows (for example refresh/sign-out/account delete).
+        // Intentional: do not clear for generic `client: null` payloads.
+        // Authoritative clear is only applied for specific auth routes below.
         break
       }
     }
 
     if let client = try? JSONDecoder.clerkDecoder.decode(Client.self, from: data) {
       await setClient(client, responseSequence: request.requestSequence)
-      return
     }
-  }
 
-  @MainActor
-  private func setClient(_ client: Client, responseSequence: UInt64?) {
-    Clerk.shared.mergeClientFromResponse(client, responseSequence: responseSequence)
+    await applyAuthoritativeClearIfNeeded(response: response, request: request)
   }
 
   /// Distinguishes explicit null from an absent key on the envelope `client` field:
@@ -71,6 +68,47 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       } catch {
         clientState = .missing
       }
+    }
+  }
+
+  @MainActor
+  private func setClient(_ client: Client, responseSequence: UInt64?) {
+    Clerk.shared.mergeClientFromResponse(client, responseSequence: responseSequence)
+  }
+
+  @MainActor
+  private func applyAuthoritativeClearIfNeeded(response: HTTPURLResponse, request: URLRequest) async {
+    guard (200 ... 299).contains(response.statusCode) else {
+      return
+    }
+
+    guard let path = request.url?.path else {
+      return
+    }
+
+    let responseSequence = request.requestSequence
+
+    if request.httpMethod == HTTPMethod.delete.rawValue,
+       path == "/v1/client/sessions"
+    {
+      await Clerk.shared.applyAuthoritativeClear(
+        responseSequence: responseSequence,
+        flush: true,
+        requiresOrderingProof: true
+      )
+      return
+    }
+
+    if request.httpMethod == HTTPMethod.post.rawValue,
+       path.hasPrefix("/v1/client/sessions/"),
+       path.hasSuffix("/remove"),
+       Clerk.shared.client?.sessions.isEmpty ?? true
+    {
+      await Clerk.shared.applyAuthoritativeClear(
+        responseSequence: responseSequence,
+        flush: true,
+        requiresOrderingProof: true
+      )
     }
   }
 }
