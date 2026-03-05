@@ -555,8 +555,10 @@ extension Clerk {
 
           watchConnectivityCoordinator?.sync()
 
-        case .clientReceived(let client, let requestSequence):
-          mergeClientFromResponse(client, responseSequence: requestSequence)
+        case .clientReceived:
+          // Middleware applies client merges directly. This stream event remains
+          // available for external subscribers observing response activity.
+          break
 
         case .environmentReceived(let environment):
           self.environment = environment

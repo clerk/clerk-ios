@@ -36,7 +36,7 @@ struct SessionServiceTests {
   }
 
   @Test
-  func signOutRejectsStaleClearWhenResponseSequenceIsOlderThanLatestAccepted() async throws {
+  func signOutAppliesClearEvenWhenResponseSequenceIsOlderThanLatestAccepted() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
 
@@ -62,9 +62,7 @@ struct SessionServiceTests {
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
 
     #expect(requestHandled.value)
-    let currentClient = try #require(Clerk.shared.client)
-    #expect(currentClient.id == latestClient.id)
-    #expect(currentClient.updatedAt == latestClient.updatedAt)
+    #expect(Clerk.shared.client == nil)
   }
 
   @Test

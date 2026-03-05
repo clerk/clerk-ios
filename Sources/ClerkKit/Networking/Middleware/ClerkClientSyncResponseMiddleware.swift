@@ -75,6 +75,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   @MainActor
   private func setClient(_ client: Client, responseSequence: UInt64?) {
     Clerk.shared.mergeClientFromResponse(client, responseSequence: responseSequence)
+    Clerk.shared.clerkEventEmitter.send(.clientReceived(client: client, requestSequence: responseSequence))
   }
 
   @MainActor
@@ -93,7 +94,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: responseSequence,
         flush: true,
-        requiresOrderingProof: true
+        requiresOrderingProof: false
       )
     case .authoritativeClearIfNoSessions:
       // Evaluate after any client merge above so this check reflects the
@@ -102,7 +103,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: responseSequence,
         flush: true,
-        requiresOrderingProof: true
+        requiresOrderingProof: false
       )
     }
   }

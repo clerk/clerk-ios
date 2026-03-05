@@ -157,6 +157,24 @@ struct ClerkClientSyncResponseMiddlewareTests {
     }
   }
 
+  @Test
+  func clientPayloadEmitsClientReceivedEvent() async throws {
+    try await withMainSerialExecutor {
+      Clerk.shared.client = nil
+      let eventStream = Clerk.shared.events
+
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/me")
+      let payload = try JSONEncoder.clerkEncoder.encode(Client.mock)
+
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+
+      let event = try #require(await waitForClientReceivedEvent(in: eventStream))
+      #expect(event.client.id == Client.mock.id)
+      #expect(event.requestSequence == fixture.request.requestSequence)
+    }
+  }
+
   @MainActor
   private static func nextRequestSequence() -> UInt64 {
     requestSequence &+= 1
@@ -183,5 +201,27 @@ struct ClerkClientSyncResponseMiddlewareTests {
       headerFields: nil
     ))
     return (request: request, response: response)
+  }
+
+  private func waitForClientReceivedEvent(in stream: AsyncStream<ClerkEvent>) async -> (client: Client, requestSequence: UInt64?)? {
+    await withTaskGroup(of: (client: Client, requestSequence: UInt64?)?.self) { group in
+      group.addTask {
+        var events = stream.makeAsyncIterator()
+        while let event = await events.next() {
+          if case .clientReceived(let client, let requestSequence) = event {
+            return (client: client, requestSequence: requestSequence)
+          }
+        }
+
+        return nil
+      }
+      group.addTask {
+        try? await Task.sleep(for: .seconds(1))
+        return nil
+      }
+
+      defer { group.cancelAll() }
+      return await group.next() ?? nil
+    }
   }
 }
