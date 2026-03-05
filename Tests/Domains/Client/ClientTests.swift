@@ -138,6 +138,34 @@ struct ClientTests {
   }
 
   @Test
+  func mergeClientFromResponseRequiresSequenceWhenCurrentClientIsNil() async {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = .mock
+
+    await Clerk.shared.applyAuthoritativeClear(
+      responseSequence: 5,
+      flush: false,
+      requiresOrderingProof: true
+    )
+
+    #expect(Clerk.shared.client == nil)
+
+    var unsequencedClient = Client.mock
+    unsequencedClient.id = "unsequenced-late-client"
+    unsequencedClient.updatedAt = Date(timeIntervalSince1970: 400)
+    Clerk.shared.mergeClientFromResponse(unsequencedClient, responseSequence: nil)
+
+    #expect(Clerk.shared.client == nil)
+
+    var sequencedClient = Client.mock
+    sequencedClient.id = "sequenced-client"
+    sequencedClient.updatedAt = Date(timeIntervalSince1970: 500)
+    Clerk.shared.mergeClientFromResponse(sequencedClient, responseSequence: 6)
+
+    #expect(Clerk.shared.client?.id == sequencedClient.id)
+  }
+
+  @Test
   func refreshClientWithLegacyGetOnlyServiceCanClearClient() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
     Clerk.shared.client = .mock

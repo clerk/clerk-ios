@@ -385,7 +385,7 @@ extension Clerk {
     }
 
     guard let currentClient = client else {
-      return true
+      return responseSequence != nil
     }
 
     return incomingClient.updatedAt >= currentClient.updatedAt
