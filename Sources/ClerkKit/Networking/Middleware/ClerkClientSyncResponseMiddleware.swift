@@ -98,9 +98,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     case .authoritativeClearIfNoSessions:
       // Evaluate after any client merge above so this check reflects the
       // newest snapshot for the same response sequence.
-      guard Clerk.shared.client?.sessions.isEmpty ?? true else {
-        return
-      }
+      guard Clerk.shared.client?.sessions.isEmpty ?? true else { return }
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: responseSequence,
         flush: true,
