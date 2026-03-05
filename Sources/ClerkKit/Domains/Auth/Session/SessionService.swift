@@ -48,14 +48,16 @@ final class SessionService: SessionServiceProtocol {
     if let sessionId {
       let request = Request<EmptyResponse>(
         path: "/v1/client/sessions/\(sessionId)/remove",
-        method: .post
+        method: .post,
+        clientSyncDirective: .authoritativeClearIfNoSessions
       )
 
       try await apiClient.send(request)
     } else {
       let request = Request<EmptyResponse>(
         path: "/v1/client/sessions",
-        method: .delete
+        method: .delete,
+        clientSyncDirective: .authoritativeClear
       )
 
       try await apiClient.send(request)

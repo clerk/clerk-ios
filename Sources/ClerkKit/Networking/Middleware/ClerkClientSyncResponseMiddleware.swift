@@ -25,7 +25,8 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
         break
       case .value(nil):
         // Intentional: do not clear for generic `client: null` payloads.
-        // Authoritative clear is only applied for specific auth routes below.
+        // Authoritative clear is only applied when the request explicitly
+        // opts into a client-sync directive.
         break
       }
     }
@@ -82,28 +83,22 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    guard let path = request.url?.path else {
-      return
-    }
-
     let responseSequence = request.requestSequence
+    let directive = request.clientSyncDirective
 
-    if request.httpMethod == HTTPMethod.delete.rawValue,
-       path == "/v1/client/sessions"
-    {
+    switch directive {
+    case .none:
+      return
+    case .authoritativeClear:
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: responseSequence,
         flush: true,
         requiresOrderingProof: true
       )
-      return
-    }
-
-    if request.httpMethod == HTTPMethod.post.rawValue,
-       path.hasPrefix("/v1/client/sessions/"),
-       path.hasSuffix("/remove"),
-       Clerk.shared.client?.sessions.isEmpty ?? true
-    {
+    case .authoritativeClearIfNoSessions:
+      guard Clerk.shared.client?.sessions.isEmpty ?? true else {
+        return
+      }
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: responseSequence,
         flush: true,

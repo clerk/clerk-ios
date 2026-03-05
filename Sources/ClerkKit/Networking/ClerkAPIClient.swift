@@ -21,6 +21,10 @@ actor APIClient {
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
+  /// Monotonic ordering token for responses produced by this API client instance.
+  ///
+  /// This sequence space is intentionally independent from Clerk's runtime client
+  /// response watermark and cache persistence sequencing.
   private var requestSequenceCounter: UInt64 = 0
 
   init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
@@ -60,6 +64,7 @@ actor APIClient {
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       try await pipeline.prepare(&urlRequest)
       urlRequest.setRequestSequence(requestSequence)
+      urlRequest.setClientSyncDirective(request.clientSyncDirective)
 
       do {
         let data: Data

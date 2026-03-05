@@ -65,7 +65,11 @@ struct ClerkClientSyncResponseMiddlewareTests {
       Clerk.shared.client = .mock
 
       let middleware = ClerkClientSyncResponseMiddleware()
-      let fixture = try clientRequestResponseFixture(path: "/v1/client/sessions", method: "DELETE")
+      let fixture = try clientRequestResponseFixture(
+        path: "/v1/client/sessions",
+        method: "DELETE",
+        clientSyncDirective: .authoritativeClear
+      )
 
       try await middleware.validate(fixture.response, data: Data("{}".utf8), for: fixture.request)
       #expect(Clerk.shared.client == nil)
@@ -82,7 +86,11 @@ struct ClerkClientSyncResponseMiddlewareTests {
       signedOutClient.lastActiveSessionId = nil
 
       let middleware = ClerkClientSyncResponseMiddleware()
-      let fixture = try clientRequestResponseFixture(path: "/v1/client/sessions/sess_test/remove", method: "POST")
+      let fixture = try clientRequestResponseFixture(
+        path: "/v1/client/sessions/sess_test/remove",
+        method: "POST",
+        clientSyncDirective: .authoritativeClearIfNoSessions
+      )
       let payload = try JSONEncoder.clerkEncoder.encode(
         ClientResponse<Client?>(response: signedOutClient, client: nil)
       )
@@ -158,6 +166,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   private func clientRequestResponseFixture(
     path: String,
     method: String = "GET",
+    clientSyncDirective: ClientSyncDirective = .none,
     requestSequence: UInt64? = nil
   ) throws
     -> (request: URLRequest, response: HTTPURLResponse)
@@ -166,6 +175,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     var request = URLRequest(url: requestURL)
     request.httpMethod = method
     request.setRequestSequence(requestSequence ?? Self.nextRequestSequence())
+    request.setClientSyncDirective(clientSyncDirective)
     let response = try #require(HTTPURLResponse(
       url: requestURL,
       statusCode: 200,

@@ -7,6 +7,8 @@ import Foundation
 
 /// Persists client cache updates off the MainActor while preserving write order.
 actor ClientPersistenceWorker {
+  /// Tracks cache mutation ordering within the persistence worker only.
+  /// This is intentionally independent from network response sequencing.
   private var latestScheduledSequence: UInt64 = 0
   private var latestCompletedSequence: UInt64 = 0
   private var waiters: [(sequence: UInt64, continuation: CheckedContinuation<Void, Never>)] = []

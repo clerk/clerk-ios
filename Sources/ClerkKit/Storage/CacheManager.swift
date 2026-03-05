@@ -35,7 +35,10 @@ final class CacheManager {
   /// The keychain storage for persisting cached data.
   private let keychain: any KeychainStorage
 
-  /// Monotonic sequence used to order client persistence writes.
+  /// Monotonic sequence used only for ordering client cache persistence writes.
+  ///
+  /// This sequence space is intentionally separate from network response
+  /// sequencing in `APIClient` and `Clerk`.
   private var clientMutationSequence: UInt64 = 0
 
   /// Persists client cache writes off the MainActor.

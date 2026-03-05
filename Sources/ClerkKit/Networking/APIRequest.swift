@@ -9,6 +9,16 @@ enum HTTPMethod: String {
   case delete = "DELETE"
 }
 
+/// Per-request policy describing how response middleware should synchronize client state.
+///
+/// This encodes intent at the call site so middleware does not need to reverse-engineer
+/// behavior from URL path heuristics.
+enum ClientSyncDirective: Int {
+  case none
+  case authoritativeClear
+  case authoritativeClearIfNoSessions
+}
+
 /// Type-erased `Encodable` wrapper used to defer encoding until the request is sent.
 struct AnyEncodable: Encodable, @unchecked Sendable {
   private let encodeClosure: @Sendable (Encoder) throws -> Void
@@ -64,6 +74,7 @@ struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]
+  let clientSyncDirective: ClientSyncDirective
 
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
@@ -73,6 +84,7 @@ struct Request<Response: Decodable & Sendable> {
     path: String,
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
+    clientSyncDirective: ClientSyncDirective = .none,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
@@ -90,6 +102,7 @@ struct Request<Response: Decodable & Sendable> {
     self.path = path
     self.method = method
     self.headers = headers
+    self.clientSyncDirective = clientSyncDirective
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     decodeClosure = decode

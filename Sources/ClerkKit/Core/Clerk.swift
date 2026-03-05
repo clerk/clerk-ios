@@ -132,6 +132,10 @@ public final class Clerk {
   ///
   /// This acts as an ordering watermark and may advance even when an incoming
   /// snapshot is rejected as stale.
+  ///
+  /// This watermark is runtime-only and intentionally not persisted across
+  /// launches. On relaunch, `updatedAt` checks and fresh network responses
+  /// re-establish ordering safety.
   private var latestClientResponseSequence: UInt64 = 0
 
   /// The event emitter for auth events.
@@ -386,24 +390,38 @@ extension Clerk {
   }
 
   private func shouldApplyClientFromResponse(_ incomingClient: Client, responseSequence: UInt64?) -> Bool {
-    if let responseSequence {
-      if responseSequence < latestClientResponseSequence {
-        return false
-      }
-
-      if responseSequence == latestClientResponseSequence,
-         client != nil
-      {
-        return false
-      }
+    if shouldRejectByResponseSequence(responseSequence) {
+      return false
     }
 
     guard let currentClient = client else {
-      // Allow unsequenced snapshots only when there is no ordering history yet.
-      return responseSequence != nil || latestClientResponseSequence == 0
+      return canApplyWithoutCurrentClient(responseSequence: responseSequence)
     }
 
     return incomingClient.updatedAt >= currentClient.updatedAt
+  }
+
+  private func shouldRejectByResponseSequence(_ responseSequence: UInt64?) -> Bool {
+    guard let responseSequence else {
+      return false
+    }
+
+    if responseSequence < latestClientResponseSequence {
+      return true
+    }
+
+    if responseSequence == latestClientResponseSequence,
+       client != nil
+    {
+      return true
+    }
+
+    return false
+  }
+
+  private func canApplyWithoutCurrentClient(responseSequence: UInt64?) -> Bool {
+    // Allow unsequenced snapshots only when there is no ordering history yet.
+    responseSequence != nil || latestClientResponseSequence == 0
   }
 
   private func shouldApplyAuthoritativeClear(responseSequence: UInt64?) -> Bool {
