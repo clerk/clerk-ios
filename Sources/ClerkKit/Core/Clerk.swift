@@ -342,7 +342,7 @@ extension Clerk {
   func applyAuthoritativeClear(
     responseSequence: UInt64? = nil,
     flush: Bool = false,
-    requiresOrderingProof: Bool = false
+    requiresOrderingProof: Bool
   ) async {
     if requiresOrderingProof,
        !shouldApplyAuthoritativeClear(responseSequence: responseSequence)
@@ -396,7 +396,9 @@ extension Clerk {
       return false
     }
 
-    return responseSequence > latestClientResponseSequence
+    // Allow clears from the same response sequence that may have already merged
+    // a snapshot, while still rejecting truly stale (lower-sequence) clears.
+    return responseSequence >= latestClientResponseSequence
   }
 
   private func applyClientObservers(previousClient: Client?, currentClient: Client?) {

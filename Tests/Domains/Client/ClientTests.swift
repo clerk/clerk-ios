@@ -102,6 +102,7 @@ struct ClientTests {
   @Test
   func refreshClientIgnoresStaleNilResponse() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = nil
 
     let service = MockClientService()
     var calls = 0

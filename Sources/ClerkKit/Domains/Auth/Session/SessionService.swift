@@ -55,7 +55,8 @@ final class SessionService: SessionServiceProtocol {
       if Clerk.shared.client?.sessions.isEmpty ?? true {
         await Clerk.shared.applyAuthoritativeClear(
           responseSequence: response.requestSequence,
-          flush: true
+          flush: true,
+          requiresOrderingProof: true
         )
       }
     } else {
@@ -67,7 +68,8 @@ final class SessionService: SessionServiceProtocol {
       let response = try await apiClient.send(request)
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: response.requestSequence,
-        flush: true
+        flush: true,
+        requiresOrderingProof: true
       )
     }
   }

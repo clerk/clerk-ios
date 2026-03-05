@@ -40,17 +40,24 @@ struct SessionServiceTests {
     let sessionId = "sess_test123"
     let removeRequestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
-    Clerk.shared.client = .mock
+    var sessionToRemove = Session.mock
+    sessionToRemove.id = sessionId
+    let remainingSession = Session.mock2
 
-    var remainingClient = Client.mock
-    remainingClient.sessions = [.mock]
+    var clientWithSession = Client.mock
+    clientWithSession.sessions = [sessionToRemove, remainingSession]
+    clientWithSession.lastActiveSessionId = remainingSession.id
+    Clerk.shared.client = clientWithSession
+
+    var mergedClient = clientWithSession
+    mergedClient.sessions = [remainingSession]
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse<Client?>(
-            response: remainingClient,
+            response: mergedClient,
             client: nil
           )
         ),
@@ -65,8 +72,10 @@ struct SessionServiceTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
     #expect(removeRequestHandled.value)
-    #expect(Clerk.shared.client?.id == remainingClient.id)
-    #expect(Clerk.shared.client?.sessions.count == 1)
+    let currentClient = try #require(Clerk.shared.client)
+    #expect(currentClient != clientWithSession)
+    #expect(currentClient.sessions.contains(where: { $0.id == remainingSession.id }))
+    #expect(currentClient.sessions.contains(where: { $0.id == sessionToRemove.id }) == false)
   }
 
   @Test
