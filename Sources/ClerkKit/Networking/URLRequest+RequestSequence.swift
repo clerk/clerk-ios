@@ -33,6 +33,7 @@ extension URLRequest {
   }
 
   private mutating func setProperty(_ value: NSNumber, forKey key: String) {
+    // Use URLProtocol request-local metadata to avoid polluting wire headers.
     guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
       return
     }

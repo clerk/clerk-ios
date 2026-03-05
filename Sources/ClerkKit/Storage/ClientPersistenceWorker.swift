@@ -18,6 +18,7 @@ actor ClientPersistenceWorker {
     sequence: UInt64,
     keychain: any KeychainStorage
   ) {
+    // Drop duplicate/stale writes that arrived late from previously queued tasks.
     guard sequence > latestScheduledSequence else {
       return
     }

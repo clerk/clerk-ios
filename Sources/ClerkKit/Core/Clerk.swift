@@ -330,6 +330,8 @@ extension Clerk {
   /// Uses `updatedAt` to avoid regressing to stale client snapshots when
   /// multiple requests complete out of order.
   func mergeClientFromResponse(_ incomingClient: Client, responseSequence: UInt64? = nil) {
+    // Decide apply/reject against the previous watermark first, then advance the
+    // watermark so stale responses cannot backslide future ordering checks.
     let shouldApply = shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence)
     advanceResponseSequence(responseSequence)
 

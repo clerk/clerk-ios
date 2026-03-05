@@ -157,6 +157,8 @@ final class CacheManager {
 
   private func enqueueClientMutation(_ client: Client?) {
     clientMutationSequence &+= 1
+    // Capture sequence + dependencies on MainActor before hopping to utility
+    // priority so mutations are persisted in enqueue order.
     let mutationSequence = clientMutationSequence
     let storage = keychain
     let persistenceWorker = clientPersistenceWorker

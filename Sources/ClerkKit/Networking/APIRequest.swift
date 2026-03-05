@@ -14,8 +14,11 @@ enum HTTPMethod: String {
 /// This encodes intent at the call site so middleware does not need to reverse-engineer
 /// behavior from URL path heuristics.
 enum ClientSyncDirective: Int {
+  /// Do not apply an authoritative clear from this response.
   case none
+  /// Always apply an authoritative clear when the response succeeds.
   case authoritativeClear
+  /// Apply an authoritative clear only when the merged client has no sessions.
   case authoritativeClearIfNoSessions
 }
 

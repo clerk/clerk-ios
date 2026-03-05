@@ -96,6 +96,8 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
         requiresOrderingProof: true
       )
     case .authoritativeClearIfNoSessions:
+      // Evaluate after any client merge above so this check reflects the
+      // newest snapshot for the same response sequence.
       guard Clerk.shared.client?.sessions.isEmpty ?? true else {
         return
       }

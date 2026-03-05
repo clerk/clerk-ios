@@ -63,6 +63,8 @@ actor APIClient {
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       try await pipeline.prepare(&urlRequest)
+      // Stamp sequencing/sync metadata after request middleware runs so middleware
+      // cannot accidentally drop the metadata by rebuilding the URLRequest.
       urlRequest.setRequestSequence(requestSequence)
       urlRequest.setClientSyncDirective(request.clientSyncDirective)
 
