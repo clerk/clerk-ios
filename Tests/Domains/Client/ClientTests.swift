@@ -6,19 +6,28 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClientTests {
-  private struct LegacyClientService: ClientServiceProtocol {
+  private struct ResponseOnlyClientService: ClientServiceProtocol {
     let client: Client?
+    let requestSequence: UInt64?
 
     @MainActor
-    func get() async throws -> Client? {
-      client
+    func getResponse() async throws -> ClientServiceResponse {
+      ClientServiceResponse(
+        client: client,
+        requestSequence: requestSequence
+      )
     }
   }
 
-  private struct LegacyNilClientService: ClientServiceProtocol {
+  private struct ResponseOnlyNilClientService: ClientServiceProtocol {
+    let requestSequence: UInt64?
+
     @MainActor
-    func get() async throws -> Client? {
-      nil
+    func getResponse() async throws -> ClientServiceResponse {
+      ClientServiceResponse(
+        client: nil,
+        requestSequence: requestSequence
+      )
     }
   }
 
@@ -287,12 +296,12 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientWithLegacyGetOnlyServiceCanClearClient() async throws {
+  func refreshClientWithResponseOnlyServiceCanClearClient() async throws {
     setUpClerkClient(.mock)
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: LegacyNilClientService()
+      clientService: ResponseOnlyNilClientService(requestSequence: 1)
     )
 
     let refreshedClient = try await Clerk.shared.refreshClient()
@@ -302,7 +311,7 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientWithLegacyGetOnlyServiceCanApplyClient() async throws {
+  func refreshClientWithResponseOnlyServiceCanApplyClient() async throws {
     setUpClerkClient(nil)
 
     var legacyClient = Client.mock
@@ -311,7 +320,10 @@ struct ClientTests {
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: LegacyClientService(client: legacyClient)
+      clientService: ResponseOnlyClientService(
+        client: legacyClient,
+        requestSequence: 1
+      )
     )
 
     let refreshedClient = try await Clerk.shared.refreshClient()

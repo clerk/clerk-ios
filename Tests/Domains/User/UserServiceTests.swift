@@ -568,6 +568,7 @@ struct UserServiceTests {
 
       mock.onRequestHandler = OnRequestHandler { request in
         #expect(request.httpMethod == "DELETE")
+        #expect(request.clientSyncDirective == .authoritativeClear)
         requestHandled.setValue(true)
       }
       mock.register()
@@ -599,6 +600,7 @@ struct UserServiceTests {
 
       mock.onRequestHandler = OnRequestHandler { request in
         #expect(request.httpMethod == "DELETE")
+        #expect(request.clientSyncDirective == .authoritativeClear)
         requestHandled.setValue(true)
       }
       mock.register()

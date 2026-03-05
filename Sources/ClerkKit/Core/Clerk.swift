@@ -397,9 +397,12 @@ extension Clerk {
     }
 
     guard let currentClient = client else {
+      // With no current client, only accept unsequenced snapshots when no
+      // ordering history exists yet.
       return canApplyWithoutCurrentClient(responseSequence: responseSequence)
     }
 
+    // Sequence checks passed, so fall back to timestamp monotonicity.
     return incomingClient.updatedAt >= currentClient.updatedAt
   }
 
@@ -409,12 +412,16 @@ extension Clerk {
     }
 
     if responseSequence < latestClientResponseSequence {
+      // Lower sequence means this response is causally older than a response
+      // already observed.
       return true
     }
 
     if responseSequence == latestClientResponseSequence,
        client != nil
     {
+      // Same-sequence duplicates should not overwrite an already-applied
+      // client snapshot.
       return true
     }
 

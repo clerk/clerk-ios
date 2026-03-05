@@ -326,16 +326,11 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me",
       method: .delete,
+      clientSyncDirective: .authoritativeClear,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
     )
 
-    let response = try await apiClient.send(request)
-    let deletedObject = response.value.response
-    await Clerk.shared.applyAuthoritativeClear(
-      responseSequence: response.requestSequence,
-      flush: true,
-      requiresOrderingProof: true
-    )
+    let deletedObject = try await apiClient.send(request).value.response
     Clerk.shared.auth.send(.accountDeleted)
     return deletedObject
   }

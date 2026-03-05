@@ -29,7 +29,7 @@ struct ClientServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.clientService.get()
+    _ = try await Clerk.shared.dependencies.clientService.getResponse()
     #expect(requestHandled.value)
   }
 }

@@ -10,39 +10,14 @@ package struct ClientServiceResponse {
   let requestSequence: UInt64?
 }
 
-@MainActor
-private enum CompatibilityRequestSequence {
-  static var nextValue: UInt64 = 0
-
-  static func next() -> UInt64 {
-    nextValue &+= 1
-    return nextValue
-  }
-}
-
 protocol ClientServiceProtocol: Sendable {
-  @MainActor func get() async throws -> Client?
   /// Returns the client payload alongside an ordering token.
   ///
-  /// Production conformers should provide a monotonic `requestSequence` so
-  /// `Clerk` can reject out-of-order clears and snapshots. Returning `nil`
-  /// sequence values disables causal ordering checks for that response.
+  /// Conformers used by runtime networking paths should provide a monotonic
+  /// `requestSequence` so `Clerk` can reject out-of-order clears and
+  /// snapshots. Returning `nil` sequence values disables causal ordering
+  /// checks for that response.
   @MainActor func getResponse() async throws -> ClientServiceResponse
-}
-
-extension ClientServiceProtocol {
-  /// Compatibility fallback for legacy/test conformers that only implement `get()`.
-  ///
-  /// This synthesizes a local monotonic `requestSequence` so sequence-based
-  /// stale guards continue to apply.
-  @MainActor
-  func getResponse() async throws -> ClientServiceResponse {
-    let requestSequence = CompatibilityRequestSequence.next()
-    return try await ClientServiceResponse(
-      client: get(),
-      requestSequence: requestSequence
-    )
-  }
 }
 
 final class ClientService: ClientServiceProtocol {
@@ -52,12 +27,14 @@ final class ClientService: ClientServiceProtocol {
     self.apiClient = apiClient
   }
 
+  /// Fetches only the client payload, discarding response ordering metadata.
   @MainActor
   func get() async throws -> Client? {
     let response = try await getResponse()
     return response.client
   }
 
+  /// Fetches the client payload plus request ordering metadata.
   @MainActor
   func getResponse() async throws -> ClientServiceResponse {
     let request = Request<ClientResponse<Client?>>(path: "/v1/client")

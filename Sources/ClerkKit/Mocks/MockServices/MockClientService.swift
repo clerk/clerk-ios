@@ -9,22 +9,22 @@ import Foundation
 
 /// Mock implementation of `ClientServiceProtocol` for testing and previews.
 ///
-/// Allows customizing the behavior of `clerk.refreshClient()` through a handler closure.
-/// Returns default mock values if handler is not provided.
+/// Allows customizing `getResponse()` behavior for `clerk.refreshClient()`.
+/// Returns default mock values if handlers are not provided.
 package final class MockClientService: ClientServiceProtocol {
   @MainActor
   private var responseSequence: UInt64 = 0
 
-  /// Custom handler for the `get()` method used by `clerk.refreshClient()`.
+  /// Custom client payload source used when `getResponseHandler` is unset.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.
   package nonisolated(unsafe) var getHandler: (() async throws -> Client?)?
   package nonisolated(unsafe) var getResponseHandler: (() async throws -> ClientServiceResponse)?
 
-  /// Creates a new mock client service with an optional implementation of the `get()` method.
+  /// Creates a new mock client service with an optional client payload source.
   ///
-  /// - Parameter get: Optional implementation of the `get()` method. If not provided, returns `Client.mock`.
+  /// - Parameter get: Optional payload source. If not provided, returns `Client.mock`.
   ///
   /// Example:
   /// ```swift
