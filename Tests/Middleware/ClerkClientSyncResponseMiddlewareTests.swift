@@ -17,59 +17,44 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func responseClientTakesPrecedenceOverNullClient() async throws {
     try await withMainSerialExecutor {
-      var responseClientApplied = false
-      for _ in 0 ..< 3 where !responseClientApplied {
-        Clerk.shared.client = nil
+      Clerk.shared.client = nil
 
-        let middleware = ClerkClientSyncResponseMiddleware()
-        let fixture = try clientRequestResponseFixture(path: "/v1/client")
-        let payload = try JSONEncoder.clerkEncoder.encode(
-          ClientResponse<Client?>(response: .mock, client: nil)
-        )
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/client")
+      let payload = try JSONEncoder.clerkEncoder.encode(
+        ClientResponse<Client?>(response: .mock, client: nil)
+      )
 
-        try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-        responseClientApplied = Clerk.shared.client?.id == Client.mock.id
-      }
-
-      #expect(responseClientApplied)
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+      #expect(Clerk.shared.client?.id == Client.mock.id)
     }
   }
 
   @Test
   func explicitNullClientDoesNotClearState() async throws {
     try await withMainSerialExecutor {
-      var statePreserved = false
-      for _ in 0 ..< 3 where !statePreserved {
-        Clerk.shared.client = .mock
+      Clerk.shared.client = .mock
 
-        let middleware = ClerkClientSyncResponseMiddleware()
-        let fixture = try clientRequestResponseFixture(path: "/v1/me")
-        let payload = Data(#"{"response":{},"client":null}"#.utf8)
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/me")
+      let payload = Data(#"{"response":{},"client":null}"#.utf8)
 
-        try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-        statePreserved = Clerk.shared.client?.id == Client.mock.id
-      }
-
-      #expect(statePreserved)
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+      #expect(Clerk.shared.client?.id == Client.mock.id)
     }
   }
 
   @Test
   func nullResponseWithoutClientDoesNotClearState() async throws {
     try await withMainSerialExecutor {
-      var statePreserved = false
-      for _ in 0 ..< 3 where !statePreserved {
-        Clerk.shared.client = .mock
+      Clerk.shared.client = .mock
 
-        let middleware = ClerkClientSyncResponseMiddleware()
-        let fixture = try clientRequestResponseFixture(path: "/v1/unknown")
-        let payload = Data(#"{"response":null}"#.utf8)
+      let middleware = ClerkClientSyncResponseMiddleware()
+      let fixture = try clientRequestResponseFixture(path: "/v1/unknown")
+      let payload = Data(#"{"response":null}"#.utf8)
 
-        try await middleware.validate(fixture.response, data: payload, for: fixture.request)
-        statePreserved = Clerk.shared.client?.id == Client.mock.id
-      }
-
-      #expect(statePreserved)
+      try await middleware.validate(fixture.response, data: payload, for: fixture.request)
+      #expect(Clerk.shared.client?.id == Client.mock.id)
     }
   }
 

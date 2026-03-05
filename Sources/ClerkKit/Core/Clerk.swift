@@ -128,7 +128,10 @@ public final class Clerk {
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
-  /// Latest accepted sequence for client updates that originated from network responses.
+  /// Latest observed response sequence for client-affecting network updates.
+  ///
+  /// This acts as an ordering watermark and may advance even when an incoming
+  /// snapshot is rejected as stale.
   private var latestClientResponseSequence: UInt64 = 0
 
   /// The event emitter for auth events.
@@ -325,6 +328,8 @@ extension Clerk {
   func mergeClientFromResponse(_ incomingClient: Client, responseSequence: UInt64? = nil) {
     let shouldApply = shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence)
 
+    // Advance the ordering watermark for any observed sequenced response,
+    // even when this particular snapshot is rejected by stale guards.
     if let responseSequence {
       latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
     }

@@ -24,6 +24,7 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
+    // Run refresh in the background to avoid delaying the original response path.
     Task {
       _ = try? await Clerk.shared.refreshClient()
     }
