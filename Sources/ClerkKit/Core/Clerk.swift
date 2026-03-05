@@ -378,10 +378,16 @@ extension Clerk {
   }
 
   private func shouldApplyClientFromResponse(_ incomingClient: Client, responseSequence: UInt64?) -> Bool {
-    if let responseSequence,
-       responseSequence <= latestClientResponseSequence
-    {
-      return false
+    if let responseSequence {
+      if responseSequence < latestClientResponseSequence {
+        return false
+      }
+
+      if responseSequence == latestClientResponseSequence,
+         client != nil
+      {
+        return false
+      }
     }
 
     guard let currentClient = client else {

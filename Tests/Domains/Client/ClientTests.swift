@@ -157,6 +157,13 @@ struct ClientTests {
 
     #expect(Clerk.shared.client == nil)
 
+    var equalSequenceClient = Client.mock
+    equalSequenceClient.id = "equal-sequence-client"
+    equalSequenceClient.updatedAt = Date(timeIntervalSince1970: 450)
+    Clerk.shared.mergeClientFromResponse(equalSequenceClient, responseSequence: 5)
+
+    #expect(Clerk.shared.client?.id == equalSequenceClient.id)
+
     var sequencedClient = Client.mock
     sequencedClient.id = "sequenced-client"
     sequencedClient.updatedAt = Date(timeIntervalSince1970: 500)
