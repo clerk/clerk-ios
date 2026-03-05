@@ -568,6 +568,29 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
+    cacheManager?.disableClientMutations()
+    teardownManagersCore()
+    cacheManager = nil
+  }
+
+  /// Cleans up managers and waits for pending client cache persistence.
+  ///
+  /// Use this for teardown paths that must guarantee no pending cache write can
+  /// run after keychain cleanup.
+  package func cleanupManagersAndFlushPersistence() async {
+    let manager = cacheManager
+    manager?.disableClientMutations()
+
+    teardownManagersCore()
+
+    if let manager {
+      await manager.flushClientPersistence()
+    }
+
+    cacheManager = nil
+  }
+
+  private func teardownManagersCore() {
     authEventEmitter.finish()
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
@@ -579,8 +602,5 @@ extension Clerk {
     watchConnectivityCoordinator = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
-    // Prevent follow-up test state resets from scheduling keychain mutations
-    // via `client`/`environment` observers after manager cleanup.
-    cacheManager = nil
   }
 }

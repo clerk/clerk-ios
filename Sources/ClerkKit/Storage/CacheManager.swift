@@ -43,6 +43,8 @@ final class CacheManager {
 
   /// Persists client cache writes off the MainActor.
   private let clientPersistenceWorker = ClientPersistenceWorker()
+  /// Prevents scheduling client cache writes during teardown.
+  private var acceptsClientMutations = true
 
   /// Creates a new cache manager.
   ///
@@ -116,6 +118,9 @@ final class CacheManager {
   ///
   /// - Parameter client: The client to save.
   func saveClient(_ client: Client) {
+    guard acceptsClientMutations else {
+      return
+    }
     enqueueClientMutation(client)
   }
 
@@ -136,6 +141,9 @@ final class CacheManager {
 
   /// Deletes cached client data from keychain.
   func deleteClient() {
+    guard acceptsClientMutations else {
+      return
+    }
     enqueueClientMutation(nil)
   }
 
@@ -151,6 +159,11 @@ final class CacheManager {
     }
 
     await clientPersistenceWorker.waitForPersistence(upTo: targetSequence)
+  }
+
+  /// Stops accepting new client mutations during lifecycle teardown.
+  func disableClientMutations() {
+    acceptsClientMutations = false
   }
 
   // MARK: - Private Keychain Operations

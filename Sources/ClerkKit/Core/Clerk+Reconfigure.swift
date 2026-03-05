@@ -22,12 +22,12 @@ extension Clerk {
   ///   - options: Configuration options for the Clerk instance.
   /// - Throws: An error if reconfiguration fails.
   @MainActor
-  public static func reconfigure(publishableKey: String, options: Clerk.Options = .init()) throws {
-    // 1. Clear keychain data
-    clearAllKeychainItems()
+  public static func reconfigure(publishableKey: String, options: Clerk.Options = .init()) async throws {
+    // 1. Cleanup managers and flush pending client cache writes
+    await shared.cleanupManagersAndFlushPersistence()
 
-    // 2. Cleanup managers
-    shared.cleanupManagers()
+    // 2. Clear keychain data
+    clearAllKeychainItems()
 
     // 3. Clear in-memory state
     shared.client = nil
