@@ -26,7 +26,13 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
 
     // Run refresh in the background to avoid delaying the original response path.
     Task {
-      _ = try? await Clerk.shared.refreshClient()
+      do {
+        try await Clerk.shared.refreshClient()
+      } catch is CancellationError {
+        // Ignore cooperative cancellation.
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh client after invalid auth response")
+      }
     }
   }
 }

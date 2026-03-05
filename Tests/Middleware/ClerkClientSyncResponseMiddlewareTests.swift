@@ -11,6 +11,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   init() {
     configureClerkForTesting()
+    Self.requestSequence = 0
     Clerk.shared.resetClientResponseSequenceTracking()
   }
 

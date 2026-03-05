@@ -26,10 +26,14 @@ struct ClientTests {
     configureClerkForTesting()
   }
 
+  private func setUpClerkClient(_ client: Client?) {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = client
+  }
+
   @Test
   func refreshClientUsesClientServiceGet() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = nil
+    setUpClerkClient(nil)
 
     let called = LockIsolated(false)
     let expectedClient = Client(
@@ -57,8 +61,7 @@ struct ClientTests {
 
   @Test
   func refreshClientAppliesUnsequencedClientWhenStateIsEmpty() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = nil
+    setUpClerkClient(nil)
 
     var expectedClient = Client.mock
     expectedClient.id = "unsequenced-initial-client"
@@ -85,11 +88,10 @@ struct ClientTests {
 
   @Test
   func refreshClientDoesNotOverrideNewerClientSnapshot() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
     var currentClient = Client.mock
     currentClient.id = "current-client"
     currentClient.updatedAt = Date(timeIntervalSince1970: 300)
-    Clerk.shared.client = currentClient
+    setUpClerkClient(currentClient)
 
     var staleClient = Client.mock
     staleClient.id = "stale-client"
@@ -114,8 +116,7 @@ struct ClientTests {
 
   @Test
   func refreshClientNilResponseClearsState() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = .mock
+    setUpClerkClient(.mock)
 
     let service = MockClientService()
     service.getResponseHandler = {
@@ -138,8 +139,7 @@ struct ClientTests {
 
   @Test
   func refreshClientNilUnsequencedResponseClearsState() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = .mock
+    setUpClerkClient(.mock)
 
     let service = MockClientService()
     service.getResponseHandler = {
@@ -162,8 +162,7 @@ struct ClientTests {
 
   @Test
   func refreshClientIgnoresStaleNilResponse() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = nil
+    setUpClerkClient(nil)
 
     let service = MockClientService()
     var calls = 0
@@ -200,8 +199,7 @@ struct ClientTests {
 
   @Test
   func mergeClientFromResponseRequiresSequenceWhenCurrentClientIsNil() async {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = .mock
+    setUpClerkClient(.mock)
 
     await Clerk.shared.applyAuthoritativeClear(
       responseSequence: 5,
@@ -267,12 +265,10 @@ struct ClientTests {
 
   @Test
   func staleHigherSequenceSnapshotStillAdvancesOrderingAndBlocksLowerClear() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-
     var currentClient = Client.mock
     currentClient.id = "current-client"
     currentClient.updatedAt = Date(timeIntervalSince1970: 500)
-    Clerk.shared.client = currentClient
+    setUpClerkClient(currentClient)
 
     var staleHigherSequenceClient = Client.mock
     staleHigherSequenceClient.id = "stale-higher-sequence-client"
@@ -292,8 +288,7 @@ struct ClientTests {
 
   @Test
   func refreshClientWithLegacyGetOnlyServiceCanClearClient() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = .mock
+    setUpClerkClient(.mock)
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -308,8 +303,7 @@ struct ClientTests {
 
   @Test
   func refreshClientWithLegacyGetOnlyServiceCanApplyClient() async throws {
-    Clerk.shared.resetClientResponseSequenceTracking()
-    Clerk.shared.client = nil
+    setUpClerkClient(nil)
 
     var legacyClient = Client.mock
     legacyClient.id = "legacy-get-client"
