@@ -47,6 +47,34 @@ struct ClientTests {
   }
 
   @Test
+  func refreshClientAppliesUnsequencedClientWhenStateIsEmpty() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = nil
+
+    var expectedClient = Client.mock
+    expectedClient.id = "unsequenced-initial-client"
+    expectedClient.updatedAt = Date(timeIntervalSince1970: 1_800_000_000)
+
+    let service = MockClientService()
+    service.getResponseHandler = {
+      ClientServiceResponse(
+        client: expectedClient,
+        requestSequence: nil
+      )
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    let refreshedClient = try await Clerk.shared.refreshClient()
+
+    #expect(refreshedClient?.id == expectedClient.id)
+    #expect(Clerk.shared.client?.id == expectedClient.id)
+  }
+
+  @Test
   func refreshClientDoesNotOverrideNewerClientSnapshot() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
     var currentClient = Client.mock

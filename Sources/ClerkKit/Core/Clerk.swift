@@ -391,7 +391,8 @@ extension Clerk {
     }
 
     guard let currentClient = client else {
-      return responseSequence != nil
+      // Allow unsequenced snapshots only when there is no ordering history yet.
+      return responseSequence != nil || latestClientResponseSequence == 0
     }
 
     return incomingClient.updatedAt >= currentClient.updatedAt
