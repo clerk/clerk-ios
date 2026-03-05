@@ -257,6 +257,31 @@ struct ClientTests {
   }
 
   @Test
+  func staleHigherSequenceSnapshotStillAdvancesOrderingAndBlocksLowerClear() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+
+    var currentClient = Client.mock
+    currentClient.id = "current-client"
+    currentClient.updatedAt = Date(timeIntervalSince1970: 500)
+    Clerk.shared.client = currentClient
+
+    var staleHigherSequenceClient = Client.mock
+    staleHigherSequenceClient.id = "stale-higher-sequence-client"
+    staleHigherSequenceClient.updatedAt = Date(timeIntervalSince1970: 400)
+    Clerk.shared.mergeClientFromResponse(staleHigherSequenceClient, responseSequence: 11)
+
+    await Clerk.shared.applyAuthoritativeClear(
+      responseSequence: 10,
+      flush: false,
+      requiresOrderingProof: true
+    )
+
+    let resultingClient = try #require(Clerk.shared.client)
+    #expect(resultingClient.id == currentClient.id)
+    #expect(resultingClient.updatedAt == currentClient.updatedAt)
+  }
+
+  @Test
   func refreshClientWithLegacyGetOnlyServiceCanClearClient() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
     Clerk.shared.client = .mock

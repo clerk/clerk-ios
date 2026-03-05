@@ -323,12 +323,14 @@ extension Clerk {
   /// Uses `updatedAt` to avoid regressing to stale client snapshots when
   /// multiple requests complete out of order.
   func mergeClientFromResponse(_ incomingClient: Client, responseSequence: UInt64? = nil) {
-    guard shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence) else {
-      return
-    }
+    let shouldApply = shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence)
 
     if let responseSequence {
       latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
+    }
+
+    guard shouldApply else {
+      return
     }
 
     client = incomingClient
