@@ -327,12 +327,7 @@ extension Clerk {
   /// multiple requests complete out of order.
   func mergeClientFromResponse(_ incomingClient: Client, responseSequence: UInt64? = nil) {
     let shouldApply = shouldApplyClientFromResponse(incomingClient, responseSequence: responseSequence)
-
-    // Advance the ordering watermark for any observed sequenced response,
-    // even when this particular snapshot is rejected by stale guards.
-    if let responseSequence {
-      latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
-    }
+    advanceResponseSequence(responseSequence)
 
     guard shouldApply else {
       return
@@ -357,9 +352,7 @@ extension Clerk {
       return
     }
 
-    if let responseSequence {
-      latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
-    }
+    advanceResponseSequence(responseSequence)
 
     client = nil
 
@@ -382,6 +375,14 @@ extension Clerk {
   /// runtime reconfigure flows). Do not call from normal auth flows.
   func resetClientResponseSequenceTracking() {
     latestClientResponseSequence = 0
+  }
+
+  /// Advances the ordering watermark for any observed sequenced response,
+  /// even when the particular snapshot is rejected by stale guards.
+  private func advanceResponseSequence(_ responseSequence: UInt64?) {
+    if let responseSequence {
+      latestClientResponseSequence = max(latestClientResponseSequence, responseSequence)
+    }
   }
 
   private func shouldApplyClientFromResponse(_ incomingClient: Client, responseSequence: UInt64?) -> Bool {
