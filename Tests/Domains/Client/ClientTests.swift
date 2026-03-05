@@ -100,6 +100,30 @@ struct ClientTests {
   }
 
   @Test
+  func refreshClientNilUnsequencedResponseClearsState() async throws {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    Clerk.shared.client = .mock
+
+    let service = MockClientService()
+    service.getResponseHandler = {
+      ClientServiceResponse(
+        client: nil,
+        requestSequence: nil
+      )
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    let refreshedClient = try await Clerk.shared.refreshClient()
+
+    #expect(refreshedClient == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
   func refreshClientIgnoresStaleNilResponse() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
     Clerk.shared.client = nil

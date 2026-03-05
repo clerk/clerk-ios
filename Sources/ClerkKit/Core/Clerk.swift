@@ -302,7 +302,7 @@ extension Clerk {
     } else {
       await applyAuthoritativeClear(
         responseSequence: response.requestSequence,
-        flush: false,
+        flush: true,
         requiresOrderingProof: true
       )
     }
@@ -399,7 +399,9 @@ extension Clerk {
 
   private func shouldApplyAuthoritativeClear(responseSequence: UInt64?) -> Bool {
     guard let responseSequence else {
-      return false
+      // `nil` sequence means ordering metadata is unavailable for this response.
+      // Treat it as authoritative and skip stale-order rejection.
+      return true
     }
 
     // Allow clears from the same response sequence that may have already merged
