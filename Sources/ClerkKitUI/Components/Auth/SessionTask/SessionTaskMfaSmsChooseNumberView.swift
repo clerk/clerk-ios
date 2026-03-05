@@ -87,13 +87,10 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   private var chooseNumberContent: some View {
     VStack(spacing: 0) {
-      Badge(key: "Two-step verification setup", style: .secondary)
-        .padding(.bottom, 16)
-
-      VStack(spacing: 8) {
-        HeaderView(style: .title, text: "Add SMS code verification")
-        HeaderView(style: .subtitle, text: "Choose the phone number you want to use for SMS code two-step verification")
-      }
+      SessionTaskHeaderSection(
+        title: "Add SMS code verification",
+        subtitle: "Choose the phone number you want to use for SMS code two-step verification"
+      )
       .padding(.bottom, 32)
 
       VStack(spacing: 12) {
