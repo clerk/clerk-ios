@@ -173,6 +173,38 @@ struct ClientTests {
   }
 
   @Test
+  func mergeClientFromResponseRejectsEqualSequenceWhenCurrentClientExists() async {
+    Clerk.shared.resetClientResponseSequenceTracking()
+    let currentSequence: UInt64 = 5
+
+    await Clerk.shared.applyAuthoritativeClear(
+      responseSequence: currentSequence,
+      flush: false,
+      requiresOrderingProof: true
+    )
+
+    var existingClient = Client.mock
+    existingClient.id = "existing-client"
+    existingClient.updatedAt = Date(timeIntervalSince1970: 500)
+    Clerk.shared.client = existingClient
+
+    var equalSequenceClient = Client.mock
+    equalSequenceClient.id = "equal-sequence-incoming-client"
+    equalSequenceClient.updatedAt = Date(timeIntervalSince1970: 600)
+    Clerk.shared.mergeClientFromResponse(equalSequenceClient, responseSequence: currentSequence)
+
+    #expect(Clerk.shared.client?.id == existingClient.id)
+    #expect(Clerk.shared.client?.updatedAt == existingClient.updatedAt)
+
+    var newerSequenceClient = Client.mock
+    newerSequenceClient.id = "newer-sequence-client"
+    newerSequenceClient.updatedAt = Date(timeIntervalSince1970: 700)
+    Clerk.shared.mergeClientFromResponse(newerSequenceClient, responseSequence: currentSequence + 1)
+
+    #expect(Clerk.shared.client?.id == newerSequenceClient.id)
+  }
+
+  @Test
   func refreshClientWithLegacyGetOnlyServiceCanClearClient() async throws {
     Clerk.shared.resetClientResponseSequenceTracking()
     Clerk.shared.client = .mock
