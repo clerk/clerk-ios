@@ -46,13 +46,10 @@ struct SessionTaskBackupCodesView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        Badge(key: "Two-step verification setup", style: .secondary)
-          .padding(.bottom, 16)
-
-        VStack(spacing: 8) {
-          HeaderView(style: .title, text: title)
-          HeaderView(style: .subtitle, text: subtitle)
-        }
+        SessionTaskHeaderSection(
+          title: title,
+          subtitle: subtitle
+        )
         .padding(.bottom, 32)
 
         VStack(spacing: 0) {

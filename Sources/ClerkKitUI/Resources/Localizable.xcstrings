@@ -13955,6 +13955,76 @@
         }
       }
     },
+    "Your account requires a new password before you can continue" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتطلب حسابك كلمة مرور جديدة قبل أن تتمكن من المتابعة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Konto erfordert ein neues Passwort, bevor Sie fortfahren können."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο λογαριασμός σας απαιτεί νέο κωδικό πρόσβασης πριν μπορέσετε να συνεχίσετε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuenta requiere una nueva contraseña antes de poder continuar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre compte nécessite un nouveau mot de passe avant de pouvoir continuer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "जारी रखने से पहले आपके खाते को एक नए पासवर्ड की आवश्यकता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo account richiede una nuova password prima di poter continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続行するには、アカウントに新しいパスワードを設定する必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계속하기 전에 계정에 새 비밀번호를 설정해야 합니다."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua conta requer uma nova senha antes de poder continuar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的账户需要设置新密码才能继续。"
+          }
+        }
+      }
+    },
     "Your account requires additional security. You need to set up two-step verification to continue." : {
       "extractionState" : "stale",
       "localizations" : {

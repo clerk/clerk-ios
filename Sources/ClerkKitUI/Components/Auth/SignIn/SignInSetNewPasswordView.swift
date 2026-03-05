@@ -47,8 +47,17 @@ struct SignInSetNewPasswordView: View {
 
     ScrollView {
       VStack(spacing: 0) {
-        HeaderView(style: .title, text: "Set new password")
-          .padding(.bottom, 32)
+        VStack(spacing: 8) {
+          HeaderView(style: .title, text: "Set new password")
+
+          if mode == .sessionTask {
+            Text("Your account requires a new password before you can continue", bundle: .module)
+              .foregroundStyle(theme.colors.warning)
+              .font(theme.fonts.subheadline)
+              .multilineTextAlignment(.center)
+          }
+        }
+        .padding(.bottom, 32)
 
         VStack(spacing: 24) {
           ClerkTextField(
