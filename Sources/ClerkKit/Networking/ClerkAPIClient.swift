@@ -22,9 +22,6 @@ actor APIClient {
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
   /// Monotonic ordering token for responses produced by this API client instance.
-  ///
-  /// This sequence space is intentionally independent from Clerk's runtime client
-  /// response watermark and cache persistence sequencing.
   private var requestSequenceCounter: UInt64 = 0
 
   init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
