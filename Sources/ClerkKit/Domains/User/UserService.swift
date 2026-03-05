@@ -334,7 +334,7 @@ final class UserService: UserServiceProtocol {
     await Clerk.shared.applyAuthoritativeClear(
       responseSequence: response.requestSequence,
       flush: true,
-      requiresOrderingProof: true
+      requiresOrderingProof: false
     )
     Clerk.shared.auth.send(.accountDeleted)
     return deletedObject

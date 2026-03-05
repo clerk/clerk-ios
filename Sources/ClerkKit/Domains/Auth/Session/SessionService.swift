@@ -56,7 +56,7 @@ final class SessionService: SessionServiceProtocol {
         await Clerk.shared.applyAuthoritativeClear(
           responseSequence: response.requestSequence,
           flush: true,
-          requiresOrderingProof: true
+          requiresOrderingProof: false
         )
       }
     } else {
@@ -69,7 +69,7 @@ final class SessionService: SessionServiceProtocol {
       await Clerk.shared.applyAuthoritativeClear(
         responseSequence: response.requestSequence,
         flush: true,
-        requiresOrderingProof: true
+        requiresOrderingProof: false
       )
     }
   }

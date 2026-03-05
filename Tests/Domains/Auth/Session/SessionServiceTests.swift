@@ -36,6 +36,36 @@ struct SessionServiceTests {
   }
 
   @Test
+  func signOutAppliesClearWhenResponseSequenceIsOlderThanLatestAccepted() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
+
+    var latestClient = Client.mock
+    latestClient.id = "latest-client"
+    latestClient.updatedAt = Date(timeIntervalSince1970: 2000)
+    Clerk.shared.client = .mock
+    Clerk.shared.mergeClientFromResponse(latestClient, responseSequence: 10)
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "DELETE")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
+
+    #expect(requestHandled.value)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
   func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
     let removeRequestHandled = LockIsolated(false)
