@@ -11,7 +11,7 @@ import Foundation
 ///
 /// This enum provides a single source of truth for all keychain keys used by the Clerk SDK,
 /// making it easier to maintain and iterate over all keys when needed (e.g., for clearing all data).
-enum ClerkKeychainKey: String, CaseIterable, Sendable {
+enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached client data.
   case cachedClient
 

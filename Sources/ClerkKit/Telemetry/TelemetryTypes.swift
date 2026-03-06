@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Use this to control sampling, buffering, and environment metadata for
 /// development-only telemetry in the Clerk iOS SDK.
-struct TelemetryCollectorOptions: Sendable {
+struct TelemetryCollectorOptions {
   /// Sampling rate in the range [0, 1].
   var samplingRate: Double
   /// Maximum number of events to buffer before forcing a flush.
@@ -44,7 +44,7 @@ struct TelemetryCollectorOptions: Sendable {
 /// A telemetry event as sent to the Clerk telemetry backend.
 ///
 /// iOS does not include `cv` (Clerk version) or `sk` (secret key).
-struct TelemetryEvent: Codable, Sendable {
+struct TelemetryEvent: Codable {
   /// The event name (e.g. "method_invoked").
   let event: String
   /// The instance type string (e.g. "development", "production").
@@ -60,7 +60,7 @@ struct TelemetryEvent: Codable, Sendable {
 }
 
 /// Raw input describing a telemetry event to be recorded by the collector.
-package struct TelemetryEventRaw: Sendable {
+package struct TelemetryEventRaw {
   /// The event name.
   let event: String
   /// Arbitrary JSON payload.

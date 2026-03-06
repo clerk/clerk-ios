@@ -94,7 +94,7 @@ struct UserTests {
     #expect(captured.value == "+1234567890")
   }
 
-  struct ExternalAccountScenario: Codable, Sendable, Equatable {
+  struct ExternalAccountScenario: Codable, Equatable {
     let redirectUrl: String?
     let additionalScopes: [String]?
   }
@@ -225,7 +225,7 @@ struct UserTests {
     #expect(params.1 == 10)
   }
 
-  struct OrganizationSuggestionsScenario: Codable, Sendable, Equatable {
+  struct OrganizationSuggestionsScenario: Codable, Equatable {
     let status: String?
   }
 

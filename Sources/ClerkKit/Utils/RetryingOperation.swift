@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct RetryPolicy: Sendable {
+struct RetryPolicy {
   let maxAttempts: Int
   let initialDelay: Duration
   let maximumDelay: Duration

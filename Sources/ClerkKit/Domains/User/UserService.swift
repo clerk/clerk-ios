@@ -30,6 +30,7 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func delete() async throws -> DeletedObject
 }
 
+// swiftlint:disable:next type_body_length
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
   @MainActor

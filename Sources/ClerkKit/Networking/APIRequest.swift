@@ -1,7 +1,7 @@
 import Foundation
 
 /// Supported HTTP verbs for Clerk network requests.
-enum HTTPMethod: String, Sendable {
+enum HTTPMethod: String {
   case get = "GET"
   case post = "POST"
   case put = "PUT"
@@ -57,10 +57,10 @@ enum RequestBody: @unchecked Sendable {
 }
 
 /// Canonical empty payload used for requests where no response body is anticipated.
-struct EmptyResponse: Codable, Sendable {}
+struct EmptyResponse: Codable {}
 
 /// Describes a single API request with a strongly typed response.
-struct Request<Response: Decodable & Sendable>: Sendable {
+struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]
@@ -165,6 +165,6 @@ enum RequestError: Error {
 }
 
 /// Wraps a decoded response value from the API client.
-struct APIResponse<Value: Sendable>: Sendable {
+struct APIResponse<Value: Sendable> {
   let value: Value
 }

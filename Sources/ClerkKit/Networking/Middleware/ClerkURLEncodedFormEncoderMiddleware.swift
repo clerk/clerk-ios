@@ -20,7 +20,10 @@ struct ClerkURLEncodedFormEncoderMiddleware: ClerkRequestMiddleware {
         switch value {
         case .object, .array:
           let nestedData = try JSONEncoder().encode(value)
-          dict[key] = .string(String(decoding: nestedData, as: UTF8.self))
+          guard let nestedString = String(bytes: nestedData, encoding: .utf8) else {
+            continue
+          }
+          dict[key] = .string(nestedString)
         default:
           continue
         }
