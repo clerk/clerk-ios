@@ -117,7 +117,10 @@ extension URLRequest {
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
-    let mutableRequest = (self as NSURLRequest).mutableCopy() as! NSMutableURLRequest
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
     URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
     self = mutableRequest as URLRequest
   }

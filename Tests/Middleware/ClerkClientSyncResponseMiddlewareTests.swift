@@ -38,12 +38,12 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 }
 
-private struct ClientEnvelope<Response: Codable & Sendable>: Codable, Sendable {
+private struct ClientEnvelope<Response: Codable>: Codable {
   let response: Response
   let client: Client?
 }
 
-private struct ClientOnlyEnvelope: Codable, Sendable {
+private struct ClientOnlyEnvelope: Codable {
   let response: Client
   let client: Client?
 }
