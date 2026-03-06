@@ -52,16 +52,39 @@ import SwiftUI
 ///   }
 /// }
 /// ```
+///
+/// Embedded in a parent `NavigationStack`:
+///
+/// ```swift
+/// struct ContentView: View {
+///   @State private var path = NavigationPath()
+///
+///   var body: some View {
+///     NavigationStack(path: $path) {
+///       HomeView()
+///         .navigationDestination(for: AppRoute.self) { route in
+///           switch route {
+///           case .profile:
+///             UserProfileView(isDismissable: false, navigationPath: $path)
+///           }
+///         }
+///     }
+///   }
+/// }
+/// ```
 public struct UserProfileView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  let isDismissable: Bool
+  private let isDismissable: Bool
+  private let navigationPath: Binding<NavigationPath>?
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var navigation = UserProfileNavigation()
+  @State private var initialPathCount: Int
+  @State private var internalPath = NavigationPath()
+  @State private var navigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
@@ -73,52 +96,25 @@ public struct UserProfileView: View {
   ///   can be used in sheets or other dismissable contexts. When `false`, no
   ///   dismiss button is shown, making it suitable for full-screen usage.
   ///   Defaults to `true`.
-  public init(isDismissable: Bool = true) {
+  ///   - navigationPath: An optional binding to a parent `NavigationPath`. When provided,
+  ///   the view skips creating its own `NavigationStack` and pushes destinations onto the
+  ///   parent's path instead. Use this when embedding `UserProfileView` inside your own
+  ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
+  public init(isDismissable: Bool = true, navigationPath: Binding<NavigationPath>? = nil) {
     self.isDismissable = isDismissable
+    self.navigationPath = navigationPath
+    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
   }
 
   public var body: some View {
     if let user = clerk.user {
-      NavigationStack(path: $navigation.path) {
-        VStack(spacing: 0) {
-          ScrollView {
-            LazyVStack(spacing: 0) {
-              UserProfileHeaderView(
-                user: user,
-                onUpdateProfile: {
-                  updateProfileIsPresented = true
-                }
-              )
-
-              VStack(spacing: 48) {
-                profileSection
-
-                accountSection
-              }
-            }
+      Group {
+        if navigationPath == nil {
+          NavigationStack(path: $internalPath) {
+            profileContent(user: user)
           }
-          .background(theme.colors.muted)
-
-          SecuredByClerkFooter()
-        }
-        .animation(.default, value: user)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .principal) {
-            Text("Account", bundle: .module)
-              .font(theme.fonts.headline)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.foreground)
-          }
-
-          if isDismissable {
-            ToolbarItem(placement: .topBarTrailing) {
-              DismissButton()
-            }
-          }
-        }
-        .navigationDestination(for: Destination.self) {
-          $0.view
+        } else {
+          profileContent(user: user)
         }
       }
       .tint(theme.colors.primary)
@@ -159,12 +155,84 @@ public struct UserProfileView: View {
         await clerk.telemetry.record(
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
-            payload: ["isDismissable": .bool(isDismissable)]
+            payload: [
+              "isDismissable": .bool(isDismissable),
+              "isEmbedded": .bool(navigationPath != nil),
+            ]
           )
         )
       }
       .environment(navigation)
       .environment(codeLimiter)
+      .environment(\.userProfileRouter, router)
+    }
+  }
+
+  private var router: UserProfileRouter {
+    UserProfileRouter(
+      push: { destination in
+        if let navigationPath {
+          navigationPath.wrappedValue.append(destination)
+        } else {
+          internalPath.append(destination)
+        }
+      },
+      popToRoot: { includingSelf in
+        let extraRemoval = includingSelf ? 1 : 0
+        if let navigationPath {
+          let currentCount = navigationPath.wrappedValue.count
+          let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
+          navigationPath.wrappedValue.removeLast(entriesToRemove)
+        } else {
+          internalPath = NavigationPath()
+        }
+      }
+    )
+  }
+
+  private func profileContent(user: User) -> some View {
+    VStack(spacing: 0) {
+      ScrollView {
+        LazyVStack(spacing: 0) {
+          UserProfileHeaderView(
+            user: user,
+            onUpdateProfile: {
+              updateProfileIsPresented = true
+            }
+          )
+
+          VStack(spacing: 48) {
+            profileSection
+
+            accountSection
+          }
+        }
+      }
+      .background(theme.colors.muted)
+
+      SecuredByClerkFooter()
+    }
+    .animation(.default, value: user)
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Account", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
+      }
+
+      if isDismissable {
+        ToolbarItem(placement: .topBarTrailing) {
+          DismissButton()
+        }
+      }
+    }
+    .navigationDestination(for: Destination.self) { destination in
+      destination.view
+        .environment(navigation)
+        .environment(codeLimiter)
+        .environment(\.userProfileRouter, router)
     }
   }
 }
@@ -175,11 +243,11 @@ extension UserProfileView {
   private var profileSection: some View {
     VStack(spacing: 0) {
       row(icon: "icon-profile", text: "Manage account") {
-        navigation.path.append(Destination.profileDetail)
+        router.push(.profileDetail)
       }
 
       row(icon: "icon-security", text: "Security") {
-        navigation.path.append(Destination.security)
+        router.push(.security)
       }
     }
     .background(theme.colors.background)
@@ -336,7 +404,7 @@ private struct UserProfileHeaderView: View {
 // MARK: - Destination
 
 extension UserProfileView {
-  enum Destination: Hashable {
+  enum Destination: Hashable, Sendable {
     case profileDetail
     case security
 
@@ -374,7 +442,7 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileNavigation())
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 
@@ -399,7 +467,34 @@ extension UserProfileView {
       }
     )
     .environment(AuthState())
-    .environment(UserProfileNavigation())
+    .environment(UserProfileSheetNavigation())
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Embedded in parent NavigationStack") {
+  @Previewable @State var navigationPath = NavigationPath()
+
+  UserProfileView(isDismissable: false, navigationPath: $navigationPath)
+    .environment(
+      Clerk.preview { builder in
+        builder.services.clientService.getHandler = {
+          try? await Task.sleep(for: .seconds(1))
+          return Client.mock
+        }
+
+        builder.services.environmentService.getHandler = {
+          try? await Task.sleep(for: .seconds(1))
+          return Clerk.Environment.mock
+        }
+
+        builder.services.userService.getSessionsHandler = { _ in
+          try? await Task.sleep(for: .seconds(1))
+          return [Session.mock, Session.mock2]
+        }
+      }
+    )
+    .environment(AuthState())
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 

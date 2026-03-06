@@ -10,7 +10,7 @@ import SwiftUI
 
 struct BackupCodesView: View {
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileNavigation.self) private var navigation
+  @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
   enum MfaType {

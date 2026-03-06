@@ -12,7 +12,8 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(UserProfileNavigation.self) private var navigation
+  @Environment(UserProfileSheetNavigation.self) private var navigation
+  @Environment(\.userProfileRouter) private var router
 
   @State private var deleteAccount = ""
   @State private var error: Error?
@@ -95,9 +96,11 @@ extension UserProfileDeleteAccountConfirmationView {
 
     do {
       try await user.delete()
+      let shouldPresentAccountSwitcher = clerk.auth.sessions.count > 1
+      let shouldPopIncludingSelf = clerk.user == nil && !shouldPresentAccountSwitcher
       dismiss()
-      navigation.path = NavigationPath()
-      if clerk.auth.sessions.count > 1 {
+      router.popToRoot(shouldPopIncludingSelf)
+      if shouldPresentAccountSwitcher {
         navigation.accountSwitcherIsPresented = true
       }
     } catch {
