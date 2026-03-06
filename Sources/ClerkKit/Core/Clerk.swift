@@ -406,6 +406,10 @@ extension Clerk {
     client = incoming
   }
 
+  func applyWatchSyncedClient(_ incoming: Client) {
+    client = incoming
+  }
+
   func storeReceivedDeviceToken(_ token: String) {
     do {
       try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)

@@ -144,7 +144,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
     do {
       let receivedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
-      Clerk.shared.applyResponseClient(receivedClient)
+      Clerk.shared.applyWatchSyncedClient(receivedClient)
     } catch {
       ClerkLogger.logError(error, message: "Failed to decode Client from watch app")
     }

@@ -78,10 +78,40 @@ struct ClerkResponseClientStateTests {
     #expect(Clerk.shared.client?.signIn?.id == original.signIn?.id)
   }
 
-  private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval) -> Client {
+  @Test
+  func applyWatchSyncedClientAcceptsSessionSwitchAtSameTimestamp() {
+    configureClerkForTesting()
+    let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
+    let replacement = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
+
+    Clerk.shared.client = original
+
+    Clerk.shared.applyWatchSyncedClient(replacement)
+
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
+  }
+
+  @Test
+  func applyWatchSyncedClientOverridesPreviouslyAppliedResponseSequence() {
+    configureClerkForTesting()
+    let responseClient = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
+    let syncedClient = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
+
+    Clerk.shared.client = nil
+    Clerk.shared.applyResponseClient(responseClient, responseSequence: 10)
+
+    Clerk.shared.applyWatchSyncedClient(syncedClient)
+
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
+  }
+
+  private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
     var client = Client.mockSignedOut
     client.id = id
     client.updatedAt = Date(timeIntervalSince1970: updatedAt)
+    client.lastActiveSessionId = lastActiveSessionId
     if let signInId {
       var signIn = SignIn.mock
       signIn.id = signInId
