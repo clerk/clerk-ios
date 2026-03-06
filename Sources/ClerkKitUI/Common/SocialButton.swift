@@ -23,11 +23,9 @@ struct SocialButton: View {
   private var fallbackProviderText: some View {
     ViewThatFits(in: .horizontal) {
       Text("Continue with \(provider.name)", bundle: .module)
-        .lineLimit(1)
       Text(provider.name)
-        .lineLimit(1)
     }
-    .fixedSize(horizontal: true, vertical: false)
+    .lineLimit(1)
     .font(theme.fonts.body)
     .foregroundStyle(theme.colors.foreground)
   }
@@ -48,7 +46,6 @@ struct SocialButton: View {
               .font(theme.fonts.body)
               .foregroundStyle(theme.colors.foreground)
           }
-          .fixedSize(horizontal: true, vertical: false)
 
           ProviderIconView(
             provider: provider,
@@ -58,6 +55,8 @@ struct SocialButton: View {
         }
       } else if state.error != nil {
         fallbackProviderText
+      } else {
+        fallbackProviderText.hidden()
       }
     }
     .transition(.opacity.animation(.easeInOut(duration: 0.25)))
@@ -139,6 +138,7 @@ extension SocialButton {
     }
   }
   .padding()
+  .environment(Clerk.preview())
 }
 
 #endif
