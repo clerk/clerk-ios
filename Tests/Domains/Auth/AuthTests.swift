@@ -23,11 +23,11 @@ struct AuthTests {
     )
   }
 
-  struct SignOutScenario: Codable, Sendable, Equatable {
+  struct SignOutScenario: Codable, Equatable {
     let sessionId: String?
   }
 
-  struct SetActiveScenario: Codable, Sendable, Equatable {
+  struct SetActiveScenario: Codable, Equatable {
     let organizationId: String?
   }
 

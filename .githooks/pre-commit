@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Pre-commit hook to format staged Swift files
+set -euo pipefail
 
-# Check if swiftformat is installed
-if ! command -v swiftformat > /dev/null; then
-    echo "Error: SwiftFormat is not installed. Run 'make setup' to install it."
-    exit 1
-fi
+# Pre-commit hook to format staged Swift files
+repo_root="$(git rev-parse --show-toplevel)"
+swiftformat_bin="$repo_root/.tools/bin/swiftformat"
+
+"$repo_root/scripts/install-swiftformat.sh" > /dev/null
 
 # Filter staged Swift files (null-delimited for safe handling of special characters)
 # Store filtered files in a temporary file to avoid reading git output multiple times
@@ -26,10 +26,9 @@ fi
 
 # Format staged Swift files (using null-delimited input)
 echo "Formatting staged Swift files..."
-cat "$temp_file" | xargs -0 swiftformat
+xargs -0 "$swiftformat_bin" < "$temp_file"
 
 # Re-stage the formatted files (using null-delimited input)
-cat "$temp_file" | xargs -0 git add
+xargs -0 git add < "$temp_file"
 
 echo "✅ Swift files formatted and re-staged"
-

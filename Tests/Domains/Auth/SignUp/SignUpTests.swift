@@ -17,7 +17,7 @@ struct SignUpTests {
     )
   }
 
-  struct ReloadScenario: Codable, Sendable, Equatable {
+  struct ReloadScenario: Codable, Equatable {
     let rotatingTokenNonce: String?
   }
 

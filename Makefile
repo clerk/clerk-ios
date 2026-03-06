@@ -1,4 +1,7 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-integration help create-env install-1password-cli fetch-test-keys
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+
+SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
+SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 
 
 # Default target
@@ -13,7 +16,9 @@ help:
 	@echo "  make check         - Run both format-check and lint (for CI)"
 	@echo "  make test          - Run unit tests"
 	@echo "  make test-integration - Run only integration tests"
-	@echo "  make install-tools - Install SwiftFormat and SwiftLint via Homebrew"
+	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
+	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
+	@echo "  make update-swiftlint - Update pinned SwiftLint to the latest release"
 	@echo "  make install-hooks - Set up pre-commit hook to auto-format staged Swift files"
 	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
 	@echo "  make create-example-local-secrets-plists - Create LocalSecrets.plist files for examples from templates"
@@ -49,20 +54,16 @@ ifneq (,$(filter set-example-pk,$(MAKECMDGOALS)))
 	@:
 endif
 
-# Install SwiftFormat and SwiftLint via Homebrew
+# Install the repo-pinned SwiftFormat and SwiftLint
 install-tools:
-	@if ! command -v swiftformat > /dev/null; then \
-		echo "Installing SwiftFormat via Homebrew..."; \
-		brew install swiftformat; \
-	else \
-		echo "✅ SwiftFormat installed"; \
-	fi
-	@if ! command -v swiftlint > /dev/null; then \
-		echo "Installing SwiftLint via Homebrew..."; \
-		brew install swiftlint; \
-	else \
-		echo "✅ SwiftLint installed"; \
-	fi
+	@./scripts/install-swiftformat.sh
+	@./scripts/install-swiftlint.sh
+
+update-swiftformat:
+	@./scripts/update-swiftformat-to-latest.sh
+
+update-swiftlint:
+	@./scripts/update-swiftlint-to-latest.sh
 
 # Install pre-commit hook
 install-hooks:
@@ -111,22 +112,26 @@ fetch-test-keys: install-1password-cli create-env
 # Format all Swift files
 format:
 	@echo "Formatting Swift files..."
-	@swiftformat .
+	@./scripts/install-swiftformat.sh > /dev/null
+	@"$(SWIFTFORMAT)" .
 
 # Check formatting without modifying files
 format-check:
 	@echo "Checking Swift file formatting..."
-	swiftformat --lint .
+	@./scripts/install-swiftformat.sh > /dev/null
+	@"$(SWIFTFORMAT)" --lint .
 
 # Run SwiftLint
 lint:
 	@echo "Running SwiftLint..."
-	swiftlint
+	@./scripts/install-swiftlint.sh > /dev/null
+	@"$(SWIFTLINT)"
 
 # Run SwiftLint with auto-fix
 lint-fix:
 	@echo "Running SwiftLint with auto-fix..."
-	@swiftlint --fix
+	@./scripts/install-swiftlint.sh > /dev/null
+	@"$(SWIFTLINT)" --fix
 
 # Run both format-check and lint
 check: format-check lint

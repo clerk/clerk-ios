@@ -27,7 +27,7 @@ protocol NetworkRetryMiddleware: Sendable {
 }
 
 /// Describes the order of execution for networking middleware.
-struct NetworkingPipeline: Sendable {
+struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
   private let responseMiddleware: [any ClerkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]

@@ -232,7 +232,7 @@ struct SignInTests {
     #expect(params.1.strategy == .emailCode)
   }
 
-  enum MfaVerifyScenario: String, CaseIterable, Codable, Sendable {
+  enum MfaVerifyScenario: String, CaseIterable, Codable {
     case phoneCode
     case totp
     case backupCode
@@ -398,7 +398,7 @@ struct SignInTests {
     #expect(params.1.signOutOfOtherSessions == true)
   }
 
-  struct ReloadScenario: Codable, Sendable, Equatable {
+  struct ReloadScenario: Codable, Equatable {
     let rotatingTokenNonce: String?
   }
 

@@ -12,7 +12,7 @@ import Foundation
 /// ```swift
 /// func post(_ params: SignUp.CreateParams) -> Request<ClientResponse<SignUp>>
 /// ```
-struct ClientResponse<Response: Codable & Sendable>: Codable, Sendable {
+struct ClientResponse<Response: Codable & Sendable>: Codable {
   let response: Response
   let client: Client?
 }

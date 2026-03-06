@@ -13,8 +13,8 @@ make setup
 ```
 
 This command will:
-1. Check if SwiftFormat is installed, and install it via Homebrew if needed
-2. Check if SwiftLint is installed, and install it via Homebrew if needed
+1. Install the repo-pinned SwiftFormat version
+2. Install the repo-pinned SwiftLint version
 3. Set up the pre-commit hook to automatically format staged Swift files
 4. Configure Xcode file header templates for both `Clerk.xcworkspace` and Swift package workspace views
 5. Create a `.keys.json` file for integration test configuration (if it doesn't exist)
@@ -30,7 +30,6 @@ After running `make setup`, you're ready to start developing!
 
 - macOS with Xcode 16+ installed
 - Swift 5.10+
-- Homebrew (for installing SwiftFormat and SwiftLint)
 - Git
 
 ## Development Workflow
@@ -48,12 +47,14 @@ After running `make setup`, you're ready to start developing!
    ```bash
    make format        # Format all Swift files
    make format-check  # Check formatting without modifying files
+   make update-swiftformat  # Update the pinned SwiftFormat release
    ```
 
 4. **Linting** (if needed):
    ```bash
    make lint      # Check for lint issues
    make lint-fix  # Auto-fix lint issues where possible
+   make update-swiftlint  # Update the pinned SwiftLint release
    ```
 
 5. **Run all checks** before pushing:
@@ -64,7 +65,9 @@ After running `make setup`, you're ready to start developing!
 ### Available Make Commands
 
 - `make setup` - Install tools/hooks, configure Xcode file headers, and create example LocalSecrets plists
-- `make install-tools` - Install SwiftFormat and SwiftLint via Homebrew
+- `make install-tools` - Install pinned SwiftFormat and SwiftLint
+- `make update-swiftformat` - Update pinned SwiftFormat to the latest release
+- `make update-swiftlint` - Update pinned SwiftLint to the latest release
 - `make install-hooks` - Install the pre-commit hook
 - `make install-xcode-template-macros` - Sync Xcode file header templates for both workspace and package views
 - `make create-example-local-secrets-plists` - Create `LocalSecrets.plist` files for examples if missing
@@ -81,6 +84,8 @@ After running `make setup`, you're ready to start developing!
 ## Code Formatting
 
 This project uses **SwiftFormat** for code formatting. The configuration is stored in `.swiftformat`.
+
+- **Pinned version**: `0.60.0`
 
 - **Indentation**: 2 spaces
 - **Line length**: 1000 characters (very permissive)
@@ -103,6 +108,8 @@ To ensure consistent indentation in Xcode, configure your editor to use 2 spaces
 ## Code Linting
 
 This project uses **SwiftLint** for code quality checks. The configuration is stored in `.swiftlint.yml`.
+
+- **Pinned version**: `0.63.2`
 
 SwiftLint checks for:
 - Code quality issues

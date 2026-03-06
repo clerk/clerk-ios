@@ -49,6 +49,7 @@ Package.resolved
 .swiftpm/
 
 .build/
+.tools/
 
 # CocoaPods
 #

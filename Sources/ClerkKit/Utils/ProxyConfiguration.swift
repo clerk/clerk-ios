@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ProxyConfiguration: Sendable {
+struct ProxyConfiguration {
   let baseURL: URL
   let pathSegments: [String]
 

@@ -9,7 +9,7 @@ import Foundation
 ///
 /// `ClerkEvent` represents general events that occur during Clerk operations,
 /// such as receiving data from the API.
-enum ClerkEvent: Sendable {
+enum ClerkEvent {
   /// The device token was received from the API.
   case deviceTokenReceived(token: String)
   /// The client was received from the API.

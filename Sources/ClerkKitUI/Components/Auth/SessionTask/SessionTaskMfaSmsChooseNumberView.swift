@@ -76,12 +76,13 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   private var addPhoneContent: some View {
     SessionTaskAddPhoneForm(
       onBeginSubmit: { isSubmittingPhone = true },
-      onError: { isSubmittingPhone = false }
-    ) { newPhoneNumber in
-      try await newPhoneNumber.sendCode()
-      codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
-      navigation.path.append(.taskVerifySms(phoneNumber: newPhoneNumber))
-    }
+      onError: { isSubmittingPhone = false },
+      onPhoneNumberCreated: { newPhoneNumber in
+        try await newPhoneNumber.sendCode()
+        codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
+        navigation.path.append(.taskVerifySms(phoneNumber: newPhoneNumber))
+      }
+    )
   }
 
   private var chooseNumberContent: some View {
@@ -97,15 +98,18 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
       VStack(spacing: 12) {
         ForEach(availablePhoneNumbers) { phoneNumber in
-          AsyncButton {
-            await sendCode(to: phoneNumber)
-          } label: { isRunning in
-            AddMfaSmsRow(
-              phoneNumber: phoneNumber,
-              isSelected: false
-            )
-            .overlayProgressView(isActive: isRunning)
-          }
+          AsyncButton(
+            action: {
+              await sendCode(to: phoneNumber)
+            },
+            label: { isRunning in
+              AddMfaSmsRow(
+                phoneNumber: phoneNumber,
+                isSelected: false
+              )
+              .overlayProgressView(isActive: isRunning)
+            }
+          )
           .buttonStyle(.pressedBackground)
         }
       }

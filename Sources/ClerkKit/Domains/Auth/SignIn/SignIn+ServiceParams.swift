@@ -6,7 +6,7 @@
 import Foundation
 
 extension SignIn {
-  struct CreateParams: Encodable, Sendable {
+  struct CreateParams: Encodable {
     let locale: String
     let identifier: String?
     let password: String?
@@ -36,7 +36,7 @@ extension SignIn {
     }
   }
 
-  struct PrepareFirstFactorParams: Encodable, Sendable {
+  struct PrepareFirstFactorParams: Encodable {
     let strategy: FactorStrategy
     let emailAddressId: String?
     let phoneNumberId: String?
@@ -55,7 +55,7 @@ extension SignIn {
     }
   }
 
-  struct AttemptFirstFactorParams: Encodable, Sendable {
+  struct AttemptFirstFactorParams: Encodable {
     let strategy: FactorStrategy
     let code: String?
     let password: String?
@@ -77,7 +77,7 @@ extension SignIn {
     }
   }
 
-  struct PrepareSecondFactorParams: Encodable, Sendable {
+  struct PrepareSecondFactorParams: Encodable {
     let strategy: FactorStrategy
     let phoneNumberId: String?
     let emailAddressId: String?
@@ -93,12 +93,12 @@ extension SignIn {
     }
   }
 
-  struct AttemptSecondFactorParams: Encodable, Sendable {
+  struct AttemptSecondFactorParams: Encodable {
     let strategy: FactorStrategy
     let code: String
   }
 
-  struct ResetPasswordParams: Encodable, Sendable {
+  struct ResetPasswordParams: Encodable {
     let password: String
     let signOutOfOtherSessions: Bool?
 
@@ -108,7 +108,7 @@ extension SignIn {
     }
   }
 
-  struct GetParams: Sendable {
+  struct GetParams {
     let rotatingTokenNonce: String?
 
     init(rotatingTokenNonce: String? = nil) {

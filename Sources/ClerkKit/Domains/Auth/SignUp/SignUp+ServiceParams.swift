@@ -6,7 +6,7 @@
 import Foundation
 
 extension SignUp {
-  struct CreateParams: Encodable, Sendable {
+  struct CreateParams: Encodable {
     let locale: String
     let emailAddress: String?
     let phoneNumber: String?
@@ -56,7 +56,7 @@ extension SignUp {
 
   typealias UpdateParams = CreateParams
 
-  struct PrepareVerificationParams: Encodable, Sendable {
+  struct PrepareVerificationParams: Encodable {
     let strategy: FactorStrategy
     let emailAddressId: String?
     let phoneNumberId: String?
@@ -72,12 +72,12 @@ extension SignUp {
     }
   }
 
-  struct AttemptVerificationParams: Encodable, Sendable {
+  struct AttemptVerificationParams: Encodable {
     let strategy: FactorStrategy
     let code: String
   }
 
-  struct GetParams: Sendable {
+  struct GetParams {
     let rotatingTokenNonce: String?
 
     init(rotatingTokenNonce: String? = nil) {

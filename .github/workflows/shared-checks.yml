@@ -24,26 +24,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install SwiftFormat
-        run: |
-          brew update
-          if brew list --versions swiftformat > /dev/null; then
-            brew upgrade swiftformat
-          else
-            brew install swiftformat
-          fi
+        run: ./scripts/install-swiftformat.sh
 
       - name: Install SwiftLint
-        run: |
-          if brew list --versions swiftlint > /dev/null; then
-            brew upgrade swiftlint
-          else
-            brew install swiftlint
-          fi
+        run: ./scripts/install-swiftlint.sh
 
       - name: Show formatter and linter versions
         run: |
-          swiftformat --version
-          swiftlint version
+          ./.tools/bin/swiftformat --version
+          ./.tools/bin/swiftlint version
 
       - name: Check formatting and linting
         run: |

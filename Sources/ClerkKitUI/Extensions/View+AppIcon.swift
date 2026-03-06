@@ -8,7 +8,7 @@
 import SwiftUI
 
 extension EnvironmentValues {
-  @Entry var clerkAppIcon: Image? = nil
+  @Entry var clerkAppIcon: Image?
 }
 
 extension View {
