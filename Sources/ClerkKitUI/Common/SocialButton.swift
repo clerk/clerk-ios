@@ -20,20 +20,45 @@ struct SocialButton: View {
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
 
-  private var iconImage: some View {
+  private var fallbackProviderText: some View {
+    ViewThatFits(in: .horizontal) {
+      Text("Continue with \(provider.name)", bundle: .module)
+      Text(provider.name)
+    }
+    .lineLimit(1)
+    .font(theme.fonts.body)
+    .foregroundStyle(theme.colors.foreground)
+  }
+
+  private var providerLabel: some View {
     LazyImage(url: provider.iconImageUrl) { state in
       if let image = state.image {
-        ProviderIconView(
-          provider: provider,
-          image: image
-        )
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: 12) {
+            ProviderIconView(
+              provider: provider,
+              image: image
+            )
+            .frame(width: 21, height: 21)
+
+            Text("Continue with \(provider.name)", bundle: .module)
+              .lineLimit(1)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.foreground)
+          }
+
+          ProviderIconView(
+            provider: provider,
+            image: image
+          )
+          .frame(width: 21, height: 21)
+        }
+      } else if state.error != nil {
+        fallbackProviderText
       } else {
-        Image(systemName: "globe")
-          .resizable()
-          .scaledToFit()
+        fallbackProviderText.hidden()
       }
     }
-    .frame(width: 21, height: 21)
     .transition(.opacity.animation(.easeInOut(duration: 0.25)))
   }
 
@@ -83,18 +108,9 @@ struct SocialButton: View {
         }
       }
     } label: { isRunning in
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: 12) {
-          iconImage
-          Text("Continue with \(provider.name)", bundle: .module)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.foreground)
-        }
-
-        iconImage
-      }
-      .frame(maxWidth: .infinity)
-      .overlayProgressView(isActive: isRunning)
+      providerLabel
+        .frame(maxWidth: .infinity)
+        .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
   }
@@ -122,6 +138,7 @@ extension SocialButton {
     }
   }
   .padding()
+  .environment(Clerk.preview())
 }
 
 #endif
