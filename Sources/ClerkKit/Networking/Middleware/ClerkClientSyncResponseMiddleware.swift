@@ -6,15 +6,15 @@
 import Foundation
 
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) throws {
+  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     if let client = Self.decodeClient(from: data) {
-      Task { @MainActor in
-        Clerk.shared.clerkEventEmitter.send(.clientReceived(client: client))
-      }
+      await Clerk.shared.applyResponseClient(client, responseSequence: request.clerkRequestSequence)
+    } else {
+      ClerkLogger.debug("No client found in API response payload. Skipping client sync.")
     }
   }
 
-  private static func decodeClient(from jsonData: Data) -> Client? {
+  static func decodeClient(from jsonData: Data) -> Client? {
     struct ClientWrapper: Decodable {
       let client: Client?
 

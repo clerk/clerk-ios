@@ -6,7 +6,7 @@
 import Foundation
 
 struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
     guard response.isError else { return }
 
     if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),

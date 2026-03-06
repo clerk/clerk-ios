@@ -6,12 +6,9 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClientTests {
-  init() {
-    Clerk.configure(publishableKey: testPublishableKey)
-  }
-
   @Test
   func refreshClientUsesClientServiceGet() async throws {
+    configureClerkForTesting()
     let called = LockIsolated(false)
     let expectedClient = Client(
       id: "refresh-client-test",
@@ -28,6 +25,7 @@ struct ClientTests {
       apiClient: createMockAPIClient(),
       clientService: service
     )
+    Clerk.shared.client = nil
 
     _ = try await Clerk.shared.refreshClient()
 

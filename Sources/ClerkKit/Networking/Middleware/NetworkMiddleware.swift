@@ -13,7 +13,7 @@ public protocol ClerkRequestMiddleware: Sendable {
 /// Provide implementations via ``Clerk/Options/middleware`` to run logic
 /// immediately after a response is received.
 public protocol ClerkResponseMiddleware: Sendable {
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws
 }
 
 /// Allows middleware to influence retry decisions.
@@ -48,9 +48,9 @@ struct NetworkingPipeline {
     }
   }
 
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     for middleware in responseMiddleware {
-      try middleware.validate(response, data: data, for: request)
+      try await middleware.validate(response, data: data, for: request)
     }
   }
 
@@ -106,5 +106,22 @@ extension NetworkingPipeline {
         ClerkRateLimitRetryMiddleware(),
       ]
     )
+  }
+}
+
+extension URLRequest {
+  private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
+
+  var clerkRequestSequence: Int? {
+    URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
+  }
+
+  mutating func setClerkRequestSequence(_ sequence: Int) {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+    URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
+    self = mutableRequest as URLRequest
   }
 }

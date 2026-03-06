@@ -60,13 +60,16 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testSaveClient() throws {
+  func testSaveClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     cacheManager.saveClient(Client.mock)
+    let clientData = try await waitForKeychainData(
+      keychain,
+      key: "cachedClient"
+    )
 
     // Verify client was saved to keychain
-    let clientData = try keychain.data(forKey: "cachedClient")
     #expect(clientData != nil)
 
     let decoder = JSONDecoder.clerkDecoder
@@ -75,13 +78,16 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testSaveEnvironment() throws {
+  func testSaveEnvironment() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     cacheManager.saveEnvironment(Clerk.Environment.mock)
+    let envData = try await waitForKeychainData(
+      keychain,
+      key: "cachedEnvironment"
+    )
 
     // Verify environment was saved to keychain
-    let envData = try keychain.data(forKey: "cachedEnvironment")
     #expect(envData != nil)
 
     let decoder = JSONDecoder.clerkDecoder
@@ -158,7 +164,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testDeleteClient() throws {
+  func testDeleteClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     // Save a client first
@@ -167,6 +173,7 @@ struct CacheManagerTests {
     try keychain.set(clientData, forKey: "cachedClient")
 
     cacheManager.deleteClient()
+    try await waitForKeychainDeletion(keychain, key: "cachedClient")
 
     // Verify client was deleted from keychain
     let clientDataAfter = try keychain.data(forKey: "cachedClient")
@@ -182,5 +189,39 @@ struct CacheManagerTests {
 
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.environmentSet.value == false)
+  }
+
+  private func waitForKeychainData(
+    _ keychain: InMemoryKeychain,
+    key: String,
+    timeout: Duration = .milliseconds(250)
+  ) async throws -> Data? {
+    let deadline = ContinuousClock.now + timeout
+
+    while ContinuousClock.now < deadline {
+      if let data = try keychain.data(forKey: key) {
+        return data
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    return try keychain.data(forKey: key)
+  }
+
+  private func waitForKeychainDeletion(
+    _ keychain: InMemoryKeychain,
+    key: String,
+    timeout: Duration = .milliseconds(250)
+  ) async throws {
+    let deadline = ContinuousClock.now + timeout
+
+    while ContinuousClock.now < deadline {
+      if try keychain.data(forKey: key) == nil {
+        return
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
   }
 }
