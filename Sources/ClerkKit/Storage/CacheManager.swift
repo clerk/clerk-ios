@@ -7,6 +7,49 @@
 
 import Foundation
 
+private actor CachePersistenceWorker {
+  private let keychain: any KeychainStorage
+
+  init(keychain: any KeychainStorage) {
+    self.keychain = keychain
+  }
+
+  func saveClient(_ client: Client) {
+    do {
+      let clientData = try JSONEncoder.clerkEncoder.encode(client)
+      try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
+      )
+    }
+  }
+
+  func saveEnvironment(_ environment: Clerk.Environment) {
+    do {
+      let environmentData = try JSONEncoder.clerkEncoder.encode(environment)
+      try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
+      )
+    }
+  }
+
+  func deleteClient() {
+    do {
+      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete cached client from keychain. This is non-critical."
+      )
+    }
+  }
+}
+
 /// Protocol defining callbacks for cache loading operations.
 ///
 /// This allows the cache manager to interact with Clerk instance properties
@@ -29,6 +72,9 @@ protocol CacheCoordinator: AnyObject, Sendable {
 /// to ensure cached data doesn't overwrite fresh data loaded from the API.
 @MainActor
 final class CacheManager {
+  private let persistenceWorker: CachePersistenceWorker
+  private var pendingPersistenceTask: Task<Void, Never>?
+
   /// The coordinator that manages the actual property updates.
   private weak var coordinator: (any CacheCoordinator)?
 
@@ -42,6 +88,7 @@ final class CacheManager {
   ///   - keychain: The keychain storage to use for persisting cached data.
   ///     Passed in directly because CacheManager is initialized during `configure()` before `Clerk.shared` is set.
   init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
+    persistenceWorker = CachePersistenceWorker(keychain: keychain)
     self.coordinator = coordinator
     self.keychain = keychain
   }
@@ -107,14 +154,8 @@ final class CacheManager {
   ///
   /// - Parameter client: The client to save.
   func saveClient(_ client: Client) {
-    do {
-      try saveClientToKeychain(client)
-    } catch {
-      // Log keychain errors but don't fail - saving is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
-      )
+    enqueuePersistence { worker in
+      await worker.saveClient(client)
     }
   }
 
@@ -122,37 +163,19 @@ final class CacheManager {
   ///
   /// - Parameter environment: The environment to save.
   func saveEnvironment(_ environment: Clerk.Environment) {
-    do {
-      try saveEnvironmentToKeychain(environment)
-    } catch {
-      // Log keychain errors but don't fail - saving is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
-      )
+    enqueuePersistence { worker in
+      await worker.saveEnvironment(environment)
     }
   }
 
   /// Deletes cached client data from keychain.
   func deleteClient() {
-    do {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
-    } catch {
-      // Log keychain errors but don't fail - deletion is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to delete cached client from keychain. This is non-critical."
-      )
+    enqueuePersistence { worker in
+      await worker.deleteClient()
     }
   }
 
   // MARK: - Private Keychain Operations
-
-  /// Saves client data to keychain.
-  private func saveClientToKeychain(_ client: Client) throws {
-    let clientData = try JSONEncoder.clerkEncoder.encode(client)
-    try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
-  }
 
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {
@@ -163,13 +186,6 @@ final class CacheManager {
     return try decoder.decode(Client.self, from: clientData)
   }
 
-  /// Saves environment data to keychain.
-  private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
-    let encoder = JSONEncoder.clerkEncoder
-    let environmentData = try encoder.encode(environment)
-    try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-  }
-
   /// Loads environment data from keychain.
   private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
     guard let environmentData = try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {
@@ -177,5 +193,17 @@ final class CacheManager {
     }
     let decoder = JSONDecoder.clerkDecoder
     return try decoder.decode(Clerk.Environment.self, from: environmentData)
+  }
+
+  private func enqueuePersistence(
+    _ operation: @Sendable @escaping (CachePersistenceWorker) async -> Void
+  ) {
+    let persistenceWorker = persistenceWorker
+    let previousTask = pendingPersistenceTask
+
+    pendingPersistenceTask = Task(priority: .utility) {
+      await previousTask?.value
+      await operation(persistenceWorker)
+    }
   }
 }

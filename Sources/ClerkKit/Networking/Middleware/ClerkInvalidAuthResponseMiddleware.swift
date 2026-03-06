@@ -24,10 +24,6 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    do {
-      try await Clerk.shared.refreshClient()
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
-    }
+    await Clerk.shared.refreshClientAfterInvalidAuth()
   }
 }

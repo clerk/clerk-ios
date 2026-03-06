@@ -93,6 +93,9 @@ public final class Clerk {
   /// The most recent network response sequence that updated the local client.
   private var lastAppliedClientResponseSequence: Int?
 
+  /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
+  private var invalidAuthRefreshTask: Task<Void, Never>?
+
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
@@ -375,6 +378,26 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  func refreshClientAfterInvalidAuth() async {
+    if let invalidAuthRefreshTask {
+      await invalidAuthRefreshTask.value
+      return
+    }
+
+    let task = Task { [self] in
+      defer { invalidAuthRefreshTask = nil }
+
+      do {
+        try await refreshClient()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
+      }
+    }
+
+    invalidAuthRefreshTask = task
+    await task.value
+  }
+
   func applyResponseClient(_ incoming: Client, responseSequence: Int? = nil) {
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
@@ -437,6 +460,8 @@ extension Clerk {
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
     authEventEmitter.finish()
+    invalidAuthRefreshTask?.cancel()
+    invalidAuthRefreshTask = nil
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
