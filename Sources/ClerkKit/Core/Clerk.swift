@@ -90,6 +90,9 @@ public final class Clerk {
   /// A dictionary of a user's active sessions on all devices.
   public internal(set) var sessionsByUserId: [String: [Session]] = [:]
 
+  /// The most recent network response sequence that updated the local client.
+  private var lastAppliedClientResponseSequence: Int?
+
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
@@ -135,9 +138,6 @@ public final class Clerk {
   /// Coordinates watch connectivity syncing.
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
-  /// Task that listens for general Clerk events and handles them.
-  private var clerkEventListenerTask: Task<Void, Never>?
-
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
@@ -163,16 +163,6 @@ public final class Clerk {
   /// Use this property to create organizations.
   public var organizations: Organizations {
     Organizations(organizationService: dependencies.organizationService)
-  }
-
-  /// The event emitter for general Clerk events.
-  let clerkEventEmitter = EventEmitter<ClerkEvent>()
-
-  /// An `AsyncStream` of general Clerk events.
-  ///
-  /// Subscribe to this stream to receive notifications about device tokens, client updates, and environment changes.
-  var events: AsyncStream<ClerkEvent> {
-    clerkEventEmitter.events
   }
 
   /// Proxy configuration derived from `proxyUrl`, if present.
@@ -223,13 +213,9 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up event listeners
-    startClerkEventListener()
-
     // Set up watch connectivity coordinator only if enabled
     if options.watchConnectivityEnabled {
       watchConnectivityCoordinator = WatchConnectivityCoordinator()
-      watchConnectivityCoordinator?.start()
     }
 
     // Set up cache manager and load cached data synchronously
@@ -309,7 +295,9 @@ extension Clerk {
   @discardableResult
   public func refreshClient() async throws -> Client? {
     let client = try await dependencies.clientService.get()
-    self.client = client
+    if let client {
+      applyResponseClient(client)
+    }
     return client
   }
 
@@ -387,6 +375,46 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  func applyResponseClient(_ incoming: Client, responseSequence: Int? = nil) {
+    if let responseSequence {
+      if let lastAppliedClientResponseSequence,
+         responseSequence < lastAppliedClientResponseSequence
+      {
+        ClerkLogger.debug(
+          "Ignoring stale client update from older response sequence. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
+        )
+        return
+      }
+
+      lastAppliedClientResponseSequence = responseSequence
+      client = incoming
+      return
+    }
+
+    guard let currentClient = client else {
+      client = incoming
+      return
+    }
+
+    guard incoming.updatedAt > currentClient.updatedAt else {
+      ClerkLogger.debug(
+        "Ignoring stale client update. Current updatedAt: \(currentClient.updatedAt), incoming updatedAt: \(incoming.updatedAt)"
+      )
+      return
+    }
+
+    client = incoming
+  }
+
+  func storeReceivedDeviceToken(_ token: String) {
+    do {
+      try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      watchConnectivityCoordinator?.sync()
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to save device token to keychain")
+    }
+  }
+
   private func attestDeviceIfNeeded(environment: Environment) {
     if !AppAttestHelper.hasKeyId,
        [.onboarding, .enforced].contains(environment.fraudSettings.native.deviceAttestationMode)
@@ -401,31 +429,6 @@ extension Clerk {
     }
   }
 
-  /// Starts listening for general Clerk events and handles them.
-  private func startClerkEventListener() {
-    clerkEventListenerTask = Task { @MainActor [weak self] in
-      guard let self else { return }
-      for await event in clerkEventEmitter.events {
-        switch event {
-        case .deviceTokenReceived(let token):
-          do {
-            try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-          } catch {
-            ClerkLogger.logError(error, message: "Failed to save device token to keychain")
-          }
-
-          watchConnectivityCoordinator?.sync()
-
-        case .clientReceived(let client):
-          self.client = client
-
-        case .environmentReceived(let environment):
-          self.environment = environment
-        }
-      }
-    }
-  }
-
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
@@ -434,9 +437,6 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    clerkEventListenerTask?.cancel()
-    clerkEventListenerTask = nil
-    watchConnectivityCoordinator?.stop()
     watchConnectivityCoordinator = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil

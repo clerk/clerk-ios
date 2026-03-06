@@ -92,14 +92,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
 
     do {
       let receivedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
-      if let currentClient = Clerk.shared.client {
-        // iOS takes priority on tie, so only accept if received is newer or equal
-        if receivedClient.updatedAt >= currentClient.updatedAt {
-          Clerk.shared.client = receivedClient
-        }
-      } else {
-        Clerk.shared.client = receivedClient
-      }
+      Clerk.shared.applyResponseClient(receivedClient)
     } catch {
       ClerkLogger.logError(error, message: "Failed to decode Client from iOS app")
     }

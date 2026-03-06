@@ -21,6 +21,7 @@ actor APIClient {
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
+  private var nextRequestSequenceNumber = 0
 
   init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
     var configuration = Configuration()
@@ -51,11 +52,13 @@ actor APIClient {
     uploadBody: Data?
   ) async throws -> APIResponse<Value> {
     var attempts = 0
+    let requestSequence = makeRequestSequence()
 
     while true {
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
+      urlRequest.setClerkRequestSequence(requestSequence)
       try await pipeline.prepare(&urlRequest)
 
       do {
@@ -73,7 +76,7 @@ actor APIClient {
         }
 
         do {
-          try pipeline.validate(httpResponse, data: data, for: urlRequest)
+          try await pipeline.validate(httpResponse, data: data, for: urlRequest)
         } catch {
           if try await pipeline.shouldRetry(
             request: urlRequest,
@@ -100,6 +103,11 @@ actor APIClient {
         throw error
       }
     }
+  }
+
+  private func makeRequestSequence() -> Int {
+    nextRequestSequenceNumber += 1
+    return nextRequestSequenceNumber
   }
 }
 
