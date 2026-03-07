@@ -184,6 +184,10 @@ public struct Auth {
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
+    let requestedScopes = Self.normalizedAppleScopes(
+      requestedScopes,
+      environment: Clerk.shared.environment
+    )
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
@@ -205,6 +209,25 @@ public struct Auth {
       }
       return result
     }
+  }
+  #endif
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  static func normalizedAppleScopes(
+    _ requestedScopes: [ASAuthorization.Scope],
+    environment: Clerk.Environment?
+  ) -> [ASAuthorization.Scope] {
+    guard requestedScopes.contains(.fullName) else {
+      return requestedScopes
+    }
+
+    let attributes = environment?.userSettings.attributes
+    let firstNameEnabled = attributes?["first_name"]?.enabled ?? true
+    let lastNameEnabled = attributes?["last_name"]?.enabled ?? true
+
+    return firstNameEnabled || lastNameEnabled
+      ? requestedScopes
+      : requestedScopes.filter { $0 != .fullName }
   }
   #endif
 
@@ -359,6 +382,10 @@ public struct Auth {
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signUpWithIdToken(_ idToken: String, provider: IDTokenProvider, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
+    let attributes = Clerk.shared.environment?.userSettings.attributes
+    let firstName = (attributes?["first_name"]?.enabled ?? true) ? firstName : nil
+    let lastName = (attributes?["last_name"]?.enabled ?? true) ? lastName : nil
+
     let signUp = try await signUpService.create(params: .init(
       firstName: firstName,
       lastName: lastName,

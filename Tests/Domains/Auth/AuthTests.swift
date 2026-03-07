@@ -1,4 +1,7 @@
 @testable import ClerkKit
+#if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+import AuthenticationServices
+#endif
 import ConcurrencyExtras
 import Foundation
 import Testing
@@ -13,7 +16,8 @@ struct AuthTests {
   private func configureDependencies(
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
-    sessionService: MockSessionService? = nil
+    sessionService: MockSessionService? = nil,
+    environment: Clerk.Environment? = .mock
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -21,6 +25,7 @@ struct AuthTests {
       signUpService: signUpService,
       sessionService: sessionService
     )
+    Clerk.shared.environment = environment
   }
 
   struct SignOutScenario: Codable, Equatable {
@@ -315,6 +320,97 @@ struct AuthTests {
     #expect(params.strategy?.rawValue == IDTokenProvider.apple.strategy)
     #expect(params.token == "mock_id_token")
   }
+
+  @Test
+  func signUpWithIdTokenPreservesEnabledNameFields() async throws {
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signUpService: signUpService)
+
+    _ = try await Clerk.shared.auth.signUpWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      firstName: "Jane",
+      lastName: "Doe"
+    )
+
+    let params = try #require(signUpParams.value)
+    #expect(params.firstName == "Jane")
+    #expect(params.lastName == "Doe")
+  }
+
+  @Test
+  func signUpWithIdTokenStripsDisabledNameFields() async throws {
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = false
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    configureDependencies(
+      signUpService: signUpService,
+      environment: environment
+    )
+
+    _ = try await Clerk.shared.auth.signUpWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      firstName: "Jane",
+      lastName: "Doe"
+    )
+
+    let params = try #require(signUpParams.value)
+    #expect(params.firstName == nil)
+    #expect(params.lastName == nil)
+  }
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled() {
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = false
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: environment
+    )
+
+    #expect(scopes == [.email])
+  }
+
+  @Test
+  func normalizedAppleScopesKeepsFullNameWhenEitherNameFieldIsEnabled() {
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = true
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: environment
+    )
+
+    #expect(scopes == [.email, .fullName])
+  }
+
+  @Test
+  func normalizedAppleScopesKeepsFullNameWhenEnvironmentIsUnavailable() {
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: nil
+    )
+
+    #expect(scopes == [.email, .fullName])
+  }
+  #endif
 
   @Test
   func signUpWithTicketUsesSignUpServiceCreate() async throws {
