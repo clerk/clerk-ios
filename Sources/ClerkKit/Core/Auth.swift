@@ -382,10 +382,6 @@ public struct Auth {
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
   public func signUpWithIdToken(_ idToken: String, provider: IDTokenProvider, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
-    let attributes = Clerk.shared.environment?.userSettings.attributes
-    let firstName = (attributes?["first_name"]?.enabled ?? true) ? firstName : nil
-    let lastName = (attributes?["last_name"]?.enabled ?? true) ? lastName : nil
-
     let signUp = try await signUpService.create(params: .init(
       firstName: firstName,
       lastName: lastName,
