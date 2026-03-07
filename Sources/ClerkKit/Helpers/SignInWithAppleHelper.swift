@@ -76,7 +76,7 @@ final class SignInWithAppleHelper: NSObject {
   /// - Returns: An `ASAuthorizationAppleIDCredential` object containing the user's Apple ID credentials.
   /// - Throws: An error if the authorization fails or if the credential cannot be retrieved.
   @MainActor
-  static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope] = [.email]) async throws -> ASAuthorizationAppleIDCredential {
+  static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope]) async throws -> ASAuthorizationAppleIDCredential {
     let authManager = SignInWithAppleHelper()
     let authorization = try await authManager.start(requestedScopes: requestedScopes)
 

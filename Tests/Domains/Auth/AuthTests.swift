@@ -13,7 +13,8 @@ struct AuthTests {
   private func configureDependencies(
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
-    sessionService: MockSessionService? = nil
+    sessionService: MockSessionService? = nil,
+    environment: Clerk.Environment? = .mock
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -21,6 +22,7 @@ struct AuthTests {
       signUpService: signUpService,
       sessionService: sessionService
     )
+    Clerk.shared.environment = environment
   }
 
   struct SignOutScenario: Codable, Equatable {
@@ -314,6 +316,57 @@ struct AuthTests {
     let params = try #require(signUpParams.value)
     #expect(params.strategy?.rawValue == IDTokenProvider.apple.strategy)
     #expect(params.token == "mock_id_token")
+  }
+
+  @Test
+  func signUpWithIdTokenPreservesEnabledNameFields() async throws {
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signUpService: signUpService)
+
+    _ = try await Clerk.shared.auth.signUpWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      firstName: "Jane",
+      lastName: "Doe"
+    )
+
+    let params = try #require(signUpParams.value)
+    #expect(params.firstName == "Jane")
+    #expect(params.lastName == "Doe")
+  }
+
+  @Test
+  func signUpWithIdTokenStripsDisabledNameFields() async throws {
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = false
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    configureDependencies(
+      signUpService: signUpService,
+      environment: environment
+    )
+
+    _ = try await Clerk.shared.auth.signUpWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      firstName: "Jane",
+      lastName: "Doe"
+    )
+
+    let params = try #require(signUpParams.value)
+    #expect(params.firstName == nil)
+    #expect(params.lastName == nil)
   }
 
   @Test
