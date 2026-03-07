@@ -1,4 +1,7 @@
 @testable import ClerkKit
+#if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+import AuthenticationServices
+#endif
 import ConcurrencyExtras
 import Foundation
 import Testing
@@ -368,6 +371,46 @@ struct AuthTests {
     #expect(params.firstName == nil)
     #expect(params.lastName == nil)
   }
+
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled() {
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = false
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: environment
+    )
+
+    #expect(scopes == [.email])
+  }
+
+  @Test
+  func normalizedAppleScopesKeepsFullNameWhenEitherNameFieldIsEnabled() {
+    var environment = Clerk.Environment.mock
+    environment.userSettings.attributes["first_name"]?.enabled = true
+    environment.userSettings.attributes["last_name"]?.enabled = false
+
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: environment
+    )
+
+    #expect(scopes == [.email, .fullName])
+  }
+
+  @Test
+  func normalizedAppleScopesKeepsFullNameWhenEnvironmentIsUnavailable() {
+    let scopes = Auth.normalizedAppleScopes(
+      [.email, .fullName],
+      environment: nil
+    )
+
+    #expect(scopes == [.email, .fullName])
+  }
+  #endif
 
   @Test
   func signUpWithTicketUsesSignUpServiceCreate() async throws {

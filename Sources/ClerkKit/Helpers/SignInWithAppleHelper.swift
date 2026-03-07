@@ -65,14 +65,14 @@ final class SignInWithAppleHelper: NSObject {
     }
   }
 
-  /// Fetches an Apple ID credential using Sign in with Apple.
+  /// Fetches an Apple ID credential using Sign in with Apple for the requested scopes.
   ///
   /// This method wraps the authorization process into a single function, allowing you to retrieve
   /// the `ASAuthorizationAppleIDCredential` directly.
   ///
   /// - Parameters:
   ///   - requestedScopes: An array of `ASAuthorization.Scope` values to request specific information
-  ///     such as the user's email or full name. Defaults to `[.email]`.
+  ///     such as the user's email or full name. This parameter is required.
   /// - Returns: An `ASAuthorizationAppleIDCredential` object containing the user's Apple ID credentials.
   /// - Throws: An error if the authorization fails or if the credential cannot be retrieved.
   @MainActor
