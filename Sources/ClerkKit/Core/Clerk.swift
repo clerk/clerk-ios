@@ -429,7 +429,7 @@ extension Clerk {
     client = incoming
   }
 
-  func applyWatchSyncedClient(_ incoming: Client) {
+  func applyWatchSyncedClient(_ incoming: Client?) {
     client = incoming
   }
 

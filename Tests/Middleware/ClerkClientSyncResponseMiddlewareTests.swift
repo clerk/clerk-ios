@@ -38,15 +38,14 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let data = try #require("""
     {"response":null,"client":null}
     """.data(using: .utf8))
-    let response = try #require(
-      try HTTPURLResponse(
-        url: #require(URL(string: "https://example.com/v1/client")),
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: nil
-      )
-    )
-    let request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client")))
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
 
     try await ClerkClientSyncResponseMiddleware().validate(response, data: data, for: request)
 
@@ -62,15 +61,14 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let data = try #require("""
     {"response":{"object":"session","id":"sess_123","status":"active"}}
     """.data(using: .utf8))
-    let response = try #require(
-      try HTTPURLResponse(
-        url: #require(URL(string: "https://example.com/v1/me/sessions/active")),
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: nil
-      )
-    )
-    let request = try URLRequest(url: #require(URL(string: "https://example.com/v1/me/sessions/active")))
+    let url = try #require(URL(string: "https://example.com/v1/me/sessions/active"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
 
     try await ClerkClientSyncResponseMiddleware().validate(response, data: data, for: request)
 

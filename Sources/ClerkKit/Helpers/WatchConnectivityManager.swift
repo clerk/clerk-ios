@@ -138,7 +138,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     defer { isProcessingSync = false }
 
     if clientData.isEmpty {
-      Clerk.shared.client = nil
+      Clerk.shared.applyWatchSyncedClient(nil)
       return
     }
 

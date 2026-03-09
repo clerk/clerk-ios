@@ -174,10 +174,6 @@ struct CacheManagerTests {
 
     cacheManager.deleteClient()
     try await waitForKeychainDeletion(keychain, key: "cachedClient")
-
-    // Verify client was deleted from keychain
-    let clientDataAfter = try keychain.data(forKey: "cachedClient")
-    #expect(clientDataAfter == nil)
   }
 
   @Test
