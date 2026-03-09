@@ -11,9 +11,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       await Clerk.shared.applyResponseClient(client, responseSequence: request.clerkRequestSequence)
     } else if hasExplicitNullClientField(in: data) {
       ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
-      await MainActor.run {
-        Clerk.shared.client = nil
-      }
+      await Clerk.shared.applyResponseClientNil(responseSequence: request.clerkRequestSequence)
     }
   }
 

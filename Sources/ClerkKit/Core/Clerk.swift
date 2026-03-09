@@ -431,6 +431,23 @@ extension Clerk {
     client = incoming
   }
 
+  func applyResponseClientNil(responseSequence: Int? = nil) {
+    if let responseSequence {
+      if let lastAppliedClientResponseSequence,
+         responseSequence < lastAppliedClientResponseSequence
+      {
+        ClerkLogger.debug(
+          "Ignoring stale client clear from older response sequence. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
+        )
+        return
+      }
+
+      lastAppliedClientResponseSequence = responseSequence
+    }
+
+    client = nil
+  }
+
   func applyWatchSyncedClient(_ incoming: Client?) {
     client = incoming
   }

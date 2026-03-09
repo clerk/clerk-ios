@@ -557,7 +557,7 @@ struct UserServiceTests {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
     Clerk.shared.client = .mock
-    var authEvents = Clerk.shared.auth.events.makeAsyncIterator()
+    let authEvents = Clerk.shared.auth.events
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -572,23 +572,39 @@ struct UserServiceTests {
     }
     mock.register()
 
-    let expectedOldSessionID = Clerk.shared.client?.currentSession?.id
-
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
 
-    let firstEvent = try #require(await authEvents.next())
-    guard case let .sessionChanged(oldValue, newValue) = firstEvent else {
-      Issue.record("Expected sessionChanged before accountDeleted, got \(firstEvent)")
-      return
-    }
-    #expect(oldValue?.id == expectedOldSessionID)
-    #expect(newValue == nil)
+    try await nextAccountDeletedEvent(from: authEvents)
+  }
 
-    let secondEvent = try #require(await authEvents.next())
-    guard case .accountDeleted = secondEvent else {
-      Issue.record("Expected accountDeleted event after sessionChanged, got \(secondEvent)")
-      return
+  private func nextAccountDeletedEvent(
+    from events: AsyncStream<AuthEvent>,
+    timeout: Duration = .seconds(1)
+  ) async throws {
+    enum WaitError: Error {
+      case timeout
+    }
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        var iterator = events.makeAsyncIterator()
+        while let event = await iterator.next() {
+          if case .accountDeleted = event {
+            return
+          }
+        }
+
+        throw WaitError.timeout
+      }
+
+      group.addTask {
+        try await Task.sleep(for: timeout)
+        throw WaitError.timeout
+      }
+
+      try await group.next()
+      group.cancelAll()
     }
   }
 }

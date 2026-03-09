@@ -79,6 +79,18 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
+  func applyResponseClientNilIgnoresOlderResponseSequence() {
+    configureClerkForTesting()
+    let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
+
+    Clerk.shared.client = nil
+    Clerk.shared.applyResponseClient(original, responseSequence: 2)
+    Clerk.shared.applyResponseClientNil(responseSequence: 1)
+
+    #expect(Clerk.shared.client?.signIn?.id == original.signIn?.id)
+  }
+
+  @Test
   func applyWatchSyncedClientAcceptsSessionSwitchAtSameTimestamp() {
     configureClerkForTesting()
     let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
