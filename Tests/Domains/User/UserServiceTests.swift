@@ -572,28 +572,23 @@ struct UserServiceTests {
     }
     mock.register()
 
+    let expectedOldSessionID = Clerk.shared.client?.currentSession?.id
+
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
 
     let firstEvent = try #require(await authEvents.next())
-    if case .accountDeleted = firstEvent {
+    guard case let .sessionChanged(oldValue, newValue) = firstEvent else {
+      Issue.record("Expected sessionChanged before accountDeleted, got \(firstEvent)")
       return
     }
-
-    #expect(matchesSessionChanged(firstEvent), "Expected delete to emit either accountDeleted or sessionChanged before accountDeleted, got \(firstEvent)")
+    #expect(oldValue?.id == expectedOldSessionID)
+    #expect(newValue == nil)
 
     let secondEvent = try #require(await authEvents.next())
     guard case .accountDeleted = secondEvent else {
       Issue.record("Expected accountDeleted event after sessionChanged, got \(secondEvent)")
       return
     }
-  }
-
-  private func matchesSessionChanged(_ event: AuthEvent) -> Bool {
-    if case .sessionChanged = event {
-      return true
-    }
-
-    return false
   }
 }

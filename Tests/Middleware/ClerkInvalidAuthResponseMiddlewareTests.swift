@@ -14,7 +14,7 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: MockClientService(get: {
-        refreshCount.setValue(refreshCount.value + 1)
+        refreshCount.withValue { $0 += 1 }
         try await Task.sleep(for: .milliseconds(100))
         return Client.mock
       })
@@ -24,6 +24,6 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
     async let second: Void = clerk.refreshClientAfterInvalidAuth()
     _ = await (first, second)
 
-    #expect(refreshCount.value == 1)
+    #expect(refreshCount.withValue { $0 } == 1)
   }
 }

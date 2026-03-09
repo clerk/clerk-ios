@@ -223,5 +223,13 @@ struct CacheManagerTests {
 
       try await Task.sleep(for: .milliseconds(10))
     }
+
+    enum TimeoutError: Error {
+      case timedOut(String)
+    }
+
+    if try keychain.data(forKey: key) != nil {
+      throw TimeoutError.timedOut("Timed out waiting for key '\(key)' deletion from InMemoryKeychain")
+    }
   }
 }
