@@ -34,20 +34,19 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientDoesNotClearClientWhenServiceReturnsNil() async throws {
+  func refreshClientClearsClientWhenServiceReturnsNil() async throws {
     configureClerkForTesting()
     let service = MockClientService(get: { nil })
-    let existingClient = Client.mock
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: service
     )
-    Clerk.shared.client = existingClient
+    Clerk.shared.client = Client.mock
 
     let client = try await Clerk.shared.refreshClient()
 
     #expect(client == nil)
-    #expect(Clerk.shared.client?.id == existingClient.id)
+    #expect(Clerk.shared.client == nil)
   }
 }

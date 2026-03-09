@@ -300,6 +300,8 @@ extension Clerk {
     let client = try await dependencies.clientService.get()
     if let client {
       applyResponseClient(client)
+    } else {
+      self.client = nil
     }
     return client
   }
