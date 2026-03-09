@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -155,21 +155,21 @@ extension ClerkTheme {
 }
 
 extension ClerkTheme.Colors {
-  public static let defaultPrimaryColor = Color(.primary)
-  public static let defaultBackgroundColor = Color(.background)
-  public static let defaultInputColor = Color(.input)
-  public static let defaultDangerColor = Color(.danger)
-  public static let defaultSuccessColor = Color(.success)
-  public static let defaultWarningColor = Color(.warning)
-  public static let defaultForegroundColor = Color(.foreground)
-  public static let defaultMutedForegroundColor = Color(.mutedForeground)
-  public static let defaultPrimaryForegroundColor = Color(.primaryForeground)
-  public static let defaultInputForegroundColor = Color(.inputForeground)
-  public static let defaultNeutralColor = Color(.neutral)
-  public static let defaultRingColor = Color(.neutral)
-  public static let defaultMutedColor = Color(.muted)
-  public static let defaultShadowColor = Color(.neutral)
-  public static let defaultBorderColor = Color(.neutral)
+  public static let defaultPrimaryColor = Color("Primary", bundle: .module)
+  public static let defaultBackgroundColor = Color("Background", bundle: .module)
+  public static let defaultInputColor = Color("Input", bundle: .module)
+  public static let defaultDangerColor = Color("Danger", bundle: .module)
+  public static let defaultSuccessColor = Color("Success", bundle: .module)
+  public static let defaultWarningColor = Color("Warning", bundle: .module)
+  public static let defaultForegroundColor = Color("Foreground", bundle: .module)
+  public static let defaultMutedForegroundColor = Color("mutedForeground", bundle: .module)
+  public static let defaultPrimaryForegroundColor = Color("PrimaryForeground", bundle: .module)
+  public static let defaultInputForegroundColor = Color("InputForeground", bundle: .module)
+  public static let defaultNeutralColor = Color("Neutral", bundle: .module)
+  public static let defaultRingColor = Color("Neutral", bundle: .module)
+  public static let defaultMutedColor = Color("Muted", bundle: .module)
+  public static let defaultShadowColor = Color("Neutral", bundle: .module)
+  public static let defaultBorderColor = Color("Neutral", bundle: .module)
 
   /// The default ClerkKitUI semantic color palette.
   public nonisolated static var `default`: Self {

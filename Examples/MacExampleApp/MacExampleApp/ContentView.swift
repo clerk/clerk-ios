@@ -4,10 +4,13 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
+  @State private var authIsPresented = false
+  @State private var authMode: AuthView.Mode = .signInOrUp
   @State private var isRefreshing = false
   @State private var lastRefreshError: String?
 
@@ -34,13 +37,40 @@ struct ContentView: View {
         .textSelection(.enabled)
       }
 
+      GroupBox("Manual Auth Coverage") {
+        VStack(alignment: .leading, spacing: 12) {
+          Picker("Auth Mode", selection: $authMode) {
+            Text("Sign In or Up").tag(AuthView.Mode.signInOrUp)
+            Text("Sign In").tag(AuthView.Mode.signIn)
+            Text("Sign Up").tag(AuthView.Mode.signUp)
+          }
+          .pickerStyle(.segmented)
+
+          statusRow("Visible Providers", visibleProviderNames)
+          statusRow("Passkey Button", showsPasskeyButton ? "Available" : "Unavailable")
+
+          Text("Use this section to exercise the remaining macOS flows called out in the support plan.")
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: 520, alignment: .leading)
+        }
+      }
+
       HStack(spacing: 12) {
+        UserButton {
+          Button("Open AuthView") {
+            authIsPresented = true
+          }
+          .buttonStyle(.borderedProminent)
+          .disabled(isRefreshing)
+        }
+        .disabled(isRefreshing)
+
         Button("Refresh Environment") {
           Task {
             await refreshEnvironment()
           }
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(.bordered)
         .disabled(isRefreshing)
 
         Button("Refresh Client") {
@@ -62,13 +92,16 @@ struct ContentView: View {
           .foregroundStyle(.red)
           .frame(maxWidth: 520, alignment: .leading)
       } else {
-        Text("ClerkKitUI prebuilt views such as AuthView and UserButton are currently iOS-only. Use this app as the native macOS launch target while that support is added.")
+        Text("`AuthView()`, `UserButton()`, and `UserProfileView()` now have minimal macOS implementations. The broader signed-in security and account-management UI is still iOS-only.")
           .foregroundStyle(.secondary)
           .frame(maxWidth: 520, alignment: .leading)
       }
     }
     .padding(32)
     .frame(minWidth: 640, minHeight: 440)
+    .sheet(isPresented: $authIsPresented) {
+      AuthView(mode: authMode)
+    }
   }
 
   private func statusRow(_ title: String, _ value: String) -> some View {
@@ -80,6 +113,27 @@ struct ContentView: View {
       Text(value)
         .foregroundStyle(.secondary)
     }
+  }
+
+  private var visibleProviderNames: String {
+    let providerNames = clerk.environment?.userSettings.social.values
+      .filter { config in
+        config.enabled && config.authenticatable && !config.notSelectable
+      }
+      .map(\.name)
+      .sorted { lhs, rhs in
+        lhs.localizedStandardCompare(rhs) == .orderedAscending
+      }
+
+    guard let providerNames, !providerNames.isEmpty else {
+      return "None"
+    }
+
+    return providerNames.joined(separator: ", ")
+  }
+
+  private var showsPasskeyButton: Bool {
+    authMode != .signUp && (clerk.environment?.userSettings.passkeySettings?.showSignInButton ?? false)
   }
 
   @MainActor

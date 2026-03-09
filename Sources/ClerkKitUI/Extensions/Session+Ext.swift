@@ -3,11 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
-
 import ClerkKit
 import Foundation
+
+#if os(iOS)
 import SwiftUI
+#endif
 
 extension Session {
   var pendingTasks: [Task] {
@@ -25,6 +26,36 @@ extension Session {
 }
 
 extension SessionActivity {
+  var browserFormatted: String {
+    [browserName, browserVersion].compactMap(\.self).joined(separator: " ")
+  }
+
+  var locationFormatted: String {
+    [city, country].compactMap(\.self).joined(separator: ", ")
+  }
+
+  var ipAndLocationFormatted: String {
+    [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
+  }
+
+  #if os(macOS)
+  var deviceDescription: String {
+    if let deviceType, !deviceType.isEmpty {
+      return deviceType
+    }
+
+    if let isMobile {
+      return isMobile ? "Mobile device" : "Desktop device"
+    }
+
+    return "Unknown device"
+  }
+  #endif
+}
+
+#if os(iOS)
+
+extension SessionActivity {
   var deviceText: Text {
     if let deviceType {
       Text(verbatim: deviceType)
@@ -37,18 +68,6 @@ extension SessionActivity {
 
   var deviceImage: Image {
     Image(isMobile == true ? "device-mobile" : "device-desktop", bundle: .module)
-  }
-
-  var browserFormatted: String {
-    [browserName, browserVersion].compactMap(\.self).joined(separator: " ")
-  }
-
-  var locationFormatted: String {
-    [city, country].compactMap(\.self).joined(separator: ", ")
-  }
-
-  var ipAndLocationFormatted: String {
-    [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
   }
 }
 

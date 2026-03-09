@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import Foundation
 import SwiftUI
@@ -19,11 +19,11 @@ extension ClerkTheme {
   @MainActor
   public static let clerk: ClerkTheme = .init(
     colors: .init(
-      primary: Color(.clerkPrimary),
-      danger: Color(.clerkDanger),
-      primaryForeground: Color(.clerkPrimaryForeground),
-      neutral: Color(.clerkNeutral),
-      muted: Color(.clerkMuted)
+      primary: Color("ClerkPrimary", bundle: .module),
+      danger: Color("ClerkDanger", bundle: .module),
+      primaryForeground: Color("ClerkPrimaryForeground", bundle: .module),
+      neutral: Color("ClerkNeutral", bundle: .module),
+      muted: Color("ClerkMuted", bundle: .module)
     ),
     design: .init(
       borderRadius: 8.0

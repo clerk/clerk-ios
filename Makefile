@@ -27,6 +27,7 @@ help:
 	@echo "      CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e"
 	@echo "      E2E_ONLY_TESTING='E2EHostE2ETests/E2EHostE2ETests/testName()' make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
+	@echo "  make smoke-macos   - Build the Swift package and MacExampleApp on macOS"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
 	@echo "  make update-swiftlint - Update pinned SwiftLint to the latest release"

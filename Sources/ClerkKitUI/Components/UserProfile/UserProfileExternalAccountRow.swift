@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -19,11 +19,15 @@ struct UserProfileExternalAccountRow: View {
   @State private var isLoading = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
   let externalAccount: ExternalAccount
+
+  private var displayedError: Error? {
+    externalAccount.verification?.error ?? error
+  }
 
   var body: some View {
     HStack(spacing: 16) {
@@ -61,10 +65,17 @@ struct UserProfileExternalAccountRow: View {
             .frame(minHeight: 22)
         }
 
+        #if os(iOS)
         if let error = externalAccount.verification?.error {
           ErrorText(text: verificationErrorText(for: error), alignment: .leading)
             .font(theme.fonts.footnote)
         }
+        #elseif os(macOS)
+        if let displayedError {
+          ErrorText(error: displayedError, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        #endif
       }
 
       Spacer()
@@ -89,19 +100,12 @@ struct UserProfileExternalAccountRow: View {
       } label: {
         ThreeDotsMenuLabel()
       }
-      .frame(width: 30, height: 30)
+      #if os(macOS)
+      .menuStyle(.borderlessButton)
+      #endif
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 24)
-    .padding(.vertical, 16)
-    .background(theme.colors.background)
-    .overlayProgressView(isActive: isLoading)
-    .overlay(alignment: .bottom) {
-      Rectangle()
-        .frame(height: 1)
-        .foregroundStyle(theme.colors.border)
-    }
-    .clerkErrorPresenting($error)
+    .modifier(PlatformRowChrome(isLoading: isLoading, error: $error))
     .onChange(of: removeResource) {
       if $1 != nil { isConfirmingRemoval = true }
     }
@@ -144,6 +148,21 @@ extension UserProfileExternalAccountRow {
     return Text(verbatim: error.localizedDescription)
   }
 
+  @ViewBuilder
+  private var actionsLabel: some View {
+    #if os(iOS)
+    Image("icon-three-dots-vertical", bundle: .module)
+      .resizable()
+      .scaledToFit()
+      .foregroundStyle(theme.colors.mutedForeground)
+      .frame(width: 20, height: 20)
+      .frame(width: 30, height: 30)
+    #elseif os(macOS)
+    Label("Actions", systemImage: "ellipsis.circle")
+      .foregroundStyle(theme.colors.mutedForeground)
+    #endif
+  }
+
   private func reconnect() async {
     guard let user else { return }
 
@@ -171,7 +190,13 @@ extension UserProfileExternalAccountRow {
         )
       }
       try await account.reauthorize()
+      #if os(macOS)
+      _ = try? await clerk.refreshClient()
+      #endif
     } catch {
+      #if os(macOS)
+      if error.isUserCancelledError { return }
+      #endif
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)
     }
@@ -182,6 +207,9 @@ extension UserProfileExternalAccountRow {
 
     do {
       try await resource?.deleteAction()
+      #if os(macOS)
+      _ = try? await clerk.refreshClient()
+      #endif
     } catch {
       self.error = error
       ClerkLogger.error("Failed to remove external account resource", error: error)
@@ -189,8 +217,46 @@ extension UserProfileExternalAccountRow {
   }
 }
 
+private struct PlatformRowChrome: ViewModifier {
+  @Environment(\.clerkTheme) private var theme
+
+  let isLoading: Bool
+  @Binding var error: Error?
+
+  func body(content: Content) -> some View {
+    #if os(iOS)
+    content
+      .padding(.horizontal, 24)
+      .padding(.vertical, 16)
+      .background(theme.colors.background)
+      .overlayProgressView(isActive: isLoading)
+      .overlay(alignment: .bottom) {
+        Rectangle()
+          .frame(height: 1)
+          .foregroundStyle(theme.colors.border)
+      }
+      .clerkErrorPresenting($error)
+    #elseif os(macOS)
+    content
+      .overlay(alignment: .trailing) {
+        if isLoading {
+          ProgressView()
+            .controlSize(.small)
+            .tint(theme.colors.primary)
+        }
+      }
+    #endif
+  }
+}
+
 #Preview {
+  #if os(iOS)
   UserProfileExternalAccountRow(externalAccount: .mockVerified)
+  #elseif os(macOS)
+  UserProfileExternalAccountRow(externalAccount: .mockVerified)
+    .environment(Clerk.preview())
+    .padding()
+  #endif
 }
 
 #endif

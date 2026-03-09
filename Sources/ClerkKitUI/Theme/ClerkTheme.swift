@@ -3,12 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import Foundation
 import SwiftUI
 
-/// A top-level theme container that customizes the appearance of Clerk iOS views.
+/// A top-level theme container that customizes the appearance of ClerkKitUI views.
 ///
 /// `ClerkTheme` groups semantic `colors`, Dynamic Type-aligned `fonts`, and shared
 /// `design` tokens. Apply it with `.environment(\.clerkTheme, ...)` on your root

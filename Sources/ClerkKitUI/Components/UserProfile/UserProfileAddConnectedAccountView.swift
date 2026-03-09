@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -40,52 +40,83 @@ struct UserProfileAddConnectedAccountView: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(spacing: 24) {
-          Text("Link another login option to your account. You’ll need to verify it before it can be used.", bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.mutedForeground)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-
-          SocialButtonLayout {
-            ForEach(unconnectedProviders) { provider in
-              SocialButton(provider: provider) {
-                await connectExternalAccount(provider: provider)
-              }
-            }
-          }
-        }
-        .padding(24)
-        .clerkErrorPresenting($error)
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
-          }
-
-          ToolbarItem(placement: .principal) {
-            Text("Connect account", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
-        }
-        .onGeometryChange(for: CGFloat.self) { proxy in
-          proxy.size.height
-        } action: { newValue in
-          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-        }
+        content
       }
       .scrollBounceBehavior(.basedOnSize)
+      .background(theme.colors.background)
+      .toolbar {
+        ToolbarItem(placement: cancellationPlacement) {
+          Button(cancelText) {
+            dismiss()
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text("Connect account", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
   }
 }
 
 extension UserProfileAddConnectedAccountView {
+  private var content: some View {
+    VStack(spacing: 24) {
+      Text("Link another login option to your account. You’ll need to verify it before it can be used.", bundle: .module)
+        .font(theme.fonts.subheadline)
+        .foregroundStyle(theme.colors.mutedForeground)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+
+      SocialButtonLayout {
+        ForEach(unconnectedProviders) { provider in
+          SocialButton(provider: provider) {
+            await connectExternalAccount(provider: provider)
+          }
+        }
+      }
+
+      #if os(macOS)
+      if let error {
+        ErrorText(error: error, alignment: .leading)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      #endif
+    }
+    .padding(24)
+    .background(theme.colors.background)
+    #if os(iOS)
+      .clerkErrorPresenting($error)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.height
+      } action: { newValue in
+        contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
+      }
+    #endif
+  }
+
+  private var cancellationPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .cancellationAction
+    #elseif os(macOS)
+    .automatic
+    #endif
+  }
+
+  private var cancelText: LocalizedStringKey {
+    #if os(iOS)
+    "Cancel"
+    #elseif os(macOS)
+    "Close"
+    #endif
+  }
+
   func connectExternalAccount(provider: OAuthProvider) async {
     guard let user else { return }
 
@@ -112,7 +143,11 @@ extension UserProfileAddConnectedAccountView {
 
 #Preview {
   UserProfileAddConnectedAccountView(contentHeight: .constant(300))
+  #if os(iOS)
     .clerkPreview()
+  #elseif os(macOS)
+    .environment(Clerk.preview())
+  #endif
     .environment(\.clerkTheme, .clerk)
 }
 

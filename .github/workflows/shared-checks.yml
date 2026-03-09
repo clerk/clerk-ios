@@ -74,6 +74,9 @@ jobs:
       - name: Run unit tests
         run: make test
 
+      - name: Run macOS smoke build
+        run: make smoke-macos
+
       - name: Setup integration test keys
         if: inputs.run_integration_tests
         env:
