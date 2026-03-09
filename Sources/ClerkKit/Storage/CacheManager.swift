@@ -7,6 +7,31 @@
 
 import Foundation
 
+private final class CachePersistenceState: @unchecked Sendable {
+  private let lock = NSLock()
+  private var generation = 0
+  private var isShutdown = false
+
+  func currentGeneration() -> Int? {
+    lock.lock()
+    defer { lock.unlock() }
+    return isShutdown ? nil : generation
+  }
+
+  func canPersist(generation: Int) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return !isShutdown && self.generation == generation
+  }
+
+  func shutdown() {
+    lock.lock()
+    defer { lock.unlock() }
+    isShutdown = true
+    generation += 1
+  }
+}
+
 private actor CachePersistenceWorker {
   private let keychain: any KeychainStorage
 
@@ -73,6 +98,7 @@ protocol CacheCoordinator: AnyObject, Sendable {
 @MainActor
 final class CacheManager {
   private let persistenceWorker: CachePersistenceWorker
+  private let persistenceState = CachePersistenceState()
   private var pendingPersistenceTask: Task<Void, Never>?
 
   /// The coordinator that manages the actual property updates.
@@ -175,6 +201,13 @@ final class CacheManager {
     }
   }
 
+  func shutdown() {
+    persistenceState.shutdown()
+    pendingPersistenceTask?.cancel()
+    pendingPersistenceTask = nil
+    coordinator = nil
+  }
+
   // MARK: - Private Keychain Operations
 
   /// Loads client data from keychain.
@@ -198,11 +231,18 @@ final class CacheManager {
   private func enqueuePersistence(
     _ operation: @Sendable @escaping (CachePersistenceWorker) async -> Void
   ) {
+    guard let generation = persistenceState.currentGeneration() else {
+      return
+    }
+
     let persistenceWorker = persistenceWorker
     let previousTask = pendingPersistenceTask
+    let persistenceState = persistenceState
 
     pendingPersistenceTask = Task(priority: .utility) {
       await previousTask?.value
+      guard !Task.isCancelled else { return }
+      guard persistenceState.canPersist(generation: generation) else { return }
       await operation(persistenceWorker)
     }
   }

@@ -171,6 +171,18 @@ struct CacheManagerTests {
   }
 
   @Test
+  func shutdownIgnoresFuturePersistenceRequests() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.shutdown()
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
+
+    try await Task.sleep(for: .milliseconds(50))
+
+    #expect(try keychain.data(forKey: "cachedEnvironment") == nil)
+  }
+
+  @Test
   func handlesMissingCachedData() {
     let (_, coordinator, cacheManager) = createTestSetup()
 

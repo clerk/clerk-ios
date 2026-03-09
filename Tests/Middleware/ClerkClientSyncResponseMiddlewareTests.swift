@@ -33,7 +33,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateClearsClientWhenResponseAndClientAreNull() async throws {
     configureClerkForTesting()
-    Clerk.shared.client = Client.mock
+    let clerk = Clerk.shared
+    clerk.client = Client.mock
+    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
 
     let data = try #require("""
     {"response":null,"client":null}
@@ -47,16 +49,18 @@ struct ClerkClientSyncResponseMiddlewareTests {
     ))
     let request = URLRequest(url: url)
 
-    try await ClerkClientSyncResponseMiddleware().validate(response, data: data, for: request)
+    try await middleware.validate(response, data: data, for: request)
 
-    #expect(Clerk.shared.client == nil)
+    #expect(clerk.client == nil)
   }
 
   @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
     configureClerkForTesting()
+    let clerk = Clerk.shared
     let existingClient = Client.mock
-    Clerk.shared.client = existingClient
+    clerk.client = existingClient
+    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
 
     let data = try #require("""
     {"response":{"object":"session","id":"sess_123","status":"active"}}
@@ -70,9 +74,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
     ))
     let request = URLRequest(url: url)
 
-    try await ClerkClientSyncResponseMiddleware().validate(response, data: data, for: request)
+    try await middleware.validate(response, data: data, for: request)
 
-    #expect(Clerk.shared.client?.id == existingClient.id)
+    #expect(clerk.client?.id == existingClient.id)
   }
 
   private func client(id: String, updatedAt: Date) -> Client {

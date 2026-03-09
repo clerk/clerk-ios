@@ -17,39 +17,16 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientIgnoresOlderClient() {
+  func applyResponseClientWithoutSequenceReplacesExistingClient() {
     configureClerkForTesting()
-    let current = client(id: "client-newer", updatedAt: 3000)
-    let stale = client(id: "client-stale", updatedAt: 2000)
+    let current = client(id: "client-current", updatedAt: 3000, lastActiveSessionId: "session-a")
+    let replacement = client(id: "client-replacement", updatedAt: 2000, lastActiveSessionId: "session-b")
     Clerk.shared.client = current
 
-    Clerk.shared.applyResponseClient(stale)
+    Clerk.shared.applyResponseClient(replacement)
 
-    #expect(Clerk.shared.client?.id == current.id)
-  }
-
-  @Test
-  func applyResponseClientIgnoresEqualTimestampClient() {
-    configureClerkForTesting()
-    let current = client(id: "client-current", updatedAt: 3000)
-    let incoming = client(id: "client-same-time", updatedAt: 3000)
-    Clerk.shared.client = current
-
-    Clerk.shared.applyResponseClient(incoming)
-
-    #expect(Clerk.shared.client?.id == current.id)
-  }
-
-  @Test
-  func applyResponseClientAcceptsNewerClient() {
-    configureClerkForTesting()
-    let current = client(id: "client-current", updatedAt: 2000)
-    let newer = client(id: "client-newer", updatedAt: 4000)
-    Clerk.shared.client = current
-
-    Clerk.shared.applyResponseClient(newer)
-
-    #expect(Clerk.shared.client?.id == newer.id)
+    #expect(Clerk.shared.client?.id == replacement.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
   }
 
   @Test
@@ -91,32 +68,129 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyWatchSyncedClientAcceptsSessionSwitchAtSameTimestamp() {
+  func applyWatchSyncedClientAcceptsNewerSyncAnchor() {
     configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
     let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
     let replacement = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
 
-    Clerk.shared.client = original
+    Clerk.shared.applyWatchSyncedClient(
+      original,
+      syncedAt: Date(timeIntervalSince1970: 1),
+      incomingIsAuthoritative: false
+    )
 
-    Clerk.shared.applyWatchSyncedClient(replacement)
+    Clerk.shared.applyWatchSyncedClient(
+      replacement,
+      syncedAt: Date(timeIntervalSince1970: 2),
+      incomingIsAuthoritative: false
+    )
 
     #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
     #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
   }
 
   @Test
-  func applyWatchSyncedClientOverridesPreviouslyAppliedResponseSequence() {
+  func applyWatchSyncedClientIgnoresEqualSyncAnchorWhenCurrentDeviceRetainsPriority() {
     configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
+    let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
+    let replacement = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
+
+    Clerk.shared.applyWatchSyncedClient(
+      original,
+      syncedAt: Date(timeIntervalSince1970: 2),
+      incomingIsAuthoritative: false
+    )
+
+    Clerk.shared.applyWatchSyncedClient(
+      replacement,
+      syncedAt: Date(timeIntervalSince1970: 2),
+      incomingIsAuthoritative: false
+    )
+
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-a")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-a")
+  }
+
+  @Test
+  func applyWatchSyncedClientIgnoresOlderSyncAnchor() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
+    let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
+    let stale = client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 3000, lastActiveSessionId: "session-stale")
+
+    Clerk.shared.applyWatchSyncedClient(
+      current,
+      syncedAt: Date(timeIntervalSince1970: 3),
+      incomingIsAuthoritative: false
+    )
+
+    Clerk.shared.applyWatchSyncedClient(
+      stale,
+      syncedAt: Date(timeIntervalSince1970: 2),
+      incomingIsAuthoritative: false
+    )
+
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-current")
+  }
+
+  @Test
+  func applyWatchSyncedClientOverridesPreviouslyAppliedResponseSequenceWithNewerSyncAnchor() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
     let responseClient = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
     let syncedClient = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
 
     Clerk.shared.client = nil
     Clerk.shared.applyResponseClient(responseClient, responseSequence: 10)
 
-    Clerk.shared.applyWatchSyncedClient(syncedClient)
+    Clerk.shared.applyWatchSyncedClient(
+      syncedClient,
+      syncedAt: .distantFuture,
+      incomingIsAuthoritative: false
+    )
 
     #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
     #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
+  }
+
+  @Test
+  func cleanupManagersResetsLastAppliedClientResponseSequence() {
+    configureClerkForTesting()
+    let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
+    let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 2000)
+
+    Clerk.shared.client = nil
+    Clerk.shared.applyResponseClient(original, responseSequence: 10)
+
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.applyResponseClient(replacement, responseSequence: 1)
+
+    #expect(Clerk.shared.client?.signIn?.id == replacement.signIn?.id)
+  }
+
+  @Test
+  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
+    let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
+
+    Clerk.shared.applyResponseClient(current, responseSequence: 10)
+    Clerk.shared.applyWatchSyncedClient(
+      replacement,
+      syncedAt: Date(timeIntervalSince1970: 1),
+      incomingIsAuthoritative: true
+    )
+
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-replacement")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-replacement")
   }
 
   private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {

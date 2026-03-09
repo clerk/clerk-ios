@@ -16,15 +16,6 @@ import WatchConnectivity
 /// they change or when the app enters the foreground. It uses WCSession's updateApplicationContext
 /// for reliable delivery even when the watch app is not running.
 final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
-  /// The key used to send deviceToken in the application context.
-  private static let deviceTokenKey = "clerkDeviceToken"
-
-  /// The key used to send Client in the application context.
-  private static let clientKey = "clerkClient"
-
-  /// The key used to send Environment in the application context.
-  private static let environmentKey = "clerkEnvironment"
-
   /// The WCSession instance used for communication.
   private let session: WCSession
 
@@ -64,29 +55,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     guard !isProcessingSync else { return }
     guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
 
-    var applicationContext: [String: Any] = [:]
-
-    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
-      applicationContext[Self.deviceTokenKey] = deviceToken
-    }
-
-    if let client = Clerk.shared.client {
-      do {
-        applicationContext[Self.clientKey] = try JSONEncoder.clerkEncoder.encode(client)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to serialize Client for sync")
-      }
-    } else {
-      applicationContext[Self.clientKey] = Data()
-    }
-
-    if let environment = Clerk.shared.environment {
-      do {
-        applicationContext[Self.environmentKey] = try JSONEncoder.clerkEncoder.encode(environment)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to serialize Environment for sync")
-      }
-    }
+    let applicationContext = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain).applicationContext
 
     guard !applicationContext.isEmpty else { return }
 
@@ -102,64 +71,10 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   }
 
   @MainActor
-  private func processSyncedDeviceToken(_ deviceToken: String) {
+  private func applyPayload(_ payload: WatchSyncPayload) {
     isProcessingSync = true
     defer { isProcessingSync = false }
-
-    // Check if this is first sync
-    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
-    let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-
-    // First sync: iOS always wins if both have tokens
-    if !hasSyncedBefore, currentToken != nil {
-      do {
-        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
-      }
-      // iOS always wins on first sync - don't accept watch token
-      return
-    }
-
-    // Subsequent syncs: Always accept received value
-    do {
-      try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      if !hasSyncedBefore {
-        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
-      }
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to store deviceToken from watch app")
-    }
-  }
-
-  @MainActor
-  private func processSyncedClient(_ clientData: Data) {
-    isProcessingSync = true
-    defer { isProcessingSync = false }
-
-    if clientData.isEmpty {
-      Clerk.shared.applyWatchSyncedClient(nil)
-      return
-    }
-
-    do {
-      let receivedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
-      Clerk.shared.applyWatchSyncedClient(receivedClient)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to decode Client from watch app")
-    }
-  }
-
-  @MainActor
-  private func processSyncedEnvironment(_ environmentData: Data) {
-    isProcessingSync = true
-    defer { isProcessingSync = false }
-
-    do {
-      Clerk.shared.environment = try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to decode Environment from watch app")
-    }
+    payload.apply(from: .watch, to: Clerk.shared, keychain: keychain)
   }
 }
 
@@ -203,22 +118,12 @@ extension WatchConnectivityManager: WCSessionDelegate {
   }
 
   nonisolated func session(_: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-    // Extract values before crossing actor boundaries to avoid Sendable warnings
-    // Use string literals instead of static properties to avoid actor isolation issues
-    let deviceToken = applicationContext["clerkDeviceToken"] as? String
-    let clientData = applicationContext["clerkClient"] as? Data
-    let environmentData = applicationContext["clerkEnvironment"] as? Data
+    let payload = WatchSyncPayload(applicationContext: applicationContext)
 
     Task { @MainActor [weak self] in
       guard let self else { return }
-      if let deviceToken {
-        processSyncedDeviceToken(deviceToken)
-      }
-      if let clientData {
-        processSyncedClient(clientData)
-      }
-      if let environmentData {
-        processSyncedEnvironment(environmentData)
+      if let payload {
+        applyPayload(payload)
       }
     }
   }

@@ -6,12 +6,20 @@
 import Foundation
 
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
+  private let clerkProvider: @Sendable @MainActor () -> Clerk
+
+  init(clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }) {
+    self.clerkProvider = clerkProvider
+  }
+
   func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    let clerk = await clerkProvider()
+
     if let client = Self.decodeClient(from: data) {
-      await Clerk.shared.applyResponseClient(client, responseSequence: request.clerkRequestSequence)
+      await clerk.applyResponseClient(client, responseSequence: request.clerkRequestSequence)
     } else if hasExplicitNullClientField(in: data) {
       ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
-      await Clerk.shared.applyResponseClientNil(responseSequence: request.clerkRequestSequence)
+      await clerk.applyResponseClientNil(responseSequence: request.clerkRequestSequence)
     }
   }
 

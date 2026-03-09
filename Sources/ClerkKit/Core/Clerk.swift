@@ -93,6 +93,9 @@ public final class Clerk {
   /// The most recent network response sequence that updated the local client.
   private var lastAppliedClientResponseSequence: Int?
 
+  /// Local timestamp for the most recently applied live client state.
+  private var lastClientSyncAnchor: Date?
+
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
@@ -171,6 +174,10 @@ public final class Clerk {
   /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration
+  }
+
+  var watchSyncClientAnchor: Date? {
+    lastClientSyncAnchor
   }
 
   package init() {
@@ -301,7 +308,7 @@ extension Clerk {
     if let client {
       applyResponseClient(client)
     } else {
-      self.client = nil
+      applyResponseClientNil()
     }
     return client
   }
@@ -412,22 +419,12 @@ extension Clerk {
       }
 
       lastAppliedClientResponseSequence = responseSequence
+      lastClientSyncAnchor = Date()
       client = incoming
       return
     }
 
-    guard let currentClient = client else {
-      client = incoming
-      return
-    }
-
-    guard incoming.updatedAt > currentClient.updatedAt else {
-      ClerkLogger.debug(
-        "Ignoring stale client update. Current updatedAt: \(currentClient.updatedAt), incoming updatedAt: \(incoming.updatedAt)"
-      )
-      return
-    }
-
+    lastClientSyncAnchor = Date()
     client = incoming
   }
 
@@ -445,10 +442,43 @@ extension Clerk {
       lastAppliedClientResponseSequence = responseSequence
     }
 
+    lastClientSyncAnchor = Date()
     client = nil
   }
 
-  func applyWatchSyncedClient(_ incoming: Client?) {
+  func applyWatchSyncedClient(
+    _ incoming: Client?,
+    syncedAt: Date?,
+    incomingIsAuthoritative: Bool
+  ) {
+    if incomingIsAuthoritative {
+      if let syncedAt {
+        lastClientSyncAnchor = syncedAt
+      }
+      client = incoming
+      return
+    }
+
+    if let syncedAt {
+      if let lastClientSyncAnchor,
+         syncedAt <= lastClientSyncAnchor
+      {
+        ClerkLogger.debug(
+          "Ignoring stale watch-synced client update. Current sync anchor: \(lastClientSyncAnchor), incoming sync anchor: \(syncedAt)"
+        )
+        return
+      }
+
+      lastClientSyncAnchor = syncedAt
+      client = incoming
+      return
+    }
+
+    guard client == nil else {
+      ClerkLogger.debug("Ignoring watch-synced client update without sync anchor because current device retains priority.")
+      return
+    }
+
     client = incoming
   }
 
@@ -481,6 +511,10 @@ extension Clerk {
     authEventEmitter.finish()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
+    lastAppliedClientResponseSequence = nil
+    lastClientSyncAnchor = nil
+    cacheManager?.shutdown()
+    cacheManager = nil
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
