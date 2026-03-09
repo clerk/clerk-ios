@@ -35,4 +35,58 @@ struct VersionTests {
     }
     // It's acceptable for deviceID to be nil on unsupported platforms
   }
+
+  @Test
+  func apiVersionIsNotEmpty() {
+    #expect(!Clerk.apiVersion.isEmpty)
+  }
+
+  @Test
+  func apiVersionHasDateFormat() {
+    // API version should be in format YYYY-MM-DD
+    let components = Clerk.apiVersion.split(separator: "-")
+    #expect(components.count == 3, "API version should have 3 components separated by -")
+
+    // Year should be 4 digits
+    #expect(components[0].count == 4, "Year should be 4 digits")
+    #expect(Int(components[0]) != nil, "Year should be numeric")
+
+    // Month should be 2 digits
+    #expect(components[1].count == 2, "Month should be 2 digits")
+    #expect(Int(components[1]) != nil, "Month should be numeric")
+
+    // Day should be 2 digits
+    #expect(components[2].count == 2, "Day should be 2 digits")
+    #expect(Int(components[2]) != nil, "Day should be numeric")
+  }
+
+  @Test
+  func apiVersionIsValidDate() {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    let date = formatter.date(from: Clerk.apiVersion)
+
+    #expect(date != nil, "API version should be a valid date")
+  }
+
+  @Test
+  func sdkVersionMatchesSemverPattern() {
+    // Version should match semver pattern
+    let pattern = #"^\d+\.\d+\.\d+$"#
+    let regex = try? NSRegularExpression(pattern: pattern)
+    let range = NSRange(Clerk.sdkVersion.startIndex..., in: Clerk.sdkVersion)
+    let match = regex?.firstMatch(in: Clerk.sdkVersion, range: range)
+
+    #expect(match != nil, "SDK version should match semver pattern (X.Y.Z)")
+  }
+
+  @Test
+  func versionsAreAccessible() {
+    // Test that versions can be accessed
+    let sdkVersion = Clerk.sdkVersion
+    let apiVersion = Clerk.apiVersion
+
+    #expect(!sdkVersion.isEmpty)
+    #expect(!apiVersion.isEmpty)
+  }
 }

@@ -319,4 +319,91 @@ struct ClerkAPIClientTests {
       #expect(requestHandled.value)
     }
   }
+
+  @Test
+  func requestSequenceNumberIncreases() async throws {
+    let requestSequences = LockIsolated<[Int]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+
+    var mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder().encode(["success": true]),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      if let sequence = request.clerkRequestSequence {
+        requestSequences.withValue { $0.append(sequence) }
+      }
+    }
+    mock.register()
+
+    let request = Request<EmptyResponse>(path: "/v1/test", method: .get)
+
+    // Make multiple requests
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+
+    let sequences = requestSequences.value
+    #expect(sequences.count == 3)
+    #expect(sequences[0] < sequences[1])
+    #expect(sequences[1] < sequences[2])
+  }
+
+  @Test
+  func serverErrorReturnsError() async throws {
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+
+    let mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 500,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(code: "internal_error", message: "Internal server error", longMessage: nil)
+            ],
+            clerkTraceId: "trace123"
+          )
+        ),
+      ]
+    )
+    mock.register()
+
+    let request = Request<EmptyResponse>(path: "/v1/test", method: .get)
+
+    do {
+      _ = try await Clerk.shared.dependencies.apiClient.send(request)
+      #expect(Bool(false), "Expected error to be thrown")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "internal_error")
+      #expect(error.clerkTraceId == "trace123")
+    }
+  }
+
+  @Test
+  func responseDecodingToExpectedType() async throws {
+    struct TestResponse: Codable, Sendable {
+      let id: String
+      let name: String
+    }
+
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+    let expectedResponse = TestResponse(id: "test123", name: "Test Name")
+
+    let mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(expectedResponse),
+      ]
+    )
+    mock.register()
+
+    let request = Request<TestResponse>(path: "/v1/test", method: .get)
+    let response = try await Clerk.shared.dependencies.apiClient.send(request)
+
+    #expect(response.value.id == "test123")
+    #expect(response.value.name == "Test Name")
+  }
 }

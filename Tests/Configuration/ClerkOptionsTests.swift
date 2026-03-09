@@ -13,7 +13,7 @@ struct ClerkOptionsTests {
   }
 
   private struct TestResponseMiddleware: ClerkResponseMiddleware {
-    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) throws {}
+    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {}
   }
 
   @Test
@@ -148,5 +148,118 @@ struct ClerkOptionsTests {
 
     #expect(options.middleware.response.count == 1)
     #expect(options.middleware.response.first is TestResponseMiddleware)
+  }
+
+  @Test
+  func watchConnectivityEnabledDefaultsToFalse() {
+    let options = Clerk.Options()
+
+    #expect(options.watchConnectivityEnabled == false)
+  }
+
+  @Test
+  func watchConnectivityEnabledCanBeSet() {
+    let options = Clerk.Options(watchConnectivityEnabled: true)
+
+    #expect(options.watchConnectivityEnabled == true)
+  }
+
+  @Test
+  func loggerHandlerDefaultsToNil() {
+    let options = Clerk.Options()
+
+    #expect(options.loggerHandler == nil)
+  }
+
+  @Test
+  func loggerHandlerCanBeSet() {
+    var capturedLogEntry: LogEntry?
+    let loggerHandler: @Sendable (LogEntry) -> Void = { entry in
+      capturedLogEntry = entry
+    }
+
+    let options = Clerk.Options(loggerHandler: loggerHandler)
+
+    #expect(options.loggerHandler != nil)
+  }
+
+  @Test
+  func middlewareConfigInitializationWithBothTypes() {
+    let requestMiddleware = TestRequestMiddleware()
+    let responseMiddleware = TestResponseMiddleware()
+
+    let options = Clerk.Options(
+      middleware: .init(
+        request: [requestMiddleware],
+        response: [responseMiddleware]
+      )
+    )
+
+    #expect(options.middleware.request.count == 1)
+    #expect(options.middleware.response.count == 1)
+    #expect(options.middleware.request.first is TestRequestMiddleware)
+    #expect(options.middleware.response.first is TestResponseMiddleware)
+  }
+
+  @Test
+  func keychainConfigAccessGroupCanBeSet() {
+    let keychainConfig = Clerk.Options.KeychainConfig(
+      service: "test.service",
+      accessGroup: "group.test.app"
+    )
+
+    #expect(keychainConfig.service == "test.service")
+    #expect(keychainConfig.accessGroup == "group.test.app")
+  }
+
+  @Test
+  func redirectConfigWithCustomValues() {
+    let redirectConfig = Clerk.Options.RedirectConfig(
+      redirectUrl: "custom://auth",
+      callbackUrlScheme: "custom"
+    )
+
+    #expect(redirectConfig.redirectUrl == "custom://auth")
+    #expect(redirectConfig.callbackUrlScheme == "custom")
+  }
+
+  @Test
+  func fullOptionsInitialization() {
+    let keychainConfig = Clerk.Options.KeychainConfig(
+      service: "test.service",
+      accessGroup: "test.group"
+    )
+    let redirectConfig = Clerk.Options.RedirectConfig(
+      redirectUrl: "test://callback",
+      callbackUrlScheme: "test"
+    )
+    let requestMiddleware = TestRequestMiddleware()
+    let responseMiddleware = TestResponseMiddleware()
+
+    let options = Clerk.Options(
+      logLevel: .verbose,
+      telemetryEnabled: false,
+      keychainConfig: keychainConfig,
+      proxyUrl: "https://proxy.example.com",
+      redirectConfig: redirectConfig,
+      watchConnectivityEnabled: true,
+      loggerHandler: { _ in },
+      middleware: .init(
+        request: [requestMiddleware],
+        response: [responseMiddleware]
+      )
+    )
+
+    #expect(options.logLevel == .verbose)
+    #expect(options.telemetryEnabled == false)
+    #expect(options.keychainConfig.service == "test.service")
+    #expect(options.keychainConfig.accessGroup == "test.group")
+    #expect(options.proxyUrl?.absoluteString == "https://proxy.example.com")
+    #expect(options.redirectConfig.redirectUrl == "test://callback")
+    #expect(options.redirectConfig.callbackUrlScheme == "test")
+    #expect(options.watchConnectivityEnabled == true)
+    #expect(options.loggerHandler != nil)
+    #expect(options.middleware.request.count == 1)
+    #expect(options.middleware.response.count == 1)
   }
 }
