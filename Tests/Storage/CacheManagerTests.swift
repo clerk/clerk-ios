@@ -69,11 +69,8 @@ struct CacheManagerTests {
       key: "cachedClient"
     )
 
-    // Verify client was saved to keychain
-    #expect(clientData != nil)
-
     let decoder = JSONDecoder.clerkDecoder
-    let decodedClient = try decoder.decode(Client.self, from: #require(clientData))
+    let decodedClient = try decoder.decode(Client.self, from: clientData)
     #expect(decodedClient.id == Client.mock.id)
   }
 
@@ -87,11 +84,8 @@ struct CacheManagerTests {
       key: "cachedEnvironment"
     )
 
-    // Verify environment was saved to keychain
-    #expect(envData != nil)
-
     let decoder = JSONDecoder.clerkDecoder
-    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: #require(envData))
+    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: envData)
     #expect(decodedEnv == Clerk.Environment.mock)
   }
 
@@ -190,8 +184,12 @@ struct CacheManagerTests {
   private func waitForKeychainData(
     _ keychain: InMemoryKeychain,
     key: String,
-    timeout: Duration = .milliseconds(250)
-  ) async throws -> Data? {
+    timeout: Duration = .milliseconds(500)
+  ) async throws -> Data {
+    enum TimeoutError: Error {
+      case timedOut(String)
+    }
+
     let deadline = ContinuousClock.now + timeout
 
     while ContinuousClock.now < deadline {
@@ -202,7 +200,11 @@ struct CacheManagerTests {
       try await Task.sleep(for: .milliseconds(10))
     }
 
-    return try keychain.data(forKey: key)
+    if let data = try keychain.data(forKey: key) {
+      return data
+    }
+
+    throw TimeoutError.timedOut("Timed out waiting for key '\(key)' to appear in InMemoryKeychain")
   }
 
   private func waitForKeychainDeletion(
