@@ -9,8 +9,11 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     if let client = Self.decodeClient(from: data) {
       await Clerk.shared.applyResponseClient(client, responseSequence: request.clerkRequestSequence)
-    } else {
-      ClerkLogger.debug("No client found in API response payload. Skipping client sync.")
+    } else if hasExplicitNullClientField(in: data) {
+      ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
+      await MainActor.run {
+        Clerk.shared.client = nil
+      }
     }
   }
 
@@ -45,5 +48,26 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     }
 
     return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
+  }
+
+  private func hasExplicitNullClientField(in jsonData: Data) -> Bool {
+    struct ClientFieldProbe: Decodable {
+      let hasExplicitNullClientField: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case client
+      }
+
+      init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.client) {
+          hasExplicitNullClientField = try container.decodeNil(forKey: .client)
+        } else {
+          hasExplicitNullClientField = false
+        }
+      }
+    }
+
+    return (try? JSONDecoder.clerkDecoder.decode(ClientFieldProbe.self, from: jsonData))?.hasExplicitNullClientField == true
   }
 }
