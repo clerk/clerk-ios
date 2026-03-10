@@ -572,40 +572,24 @@ struct UserServiceTests {
     }
     mock.register()
 
-    async let accountDeletedEvent: Void = nextAccountDeletedEvent(from: authEvents)
-    await Task.yield()
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
-    try await accountDeletedEvent
-  }
 
-  private func nextAccountDeletedEvent(
-    from events: AsyncStream<AuthEvent>,
-    timeout: Duration = .seconds(1)
-  ) async throws {
-    enum WaitError: Error {
-      case timeout
+    var iterator = authEvents.makeAsyncIterator()
+    let firstEvent = try #require(await iterator.next(), "Expected sessionChanged event")
+    let secondEvent = try #require(await iterator.next(), "Expected accountDeleted event")
+
+    switch firstEvent {
+    case .sessionChanged(let oldValue, let newValue):
+      #expect(oldValue?.id == Session.mock.id)
+      #expect(newValue == nil)
+    default:
+      Issue.record("Expected sessionChanged event, got \(firstEvent)")
     }
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        var iterator = events.makeAsyncIterator()
-        while let event = await iterator.next() {
-          if case .accountDeleted = event {
-            return
-          }
-        }
-
-        throw WaitError.timeout
-      }
-
-      group.addTask {
-        try await Task.sleep(for: timeout)
-        throw WaitError.timeout
-      }
-
-      try await group.next()
-      group.cancelAll()
+    guard case .accountDeleted = secondEvent else {
+      Issue.record("Expected accountDeleted event, got \(secondEvent)")
+      return
     }
   }
 }

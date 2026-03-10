@@ -77,7 +77,11 @@ package struct WatchSyncPayload {
       client = nil
     }
     if let environmentData {
-      environment = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData)
+      guard let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) else {
+        ClerkLogger.warning("Failed to decode Environment from watch sync payload. Dropping payload.")
+        return nil
+      }
+      environment = decoded
     } else {
       environment = nil
     }
