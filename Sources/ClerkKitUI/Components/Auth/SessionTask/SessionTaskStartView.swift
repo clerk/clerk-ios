@@ -18,8 +18,12 @@ struct SessionTaskStartView: View {
     case .resetPassword:
       SignInSetNewPasswordView(mode: .sessionTask)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
         .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            UserButton(presentationContext: .sessionTaskToolbar)
+          }
+        }
     case .unknown:
       GetHelpView(context: .sessionTask)
         .navigationBarBackButtonHidden()
