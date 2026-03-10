@@ -572,10 +572,11 @@ struct UserServiceTests {
     }
     mock.register()
 
+    async let accountDeletedEvent: Void = nextAccountDeletedEvent(from: authEvents)
+    await Task.yield()
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
-
-    try await nextAccountDeletedEvent(from: authEvents)
+    try await accountDeletedEvent
   }
 
   private func nextAccountDeletedEvent(

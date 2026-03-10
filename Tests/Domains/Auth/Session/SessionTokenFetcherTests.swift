@@ -60,13 +60,14 @@ struct SessionTokenFetcherTests {
     )
 
     let events = Clerk.shared.auth.events
-
+    async let refreshedTokenEvent = nextRefreshedToken(from: events)
+    await Task.yield()
     _ = try await SessionTokenFetcher.shared.fetchToken(
       session,
       options: .init(skipCache: true)
     )
 
-    let token = try await nextRefreshedToken(from: events)
+    let token = try await refreshedTokenEvent
     #expect(token == tokenResource.jwt)
   }
 
