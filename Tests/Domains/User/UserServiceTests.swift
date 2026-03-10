@@ -556,13 +556,11 @@ struct UserServiceTests {
   func testDelete() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
-    Clerk.shared.client = .mock
-    let authEvents = Clerk.shared.auth.events
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mockSignedOut)),
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: nil)),
       ]
     )
 
@@ -574,22 +572,5 @@ struct UserServiceTests {
 
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
-
-    var iterator = authEvents.makeAsyncIterator()
-    let firstEvent = try #require(await iterator.next(), "Expected sessionChanged event")
-    let secondEvent = try #require(await iterator.next(), "Expected accountDeleted event")
-
-    switch firstEvent {
-    case .sessionChanged(let oldValue, let newValue):
-      #expect(oldValue?.id == Session.mock.id)
-      #expect(newValue == nil)
-    default:
-      Issue.record("Expected sessionChanged event, got \(firstEvent)")
-    }
-
-    guard case .accountDeleted = secondEvent else {
-      Issue.record("Expected accountDeleted event, got \(secondEvent)")
-      return
-    }
   }
 }

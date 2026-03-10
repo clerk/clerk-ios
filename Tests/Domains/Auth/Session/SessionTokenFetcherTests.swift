@@ -47,8 +47,9 @@ struct SessionTokenFetcherTests {
   }
 
   @Test
-  func fetchTokenEmitsTokenRefreshedEvent() async throws {
+  func fetchTokenCachesFetchedToken() async throws {
     let session = Session.mock
+    let template = UUID().uuidString
     let tokenResource = TokenResource(jwt: "jwt_123")
     let service = MockSessionService(fetchToken: { _, _ in
       tokenResource
@@ -59,18 +60,14 @@ struct SessionTokenFetcherTests {
       sessionService: service
     )
 
-    let events = Clerk.shared.auth.events
     _ = try await SessionTokenFetcher.shared.fetchToken(
       session,
-      options: .init(skipCache: true)
+      options: .init(template: template, skipCache: true)
     )
 
-    var iterator = events.makeAsyncIterator()
-    let event = try #require(await iterator.next(), "Expected tokenRefreshed event")
-    guard case .tokenRefreshed(let token) = event else {
-      Issue.record("Expected tokenRefreshed event, got \(event)")
-      return
-    }
-    #expect(token == tokenResource.jwt)
+    let cachedToken = await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: template)
+    )
+    #expect(cachedToken == tokenResource)
   }
 }

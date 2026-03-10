@@ -18,6 +18,9 @@ func configureClerkForTesting() {
 
   // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()
+
+  // Unit tests should not inherit startup refreshes or session polling from configure().
+  Clerk.shared.cleanupManagers()
 }
 
 /// Replaces the API client with MockingURLProtocol after Clerk.configure() creates the container.
