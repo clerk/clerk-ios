@@ -208,6 +208,15 @@ final class CacheManager {
     coordinator = nil
   }
 
+  func shutdownAndDrain() async {
+    persistenceState.shutdown()
+    let pendingTask = pendingPersistenceTask
+    pendingPersistenceTask = nil
+    coordinator = nil
+    pendingTask?.cancel()
+    await pendingTask?.value
+  }
+
   // MARK: - Private Keychain Operations
 
   /// Loads client data from keychain.

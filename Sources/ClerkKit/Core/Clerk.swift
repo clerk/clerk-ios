@@ -508,13 +508,28 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
+    resetManagerStateForCleanup()
+    cacheManager?.shutdown()
+    cacheManager = nil
+    teardownNonCacheManagers()
+  }
+
+  package func cleanupManagersAndDrainCache() async {
+    resetManagerStateForCleanup()
+    await cacheManager?.shutdownAndDrain()
+    cacheManager = nil
+    teardownNonCacheManagers()
+  }
+
+  private func resetManagerStateForCleanup() {
     authEventEmitter.finish()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
     lastAppliedClientResponseSequence = nil
     lastClientSyncAnchor = nil
-    cacheManager?.shutdown()
-    cacheManager = nil
+  }
+
+  private func teardownNonCacheManagers() {
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
