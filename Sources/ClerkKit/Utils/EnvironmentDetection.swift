@@ -24,6 +24,12 @@ package enum EnvironmentDetection {
   /// that are set when running tests in Xcode or via Swift Testing.
   package static var isRunningInTests: Bool {
     #if DEBUG
+    // Check if the XCTest framework is loaded. This covers both XCTest
+    // and Swift Testing, which both run through the xctest runner.
+    if NSClassFromString("XCTestCase") != nil {
+      return true
+    }
+
     let processInfo = ProcessInfo.processInfo
 
     // Check for Xcode test arguments

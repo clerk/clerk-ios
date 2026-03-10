@@ -34,7 +34,10 @@ struct AuthAndClientIntegrationTests {
   /// Verifies that SignUp and SignIn objects are successfully decoded from the API.
   @Test
   func signUpAndSignIn() async throws {
-    configureClerkForIntegrationTesting(keyName: "with-email-codes")
+    let keyName = "with-email-codes"
+    guard try configureClerkForIntegrationTesting(keyName: keyName) else {
+      return
+    }
     let testEmail = Self.makeUniqueTestEmail()
     var capturedError: Error?
     var didCreateSignUp = false
@@ -75,6 +78,9 @@ struct AuthAndClientIntegrationTests {
     await deleteTestAccountIfExists(email: testEmail, allowPasswordCleanup: didCreateSignUp)
 
     if let capturedError {
+      if try shouldSkipIntegrationTest(capturedError, keyName: keyName) {
+        return
+      }
       throw capturedError
     }
   }

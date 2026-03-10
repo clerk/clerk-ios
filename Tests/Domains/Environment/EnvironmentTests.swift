@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct EnvironmentTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   @Test

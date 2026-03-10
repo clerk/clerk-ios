@@ -8,6 +8,24 @@
 @testable import ClerkKit
 import Foundation
 
+private enum IntegrationTestConfigurationError: LocalizedError {
+  case missingPublishableKey(String)
+  case unsupportedInstance(String)
+
+  var errorDescription: String? {
+    switch self {
+    case .missingPublishableKey(let keyName):
+      "Missing integration test publishable key for '\(keyName)'."
+    case .unsupportedInstance(let keyName):
+      "Integration test instance '\(keyName)' does not support the required Native API flows."
+    }
+  }
+}
+
+private var isRunningInCI: Bool {
+  ProcessInfo.processInfo.environment["CI"] != nil
+}
+
 /// Gets the publishable key for integration tests.
 ///
 /// Reads from `.keys.json` file using the specified `keyName`.
@@ -51,8 +69,15 @@ func getIntegrationTestPublishableKey(keyName: String) -> String {
 /// - Note: Integration tests require network access and a valid Clerk test instance.
 /// - Note: Integration tests are slower than unit tests due to real network calls.
 @MainActor
-func configureClerkForIntegrationTesting(keyName: String) {
+func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
   let publishableKey = getIntegrationTestPublishableKey(keyName: keyName)
+  guard !publishableKey.isEmpty else {
+    if isRunningInCI {
+      throw IntegrationTestConfigurationError.missingPublishableKey(keyName)
+    }
+    return false
+  }
+
   Clerk.configure(publishableKey: publishableKey)
 
   // Replace the dependencies with a container that uses an in-memory keychain
@@ -75,4 +100,19 @@ func configureClerkForIntegrationTesting(keyName: String) {
     phoneNumberService: PhoneNumberService(apiClient: apiClient),
     externalAccountService: ExternalAccountService(apiClient: apiClient)
   )
+
+  return true
+}
+
+func shouldSkipIntegrationTest(_ error: Error, keyName: String) throws -> Bool {
+  if let clerkError = error as? ClerkAPIError,
+     clerkError.code == "native_api_disabled"
+  {
+    if isRunningInCI {
+      throw IntegrationTestConfigurationError.unsupportedInstance(keyName)
+    }
+    return true
+  }
+
+  return false
 }

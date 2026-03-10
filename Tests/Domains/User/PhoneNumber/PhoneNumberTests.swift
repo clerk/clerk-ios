@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct PhoneNumberTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   private func configureService(_ service: MockPhoneNumberService) {

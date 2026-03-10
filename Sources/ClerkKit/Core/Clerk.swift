@@ -308,7 +308,7 @@ extension Clerk {
     if let responseClient = response.client {
       applyResponseClient(responseClient, responseSequence: response.requestSequence)
     } else {
-      applyResponseClientNil(responseSequence: response.requestSequence)
+      applyResponseClient(nil, responseSequence: response.requestSequence)
     }
     return client
   }
@@ -407,43 +407,22 @@ extension Clerk {
     await task.value
   }
 
-  func applyResponseClient(_ incoming: Client, responseSequence: Int? = nil) {
+  func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil) {
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
-         responseSequence < lastAppliedClientResponseSequence
+         responseSequence <= lastAppliedClientResponseSequence
       {
         ClerkLogger.debug(
-          "Ignoring stale client update from older response sequence. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
+          "Ignoring stale client response. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
         )
         return
       }
 
       lastAppliedClientResponseSequence = responseSequence
-      lastClientSyncAnchor = Date()
-      client = incoming
-      return
     }
 
     lastClientSyncAnchor = Date()
     client = incoming
-  }
-
-  func applyResponseClientNil(responseSequence: Int? = nil) {
-    if let responseSequence {
-      if let lastAppliedClientResponseSequence,
-         responseSequence < lastAppliedClientResponseSequence
-      {
-        ClerkLogger.debug(
-          "Ignoring stale client clear from older response sequence. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
-        )
-        return
-      }
-
-      lastAppliedClientResponseSequence = responseSequence
-    }
-
-    lastClientSyncAnchor = Date()
-    client = nil
   }
 
   func applyWatchSyncedClient(
@@ -515,6 +494,9 @@ extension Clerk {
   }
 
   package func cleanupManagersAndDrainCache() async {
+    invalidAuthRefreshTask?.cancel()
+    await invalidAuthRefreshTask?.value
+
     resetManagerStateForCleanup()
     await cacheManager?.shutdownAndDrain()
     cacheManager = nil

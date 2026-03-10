@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct SessionTokenFetcherTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
     Clerk.shared.cleanupManagers()
   }
 

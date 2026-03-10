@@ -62,7 +62,7 @@ struct ClerkResponseClientStateTests {
 
     Clerk.shared.client = nil
     Clerk.shared.applyResponseClient(original, responseSequence: 2)
-    Clerk.shared.applyResponseClientNil(responseSequence: 1)
+    Clerk.shared.applyResponseClient(nil, responseSequence: 1)
 
     #expect(Clerk.shared.client?.signIn?.id == original.signIn?.id)
   }

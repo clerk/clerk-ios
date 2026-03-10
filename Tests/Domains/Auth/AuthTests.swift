@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct AuthTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   private func configureDependencies(
