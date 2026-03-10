@@ -304,11 +304,11 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    let client = try await dependencies.clientService.get()
-    if let client {
-      applyResponseClient(client)
+    let response = try await dependencies.clientService.getResponse()
+    if let responseClient = response.client {
+      applyResponseClient(responseClient, responseSequence: response.requestSequence)
     } else {
-      applyResponseClientNil()
+      applyResponseClientNil(responseSequence: response.requestSequence)
     }
     return client
   }

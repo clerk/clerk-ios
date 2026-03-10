@@ -90,7 +90,7 @@ actor APIClient {
         }
 
         let value = try request.decode(data, using: decoder)
-        return APIResponse(value: value)
+        return APIResponse(value: value, requestSequence: requestSequence)
       } catch {
         if try await pipeline.shouldRetry(
           request: urlRequest,
