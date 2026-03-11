@@ -65,23 +65,23 @@ package struct WatchSyncPayload {
     if let clientData {
       if clientData.isEmpty {
         client = nil
-      } else {
-        guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
-          ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
-          return nil
-        }
+      } else if let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) {
         client = decoded
+      } else {
+        ClerkLogger.warning("Failed to decode Client from watch sync payload. Skipping client field.")
+        client = nil
       }
     } else {
       client = nil
     }
-    if let environmentData {
-      guard let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) else {
-        ClerkLogger.warning("Failed to decode Environment from watch sync payload. Dropping payload.")
-        return nil
-      }
+    if let environmentData,
+       let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData)
+    {
       environment = decoded
     } else {
+      if environmentData != nil {
+        ClerkLogger.warning("Failed to decode Environment from watch sync payload. Skipping environment field.")
+      }
       environment = nil
     }
   }
