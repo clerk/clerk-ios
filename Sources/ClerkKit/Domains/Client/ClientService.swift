@@ -8,6 +8,7 @@ import Foundation
 package struct ClientServiceResponse {
   let client: Client?
   let requestSequence: Int?
+  let serverDate: Date?
 }
 
 protocol ClientServiceProtocol: Sendable {
@@ -34,7 +35,8 @@ final class ClientService: ClientServiceProtocol {
     let response = try await apiClient.send(request)
     return ClientServiceResponse(
       client: response.value.response,
-      requestSequence: response.requestSequence
+      requestSequence: response.requestSequence,
+      serverDate: response.serverDate
     )
   }
 }

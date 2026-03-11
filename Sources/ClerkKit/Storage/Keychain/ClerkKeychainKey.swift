@@ -15,6 +15,9 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached client data.
   case cachedClient
 
+  /// Key for the server timestamp from the response that last updated the cached client.
+  case cachedClientServerDate
+
   /// Key for cached environment data.
   case cachedEnvironment
 

@@ -72,7 +72,7 @@ struct ClientTests {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: SequencedClientService(
-        response: ClientServiceResponse(client: stale, requestSequence: 1)
+        response: ClientServiceResponse(client: stale, requestSequence: 1, serverDate: nil)
       )
     )
 
@@ -99,7 +99,7 @@ struct ClientTests {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: SequencedClientService(
-        response: ClientServiceResponse(client: nil, requestSequence: 1)
+        response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
       )
     )
 

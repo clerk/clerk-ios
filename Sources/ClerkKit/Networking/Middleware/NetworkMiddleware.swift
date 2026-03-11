@@ -109,6 +109,21 @@ extension NetworkingPipeline {
   }
 }
 
+extension HTTPURLResponse {
+  private static let httpDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(identifier: "GMT")
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+    return formatter
+  }()
+
+  var serverDate: Date? {
+    guard let dateString = value(forHTTPHeaderField: "Date") else { return nil }
+    return Self.httpDateFormatter.date(from: dateString)
+  }
+}
+
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
 

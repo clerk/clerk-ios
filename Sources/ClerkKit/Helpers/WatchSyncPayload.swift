@@ -30,37 +30,38 @@ package enum WatchSyncSource {
 package struct WatchSyncPayload {
   private static let deviceTokenKey = "clerkDeviceToken"
   private static let clientKey = "clerkClient"
-  private static let clientSyncAnchorKey = "clerkClientSyncAnchor"
+  private static let clientServerFetchDateKey = "clerkClientServerFetchDate"
   private static let environmentKey = "clerkEnvironment"
 
   let deviceToken: String?
   let client: Client?
+  let clientServerFetchDate: Date?
   let environment: Clerk.Environment?
-  let clientSyncAnchor: Date?
 
   init(
     deviceToken: String?,
     client: Client?,
-    environment: Clerk.Environment?,
-    clientSyncAnchor: Date?
+    clientServerFetchDate: Date?,
+    environment: Clerk.Environment?
   ) {
     self.deviceToken = deviceToken
     self.client = client
+    self.clientServerFetchDate = clientServerFetchDate
     self.environment = environment
-    self.clientSyncAnchor = clientSyncAnchor
   }
 
   init?(applicationContext: [String: Any]) {
     let deviceToken = applicationContext[Self.deviceTokenKey] as? String
     let clientData = applicationContext[Self.clientKey] as? Data
     let environmentData = applicationContext[Self.environmentKey] as? Data
-    let clientSyncAnchor = (applicationContext[Self.clientSyncAnchorKey] as? Double).map(Date.init(timeIntervalSince1970:))
+    let clientServerFetchDate = (applicationContext[Self.clientServerFetchDateKey] as? Double).map(Date.init(timeIntervalSince1970:))
 
-    guard deviceToken != nil || clientData != nil || environmentData != nil || clientSyncAnchor != nil else {
+    guard deviceToken != nil || clientData != nil || environmentData != nil else {
       return nil
     }
 
     self.deviceToken = deviceToken
+    self.clientServerFetchDate = clientServerFetchDate
     if let clientData {
       if clientData.isEmpty {
         client = nil
@@ -83,15 +84,14 @@ package struct WatchSyncPayload {
     } else {
       environment = nil
     }
-    self.clientSyncAnchor = clientSyncAnchor
   }
 
   @MainActor
   init(clerk: Clerk, keychain: any KeychainStorage) {
     deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     client = clerk.client
+    clientServerFetchDate = clerk.lastClientServerFetchDate
     environment = clerk.environment
-    clientSyncAnchor = clerk.watchSyncClientAnchor
   }
 
   var applicationContext: [String: Any] {
@@ -111,8 +111,8 @@ package struct WatchSyncPayload {
       applicationContext[Self.clientKey] = Data()
     }
 
-    if let clientSyncAnchor {
-      applicationContext[Self.clientSyncAnchorKey] = clientSyncAnchor.timeIntervalSince1970
+    if let clientServerFetchDate {
+      applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
     }
 
     if let environment {
@@ -140,13 +140,9 @@ package struct WatchSyncPayload {
       clerk.environment = environment
     }
 
-    guard clientSyncAnchor != nil || client != nil else {
-      return
-    }
-
     clerk.applyWatchSyncedClient(
       client,
-      syncedAt: clientSyncAnchor,
+      incomingServerFetchDate: clientServerFetchDate,
       incomingIsAuthoritative: source.incomingClientIsAuthoritative
     )
   }

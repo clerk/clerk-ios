@@ -18,7 +18,7 @@ final class MockCacheCoordinator: CacheCoordinator {
   private var client: Client?
   private var environment: Clerk.Environment?
 
-  func setClientIfNeeded(_ client: Client?) {
+  func setClientIfNeeded(_ client: Client?, serverFetchDate _: Date?) {
     guard self.client == nil else { return }
     self.client = client
     if client != nil {
@@ -63,7 +63,7 @@ struct CacheManagerTests {
   func testSaveClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
-    cacheManager.saveClient(Client.mock)
+    cacheManager.saveClient(Client.mock, serverFetchDate: nil)
     let clientData = try await waitForKeychainData(
       keychain,
       key: "cachedClient"
@@ -129,7 +129,7 @@ struct CacheManagerTests {
     try keychain.set(clientData, forKey: "cachedClient")
 
     // Simulate existing client by setting one directly
-    coordinator.setClientIfNeeded(Client.mock)
+    coordinator.setClientIfNeeded(Client.mock, serverFetchDate: nil)
     coordinator.clientSet.setValue(false) // Reset to test that it's not set again
 
     cacheManager.loadCachedData()

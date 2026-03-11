@@ -39,14 +39,32 @@ private actor CachePersistenceWorker {
     self.keychain = keychain
   }
 
-  func saveClient(_ client: Client) {
+  func saveClient(_ client: Client, serverFetchDate: Date?) {
     do {
       let clientData = try JSONEncoder.clerkEncoder.encode(client)
       try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
+      if let serverFetchDate {
+        let dateString = String(serverFetchDate.timeIntervalSince1970)
+        try keychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+      } else {
+        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+      }
     } catch {
       ClerkLogger.logError(
         error,
         message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
+      )
+    }
+  }
+
+  func saveServerFetchDate(_ date: Date) {
+    do {
+      let dateString = String(date.timeIntervalSince1970)
+      try keychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save server fetch date to keychain. This is non-critical."
       )
     }
   }
@@ -66,6 +84,7 @@ private actor CachePersistenceWorker {
   func deleteClient() {
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     } catch {
       ClerkLogger.logError(
         error,
@@ -80,10 +99,12 @@ private actor CachePersistenceWorker {
 /// This allows the cache manager to interact with Clerk instance properties
 /// without directly coupling to the Clerk class.
 protocol CacheCoordinator: AnyObject, Sendable {
-  /// Sets the client if no client is currently set.
+  /// Sets the client and its server fetch date if no client is currently set.
   ///
-  /// - Parameter client: The client to set, or nil to clear.
-  @MainActor func setClientIfNeeded(_ client: Client?)
+  /// - Parameters:
+  ///   - client: The client to set, or nil to clear.
+  ///   - serverFetchDate: The server timestamp persisted with this cached client.
+  @MainActor func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?)
 
   /// Sets the environment if the current environment is empty.
   ///
@@ -140,10 +161,12 @@ final class CacheManager {
         return
       }
 
+      let serverFetchDate = try loadClientServerFetchDateFromKeychain()
+
       // Only set cached client if we don't already have one
       // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
-      coordinator.setClientIfNeeded(cachedClient)
+      coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
     } catch {
       // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
@@ -178,10 +201,19 @@ final class CacheManager {
 
   /// Saves client data to keychain.
   ///
-  /// - Parameter client: The client to save.
-  func saveClient(_ client: Client) {
+  /// - Parameters:
+  ///   - client: The client to save.
+  ///   - serverFetchDate: The server timestamp from the response that produced this client.
+  func saveClient(_ client: Client, serverFetchDate: Date?) {
     enqueuePersistence { worker in
-      await worker.saveClient(client)
+      await worker.saveClient(client, serverFetchDate: serverFetchDate)
+    }
+  }
+
+  /// Persists the server fetch date without re-saving the client.
+  func saveServerFetchDate(_ date: Date) {
+    enqueuePersistence { worker in
+      await worker.saveServerFetchDate(date)
     }
   }
 
@@ -226,6 +258,16 @@ final class CacheManager {
     }
     let decoder = JSONDecoder.clerkDecoder
     return try decoder.decode(Client.self, from: clientData)
+  }
+
+  /// Loads the server fetch date persisted alongside the cached client.
+  private func loadClientServerFetchDateFromKeychain() throws -> Date? {
+    guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
+          let timeInterval = TimeInterval(dateString)
+    else {
+      return nil
+    }
+    return Date(timeIntervalSince1970: timeInterval)
   }
 
   /// Loads environment data from keychain.

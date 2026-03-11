@@ -38,12 +38,14 @@ package final class MockClientService: ClientServiceProtocol {
     if let handler = getHandler {
       return try await ClientServiceResponse(
         client: handler(),
-        requestSequence: nil
+        requestSequence: nil,
+        serverDate: nil
       )
     }
     return ClientServiceResponse(
       client: .mock,
-      requestSequence: nil
+      requestSequence: nil,
+      serverDate: nil
     )
   }
 }

@@ -68,97 +68,168 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyWatchSyncedClientAcceptsNewerSyncAnchor() {
+  func applyResponseClientStoresServerDate() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
+    let serverDate = Date(timeIntervalSince1970: 1000)
+    let incoming = client(id: "client-1", updatedAt: 2000)
+
     Clerk.shared.client = nil
-    let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
-    let replacement = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
+    Clerk.shared.applyResponseClient(incoming, serverDate: serverDate)
 
-    Clerk.shared.applyWatchSyncedClient(
-      original,
-      syncedAt: Date(timeIntervalSince1970: 1),
-      incomingIsAuthoritative: false
-    )
-
-    Clerk.shared.applyWatchSyncedClient(
-      replacement,
-      syncedAt: Date(timeIntervalSince1970: 2),
-      incomingIsAuthoritative: false
-    )
-
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
-    #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
+    #expect(Clerk.shared.lastClientServerFetchDate == serverDate)
   }
 
-  @Test
-  func applyWatchSyncedClientIgnoresEqualSyncAnchorWhenCurrentDeviceRetainsPriority() {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-    Clerk.shared.client = nil
-    let original = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
-    let replacement = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
-
-    Clerk.shared.applyWatchSyncedClient(
-      original,
-      syncedAt: Date(timeIntervalSince1970: 2),
-      incomingIsAuthoritative: false
-    )
-
-    Clerk.shared.applyWatchSyncedClient(
-      replacement,
-      syncedAt: Date(timeIntervalSince1970: 2),
-      incomingIsAuthoritative: false
-    )
-
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-a")
-    #expect(Clerk.shared.client?.signIn?.id == "sign-in-a")
-  }
+  // MARK: - Watch Sync (Authoritative / Phone → Watch)
 
   @Test
-  func applyWatchSyncedClientIgnoresOlderSyncAnchor() {
+  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
-    Clerk.shared.client = nil
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
-    let stale = client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 3000, lastActiveSessionId: "session-stale")
+    let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
 
+    Clerk.shared.applyResponseClient(current, responseSequence: 10)
     Clerk.shared.applyWatchSyncedClient(
-      current,
-      syncedAt: Date(timeIntervalSince1970: 3),
-      incomingIsAuthoritative: false
+      replacement,
+      incomingServerFetchDate: Date(timeIntervalSince1970: 1),
+      incomingIsAuthoritative: true
     )
 
-    Clerk.shared.applyWatchSyncedClient(
-      stale,
-      syncedAt: Date(timeIntervalSince1970: 2),
-      incomingIsAuthoritative: false
-    )
-
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
-    #expect(Clerk.shared.client?.signIn?.id == "sign-in-current")
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-replacement")
+    #expect(Clerk.shared.client?.signIn?.id == "sign-in-replacement")
   }
 
   @Test
-  func applyWatchSyncedClientOverridesPreviouslyAppliedResponseSequenceWithNewerSyncAnchor() {
+  func applyWatchSyncedClientAuthoritativeNilClearsClient() {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
-    Clerk.shared.client = nil
-    let responseClient = client(id: "client-original", signInId: "sign-in-a", updatedAt: 3000, lastActiveSessionId: "session-a")
-    let syncedClient = client(id: "client-original", signInId: "sign-in-b", updatedAt: 3000, lastActiveSessionId: "session-b")
-
-    Clerk.shared.client = nil
-    Clerk.shared.applyResponseClient(responseClient, responseSequence: 10)
+    let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000)
+    Clerk.shared.applyResponseClient(current, responseSequence: 10)
 
     Clerk.shared.applyWatchSyncedClient(
-      syncedClient,
-      syncedAt: .distantFuture,
+      nil,
+      incomingServerFetchDate: nil,
+      incomingIsAuthoritative: true
+    )
+
+    #expect(Clerk.shared.client == nil)
+  }
+
+  // MARK: - Watch Sync (Non-authoritative / Watch → Phone)
+
+  @Test
+  func nonAuthoritativeWatchSyncAcceptsNewerServerFetchDate() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
+    let phoneServerDate = Date(timeIntervalSince1970: 100)
+    let watchServerDate = Date(timeIntervalSince1970: 200)
+
+    Clerk.shared.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
+    Clerk.shared.applyWatchSyncedClient(
+      watchClient,
+      incomingServerFetchDate: watchServerDate,
       incomingIsAuthoritative: false
     )
 
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-b")
-    #expect(Clerk.shared.client?.signIn?.id == "sign-in-b")
+    #expect(Clerk.shared.client?.id == watchClient.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-watch")
+    #expect(Clerk.shared.lastClientServerFetchDate == watchServerDate)
   }
+
+  @Test
+  func nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
+    let phoneServerDate = Date(timeIntervalSince1970: 200)
+    let watchServerDate = Date(timeIntervalSince1970: 100)
+
+    Clerk.shared.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
+    Clerk.shared.applyWatchSyncedClient(
+      watchClient,
+      incomingServerFetchDate: watchServerDate,
+      incomingIsAuthoritative: false
+    )
+
+    #expect(Clerk.shared.client?.id == phoneClient.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-phone")
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncSchedulesRefreshWhenNoServerFetchDates() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
+
+    Clerk.shared.applyResponseClient(phoneClient, responseSequence: 1)
+    Clerk.shared.applyWatchSyncedClient(
+      watchClient,
+      incomingServerFetchDate: nil,
+      incomingIsAuthoritative: false
+    )
+
+    // Without server fetch dates, phone keeps its client (defers to server refresh)
+    #expect(Clerk.shared.client?.id == phoneClient.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-phone")
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncNilDoesNotClearPhoneClient() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
+
+    Clerk.shared.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
+    Clerk.shared.applyWatchSyncedClient(
+      nil,
+      incomingServerFetchDate: Date(timeIntervalSince1970: 200),
+      incomingIsAuthoritative: false
+    )
+
+    // Even with a newer server fetch date, nil is not accepted from watch.
+    // Only the server can sign out the phone.
+    #expect(Clerk.shared.client?.id == phoneClient.id)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
+    let watchServerDate = Date(timeIntervalSince1970: 100)
+
+    Clerk.shared.applyWatchSyncedClient(
+      watchClient,
+      incomingServerFetchDate: watchServerDate,
+      incomingIsAuthoritative: false
+    )
+
+    #expect(Clerk.shared.client?.id == watchClient.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-watch")
+    #expect(Clerk.shared.lastClientServerFetchDate == watchServerDate)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncNilDoesNotSeedPhone() {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+    Clerk.shared.client = nil
+
+    Clerk.shared.applyWatchSyncedClient(
+      nil,
+      incomingServerFetchDate: nil,
+      incomingIsAuthoritative: false
+    )
+
+    #expect(Clerk.shared.client == nil)
+  }
+
+  // MARK: - Cleanup
 
   @Test
   func cleanupManagersResetsLastAppliedClientResponseSequence() {
@@ -173,24 +244,6 @@ struct ClerkResponseClientStateTests {
     Clerk.shared.applyResponseClient(replacement, responseSequence: 1)
 
     #expect(Clerk.shared.client?.signIn?.id == replacement.signIn?.id)
-  }
-
-  @Test
-  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-    let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
-    let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
-
-    Clerk.shared.applyResponseClient(current, responseSequence: 10)
-    Clerk.shared.applyWatchSyncedClient(
-      replacement,
-      syncedAt: Date(timeIntervalSince1970: 1),
-      incomingIsAuthoritative: true
-    )
-
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-replacement")
-    #expect(Clerk.shared.client?.signIn?.id == "sign-in-replacement")
   }
 
   private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
