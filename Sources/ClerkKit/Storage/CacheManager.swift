@@ -84,7 +84,6 @@ private actor CachePersistenceWorker {
   func deleteClient() {
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     } catch {
       ClerkLogger.logError(
         error,
@@ -105,6 +104,12 @@ protocol CacheCoordinator: AnyObject, Sendable {
   ///   - client: The client to set, or nil to clear.
   ///   - serverFetchDate: The server timestamp persisted with this cached client.
   @MainActor func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?)
+
+  /// Sets the server fetch date if one is not already set and no client exists.
+  ///
+  /// This restores the server-confirmed timestamp after sign-out so the device
+  /// can distinguish "signed out" from "fresh install" on cold launch.
+  @MainActor func setServerFetchDateIfNeeded(_ date: Date)
 
   /// Sets the environment if the current environment is empty.
   ///
@@ -157,16 +162,20 @@ final class CacheManager {
   /// cached data from overwriting fresh data loaded from the API.
   private func loadCachedClient() {
     do {
-      guard let cachedClient = try loadClientFromKeychain() else {
-        return
-      }
-
       let serverFetchDate = try loadClientServerFetchDateFromKeychain()
 
-      // Only set cached client if we don't already have one
-      // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
-      coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+
+      if let cachedClient = try loadClientFromKeychain() {
+        // Only set cached client if we don't already have one
+        // This prevents overwriting fresh data during load()
+        coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+      } else if let serverFetchDate {
+        // No cached client but a server date exists (e.g. after sign-out).
+        // Restore the date so the device knows it was server-confirmed
+        // and doesn't accept stale watch payloads as seed data.
+        coordinator.setServerFetchDateIfNeeded(serverFetchDate)
+      }
     } catch {
       // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(

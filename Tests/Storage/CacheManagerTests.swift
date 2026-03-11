@@ -14,16 +14,27 @@ import Testing
 @MainActor
 final class MockCacheCoordinator: CacheCoordinator {
   var clientSet = LockIsolated(false)
+  var serverFetchDateSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
   private var client: Client?
+  private var serverFetchDate: Date?
   private var environment: Clerk.Environment?
 
-  func setClientIfNeeded(_ client: Client?, serverFetchDate _: Date?) {
+  func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
     guard self.client == nil else { return }
     self.client = client
+    if let serverFetchDate {
+      self.serverFetchDate = serverFetchDate
+    }
     if client != nil {
       clientSet.setValue(true)
     }
+  }
+
+  func setServerFetchDateIfNeeded(_ date: Date) {
+    guard client == nil, serverFetchDate == nil else { return }
+    serverFetchDate = date
+    serverFetchDateSet.setValue(true)
   }
 
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {

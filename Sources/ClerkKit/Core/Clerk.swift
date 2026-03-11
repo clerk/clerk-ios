@@ -338,6 +338,11 @@ extension Clerk: CacheCoordinator {
     self.client = client
   }
 
+  func setServerFetchDateIfNeeded(_ date: Date) {
+    guard client == nil, lastClientServerFetchDate == nil else { return }
+    lastClientServerFetchDate = date
+  }
+
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
     // Only set if environment hasn't been loaded yet
     // This prevents cached data from overwriting fresh data loaded from the API
