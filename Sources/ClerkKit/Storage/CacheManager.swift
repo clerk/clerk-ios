@@ -10,12 +10,13 @@ import Foundation
 private final class CachePersistenceState: @unchecked Sendable {
   private let lock = NSLock()
   private var generation = 0
+  private var isFrozen = false
   private var isShutdown = false
 
   func currentGeneration() -> Int? {
     lock.lock()
     defer { lock.unlock() }
-    return isShutdown ? nil : generation
+    return (isShutdown || isFrozen) ? nil : generation
   }
 
   func canPersist(generation: Int) -> Bool {
@@ -24,10 +25,19 @@ private final class CachePersistenceState: @unchecked Sendable {
     return !isShutdown && self.generation == generation
   }
 
+  /// Stops accepting new writes while allowing already-enqueued work to complete.
+  func freeze() {
+    lock.lock()
+    defer { lock.unlock() }
+    isFrozen = true
+  }
+
+  /// Fully shuts down, invalidating all pending and future work.
   func shutdown() {
     lock.lock()
     defer { lock.unlock() }
     isShutdown = true
+    isFrozen = true
     generation += 1
   }
 }
@@ -247,6 +257,7 @@ final class CacheManager {
   }
 
   func shutdownAndDrain() async {
+    persistenceState.freeze()
     let pendingTask = pendingPersistenceTask
     pendingPersistenceTask = nil
     coordinator = nil

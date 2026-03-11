@@ -543,6 +543,10 @@ extension Clerk {
     await watchSyncRefreshTask?.value
     watchSyncRefreshTask = nil
 
+    // Cancel task coordinator tasks before draining the cache to prevent
+    // in-flight refreshes from enqueuing new writes during the drain.
+    taskCoordinator?.cancelAll()
+
     resetManagerStateForCleanup()
     await cacheManager?.shutdownAndDrain()
     cacheManager = nil
