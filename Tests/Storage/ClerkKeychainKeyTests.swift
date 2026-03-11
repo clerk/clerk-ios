@@ -29,6 +29,7 @@ struct ClerkKeychainKeyTests {
   @Test
   func rawValuesMatchExpectedStrings() {
     #expect(ClerkKeychainKey.cachedClient.rawValue == "cachedClient")
+    #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")
     #expect(ClerkKeychainKey.cachedEnvironment.rawValue == "cachedEnvironment")
     #expect(ClerkKeychainKey.clerkDeviceToken.rawValue == "clerkDeviceToken")
     #expect(ClerkKeychainKey.clerkDeviceTokenSynced.rawValue == "clerkDeviceTokenSynced")

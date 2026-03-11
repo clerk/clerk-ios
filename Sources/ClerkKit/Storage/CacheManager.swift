@@ -106,9 +106,6 @@ protocol CacheCoordinator: AnyObject, Sendable {
   @MainActor func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?)
 
   /// Sets the server fetch date if one is not already set and no client exists.
-  ///
-  /// This restores the server-confirmed timestamp after sign-out so the device
-  /// can distinguish "signed out" from "fresh install" on cold launch.
   @MainActor func setServerFetchDateIfNeeded(_ date: Date)
 
   /// Sets the environment if the current environment is empty.
@@ -250,12 +247,11 @@ final class CacheManager {
   }
 
   func shutdownAndDrain() async {
-    persistenceState.shutdown()
     let pendingTask = pendingPersistenceTask
     pendingPersistenceTask = nil
     coordinator = nil
-    pendingTask?.cancel()
     await pendingTask?.value
+    persistenceState.shutdown()
   }
 
   // MARK: - Private Keychain Operations

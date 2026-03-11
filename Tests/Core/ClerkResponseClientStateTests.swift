@@ -84,7 +84,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
     let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
 
@@ -102,7 +101,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func applyWatchSyncedClientAuthoritativeNilClearsClient() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000)
     Clerk.shared.applyResponseClient(current, responseSequence: 10)
 
@@ -120,7 +118,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncAcceptsNewerServerFetchDate() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
     let phoneServerDate = Date(timeIntervalSince1970: 100)
@@ -141,7 +138,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
     let phoneServerDate = Date(timeIntervalSince1970: 200)
@@ -161,7 +157,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncSchedulesRefreshWhenNoServerFetchDates() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
 
@@ -180,7 +175,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncNilDoesNotClearPhoneClient() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
 
     Clerk.shared.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
@@ -198,7 +192,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     Clerk.shared.client = nil
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
     let watchServerDate = Date(timeIntervalSince1970: 100)
@@ -217,7 +210,6 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncNilDoesNotSeedPhone() {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
     Clerk.shared.client = nil
 
     Clerk.shared.applyWatchSyncedClient(

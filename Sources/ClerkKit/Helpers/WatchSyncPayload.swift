@@ -62,10 +62,8 @@ package struct WatchSyncPayload {
 
     self.deviceToken = deviceToken
     self.clientServerFetchDate = clientServerFetchDate
-    if let clientData {
-      if clientData.isEmpty {
-        client = nil
-      } else if let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) {
+    if let clientData, !clientData.isEmpty {
+      if let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) {
         client = decoded
       } else {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Skipping client field.")
@@ -74,14 +72,14 @@ package struct WatchSyncPayload {
     } else {
       client = nil
     }
-    if let environmentData,
-       let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData)
-    {
-      environment = decoded
-    } else {
-      if environmentData != nil {
+    if let environmentData {
+      if let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) {
+        environment = decoded
+      } else {
         ClerkLogger.warning("Failed to decode Environment from watch sync payload. Skipping environment field.")
+        environment = nil
       }
+    } else {
       environment = nil
     }
   }
@@ -107,8 +105,6 @@ package struct WatchSyncPayload {
       } catch {
         ClerkLogger.logError(error, message: "Failed to serialize Client for watch sync")
       }
-    } else {
-      applicationContext[Self.clientKey] = Data()
     }
 
     if let clientServerFetchDate {

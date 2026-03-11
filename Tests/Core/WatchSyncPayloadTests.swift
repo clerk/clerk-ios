@@ -26,7 +26,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func applicationContextMarksMissingClientWithEmptyData() throws {
+  func applicationContextOmitsClientWhenNil() {
     let payload = WatchSyncPayload(
       deviceToken: "device-token",
       client: nil,
@@ -34,11 +34,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    let encodedClient = try #require(payload.applicationContext["clerkClient"] as? Data)
-    let decoded = try #require(WatchSyncPayload(applicationContext: payload.applicationContext))
-
-    #expect(encodedClient.isEmpty)
-    #expect(decoded.client == nil)
+    #expect(payload.applicationContext["clerkClient"] == nil)
   }
 
   @Test

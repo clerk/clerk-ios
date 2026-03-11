@@ -456,8 +456,8 @@ extension Clerk {
     // Compare server fetch dates when available — both come from the same server
     // clock, so there is no cross-device skew. The device whose client was confirmed
     // by the server more recently has the fresher state.
-    // A nil incoming is never accepted non-authoritatively; only the server can
-    // sign out the phone.
+    // A nil incoming (missing or undecodable client field) is never accepted
+    // non-authoritatively since there is no client data to apply.
     if let incoming, let incomingServerFetchDate, let lastClientServerFetchDate,
        incomingServerFetchDate > lastClientServerFetchDate
     {
@@ -540,6 +540,7 @@ extension Clerk {
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
     watchSyncRefreshTask?.cancel()
+    await watchSyncRefreshTask?.value
     watchSyncRefreshTask = nil
 
     resetManagerStateForCleanup()

@@ -194,6 +194,17 @@ struct CacheManagerTests {
   }
 
   @Test
+  func shutdownAndDrainCompletesPendingPersistenceRequests() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
+    await cacheManager.shutdownAndDrain()
+
+    let envData = try keychain.data(forKey: "cachedEnvironment")
+    #expect(envData != nil)
+  }
+
+  @Test
   func handlesMissingCachedData() {
     let (_, coordinator, cacheManager) = createTestSetup()
 
