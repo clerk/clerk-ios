@@ -63,12 +63,11 @@ package struct WatchSyncPayload {
     self.deviceToken = deviceToken
     self.clientServerFetchDate = clientServerFetchDate
     if let clientData, !clientData.isEmpty {
-      if let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) {
-        client = decoded
-      } else {
-        ClerkLogger.warning("Failed to decode Client from watch sync payload. Skipping client field.")
-        client = nil
+      guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
+        ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
+        return nil
       }
+      client = decoded
     } else {
       client = nil
     }
