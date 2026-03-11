@@ -490,7 +490,7 @@ extension Clerk {
     guard watchSyncRefreshTask == nil else { return }
 
     watchSyncRefreshTask = Task { [weak self] in
-      defer { Task { @MainActor in self?.watchSyncRefreshTask = nil } }
+      defer { self?.watchSyncRefreshTask = nil }
       do {
         try await self?.refreshClient()
       } catch {
