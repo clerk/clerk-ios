@@ -9,11 +9,7 @@ package enum WatchSyncSource {
   case phone
   case watch
 
-  var incomingClientIsAuthoritative: Bool {
-    self == .phone
-  }
-
-  var incomingDeviceTokenWinsFirstSync: Bool {
+  var incomingDeviceIsAuthoritative: Bool {
     self == .phone
   }
 
@@ -138,7 +134,7 @@ package struct WatchSyncPayload {
     clerk.applyWatchSyncedClient(
       client,
       incomingServerFetchDate: clientServerFetchDate,
-      incomingIsAuthoritative: source.incomingClientIsAuthoritative
+      incomingIsAuthoritative: source.incomingDeviceIsAuthoritative
     )
   }
 
@@ -151,7 +147,7 @@ package struct WatchSyncPayload {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceTokenWinsFirstSync {
+    if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
       do {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       } catch {

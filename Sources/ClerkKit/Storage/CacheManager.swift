@@ -54,8 +54,7 @@ private actor CachePersistenceWorker {
       let clientData = try JSONEncoder.clerkEncoder.encode(client)
       try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate {
-        let dateString = String(serverFetchDate.timeIntervalSince1970)
-        try keychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+        saveServerFetchDate(serverFetchDate)
       } else {
         try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
@@ -91,9 +90,12 @@ private actor CachePersistenceWorker {
     }
   }
 
-  func deleteClient() {
+  func deleteClient(serverFetchDate: Date?) {
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+      if let serverFetchDate {
+        saveServerFetchDate(serverFetchDate)
+      }
     } catch {
       ClerkLogger.logError(
         error,
@@ -243,9 +245,9 @@ final class CacheManager {
   }
 
   /// Deletes cached client data from keychain.
-  func deleteClient() {
+  func deleteClient(serverFetchDate: Date? = nil) {
     enqueuePersistence { worker in
-      await worker.deleteClient()
+      await worker.deleteClient(serverFetchDate: serverFetchDate)
     }
   }
 

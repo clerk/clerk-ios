@@ -50,10 +50,7 @@ public final class Clerk {
         cacheManager?.saveClient(client, serverFetchDate: lastClientServerFetchDate)
         dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
       } else {
-        cacheManager?.deleteClient()
-        if let lastClientServerFetchDate {
-          cacheManager?.saveServerFetchDate(lastClientServerFetchDate)
-        }
+        cacheManager?.deleteClient(serverFetchDate: lastClientServerFetchDate)
       }
 
       // Sync to watch app if enabled (sync both when client is set and when it's cleared)
