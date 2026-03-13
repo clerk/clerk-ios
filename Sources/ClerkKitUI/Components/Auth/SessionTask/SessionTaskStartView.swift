@@ -47,6 +47,11 @@ struct SessionTaskStartView: View {
     .clerkPreview()
 }
 
+#Preview("Reset Password") {
+  SessionTaskStartView(task: .resetPassword)
+    .clerkPreview()
+}
+
 #Preview("Unknown Task") {
   SessionTaskStartView(task: .unknown("new-task"))
     .clerkPreview()
