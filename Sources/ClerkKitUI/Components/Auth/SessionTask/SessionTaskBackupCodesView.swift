@@ -109,7 +109,7 @@ struct SessionTaskBackupCodesView: View {
         .padding(.bottom, 32)
 
         Button {
-          navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .setupMfa)
+          navigation.handleSessionTaskCompletion(session: clerk.session)
         } label: {
           HStack {
             Text("Continue", bundle: .module)
@@ -135,7 +135,7 @@ struct SessionTaskBackupCodesView: View {
           UserButton(presentationContext: .sessionTaskToolbar)
         } else {
           DismissButton {
-            navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .setupMfa)
+            navigation.handleSessionTaskCompletion(session: clerk.session)
           }
         }
       }

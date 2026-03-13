@@ -96,7 +96,7 @@ struct SessionTaskMfaVerifyTotpView: View {
     if !backupCodes.isEmpty {
       navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .authenticatorApp))
     } else {
-      navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .setupMfa)
+      navigation.handleSessionTaskCompletion(session: clerk.session)
     }
   }
 }

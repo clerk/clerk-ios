@@ -194,7 +194,7 @@ extension SignInSetNewPasswordView {
       )
     )
 
-    navigation.handleSessionTaskCompletion(session: clerk.session, completedTask: .resetPassword)
+    navigation.handleSessionTaskCompletion(session: clerk.session)
   }
 }
 

@@ -86,24 +86,6 @@ final class AuthNavigation {
     session?.pendingTasks.first
   }
 
-  @MainActor
-  private func nextPendingSessionTask(from session: Session?, after completedTask: Session.Task) -> Session.Task? {
-    let pendingTasks = session?.pendingTasks ?? []
-    guard !pendingTasks.isEmpty else { return nil }
-
-    // If the session snapshot is stale and still contains the completed task,
-    // move to the following task in that snapshot instead of repeating it.
-    if let completedIndex = pendingTasks.firstIndex(of: completedTask) {
-      let nextIndex = pendingTasks.index(after: completedIndex)
-      if pendingTasks.indices.contains(nextIndex) {
-        return pendingTasks[nextIndex]
-      }
-      return nil
-    }
-
-    return pendingTasks.first
-  }
-
   @discardableResult @MainActor
   func routeToSessionTaskStartIfNeeded(session: Session?) -> Bool {
     guard let nextTask = nextPendingSessionTask(from: session) else {
@@ -119,8 +101,8 @@ final class AuthNavigation {
   /// Sets `allTasksComplete` when there are no more pending tasks;
   /// otherwise appends the next task start destination to `path`.
   @MainActor
-  func handleSessionTaskCompletion(session: Session?, completedTask: Session.Task) {
-    guard let nextTask = nextPendingSessionTask(from: session, after: completedTask) else {
+  func handleSessionTaskCompletion(session: Session?) {
+    guard let nextTask = nextPendingSessionTask(from: session) else {
       allTasksComplete = true
       return
     }
