@@ -42,13 +42,10 @@ struct SessionTaskMfaVerifySmsView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        Badge(key: "Two-step verification setup", style: .secondary)
-          .padding(.bottom, 16)
-
-        VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Verify your phone number")
-          HeaderView(style: .subtitle, text: "A text message containing a verification code will be sent to this phone number. Message and data rates may apply.")
-        }
+        SessionTaskHeaderSection(
+          title: "Verify your phone number",
+          subtitle: "A text message containing a verification code will be sent to this phone number. Message and data rates may apply."
+        )
         .padding(.bottom, 16)
 
         Button {
