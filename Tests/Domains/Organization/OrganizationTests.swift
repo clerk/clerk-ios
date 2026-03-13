@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct OrganizationTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   private func configureOrganizationService(_ service: MockOrganizationService) {

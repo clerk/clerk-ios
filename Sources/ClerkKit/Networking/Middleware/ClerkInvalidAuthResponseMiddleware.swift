@@ -9,7 +9,7 @@ import Foundation
 struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
   let invalidAuthCodes = ["authentication_invalid", "resource_not_found"]
 
-  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     guard
       let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
       let clerkAPIError = clerkErrorResponse.errors.first,
@@ -24,8 +24,6 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    Task {
-      try await Clerk.shared.refreshClient()
-    }
+    await Clerk.shared.refreshClientAfterInvalidAuth()
   }
 }

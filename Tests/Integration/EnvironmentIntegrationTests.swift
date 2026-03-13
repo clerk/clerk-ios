@@ -24,7 +24,9 @@ import Testing
 struct EnvironmentIntegrationTests {
   @Test
   func fetchAndDecodeEnvironment() async throws {
-    configureClerkForIntegrationTesting(keyName: "with-email-codes")
+    guard try configureClerkForIntegrationTesting(keyName: "with-email-codes") else {
+      return
+    }
 
     // Test that we can fetch and decode the environment from a real Clerk instance
     _ = try await Clerk.shared.refreshEnvironment()

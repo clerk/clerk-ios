@@ -13,7 +13,7 @@ struct ClerkOptionsTests {
   }
 
   private struct TestResponseMiddleware: ClerkResponseMiddleware {
-    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) throws {}
+    func validate(_: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {}
   }
 
   @Test

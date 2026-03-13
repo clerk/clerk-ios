@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct SessionTokenFetcherTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
     Clerk.shared.cleanupManagers()
   }
 
@@ -47,8 +47,9 @@ struct SessionTokenFetcherTests {
   }
 
   @Test
-  func fetchTokenEmitsTokenRefreshedEvent() async throws {
+  func fetchTokenCachesFetchedToken() async throws {
     let session = Session.mock
+    let template = UUID().uuidString
     let tokenResource = TokenResource(jwt: "jwt_123")
     let service = MockSessionService(fetchToken: { _, _ in
       tokenResource
@@ -59,19 +60,14 @@ struct SessionTokenFetcherTests {
       sessionService: service
     )
 
-    var events = Clerk.shared.auth.events.makeAsyncIterator()
-
     _ = try await SessionTokenFetcher.shared.fetchToken(
       session,
-      options: .init(skipCache: true)
+      options: .init(template: template, skipCache: true)
     )
 
-    let event = try #require(await events.next())
-    switch event {
-    case .tokenRefreshed(let token):
-      #expect(token == tokenResource.jwt)
-    default:
-      #expect(Bool(false))
-    }
+    let cachedToken = await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: template)
+    )
+    #expect(cachedToken == tokenResource)
   }
 }

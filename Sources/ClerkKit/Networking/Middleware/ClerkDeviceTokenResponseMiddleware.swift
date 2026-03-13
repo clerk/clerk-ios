@@ -6,18 +6,9 @@
 import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
-  func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) throws {
+  func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-      // Emit event on MainActor - listeners will handle saving and syncing
-      if Thread.isMainThread {
-        MainActor.assumeIsolated {
-          Clerk.shared.clerkEventEmitter.send(.deviceTokenReceived(token: deviceToken))
-        }
-      } else {
-        Task { @MainActor in
-          Clerk.shared.clerkEventEmitter.send(.deviceTokenReceived(token: deviceToken))
-        }
-      }
+      await Clerk.shared.storeReceivedDeviceToken(deviceToken)
     }
   }
 }

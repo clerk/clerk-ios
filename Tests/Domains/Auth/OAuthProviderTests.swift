@@ -6,7 +6,7 @@ import Testing
 @Suite(.serialized)
 struct OAuthProviderTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   @Test

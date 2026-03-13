@@ -109,7 +109,7 @@ extension Clerk {
     /// }
     ///
     /// struct ResponseDiagnosticsMiddleware: ClerkResponseMiddleware {
-    ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) throws {
+    ///   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     ///     // Inspect response or emit diagnostics here.
     ///   }
     /// }

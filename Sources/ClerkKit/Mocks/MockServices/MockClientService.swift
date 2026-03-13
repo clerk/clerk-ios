@@ -12,7 +12,7 @@ import Foundation
 /// Allows customizing the behavior of `clerk.refreshClient()` through a handler closure.
 /// Returns default mock values if handler is not provided.
 package final class MockClientService: ClientServiceProtocol {
-  /// Custom handler for the `get()` method used by `clerk.refreshClient()`.
+  /// Custom handler for the `getResponse()` method used by `clerk.refreshClient()`.
   ///
   /// If set, this handler will be called instead of the default behavior.
   /// The handler can include delays, custom logic, or return different values.
@@ -34,10 +34,18 @@ package final class MockClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  package func get() async throws -> Client? {
+  package func getResponse() async throws -> ClientServiceResponse {
     if let handler = getHandler {
-      return try await handler()
+      return try await ClientServiceResponse(
+        client: handler(),
+        requestSequence: nil,
+        serverDate: nil
+      )
     }
-    return .mock
+    return ClientServiceResponse(
+      client: .mock,
+      requestSequence: nil,
+      serverDate: nil
+    )
   }
 }

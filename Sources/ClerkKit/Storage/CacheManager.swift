@@ -7,15 +7,118 @@
 
 import Foundation
 
+private final class CachePersistenceState: @unchecked Sendable {
+  private let lock = NSLock()
+  private var generation = 0
+  private var isFrozen = false
+  private var isShutdown = false
+
+  func currentGeneration() -> Int? {
+    lock.lock()
+    defer { lock.unlock() }
+    return (isShutdown || isFrozen) ? nil : generation
+  }
+
+  func canPersist(generation: Int) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return !isShutdown && self.generation == generation
+  }
+
+  /// Stops accepting new writes while allowing already-enqueued work to complete.
+  func freeze() {
+    lock.lock()
+    defer { lock.unlock() }
+    isFrozen = true
+  }
+
+  /// Fully shuts down, invalidating all pending and future work.
+  func shutdown() {
+    lock.lock()
+    defer { lock.unlock() }
+    isShutdown = true
+    isFrozen = true
+    generation += 1
+  }
+}
+
+private actor CachePersistenceWorker {
+  private let keychain: any KeychainStorage
+
+  init(keychain: any KeychainStorage) {
+    self.keychain = keychain
+  }
+
+  func saveClient(_ client: Client, serverFetchDate: Date?) {
+    do {
+      let clientData = try JSONEncoder.clerkEncoder.encode(client)
+      try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
+      if let serverFetchDate {
+        saveServerFetchDate(serverFetchDate)
+      } else {
+        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
+      )
+    }
+  }
+
+  func saveServerFetchDate(_ date: Date) {
+    do {
+      let dateString = String(date.timeIntervalSince1970)
+      try keychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save server fetch date to keychain. This is non-critical."
+      )
+    }
+  }
+
+  func saveEnvironment(_ environment: Clerk.Environment) {
+    do {
+      let environmentData = try JSONEncoder.clerkEncoder.encode(environment)
+      try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
+      )
+    }
+  }
+
+  func deleteClient(serverFetchDate: Date?) {
+    do {
+      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+      if let serverFetchDate {
+        saveServerFetchDate(serverFetchDate)
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete cached client from keychain. This is non-critical."
+      )
+    }
+  }
+}
+
 /// Protocol defining callbacks for cache loading operations.
 ///
 /// This allows the cache manager to interact with Clerk instance properties
 /// without directly coupling to the Clerk class.
 protocol CacheCoordinator: AnyObject, Sendable {
-  /// Sets the client if no client is currently set.
+  /// Sets the client and its server fetch date if no client is currently set.
   ///
-  /// - Parameter client: The client to set, or nil to clear.
-  @MainActor func setClientIfNeeded(_ client: Client?)
+  /// - Parameters:
+  ///   - client: The client to set, or nil to clear.
+  ///   - serverFetchDate: The server timestamp persisted with this cached client.
+  @MainActor func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?)
+
+  /// Sets the server fetch date if one is not already set and no client exists.
+  @MainActor func setServerFetchDateIfNeeded(_ date: Date)
 
   /// Sets the environment if the current environment is empty.
   ///
@@ -29,6 +132,10 @@ protocol CacheCoordinator: AnyObject, Sendable {
 /// to ensure cached data doesn't overwrite fresh data loaded from the API.
 @MainActor
 final class CacheManager {
+  private let persistenceWorker: CachePersistenceWorker
+  private let persistenceState = CachePersistenceState()
+  private var pendingPersistenceTask: Task<Void, Never>?
+
   /// The coordinator that manages the actual property updates.
   private weak var coordinator: (any CacheCoordinator)?
 
@@ -42,6 +149,7 @@ final class CacheManager {
   ///   - keychain: The keychain storage to use for persisting cached data.
   ///     Passed in directly because CacheManager is initialized during `configure()` before `Clerk.shared` is set.
   init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
+    persistenceWorker = CachePersistenceWorker(keychain: keychain)
     self.coordinator = coordinator
     self.keychain = keychain
   }
@@ -63,14 +171,20 @@ final class CacheManager {
   /// cached data from overwriting fresh data loaded from the API.
   private func loadCachedClient() {
     do {
-      guard let cachedClient = try loadClientFromKeychain() else {
-        return
-      }
+      let serverFetchDate = try loadClientServerFetchDateFromKeychain()
 
-      // Only set cached client if we don't already have one
-      // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
-      coordinator.setClientIfNeeded(cachedClient)
+
+      if let cachedClient = try loadClientFromKeychain() {
+        // Only set cached client if we don't already have one
+        // This prevents overwriting fresh data during load()
+        coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+      } else if let serverFetchDate {
+        // No cached client but a server date exists (e.g. after sign-out).
+        // Restore the date so the device knows it was server-confirmed
+        // and doesn't accept stale watch payloads as seed data.
+        coordinator.setServerFetchDateIfNeeded(serverFetchDate)
+      }
     } catch {
       // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
@@ -105,16 +219,19 @@ final class CacheManager {
 
   /// Saves client data to keychain.
   ///
-  /// - Parameter client: The client to save.
-  func saveClient(_ client: Client) {
-    do {
-      try saveClientToKeychain(client)
-    } catch {
-      // Log keychain errors but don't fail - saving is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save client to keychain. This is non-critical but may affect offline functionality."
-      )
+  /// - Parameters:
+  ///   - client: The client to save.
+  ///   - serverFetchDate: The server timestamp from the response that produced this client.
+  func saveClient(_ client: Client, serverFetchDate: Date?) {
+    enqueuePersistence { worker in
+      await worker.saveClient(client, serverFetchDate: serverFetchDate)
+    }
+  }
+
+  /// Persists the server fetch date without re-saving the client.
+  func saveServerFetchDate(_ date: Date) {
+    enqueuePersistence { worker in
+      await worker.saveServerFetchDate(date)
     }
   }
 
@@ -122,37 +239,35 @@ final class CacheManager {
   ///
   /// - Parameter environment: The environment to save.
   func saveEnvironment(_ environment: Clerk.Environment) {
-    do {
-      try saveEnvironmentToKeychain(environment)
-    } catch {
-      // Log keychain errors but don't fail - saving is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
-      )
+    enqueuePersistence { worker in
+      await worker.saveEnvironment(environment)
     }
   }
 
   /// Deletes cached client data from keychain.
-  func deleteClient() {
-    do {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
-    } catch {
-      // Log keychain errors but don't fail - deletion is best-effort
-      ClerkLogger.logError(
-        error,
-        message: "Failed to delete cached client from keychain. This is non-critical."
-      )
+  func deleteClient(serverFetchDate: Date? = nil) {
+    enqueuePersistence { worker in
+      await worker.deleteClient(serverFetchDate: serverFetchDate)
     }
   }
 
-  // MARK: - Private Keychain Operations
-
-  /// Saves client data to keychain.
-  private func saveClientToKeychain(_ client: Client) throws {
-    let clientData = try JSONEncoder.clerkEncoder.encode(client)
-    try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
+  func shutdown() {
+    persistenceState.shutdown()
+    pendingPersistenceTask?.cancel()
+    pendingPersistenceTask = nil
+    coordinator = nil
   }
+
+  func shutdownAndDrain() async {
+    persistenceState.freeze()
+    let pendingTask = pendingPersistenceTask
+    pendingPersistenceTask = nil
+    coordinator = nil
+    await pendingTask?.value
+    persistenceState.shutdown()
+  }
+
+  // MARK: - Private Keychain Operations
 
   /// Loads client data from keychain.
   private func loadClientFromKeychain() throws -> Client? {
@@ -163,11 +278,14 @@ final class CacheManager {
     return try decoder.decode(Client.self, from: clientData)
   }
 
-  /// Saves environment data to keychain.
-  private func saveEnvironmentToKeychain(_ environment: Clerk.Environment) throws {
-    let encoder = JSONEncoder.clerkEncoder
-    let environmentData = try encoder.encode(environment)
-    try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+  /// Loads the server fetch date persisted alongside the cached client.
+  private func loadClientServerFetchDateFromKeychain() throws -> Date? {
+    guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
+          let timeInterval = TimeInterval(dateString)
+    else {
+      return nil
+    }
+    return Date(timeIntervalSince1970: timeInterval)
   }
 
   /// Loads environment data from keychain.
@@ -177,5 +295,24 @@ final class CacheManager {
     }
     let decoder = JSONDecoder.clerkDecoder
     return try decoder.decode(Clerk.Environment.self, from: environmentData)
+  }
+
+  private func enqueuePersistence(
+    _ operation: @Sendable @escaping (CachePersistenceWorker) async -> Void
+  ) {
+    guard let generation = persistenceState.currentGeneration() else {
+      return
+    }
+
+    let persistenceWorker = persistenceWorker
+    let previousTask = pendingPersistenceTask
+    let persistenceState = persistenceState
+
+    pendingPersistenceTask = Task(priority: .utility) {
+      await previousTask?.value
+      guard !Task.isCancelled else { return }
+      guard persistenceState.canPersist(generation: generation) else { return }
+      await operation(persistenceWorker)
+    }
   }
 }

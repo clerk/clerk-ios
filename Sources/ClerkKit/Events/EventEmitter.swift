@@ -55,16 +55,17 @@ final class EventEmitter<Event: Sendable> {
   /// ```
   ///
   var events: AsyncStream<Event> {
-    AsyncStream<Event> { continuation in
-      let id = UUID()
-      continuations[id] = continuation
+    let (stream, continuation) = AsyncStream<Event>.makeStream()
+    let id = UUID()
+    continuations[id] = continuation
 
-      continuation.onTermination = { @Sendable [weak self] _ in
-        Task { @MainActor in
-          self?.continuations.removeValue(forKey: id)
-        }
+    continuation.onTermination = { @Sendable [weak self] _ in
+      Task { @MainActor in
+        self?.continuations.removeValue(forKey: id)
       }
     }
+
+    return stream
   }
 
   /// Sends an event to all active listeners.

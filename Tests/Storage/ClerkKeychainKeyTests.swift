@@ -15,10 +15,11 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 5)
+    #expect(allCases.count == 6)
 
     // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
+    #expect(allCases.contains(.cachedClientServerDate))
     #expect(allCases.contains(.cachedEnvironment))
     #expect(allCases.contains(.clerkDeviceToken))
     #expect(allCases.contains(.clerkDeviceTokenSynced))
@@ -28,6 +29,7 @@ struct ClerkKeychainKeyTests {
   @Test
   func rawValuesMatchExpectedStrings() {
     #expect(ClerkKeychainKey.cachedClient.rawValue == "cachedClient")
+    #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")
     #expect(ClerkKeychainKey.cachedEnvironment.rawValue == "cachedEnvironment")
     #expect(ClerkKeychainKey.clerkDeviceToken.rawValue == "clerkDeviceToken")
     #expect(ClerkKeychainKey.clerkDeviceTokenSynced.rawValue == "clerkDeviceTokenSynced")

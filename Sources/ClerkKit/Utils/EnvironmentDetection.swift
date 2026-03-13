@@ -25,25 +25,10 @@ package enum EnvironmentDetection {
   package static var isRunningInTests: Bool {
     #if DEBUG
     let processInfo = ProcessInfo.processInfo
-
-    // Check for Xcode test arguments
-    if processInfo.arguments.contains("-XCTest") {
-      return true
-    }
-
-    // Check for Swift Testing environment variable
-    if processInfo.environment["SWIFT_DETERMINISTIC_HASHING"] != nil {
-      return true
-    }
-
-    // Check for test bundle identifier
-    if let bundleIdentifier = Bundle.main.bundleIdentifier,
-       bundleIdentifier.contains("xctest") || bundleIdentifier.contains("Tests")
-    {
-      return true
-    }
-
-    return false
+    let hasXCTestRuntime = NSClassFromString("XCTestCase") != nil
+    let hasTestRunnerSignal = processInfo.arguments.contains("-XCTest")
+      || processInfo.environment["XCTestConfigurationFilePath"] != nil
+    return hasXCTestRuntime && hasTestRunnerSignal
     #else
     return false
     #endif

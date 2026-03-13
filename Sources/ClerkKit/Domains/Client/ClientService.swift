@@ -5,8 +5,14 @@
 
 import Foundation
 
+package struct ClientServiceResponse {
+  let client: Client?
+  let requestSequence: Int?
+  let serverDate: Date?
+}
+
 protocol ClientServiceProtocol: Sendable {
-  @MainActor func get() async throws -> Client?
+  @MainActor func getResponse() async throws -> ClientServiceResponse
 }
 
 final class ClientService: ClientServiceProtocol {
@@ -16,9 +22,21 @@ final class ClientService: ClientServiceProtocol {
     self.apiClient = apiClient
   }
 
+  /// Fetches only the client payload, discarding response ordering metadata.
   @MainActor
   func get() async throws -> Client? {
+    try await getResponse().client
+  }
+
+  /// Fetches the client payload plus request ordering metadata.
+  @MainActor
+  func getResponse() async throws -> ClientServiceResponse {
     let request = Request<ClientResponse<Client?>>(path: "/v1/client")
-    return try await apiClient.send(request).value.response
+    let response = try await apiClient.send(request)
+    return ClientServiceResponse(
+      client: response.value.response,
+      requestSequence: response.requestSequence,
+      serverDate: response.serverDate
+    )
   }
 }

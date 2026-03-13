@@ -14,16 +14,27 @@ import Testing
 @MainActor
 final class MockCacheCoordinator: CacheCoordinator {
   var clientSet = LockIsolated(false)
+  var serverFetchDateSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
   private var client: Client?
+  private var serverFetchDate: Date?
   private var environment: Clerk.Environment?
 
-  func setClientIfNeeded(_ client: Client?) {
+  func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
     guard self.client == nil else { return }
     self.client = client
+    if let serverFetchDate {
+      self.serverFetchDate = serverFetchDate
+    }
     if client != nil {
       clientSet.setValue(true)
     }
+  }
+
+  func setServerFetchDateIfNeeded(_ date: Date) {
+    guard client == nil, serverFetchDate == nil else { return }
+    serverFetchDate = date
+    serverFetchDateSet.setValue(true)
   }
 
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
@@ -60,32 +71,32 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testSaveClient() throws {
+  func testSaveClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
-    cacheManager.saveClient(Client.mock)
-
-    // Verify client was saved to keychain
-    let clientData = try keychain.data(forKey: "cachedClient")
-    #expect(clientData != nil)
+    cacheManager.saveClient(Client.mock, serverFetchDate: nil)
+    let clientData = try await waitForKeychainData(
+      keychain,
+      key: "cachedClient"
+    )
 
     let decoder = JSONDecoder.clerkDecoder
-    let decodedClient = try decoder.decode(Client.self, from: #require(clientData))
+    let decodedClient = try decoder.decode(Client.self, from: clientData)
     #expect(decodedClient.id == Client.mock.id)
   }
 
   @Test
-  func testSaveEnvironment() throws {
+  func testSaveEnvironment() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     cacheManager.saveEnvironment(Clerk.Environment.mock)
-
-    // Verify environment was saved to keychain
-    let envData = try keychain.data(forKey: "cachedEnvironment")
-    #expect(envData != nil)
+    let envData = try await waitForKeychainData(
+      keychain,
+      key: "cachedEnvironment"
+    )
 
     let decoder = JSONDecoder.clerkDecoder
-    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: #require(envData))
+    let decodedEnv = try decoder.decode(Clerk.Environment.self, from: envData)
     #expect(decodedEnv == Clerk.Environment.mock)
   }
 
@@ -129,7 +140,7 @@ struct CacheManagerTests {
     try keychain.set(clientData, forKey: "cachedClient")
 
     // Simulate existing client by setting one directly
-    coordinator.setClientIfNeeded(Client.mock)
+    coordinator.setClientIfNeeded(Client.mock, serverFetchDate: nil)
     coordinator.clientSet.setValue(false) // Reset to test that it's not set again
 
     cacheManager.loadCachedData()
@@ -158,7 +169,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func testDeleteClient() throws {
+  func testDeleteClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
     // Save a client first
@@ -167,10 +178,30 @@ struct CacheManagerTests {
     try keychain.set(clientData, forKey: "cachedClient")
 
     cacheManager.deleteClient()
+    try await waitForKeychainDeletion(keychain, key: "cachedClient")
+  }
 
-    // Verify client was deleted from keychain
-    let clientDataAfter = try keychain.data(forKey: "cachedClient")
-    #expect(clientDataAfter == nil)
+  @Test
+  func shutdownIgnoresFuturePersistenceRequests() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.shutdown()
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
+
+    try await Task.sleep(for: .milliseconds(50))
+
+    #expect(try keychain.data(forKey: "cachedEnvironment") == nil)
+  }
+
+  @Test
+  func shutdownAndDrainCompletesPendingPersistenceRequests() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
+    await cacheManager.shutdownAndDrain()
+
+    let envData = try keychain.data(forKey: "cachedEnvironment")
+    #expect(envData != nil)
   }
 
   @Test
@@ -182,5 +213,55 @@ struct CacheManagerTests {
 
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.environmentSet.value == false)
+  }
+
+  private func waitForKeychainData(
+    _ keychain: InMemoryKeychain,
+    key: String,
+    timeout: Duration = .milliseconds(500)
+  ) async throws -> Data {
+    enum TimeoutError: Error {
+      case timedOut(String)
+    }
+
+    let deadline = ContinuousClock.now + timeout
+
+    while ContinuousClock.now < deadline {
+      if let data = try keychain.data(forKey: key) {
+        return data
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    if let data = try keychain.data(forKey: key) {
+      return data
+    }
+
+    throw TimeoutError.timedOut("Timed out waiting for key '\(key)' to appear in InMemoryKeychain")
+  }
+
+  private func waitForKeychainDeletion(
+    _ keychain: InMemoryKeychain,
+    key: String,
+    timeout: Duration = .milliseconds(250)
+  ) async throws {
+    let deadline = ContinuousClock.now + timeout
+
+    while ContinuousClock.now < deadline {
+      if try keychain.data(forKey: key) == nil {
+        return
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    enum TimeoutError: Error {
+      case timedOut(String)
+    }
+
+    if try keychain.data(forKey: key) != nil {
+      throw TimeoutError.timedOut("Timed out waiting for key '\(key)' deletion from InMemoryKeychain")
+    }
   }
 }
