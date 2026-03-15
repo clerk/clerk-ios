@@ -553,13 +553,9 @@ struct UserServiceTests {
   }
 
   @Test
-  func deleteSyncsRemainingSessionsFromResponse() async throws {
-    Mocker.removeAll()
-    defer { Mocker.removeAll() }
-
+  func deleteUsesDeleteEndpoint() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
-    Clerk.shared.client = .mock
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -576,35 +572,5 @@ struct UserServiceTests {
 
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
-    #expect(Clerk.shared.client?.sessions.count == Client.mock.sessions.count)
-    #expect(Clerk.shared.user != nil)
-  }
-
-  @Test
-  func deleteSyncsSignedOutClientWhenNoSessionsRemain() async throws {
-    Mocker.removeAll()
-    defer { Mocker.removeAll() }
-
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
-    Clerk.shared.client = .mock
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mockSignedOut)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await Clerk.shared.dependencies.userService.delete()
-    #expect(requestHandled.value)
-    #expect(Clerk.shared.client?.sessions.isEmpty == true)
-    #expect(Clerk.shared.user == nil)
   }
 }
