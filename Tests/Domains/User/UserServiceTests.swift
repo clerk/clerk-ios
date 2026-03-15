@@ -554,8 +554,12 @@ struct UserServiceTests {
 
   @Test
   func deleteSyncsRemainingSessionsFromResponse() async throws {
+    Mocker.removeAll()
+    defer { Mocker.removeAll() }
+
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+    Clerk.shared.client = .mock
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -578,6 +582,9 @@ struct UserServiceTests {
 
   @Test
   func deleteSyncsSignedOutClientWhenNoSessionsRemain() async throws {
+    Mocker.removeAll()
+    defer { Mocker.removeAll() }
+
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
     Clerk.shared.client = .mock
