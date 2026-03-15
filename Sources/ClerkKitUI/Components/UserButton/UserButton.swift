@@ -55,7 +55,7 @@ public struct UserButton<SignedOutContent: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  public enum PresentationContext {
+  enum PresentationContext {
     case standard
     case sessionTaskToolbar
   }
@@ -79,7 +79,16 @@ public struct UserButton<SignedOutContent: View>: View {
   /// The button will automatically display the current user's profile image
   /// and handle presenting the user profile sheet when tapped.
   public init(
-    presentationContext: PresentationContext = .standard,
+    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
+  ) {
+    self.init(
+      presentationContext: .standard,
+      signedOutContent: signedOutContent
+    )
+  }
+
+  init(
+    presentationContext: PresentationContext,
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
   ) {
     self.presentationContext = presentationContext
@@ -87,9 +96,15 @@ public struct UserButton<SignedOutContent: View>: View {
   }
 
   /// Creates a new user button with no signed-out content.
-  public init(presentationContext: PresentationContext = .standard) where SignedOutContent == EmptyView {
-    self.presentationContext = presentationContext
-    signedOutContent = { EmptyView() }
+  public init() where SignedOutContent == EmptyView {
+    self.init(presentationContext: .standard)
+  }
+
+  init(presentationContext: PresentationContext) where SignedOutContent == EmptyView {
+    self.init(
+      presentationContext: presentationContext,
+      signedOutContent: { EmptyView() }
+    )
   }
 
   private var hasPendingSessionTasks: Bool {
