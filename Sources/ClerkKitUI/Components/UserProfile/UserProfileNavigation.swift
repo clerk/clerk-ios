@@ -32,9 +32,19 @@ final class UserProfileSheetNavigation {
 }
 
 /// Routing API for navigating inside `UserProfileView` and nested destinations.
-struct UserProfileRouter: Sendable {
-  let push: @MainActor @Sendable (UserProfileView.Destination) -> Void
+struct UserProfileRouter {
+  let push: @MainActor @Sendable (UserProfileDestination) -> Void
   let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
+
+  @MainActor
+  func push(_ row: UserProfileRow) {
+    push(.builtIn(row))
+  }
+
+  @MainActor
+  func push(_ route: some Hashable) {
+    push(.custom(AnyHashable(route)))
+  }
 }
 
 extension EnvironmentValues {

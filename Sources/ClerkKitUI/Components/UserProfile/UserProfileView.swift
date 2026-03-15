@@ -72,13 +72,38 @@ import SwiftUI
 ///   }
 /// }
 /// ```
-public struct UserProfileView: View {
+///
+/// With custom rows:
+///
+/// ```swift
+/// enum ProfileRoute: Hashable {
+///   case billing
+///   case preferences
+/// }
+///
+/// UserProfileView(
+///   customRows: [
+///     .init(id: .billing, title: "Billing", icon: .asset(name: "icon-card"), placement: .after(.security)),
+///     .init(id: .preferences, title: "Preferences", icon: .system(name: "gear"), placement: .before(.signOut)),
+///   ]
+/// ) { (route: ProfileRoute) in
+///     switch route {
+///     case .billing:
+///       BillingView()
+///     case .preferences:
+///       PreferencesView()
+///     }
+///   }
+/// ```
+public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
+  private let customRows: [UserProfileCustomRow]
+  private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
@@ -100,9 +125,36 @@ public struct UserProfileView: View {
   ///   the view skips creating its own `NavigationStack` and pushes destinations onto the
   ///   parent's path instead. Use this when embedding `UserProfileView` inside your own
   ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
-  public init(isDismissable: Bool = true, navigationPath: Binding<NavigationPath>? = nil) {
+  public init(
+    isDismissable: Bool = true,
+    navigationPath: Binding<NavigationPath>? = nil
+  ) where Route == Never, Destination == EmptyView {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
+    customRows = []
+    customDestination = nil
+    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
+  }
+
+  /// Creates a new user profile view with custom rows rendered alongside Clerk's built-in
+  /// rows on the root user profile screen.
+  ///
+  /// - Parameters:
+  ///   - isDismissable: Whether the view can be dismissed by the user.
+  ///   - navigationPath: An optional binding to a parent `NavigationPath`.
+  ///   - customRows: Custom rows rendered alongside Clerk's built-in rows on the root
+  ///   user profile screen.
+  ///   - destination: A destination builder for custom row routes.
+  public init(
+    isDismissable: Bool = true,
+    navigationPath: Binding<NavigationPath>? = nil,
+    customRows: [UserProfileCustomRow],
+    @ViewBuilder destination: @escaping @MainActor (Route) -> Destination
+  ) {
+    self.isDismissable = isDismissable
+    self.navigationPath = navigationPath
+    self.customRows = customRows
+    customDestination = destination
     _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
   }
 
@@ -190,6 +242,22 @@ public struct UserProfileView: View {
     )
   }
 
+  private var accountBuiltInRows: [UserProfileRow] {
+    var rows: [UserProfileRow] = []
+
+    if clerk.environment?.mutliSessionModeIsEnabled == true {
+      if clerk.auth.sessions.count > 1 {
+        rows.append(.switchAccount)
+      }
+
+      rows.append(.addAccount)
+    }
+
+    rows.append(.signOut)
+
+    return rows
+  }
+
   private func profileContent(user: User) -> some View {
     VStack(spacing: 0) {
       ScrollView {
@@ -202,9 +270,8 @@ public struct UserProfileView: View {
           )
 
           VStack(spacing: 48) {
-            profileSection
-
-            accountSection
+            section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
+            section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
           }
         }
       }
@@ -228,8 +295,8 @@ public struct UserProfileView: View {
         }
       }
     }
-    .navigationDestination(for: Destination.self) { destination in
-      destination.view
+    .navigationDestination(for: UserProfileDestination.self) { destination in
+      destinationView(for: destination)
         .environment(navigation)
         .environment(codeLimiter)
         .environment(\.userProfileRouter, router)
@@ -240,14 +307,10 @@ public struct UserProfileView: View {
 // MARK: - Subviews
 
 extension UserProfileView {
-  private var profileSection: some View {
+  fileprivate func section(rows: [UserProfileListRow]) -> some View {
     VStack(spacing: 0) {
-      row(icon: "icon-profile", text: "Manage account") {
-        router.push(.profileDetail)
-      }
-
-      row(icon: "icon-security", text: "Security") {
-        router.push(.security)
+      ForEach(rows) { row in
+        rowView(row)
       }
     }
     .background(theme.colors.background)
@@ -258,42 +321,53 @@ extension UserProfileView {
     }
   }
 
-  private var accountSection: some View {
-    VStack(spacing: 0) {
-      if clerk.environment?.mutliSessionModeIsEnabled == true {
-        if clerk.auth.sessions.count > 1 {
-          row(icon: "icon-switch", text: "Switch account") {
-            navigation.accountSwitcherIsPresented = true
-          }
-        }
-
-        row(icon: "icon-plus", text: "Add account") {
-          navigation.authViewIsPresented = true
-        }
+  @ViewBuilder
+  fileprivate func rowView(_ listRow: UserProfileListRow) -> some View {
+    switch listRow {
+    case .builtIn(let builtInRow):
+      builtInRowView(builtInRow)
+    case .custom(let customRow):
+      row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
+        router.push(customRow.id)
       }
+    }
+  }
 
-      row(icon: "icon-sign-out", text: "Sign out") {
+  fileprivate func builtInRowView(_ rowType: UserProfileRow) -> some View {
+    row(icon: rowType.icon, text: rowType.title) {
+      switch rowType {
+      case .manageAccount, .security:
+        router.push(rowType)
+      case .switchAccount:
+        navigation.accountSwitcherIsPresented = true
+      case .addAccount:
+        navigation.authViewIsPresented = true
+      case .signOut:
         guard let sessionId = clerk.session?.id else { return }
         await signOut(sessionId: sessionId)
       }
     }
-    .background(theme.colors.background)
-    .overlay(alignment: .top) {
-      Rectangle()
-        .frame(height: 1)
-        .foregroundStyle(theme.colors.border)
-    }
   }
 
-  private func row(
+  fileprivate func row(
     icon: String,
     text: LocalizedStringKey,
+    bundle: Bundle? = .module,
+    action: @escaping () async -> Void
+  ) -> some View {
+    row(icon: .asset(name: icon), text: text, bundle: bundle, action: action)
+  }
+
+  fileprivate func row(
+    icon: UserProfileRowIcon,
+    text: LocalizedStringKey,
+    bundle: Bundle? = .module,
     action: @escaping () async -> Void
   ) -> some View {
     AsyncButton {
       await action()
     } label: { isRunning in
-      UserProfileRowView(icon: icon, text: text)
+      UserProfileRowView(icon: icon, text: text, bundle: bundle)
         .overlayProgressView(isActive: isRunning)
     }
     .overlay(alignment: .bottom) {
@@ -304,12 +378,65 @@ extension UserProfileView {
     .buttonStyle(.pressedBackground)
     .simultaneousGesture(TapGesture())
   }
+
+  @ViewBuilder
+  fileprivate func destinationView(for destination: UserProfileDestination) -> some View {
+    switch destination {
+    case .builtIn(.manageAccount):
+      UserProfileDetailView()
+    case .builtIn(.security):
+      UserProfileSecurityView()
+    case .builtIn:
+      EmptyView()
+    case .custom(let route):
+      if let typedRoute = route.base as? Route, let customDestination {
+        customDestination(typedRoute)
+      } else {
+        EmptyView()
+      }
+    }
+  }
+}
+
+// MARK: - Ordering
+
+extension UserProfileView {
+  fileprivate func renderedRows(
+    builtInRows: [UserProfileRow],
+    in section: UserProfileSection
+  ) -> [UserProfileListRow] {
+    let sectionCustomRows = customRows.filter { $0.placement.section == section }
+
+    let sectionStartRows = sectionCustomRows.filter { $0.placement.isSectionStart }
+    let sectionEndRows = sectionCustomRows.filter { $0.placement.isSectionEnd }
+
+    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow]]()) { result, customRow in
+      guard case .before(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
+    }
+
+    let rowsAfterAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow]]()) { result, customRow in
+      guard case .after(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
+    }
+
+    var rows = sectionStartRows.map(UserProfileListRow.custom)
+
+    for builtInRow in builtInRows {
+      rows.append(contentsOf: rowsBeforeAnchor[builtInRow, default: []].map(UserProfileListRow.custom))
+      rows.append(.builtIn(builtInRow))
+      rows.append(contentsOf: rowsAfterAnchor[builtInRow, default: []].map(UserProfileListRow.custom))
+    }
+
+    rows.append(contentsOf: sectionEndRows.map(UserProfileListRow.custom))
+    return rows
+  }
 }
 
 // MARK: - Actions
 
 extension UserProfileView {
-  func signOut(sessionId: String) async {
+  fileprivate func signOut(sessionId: String) async {
     do {
       try await clerk.auth.signOut(sessionId: sessionId)
       if clerk.session == nil {
@@ -321,7 +448,7 @@ extension UserProfileView {
     }
   }
 
-  func getSessionsOnAllDevices() async {
+  fileprivate func getSessionsOnAllDevices() async {
     guard let user = clerk.user else { return }
     do {
       try await user.getSessions()
@@ -336,7 +463,107 @@ extension UserProfileView {
   }
 }
 
-// MARK: - UserProfileHeaderView
+// MARK: - Types
+
+private enum UserProfileListRow: Identifiable {
+  case builtIn(UserProfileRow)
+  case custom(UserProfileCustomRow)
+
+  var id: UserProfileListRowID {
+    switch self {
+    case .builtIn(let row):
+      .builtIn(row)
+    case .custom(let row):
+      .custom(row.id)
+    }
+  }
+}
+
+private enum UserProfileListRowID: Hashable {
+  case builtIn(UserProfileRow)
+  case custom(AnyHashable)
+}
+
+enum UserProfileDestination: Hashable {
+  case builtIn(UserProfileRow)
+  case custom(AnyHashable)
+}
+
+extension UserProfileCustomRowPlacement {
+  fileprivate var section: UserProfileSection {
+    switch self {
+    case .sectionStart(let section):
+      section
+    case .sectionEnd(let section):
+      section
+    case .before(let row):
+      row.section
+    case .after(let row):
+      row.section
+    }
+  }
+
+  fileprivate var isSectionStart: Bool {
+    switch self {
+    case .sectionStart:
+      true
+    default:
+      false
+    }
+  }
+
+  fileprivate var isSectionEnd: Bool {
+    switch self {
+    case .sectionEnd:
+      true
+    default:
+      false
+    }
+  }
+}
+
+extension UserProfileRow {
+  fileprivate var section: UserProfileSection {
+    switch self {
+    case .manageAccount, .security:
+      .profile
+    case .switchAccount, .addAccount, .signOut:
+      .account
+    }
+  }
+
+  fileprivate var icon: String {
+    switch self {
+    case .manageAccount:
+      "icon-profile"
+    case .security:
+      "icon-security"
+    case .switchAccount:
+      "icon-switch"
+    case .addAccount:
+      "icon-plus"
+    case .signOut:
+      "icon-sign-out"
+    }
+  }
+
+  fileprivate var title: LocalizedStringKey {
+    switch self {
+    case .manageAccount:
+      "Manage account"
+    case .security:
+      "Security"
+    case .switchAccount:
+      "Switch account"
+    case .addAccount:
+      "Add account"
+    case .signOut:
+      "Sign out"
+    }
+  }
+}
+
+// MARK: - Header
 
 private struct UserProfileHeaderView: View {
   @Environment(\.clerkTheme) private var theme
@@ -401,26 +628,6 @@ private struct UserProfileHeaderView: View {
   }
 }
 
-// MARK: - Destination
-
-extension UserProfileView {
-  enum Destination: Hashable, Sendable {
-    case profileDetail
-    case security
-
-    @MainActor
-    @ViewBuilder
-    var view: some View {
-      switch self {
-      case .profileDetail:
-        UserProfileDetailView()
-      case .security:
-        UserProfileSecurityView()
-      }
-    }
-  }
-}
-
 #Preview("Dismissable") {
   UserProfileView()
     .environment(
@@ -444,6 +651,53 @@ extension UserProfileView {
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("With custom rows") {
+  UserProfileView(customRows: [
+    UserProfileCustomRow(
+      id: "billing",
+      title: "Billing",
+      icon: .asset(name: "icon-security"),
+      placement: .after(.security)
+    ),
+    UserProfileCustomRow(
+      id: "preferences",
+      title: "Preferences",
+      icon: .asset(name: "icon-switch"),
+      placement: .before(.signOut)
+    ),
+  ]) { (route: String) in
+    switch route {
+    case "billing":
+      Text("Billing")
+    case "preferences":
+      Text("Preferences")
+    default:
+      EmptyView()
+    }
+  }
+  .environment(
+    Clerk.preview { builder in
+      builder.services.clientService.getHandler = {
+        try? await Task.sleep(for: .seconds(1))
+        return Client.mock
+      }
+
+      builder.services.environmentService.getHandler = {
+        try? await Task.sleep(for: .seconds(1))
+        return Clerk.Environment.mock
+      }
+
+      builder.services.userService.getSessionsHandler = { _ in
+        try? await Task.sleep(for: .seconds(1))
+        return [Session.mock, Session.mock2]
+      }
+    }
+  )
+  .environment(AuthState())
+  .environment(UserProfileSheetNavigation())
+  .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Not dismissable") {
