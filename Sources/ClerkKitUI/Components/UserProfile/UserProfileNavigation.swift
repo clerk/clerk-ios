@@ -32,7 +32,7 @@ final class UserProfileSheetNavigation {
 }
 
 /// Routing API for navigating inside `UserProfileView` and nested destinations.
-struct UserProfileRouter: Sendable {
+struct UserProfileRouter {
   let push: @MainActor @Sendable (UserProfileView.Destination) -> Void
   let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
 }

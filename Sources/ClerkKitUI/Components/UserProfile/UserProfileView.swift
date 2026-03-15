@@ -404,7 +404,7 @@ private struct UserProfileHeaderView: View {
 // MARK: - Destination
 
 extension UserProfileView {
-  enum Destination: Hashable, Sendable {
+  enum Destination: Hashable {
     case profileDetail
     case security
 
