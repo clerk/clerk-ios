@@ -8,16 +8,13 @@
 import Foundation
 import SwiftUI
 
-/// Manages navigation and presentation state for the user profile flow.
+/// Manages presentation state for the user profile flow.
 ///
-/// This class handles navigation path management and sheet presentation state.
+/// This class handles sheet presentation state for the user profile.
 /// It is injected into child views via the environment.
 @MainActor
 @Observable
-final class UserProfileNavigation {
-  /// The navigation path for the user profile flow.
-  var path = NavigationPath()
-
+final class UserProfileSheetNavigation {
   /// Whether the account switcher sheet is presented.
   var accountSwitcherIsPresented = false
 
@@ -30,8 +27,21 @@ final class UserProfileNavigation {
   /// The currently presented MFA add view type.
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 
-  /// Creates a new UserProfileNavigation instance.
+  /// Creates a new UserProfileSheetNavigation instance.
   init() {}
+}
+
+/// Routing API for navigating inside `UserProfileView` and nested destinations.
+struct UserProfileRouter {
+  let push: @MainActor @Sendable (UserProfileView.Destination) -> Void
+  let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
+}
+
+extension EnvironmentValues {
+  @Entry var userProfileRouter = UserProfileRouter(
+    push: { _ in },
+    popToRoot: { _ in }
+  )
 }
 
 #endif

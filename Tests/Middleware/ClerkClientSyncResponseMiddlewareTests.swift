@@ -79,6 +79,52 @@ struct ClerkClientSyncResponseMiddlewareTests {
     #expect(clerk.client?.id == existingClient.id)
   }
 
+  @Test
+  func validateAppliesRemainingSessionsClientFromDeleteResponse() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    clerk.client = .mockSignedOut
+    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+
+    let data = try JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+    let url = try #require(URL(string: "https://example.com/v1/me"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.client?.sessions.count == Client.mock.sessions.count)
+    #expect(clerk.user != nil)
+  }
+
+  @Test
+  func validateAppliesSignedOutClientFromDeleteResponseWhenNoSessionsRemain() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    clerk.client = .mock
+    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+
+    let data = try JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mockSignedOut))
+    let url = try #require(URL(string: "https://example.com/v1/me"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.client?.sessions.isEmpty == true)
+    #expect(clerk.user == nil)
+  }
+
   private func client(id: String, updatedAt: Date) -> Client {
     var client = Client.mockSignedOut
     client.id = id
