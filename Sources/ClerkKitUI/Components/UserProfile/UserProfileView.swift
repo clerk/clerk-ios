@@ -474,28 +474,30 @@ extension UserProfileView {
 #Preview("Embedded in parent NavigationStack") {
   @Previewable @State var navigationPath = NavigationPath()
 
-  UserProfileView(isDismissable: false, navigationPath: $navigationPath)
-    .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
+  NavigationStack(path: $navigationPath) {
+    UserProfileView(isDismissable: false, navigationPath: $navigationPath)
+      .environment(
+        Clerk.preview { builder in
+          builder.services.clientService.getHandler = {
+            try? await Task.sleep(for: .seconds(1))
+            return Client.mock
+          }
 
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
+          builder.services.environmentService.getHandler = {
+            try? await Task.sleep(for: .seconds(1))
+            return Clerk.Environment.mock
+          }
 
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
+          builder.services.userService.getSessionsHandler = { _ in
+            try? await Task.sleep(for: .seconds(1))
+            return [Session.mock, Session.mock2]
+          }
         }
-      }
-    )
-    .environment(AuthState())
-    .environment(UserProfileSheetNavigation())
-    .environment(\.clerkTheme, .clerk)
+      )
+      .environment(AuthState())
+      .environment(UserProfileSheetNavigation())
+      .environment(\.clerkTheme, .clerk)
+  }
 }
 
 #endif
