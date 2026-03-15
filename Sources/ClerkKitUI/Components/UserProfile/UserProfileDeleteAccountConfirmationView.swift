@@ -96,7 +96,7 @@ extension UserProfileDeleteAccountConfirmationView {
 
     do {
       try await user.delete()
-      let shouldPresentAccountSwitcher = clerk.auth.sessions.count > 1
+      let shouldPresentAccountSwitcher = !clerk.auth.sessions.isEmpty
       let shouldPopIncludingSelf = clerk.user == nil && !shouldPresentAccountSwitcher
       dismiss()
       router.popToRoot(shouldPopIncludingSelf)
