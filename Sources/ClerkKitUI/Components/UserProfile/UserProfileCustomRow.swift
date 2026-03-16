@@ -9,8 +9,8 @@ import Foundation
 import SwiftUI
 
 /// A custom row displayed alongside Clerk's built-in rows in ``UserProfileView``.
-public struct UserProfileCustomRow {
-  public let id: AnyHashable
+public struct UserProfileCustomRow<Route: Hashable> {
+  public let route: Route
   public let title: LocalizedStringKey
   public let icon: UserProfileRowIcon
   public let bundle: Bundle?
@@ -19,10 +19,10 @@ public struct UserProfileCustomRow {
   /// Creates a custom row for ``UserProfileView``.
   ///
   /// Rows that share the same placement are displayed in the order they appear in the
-  /// array passed to ``UserProfileView/init(isDismissable:navigationPath:customRows:)``.
+  /// array passed to ``UserProfileView/init(isDismissable:navigationPath:customRows:destination:)``.
   ///
   /// - Parameters:
-  ///   - id: The route that should be pushed when the row is tapped.
+  ///   - route: The route that should be pushed when the row is tapped.
   ///   - title: The row title.
   ///   - icon: The icon displayed for the row.
   ///   - bundle: The bundle containing the icon and localized title. Defaults to the
@@ -30,13 +30,13 @@ public struct UserProfileCustomRow {
   ///   localizations live outside the host app's default bundle.
   ///   - placement: The insertion point relative to Clerk's built-in rows.
   public init(
-    id: some Hashable,
+    route: Route,
     title: LocalizedStringKey,
     icon: UserProfileRowIcon,
     bundle: Bundle? = nil,
     placement: UserProfileCustomRowPlacement = .sectionEnd(.profile)
   ) {
-    self.id = AnyHashable(id)
+    self.route = route
     self.title = title
     self.icon = icon
     self.bundle = bundle

@@ -83,8 +83,8 @@ import SwiftUI
 ///
 /// UserProfileView(
 ///   customRows: [
-///     .init(id: .billing, title: "Billing", icon: .asset(name: "icon-card"), placement: .after(.security)),
-///     .init(id: .preferences, title: "Preferences", icon: .system(name: "gear"), placement: .before(.signOut)),
+///     .init(route: .billing, title: "Billing", icon: .asset(name: "icon-card"), placement: .after(.security)),
+///     .init(route: .preferences, title: "Preferences", icon: .system(name: "gear"), placement: .before(.signOut)),
 ///   ]
 /// ) { (route: ProfileRoute) in
 ///     switch route {
@@ -95,6 +95,9 @@ import SwiftUI
 ///     }
 ///   }
 /// ```
+///
+/// Custom destination views can access programmatic navigation through
+/// ``UserProfileNavigator`` when needed.
 public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -102,7 +105,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
-  private let customRows: [UserProfileCustomRow]
+  private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
@@ -148,7 +151,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   public init(
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
-    customRows: [UserProfileCustomRow],
+    customRows: [UserProfileCustomRow<Route>],
     @ViewBuilder destination: @escaping @MainActor (Route) -> Destination
   ) {
     self.isDismissable = isDismissable
@@ -216,30 +219,41 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .environment(navigation)
       .environment(codeLimiter)
-      .environment(\.userProfileRouter, router)
+      .environment(
+        UserProfileBuiltInRouter(
+          push: { row in
+            navigator.push(row)
+          },
+          popToRoot: popToRoot
+        )
+      )
     }
   }
 
-  private var router: UserProfileRouter {
-    UserProfileRouter(
-      push: { destination in
+  /// The typed navigation engine for this `UserProfileView` instance. It owns the logic
+  /// for pushing onto either the parent `navigationPath` or the internal sheet stack.
+  private var navigator: UserProfileNavigator<Route> {
+    UserProfileNavigator(
+      pushDestination: { destination in
         if let navigationPath {
           navigationPath.wrappedValue.append(destination)
         } else {
           internalPath.append(destination)
         }
       },
-      popToRoot: { includingSelf in
-        let extraRemoval = includingSelf ? 1 : 0
-        if let navigationPath {
-          let currentCount = navigationPath.wrappedValue.count
-          let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
-          navigationPath.wrappedValue.removeLast(entriesToRemove)
-        } else {
-          internalPath = NavigationPath()
-        }
-      }
+      popToRoot: popToRoot
     )
+  }
+
+  private func popToRoot(includingSelf: Bool) {
+    let extraRemoval = includingSelf ? 1 : 0
+    if let navigationPath {
+      let currentCount = navigationPath.wrappedValue.count
+      let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
+      navigationPath.wrappedValue.removeLast(entriesToRemove)
+    } else {
+      internalPath = NavigationPath()
+    }
   }
 
   private var accountBuiltInRows: [UserProfileRow] {
@@ -295,11 +309,19 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         }
       }
     }
-    .navigationDestination(for: UserProfileDestination.self) { destination in
+    .navigationDestination(for: UserProfileNavigationDestination<Route>.self) { destination in
       destinationView(for: destination)
         .environment(navigation)
         .environment(codeLimiter)
-        .environment(\.userProfileRouter, router)
+        .environment(navigator)
+        .environment(
+          UserProfileBuiltInRouter(
+            push: { row in
+              navigator.push(row)
+            },
+            popToRoot: popToRoot
+          )
+        )
     }
   }
 }
@@ -307,7 +329,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 // MARK: - Subviews
 
 extension UserProfileView {
-  fileprivate func section(rows: [UserProfileListRow]) -> some View {
+  fileprivate func section(rows: [UserProfileListRow<Route>]) -> some View {
     VStack(spacing: 0) {
       ForEach(rows) { row in
         rowView(row)
@@ -322,13 +344,13 @@ extension UserProfileView {
   }
 
   @ViewBuilder
-  fileprivate func rowView(_ listRow: UserProfileListRow) -> some View {
+  fileprivate func rowView(_ listRow: UserProfileListRow<Route>) -> some View {
     switch listRow {
     case .builtIn(let builtInRow):
       builtInRowView(builtInRow)
     case .custom(let customRow):
       row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
-        router.push(customRow.id)
+        navigator.push(customRow.route)
       }
     }
   }
@@ -337,7 +359,7 @@ extension UserProfileView {
     row(icon: rowType.icon, text: rowType.title) {
       switch rowType {
       case .manageAccount, .security:
-        router.push(rowType)
+        navigator.push(rowType)
       case .switchAccount:
         navigation.accountSwitcherIsPresented = true
       case .addAccount:
@@ -380,7 +402,7 @@ extension UserProfileView {
   }
 
   @ViewBuilder
-  fileprivate func destinationView(for destination: UserProfileDestination) -> some View {
+  fileprivate func destinationView(for destination: UserProfileNavigationDestination<Route>) -> some View {
     switch destination {
     case .builtIn(.manageAccount):
       UserProfileDetailView()
@@ -389,8 +411,8 @@ extension UserProfileView {
     case .builtIn:
       EmptyView()
     case .custom(let route):
-      if let typedRoute = route.base as? Route, let customDestination {
-        customDestination(typedRoute)
+      if let customDestination {
+        customDestination(route)
       } else {
         EmptyView()
       }
@@ -404,18 +426,18 @@ extension UserProfileView {
   fileprivate func renderedRows(
     builtInRows: [UserProfileRow],
     in section: UserProfileSection
-  ) -> [UserProfileListRow] {
+  ) -> [UserProfileListRow<Route>] {
     let sectionCustomRows = customRows.filter { $0.placement.section == section }
 
     let sectionStartRows = sectionCustomRows.filter { $0.placement.isSectionStart }
     let sectionEndRows = sectionCustomRows.filter { $0.placement.isSectionEnd }
 
-    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow]]()) { result, customRow in
+    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
       guard case .before(let anchor) = customRow.placement else { return }
       result[anchor, default: []].append(customRow)
     }
 
-    let rowsAfterAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow]]()) { result, customRow in
+    let rowsAfterAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
       guard case .after(let anchor) = customRow.placement else { return }
       result[anchor, default: []].append(customRow)
     }
@@ -465,28 +487,23 @@ extension UserProfileView {
 
 // MARK: - Types
 
-private enum UserProfileListRow: Identifiable {
+private enum UserProfileListRow<Route: Hashable>: Identifiable {
   case builtIn(UserProfileRow)
-  case custom(UserProfileCustomRow)
+  case custom(UserProfileCustomRow<Route>)
 
-  var id: UserProfileListRowID {
+  var id: UserProfileListRowID<Route> {
     switch self {
     case .builtIn(let row):
       .builtIn(row)
     case .custom(let row):
-      .custom(row.id)
+      .custom(row.route)
     }
   }
 }
 
-private enum UserProfileListRowID: Hashable {
+private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case builtIn(UserProfileRow)
-  case custom(AnyHashable)
-}
-
-enum UserProfileDestination: Hashable {
-  case builtIn(UserProfileRow)
-  case custom(AnyHashable)
+  case custom(Route)
 }
 
 extension UserProfileCustomRowPlacement {
@@ -656,13 +673,13 @@ private struct UserProfileHeaderView: View {
 #Preview("With custom rows") {
   UserProfileView(customRows: [
     UserProfileCustomRow(
-      id: "billing",
+      route: "billing",
       title: "Billing",
       icon: .asset(name: "icon-security"),
       placement: .after(.security)
     ),
     UserProfileCustomRow(
-      id: "preferences",
+      route: "preferences",
       title: "Preferences",
       icon: .asset(name: "icon-switch"),
       placement: .before(.signOut)

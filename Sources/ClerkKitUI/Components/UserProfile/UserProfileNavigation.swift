@@ -26,32 +26,70 @@ final class UserProfileSheetNavigation {
 
   /// The currently presented MFA add view type.
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
-
-  /// Creates a new UserProfileSheetNavigation instance.
-  init() {}
 }
 
-/// Routing API for navigating inside `UserProfileView` and nested destinations.
-struct UserProfileRouter {
-  let push: @MainActor @Sendable (UserProfileDestination) -> Void
-  let popToRoot: @MainActor @Sendable (_ includingSelf: Bool) -> Void
+/// Navigation API for navigating inside `UserProfileView` and custom destinations.
+///
+/// Custom destination views can read this value using:
+///
+/// ```swift
+/// @Environment(UserProfileNavigator<MyRoute>.self) private var navigation
+/// ```
+@MainActor
+@Observable
+public final class UserProfileNavigator<Route: Hashable> {
+  private let pushDestination: @MainActor (UserProfileNavigationDestination<Route>) -> Void
+  private let popToRootAction: @MainActor (_ includingSelf: Bool) -> Void
 
-  @MainActor
+  init(
+    pushDestination: @escaping @MainActor (UserProfileNavigationDestination<Route>) -> Void,
+    popToRoot: @escaping @MainActor (_ includingSelf: Bool) -> Void
+  ) {
+    self.pushDestination = pushDestination
+    popToRootAction = popToRoot
+  }
+
+  public func push(_ row: UserProfileRow) {
+    pushDestination(.builtIn(row))
+  }
+
+  public func push(_ route: Route) {
+    pushDestination(.custom(route))
+  }
+
+  public func popToRoot(_ includingSelf: Bool = false) {
+    popToRootAction(includingSelf)
+  }
+}
+
+enum UserProfileNavigationDestination<Route: Hashable>: Hashable {
+  case builtIn(UserProfileRow)
+  case custom(Route)
+}
+
+/// Internal built-in-only adapter for Clerk-owned child views that should not know about
+/// the host app's custom `Route` type but still need to trigger profile navigation.
+@MainActor
+@Observable
+final class UserProfileBuiltInRouter {
+  private let pushRow: @MainActor (UserProfileRow) -> Void
+  private let popToRootAction: @MainActor (_ includingSelf: Bool) -> Void
+
+  init(
+    push: @escaping @MainActor (UserProfileRow) -> Void,
+    popToRoot: @escaping @MainActor (_ includingSelf: Bool) -> Void
+  ) {
+    pushRow = push
+    popToRootAction = popToRoot
+  }
+
   func push(_ row: UserProfileRow) {
-    push(.builtIn(row))
+    pushRow(row)
   }
 
-  @MainActor
-  func push(_ route: some Hashable) {
-    push(.custom(AnyHashable(route)))
+  func popToRoot(_ includingSelf: Bool = false) {
+    popToRootAction(includingSelf)
   }
-}
-
-extension EnvironmentValues {
-  @Entry var userProfileRouter = UserProfileRouter(
-    push: { _ in },
-    popToRoot: { _ in }
-  )
 }
 
 #endif
