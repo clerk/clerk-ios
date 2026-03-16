@@ -51,7 +51,7 @@ import SwiftUI
 ///   }
 /// }
 /// ```
-public struct UserButton<SignedOutContent: View>: View {
+public struct UserButton<Route: Hashable, SignedOutContent: View, ProfileDestination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
@@ -62,6 +62,8 @@ public struct UserButton<SignedOutContent: View>: View {
 
   @State private var presentedSheet: PresentedSheet?
   private let presentationContext: PresentationContext
+  private let customRows: [UserProfileCustomRow<Route>]
+  private let profileDestination: (@MainActor (Route) -> ProfileDestination)?
   private let signedOutContent: () -> SignedOutContent
 
   private enum PresentedSheet: String, Identifiable {
@@ -80,29 +82,67 @@ public struct UserButton<SignedOutContent: View>: View {
   /// and handle presenting the user profile sheet when tapped.
   public init(
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
-  ) {
+  ) where Route == Never, ProfileDestination == EmptyView {
     self.init(
       presentationContext: .standard,
+      customRows: [],
+      profileDestination: nil,
       signedOutContent: signedOutContent
     )
   }
 
   init(
     presentationContext: PresentationContext,
+    customRows: [UserProfileCustomRow<Route>],
+    profileDestination: (@MainActor (Route) -> ProfileDestination)?,
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
   ) {
     self.presentationContext = presentationContext
+    self.customRows = customRows
+    self.profileDestination = profileDestination
     self.signedOutContent = signedOutContent
   }
 
   /// Creates a new user button with no signed-out content.
-  public init() where SignedOutContent == EmptyView {
+  public init() where Route == Never, SignedOutContent == EmptyView, ProfileDestination == EmptyView {
     self.init(presentationContext: .standard)
   }
 
-  init(presentationContext: PresentationContext) where SignedOutContent == EmptyView {
+  init(
+    presentationContext: PresentationContext
+  ) where Route == Never, SignedOutContent == EmptyView, ProfileDestination == EmptyView {
     self.init(
       presentationContext: presentationContext,
+      customRows: [],
+      profileDestination: nil,
+      signedOutContent: { EmptyView() }
+    )
+  }
+
+  /// Creates a new user button that presents `UserProfileView` with custom rows.
+  public init(
+    customRows: [UserProfileCustomRow<Route>],
+    @ViewBuilder destination: @escaping @MainActor (Route) -> ProfileDestination,
+    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
+  ) {
+    self.init(
+      presentationContext: .standard,
+      customRows: customRows,
+      profileDestination: destination,
+      signedOutContent: signedOutContent
+    )
+  }
+
+  /// Creates a new user button that presents `UserProfileView` with custom rows and no
+  /// signed-out content.
+  public init(
+    customRows: [UserProfileCustomRow<Route>],
+    @ViewBuilder destination: @escaping @MainActor (Route) -> ProfileDestination
+  ) where SignedOutContent == EmptyView {
+    self.init(
+      presentationContext: .standard,
+      customRows: customRows,
+      profileDestination: destination,
       signedOutContent: { EmptyView() }
     )
   }
@@ -142,8 +182,7 @@ public struct UserButton<SignedOutContent: View>: View {
     .sheet(item: $presentedSheet) { sheet in
       switch sheet {
       case .userProfile:
-        UserProfileView()
-          .presentationDragIndicator(.visible)
+        userProfileSheet
       case .sessionTaskAuth:
         AuthView()
           .presentationDragIndicator(.visible)
@@ -164,6 +203,17 @@ public struct UserButton<SignedOutContent: View>: View {
 }
 
 extension UserButton {
+  @ViewBuilder
+  private var userProfileSheet: some View {
+    if let profileDestination {
+      UserProfileView(customRows: customRows, destination: profileDestination)
+        .presentationDragIndicator(.visible)
+    } else {
+      UserProfileView()
+        .presentationDragIndicator(.visible)
+    }
+  }
+
   private func handleTap() {
     switch presentationContext {
     case .sessionTaskToolbar:

@@ -27,11 +27,7 @@ struct UserProfileRowView: View {
 
   var body: some View {
     HStack(spacing: 16) {
-      iconImage
-        .resizable()
-        .scaledToFit()
-        .frame(width: 48, height: 24)
-        .foregroundStyle(theme.colors.mutedForeground)
+      iconView
       Text(text, bundle: bundle)
         .font(theme.fonts.body)
         .fontWeight(.semibold)
@@ -44,12 +40,24 @@ struct UserProfileRowView: View {
     .contentShape(.rect)
   }
 
-  private var iconImage: Image {
+  @ViewBuilder
+  private var iconView: some View {
     switch icon {
     case .asset(let name):
       Image(name, bundle: bundle)
+        .renderingMode(.template)
+        .resizable()
+        .scaledToFit()
+        .frame(maxWidth: 24, maxHeight: 24)
+        .frame(width: 48, height: 24)
+        .foregroundStyle(theme.colors.mutedForeground)
     case .system(let name):
       Image(systemName: name)
+        .resizable()
+        .scaledToFit()
+        .frame(maxWidth: 21, maxHeight: 21)
+        .frame(width: 48, height: 24)
+        .foregroundStyle(theme.colors.mutedForeground)
     }
   }
 }
