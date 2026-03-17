@@ -74,6 +74,9 @@ public struct AuthView: View {
   /// Configuration values for identifier pre-filling and persistence.
   private let config: AuthIdentifierConfig
 
+  /// Error to present to the user.
+  @State private var error: Error?
+
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
 
@@ -148,6 +151,7 @@ public struct AuthView: View {
     .presentationBackground(theme.colors.background)
     .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
     .tint(theme.colors.primary)
+    .clerkErrorPresenting($error)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
@@ -191,6 +195,15 @@ public struct AuthView: View {
     }
     .onChange(of: config, initial: true) { _, newConfig in
       authState.configure(newConfig)
+    }
+    .onOpenURL { url in
+      Task {
+        do {
+          try await clerk.handle(url)
+        } catch {
+          error = error
+        }
+      }
     }
     .taskOnce {
       await clerk.telemetry.record(

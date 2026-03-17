@@ -11,57 +11,83 @@ import Foundation
 extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
-    let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
+    preparedFirstFactor
+      ?? preferredEmailLinkFirstFactor
+      ?? defaultStartingFirstFactor
+  }
 
-    if preferredSignInStrategy == .password {
-      return factorWhenPasswordIsPreferred
-    } else {
-      return factorWhenOtpIsPreferred
+  var preparedFirstFactor: Factor? {
+    guard let strategy = firstFactorVerification?.strategy else { return nil }
+    return supportedFirstFactors?.first(where: { $0.strategy == strategy })
+  }
+
+  var preferredEmailLinkFirstFactor: Factor? {
+    guard shouldPreferEmailLink,
+          let emailLinkFactor = supportedFirstFactors?.first(where: { $0.strategy == .emailLink })
+    else {
+      return nil
     }
+
+    return emailLinkFactor
+  }
+
+  @MainActor
+  var defaultStartingFirstFactor: Factor? {
+    let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
+    return preferredSignInStrategy == .password
+      ? factorWhenPasswordIsPreferred
+      : factorWhenOtpIsPreferred
+  }
+
+  var availableFirstFactors: [Factor] {
+    supportedFirstFactors?.filter { factor in
+      if case .unknown = factor.strategy { return false }
+      return true
+    } ?? []
   }
 
   var factorWhenPasswordIsPreferred: Factor? {
-    let availableFirstFactors = supportedFirstFactors?.filter { factor in
-      if case .unknown = factor.strategy { return false }
-      return true
-    }
-
-    if let passkeyFactor = availableFirstFactors?.first(where: { factor in
+    if let passkeyFactor = availableFirstFactors.first(where: { factor in
       factor.strategy == .passkey
     }) {
       return passkeyFactor
     }
 
-    if let passwordFactor = availableFirstFactors?.first(where: { factor in
+    if let passwordFactor = availableFirstFactors.first(where: { factor in
       factor.strategy == .password
     }) {
       return passwordFactor
     }
 
-    let sortedFactors = availableFirstFactors?.sorted(using: Factor.passwordPrefComparator)
-
-    return availableFirstFactors?.first { factor in
+    let sortedFactors = availableFirstFactors.sorted(using: Factor.passwordPrefComparator)
+    return availableFirstFactors.first { factor in
       factor.safeIdentifier == identifier
-    } ?? sortedFactors?.first
+    } ?? sortedFactors.first
   }
 
   var factorWhenOtpIsPreferred: Factor? {
-    let availableFirstFactors = supportedFirstFactors?.filter { factor in
-      if case .unknown = factor.strategy { return false }
-      return true
-    }
-
-    if let passkeyFactor = availableFirstFactors?.first(where: { factor in
+    if let passkeyFactor = availableFirstFactors.first(where: { factor in
       factor.strategy == .passkey
     }) {
       return passkeyFactor
     }
 
-    let sortedFactors = availableFirstFactors?.sorted(using: Factor.otpPrefComparator)
-
-    return sortedFactors?.first { factor in
+    let sortedFactors = availableFirstFactors.sorted(using: Factor.otpPrefComparator)
+    return sortedFactors.first { factor in
       factor.safeIdentifier == identifier
-    } ?? sortedFactors?.first
+    } ?? sortedFactors.first
+  }
+
+  var shouldPreferEmailLink: Bool {
+    guard availableFirstFactors.contains(where: { $0.strategy == .emailLink }) else {
+      return false
+    }
+
+    return identifier?.contains("@") == true
+      || availableFirstFactors.contains { factor in
+        (factor.strategy == .emailLink || factor.strategy == .emailCode)
+          && factor.safeIdentifier?.contains("@") == true
+      }
   }
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {

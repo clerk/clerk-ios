@@ -4,6 +4,7 @@ import AuthenticationServices
 #endif
 import ConcurrencyExtras
 import Foundation
+import Mocker
 import Testing
 
 @MainActor
@@ -18,10 +19,13 @@ struct AuthTests {
     signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
     environment: Clerk.Environment? = .mock,
+    keychain: (any KeychainStorage)? = nil,
+    environment: Clerk.Environment? = .mock,
     options: Clerk.Options = .init()
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
+      keychain: keychain,
       signInService: signInService,
       signUpService: signUpService,
       sessionService: sessionService
@@ -231,6 +235,108 @@ struct AuthTests {
 
     let params = try #require(signInParams.value)
     #expect(params.ticket == "mock_ticket_value")
+  }
+
+  @Test
+  func signInWithEmailLinkCreatesAndPreparesFirstFactor() async throws {
+    let keychain = InMemoryKeychain()
+    let createParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let prepareParams = LockIsolated<SignIn.PrepareFirstFactorParams?>(nil)
+
+    var signIn = SignIn.mock
+    signIn.identifier = "test@example.com"
+    signIn.supportedFirstFactors = [
+      Factor(
+        strategy: .emailLink,
+        emailAddressId: "ema_123",
+        safeIdentifier: "test@example.com"
+      ),
+    ]
+
+    let signInService = MockSignInService(
+      create: { params in
+        createParams.setValue(params)
+        return signIn
+      },
+      prepareFirstFactor: { _, params in
+        prepareParams.setValue(params)
+        return signIn
+      }
+    )
+
+    configureDependencies(signInService: signInService, keychain: keychain)
+
+    _ = try await Clerk.shared.auth.signInWithEmailLink(emailAddress: " test@example.com ")
+
+    let capturedCreateParams = try #require(createParams.value)
+    #expect(capturedCreateParams.identifier == "test@example.com")
+
+    let capturedPrepareParams = try #require(prepareParams.value)
+    #expect(capturedPrepareParams.strategy == .emailLink)
+    #expect(capturedPrepareParams.emailAddressId == "ema_123")
+    #expect(capturedPrepareParams.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(capturedPrepareParams.codeChallengeMethod == NativeMagicLinkPKCE.codeChallengeMethod)
+    #expect(capturedPrepareParams.codeChallenge?.isEmpty == false)
+
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue))
+  }
+
+  @Test
+  func handleMagicLinkCallbackCompletesPendingFlowAndActivatesSession() async throws {
+    let keychain = InMemoryKeychain()
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let activatedSessionId = LockIsolated<String?>(nil)
+
+    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          NativeMagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+        ),
+      ]
+    )
+
+    completionMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody?["flow_id"] == "flow_123")
+      #expect(request.urlEncodedFormBody?["approval_token"] == "approval_123")
+      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_123")
+    }
+    completionMock.register()
+
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
+      return completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    configureDependencies(
+      signInService: signInService,
+      sessionService: sessionService,
+      keychain: keychain
+    )
+    try NativeMagicLinkStore.save(codeVerifier: "verifier_123")
+
+    let signIn = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
+
+    #expect(signIn.createdSessionId == "sess_123")
+    #expect(signInParams.value?.ticket == "ticket_123")
+    #expect(activatedSessionId.value == "sess_123")
+    #expect(try (Clerk.shared.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)) == false)
   }
 
   @Test

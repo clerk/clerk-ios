@@ -104,6 +104,25 @@ public struct Auth {
     try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
   }
 
+  /// Starts a native magic-link sign-in flow for an email address.
+  ///
+  /// This creates an identifier-first sign-in attempt, prepares the `email_link` first factor,
+  /// and stores the PKCE verifier locally so the callback can be completed inside the app.
+  ///
+  /// - Parameter emailAddress: The user's email address.
+  /// - Returns: A `SignIn` object with the email-link verification prepared.
+  /// - Throws: An error if the email address is invalid or email-link preparation fails.
+  @discardableResult
+  public func signInWithEmailLink(emailAddress: String) async throws -> SignIn {
+    let identifier = emailAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !identifier.isEmpty else {
+      throw ClerkClientError(message: "Email address is required.")
+    }
+
+    let signIn = try await signInService.create(params: .init(identifier: identifier))
+    return try await signIn.sendEmailLink()
+  }
+
   /// Signs in with OTP (One-Time Password) using a phone number.
   ///
   /// This method creates a sign-in attempt and automatically sends a verification code to the phone number.
@@ -282,6 +301,90 @@ public struct Auth {
       strategy: .ticket,
       ticket: ticket
     ))
+  }
+
+  /// Returns whether a URL looks like a native magic-link callback.
+  ///
+  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string or fragment.
+  public func canHandleMagicLinkCallback(_ url: URL) -> Bool {
+    NativeMagicLinkCallback.canHandle(url)
+  }
+
+  /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
+  ///
+  /// - Parameter url: The callback URL opened by the app.
+  /// - Returns: The completed `SignIn`.
+  /// - Throws: An error if the callback is invalid or completion fails.
+  @discardableResult
+  public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
+    let callback = try NativeMagicLinkCallback(url: url)
+    return try await completeMagicLink(flowId: callback.flowId, approvalToken: callback.approvalToken)
+  }
+
+  /// Completes a pending native magic-link sign-in using callback values from the deep link.
+  ///
+  /// - Parameters:
+  ///   - flowId: The `flow_id` value from the callback.
+  ///   - approvalToken: The `approval_token` value from the callback.
+  /// - Returns: The completed `SignIn`.
+  /// - Throws: An error if no pending flow exists or completion fails.
+  @discardableResult
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> SignIn {
+    let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
+    let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !resolvedFlowId.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing flow_id.")
+    }
+
+    guard !resolvedApprovalToken.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing approval_token.")
+    }
+
+    guard let pendingFlow = NativeMagicLinkStore.load() else {
+      throw ClerkClientError(message: "No pending magic link sign-in was found.")
+    }
+
+    let request = Request<NativeMagicLinkCompleteResponse>(
+      path: "/v1/client/magic_links/complete",
+      method: .post,
+      body: NativeMagicLinkCompleteParams(
+        flowId: resolvedFlowId,
+        approvalToken: resolvedApprovalToken,
+        codeVerifier: pendingFlow.codeVerifier
+      )
+    )
+
+    let completionResponse: NativeMagicLinkCompleteResponse
+    do {
+      completionResponse = try await Clerk.shared.dependencies.apiClient.send(request).value
+      NativeMagicLinkStore.clear()
+    } catch let error as ClerkAPIError {
+      if nativeMagicLinkTerminalErrorCodes.contains(error.code) {
+        NativeMagicLinkStore.clear()
+      }
+      throw error
+    }
+
+    let signIn: SignIn
+    do {
+      signIn = try await signInWithTicket(completionResponse.ticket)
+    } catch {
+      throw error
+    }
+
+    if let sessionId = signIn.createdSessionId {
+      do {
+        try await setActive(sessionId: sessionId)
+      } catch {
+        let isAlreadyActive = Clerk.shared.session?.id == sessionId
+        if isAlreadyActive {
+          return signIn
+        }
+        throw error
+      }
+    }
+    return signIn
   }
 
   // MARK: - Sign Up Entry Points

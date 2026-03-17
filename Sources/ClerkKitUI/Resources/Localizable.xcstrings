@@ -6659,6 +6659,9 @@
         }
       }
     },
+    "Link sent" : {
+
+    },
     "Linked" : {
       "localizations" : {
         "ar" : {
@@ -7292,6 +7295,12 @@
           }
         }
       }
+    },
+    "No email app is available on this device." : {
+
+    },
+    "Open email app" : {
+
     },
     "or" : {
       "localizations" : {
@@ -9746,6 +9755,12 @@
         }
       }
     },
+    "Send email to %@" : {
+
+    },
+    "Send email to email address" : {
+
+    },
     "Send SMS code to %@" : {
       "localizations" : {
         "ar" : {
@@ -9815,6 +9830,9 @@
           }
         }
       }
+    },
+    "Sending link..." : {
+
     },
     "Set as default" : {
       "localizations" : {
