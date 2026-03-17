@@ -47,6 +47,9 @@ struct SignInFactorAlternativeMethodsView: View {
     case .emailCode:
       guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email code to \(safeIdentifier)"
+    case .emailLink:
+      guard let safeIdentifier = factor.safeIdentifier else { return nil }
+      return "Email link to \(safeIdentifier)"
     case .passkey:
       return "Sign in with your passkey"
     case .password:
@@ -67,6 +70,8 @@ struct SignInFactorAlternativeMethodsView: View {
     case .phoneCode:
       "icon-sms"
     case .emailCode:
+      "icon-email"
+    case .emailLink:
       "icon-email"
     case .passkey:
       "icon-fingerprint"

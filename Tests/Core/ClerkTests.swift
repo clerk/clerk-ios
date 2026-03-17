@@ -52,6 +52,7 @@ struct ClerkTests {
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
+    try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)
 
     // Verify all keys exist before clearing
     for key in ClerkKeychainKey.allCases {

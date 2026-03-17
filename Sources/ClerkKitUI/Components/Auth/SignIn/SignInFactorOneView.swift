@@ -20,6 +20,8 @@ struct SignInFactorOneView: View {
       SignInFactorOnePasskeyView(factor: factor)
     case .password:
       SignInFactorOnePasswordView(factor: factor)
+    case .emailLink:
+      SignInFactorOneEmailLinkView(factor: factor)
     case .emailCode,
          .phoneCode,
          .resetPasswordEmailCode,

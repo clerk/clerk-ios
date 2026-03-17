@@ -280,6 +280,43 @@ struct SignInServiceTests {
   }
 
   @Test
+  func prepareFirstFactorEmailLink() async throws {
+    let signIn = SignIn.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "email_link")
+      #expect(request.urlEncodedFormBody!["email_address_id"] == "ema_123")
+      #expect(request.urlEncodedFormBody!["redirect_uri"] == "com.clerk.Quickstart://callback")
+      #expect(request.urlEncodedFormBody!["code_challenge"] == "challenge_123")
+      #expect(request.urlEncodedFormBody!["code_challenge_method"] == "S256")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+      signInId: signIn.id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: "ema_123",
+        redirectUri: "com.clerk.Quickstart://callback",
+        codeChallenge: "challenge_123",
+        codeChallengeMethod: "S256"
+      )
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func prepareFirstFactorPhoneCode() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)

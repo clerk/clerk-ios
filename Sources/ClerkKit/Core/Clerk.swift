@@ -469,6 +469,22 @@ extension Clerk {
     maximumDelay: .seconds(5)
   )
 
+  /// Handles an incoming URL, routing it to the appropriate handler.
+  ///
+  /// If the URL matches a known Clerk callback (e.g. a magic link), it will
+  /// be processed automatically. Unrecognized URLs are ignored.
+  ///
+  /// ```swift
+  /// .onOpenURL { url in
+  ///   Task { try? await clerk.handle(url) }
+  /// }
+  /// ```
+  public func handle(_ url: URL) async throws {
+    if auth.canHandleMagicLinkCallback(url) {
+      try await auth.handleMagicLinkCallback(url)
+    }
+  }
+
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
     await SessionTokenFetcher.shared.reset()
