@@ -9,7 +9,7 @@ import ClerkKit
 import SwiftUI
 import UIKit
 
-struct SignInFactorOneEmailLinkView: View {
+struct EmailLinkVerificationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
@@ -17,27 +17,25 @@ struct SignInFactorOneEmailLinkView: View {
   @State private var deliveryState = DeliveryState.idle
   @State private var error: Error?
 
-  let factor: Factor
+  let mode: Mode
 
-  var signIn: SignIn? {
-    clerk.auth.currentSignIn
+  private var emailAddress: String? {
+    switch mode {
+    case .signIn(let factor):
+      factor.safeIdentifier
+    case .signUp:
+      clerk.auth.currentSignUp?.emailAddress
+    }
   }
 
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
         headerSection
-
-        VStack(spacing: 24) {
-          openEmailAppButton
-          statusSection
-
-          resendSection
-          useAnotherMethodButton
-        }
-        .padding(.bottom, 32)
+        inputSection
 
         SecuredByClerkView()
+          .padding(.top, 32)
       }
       .padding(16)
     }
@@ -49,17 +47,35 @@ struct SignInFactorOneEmailLinkView: View {
   }
 }
 
-extension SignInFactorOneEmailLinkView {
+// MARK: - Types
+
+extension EmailLinkVerificationView {
+  enum Mode {
+    case signIn(Factor)
+    case signUp
+  }
+
+  enum DeliveryState {
+    case idle
+    case sending
+    case sent
+    case failed(Error)
+  }
+}
+
+// MARK: - Subviews
+
+extension EmailLinkVerificationView {
   private var headerSection: some View {
     VStack(spacing: 8) {
       HeaderView(style: .title, text: "Check your email")
       HeaderView(style: .subtitle, text: subtitleString)
 
-      if let identifier = factor.safeIdentifier {
+      if let emailAddress {
         Button {
           navigation.path = []
         } label: {
-          IdentityPreviewView(label: identifier)
+          IdentityPreviewView(label: emailAddress)
         }
         .buttonStyle(.secondary(config: .init(size: .small)))
         .simultaneousGesture(TapGesture())
@@ -73,6 +89,18 @@ extension SignInFactorOneEmailLinkView {
       "to continue to \(appName)"
     } else {
       "to continue"
+    }
+  }
+
+  private var inputSection: some View {
+    VStack(spacing: 24) {
+      openEmailAppButton
+
+      resendSection
+
+      if case .signIn(let factor) = mode {
+        useAnotherMethodButton(factor: factor)
+      }
     }
   }
 
@@ -95,27 +123,6 @@ extension SignInFactorOneEmailLinkView {
     .simultaneousGesture(TapGesture())
   }
 
-  @ViewBuilder
-  private var statusSection: some View {
-    switch deliveryState {
-    case .idle:
-      EmptyView()
-    case .sending:
-      EmptyView()
-    case .sent:
-      HStack(spacing: 4) {
-        Image("icon-check-circle", bundle: .module)
-          .foregroundStyle(theme.colors.success)
-        Text("Link sent", bundle: .module)
-          .foregroundStyle(theme.colors.mutedForeground)
-      }
-      .font(theme.fonts.subheadline)
-    case .failed(let error):
-      ErrorText(error: error)
-        .font(theme.fonts.subheadline)
-    }
-  }
-
   private var resendSection: some View {
     AsyncButton {
       await sendLink()
@@ -125,8 +132,6 @@ extension SignInFactorOneEmailLinkView {
         Text("Resend", bundle: .module)
           .foregroundStyle(theme.colors.primary)
       }
-      .font(theme.fonts.subheadline)
-      .monospacedDigit()
       .overlayProgressView(isActive: isRunning)
       .frame(maxWidth: .infinity)
     }
@@ -142,7 +147,7 @@ extension SignInFactorOneEmailLinkView {
     .simultaneousGesture(TapGesture())
   }
 
-  private var useAnotherMethodButton: some View {
+  private func useAnotherMethodButton(factor: Factor) -> some View {
     Button {
       navigation.path.append(
         AuthView.Destination.signInFactorOneUseAnotherMethod(
@@ -162,7 +167,11 @@ extension SignInFactorOneEmailLinkView {
     )
     .simultaneousGesture(TapGesture())
   }
+}
 
+// MARK: - Helpers
+
+extension EmailLinkVerificationView {
   private var isSendingLink: Bool {
     if case .sending = deliveryState {
       true
@@ -170,10 +179,21 @@ extension SignInFactorOneEmailLinkView {
       false
     }
   }
+}
 
+// MARK: - Actions
+
+extension EmailLinkVerificationView {
   @MainActor
   private func sendInitialLinkIfNeeded() async {
-    guard signIn?.firstFactorVerification?.strategy != .emailLink else {
+    let alreadySent: Bool = switch mode {
+    case .signIn:
+      clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
+    case .signUp:
+      clerk.auth.currentSignUp?.verifications["email_address"]??.strategy == .emailLink
+    }
+
+    guard !alreadySent else {
       deliveryState = .sent
       return
     }
@@ -183,15 +203,24 @@ extension SignInFactorOneEmailLinkView {
 
   @MainActor
   private func sendLink() async {
-    guard let signIn else {
-      navigation.path = []
-      return
-    }
-
     deliveryState = .sending
 
     do {
-      _ = try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+      switch mode {
+      case .signIn(let factor):
+        guard let signIn = clerk.auth.currentSignIn else {
+          navigation.path = []
+          return
+        }
+        _ = try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+
+      case .signUp:
+        guard let signUp = clerk.auth.currentSignUp else {
+          navigation.path = []
+          return
+        }
+        _ = try await signUp.sendEmailLink()
+      }
       deliveryState = .sent
     } catch {
       deliveryState = .failed(error)
@@ -212,24 +241,22 @@ extension SignInFactorOneEmailLinkView {
   }
 }
 
-extension SignInFactorOneEmailLinkView {
-  enum DeliveryState {
-    case idle
-    case sending
-    case sent
-    case failed(Error)
-  }
-}
-
-#Preview {
-  SignInFactorOneEmailLinkView(
-    factor: Factor(
-      strategy: .emailLink,
-      emailAddressId: "ema_123",
-      safeIdentifier: "sam@clerk.dev"
+#Preview("Sign In") {
+  EmailLinkVerificationView(
+    mode: .signIn(
+      Factor(
+        strategy: .emailLink,
+        emailAddressId: "ema_123",
+        safeIdentifier: "sam@clerk.dev"
+      )
     )
   )
   .clerkPreview()
+}
+
+#Preview("Sign Up") {
+  EmailLinkVerificationView(mode: .signUp)
+    .clerkPreview()
 }
 
 #endif

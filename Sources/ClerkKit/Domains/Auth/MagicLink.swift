@@ -1,5 +1,5 @@
 //
-//  NativeMagicLink.swift
+//  MagicLink.swift
 //  Clerk
 //
 
@@ -7,25 +7,25 @@ import CryptoKit
 import Foundation
 import Security
 
-struct NativeMagicLinkCompleteParams: Encodable {
+struct MagicLinkCompleteParams: Encodable {
   let flowId: String
   let approvalToken: String
   let codeVerifier: String
   let attestation: String? = nil
 }
 
-struct NativeMagicLinkCompleteResponse: Codable, Equatable {
+struct MagicLinkCompleteResponse: Codable, Equatable {
   let flowId: String?
   let ticket: String
 }
 
-struct PendingNativeMagicLinkFlow: Codable, Equatable {
+struct PendingMagicLinkFlow: Codable, Equatable {
   let codeVerifier: String
   let createdAt: Date
   let expiresAt: Date
 }
 
-struct NativeMagicLinkCallback: Equatable {
+struct MagicLinkCallback: Equatable {
   let flowId: String
   let approvalToken: String
 
@@ -62,7 +62,7 @@ struct NativeMagicLinkCallback: Equatable {
   }
 }
 
-enum NativeMagicLinkPKCE {
+enum MagicLinkPKCE {
   static let codeChallengeMethod = "S256"
 
   struct Pair: Equatable {
@@ -85,7 +85,7 @@ enum NativeMagicLinkPKCE {
 }
 
 @MainActor
-enum NativeMagicLinkStore {
+enum MagicLinkStore {
   private static let ttl: TimeInterval = 10 * 60
 
   private static var keychain: any KeychainStorage {
@@ -94,21 +94,21 @@ enum NativeMagicLinkStore {
 
   static func save(codeVerifier: String) throws {
     let createdAt = Date()
-    let pendingFlow = PendingNativeMagicLinkFlow(
+    let pendingFlow = PendingMagicLinkFlow(
       codeVerifier: codeVerifier,
       createdAt: createdAt,
       expiresAt: createdAt.addingTimeInterval(ttl)
     )
     let data = try JSONEncoder.clerkEncoder.encode(pendingFlow)
-    try keychain.set(data, forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)
+    try keychain.set(data, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 
-  static func load() -> PendingNativeMagicLinkFlow? {
-    guard let data = try? keychain.data(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue) else {
+  static func load() -> PendingMagicLinkFlow? {
+    guard let data = try? keychain.data(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) else {
       return nil
     }
 
-    guard let pendingFlow = try? JSONDecoder.clerkDecoder.decode(PendingNativeMagicLinkFlow.self, from: data) else {
+    guard let pendingFlow = try? JSONDecoder.clerkDecoder.decode(PendingMagicLinkFlow.self, from: data) else {
       clear()
       return nil
     }
@@ -122,11 +122,11 @@ enum NativeMagicLinkStore {
   }
 
   static func clear() {
-    try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)
+    try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 }
 
-let nativeMagicLinkTerminalErrorCodes: Set<String> = [
+let magicLinkTerminalErrorCodes: Set<String> = [
   "approval_token_consumed",
   "approval_token_expired",
   "approval_token_invalid",

@@ -275,10 +275,10 @@ struct AuthTests {
     #expect(capturedPrepareParams.strategy == .emailLink)
     #expect(capturedPrepareParams.emailAddressId == "ema_123")
     #expect(capturedPrepareParams.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(capturedPrepareParams.codeChallengeMethod == NativeMagicLinkPKCE.codeChallengeMethod)
+    #expect(capturedPrepareParams.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
     #expect(capturedPrepareParams.codeChallenge?.isEmpty == false)
 
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue))
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
   }
 
   @Test
@@ -297,7 +297,7 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          NativeMagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
         ),
       ]
     )
@@ -329,14 +329,18 @@ struct AuthTests {
       sessionService: sessionService,
       keychain: keychain
     )
-    try NativeMagicLinkStore.save(codeVerifier: "verifier_123")
+    try MagicLinkStore.save(codeVerifier: "verifier_123")
 
-    let signIn = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
+    let result = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
 
+    guard case .signIn(let signIn) = result else {
+      Issue.record("Expected .signIn result")
+      return
+    }
     #expect(signIn.createdSessionId == "sess_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(try (Clerk.shared.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)) == false)
+    #expect(try (Clerk.shared.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)) == false)
   }
 
   @Test

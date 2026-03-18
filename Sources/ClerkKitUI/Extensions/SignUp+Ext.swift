@@ -13,6 +13,25 @@ extension SignUp {
   static let individuallyCollectableFields: Set<SignUp.Field> = [.emailAddress, .phoneNumber, .username, .password]
   static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
 
+  @MainActor
+  var emailVerificationStrategy: FactorStrategy {
+    // Check if there's an active verification with a strategy
+    if let verification = verifications["email_address"],
+       let strategy = verification?.strategy
+    {
+      return strategy
+    }
+
+    // Fall back to environment user settings
+    if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
+       verifications.contains("email_link")
+    {
+      return .emailLink
+    }
+
+    return .emailCode
+  }
+
   var firstFieldToCollect: SignUp.Field? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first
   }

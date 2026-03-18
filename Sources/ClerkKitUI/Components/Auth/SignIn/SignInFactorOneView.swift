@@ -21,7 +21,7 @@ struct SignInFactorOneView: View {
     case .password:
       SignInFactorOnePasswordView(factor: factor)
     case .emailLink:
-      SignInFactorOneEmailLinkView(factor: factor)
+      EmailLinkVerificationView(mode: .signIn(factor))
     case .emailCode,
          .phoneCode,
          .resetPasswordEmailCode,

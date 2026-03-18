@@ -11,6 +11,21 @@ struct ClerkTests {
     configureClerkForTesting()
   }
 
+  private func configureDependencies(
+    signInService: MockSignInService? = nil,
+    sessionService: MockSessionService? = nil,
+    keychain: (any KeychainStorage)? = nil,
+    environment: Clerk.Environment? = .mock
+  ) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signInService: signInService,
+      sessionService: sessionService
+    )
+    Clerk.shared.environment = environment
+  }
+
   func createSession(
     id: String,
     status: Session.SessionStatus,
@@ -52,7 +67,7 @@ struct ClerkTests {
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
-    try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingNativeMagicLinkFlow.rawValue)
+    try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
 
     // Verify all keys exist before clearing
     for key in ClerkKeychainKey.allCases {
@@ -197,6 +212,128 @@ struct ClerkTests {
     // Clear client - should become false again
     Clerk.shared.client = nil
     #expect(Clerk.shared.isLoaded == false)
+  }
+
+  @Test
+  func handleReturnsFalseForUnrecognizedURL() async throws {
+    let url = try #require(URL(string: "https://example.com/not-clerk"))
+
+    let handled = try await Clerk.shared.handle(url)
+
+    #expect(handled == false)
+  }
+
+  @Test
+  func handleReturnsTrueForMagicLinkCallback() async throws {
+    let keychain = InMemoryKeychain()
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let activatedSessionId = LockIsolated<String?>(nil)
+
+    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+        ),
+      ]
+    )
+
+    completionMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody?["flow_id"] == "flow_123")
+      #expect(request.urlEncodedFormBody?["approval_token"] == "approval_123")
+      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_123")
+    }
+    completionMock.register()
+
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
+      return completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    configureDependencies(
+      signInService: signInService,
+      sessionService: sessionService,
+      keychain: keychain
+    )
+    try MagicLinkStore.save(codeVerifier: "verifier_123")
+
+    let handled = try await Clerk.shared.handle(callbackUrl)
+
+    #expect(handled == true)
+    #expect(signInParams.value?.ticket == "ticket_123")
+    #expect(activatedSessionId.value == "sess_123")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func handleDeduplicatesConcurrentMagicLinkCallbacks() async throws {
+    let keychain = InMemoryKeychain()
+    let createCallCount = LockIsolated(0)
+    let activatedSessionId = LockIsolated<String?>(nil)
+
+    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    let completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+        ),
+      ]
+    )
+    completionMock.register()
+
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+
+    let signInService = MockSignInService(create: { _ in
+      createCallCount.withValue { $0 += 1 }
+      try await Task.sleep(for: .milliseconds(50))
+      return completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    configureDependencies(
+      signInService: signInService,
+      sessionService: sessionService,
+      keychain: keychain
+    )
+    try MagicLinkStore.save(codeVerifier: "verifier_123")
+
+    async let firstHandled = Clerk.shared.handle(callbackUrl)
+    async let secondHandled = Clerk.shared.handle(callbackUrl)
+
+    let (first, second) = try await (firstHandled, secondHandled)
+
+    #expect(first == true)
+    #expect(second == true)
+    #expect(createCallCount.value == 1)
+    #expect(activatedSessionId.value == "sess_123")
   }
 
   // MARK: - Current / Active Session Tests

@@ -307,29 +307,32 @@ public struct Auth {
   ///
   /// Magic-link callbacks include `flow_id` and `approval_token` in the query string or fragment.
   public func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    NativeMagicLinkCallback.canHandle(url)
+    MagicLinkCallback.canHandle(url)
   }
 
-  /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
+  /// Handles a native magic-link callback and completes sign-in or sign-up using the stored PKCE verifier.
   ///
   /// - Parameter url: The callback URL opened by the app.
-  /// - Returns: The completed `SignIn`.
+  /// - Returns: A `TransferFlowResult` containing the completed `SignIn` or `SignUp`.
   /// - Throws: An error if the callback is invalid or completion fails.
   @discardableResult
-  public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
-    let callback = try NativeMagicLinkCallback(url: url)
+  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
+    let callback = try MagicLinkCallback(url: url)
     return try await completeMagicLink(flowId: callback.flowId, approvalToken: callback.approvalToken)
   }
 
-  /// Completes a pending native magic-link sign-in using callback values from the deep link.
+  /// Completes a pending native magic-link flow using callback values from the deep link.
+  ///
+  /// Determines whether to complete as sign-in or sign-up by checking if
+  /// `currentSignUp` has an active email-link verification in progress.
   ///
   /// - Parameters:
   ///   - flowId: The `flow_id` value from the callback.
   ///   - approvalToken: The `approval_token` value from the callback.
-  /// - Returns: The completed `SignIn`.
+  /// - Returns: A `TransferFlowResult` containing the completed `SignIn` or `SignUp`.
   /// - Throws: An error if no pending flow exists or completion fails.
   @discardableResult
-  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> SignIn {
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
     let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -341,50 +344,45 @@ public struct Auth {
       throw ClerkClientError(message: "Magic link callback is missing approval_token.")
     }
 
-    guard let pendingFlow = NativeMagicLinkStore.load() else {
-      throw ClerkClientError(message: "No pending magic link sign-in was found.")
+    guard let pendingFlow = MagicLinkStore.load() else {
+      throw ClerkClientError(message: "No pending magic link flow was found.")
     }
 
-    let request = Request<NativeMagicLinkCompleteResponse>(
+    let request = Request<MagicLinkCompleteResponse>(
       path: "/v1/client/magic_links/complete",
       method: .post,
-      body: NativeMagicLinkCompleteParams(
+      body: MagicLinkCompleteParams(
         flowId: resolvedFlowId,
         approvalToken: resolvedApprovalToken,
         codeVerifier: pendingFlow.codeVerifier
       )
     )
 
-    let completionResponse: NativeMagicLinkCompleteResponse
+    let completionResponse: MagicLinkCompleteResponse
     do {
       completionResponse = try await Clerk.shared.dependencies.apiClient.send(request).value
-      NativeMagicLinkStore.clear()
+      MagicLinkStore.clear()
     } catch let error as ClerkAPIError {
-      if nativeMagicLinkTerminalErrorCodes.contains(error.code) {
-        NativeMagicLinkStore.clear()
+      if magicLinkTerminalErrorCodes.contains(error.code) {
+        MagicLinkStore.clear()
       }
       throw error
     }
 
-    let signIn: SignIn
-    do {
-      signIn = try await signInWithTicket(completionResponse.ticket)
-    } catch {
-      throw error
-    }
+    let signIn = try await signInWithTicket(completionResponse.ticket)
 
     if let sessionId = signIn.createdSessionId {
       do {
         try await setActive(sessionId: sessionId)
       } catch {
-        let isAlreadyActive = Clerk.shared.session?.id == sessionId
-        if isAlreadyActive {
-          return signIn
+        let isAlreadyActive = sessions.contains(where: { $0.id == sessionId })
+        if !isAlreadyActive {
+          throw error
         }
-        throw error
       }
     }
-    return signIn
+
+    return .signIn(signIn)
   }
 
   // MARK: - Sign Up Entry Points
