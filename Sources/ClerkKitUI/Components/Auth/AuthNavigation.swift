@@ -122,10 +122,27 @@ final class AuthNavigation {
 
   @MainActor
   private func handleMissingRequirements(signUp: SignUp) {
-    if let firstFieldToVerify = signUp.firstFieldToVerify {
-      handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
-    } else if let nextFieldToCollect = signUp.firstFieldToCollect {
-      handleFieldToCollect(signUp: signUp, field: nextFieldToCollect)
+    if signUp.emailVerificationStrategy == .emailLink {
+      // Email link verification finalizes the sign-up server-side, so defer
+      // it until everything else is done. Other verifications (e.g. phone)
+      // and field collection follow the normal priority order.
+      let nonEmailFieldToVerify = signUp.unverifiedFields
+        .sortedByPriority(SignUp.fieldPriority)
+        .first(where: { $0 != .emailAddress })
+
+      if let nonEmailFieldToVerify {
+        handleFieldToVerify(signUp: signUp, field: nonEmailFieldToVerify)
+      } else if let nextFieldToCollect = signUp.firstFieldToCollect {
+        handleFieldToCollect(signUp: signUp, field: nextFieldToCollect)
+      } else if let firstFieldToVerify = signUp.firstFieldToVerify {
+        handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
+      }
+    } else {
+      if let firstFieldToVerify = signUp.firstFieldToVerify {
+        handleFieldToVerify(signUp: signUp, field: firstFieldToVerify)
+      } else if let nextFieldToCollect = signUp.firstFieldToCollect {
+        handleFieldToCollect(signUp: signUp, field: nextFieldToCollect)
+      }
     }
   }
 
@@ -137,7 +154,11 @@ final class AuthNavigation {
         path = []
         return
       }
-      path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      if signUp.emailVerificationStrategy == .emailLink {
+        path.append(AuthView.Destination.signUpEmailLink)
+      } else {
+        path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      }
     case .phoneNumber:
       guard let phoneNumber = signUp.phoneNumber else {
         path = []

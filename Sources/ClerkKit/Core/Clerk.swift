@@ -191,6 +191,8 @@ public final class Clerk {
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
+  /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
+  private let urlHandlingCoordinator = URLHandlingCoordinator()
 
   /// The main entry point for all authentication operations.
   ///
@@ -472,17 +474,29 @@ extension Clerk {
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
-  /// be processed automatically. Unrecognized URLs are ignored.
+  /// be processed automatically and this method returns `true`. Unrecognized
+  /// URLs are ignored and this method returns `false`.
   ///
   /// ```swift
   /// .onOpenURL { url in
   ///   Task { try? await clerk.handle(url) }
   /// }
   /// ```
-  public func handle(_ url: URL) async throws {
-    if auth.canHandleMagicLinkCallback(url) {
-      try await auth.handleMagicLinkCallback(url)
+  @discardableResult
+  public func handle(_ url: URL) async throws -> Bool {
+    guard let route = try ClerkURLRoute(url: url) else { return false }
+
+    try await urlHandlingCoordinator.handle(route) { [auth] in
+      switch route {
+      case .magicLink(let flowId, let approvalToken):
+        try await auth.completeMagicLink(
+          flowId: flowId,
+          approvalToken: approvalToken
+        )
+      }
     }
+
+    return true
   }
 
   @MainActor
@@ -755,6 +769,7 @@ extension Clerk {
     invalidAuthRefreshTask = nil
     watchSyncRefreshTask?.cancel()
     watchSyncRefreshTask = nil
+    urlHandlingCoordinator.cancelAll()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
@@ -768,6 +783,7 @@ extension Clerk {
     watchSyncRefreshTask?.cancel()
     await watchSyncRefreshTask?.value
     watchSyncRefreshTask = nil
+    urlHandlingCoordinator.cancelAll()
 
     // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
     // from enqueuing new writes during the drain.

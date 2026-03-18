@@ -204,7 +204,7 @@ public struct AuthView: View {
         do {
           try await clerk.handle(url)
         } catch {
-          error = error
+          self.error = error
         }
       }
     }
@@ -303,6 +303,7 @@ extension AuthView {
     // Sign up
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
+    case signUpEmailLink
     case signUpCompleteProfile
 
     // Session tasks
@@ -346,6 +347,8 @@ extension AuthView {
         SignUpCollectFieldView(field: field)
       case let .signUpCode(field):
         SignUpCodeView(field: field)
+      case .signUpEmailLink:
+        EmailLinkVerificationView(mode: .signUp)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
       case .sessionTaskStart(let task):

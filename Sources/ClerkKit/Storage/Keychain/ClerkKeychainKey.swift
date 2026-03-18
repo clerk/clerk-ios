@@ -30,6 +30,6 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for App Attest key ID.
   case attestKeyId = "AttestKeyId"
 
-  /// Key for the pending native magic-link flow.
-  case pendingNativeMagicLinkFlow
+  /// Key for the pending magic-link flow.
+  case pendingMagicLinkFlow
 }
