@@ -373,6 +373,7 @@ extension AuthStartView {
   }
 
   private func storeIdentifierType() {
+    guard authState.persistsIdentifiers else { return }
     if phoneNumberFieldIsActive, phoneNumberIsEnabled {
       LastUsedAuth.storeIdentifierType(.phone)
     } else if authState.authStartIdentifier.isEmailAddress {

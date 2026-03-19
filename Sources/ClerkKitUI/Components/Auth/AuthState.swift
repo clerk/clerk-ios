@@ -18,8 +18,16 @@ final class AuthState {
   /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
 
-  init(mode: AuthView.Mode = .signInOrUp) {
+  /// Whether identifier values are persisted to `UserDefaults` between sessions.
+  private(set) var persistsIdentifiers: Bool = true
+
+  private let userDefaults: UserDefaults
+
+  init(mode: AuthView.Mode = .signInOrUp, userDefaults: UserDefaults = .standard) {
     self.mode = mode
+    self.userDefaults = userDefaults
+    authStartIdentifier = userDefaults.string(forKey: Self.identifierStorageKey) ?? ""
+    authStartPhoneNumber = userDefaults.string(forKey: Self.phoneNumberStorageKey) ?? ""
   }
 
   /// Whether this UI flow should allow transfer from sign-in to sign-up.
@@ -33,15 +41,46 @@ final class AuthState {
   }
 
   /// Auth Start Fields
-  var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
+  var authStartIdentifier = "" {
     didSet {
-      UserDefaults.standard.set(authStartIdentifier, forKey: "authStartIdentifier")
+      if persistsIdentifiers {
+        userDefaults.set(authStartIdentifier, forKey: Self.identifierStorageKey)
+      }
     }
   }
 
-  var authStartPhoneNumber: String = UserDefaults.standard.string(forKey: "authStartPhoneNumber") ?? "" {
+  var authStartPhoneNumber = "" {
     didSet {
-      UserDefaults.standard.set(authStartPhoneNumber, forKey: "authStartPhoneNumber")
+      if persistsIdentifiers {
+        userDefaults.set(authStartPhoneNumber, forKey: Self.phoneNumberStorageKey)
+      }
+    }
+  }
+
+  /// Applies initial identifier values and persistence configuration from the environment.
+  ///
+  /// Call this once when the view first appears so that environment-provided values
+  /// take effect before the user interacts with the form.
+  func configure(
+    initialIdentifier: String?,
+    initialPhoneNumber: String?,
+    persistsIdentifiers: Bool
+  ) {
+    self.persistsIdentifiers = persistsIdentifiers
+
+    if !persistsIdentifiers {
+      userDefaults.removeObject(forKey: Self.identifierStorageKey)
+      userDefaults.removeObject(forKey: Self.phoneNumberStorageKey)
+      LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
+      authStartIdentifier = initialIdentifier ?? ""
+      authStartPhoneNumber = initialPhoneNumber ?? ""
+    } else {
+      if let initialIdentifier {
+        authStartIdentifier = initialIdentifier
+      }
+      if let initialPhoneNumber {
+        authStartPhoneNumber = initialPhoneNumber
+      }
     }
   }
 
@@ -59,6 +98,11 @@ final class AuthState {
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
   var signUpLegalAccepted = false
+}
+
+extension AuthState {
+  static let identifierStorageKey = "authStartIdentifier"
+  static let phoneNumberStorageKey = "authStartPhoneNumber"
 }
 
 #endif

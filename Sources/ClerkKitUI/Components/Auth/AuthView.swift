@@ -65,6 +65,9 @@ public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.clerkInitialIdentifier) private var initialIdentifier
+  @Environment(\.clerkInitialPhoneNumber) private var initialPhoneNumber
+  @Environment(\.clerkPersistsIdentifiers) private var persistsIdentifiers
 
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
@@ -175,6 +178,13 @@ public struct AuthView: View {
       } else {
         navigation.path = []
       }
+    }
+    .onFirstAppear {
+      authState.configure(
+        initialIdentifier: initialIdentifier,
+        initialPhoneNumber: initialPhoneNumber,
+        persistsIdentifiers: persistsIdentifiers
+      )
     }
     .taskOnce {
       await clerk.telemetry.record(
