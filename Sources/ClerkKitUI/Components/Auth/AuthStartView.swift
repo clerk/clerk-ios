@@ -24,13 +24,6 @@ struct AuthStartView: View {
   @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
-  @State private var lastUsedAuth: LastUsedAuth?
-
-  // MARK: - Init
-
-  init() {
-    _lastUsedAuth = State(initialValue: LastUsedAuth(environment: Clerk.shared.environment))
-  }
 
   // MARK: - Configuration
 
@@ -85,7 +78,7 @@ struct AuthStartView: View {
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
     let providers = clerk.environment?.authenticatableSocialProviders ?? []
-    guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
+    guard let lastUsedSocialProvider = currentLastUsedAuth?.socialProvider else { return providers }
     return providers.filter { $0 != lastUsedSocialProvider }
   }
 
@@ -94,6 +87,11 @@ struct AuthStartView: View {
       emailOrUsernameEnabled: emailIsEnabled || usernameIsEnabled,
       phoneNumberEnabled: phoneNumberIsEnabled
     )
+  }
+
+  private var currentLastUsedAuth: LastUsedAuth? {
+    guard authState.shouldShowLastUsedAuth else { return nil }
+    return LastUsedAuth(environment: clerk.environment)
   }
 
   // MARK: - Display Strings
@@ -239,7 +237,7 @@ extension AuthStartView {
         fieldState: fieldError != nil ? .error : .default
       )
       .transition(.blurReplace)
-      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsPhoneBadge ?? false)
+      .lastUsedAuthBadgeOverlay(currentLastUsedAuth?.showsPhoneBadge ?? false)
     } else {
       VStack {
         ClerkTextField(
@@ -250,7 +248,7 @@ extension AuthStartView {
         .textContentType(.username)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
-        .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
+        .lastUsedAuthBadgeOverlay(currentLastUsedAuth?.showsEmailUsernameBadge ?? false)
       }
       .transition(.blurReplace)
     }
@@ -294,7 +292,7 @@ extension AuthStartView {
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
-      if let lastUsedProvider = lastUsedAuth?.socialProvider {
+      if let lastUsedProvider = currentLastUsedAuth?.socialProvider {
         SocialButton(provider: lastUsedProvider, transferable: authState.transferable) { result in
           handleTransferFlowResult(result)
         } onError: { error in

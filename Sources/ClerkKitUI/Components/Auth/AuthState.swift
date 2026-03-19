@@ -91,6 +91,10 @@ final class AuthState {
     }
   }
 
+  var shouldShowLastUsedAuth: Bool {
+    lastUsedAuthBehavior == .preserve
+  }
+
   /// Auth Start Fields
   var authStartIdentifier: String {
     didSet {
