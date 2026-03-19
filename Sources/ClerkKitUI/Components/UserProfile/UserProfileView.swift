@@ -230,17 +230,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     }
   }
 
-  /// The typed navigation engine for this `UserProfileView` instance. It owns the logic
-  /// for pushing onto either the parent `navigationPath` or the internal sheet stack.
-  private var navigator: UserProfileNavigator<Route> {
-    UserProfileNavigator(
-      push: { route in
-        navigate(to: .custom(route))
-      },
-      popToRoot: popToRoot
-    )
-  }
-
   private func navigate(to destination: UserProfileNavigationDestination<Route>) {
     if let navigationPath {
       navigationPath.wrappedValue.append(destination)
@@ -317,7 +306,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       view(for: destination)
         .environment(navigation)
         .environment(codeLimiter)
-        .environment(navigator)
+        .environment(
+          UserProfileNavigator(
+            push: { route in
+              navigate(to: .custom(route))
+            },
+            popToRoot: popToRoot
+          )
+        )
         .environment(
           UserProfileBuiltInRouter(
             push: { row in
@@ -354,7 +350,7 @@ extension UserProfileView {
       builtInRowView(builtInRow)
     case .custom(let customRow):
       row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
-        navigator.push(customRow.route)
+        navigate(to: .custom(customRow.route))
       }
     }
   }
@@ -363,7 +359,7 @@ extension UserProfileView {
     row(icon: rowType.icon, text: rowType.title) {
       switch rowType {
       case .manageAccount, .security:
-        navigator.push(rowType)
+        navigate(to: .builtIn(rowType))
       case .switchAccount:
         navigation.accountSwitcherIsPresented = true
       case .addAccount:
