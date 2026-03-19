@@ -224,7 +224,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           push: { row in
             navigate(to: .builtIn(row))
           },
-          popToRoot: popToRoot
+          dismissAction: dismissAction
         )
       )
     }
@@ -238,8 +238,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     }
   }
 
-  private func popToRoot(includingSelf: Bool) {
-    let extraRemoval = includingSelf ? 1 : 0
+  private func dismissAction(_ action: UserProfileDismissAction) {
+    let extraRemoval = action == .exitUserProfile ? 1 : 0
+
     if let navigationPath {
       let currentCount = navigationPath.wrappedValue.count
       let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
@@ -311,7 +312,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             push: { route in
               navigate(to: .custom(route))
             },
-            popToRoot: popToRoot
+            popToRoot: {
+              dismissAction(.popToRoot)
+            }
           )
         )
         .environment(
@@ -319,7 +322,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             push: { row in
               navigate(to: .builtIn(row))
             },
-            popToRoot: popToRoot
+            dismissAction: dismissAction
           )
         )
     }

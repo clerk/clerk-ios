@@ -40,11 +40,11 @@ final class UserProfileSheetNavigation {
 @Observable
 public final class UserProfileNavigator<Route: Hashable> {
   private let pushRow: @MainActor (Route) -> Void
-  private let popToRootAction: @MainActor (_ includingSelf: Bool) -> Void
+  private let popToRootAction: @MainActor () -> Void
 
   init(
     push: @escaping @MainActor (Route) -> Void,
-    popToRoot: @escaping @MainActor (_ includingSelf: Bool) -> Void
+    popToRoot: @escaping @MainActor () -> Void
   ) {
     pushRow = push
     popToRootAction = popToRoot
@@ -54,8 +54,10 @@ public final class UserProfileNavigator<Route: Hashable> {
     pushRow(route)
   }
 
-  public func popToRoot(_ includingSelf: Bool = false) {
-    popToRootAction(includingSelf)
+  /// Pops any pushed custom destinations and returns to the root screen of
+  /// `UserProfileView`.
+  public func popToRoot() {
+    popToRootAction()
   }
 }
 
@@ -64,28 +66,33 @@ enum UserProfileNavigationDestination<Route: Hashable>: Hashable {
   case custom(Route)
 }
 
+enum UserProfileDismissAction {
+  case popToRoot
+  case exitUserProfile
+}
+
 /// Internal built-in-only adapter for Clerk-owned child views that should not know about
 /// the host app's custom `Route` type but still need to trigger profile navigation.
 @MainActor
 @Observable
 final class UserProfileBuiltInRouter {
   private let pushRow: @MainActor (UserProfileRow) -> Void
-  private let popToRootAction: @MainActor (_ includingSelf: Bool) -> Void
+  private let dismissAction: @MainActor (UserProfileDismissAction) -> Void
 
   init(
     push: @escaping @MainActor (UserProfileRow) -> Void,
-    popToRoot: @escaping @MainActor (_ includingSelf: Bool) -> Void
+    dismissAction: @escaping @MainActor (UserProfileDismissAction) -> Void
   ) {
     pushRow = push
-    popToRootAction = popToRoot
+    self.dismissAction = dismissAction
   }
 
   func push(_ row: UserProfileRow) {
     pushRow(row)
   }
 
-  func popToRoot(_ includingSelf: Bool = false) {
-    popToRootAction(includingSelf)
+  func dismiss(_ action: UserProfileDismissAction) {
+    dismissAction(action)
   }
 }
 
