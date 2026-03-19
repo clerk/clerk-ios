@@ -81,12 +81,14 @@ struct AuthStateTests {
     let defaults = makeDefaults()
     LastUsedAuth.storeIdentifierType(.email, defaults: defaults)
 
-    _ = AuthState(
+    let authState = AuthState(
       mode: .signInOrUp,
       identifierPrefill: .empty,
       lastUsedAuthBehavior: .preserve,
       defaults: defaults
     )
+
+    authState.applyInitialPersistenceIfNeeded()
 
     #expect(LastUsedAuth.retrieveStoredIdentifierType(defaults: defaults) == .email)
   }
