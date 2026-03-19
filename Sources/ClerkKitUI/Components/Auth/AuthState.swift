@@ -77,9 +77,13 @@ final class AuthState {
     } else {
       if let initialIdentifier {
         authStartIdentifier = initialIdentifier
+      } else if initialPhoneNumber != nil {
+        authStartIdentifier = ""
       }
       if let initialPhoneNumber {
         authStartPhoneNumber = initialPhoneNumber
+      } else if initialIdentifier != nil {
+        authStartPhoneNumber = ""
       }
     }
   }

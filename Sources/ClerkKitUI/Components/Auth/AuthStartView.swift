@@ -18,6 +18,9 @@ struct AuthStartView: View {
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
   @Environment(\.dismissKeyboard) private var dismissKeyboard
+  @Environment(\.clerkInitialIdentifier) private var initialIdentifier
+  @Environment(\.clerkInitialPhoneNumber) private var initialPhoneNumber
+  @Environment(\.clerkPersistsIdentifiers) private var persistsIdentifiers
 
   // MARK: - State
 
@@ -25,12 +28,6 @@ struct AuthStartView: View {
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var lastUsedAuth: LastUsedAuth?
-
-  // MARK: - Init
-
-  init() {
-    _lastUsedAuth = State(initialValue: LastUsedAuth(environment: Clerk.shared.environment))
-  }
 
   // MARK: - Configuration
 
@@ -182,8 +179,13 @@ struct AuthStartView: View {
     .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
       $1 != nil
     }
-    .taskOnce {
-      if shouldStartOnPhoneNumber {
+    .onFirstAppear {
+      if persistsIdentifiers {
+        lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
+      }
+      if initialIdentifier != nil || initialPhoneNumber != nil {
+        phoneNumberFieldIsActive = shouldStartOnPhoneNumber
+      } else if shouldStartOnPhoneNumber {
         phoneNumberFieldIsActive = true
       }
     }

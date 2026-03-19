@@ -13,7 +13,7 @@ extension EnvironmentValues {
   @Entry var clerkPersistsIdentifiers: Bool = true
 }
 
-extension AuthView {
+extension View {
   /// Sets the initial value for the email or username field on the auth screen.
   ///
   /// Use this to pre-fill the identifier field when presenting `AuthView`.

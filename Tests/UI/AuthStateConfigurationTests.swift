@@ -108,6 +108,38 @@ struct AuthStateConfigurationTests {
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
   }
 
+  @Test
+  func initialPhoneNumberClearsStoredIdentifier() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(
+      initialIdentifier: nil,
+      initialPhoneNumber: "15555550100",
+      persistsIdentifiers: true
+    )
+
+    #expect(authState.authStartIdentifier.isEmpty)
+    #expect(authState.authStartPhoneNumber == "15555550100")
+  }
+
+  @Test
+  func initialIdentifierClearsStoredPhoneNumber() {
+    let defaults = makeUserDefaults()
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(
+      initialIdentifier: "seed@example.com",
+      initialPhoneNumber: nil,
+      persistsIdentifiers: true
+    )
+
+    #expect(authState.authStartIdentifier == "seed@example.com")
+    #expect(authState.authStartPhoneNumber.isEmpty)
+  }
+
   private func makeUserDefaults() -> UserDefaults {
     let suiteName = "AuthStateConfigurationTests.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suiteName)!
