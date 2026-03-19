@@ -222,7 +222,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       .environment(
         UserProfileBuiltInRouter(
           push: { row in
-            navigator.push(row)
+            navigate(to: .builtIn(row))
           },
           popToRoot: popToRoot
         )
@@ -234,15 +234,19 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   /// for pushing onto either the parent `navigationPath` or the internal sheet stack.
   private var navigator: UserProfileNavigator<Route> {
     UserProfileNavigator(
-      pushDestination: { destination in
-        if let navigationPath {
-          navigationPath.wrappedValue.append(destination)
-        } else {
-          internalPath.append(destination)
-        }
+      push: { route in
+        navigate(to: .custom(route))
       },
       popToRoot: popToRoot
     )
+  }
+
+  private func navigate(to destination: UserProfileNavigationDestination<Route>) {
+    if let navigationPath {
+      navigationPath.wrappedValue.append(destination)
+    } else {
+      internalPath.append(destination)
+    }
   }
 
   private func popToRoot(includingSelf: Bool) {
@@ -310,14 +314,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
     }
     .navigationDestination(for: UserProfileNavigationDestination<Route>.self) { destination in
-      destinationView(for: destination)
+      view(for: destination)
         .environment(navigation)
         .environment(codeLimiter)
         .environment(navigator)
         .environment(
           UserProfileBuiltInRouter(
             push: { row in
-              navigator.push(row)
+              navigate(to: .builtIn(row))
             },
             popToRoot: popToRoot
           )
@@ -402,7 +406,7 @@ extension UserProfileView {
   }
 
   @ViewBuilder
-  fileprivate func destinationView(for destination: UserProfileNavigationDestination<Route>) -> some View {
+  fileprivate func view(for destination: UserProfileNavigationDestination<Route>) -> some View {
     switch destination {
     case .builtIn(.manageAccount):
       UserProfileDetailView()

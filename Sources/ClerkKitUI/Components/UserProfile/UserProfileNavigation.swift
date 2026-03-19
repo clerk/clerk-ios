@@ -28,7 +28,8 @@ final class UserProfileSheetNavigation {
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 }
 
-/// Navigation API for navigating inside `UserProfileView` and custom destinations.
+/// Navigation API for navigating from custom rows to custom destinations inside
+/// `UserProfileView`.
 ///
 /// Custom destination views can read this value using:
 ///
@@ -38,23 +39,19 @@ final class UserProfileSheetNavigation {
 @MainActor
 @Observable
 public final class UserProfileNavigator<Route: Hashable> {
-  private let pushDestination: @MainActor (UserProfileNavigationDestination<Route>) -> Void
+  private let pushRow: @MainActor (Route) -> Void
   private let popToRootAction: @MainActor (_ includingSelf: Bool) -> Void
 
   init(
-    pushDestination: @escaping @MainActor (UserProfileNavigationDestination<Route>) -> Void,
+    push: @escaping @MainActor (Route) -> Void,
     popToRoot: @escaping @MainActor (_ includingSelf: Bool) -> Void
   ) {
-    self.pushDestination = pushDestination
+    pushRow = push
     popToRootAction = popToRoot
   }
 
-  public func push(_ row: UserProfileRow) {
-    pushDestination(.builtIn(row))
-  }
-
   public func push(_ route: Route) {
-    pushDestination(.custom(route))
+    pushRow(route)
   }
 
   public func popToRoot(_ includingSelf: Bool = false) {
