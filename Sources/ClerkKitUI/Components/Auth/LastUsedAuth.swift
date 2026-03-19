@@ -76,8 +76,7 @@ enum LastUsedAuth: Equatable {
   }
 
   static func storeIdentifierType(_ identifier: LastUsedAuth, defaults: UserDefaults = .standard) {
-    guard let rawValue = identifier.identifierStorageValue else { return }
-    storeIdentifierType(rawValue, defaults: defaults)
+    storeIdentifierType(identifier.identifierStorageValue, defaults: defaults)
   }
 
   static func retrieveStoredIdentifierType(defaults: UserDefaults = .standard) -> LastUsedAuth? {
