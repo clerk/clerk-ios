@@ -105,6 +105,16 @@ public struct AuthView: View {
     case phoneNumber(String)
   }
 
+  /// Configures whether the auth view should preserve or clear the last-used
+  /// auth metadata that powers the "last used" badge.
+  public enum LastUsedAuthBehavior: Equatable, Sendable {
+    /// Preserves the existing last-used auth metadata.
+    case preserve
+
+    /// Clears any stored last-used auth metadata before the auth form is shown.
+    case clear
+  }
+
   let isDismissable: Bool
 
   /// Creates a new authentication view.
@@ -119,12 +129,20 @@ public struct AuthView: View {
   ///   - identifierPrefill: Controls whether the auth form should use persisted
   ///     identifier values, clear them, or prefill a specific email, username,
   ///     or phone number. Defaults to `.persisted`.
+  ///   - lastUsedAuthBehavior: Controls whether the auth view should preserve
+  ///     or clear the last-used auth metadata used for badge display.
+  ///     Defaults to `.preserve`.
   public init(
     mode: Mode = .signInOrUp,
     isDismissable: Bool = true,
-    identifierPrefill: IdentifierPrefill = .persisted
+    identifierPrefill: IdentifierPrefill = .persisted,
+    lastUsedAuthBehavior: LastUsedAuthBehavior = .preserve
   ) {
-    _authState = State(initialValue: AuthState(mode: mode, identifierPrefill: identifierPrefill))
+    _authState = State(initialValue: AuthState(
+      mode: mode,
+      identifierPrefill: identifierPrefill,
+      lastUsedAuthBehavior: lastUsedAuthBehavior
+    ))
     self.isDismissable = isDismissable
   }
 

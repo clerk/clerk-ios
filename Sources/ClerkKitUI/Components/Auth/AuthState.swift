@@ -19,6 +19,17 @@ final class AuthState {
     case automatic
     case identifier
     case phoneNumber
+
+    func normalized(emailOrUsernameEnabled: Bool, phoneNumberEnabled: Bool) -> Self {
+      switch self {
+      case .identifier where !emailOrUsernameEnabled:
+        phoneNumberEnabled ? .phoneNumber : .automatic
+      case .phoneNumber where !phoneNumberEnabled:
+        emailOrUsernameEnabled ? .identifier : .automatic
+      case .automatic, .identifier, .phoneNumber:
+        self
+      }
+    }
   }
 
   /// The authentication mode (signIn, signUp, or signInOrUp).
@@ -29,10 +40,15 @@ final class AuthState {
   init(
     mode: AuthView.Mode = .signInOrUp,
     identifierPrefill: AuthView.IdentifierPrefill = .persisted,
+    lastUsedAuthBehavior: AuthView.LastUsedAuthBehavior = .preserve,
     defaults: UserDefaults = .standard
   ) {
     self.mode = mode
     self.defaults = defaults
+
+    if lastUsedAuthBehavior == .clear {
+      LastUsedAuth.clearStoredIdentifierType(defaults: defaults)
+    }
 
     switch identifierPrefill {
     case .persisted:
@@ -48,14 +64,12 @@ final class AuthState {
     case .identifier(let value):
       AuthStartStorage.clearPrefillState(defaults: defaults)
       AuthStartStorage.storeIdentifier(value, defaults: defaults)
-      AuthStartStorage.storeIdentifierType(value.isEmailAddress ? "email" : "username", defaults: defaults)
       authStartIdentifier = value
       authStartPhoneNumber = ""
       preferredStartField = .identifier
     case .phoneNumber(let value):
       AuthStartStorage.clearPrefillState(defaults: defaults)
       AuthStartStorage.storePhoneNumber(value, defaults: defaults)
-      AuthStartStorage.storeIdentifierType("phone", defaults: defaults)
       authStartIdentifier = ""
       authStartPhoneNumber = value
       preferredStartField = .phoneNumber

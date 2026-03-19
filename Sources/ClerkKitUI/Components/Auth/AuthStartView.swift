@@ -89,6 +89,13 @@ struct AuthStartView: View {
     return providers.filter { $0 != lastUsedSocialProvider }
   }
 
+  private var normalizedPreferredStartField: AuthState.PreferredStartField {
+    authState.preferredStartField.normalized(
+      emailOrUsernameEnabled: emailIsEnabled || usernameIsEnabled,
+      phoneNumberEnabled: phoneNumberIsEnabled
+    )
+  }
+
   // MARK: - Display Strings
 
   private var titleString: LocalizedStringKey {
@@ -182,17 +189,8 @@ struct AuthStartView: View {
     .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
       $1 != nil
     }
-    .taskOnce {
-      switch authState.preferredStartField {
-      case .identifier:
-        phoneNumberFieldIsActive = false
-      case .phoneNumber:
-        phoneNumberFieldIsActive = true
-      case .automatic:
-        if shouldStartOnPhoneNumber {
-          phoneNumberFieldIsActive = true
-        }
-      }
+    .onChange(of: normalizedPreferredStartField, initial: true) { _, preferredStartField in
+      applyPreferredStartField(preferredStartField)
     }
   }
 }
@@ -200,6 +198,21 @@ struct AuthStartView: View {
 // MARK: - Subviews
 
 extension AuthStartView {
+  private func applyPreferredStartField(_ preferredStartField: AuthState.PreferredStartField) {
+    switch preferredStartField {
+    case .identifier:
+      phoneNumberFieldIsActive = false
+    case .phoneNumber:
+      phoneNumberFieldIsActive = true
+    case .automatic:
+      if shouldStartOnPhoneNumber {
+        phoneNumberFieldIsActive = true
+      } else if !phoneNumberIsEnabled {
+        phoneNumberFieldIsActive = false
+      }
+    }
+  }
+
   private var headerSection: some View {
     VStack(spacing: 8) {
       HeaderView(style: .title, text: titleString)
