@@ -217,6 +217,9 @@ public struct AuthView: View {
       }
     }
     .taskOnce {
+      authState.applyInitialPersistenceIfNeeded()
+    }
+    .taskOnce {
       await clerk.telemetry.record(
         TelemetryEvents.viewDidAppear(
           "AuthView",

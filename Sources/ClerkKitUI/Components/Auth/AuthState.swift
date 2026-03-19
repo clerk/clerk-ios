@@ -32,10 +32,19 @@ final class AuthState {
     }
   }
 
+  enum InitialPersistenceBehavior: Equatable {
+    case none
+    case clearPrefill
+    case storeIdentifier(String)
+    case storePhoneNumber(String)
+  }
+
   /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
   let preferredStartField: PreferredStartField
   private let defaults: UserDefaults
+  private let initialPersistenceBehavior: InitialPersistenceBehavior
+  private let lastUsedAuthBehavior: AuthView.LastUsedAuthBehavior
 
   init(
     mode: AuthView.Mode = .signInOrUp,
@@ -45,10 +54,7 @@ final class AuthState {
   ) {
     self.mode = mode
     self.defaults = defaults
-
-    if lastUsedAuthBehavior == .clear {
-      LastUsedAuth.clearStoredIdentifierType(defaults: defaults)
-    }
+    self.lastUsedAuthBehavior = lastUsedAuthBehavior
 
     switch identifierPrefill {
     case .persisted:
@@ -56,23 +62,22 @@ final class AuthState {
       authStartIdentifier = persisted.identifier
       authStartPhoneNumber = persisted.phoneNumber
       preferredStartField = .automatic
+      initialPersistenceBehavior = .none
     case .empty:
-      AuthStartStorage.clearPrefillState(defaults: defaults)
       authStartIdentifier = ""
       authStartPhoneNumber = ""
       preferredStartField = .automatic
+      initialPersistenceBehavior = .clearPrefill
     case .identifier(let value):
-      AuthStartStorage.clearPrefillState(defaults: defaults)
-      AuthStartStorage.storeIdentifier(value, defaults: defaults)
       authStartIdentifier = value
       authStartPhoneNumber = ""
       preferredStartField = .identifier
+      initialPersistenceBehavior = .storeIdentifier(value)
     case .phoneNumber(let value):
-      AuthStartStorage.clearPrefillState(defaults: defaults)
-      AuthStartStorage.storePhoneNumber(value, defaults: defaults)
       authStartIdentifier = ""
       authStartPhoneNumber = value
       preferredStartField = .phoneNumber
+      initialPersistenceBehavior = .storePhoneNumber(value)
     }
   }
 
@@ -96,6 +101,25 @@ final class AuthState {
   var authStartPhoneNumber: String {
     didSet {
       AuthStartStorage.storePhoneNumber(authStartPhoneNumber, defaults: defaults)
+    }
+  }
+
+  func applyInitialPersistenceIfNeeded() {
+    if lastUsedAuthBehavior == .clear {
+      LastUsedAuth.clearStoredIdentifierType(defaults: defaults)
+    }
+
+    switch initialPersistenceBehavior {
+    case .none:
+      break
+    case .clearPrefill:
+      AuthStartStorage.clearPrefillState(defaults: defaults)
+    case .storeIdentifier(let value):
+      AuthStartStorage.clearPrefillState(defaults: defaults)
+      AuthStartStorage.storeIdentifier(value, defaults: defaults)
+    case .storePhoneNumber(let value):
+      AuthStartStorage.clearPrefillState(defaults: defaults)
+      AuthStartStorage.storePhoneNumber(value, defaults: defaults)
     }
   }
 

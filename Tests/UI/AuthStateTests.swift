@@ -44,6 +44,13 @@ struct AuthStateTests {
     #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(authState.preferredStartField == .automatic)
     #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
+      identifier: "persisted@example.com",
+      phoneNumber: "+15555550123"
+    ))
+
+    authState.applyInitialPersistenceIfNeeded()
+
+    #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
       identifier: "",
       phoneNumber: ""
     ))
@@ -55,12 +62,16 @@ struct AuthStateTests {
     let defaults = makeDefaults()
     LastUsedAuth.storeIdentifierType(.email, defaults: defaults)
 
-    _ = AuthState(
+    let authState = AuthState(
       mode: .signInOrUp,
       identifierPrefill: .persisted,
       lastUsedAuthBehavior: .clear,
       defaults: defaults
     )
+
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(defaults: defaults) == .email)
+
+    authState.applyInitialPersistenceIfNeeded()
 
     #expect(LastUsedAuth.retrieveStoredIdentifierType(defaults: defaults) == nil)
   }
@@ -96,6 +107,13 @@ struct AuthStateTests {
     #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(authState.preferredStartField == .identifier)
     #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
+      identifier: "",
+      phoneNumber: "+15555550123"
+    ))
+
+    authState.applyInitialPersistenceIfNeeded()
+
+    #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
       identifier: "person@example.com",
       phoneNumber: ""
     ))
@@ -117,6 +135,13 @@ struct AuthStateTests {
     #expect(authState.authStartIdentifier.isEmpty)
     #expect(authState.authStartPhoneNumber == "+15555550123")
     #expect(authState.preferredStartField == .phoneNumber)
+    #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
+      identifier: "persisted@example.com",
+      phoneNumber: ""
+    ))
+
+    authState.applyInitialPersistenceIfNeeded()
+
     #expect(AuthStartStorage.loadPrefillState(defaults: defaults) == .init(
       identifier: "",
       phoneNumber: "+15555550123"
