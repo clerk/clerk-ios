@@ -77,11 +77,11 @@ enum LastUsedAuth: Equatable {
 
   static func storeIdentifierType(_ identifier: LastUsedAuth) {
     guard let rawValue = identifier.identifierStorageValue else { return }
-    UserDefaults.standard.set(rawValue, forKey: identifierStorageKey)
+    AuthStartStorage.storeIdentifierType(rawValue)
   }
 
   static func retrieveStoredIdentifierType() -> LastUsedAuth? {
-    guard let rawValue = UserDefaults.standard.string(forKey: identifierStorageKey) else {
+    guard let rawValue = AuthStartStorage.loadPrefillState().identifierType else {
       return nil
     }
 
@@ -98,13 +98,11 @@ enum LastUsedAuth: Equatable {
   }
 
   static func clearStoredIdentifierType() {
-    UserDefaults.standard.removeObject(forKey: identifierStorageKey)
+    AuthStartStorage.storeIdentifierType(nil)
   }
 }
 
 extension LastUsedAuth {
-  fileprivate static let identifierStorageKey = "clerk_last_used_identifier_type"
-
   fileprivate static func shouldShowBadge(
     for strategies: [FactorStrategy],
     lastAuth: FactorStrategy,

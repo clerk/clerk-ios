@@ -183,8 +183,25 @@ struct AuthStartView: View {
       $1 != nil
     }
     .taskOnce {
-      if shouldStartOnPhoneNumber {
+      switch authState.preferredStartField {
+      case .identifier:
+        phoneNumberFieldIsActive = false
+      case .phoneNumber:
         phoneNumberFieldIsActive = true
+      case .automatic:
+        if shouldStartOnPhoneNumber {
+          phoneNumberFieldIsActive = true
+        }
+      }
+    }
+    .onChange(of: authState.preferredStartField) { _, preferredStartField in
+      switch preferredStartField {
+      case .identifier:
+        phoneNumberFieldIsActive = false
+      case .phoneNumber:
+        phoneNumberFieldIsActive = true
+      case .automatic:
+        break
       }
     }
   }

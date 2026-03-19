@@ -90,6 +90,21 @@ public struct AuthView: View {
     case signUp
   }
 
+  /// Configures how the auth form pre-fills its identifier fields.
+  public enum IdentifierPrefill: Equatable, Sendable {
+    /// Uses the identifier values persisted from previous auth flows.
+    case persisted
+
+    /// Clears any persisted identifier values before the auth form is shown.
+    case empty
+
+    /// Prefills the email or username identifier field with the provided value.
+    case identifier(String)
+
+    /// Prefills the phone number field with the provided value.
+    case phoneNumber(String)
+  }
+
   let isDismissable: Bool
 
   /// Creates a new authentication view.
@@ -101,8 +116,15 @@ public struct AuthView: View {
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: AuthState(mode: mode))
+  ///   - identifierPrefill: Controls whether the auth form should use persisted
+  ///     identifier values, clear them, or prefill a specific email, username,
+  ///     or phone number. Defaults to `.persisted`.
+  public init(
+    mode: Mode = .signInOrUp,
+    isDismissable: Bool = true,
+    identifierPrefill: IdentifierPrefill = .persisted
+  ) {
+    _authState = State(initialValue: AuthState(mode: mode, identifierPrefill: identifierPrefill))
     self.isDismissable = isDismissable
   }
 
