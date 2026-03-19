@@ -194,16 +194,6 @@ struct AuthStartView: View {
         }
       }
     }
-    .onChange(of: authState.preferredStartField) { _, preferredStartField in
-      switch preferredStartField {
-      case .identifier:
-        phoneNumberFieldIsActive = false
-      case .phoneNumber:
-        phoneNumberFieldIsActive = true
-      case .automatic:
-        break
-      }
-    }
   }
 }
 
