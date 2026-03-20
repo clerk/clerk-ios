@@ -28,7 +28,7 @@ final class UserProfileSheetNavigation {
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 }
 
-/// Navigation API for navigating from custom items to custom destinations inside
+/// Navigation API for navigating from custom rows to custom destinations inside
 /// `UserProfileView`.
 ///
 /// Custom destination views can read this value using:

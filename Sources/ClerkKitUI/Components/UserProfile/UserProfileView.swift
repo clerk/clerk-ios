@@ -73,7 +73,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// With custom items:
+/// With custom rows:
 ///
 /// ```swift
 /// enum ProfileRoute: Hashable {
@@ -82,7 +82,7 @@ import SwiftUI
 /// }
 ///
 /// UserProfileView()
-///   .userProfileItems([
+///   .userProfileRows([
 ///     .init(route: .billing, title: "Billing", icon: .asset(name: "icon-card"), placement: .after(.security)),
 ///     .init(route: .preferences, title: "Preferences", icon: .system(name: "gear"), placement: .before(.signOut)),
 ///   ])
@@ -105,7 +105,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
-  private let customItems: [UserProfileCustomItem<Route>]
+  private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
@@ -119,12 +119,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   init(
     isDismissable: Bool,
     navigationPath: Binding<NavigationPath>?,
-    customItems: [UserProfileCustomItem<Route>],
+    customRows: [UserProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
-    self.customItems = customItems
+    self.customRows = customRows
     self.customDestination = customDestination
   }
 
@@ -147,7 +147,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     self.init(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
-      customItems: [],
+      customRows: [],
       customDestination: nil
     )
   }
@@ -326,47 +326,47 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 // MARK: - View Modifiers
 
 extension UserProfileView {
-  /// Replaces the custom items rendered on the root user profile screen.
-  public func userProfileItems(
-    _ items: [UserProfileCustomItem<Route>]
+  /// Replaces the custom rows rendered on the root user profile screen.
+  public func userProfileRows(
+    _ rows: [UserProfileCustomRow<Route>]
   ) -> UserProfileView<Route, Destination> {
     UserProfileView<Route, Destination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
-      customItems: items,
+      customRows: rows,
       customDestination: customDestination
     )
   }
 }
 
 extension UserProfileView where Destination == EmptyView {
-  /// Sets the custom destination builder used by custom user profile items.
+  /// Sets the custom destination builder used by custom user profile rows.
   public func userProfileDestination<NewDestination: View>(
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> UserProfileView<Route, NewDestination> {
     UserProfileView<Route, NewDestination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
-      customItems: customItems,
+      customRows: customRows,
       customDestination: destination
     )
   }
 }
 
 extension UserProfileView where Route == Never, Destination == EmptyView {
-  /// Sets the custom items rendered on the root user profile screen.
-  public func userProfileItems<NewRoute: Hashable>(
-    _ items: [UserProfileCustomItem<NewRoute>]
+  /// Sets the custom rows rendered on the root user profile screen.
+  public func userProfileRows<NewRoute: Hashable>(
+    _ rows: [UserProfileCustomRow<NewRoute>]
   ) -> UserProfileView<NewRoute, EmptyView> {
     UserProfileView<NewRoute, EmptyView>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
-      customItems: items,
+      customRows: rows,
       customDestination: nil
     )
   }
 
-  /// Sets the custom destination builder used by custom user profile items.
+  /// Sets the custom destination builder used by custom user profile rows.
   public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
     for _: NewRoute.Type = NewRoute.self,
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
@@ -374,7 +374,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
     UserProfileView<NewRoute, NewDestination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
-      customItems: [],
+      customRows: [],
       customDestination: destination
     )
   }
@@ -402,9 +402,9 @@ extension UserProfileView {
     switch listRow {
     case .builtIn(let builtInRow):
       builtInRowView(builtInRow)
-    case .custom(let customItem):
-      row(icon: customItem.icon, text: customItem.title, bundle: customItem.bundle) {
-        navigate(to: .custom(customItem.route))
+    case .custom(let customRow, _):
+      row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
+        navigate(to: .custom(customRow.route))
       }
     }
   }
@@ -481,30 +481,39 @@ extension UserProfileView {
     builtInRows: [UserProfileRow],
     in section: UserProfileSection
   ) -> [UserProfileListRow<Route>] {
-    let sectionCustomItems = customItems.filter { $0.placement.section == section }
+    let sectionCustomRows = customRows.filter { $0.placement.section == section }
 
-    let sectionStartRows = sectionCustomItems.filter { $0.placement.isSectionStart }
-    let sectionEndRows = sectionCustomItems.filter { $0.placement.isSectionEnd }
+    let sectionStartRows = sectionCustomRows.filter { $0.placement.isSectionStart }
+    let sectionEndRows = sectionCustomRows.filter { $0.placement.isSectionEnd }
 
-    let rowsBeforeAnchor = sectionCustomItems.reduce(into: [UserProfileRow: [UserProfileCustomItem<Route>]]()) { result, customItem in
-      guard case .before(let anchor) = customItem.placement else { return }
-      result[anchor, default: []].append(customItem)
+    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
+      guard case .before(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
     }
 
-    let rowsAfterAnchor = sectionCustomItems.reduce(into: [UserProfileRow: [UserProfileCustomItem<Route>]]()) { result, customItem in
-      guard case .after(let anchor) = customItem.placement else { return }
-      result[anchor, default: []].append(customItem)
+    let rowsAfterAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
+      guard case .after(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
     }
 
-    var rows = sectionStartRows.map(UserProfileListRow.custom)
+    var routeOccurrences = [AnyHashable: Int]()
+
+    func nextCustomRow(_ customRow: UserProfileCustomRow<Route>) -> UserProfileListRow<Route> {
+      let key = AnyHashable(customRow.route)
+      let occurrence = routeOccurrences[key, default: 0]
+      routeOccurrences[key] = occurrence + 1
+      return .custom(customRow, occurrence: occurrence)
+    }
+
+    var rows: [UserProfileListRow<Route>] = sectionStartRows.map(nextCustomRow)
 
     for builtInRow in builtInRows {
-      rows.append(contentsOf: rowsBeforeAnchor[builtInRow, default: []].map(UserProfileListRow.custom))
+      rows.append(contentsOf: rowsBeforeAnchor[builtInRow, default: []].map(nextCustomRow))
       rows.append(.builtIn(builtInRow))
-      rows.append(contentsOf: rowsAfterAnchor[builtInRow, default: []].map(UserProfileListRow.custom))
+      rows.append(contentsOf: rowsAfterAnchor[builtInRow, default: []].map(nextCustomRow))
     }
 
-    rows.append(contentsOf: sectionEndRows.map(UserProfileListRow.custom))
+    rows.append(contentsOf: sectionEndRows.map(nextCustomRow))
     return rows
   }
 }
@@ -543,24 +552,24 @@ extension UserProfileView {
 
 private enum UserProfileListRow<Route: Hashable>: Identifiable {
   case builtIn(UserProfileRow)
-  case custom(UserProfileCustomItem<Route>)
+  case custom(UserProfileCustomRow<Route>, occurrence: Int)
 
   var id: UserProfileListRowID<Route> {
     switch self {
     case .builtIn(let row):
       .builtIn(row)
-    case .custom(let row):
-      .custom(row.route)
+    case .custom(let row, let occurrence):
+      .custom(route: row.route, occurrence: occurrence)
     }
   }
 }
 
 private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case builtIn(UserProfileRow)
-  case custom(Route)
+  case custom(route: Route, occurrence: Int)
 }
 
-extension UserProfileCustomItemPlacement {
+extension UserProfileCustomRowPlacement {
   fileprivate var section: UserProfileSection {
     switch self {
     case .sectionStart(let section):
@@ -724,16 +733,16 @@ private struct UserProfileHeaderView: View {
     .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("With custom items") {
+#Preview("With custom rows") {
   UserProfileView()
-    .userProfileItems([
-      UserProfileCustomItem(
+    .userProfileRows([
+      UserProfileCustomRow(
         route: "billing",
         title: "Billing",
         icon: .asset(name: "icon-security"),
         placement: .after(.security)
       ),
-      UserProfileCustomItem(
+      UserProfileCustomRow(
         route: "preferences",
         title: "Preferences",
         icon: .asset(name: "icon-switch"),
