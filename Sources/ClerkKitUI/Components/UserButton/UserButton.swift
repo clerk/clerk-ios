@@ -149,7 +149,13 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     .sheet(item: $presentedSheet) { sheet in
       switch sheet {
       case .userProfile:
-        userProfileSheet
+        UserProfileView(
+          isDismissable: true,
+          navigationPath: nil,
+          customItems: customItems,
+          customDestination: customDestination
+        )
+        .presentationDragIndicator(.visible)
       case .sessionTaskAuth:
         AuthView()
           .presentationDragIndicator(.visible)
@@ -185,16 +191,6 @@ extension UserButton {
       customDestination: customDestination,
       signedOutContent: signedOutContent
     )
-  }
-
-  private var userProfileSheet: some View {
-    UserProfileView(
-      isDismissable: true,
-      navigationPath: nil,
-      customItems: customItems,
-      customDestination: customDestination
-    )
-    .presentationDragIndicator(.visible)
   }
 
   private func handleTap() {
