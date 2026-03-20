@@ -9,11 +9,6 @@ import ClerkKit
 import NukeUI
 import SwiftUI
 
-enum UserButtonPresentationContext {
-  case standard
-  case sessionTaskToolbar
-}
-
 /// A circular button that displays the current user's profile image and opens the user profile when tapped.
 ///
 /// `UserButton` automatically displays the signed-in user's profile image in a circular button.
@@ -172,6 +167,11 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
     }
   }
+}
+
+enum UserButtonPresentationContext {
+  case standard
+  case sessionTaskToolbar
 }
 
 extension UserButton {
