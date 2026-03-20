@@ -11,7 +11,7 @@ import SwiftUI
 struct UserProfileSecurityView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileNavigation.self) private var navigation
+  @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var error: Error?
 
@@ -90,6 +90,7 @@ struct UserProfileSecurityView: View {
     UserProfileSecurityView()
   }
   .clerkPreview()
+  .environment(UserProfileSheetNavigation())
   .environment(\.clerkTheme, .clerk)
 }
 
