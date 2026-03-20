@@ -37,10 +37,7 @@ extension View {
   /// Controls whether auth identifier values are persisted between sessions.
   ///
   /// When set to `false`, any previously stored identifiers are cleared and
-  /// future changes will not be saved. This is useful on shared devices where
-  /// the previous user's information should not appear after sign-out.
-  ///
-  /// The default value is `true`, which preserves the existing persistence behavior.
+  /// future changes will not be saved. The default value is `true`.
   ///
   /// - Parameter persists: Whether to persist identifier values to storage.
   /// - Returns: A view with the identifier persistence behavior configured.

@@ -88,6 +88,11 @@ final class AuthState {
     }
   }
 
+  func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
+    guard persistsIdentifiers else { return }
+    LastUsedAuth.storeIdentifierType(identifierType, userDefaults: userDefaults)
+  }
+
   // Sign In Fields
   var signInPassword = ""
   var signInNewPassword = ""
