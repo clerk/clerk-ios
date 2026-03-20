@@ -1,5 +1,5 @@
 //
-//  UserProfileCustomRow.swift
+//  UserProfileCustomItem.swift
 //  Clerk
 //
 
@@ -8,25 +8,25 @@
 import Foundation
 import SwiftUI
 
-/// A custom row displayed alongside Clerk's built-in rows in ``UserProfileView``.
-public struct UserProfileCustomRow<Route: Hashable> {
+/// A custom item displayed alongside Clerk's built-in rows in ``UserProfileView``.
+public struct UserProfileCustomItem<Route: Hashable> {
   public let route: Route
   public let title: LocalizedStringKey
   public let icon: UserProfileRowIcon
   public let bundle: Bundle?
-  public let placement: UserProfileCustomRowPlacement
+  public let placement: UserProfileCustomItemPlacement
 
-  /// Creates a custom row for ``UserProfileView``.
+  /// Creates a custom item for ``UserProfileView``.
   ///
-  /// Rows that share the same placement are displayed in the order they appear in the
-  /// array passed to ``UserProfileView/init(isDismissable:navigationPath:customRows:destination:)``.
+  /// Items that share the same placement are displayed in the order they appear in the
+  /// array passed to ``UserProfileView/userProfileItems(_:)``.
   ///
   /// - Parameters:
-  ///   - route: The route that should be pushed when the row is tapped.
-  ///   - title: The row title.
-  ///   - icon: The icon displayed for the row.
+  ///   - route: The route that should be pushed when the item is tapped.
+  ///   - title: The item title.
+  ///   - icon: The icon displayed for the item.
   ///   - bundle: The bundle containing the icon and localized title. Defaults to the
-  ///   current environment's resource lookup. Pass a bundle when the row's assets or
+  ///   current environment's resource lookup. Pass a bundle when the item's assets or
   ///   localizations live outside the host app's default bundle.
   ///   - placement: The insertion point relative to Clerk's built-in rows.
   public init(
@@ -34,7 +34,7 @@ public struct UserProfileCustomRow<Route: Hashable> {
     title: LocalizedStringKey,
     icon: UserProfileRowIcon,
     bundle: Bundle? = nil,
-    placement: UserProfileCustomRowPlacement = .sectionEnd(.profile)
+    placement: UserProfileCustomItemPlacement = .sectionEnd(.profile)
   ) {
     self.route = route
     self.title = title
@@ -50,8 +50,8 @@ public enum UserProfileRowIcon: Hashable, Sendable {
   case system(name: String)
 }
 
-/// The placement of a custom row in ``UserProfileView``.
-public enum UserProfileCustomRowPlacement: Sendable {
+/// The placement of a custom item in ``UserProfileView``.
+public enum UserProfileCustomItemPlacement: Sendable {
   case sectionStart(UserProfileSection)
   case sectionEnd(UserProfileSection)
   case before(UserProfileRow)

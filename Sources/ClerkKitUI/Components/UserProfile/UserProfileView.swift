@@ -73,7 +73,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// With custom rows:
+/// With custom items:
 ///
 /// ```swift
 /// enum ProfileRoute: Hashable {
@@ -81,12 +81,12 @@ import SwiftUI
 ///   case preferences
 /// }
 ///
-/// UserProfileView(
-///   customRows: [
+/// UserProfileView()
+///   .userProfileItems([
 ///     .init(route: .billing, title: "Billing", icon: .asset(name: "icon-card"), placement: .after(.security)),
 ///     .init(route: .preferences, title: "Preferences", icon: .system(name: "gear"), placement: .before(.signOut)),
-///   ]
-/// ) { (route: ProfileRoute) in
+///   ])
+///   .userProfileDestination { (route: ProfileRoute) in
 ///     switch route {
 ///     case .billing:
 ///       BillingView()
@@ -105,7 +105,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
-  private let customRows: [UserProfileCustomRow<Route>]
+  private let customItems: [UserProfileCustomItem<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
@@ -115,6 +115,19 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var navigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
+
+  init(
+    isDismissable: Bool,
+    navigationPath: Binding<NavigationPath>?,
+    customItems: [UserProfileCustomItem<Route>],
+    customDestination: (@MainActor (Route) -> Destination)?
+  ) {
+    self.isDismissable = isDismissable
+    self.navigationPath = navigationPath
+    self.customItems = customItems
+    self.customDestination = customDestination
+    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
+  }
 
   /// Creates a new user profile view.
   ///
@@ -132,33 +145,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil
   ) where Route == Never, Destination == EmptyView {
-    self.isDismissable = isDismissable
-    self.navigationPath = navigationPath
-    customRows = []
-    customDestination = nil
-    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
-  }
-
-  /// Creates a new user profile view with custom rows rendered alongside Clerk's built-in
-  /// rows on the root user profile screen.
-  ///
-  /// - Parameters:
-  ///   - isDismissable: Whether the view can be dismissed by the user.
-  ///   - navigationPath: An optional binding to a parent `NavigationPath`.
-  ///   - customRows: Custom rows rendered alongside Clerk's built-in rows on the root
-  ///   user profile screen.
-  ///   - destination: A destination builder for custom row routes.
-  public init(
-    isDismissable: Bool = true,
-    navigationPath: Binding<NavigationPath>? = nil,
-    customRows: [UserProfileCustomRow<Route>],
-    @ViewBuilder destination: @escaping @MainActor (Route) -> Destination
-  ) {
-    self.isDismissable = isDismissable
-    self.navigationPath = navigationPath
-    self.customRows = customRows
-    customDestination = destination
-    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
+    self.init(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customItems: [],
+      customDestination: nil
+    )
   }
 
   public var body: some View {
@@ -329,6 +321,63 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 }
 
+// MARK: - View Modifiers
+
+extension UserProfileView {
+  /// Replaces the custom items rendered on the root user profile screen.
+  public func userProfileItems(
+    _ items: [UserProfileCustomItem<Route>]
+  ) -> UserProfileView<Route, Destination> {
+    UserProfileView<Route, Destination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customItems: items,
+      customDestination: customDestination
+    )
+  }
+}
+
+extension UserProfileView where Destination == EmptyView {
+  /// Sets the custom destination builder used by custom user profile items.
+  public func userProfileDestination<NewDestination: View>(
+    @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
+  ) -> UserProfileView<Route, NewDestination> {
+    UserProfileView<Route, NewDestination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customItems: customItems,
+      customDestination: destination
+    )
+  }
+}
+
+extension UserProfileView where Route == Never, Destination == EmptyView {
+  /// Sets the custom items rendered on the root user profile screen.
+  public func userProfileItems<NewRoute: Hashable>(
+    _ items: [UserProfileCustomItem<NewRoute>]
+  ) -> UserProfileView<NewRoute, EmptyView> {
+    UserProfileView<NewRoute, EmptyView>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customItems: items,
+      customDestination: nil
+    )
+  }
+
+  /// Sets the custom destination builder used by custom user profile items.
+  public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
+    for _: NewRoute.Type = NewRoute.self,
+    @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
+  ) -> UserProfileView<NewRoute, NewDestination> {
+    UserProfileView<NewRoute, NewDestination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customItems: [],
+      customDestination: destination
+    )
+  }
+}
+
 // MARK: - Subviews
 
 extension UserProfileView {
@@ -351,9 +400,9 @@ extension UserProfileView {
     switch listRow {
     case .builtIn(let builtInRow):
       builtInRowView(builtInRow)
-    case .custom(let customRow):
-      row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
-        navigate(to: .custom(customRow.route))
+    case .custom(let customItem):
+      row(icon: customItem.icon, text: customItem.title, bundle: customItem.bundle) {
+        navigate(to: .custom(customItem.route))
       }
     }
   }
@@ -430,19 +479,19 @@ extension UserProfileView {
     builtInRows: [UserProfileRow],
     in section: UserProfileSection
   ) -> [UserProfileListRow<Route>] {
-    let sectionCustomRows = customRows.filter { $0.placement.section == section }
+    let sectionCustomItems = customItems.filter { $0.placement.section == section }
 
-    let sectionStartRows = sectionCustomRows.filter { $0.placement.isSectionStart }
-    let sectionEndRows = sectionCustomRows.filter { $0.placement.isSectionEnd }
+    let sectionStartRows = sectionCustomItems.filter { $0.placement.isSectionStart }
+    let sectionEndRows = sectionCustomItems.filter { $0.placement.isSectionEnd }
 
-    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
-      guard case .before(let anchor) = customRow.placement else { return }
-      result[anchor, default: []].append(customRow)
+    let rowsBeforeAnchor = sectionCustomItems.reduce(into: [UserProfileRow: [UserProfileCustomItem<Route>]]()) { result, customItem in
+      guard case .before(let anchor) = customItem.placement else { return }
+      result[anchor, default: []].append(customItem)
     }
 
-    let rowsAfterAnchor = sectionCustomRows.reduce(into: [UserProfileRow: [UserProfileCustomRow<Route>]]()) { result, customRow in
-      guard case .after(let anchor) = customRow.placement else { return }
-      result[anchor, default: []].append(customRow)
+    let rowsAfterAnchor = sectionCustomItems.reduce(into: [UserProfileRow: [UserProfileCustomItem<Route>]]()) { result, customItem in
+      guard case .after(let anchor) = customItem.placement else { return }
+      result[anchor, default: []].append(customItem)
     }
 
     var rows = sectionStartRows.map(UserProfileListRow.custom)
@@ -492,7 +541,7 @@ extension UserProfileView {
 
 private enum UserProfileListRow<Route: Hashable>: Identifiable {
   case builtIn(UserProfileRow)
-  case custom(UserProfileCustomRow<Route>)
+  case custom(UserProfileCustomItem<Route>)
 
   var id: UserProfileListRowID<Route> {
     switch self {
@@ -509,7 +558,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case custom(Route)
 }
 
-extension UserProfileCustomRowPlacement {
+extension UserProfileCustomItemPlacement {
   fileprivate var section: UserProfileSection {
     switch self {
     case .sectionStart(let section):
@@ -673,51 +722,53 @@ private struct UserProfileHeaderView: View {
     .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("With custom rows") {
-  UserProfileView(customRows: [
-    UserProfileCustomRow(
-      route: "billing",
-      title: "Billing",
-      icon: .asset(name: "icon-security"),
-      placement: .after(.security)
-    ),
-    UserProfileCustomRow(
-      route: "preferences",
-      title: "Preferences",
-      icon: .asset(name: "icon-switch"),
-      placement: .before(.signOut)
-    ),
-  ]) { (route: String) in
-    switch route {
-    case "billing":
-      Text("Billing")
-    case "preferences":
-      Text("Preferences")
-    default:
-      EmptyView()
-    }
-  }
-  .environment(
-    Clerk.preview { builder in
-      builder.services.clientService.getHandler = {
-        try? await Task.sleep(for: .seconds(1))
-        return Client.mock
-      }
-
-      builder.services.environmentService.getHandler = {
-        try? await Task.sleep(for: .seconds(1))
-        return Clerk.Environment.mock
-      }
-
-      builder.services.userService.getSessionsHandler = { _ in
-        try? await Task.sleep(for: .seconds(1))
-        return [Session.mock, Session.mock2]
+#Preview("With custom items") {
+  UserProfileView()
+    .userProfileItems([
+      UserProfileCustomItem(
+        route: "billing",
+        title: "Billing",
+        icon: .asset(name: "icon-security"),
+        placement: .after(.security)
+      ),
+      UserProfileCustomItem(
+        route: "preferences",
+        title: "Preferences",
+        icon: .asset(name: "icon-switch"),
+        placement: .before(.signOut)
+      ),
+    ])
+    .userProfileDestination { route in
+      switch route {
+      case "billing":
+        Text("Billing")
+      case "preferences":
+        Text("Preferences")
+      default:
+        EmptyView()
       }
     }
-  )
-  .environment(AuthState())
-  .environment(UserProfileSheetNavigation())
-  .environment(\.clerkTheme, .clerk)
+    .environment(
+      Clerk.preview { builder in
+        builder.services.clientService.getHandler = {
+          try? await Task.sleep(for: .seconds(1))
+          return Client.mock
+        }
+
+        builder.services.environmentService.getHandler = {
+          try? await Task.sleep(for: .seconds(1))
+          return Clerk.Environment.mock
+        }
+
+        builder.services.userService.getSessionsHandler = { _ in
+          try? await Task.sleep(for: .seconds(1))
+          return [Session.mock, Session.mock2]
+        }
+      }
+    )
+    .environment(AuthState())
+    .environment(UserProfileSheetNavigation())
+    .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Not dismissable") {

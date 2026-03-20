@@ -9,6 +9,11 @@ import ClerkKit
 import NukeUI
 import SwiftUI
 
+enum UserButtonPresentationContext {
+  case standard
+  case sessionTaskToolbar
+}
+
 /// A circular button that displays the current user's profile image and opens the user profile when tapped.
 ///
 /// `UserButton` automatically displays the signed-in user's profile image in a circular button.
@@ -51,19 +56,14 @@ import SwiftUI
 ///   }
 /// }
 /// ```
-public struct UserButton<Route: Hashable, SignedOutContent: View, ProfileDestination: View>: View {
+public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  enum PresentationContext {
-    case standard
-    case sessionTaskToolbar
-  }
-
   @State private var presentedSheet: PresentedSheet?
-  private let presentationContext: PresentationContext
-  private let customRows: [UserProfileCustomRow<Route>]
-  private let profileDestination: (@MainActor (Route) -> ProfileDestination)?
+  private let presentationContext: UserButtonPresentationContext
+  private let customItems: [UserProfileCustomItem<Route>]
+  private let customDestination: (@MainActor (Route) -> Destination)?
   private let signedOutContent: () -> SignedOutContent
 
   private enum PresentedSheet: String, Identifiable {
@@ -82,67 +82,39 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, ProfileDestina
   /// and handle presenting the user profile sheet when tapped.
   public init(
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
-  ) where Route == Never, ProfileDestination == EmptyView {
+  ) where Route == Never, Destination == EmptyView {
     self.init(
       presentationContext: .standard,
-      customRows: [],
-      profileDestination: nil,
+      customItems: [],
+      customDestination: nil,
       signedOutContent: signedOutContent
     )
   }
 
   init(
-    presentationContext: PresentationContext,
-    customRows: [UserProfileCustomRow<Route>],
-    profileDestination: (@MainActor (Route) -> ProfileDestination)?,
+    presentationContext: UserButtonPresentationContext,
+    customItems: [UserProfileCustomItem<Route>],
+    customDestination: (@MainActor (Route) -> Destination)?,
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
   ) {
     self.presentationContext = presentationContext
-    self.customRows = customRows
-    self.profileDestination = profileDestination
+    self.customItems = customItems
+    self.customDestination = customDestination
     self.signedOutContent = signedOutContent
   }
 
   /// Creates a new user button with no signed-out content.
-  public init() where Route == Never, SignedOutContent == EmptyView, ProfileDestination == EmptyView {
+  public init() where Route == Never, SignedOutContent == EmptyView, Destination == EmptyView {
     self.init(presentationContext: .standard)
   }
 
   init(
-    presentationContext: PresentationContext
-  ) where Route == Never, SignedOutContent == EmptyView, ProfileDestination == EmptyView {
+    presentationContext: UserButtonPresentationContext
+  ) where Route == Never, SignedOutContent == EmptyView, Destination == EmptyView {
     self.init(
       presentationContext: presentationContext,
-      customRows: [],
-      profileDestination: nil,
-      signedOutContent: { EmptyView() }
-    )
-  }
-
-  /// Creates a new user button that presents `UserProfileView` with custom rows.
-  public init(
-    customRows: [UserProfileCustomRow<Route>],
-    @ViewBuilder destination: @escaping @MainActor (Route) -> ProfileDestination,
-    @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
-  ) {
-    self.init(
-      presentationContext: .standard,
-      customRows: customRows,
-      profileDestination: destination,
-      signedOutContent: signedOutContent
-    )
-  }
-
-  /// Creates a new user button that presents `UserProfileView` with custom rows and no
-  /// signed-out content.
-  public init(
-    customRows: [UserProfileCustomRow<Route>],
-    @ViewBuilder destination: @escaping @MainActor (Route) -> ProfileDestination
-  ) where SignedOutContent == EmptyView {
-    self.init(
-      presentationContext: .standard,
-      customRows: customRows,
-      profileDestination: destination,
+      customItems: [],
+      customDestination: nil,
       signedOutContent: { EmptyView() }
     )
   }
@@ -203,15 +175,26 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, ProfileDestina
 }
 
 extension UserButton {
-  @ViewBuilder
+  /// Replaces the custom items shown in the presented user profile.
+  public func userProfileItems(
+    _ items: [UserProfileCustomItem<Route>]
+  ) -> UserButton<Route, SignedOutContent, Destination> {
+    UserButton<Route, SignedOutContent, Destination>(
+      presentationContext: presentationContext,
+      customItems: items,
+      customDestination: customDestination,
+      signedOutContent: signedOutContent
+    )
+  }
+
   private var userProfileSheet: some View {
-    if let profileDestination {
-      UserProfileView(customRows: customRows, destination: profileDestination)
-        .presentationDragIndicator(.visible)
-    } else {
-      UserProfileView()
-        .presentationDragIndicator(.visible)
-    }
+    UserProfileView(
+      isDismissable: true,
+      navigationPath: nil,
+      customItems: customItems,
+      customDestination: customDestination
+    )
+    .presentationDragIndicator(.visible)
   }
 
   private func handleTap() {
@@ -225,6 +208,47 @@ extension UserButton {
         presentedSheet = .userProfile
       }
     }
+  }
+}
+
+extension UserButton where Destination == EmptyView {
+  /// Sets the custom destination builder used by custom items in the presented user profile.
+  public func userProfileDestination<NewDestination: View>(
+    @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
+  ) -> UserButton<Route, SignedOutContent, NewDestination> {
+    UserButton<Route, SignedOutContent, NewDestination>(
+      presentationContext: presentationContext,
+      customItems: customItems,
+      customDestination: destination,
+      signedOutContent: signedOutContent
+    )
+  }
+}
+
+extension UserButton where Route == Never, Destination == EmptyView {
+  /// Sets the custom items shown in the presented user profile.
+  public func userProfileItems<NewRoute: Hashable>(
+    _ items: [UserProfileCustomItem<NewRoute>]
+  ) -> UserButton<NewRoute, SignedOutContent, EmptyView> {
+    UserButton<NewRoute, SignedOutContent, EmptyView>(
+      presentationContext: presentationContext,
+      customItems: items,
+      customDestination: nil,
+      signedOutContent: signedOutContent
+    )
+  }
+
+  /// Sets the custom destination builder used by custom items in the presented user profile.
+  public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
+    for _: NewRoute.Type = NewRoute.self,
+    @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
+  ) -> UserButton<NewRoute, SignedOutContent, NewDestination> {
+    UserButton<NewRoute, SignedOutContent, NewDestination>(
+      presentationContext: presentationContext,
+      customItems: [],
+      customDestination: destination,
+      signedOutContent: signedOutContent
+    )
   }
 }
 
