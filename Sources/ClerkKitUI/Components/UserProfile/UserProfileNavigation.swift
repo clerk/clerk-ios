@@ -31,6 +31,11 @@ final class UserProfileSheetNavigation {
 /// Navigation API for navigating from custom rows to custom destinations inside
 /// `UserProfileView`.
 ///
+/// This is available in the environment when `UserProfileView` manages its own
+/// `NavigationStack` (i.e., no `navigationPath` is provided). When a parent
+/// `navigationPath` is supplied, the parent owns the stack and is responsible for
+/// navigation — `UserProfileNavigator` is not injected in that case.
+///
 /// Custom destination views can read this value using:
 ///
 /// ```swift
@@ -61,9 +66,9 @@ public final class UserProfileNavigator<Route: Hashable> {
   }
 }
 
-enum UserProfileNavigationDestination<Route: Hashable>: Hashable {
-  case builtIn(UserProfileRow)
-  case custom(Route)
+enum UserProfileBuiltInDestination: Hashable {
+  case manageAccount
+  case security
 }
 
 enum UserProfileDismissAction {
@@ -76,19 +81,19 @@ enum UserProfileDismissAction {
 @MainActor
 @Observable
 final class UserProfileBuiltInRouter {
-  private let pushRow: @MainActor (UserProfileRow) -> Void
+  private let pushDestination: @MainActor (UserProfileBuiltInDestination) -> Void
   private let dismissAction: @MainActor (UserProfileDismissAction) -> Void
 
   init(
-    push: @escaping @MainActor (UserProfileRow) -> Void,
+    push: @escaping @MainActor (UserProfileBuiltInDestination) -> Void,
     dismissAction: @escaping @MainActor (UserProfileDismissAction) -> Void
   ) {
-    pushRow = push
+    pushDestination = push
     self.dismissAction = dismissAction
   }
 
-  func push(_ row: UserProfileRow) {
-    pushRow(row)
+  func push(_ destination: UserProfileBuiltInDestination) {
+    pushDestination(destination)
   }
 
   func dismiss(_ action: UserProfileDismissAction) {

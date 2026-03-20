@@ -73,4 +73,80 @@ public enum UserProfileRow: Hashable, Sendable {
   case signOut
 }
 
+// MARK: - Internal Helpers
+
+extension UserProfileCustomRowPlacement {
+  var section: UserProfileSection {
+    switch self {
+    case .sectionStart(let section):
+      section
+    case .sectionEnd(let section):
+      section
+    case .before(let row):
+      row.section
+    case .after(let row):
+      row.section
+    }
+  }
+
+  var isSectionStart: Bool {
+    switch self {
+    case .sectionStart:
+      true
+    default:
+      false
+    }
+  }
+
+  var isSectionEnd: Bool {
+    switch self {
+    case .sectionEnd:
+      true
+    default:
+      false
+    }
+  }
+}
+
+extension UserProfileRow {
+  var section: UserProfileSection {
+    switch self {
+    case .manageAccount, .security:
+      .profile
+    case .switchAccount, .addAccount, .signOut:
+      .account
+    }
+  }
+
+  var icon: String {
+    switch self {
+    case .manageAccount:
+      "icon-profile"
+    case .security:
+      "icon-security"
+    case .switchAccount:
+      "icon-switch"
+    case .addAccount:
+      "icon-plus"
+    case .signOut:
+      "icon-sign-out"
+    }
+  }
+
+  var title: LocalizedStringKey {
+    switch self {
+    case .manageAccount:
+      "Manage account"
+    case .security:
+      "Security"
+    case .switchAccount:
+      "Switch account"
+    case .addAccount:
+      "Add account"
+    case .signOut:
+      "Sign out"
+    }
+  }
+}
+
 #endif

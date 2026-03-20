@@ -112,7 +112,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var accountSwitcherHeight: CGFloat = 400
   @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
-  @State private var navigation = UserProfileSheetNavigation()
+  @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
 
@@ -158,6 +158,23 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         if navigationPath == nil {
           NavigationStack(path: $internalPath) {
             profileContent(user: user)
+              .navigationDestination(for: Route.self) { route in
+                view(for: route)
+                  .environment(sheetNavigation)
+                  .environment(codeLimiter)
+                  .environment(
+                    UserProfileNavigator(
+                      push: navigateToCustom,
+                      popToRoot: { dismissAction(.popToRoot) }
+                    )
+                  )
+                  .environment(
+                    UserProfileBuiltInRouter(
+                      push: navigateToBuiltIn,
+                      dismissAction: dismissAction
+                    )
+                  )
+              }
           }
         } else {
           profileContent(user: user)
@@ -170,14 +187,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         initialPathCount = navigationPath?.wrappedValue.count ?? 0
       }
       .clerkErrorPresenting($error)
-      .sheet(isPresented: $navigation.accountSwitcherIsPresented) {
+      .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
       }
-      .sheet(isPresented: $navigation.authViewIsPresented) {
+      .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
         AuthView()
           .interactiveDismissDisabled()
       }
@@ -185,7 +202,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         for await event in clerk.auth.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
-            navigation.authViewIsPresented = false
+            sheetNavigation.authViewIsPresented = false
           default:
             break
           }
@@ -211,24 +228,30 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           )
         )
       }
-      .environment(navigation)
+      .environment(sheetNavigation)
       .environment(codeLimiter)
       .environment(
         UserProfileBuiltInRouter(
-          push: { row in
-            navigate(to: .builtIn(row))
-          },
+          push: navigateToBuiltIn,
           dismissAction: dismissAction
         )
       )
     }
   }
 
-  private func navigate(to destination: UserProfileNavigationDestination<Route>) {
+  private func navigateToBuiltIn(_ destination: UserProfileBuiltInDestination) {
     if let navigationPath {
       navigationPath.wrappedValue.append(destination)
     } else {
       internalPath.append(destination)
+    }
+  }
+
+  private func navigateToCustom(_ route: Route) {
+    if let navigationPath {
+      navigationPath.wrappedValue.append(route)
+    } else {
+      internalPath.append(route)
     }
   }
 
@@ -297,25 +320,19 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         }
       }
     }
-    .navigationDestination(for: UserProfileNavigationDestination<Route>.self) { destination in
+    .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
-        .environment(navigation)
+        .environment(sheetNavigation)
         .environment(codeLimiter)
         .environment(
           UserProfileNavigator(
-            push: { route in
-              navigate(to: .custom(route))
-            },
-            popToRoot: {
-              dismissAction(.popToRoot)
-            }
+            push: navigateToCustom,
+            popToRoot: { dismissAction(.popToRoot) }
           )
         )
         .environment(
           UserProfileBuiltInRouter(
-            push: { row in
-              navigate(to: .builtIn(row))
-            },
+            push: navigateToBuiltIn,
             dismissAction: dismissAction
           )
         )
@@ -341,6 +358,10 @@ extension UserProfileView {
 
 extension UserProfileView where Destination == EmptyView {
   /// Sets the custom destination builder used by custom user profile rows.
+  ///
+  /// This modifier is used when `UserProfileView` manages its own `NavigationStack`
+  /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
+  /// register your own `.navigationDestination(for:)` on the parent stack instead.
   public func userProfileDestination<NewDestination: View>(
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> UserProfileView<Route, NewDestination> {
@@ -367,6 +388,10 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
   }
 
   /// Sets the custom destination builder used by custom user profile rows.
+  ///
+  /// This modifier is used when `UserProfileView` manages its own `NavigationStack`
+  /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
+  /// register your own `.navigationDestination(for:)` on the parent stack instead.
   public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
     for _: NewRoute.Type = NewRoute.self,
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
@@ -404,7 +429,7 @@ extension UserProfileView {
       builtInRowView(builtInRow)
     case .custom(let customRow, _):
       row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
-        navigate(to: .custom(customRow.route))
+        navigateToCustom(customRow.route)
       }
     }
   }
@@ -412,12 +437,14 @@ extension UserProfileView {
   fileprivate func builtInRowView(_ rowType: UserProfileRow) -> some View {
     row(icon: rowType.icon, text: rowType.title) {
       switch rowType {
-      case .manageAccount, .security:
-        navigate(to: .builtIn(rowType))
+      case .manageAccount:
+        navigateToBuiltIn(.manageAccount)
+      case .security:
+        navigateToBuiltIn(.security)
       case .switchAccount:
-        navigation.accountSwitcherIsPresented = true
+        sheetNavigation.accountSwitcherIsPresented = true
       case .addAccount:
-        navigation.authViewIsPresented = true
+        sheetNavigation.authViewIsPresented = true
       case .signOut:
         guard let sessionId = clerk.session?.id else { return }
         await signOut(sessionId: sessionId)
@@ -456,23 +483,26 @@ extension UserProfileView {
   }
 
   @ViewBuilder
-  fileprivate func view(for destination: UserProfileNavigationDestination<Route>) -> some View {
+  fileprivate func view(
+    for destination: UserProfileBuiltInDestination
+  ) -> some View {
     switch destination {
-    case .builtIn(.manageAccount):
+    case .manageAccount:
       UserProfileDetailView()
-    case .builtIn(.security):
+    case .security:
       UserProfileSecurityView()
-    case .builtIn:
+    }
+  }
+
+  @ViewBuilder
+  fileprivate func view(for route: Route) -> some View {
+    if let customDestination {
+      customDestination(route)
+    } else {
       EmptyView()
-    case .custom(let route):
-      if let customDestination {
-        customDestination(route)
-      } else {
-        EmptyView()
-          .onAppear {
-            assertionFailure("No destination registered for custom route \(route). Use .userProfileDestination to provide one.")
-          }
-      }
+        .onAppear {
+          ClerkLogger.error("No destination registered for custom route \(route). Use .userProfileDestination to provide one.")
+        }
     }
   }
 }
@@ -570,145 +600,6 @@ private enum UserProfileListRow<Route: Hashable>: Identifiable {
 private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case builtIn(UserProfileRow)
   case custom(route: Route, occurrence: Int)
-}
-
-extension UserProfileCustomRowPlacement {
-  fileprivate var section: UserProfileSection {
-    switch self {
-    case .sectionStart(let section):
-      section
-    case .sectionEnd(let section):
-      section
-    case .before(let row):
-      row.section
-    case .after(let row):
-      row.section
-    }
-  }
-
-  fileprivate var isSectionStart: Bool {
-    switch self {
-    case .sectionStart:
-      true
-    default:
-      false
-    }
-  }
-
-  fileprivate var isSectionEnd: Bool {
-    switch self {
-    case .sectionEnd:
-      true
-    default:
-      false
-    }
-  }
-}
-
-extension UserProfileRow {
-  fileprivate var section: UserProfileSection {
-    switch self {
-    case .manageAccount, .security:
-      .profile
-    case .switchAccount, .addAccount, .signOut:
-      .account
-    }
-  }
-
-  fileprivate var icon: String {
-    switch self {
-    case .manageAccount:
-      "icon-profile"
-    case .security:
-      "icon-security"
-    case .switchAccount:
-      "icon-switch"
-    case .addAccount:
-      "icon-plus"
-    case .signOut:
-      "icon-sign-out"
-    }
-  }
-
-  fileprivate var title: LocalizedStringKey {
-    switch self {
-    case .manageAccount:
-      "Manage account"
-    case .security:
-      "Security"
-    case .switchAccount:
-      "Switch account"
-    case .addAccount:
-      "Add account"
-    case .signOut:
-      "Sign out"
-    }
-  }
-}
-
-// MARK: - Header
-
-private struct UserProfileHeaderView: View {
-  @Environment(\.clerkTheme) private var theme
-
-  let user: User
-  let onUpdateProfile: () -> Void
-
-  var body: some View {
-    let fullName = user.fullName
-    let hasFullName = fullName != nil
-
-    VStack(spacing: 12) {
-      LazyImage(url: URL(string: user.imageUrl)) { state in
-        if let image = state.image {
-          image
-            .resizable()
-            .scaledToFill()
-        } else {
-          Image("icon-profile", bundle: .module)
-            .resizable()
-            .scaledToFit()
-            .foregroundStyle(theme.colors.primary.gradient)
-            .opacity(0.5)
-        }
-      }
-      .frame(width: 96, height: 96)
-      .clipShape(.circle)
-      .transition(.opacity.animation(.easeInOut(duration: 0.25)))
-
-      VStack(spacing: 0) {
-        if let fullName {
-          Text(fullName)
-            .font(theme.fonts.title2)
-            .fontWeight(.bold)
-            .frame(minHeight: 28)
-            .foregroundStyle(theme.colors.foreground)
-        }
-
-        if let username = user.username, !username.isEmptyTrimmed {
-          Text(username)
-            .font(
-              hasFullName
-                ? theme.fonts.subheadline
-                : theme.fonts.title2
-            )
-            .fontWeight(hasFullName ? .regular : .bold)
-            .frame(minHeight: hasFullName ? nil : 28)
-            .foregroundStyle(hasFullName ? theme.colors.mutedForeground : theme.colors.foreground)
-        }
-      }
-
-      Button {
-        onUpdateProfile()
-      } label: {
-        Text("Edit profile", bundle: .module)
-      }
-      .buttonStyle(.secondary(config: .init(size: .small)))
-      .simultaneousGesture(TapGesture())
-    }
-    .padding(32)
-    .frame(maxWidth: .infinity)
-  }
 }
 
 #Preview("Dismissable") {
