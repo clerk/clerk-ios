@@ -469,6 +469,9 @@ extension UserProfileView {
         customDestination(route)
       } else {
         EmptyView()
+          .onAppear {
+            assertionFailure("No destination registered for custom route \(route). Use .userProfileDestination to provide one.")
+          }
       }
     }
   }

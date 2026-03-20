@@ -171,6 +171,7 @@ struct UserButtonAccountSwitcher: View {
 #Preview {
   UserButtonAccountSwitcher()
     .clerkPreview()
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 

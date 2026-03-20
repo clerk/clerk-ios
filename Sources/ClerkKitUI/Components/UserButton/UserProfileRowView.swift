@@ -5,7 +5,6 @@
 
 #if os(iOS)
 
-import Foundation
 import SwiftUI
 
 struct UserProfileRowView: View {

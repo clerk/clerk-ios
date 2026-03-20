@@ -112,6 +112,13 @@ extension UserProfileDeleteAccountConfirmationView {
 
 #Preview {
   UserProfileDeleteAccountConfirmationView()
+    .environment(UserProfileSheetNavigation())
+    .environment(
+      UserProfileBuiltInRouter(
+        push: { _ in },
+        dismissAction: { _ in }
+      )
+    )
     .environment(\.clerkTheme, .clerk)
     .environment(\.locale, .init(identifier: "es"))
 }

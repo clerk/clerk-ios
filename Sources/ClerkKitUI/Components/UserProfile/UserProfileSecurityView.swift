@@ -90,6 +90,7 @@ struct UserProfileSecurityView: View {
     UserProfileSecurityView()
   }
   .clerkPreview()
+  .environment(UserProfileSheetNavigation())
   .environment(\.clerkTheme, .clerk)
 }
 

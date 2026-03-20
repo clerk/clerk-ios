@@ -132,6 +132,7 @@ struct BackupCodesGrid: View {
     backupCodes: ["abc", "def", "ghi", "jkl", "lmn", "opq", "rst", "uvw", "xyz"],
     mfaType: .authenticatorApp
   )
+  .environment(UserProfileSheetNavigation())
 }
 
 #endif
