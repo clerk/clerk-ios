@@ -110,7 +110,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
-  @State private var initialPathCount: Int
+  @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
   @State private var navigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
@@ -126,7 +126,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     self.navigationPath = navigationPath
     self.customItems = customItems
     self.customDestination = customDestination
-    _initialPathCount = State(initialValue: navigationPath?.wrappedValue.count ?? 0)
   }
 
   /// Creates a new user profile view.
@@ -167,6 +166,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       .tint(theme.colors.primary)
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
+      .onFirstAppear {
+        initialPathCount = navigationPath?.wrappedValue.count ?? 0
+      }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $navigation.accountSwitcherIsPresented) {
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
