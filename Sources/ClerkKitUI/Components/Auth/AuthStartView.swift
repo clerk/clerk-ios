@@ -26,12 +26,6 @@ struct AuthStartView: View {
   @State private var generalError: Error?
   @State private var lastUsedAuth: LastUsedAuth?
 
-  // MARK: - Init
-
-  init() {
-    _lastUsedAuth = State(initialValue: LastUsedAuth(environment: Clerk.shared.environment))
-  }
-
   // MARK: - Configuration
 
   var emailIsEnabled: Bool {
@@ -182,8 +176,13 @@ struct AuthStartView: View {
     .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
       $1 != nil
     }
-    .taskOnce {
-      if shouldStartOnPhoneNumber {
+    .onFirstAppear {
+      if authState.persistsIdentifiers {
+        lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
+      }
+      if authState.hasInitialValues {
+        phoneNumberFieldIsActive = shouldStartOnPhoneNumber
+      } else if shouldStartOnPhoneNumber {
         phoneNumberFieldIsActive = true
       }
     }
@@ -374,11 +373,11 @@ extension AuthStartView {
 
   private func storeIdentifierType() {
     if phoneNumberFieldIsActive, phoneNumberIsEnabled {
-      LastUsedAuth.storeIdentifierType(.phone)
+      authState.storeLastUsedIdentifierType(.phone)
     } else if authState.authStartIdentifier.isEmailAddress {
-      LastUsedAuth.storeIdentifierType(.email)
+      authState.storeLastUsedIdentifierType(.email)
     } else {
-      LastUsedAuth.storeIdentifierType(.username)
+      authState.storeLastUsedIdentifierType(.username)
     }
   }
 }

@@ -18,8 +18,19 @@ final class AuthState {
   /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
 
-  init(mode: AuthView.Mode = .signInOrUp) {
+  /// Whether identifier values are persisted to `UserDefaults` between sessions.
+  private(set) var persistsIdentifiers: Bool = true
+
+  /// Whether the configure method received any initial values.
+  private(set) var hasInitialValues: Bool = false
+
+  private let userDefaults: UserDefaults
+
+  init(mode: AuthView.Mode = .signInOrUp, userDefaults: UserDefaults = .standard) {
     self.mode = mode
+    self.userDefaults = userDefaults
+    authStartIdentifier = userDefaults.string(forKey: Self.identifierStorageKey) ?? ""
+    authStartPhoneNumber = userDefaults.string(forKey: Self.phoneNumberStorageKey) ?? ""
   }
 
   /// Whether this UI flow should allow transfer from sign-in to sign-up.
@@ -33,16 +44,50 @@ final class AuthState {
   }
 
   /// Auth Start Fields
-  var authStartIdentifier: String = UserDefaults.standard.string(forKey: "authStartIdentifier") ?? "" {
+  var authStartIdentifier = "" {
     didSet {
-      UserDefaults.standard.set(authStartIdentifier, forKey: "authStartIdentifier")
+      if persistsIdentifiers {
+        userDefaults.set(authStartIdentifier, forKey: Self.identifierStorageKey)
+      }
     }
   }
 
-  var authStartPhoneNumber: String = UserDefaults.standard.string(forKey: "authStartPhoneNumber") ?? "" {
+  var authStartPhoneNumber = "" {
     didSet {
-      UserDefaults.standard.set(authStartPhoneNumber, forKey: "authStartPhoneNumber")
+      if persistsIdentifiers {
+        userDefaults.set(authStartPhoneNumber, forKey: Self.phoneNumberStorageKey)
+      }
     }
+  }
+
+  /// Applies identifier configuration values.
+  func configure(_ config: AuthIdentifierConfig) {
+    persistsIdentifiers = config.persistsIdentifiers
+    hasInitialValues = config.initialIdentifier != nil || config.initialPhoneNumber != nil
+
+    if !config.persistsIdentifiers {
+      userDefaults.removeObject(forKey: Self.identifierStorageKey)
+      userDefaults.removeObject(forKey: Self.phoneNumberStorageKey)
+      LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
+      authStartIdentifier = config.initialIdentifier ?? ""
+      authStartPhoneNumber = config.initialPhoneNumber ?? ""
+    } else {
+      if let initialIdentifier = config.initialIdentifier {
+        authStartIdentifier = initialIdentifier
+      } else if config.initialPhoneNumber != nil {
+        authStartIdentifier = ""
+      }
+      if let initialPhoneNumber = config.initialPhoneNumber {
+        authStartPhoneNumber = initialPhoneNumber
+      } else if config.initialIdentifier != nil {
+        authStartPhoneNumber = ""
+      }
+    }
+  }
+
+  func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
+    guard persistsIdentifiers else { return }
+    LastUsedAuth.storeIdentifierType(identifierType, userDefaults: userDefaults)
   }
 
   // Sign In Fields
@@ -59,6 +104,11 @@ final class AuthState {
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
   var signUpLegalAccepted = false
+}
+
+extension AuthState {
+  static let identifierStorageKey = "authStartIdentifier"
+  static let phoneNumberStorageKey = "authStartPhoneNumber"
 }
 
 #endif
