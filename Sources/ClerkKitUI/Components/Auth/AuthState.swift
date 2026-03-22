@@ -21,6 +21,9 @@ final class AuthState {
   /// Whether identifier values are persisted to `UserDefaults` between sessions.
   private(set) var persistsIdentifiers: Bool = true
 
+  /// Whether the configure method received any initial values.
+  private(set) var hasInitialValues: Bool = false
+
   private let userDefaults: UserDefaults
 
   init(mode: AuthView.Mode = .signInOrUp, userDefaults: UserDefaults = .standard) {
@@ -57,32 +60,26 @@ final class AuthState {
     }
   }
 
-  /// Applies initial identifier values and persistence configuration from the environment.
-  ///
-  /// Call this once when the view first appears so that environment-provided values
-  /// take effect before the user interacts with the form.
-  func configure(
-    initialIdentifier: String?,
-    initialPhoneNumber: String?,
-    persistsIdentifiers: Bool
-  ) {
-    self.persistsIdentifiers = persistsIdentifiers
+  /// Applies identifier configuration values.
+  func configure(_ config: AuthIdentifierConfig) {
+    persistsIdentifiers = config.persistsIdentifiers
+    hasInitialValues = config.initialIdentifier != nil || config.initialPhoneNumber != nil
 
-    if !persistsIdentifiers {
+    if !config.persistsIdentifiers {
       userDefaults.removeObject(forKey: Self.identifierStorageKey)
       userDefaults.removeObject(forKey: Self.phoneNumberStorageKey)
       LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
-      authStartIdentifier = initialIdentifier ?? ""
-      authStartPhoneNumber = initialPhoneNumber ?? ""
+      authStartIdentifier = config.initialIdentifier ?? ""
+      authStartPhoneNumber = config.initialPhoneNumber ?? ""
     } else {
-      if let initialIdentifier {
+      if let initialIdentifier = config.initialIdentifier {
         authStartIdentifier = initialIdentifier
-      } else if initialPhoneNumber != nil {
+      } else if config.initialPhoneNumber != nil {
         authStartIdentifier = ""
       }
-      if let initialPhoneNumber {
+      if let initialPhoneNumber = config.initialPhoneNumber {
         authStartPhoneNumber = initialPhoneNumber
-      } else if initialIdentifier != nil {
+      } else if config.initialIdentifier != nil {
         authStartPhoneNumber = ""
       }
     }

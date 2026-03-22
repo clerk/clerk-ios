@@ -18,9 +18,6 @@ struct AuthStartView: View {
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
   @Environment(\.dismissKeyboard) private var dismissKeyboard
-  @Environment(\.clerkInitialIdentifier) private var initialIdentifier
-  @Environment(\.clerkInitialPhoneNumber) private var initialPhoneNumber
-  @Environment(\.clerkPersistsIdentifiers) private var persistsIdentifiers
 
   // MARK: - State
 
@@ -180,10 +177,10 @@ struct AuthStartView: View {
       $1 != nil
     }
     .onFirstAppear {
-      if persistsIdentifiers {
+      if authState.persistsIdentifiers {
         lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
       }
-      if initialIdentifier != nil || initialPhoneNumber != nil {
+      if authState.hasInitialValues {
         phoneNumberFieldIsActive = shouldStartOnPhoneNumber
       } else if shouldStartOnPhoneNumber {
         phoneNumberFieldIsActive = true

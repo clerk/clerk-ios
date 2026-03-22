@@ -37,11 +37,10 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
+    authState.configure(AuthIdentifierConfig(
       initialIdentifier: "seed@example.com",
-      initialPhoneNumber: "17777770123",
-      persistsIdentifiers: true
-    )
+      initialPhoneNumber: "17777770123"
+    ))
 
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber == "17777770123")
@@ -57,11 +56,9 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
-      initialIdentifier: nil,
-      initialPhoneNumber: nil,
+    authState.configure(AuthIdentifierConfig(
       persistsIdentifiers: false
-    )
+    ))
 
     #expect(authState.authStartIdentifier.isEmpty)
     #expect(authState.authStartPhoneNumber.isEmpty)
@@ -74,11 +71,9 @@ struct AuthStateConfigurationTests {
   func disablingPersistenceSuppressesFutureWrites() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
-      initialIdentifier: nil,
-      initialPhoneNumber: nil,
+    authState.configure(AuthIdentifierConfig(
       persistsIdentifiers: false
-    )
+    ))
 
     authState.authStartIdentifier = "new@example.com"
     authState.authStartPhoneNumber = "19999990123"
@@ -95,11 +90,11 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
+    authState.configure(AuthIdentifierConfig(
       initialIdentifier: "seed@example.com",
       initialPhoneNumber: "17777770123",
       persistsIdentifiers: false
-    )
+    ))
 
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber == "17777770123")
@@ -114,11 +109,9 @@ struct AuthStateConfigurationTests {
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
-      initialIdentifier: nil,
-      initialPhoneNumber: "15555550100",
-      persistsIdentifiers: true
-    )
+    authState.configure(AuthIdentifierConfig(
+      initialPhoneNumber: "15555550100"
+    ))
 
     #expect(authState.authStartIdentifier.isEmpty)
     #expect(authState.authStartPhoneNumber == "15555550100")
@@ -130,11 +123,9 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(
-      initialIdentifier: "seed@example.com",
-      initialPhoneNumber: nil,
-      persistsIdentifiers: true
-    )
+    authState.configure(AuthIdentifierConfig(
+      initialIdentifier: "seed@example.com"
+    ))
 
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber.isEmpty)
