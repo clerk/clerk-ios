@@ -2,7 +2,7 @@
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
-IOS_SIMULATOR_DESTINATION ?= platform=iOS Simulator,OS=latest,name=iPhone 15
+IOS_SIMULATOR_DESTINATION ?= platform=iOS Simulator,OS=latest,name=iPhone 16
 
 
 # Default target
