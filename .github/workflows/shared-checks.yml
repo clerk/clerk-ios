@@ -42,7 +42,7 @@ jobs:
           make check
 
   test:
-    name: Run unit tests on macOS
+    name: Run ClerkKit tests on macOS
     needs: format-and-lint
     runs-on: macos-latest
     steps:
@@ -92,9 +92,32 @@ jobs:
           rm -f .keys.json
           echo "✅ Cleaned up .keys.json"
 
+  test-ui:
+    name: Run ClerkKitUI tests on iOS
+    needs: format-and-lint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: swiftpm-ios-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-ios-
+
+      - name: Run ClerkKitUI tests
+        run: make test-ui
+
   build:
     name: Build ${{ matrix.platform }}
-    needs: [test]
+    needs: [test, test-ui]
     runs-on: macos-latest
     strategy:
       matrix:

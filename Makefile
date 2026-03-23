@@ -1,4 +1,4 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -14,7 +14,8 @@ help:
 	@echo "  make lint          - Run SwiftLint to check code quality"
 	@echo "  make lint-fix      - Run SwiftLint with auto-fix where possible"
 	@echo "  make check         - Run both format-check and lint (for CI)"
-	@echo "  make test          - Run unit tests"
+	@echo "  make test          - Run ClerkKitTests on macOS"
+	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
@@ -137,11 +138,17 @@ lint-fix:
 check: format-check lint
 	@echo "✅ All checks passed!"
 
-# Run unit tests
+# Run ClerkKitTests on macOS
 test:
 	@echo "Running unit tests..."
-	swift test --skip Integration
+	swift test --skip Integration --filter '^ClerkKitTests\.'
 	@echo "✅ Unit tests completed!"
+
+# Run ClerkKitUI tests on iOS Simulator
+test-ui:
+	@echo "Running ClerkKitUI tests on iOS Simulator..."
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "platform=iOS Simulator,OS=latest,name=iPhone 16" -only-testing:ClerkKitUITests
+	@echo "✅ ClerkKitUI tests completed!"
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)

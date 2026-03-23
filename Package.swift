@@ -50,13 +50,28 @@ let package = Package(
       ]
     ),
     .testTarget(
-      name: "Tests",
+      name: "ClerkKitTests",
       dependencies: [
         "ClerkKit",
         "ClerkKitUI",
         .product(name: "Mocker", package: "Mocker"),
         .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
       ],
+      path: "Tests",
+      exclude: [
+        "UI",
+      ],
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency"),
+      ]
+    ),
+    .testTarget(
+      name: "ClerkKitUITests",
+      dependencies: [
+        "ClerkKit",
+        "ClerkKitUI",
+      ],
+      path: "Tests/UI",
       swiftSettings: [
         .enableExperimentalFeature("StrictConcurrency"),
       ]
