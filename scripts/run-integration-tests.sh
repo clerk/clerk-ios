@@ -58,7 +58,7 @@ run_suite_with_retries() {
     echo "Running integration suite '$suite' attempt $attempt/$max_attempts..."
     log_file="$(mktemp)"
 
-    swift_test_args=(--filter "$suite")
+    swift_test_args=(--filter "^ClerkKitTests\\.$suite/")
     if [ "$skip_build" = "true" ]; then
       swift_test_args=(--skip-build "${swift_test_args[@]}")
     fi

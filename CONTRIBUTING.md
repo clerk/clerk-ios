@@ -77,7 +77,8 @@ After running `make setup`, you're ready to start developing!
 - `make lint` - Run SwiftLint to check code quality
 - `make lint-fix` - Run SwiftLint with auto-fix where possible
 - `make check` - Run both format-check and lint (for CI)
-- `make test` - Run unit tests
+- `make test` - Run `ClerkKitTests` on macOS
+- `make test-ui` - Run `ClerkKitUITests` on iOS Simulator
 - `make test-integration` - Run only integration tests (requires `.keys.json` file; Clerk employees only)
 - `make fetch-test-keys` - Fetch integration test keys from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
@@ -121,13 +122,14 @@ SwiftLint checks for:
 
 This project uses **Swift Testing** (not XCTest) for all tests. Tests are organized into two categories:
 
-### Unit Tests
+### Unit and UI Tests
 
-Unit tests are located in `Tests/` and use mocked API responses via the `Mocker` library. They are fast and don't require network access.
+`ClerkKitTests` live in `Tests/` and use mocked API responses via the `Mocker` library. `ClerkKitUITests` live in `Tests/UI` and run on an iOS Simulator.
 
 **Running unit tests:**
 ```bash
-make test  # Run unit tests
+make test  # Run ClerkKitTests on macOS
+make test-ui  # Run ClerkKitUITests on iOS Simulator
 ```
 
 **When to run unit tests:**

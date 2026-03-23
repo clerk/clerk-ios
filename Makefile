@@ -1,10 +1,13 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
+IOS_SIMULATOR_DESTINATION ?=
 
 
 # Default target
+all: help
+
 help:
 	@echo "Available commands:"
 	@echo "  make setup         - Install tools/hooks and configure Xcode file headers"
@@ -14,7 +17,8 @@ help:
 	@echo "  make lint          - Run SwiftLint to check code quality"
 	@echo "  make lint-fix      - Run SwiftLint with auto-fix where possible"
 	@echo "  make check         - Run both format-check and lint (for CI)"
-	@echo "  make test          - Run unit tests"
+	@echo "  make test          - Run ClerkKitTests on macOS"
+	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
@@ -137,11 +141,50 @@ lint-fix:
 check: format-check lint
 	@echo "✅ All checks passed!"
 
-# Run unit tests
+clean:
+	@echo "Cleaning Swift package build artifacts..."
+	swift package clean
+
+# Run ClerkKitTests on macOS
 test:
 	@echo "Running unit tests..."
-	swift test --skip Integration
+	swift test --skip Integration --filter '^ClerkKitTests\.'
 	@echo "✅ Unit tests completed!"
+
+# Run ClerkKitUI tests on iOS Simulator
+test-ui:
+	@echo "Running ClerkKitUI tests on iOS Simulator..."
+	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
+	@printf '%s\n' \
+		'<?xml version="1.0" encoding="UTF-8"?>' \
+		'<Workspace' \
+		'   version = "1.0">' \
+		'   <FileRef' \
+		'      location = "self:">' \
+		'   </FileRef>' \
+		'</Workspace>' \
+		> .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
+		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
+	fi
+	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -z "$$destination" ]; then \
+		available_destinations="$$(xcodebuild -showdestinations -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package 2>/dev/null)"; \
+		for simulator_name in "iPhone 17" "iPhone 17 Pro" "iPhone 17 Pro Max" "iPhone 16" "iPhone 16 Pro" "iPhone 16 Pro Max" "iPhone SE (3rd generation)"; do \
+			if printf '%s\n' "$$available_destinations" | grep -Fq "name:$$simulator_name }"; then \
+				destination="platform=iOS Simulator,OS=latest,name=$$simulator_name"; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ -z "$$destination" ]; then \
+		echo "❌ Unable to find an available iPhone simulator for ClerkKitUITests."; \
+		echo "   Set IOS_SIMULATOR_DESTINATION explicitly and rerun make test-ui."; \
+		exit 1; \
+	fi; \
+	echo "Using simulator destination: $$destination"; \
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
+	@echo "✅ ClerkKitUI tests completed!"
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)
