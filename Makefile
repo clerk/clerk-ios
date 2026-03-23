@@ -147,6 +147,19 @@ test:
 # Run ClerkKitUI tests on iOS Simulator
 test-ui:
 	@echo "Running ClerkKitUI tests on iOS Simulator..."
+	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
+	@printf '%s\n' \
+		'<?xml version="1.0" encoding="UTF-8"?>' \
+		'<Workspace' \
+		'   version = "1.0">' \
+		'   <FileRef' \
+		'      location = "self:">' \
+		'   </FileRef>' \
+		'</Workspace>' \
+		> .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
+		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
+	fi
 	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "platform=iOS Simulator,OS=latest,name=iPhone 16" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
 
