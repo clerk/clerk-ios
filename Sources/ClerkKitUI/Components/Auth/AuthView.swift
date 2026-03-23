@@ -216,27 +216,20 @@ extension AuthView {
 // MARK: - View Modifiers
 
 extension AuthView {
-  /// Sets the initial value for the email or username field on the auth screen.
+  /// Sets the initial value for the identifier field on the auth screen.
   ///
-  /// Use this to pre-fill the identifier field when presenting `AuthView`.
+  /// The identifier is automatically detected as a phone number or email/username
+  /// and routed to the appropriate field.
   ///
-  /// - Parameter identifier: The email address or username to pre-fill.
+  /// - Parameter identifier: The email address, username, or phone number to pre-fill.
   /// - Returns: A view with the initial identifier configured.
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
-    config.initialIdentifier = identifier
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
-  }
-
-  /// Sets the initial value for the phone number field on the auth screen.
-  ///
-  /// Use this to pre-fill the phone number field when presenting `AuthView`.
-  ///
-  /// - Parameter phoneNumber: The phone number to pre-fill (e.g. `"15555550100"`).
-  /// - Returns: A view with the initial phone number configured.
-  public func initialPhoneNumber(_ phoneNumber: String) -> AuthView {
-    var config = config
-    config.initialPhoneNumber = phoneNumber
+    if identifier.isPhoneNumber {
+      config.initialPhoneNumber = identifier
+    } else {
+      config.initialIdentifier = identifier
+    }
     return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 
