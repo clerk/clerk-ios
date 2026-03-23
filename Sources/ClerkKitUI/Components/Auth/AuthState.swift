@@ -72,7 +72,7 @@ final class AuthState {
     }
 
     if let identifier = config.initialIdentifier {
-      if identifier.isPhoneNumber {
+      if identifier.looksLikePhoneNumber {
         authStartPhoneNumber = identifier
         authStartIdentifier = ""
       } else {
