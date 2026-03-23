@@ -65,12 +65,14 @@ public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
 
   /// Form field state for auth views.
   @State private var authState: AuthState
+
+  /// Configuration values for identifier pre-filling and persistence.
+  private let config: AuthIdentifierConfig
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -104,6 +106,17 @@ public struct AuthView: View {
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
+    config = AuthIdentifierConfig()
+  }
+
+  private init(
+    mode: Mode,
+    isDismissable: Bool,
+    config: AuthIdentifierConfig
+  ) {
+    _authState = State(initialValue: AuthState(mode: mode))
+    self.isDismissable = isDismissable
+    self.config = config
   }
 
   public var body: some View {
@@ -176,6 +189,9 @@ public struct AuthView: View {
         navigation.path = []
       }
     }
+    .onChange(of: config, initial: true) { _, newConfig in
+      authState.configure(newConfig)
+    }
     .taskOnce {
       await clerk.telemetry.record(
         TelemetryEvents.viewDidAppear(
@@ -194,6 +210,36 @@ extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissable && !navigation.hasSessionTaskStartInPath
+  }
+}
+
+// MARK: - View Modifiers
+
+extension AuthView {
+  /// Sets the initial value for the identifier field on the auth screen.
+  ///
+  /// The identifier is automatically detected as a phone number or email/username
+  /// and routed to the appropriate field.
+  ///
+  /// - Parameter identifier: The email address, username, or phone number to pre-fill.
+  /// - Returns: A view with the initial identifier configured.
+  public func initialIdentifier(_ identifier: String) -> AuthView {
+    var config = config
+    config.initialIdentifier = identifier
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+  }
+
+  /// Controls whether auth identifier values are persisted between sessions.
+  ///
+  /// When set to `false`, any previously stored identifiers are cleared and
+  /// future changes will not be saved. The default value is `true`.
+  ///
+  /// - Parameter persists: Whether to persist identifier values to storage.
+  /// - Returns: A view with the identifier persistence behavior configured.
+  public func persistsIdentifiers(_ persists: Bool) -> AuthView {
+    var config = config
+    config.persistsIdentifiers = persists
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 }
 

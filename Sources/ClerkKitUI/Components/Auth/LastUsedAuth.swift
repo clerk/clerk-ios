@@ -75,13 +75,13 @@ enum LastUsedAuth: Equatable {
     }
   }
 
-  static func storeIdentifierType(_ identifier: LastUsedAuth) {
+  static func storeIdentifierType(_ identifier: LastUsedAuth, userDefaults: UserDefaults = .standard) {
     guard let rawValue = identifier.identifierStorageValue else { return }
-    UserDefaults.standard.set(rawValue, forKey: identifierStorageKey)
+    userDefaults.set(rawValue, forKey: identifierStorageKey)
   }
 
-  static func retrieveStoredIdentifierType() -> LastUsedAuth? {
-    guard let rawValue = UserDefaults.standard.string(forKey: identifierStorageKey) else {
+  static func retrieveStoredIdentifierType(userDefaults: UserDefaults = .standard) -> LastUsedAuth? {
+    guard let rawValue = userDefaults.string(forKey: identifierStorageKey) else {
       return nil
     }
 
@@ -97,8 +97,8 @@ enum LastUsedAuth: Equatable {
     }
   }
 
-  static func clearStoredIdentifierType() {
-    UserDefaults.standard.removeObject(forKey: identifierStorageKey)
+  static func clearStoredIdentifierType(userDefaults: UserDefaults = .standard) {
+    userDefaults.removeObject(forKey: identifierStorageKey)
   }
 }
 
