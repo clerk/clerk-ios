@@ -169,13 +169,11 @@ test-ui:
 	fi
 	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
 	if [ -z "$$destination" ]; then \
-		available_destinations="$$(xcodebuild -showdestinations -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package 2>/dev/null)"; \
-		for simulator_name in "iPhone 17" "iPhone 17 Pro" "iPhone 17 Pro Max" "iPhone 16" "iPhone 16 Pro" "iPhone 16 Pro Max" "iPhone SE (3rd generation)"; do \
-			if printf '%s\n' "$$available_destinations" | grep -Fq "name:$$simulator_name }"; then \
-				destination="platform=iOS Simulator,OS=latest,name=$$simulator_name"; \
-				break; \
-			fi; \
-		done; \
+		available_devices="$$(xcrun simctl list devices available)"; \
+		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$$/\2/p' | head -n1)"; \
+		if [ -n "$$simulator_id" ]; then \
+			destination="platform=iOS Simulator,id=$$simulator_id"; \
+		fi; \
 	fi; \
 	if [ -z "$$destination" ]; then \
 		echo "❌ Unable to find an available iPhone simulator for ClerkKitUITests."; \
