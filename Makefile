@@ -2,6 +2,7 @@
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
+IOS_SIMULATOR_DESTINATION ?= platform=iOS Simulator,OS=latest,name=iPhone 15
 
 
 # Default target
@@ -166,7 +167,7 @@ test-ui:
 	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
 		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
 	fi
-	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "platform=iOS Simulator,OS=latest,name=iPhone 16" -only-testing:ClerkKitUITests
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$(IOS_SIMULATOR_DESTINATION)" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
 
 # Run only integration tests
