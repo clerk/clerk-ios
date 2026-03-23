@@ -122,7 +122,7 @@ SwiftLint checks for:
 
 This project uses **Swift Testing** (not XCTest) for all tests. Tests are organized into two categories:
 
-### Unit Tests
+### Unit and UI Tests
 
 `ClerkKitTests` live in `Tests/` and use mocked API responses via the `Mocker` library. `ClerkKitUITests` live in `Tests/UI` and run on an iOS Simulator.
 

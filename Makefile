@@ -1,10 +1,12 @@
-.PHONY: setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 
 
 # Default target
+all: help
+
 help:
 	@echo "Available commands:"
 	@echo "  make setup         - Install tools/hooks and configure Xcode file headers"
@@ -137,6 +139,10 @@ lint-fix:
 # Run both format-check and lint
 check: format-check lint
 	@echo "✅ All checks passed!"
+
+clean:
+	@echo "Cleaning Swift package build artifacts..."
+	swift package clean
 
 # Run ClerkKitTests on macOS
 test:
