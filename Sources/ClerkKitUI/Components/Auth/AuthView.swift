@@ -225,11 +225,7 @@ extension AuthView {
   /// - Returns: A view with the initial identifier configured.
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
-    if identifier.isPhoneNumber {
-      config.initialPhoneNumber = identifier
-    } else {
-      config.initialIdentifier = identifier
-    }
+    config.initialIdentifier = identifier
     return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 

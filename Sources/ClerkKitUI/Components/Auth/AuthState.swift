@@ -63,25 +63,25 @@ final class AuthState {
   /// Applies identifier configuration values.
   func configure(_ config: AuthIdentifierConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    hasInitialValues = config.initialIdentifier != nil || config.initialPhoneNumber != nil
+    hasInitialValues = config.initialIdentifier != nil
 
     if !config.persistsIdentifiers {
       userDefaults.removeObject(forKey: Self.identifierStorageKey)
       userDefaults.removeObject(forKey: Self.phoneNumberStorageKey)
       LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
-      authStartIdentifier = config.initialIdentifier ?? ""
-      authStartPhoneNumber = config.initialPhoneNumber ?? ""
-    } else {
-      if let initialIdentifier = config.initialIdentifier {
-        authStartIdentifier = initialIdentifier
-      } else if config.initialPhoneNumber != nil {
+    }
+
+    if let identifier = config.initialIdentifier {
+      if identifier.isPhoneNumber {
+        authStartPhoneNumber = identifier
         authStartIdentifier = ""
-      }
-      if let initialPhoneNumber = config.initialPhoneNumber {
-        authStartPhoneNumber = initialPhoneNumber
-      } else if config.initialIdentifier != nil {
+      } else {
+        authStartIdentifier = identifier
         authStartPhoneNumber = ""
       }
+    } else if !config.persistsIdentifiers {
+      authStartIdentifier = ""
+      authStartPhoneNumber = ""
     }
   }
 

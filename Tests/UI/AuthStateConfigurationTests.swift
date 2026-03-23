@@ -31,21 +31,34 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func initialValuesOverridePersistedValues() {
+  func initialEmailOverridesPersistedValues() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthIdentifierConfig(
-      initialIdentifier: "seed@example.com",
-      initialPhoneNumber: "17777770123"
+      initialIdentifier: "seed@example.com"
     ))
 
     #expect(authState.authStartIdentifier == "seed@example.com")
-    #expect(authState.authStartPhoneNumber == "17777770123")
+    #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == "seed@example.com")
-    #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == "17777770123")
+  }
+
+  @Test
+  func initialPhoneNumberOverridesPersistedValues() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthIdentifierConfig(
+      initialIdentifier: "+17777770123"
+    ))
+
+    #expect(authState.authStartPhoneNumber == "+17777770123")
+    #expect(authState.authStartIdentifier.isEmpty)
   }
 
   @Test
@@ -83,7 +96,7 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func disablingPersistenceWithInitialValuesShowsButDoesNotStore() {
+  func disablingPersistenceWithInitialEmailShowsButDoesNotStore() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
@@ -92,43 +105,14 @@ struct AuthStateConfigurationTests {
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthIdentifierConfig(
       initialIdentifier: "seed@example.com",
-      initialPhoneNumber: "17777770123",
       persistsIdentifiers: false
     ))
 
     #expect(authState.authStartIdentifier == "seed@example.com")
-    #expect(authState.authStartPhoneNumber == "17777770123")
+    #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
-  }
-
-  @Test
-  func initialPhoneNumberClearsStoredIdentifier() {
-    let defaults = makeUserDefaults()
-    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
-
-    let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
-      initialPhoneNumber: "15555550100"
-    ))
-
-    #expect(authState.authStartIdentifier.isEmpty)
-    #expect(authState.authStartPhoneNumber == "15555550100")
-  }
-
-  @Test
-  func initialIdentifierClearsStoredPhoneNumber() {
-    let defaults = makeUserDefaults()
-    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
-
-    let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
-      initialIdentifier: "seed@example.com"
-    ))
-
-    #expect(authState.authStartIdentifier == "seed@example.com")
-    #expect(authState.authStartPhoneNumber.isEmpty)
   }
 
   private func makeUserDefaults() -> UserDefaults {
