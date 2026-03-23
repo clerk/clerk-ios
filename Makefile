@@ -2,7 +2,7 @@
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
-IOS_SIMULATOR_DESTINATION ?= platform=iOS Simulator,OS=latest,name=iPhone 16
+IOS_SIMULATOR_DESTINATION ?=
 
 
 # Default target
@@ -167,7 +167,23 @@ test-ui:
 	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
 		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
 	fi
-	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$(IOS_SIMULATOR_DESTINATION)" -only-testing:ClerkKitUITests
+	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -z "$$destination" ]; then \
+		available_destinations="$$(xcodebuild -showdestinations -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package 2>/dev/null)"; \
+		for simulator_name in "iPhone 17" "iPhone 17 Pro" "iPhone 17 Pro Max" "iPhone 16" "iPhone 16 Pro" "iPhone 16 Pro Max" "iPhone SE (3rd generation)"; do \
+			if printf '%s\n' "$$available_destinations" | grep -Fq "name:$$simulator_name }"; then \
+				destination="platform=iOS Simulator,OS=latest,name=$$simulator_name"; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ -z "$$destination" ]; then \
+		echo "❌ Unable to find an available iPhone simulator for ClerkKitUITests."; \
+		echo "   Set IOS_SIMULATOR_DESTINATION explicitly and rerun make test-ui."; \
+		exit 1; \
+	fi; \
+	echo "Using simulator destination: $$destination"; \
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
 
 # Run only integration tests
