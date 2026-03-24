@@ -6,16 +6,13 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkAuthEventEmitterResponseMiddlewareTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   @Test
   func validateEmitsSignInCompletedForCompleteSignInResponse() async throws {
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
-      try await middleware.validate(response, data: signInResponseData(status: "complete"), for: request)
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(signInResponse, data: signInResponseData(status: "complete"), for: signInRequest)
     }
 
     let event = try #require(capturedEvent)
@@ -32,10 +29,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateEmitsSignUpCompletedForCompleteSignUpResponse() async throws {
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
-      try await middleware.validate(response, data: signUpResponseData(status: "complete"), for: request)
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(signUpResponse, data: signUpResponseData(status: "complete"), for: signUpRequest)
     }
 
     let event = try #require(capturedEvent)
@@ -53,10 +51,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateDoesNotEmitSignInCompletedForIncompleteSignInAttempt() async throws {
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let event = try await captureNextAuthEvent {
-      try await middleware.validate(response, data: signInResponseData(status: "needs_second_factor"), for: request)
+    let event = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(signInResponse, data: signInResponseData(status: "needs_second_factor"), for: signInRequest)
     }
 
     if let event {
@@ -66,10 +65,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateEmitsSignedOutForRemovedSessionResponse() async throws {
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
-      try await middleware.validate(response, data: sessionResponseData(status: "removed"), for: request)
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(sessionRemovalResponse, data: sessionResponseData(status: "removed"), for: sessionRemovalRequest)
     }
 
     let event = try #require(capturedEvent)
@@ -85,10 +85,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validatePrefersSignUpBeforeSignInWhenPayloadCanDecodeAsBoth() async throws {
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
-      try await middleware.validate(response, data: signUpResponseData(status: "complete"), for: request)
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(signInResponse, data: signUpResponseData(status: "complete"), for: signInRequest)
     }
 
     let event = try #require(capturedEvent)
@@ -101,26 +102,47 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     }
   }
 
-  private let request = URLRequest(url: URL(string: "https://example.com/v1/client/sign_ins")!)
-  private let response = HTTPURLResponse(
+  private let signInRequest = URLRequest(url: URL(string: "https://example.com/v1/client/sign_ins")!)
+  private let signInResponse = HTTPURLResponse(
     url: URL(string: "https://example.com/v1/client/sign_ins")!,
     statusCode: 200,
     httpVersion: nil,
     headerFields: nil
   )!
 
+  private let signUpRequest = URLRequest(url: URL(string: "https://example.com/v1/client/sign_ups")!)
+  private let signUpResponse = HTTPURLResponse(
+    url: URL(string: "https://example.com/v1/client/sign_ups")!,
+    statusCode: 200,
+    httpVersion: nil,
+    headerFields: nil
+  )!
+
+  private let sessionRemovalRequest = URLRequest(url: URL(string: "https://example.com/v1/client/sessions/sess_removed/remove")!)
+  private let sessionRemovalResponse = HTTPURLResponse(
+    url: URL(string: "https://example.com/v1/client/sessions/sess_removed/remove")!,
+    statusCode: 200,
+    httpVersion: nil,
+    headerFields: nil
+  )!
+
   private func captureNextAuthEvent(
+    from clerk: Clerk,
     timeout: Duration = .milliseconds(250),
     operation: () async throws -> Void
   ) async throws -> AuthEvent? {
     let captured = LockIsolated<AuthEvent?>(nil)
-    let listener = Task { @MainActor in
-      var iterator = Clerk.shared.auth.events.makeAsyncIterator()
-      if let event = await iterator.next() {
-        captured.setValue(event)
+    var listener: Task<Void, Never>?
+    await withCheckedContinuation { (ready: CheckedContinuation<Void, Never>) in
+      listener = Task { @MainActor in
+        var iterator = clerk.auth.events.makeAsyncIterator()
+        ready.resume()
+        if let event = await iterator.next() {
+          captured.setValue(event)
+        }
       }
     }
-    defer { listener.cancel() }
+    defer { listener?.cancel() }
 
     try await operation()
 
