@@ -7,12 +7,16 @@ import Testing
 @Suite(.serialized)
 struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
-  func validateEmitsSignInCompletedForCompleteSignInResponse() async throws {
+  func validateEmitsSignInCompletedForSignInAttemptResponseObject() async throws {
     let clerk = Clerk()
     let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(signInResponse, data: signInResponseData(status: "complete"), for: signInRequest)
+      try await middleware.validate(
+        signInResponse,
+        data: signInResponseData(object: "sign_in_attempt", status: "complete"),
+        for: signInRequest
+      )
     }
 
     let event = try #require(capturedEvent)
@@ -28,12 +32,16 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   }
 
   @Test
-  func validateEmitsSignUpCompletedForCompleteSignUpResponse() async throws {
+  func validateEmitsSignUpCompletedForSignUpAttemptResponseObject() async throws {
     let clerk = Clerk()
     let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(signUpResponse, data: signUpResponseData(status: "complete"), for: signUpRequest)
+      try await middleware.validate(
+        signUpResponse,
+        data: signUpResponseData(object: "sign_up_attempt", status: "complete"),
+        for: signUpRequest
+      )
     }
 
     let event = try #require(capturedEvent)
@@ -55,7 +63,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
     let event = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(signInResponse, data: signInResponseData(status: "needs_second_factor"), for: signInRequest)
+      try await middleware.validate(
+        signInResponse,
+        data: signInResponseData(object: "sign_in_attempt", status: "needs_second_factor"),
+        for: signInRequest
+      )
     }
 
     if let event {
@@ -69,7 +81,11 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(sessionRemovalResponse, data: sessionResponseData(status: "removed"), for: sessionRemovalRequest)
+      try await middleware.validate(
+        sessionRemovalResponse,
+        data: sessionResponseData(object: "session", status: "removed"),
+        for: sessionRemovalRequest
+      )
     }
 
     let event = try #require(capturedEvent)
@@ -80,25 +96,6 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
       #expect(session.status == .removed)
     default:
       Issue.record("Expected signedOut event but received \(String(describing: event))")
-    }
-  }
-
-  @Test
-  func validatePrefersSignUpBeforeSignInWhenPayloadCanDecodeAsBoth() async throws {
-    let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
-
-    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(signInResponse, data: signUpResponseData(status: "complete"), for: signInRequest)
-    }
-
-    let event = try #require(capturedEvent)
-
-    switch event {
-    case .signUpCompleted:
-      break
-    default:
-      Issue.record("Expected signUpCompleted event but received \(String(describing: event))")
     }
   }
 
@@ -158,9 +155,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     return captured.value
   }
 
-  private func signInResponseData(status: String) throws -> Data {
+  private func signInResponseData(object: String, status: String) throws -> Data {
     try JSONEncoder.clerkEncoder.encode(Envelope(
       response: SignInResponsePayload(
+        object: object,
         id: "sia_test",
         status: status,
         createdSessionId: "sess_test"
@@ -168,9 +166,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     ))
   }
 
-  private func signUpResponseData(status: String) throws -> Data {
+  private func signUpResponseData(object: String, status: String) throws -> Data {
     try JSONEncoder.clerkEncoder.encode(Envelope(
       response: SignUpResponsePayload(
+        object: object,
         id: "su_test",
         status: status,
         requiredFields: [],
@@ -186,9 +185,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     ))
   }
 
-  private func sessionResponseData(status: String) throws -> Data {
+  private func sessionResponseData(object: String, status: String) throws -> Data {
     try JSONEncoder.clerkEncoder.encode(Envelope(
       response: SessionResponsePayload(
+        object: object,
         id: "sess_removed",
         status: status,
         expireAt: Date(timeIntervalSince1970: 1_774_364_830),
@@ -206,12 +206,14 @@ private struct Envelope<Response: Codable>: Codable {
 }
 
 private struct SignInResponsePayload: Codable {
+  let object: String
   let id: String
   let status: String
   let createdSessionId: String?
 }
 
 private struct SignUpResponsePayload: Codable {
+  let object: String
   let id: String
   let status: String
   let requiredFields: [String]
@@ -226,6 +228,7 @@ private struct SignUpResponsePayload: Codable {
 }
 
 private struct SessionResponsePayload: Codable {
+  let object: String
   let id: String
   let status: String
   let expireAt: Date
