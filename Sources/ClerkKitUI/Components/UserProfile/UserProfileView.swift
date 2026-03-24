@@ -428,7 +428,7 @@ extension UserProfileView {
     case .builtIn(let builtInRow):
       builtInRowView(builtInRow)
     case .custom(let customRow, _):
-      row(icon: customRow.icon, text: customRow.title, bundle: customRow.bundle) {
+      row(icon: customRow.icon, text: customRow.title, bundle: nil) {
         navigateToCustom(customRow.route)
       }
     }
