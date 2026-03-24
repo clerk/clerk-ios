@@ -9,10 +9,10 @@ import SwiftUI
 
 /// A custom row displayed alongside Clerk's built-in rows in ``UserProfileView``.
 public struct UserProfileCustomRow<Route: Hashable> {
-  public let route: Route
-  public let title: LocalizedStringKey
-  public let icon: UserProfileRowIcon
-  public let placement: UserProfileCustomRowPlacement
+  let route: Route
+  let title: LocalizedStringKey
+  let icon: UserProfileRowIcon
+  let placement: UserProfileCustomRowPlacement
 
   /// Creates a custom row for ``UserProfileView``.
   ///
