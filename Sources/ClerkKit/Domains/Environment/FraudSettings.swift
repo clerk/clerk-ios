@@ -9,8 +9,35 @@ extension Clerk.Environment {
   public struct FraudSettings: Codable, Sendable, Equatable {
     public let native: Native
 
+    public init(native: Native = .init()) {
+      self.native = native
+    }
+
+    private enum CodingKeys: String, CodingKey {
+      case native
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      native = try container.decodeIfPresent(Native.self, forKey: .native) ?? .init()
+    }
+
     public struct Native: Codable, Sendable, Equatable {
       public let deviceAttestationMode: DeviceAttestationMode
+
+      public init(deviceAttestationMode: DeviceAttestationMode = .disabled) {
+        self.deviceAttestationMode = deviceAttestationMode
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case deviceAttestationMode
+      }
+
+      public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        deviceAttestationMode =
+          try container.decodeIfPresent(DeviceAttestationMode.self, forKey: .deviceAttestationMode) ?? .disabled
+      }
 
       public enum DeviceAttestationMode: Codable, Sendable, Equatable {
         case disabled

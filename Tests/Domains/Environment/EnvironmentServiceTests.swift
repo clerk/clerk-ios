@@ -32,4 +32,24 @@ struct EnvironmentServiceTests {
     _ = try await Clerk.shared.dependencies.environmentService.get()
     #expect(requestHandled.value)
   }
+
+  @Test
+  func getWithoutFraudSettings() async throws {
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
+    let encodedEnvironment = try JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)
+    var jsonObject = try #require(JSONSerialization.jsonObject(with: encodedEnvironment) as? [String: Any])
+    jsonObject.removeValue(forKey: "fraud_settings")
+
+    let mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONSerialization.data(withJSONObject: jsonObject),
+      ]
+    )
+
+    mock.register()
+
+    let environment = try await Clerk.shared.dependencies.environmentService.get()
+    #expect(environment.fraudSettings == .init())
+  }
 }

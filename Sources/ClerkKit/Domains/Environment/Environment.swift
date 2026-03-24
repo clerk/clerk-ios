@@ -22,6 +22,21 @@ extension Clerk {
       self.displayConfig = displayConfig
       self.fraudSettings = fraudSettings
     }
+
+    private enum CodingKeys: String, CodingKey {
+      case authConfig
+      case userSettings
+      case displayConfig
+      case fraudSettings
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      authConfig = try container.decode(AuthConfig.self, forKey: .authConfig)
+      userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
+      displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
+      fraudSettings = try container.decodeIfPresent(FraudSettings.self, forKey: .fraudSettings) ?? .init()
+    }
   }
 }
 

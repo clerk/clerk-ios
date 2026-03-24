@@ -252,9 +252,8 @@ extension Clerk {
           try await self.refreshEnvironment()
         }
 
-        let env = try await environment
+        _ = try await environment
         _ = try await client
-        attestDeviceIfNeeded(environment: env)
       } catch is CancellationError {
         return
       } catch {
@@ -502,20 +501,6 @@ extension Clerk {
       watchConnectivityCoordinator?.sync()
     } catch {
       ClerkLogger.logError(error, message: "Failed to save device token to keychain")
-    }
-  }
-
-  private func attestDeviceIfNeeded(environment: Environment) {
-    if !AppAttestHelper.hasKeyId,
-       [.onboarding, .enforced].contains(environment.fraudSettings.native.deviceAttestationMode)
-    {
-      Task(priority: .background) {
-        do {
-          try await AppAttestHelper.performDeviceAttestation()
-        } catch {
-          ClerkLogger.logError(error, message: "Device attestation failed")
-        }
-      }
     }
   }
 
