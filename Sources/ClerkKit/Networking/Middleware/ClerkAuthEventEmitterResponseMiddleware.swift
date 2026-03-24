@@ -11,7 +11,6 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
        signUp.status == .complete
     {
       await Clerk.shared.auth.send(.signUpCompleted(signUp: signUp))
-      print("**SIGN UP HERE**")
       return
     }
 
@@ -19,7 +18,6 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
        signIn.status == .complete
     {
       await Clerk.shared.auth.send(.signInCompleted(signIn: signIn))
-      print("**SIGN IN HERE**")
       return
     }
 
@@ -27,7 +25,6 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
        session.status == .removed
     {
       await Clerk.shared.auth.send(.signedOut(session: session))
-      print("**SIGN OUT HERE**")
     }
   }
 }
