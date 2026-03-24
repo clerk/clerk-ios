@@ -6,32 +6,36 @@
 import Foundation
 
 struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
+  private let clerkProvider: @Sendable @MainActor () -> Clerk
+
+  init(clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }) {
+    self.clerkProvider = clerkProvider
+  }
+
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
     guard let responseObject = Self.decodeResponseObject(from: data) else {
       return
     }
 
+    let clerk = await clerkProvider()
     switch responseObject {
     case .signUp:
       if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,
          signUp.status == .complete
       {
-        await Clerk.shared.auth.send(.signUpCompleted(signUp: signUp))
-        print("***SIGN UP COMPLETE")
+        await clerk.auth.send(.signUpCompleted(signUp: signUp))
       }
     case .signIn:
       if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,
          signIn.status == .complete
       {
-        await Clerk.shared.auth.send(.signInCompleted(signIn: signIn))
-        print("***SIGN IN COMPLETE")
+        await clerk.auth.send(.signInCompleted(signIn: signIn))
       }
     case .session:
       if let session = try? JSONDecoder.clerkDecoder.decode(ClientResponse<Session>.self, from: data).response,
          session.status == .removed
       {
-        await Clerk.shared.auth.send(.signedOut(session: session))
-        print("***SESSION REMOVED")
+        await clerk.auth.send(.signedOut(session: session))
       }
     case .other:
       return

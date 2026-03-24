@@ -8,10 +8,10 @@ import Testing
 struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateEmitsSignInCompletedForSignInAttemptResponseObject() async throws {
-    configureClerkForTesting()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
         signInResponse,
         data: signInResponseData(object: "sign_in_attempt", status: "complete"),
@@ -33,10 +33,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateEmitsSignUpCompletedForSignUpAttemptResponseObject() async throws {
-    configureClerkForTesting()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
         signUpResponse,
         data: signUpResponseData(object: "sign_up_attempt", status: "complete"),
@@ -59,10 +59,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateDoesNotEmitSignInCompletedForIncompleteSignInAttempt() async throws {
-    configureClerkForTesting()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let event = try await captureNextAuthEvent {
+    let event = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
         signInResponse,
         data: signInResponseData(object: "sign_in_attempt", status: "needs_second_factor"),
@@ -77,10 +77,10 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
   @Test
   func validateEmitsSignedOutForRemovedSessionResponse() async throws {
-    configureClerkForTesting()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware()
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
-    let capturedEvent = try await captureNextAuthEvent {
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
         sessionRemovalResponse,
         data: sessionResponseData(object: "session", status: "removed"),
@@ -124,6 +124,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   )!
 
   private func captureNextAuthEvent(
+    from clerk: Clerk,
     timeout: Duration = .milliseconds(250),
     operation: () async throws -> Void
   ) async throws -> AuthEvent? {
@@ -131,7 +132,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     var listener: Task<Void, Never>?
     await withCheckedContinuation { (ready: CheckedContinuation<Void, Never>) in
       listener = Task { @MainActor in
-        var iterator = Clerk.shared.auth.events.makeAsyncIterator()
+        var iterator = clerk.auth.events.makeAsyncIterator()
         ready.resume()
         if let event = await iterator.next() {
           captured.setValue(event)
