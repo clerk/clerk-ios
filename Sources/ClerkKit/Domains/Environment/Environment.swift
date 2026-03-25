@@ -9,34 +9,15 @@ extension Clerk {
     public var authConfig: AuthConfig
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
-    public var fraudSettings: FraudSettings
 
     public init(
       authConfig: AuthConfig,
       userSettings: UserSettings,
-      displayConfig: DisplayConfig,
-      fraudSettings: FraudSettings
+      displayConfig: DisplayConfig
     ) {
       self.authConfig = authConfig
       self.userSettings = userSettings
       self.displayConfig = displayConfig
-      self.fraudSettings = fraudSettings
-    }
-
-    private enum CodingKeys: String, CodingKey {
-      case authConfig
-      case userSettings
-      case displayConfig
-      case fraudSettings
-    }
-
-    public init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-      authConfig = try container.decode(AuthConfig.self, forKey: .authConfig)
-      userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
-      displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
-      // Keep decoding resilient if older/newer backends omit the deprecated fraud settings payload.
-      fraudSettings = try container.decodeIfPresent(FraudSettings.self, forKey: .fraudSettings) ?? .init()
     }
   }
 }
