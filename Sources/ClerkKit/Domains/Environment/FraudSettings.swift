@@ -19,6 +19,7 @@ extension Clerk.Environment {
 
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
+      // Missing nested device attestation settings are treated as disabled for backwards compatibility.
       native = try container.decodeIfPresent(Native.self, forKey: .native) ?? .init()
     }
 
@@ -35,6 +36,7 @@ extension Clerk.Environment {
 
       public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Missing device_attestation_mode should not break environment decoding on newer server responses.
         deviceAttestationMode =
           try container.decodeIfPresent(DeviceAttestationMode.self, forKey: .deviceAttestationMode) ?? .disabled
       }

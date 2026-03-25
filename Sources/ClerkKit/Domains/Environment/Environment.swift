@@ -35,6 +35,7 @@ extension Clerk {
       authConfig = try container.decode(AuthConfig.self, forKey: .authConfig)
       userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
       displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
+      // Keep decoding resilient if older/newer backends omit the deprecated fraud settings payload.
       fraudSettings = try container.decodeIfPresent(FraudSettings.self, forKey: .fraudSettings) ?? .init()
     }
   }
