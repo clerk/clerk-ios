@@ -102,7 +102,6 @@ extension NetworkingPipeline {
         ClerkErrorThrowingResponseMiddleware(),
       ],
       retryMiddleware: [
-        ClerkDeviceAssertionRetryMiddleware(),
         ClerkRateLimitRetryMiddleware(),
       ]
     )

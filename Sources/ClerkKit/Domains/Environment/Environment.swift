@@ -9,18 +9,15 @@ extension Clerk {
     public var authConfig: AuthConfig
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
-    public var fraudSettings: FraudSettings
 
     public init(
       authConfig: AuthConfig,
       userSettings: UserSettings,
-      displayConfig: DisplayConfig,
-      fraudSettings: FraudSettings
+      displayConfig: DisplayConfig
     ) {
       self.authConfig = authConfig
       self.userSettings = userSettings
       self.displayConfig = displayConfig
-      self.fraudSettings = fraudSettings
     }
   }
 }
