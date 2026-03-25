@@ -39,7 +39,10 @@ public struct UserProfileCustomRow<Route: Hashable> {
 
 /// The icon displayed by a user profile row.
 public enum UserProfileRowIcon: Hashable, Sendable {
-  case asset(name: String)
+  /// A template-rendered asset from either the SDK bundle or the host app bundle.
+  ///
+  /// Use `width` and `height` to tune the rendered icon size within the fixed row icon slot.
+  case asset(name: String, width: CGFloat = 24, height: CGFloat = 24)
   case system(name: String)
 }
 

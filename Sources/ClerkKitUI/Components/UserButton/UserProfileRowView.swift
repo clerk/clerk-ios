@@ -42,12 +42,12 @@ struct UserProfileRowView: View {
   @ViewBuilder
   private var iconView: some View {
     switch icon {
-    case .asset(let name):
+    case .asset(let name, let width, let height):
       Image(name, bundle: bundle)
         .renderingMode(.template)
         .resizable()
         .scaledToFit()
-        .frame(maxWidth: 24, maxHeight: 24)
+        .frame(width: width, height: height)
         .frame(width: 48, height: 24)
         .foregroundStyle(theme.colors.mutedForeground)
     case .system(let name):
