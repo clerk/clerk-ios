@@ -30,8 +30,8 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `createPhoneNumber(phoneNumber:)` method.
   package nonisolated(unsafe) var createPhoneNumberHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:)` method.
-  package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String]?) async throws -> ExternalAccount)?
+  /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
+  package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
 
   /// Custom handler for the `createExternalAccountToken(provider:idToken:)` method.
   package nonisolated(unsafe) var createExternalAccountTokenHandler: ((IDTokenProvider, String) async throws -> ExternalAccount)?
@@ -83,7 +83,7 @@ package final class MockUserService: UserServiceProtocol {
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
   ///   - createEmailAddress: Optional implementation of the `createEmailAddress(emailAddress:)` method.
   ///   - createPhoneNumber: Optional implementation of the `createPhoneNumber(phoneNumber:)` method.
-  ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:)` method.
+  ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
   ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:)` method.
   ///   - createPasskey: Optional implementation of the `createPasskey()` method (iOS only).
   ///   - createTotp: Optional implementation of the `createTotp()` method.
@@ -117,7 +117,7 @@ package final class MockUserService: UserServiceProtocol {
     createBackupCodes: (() async throws -> BackupCodeResource)? = nil,
     createEmailAddress: ((String) async throws -> EmailAddress)? = nil,
     createPhoneNumber: ((String) async throws -> PhoneNumber)? = nil,
-    createExternalAccount: ((OAuthProvider, String?, [String]?) async throws -> ExternalAccount)? = nil,
+    createExternalAccount: ((OAuthProvider, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)? = nil,
     createExternalAccountToken: ((IDTokenProvider, String) async throws -> ExternalAccount)? = nil,
     createTotp: (() async throws -> TOTPResource)? = nil,
     verifyTotp: ((String) async throws -> TOTPResource)? = nil,
@@ -200,9 +200,14 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount {
+  package func createExternalAccount(
+    provider: OAuthProvider,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompts: [OIDCPrompt]
+  ) async throws -> ExternalAccount {
     if let handler = createExternalAccountHandler {
-      return try await handler(provider, redirectUrl, additionalScopes)
+      return try await handler(provider, redirectUrl, additionalScopes, oidcPrompts)
     }
     return .mockVerified
   }

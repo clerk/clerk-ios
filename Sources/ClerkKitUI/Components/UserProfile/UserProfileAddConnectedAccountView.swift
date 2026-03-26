@@ -10,6 +10,7 @@ import SwiftUI
 
 struct UserProfileAddConnectedAccountView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkUserProfileOAuthConfiguration) private var configuration
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
@@ -92,7 +93,11 @@ extension UserProfileAddConnectedAccountView {
       if provider == .apple {
         try await user.connectAppleAccount()
       } else {
-        let newExternalAccount = try await user.createExternalAccount(provider: provider)
+        let newExternalAccount = try await user.createExternalAccount(
+          provider: provider,
+          additionalScopes: configuration.additionalScopes(for: provider),
+          oidcPrompts: configuration.prompts(for: provider)
+        )
         try await newExternalAccount.reauthorize()
       }
 

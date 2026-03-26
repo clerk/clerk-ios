@@ -106,6 +106,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [UserProfileCustomRow<Route>]
+  private let configuration: UserProfileOAuthConfiguration
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
@@ -120,11 +121,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     isDismissable: Bool,
     navigationPath: Binding<NavigationPath>?,
     customRows: [UserProfileCustomRow<Route>],
+    configuration: UserProfileOAuthConfiguration,
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
     self.customRows = customRows
+    self.configuration = configuration
     self.customDestination = customDestination
   }
 
@@ -148,6 +151,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
+      configuration: .init(),
       customDestination: nil
     )
   }
@@ -336,6 +340,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             dismissAction: dismissAction
           )
         )
+        .environment(\.clerkUserProfileOAuthConfiguration, configuration)
     }
   }
 }
@@ -351,6 +356,37 @@ extension UserProfileView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
+      configuration: configuration,
+      customDestination: customDestination
+    )
+  }
+
+  /// Configures additional OAuth scopes per provider for built-in connected account flows.
+  public func userProfileAdditionalOAuthScopes(
+    _ scopes: [OAuthScopes]
+  ) -> UserProfileView<Route, Destination> {
+    var configuration = configuration
+    configuration.additionalScopes = scopes
+    return UserProfileView<Route, Destination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customRows: customRows,
+      configuration: configuration,
+      customDestination: customDestination
+    )
+  }
+
+  /// Configures OIDC prompts per provider for built-in connected account flows.
+  public func userProfileOIDCPrompts(
+    _ prompts: [OAuthPrompts]
+  ) -> UserProfileView<Route, Destination> {
+    var configuration = configuration
+    configuration.prompts = prompts
+    return UserProfileView<Route, Destination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customRows: customRows,
+      configuration: configuration,
       customDestination: customDestination
     )
   }
@@ -369,6 +405,7 @@ extension UserProfileView where Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
+      configuration: configuration,
       customDestination: destination
     )
   }
@@ -383,6 +420,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
+      configuration: configuration,
       customDestination: nil
     )
   }
@@ -400,6 +438,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
+      configuration: configuration,
       customDestination: destination
     )
   }

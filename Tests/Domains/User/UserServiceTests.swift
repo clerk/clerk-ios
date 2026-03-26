@@ -176,7 +176,8 @@ struct UserServiceTests {
     _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
-      additionalScopes: nil
+      additionalScopes: [],
+      oidcPrompts: []
     )
     #expect(requestHandled.value)
   }
@@ -205,7 +206,8 @@ struct UserServiceTests {
     _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
       provider: .google,
       redirectUrl: explicitRedirectUrl,
-      additionalScopes: nil
+      additionalScopes: [],
+      oidcPrompts: []
     )
     #expect(requestHandled.value)
   }
@@ -235,7 +237,39 @@ struct UserServiceTests {
     _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
-      additionalScopes: ["scope1", "scope2"]
+      additionalScopes: ["scope1", "scope2"],
+      oidcPrompts: []
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createExternalAccountWithOIDCPromptArray() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/external_accounts")!
+    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<ExternalAccount>(response: .mockVerified, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
+      #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
+      #expect(request.urlEncodedFormBody!["oidc_prompt"] == "consent")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+      provider: .google,
+      redirectUrl: nil,
+      additionalScopes: [],
+      oidcPrompts: [.consent]
     )
     #expect(requestHandled.value)
   }

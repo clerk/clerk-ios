@@ -256,9 +256,20 @@ extension User {
   ///    - provider: The OAuth provider. For example: `.facebook`, `.github`, etc.
   ///    - redirectUrl: The full URL or path that the OAuth provider should redirect to, on successful authorization on their part.
   ///    - additionalScopes: Additional scopes for your user to be prompted to approve.
+  ///    - oidcPrompts: OIDC prompt values to include in the authorization request.
   @discardableResult @MainActor
-  public func createExternalAccount(provider: OAuthProvider, redirectUrl: String? = nil, additionalScopes: [String]? = nil) async throws -> ExternalAccount {
-    try await userService.createExternalAccount(provider: provider, redirectUrl: redirectUrl, additionalScopes: additionalScopes)
+  public func createExternalAccount(
+    provider: OAuthProvider,
+    redirectUrl: String? = nil,
+    additionalScopes: [String]? = nil,
+    oidcPrompts: [OIDCPrompt] = []
+  ) async throws -> ExternalAccount {
+    try await userService.createExternalAccount(
+      provider: provider,
+      redirectUrl: redirectUrl,
+      additionalScopes: additionalScopes ?? [],
+      oidcPrompts: oidcPrompts
+    )
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.

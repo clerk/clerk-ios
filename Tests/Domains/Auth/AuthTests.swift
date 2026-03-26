@@ -17,7 +17,8 @@ struct AuthTests {
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
-    environment: Clerk.Environment? = .mock
+    environment: Clerk.Environment? = .mock,
+    options: Clerk.Options = .init()
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -25,6 +26,9 @@ struct AuthTests {
       signUpService: signUpService,
       sessionService: sessionService
     )
+    try? (Clerk.shared.dependencies as? MockDependencyContainer)?
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: options)
     Clerk.shared.environment = environment
   }
 
