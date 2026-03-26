@@ -110,6 +110,7 @@ struct UserProfileMfaSection: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .groupBoxStyle(.clerk)
     .sheet(isPresented: $isAddTotpPresented) {
       UserProfileMfaAddTotpView()
     }

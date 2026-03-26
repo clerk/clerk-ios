@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is done, the known drift has been fixed, and the next active subtarget is `ClerkTheme` multiplatform support before any further modal/detail convergence.
+The `UserProfileUpdateProfileView` merge-back is complete: shared profile-editing state and update orchestration now live in [UserProfileUpdateProfileView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView.swift), with only platform-specific presentation and APIs kept behind conditional branches. The next active subtarget is converging [UserProfileChangePasswordView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView+macOS.swift) back into [UserProfileChangePasswordView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView.swift).
 
 ## Status Key
 
@@ -28,7 +28,8 @@ Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is
 - The macOS `AuthView` is intentionally minimal. It now supports provider-based auth plus direct password sign-in, but it is still not feature-parity with the iOS auth stack.
 - The macOS `UserProfileView` is now minimal, but the broader signed-in security/account-management surface is still iOS-only.
 - The macOS example app is still primarily a validation harness, even though it can now launch `AuthView()` and use `UserButton()`/`UserProfileView()`.
-- `ClerkTheme` parity is still iOS-only in practice. The macOS implementation work so far mostly uses system styling, and the shared theme infrastructure still needs its own multiplatform convergence pass.
+- `ClerkTheme` parity is materially better on macOS now that the current auth/profile surfaces use theme-backed input, section, loading/progress, and primary control chrome, but the top-level public views are still split and the broader convergence work remains structural rather than purely visual.
+- TODO: add macOS profile image editing so [UserProfileUpdateProfileView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView.swift) can match the existing iOS profile-photo flow more closely instead of leaving image editing iOS-only.
 
 ## Step 9 Capability Order
 
@@ -49,10 +50,6 @@ Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is
   Target convergence: merge into [UserButtonAccountSwitcher.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserButton/UserButtonAccountSwitcher.swift) after the shared session ordering, active-session selection, add-account routing, and sign-out-all behavior are aligned across platforms.
 - `[ ]` [UserProfileView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileView+macOS.swift)
   Target convergence: merge back into [UserProfileView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileView.swift) once the macOS feature set is broad enough to justify a shared shell and shared navigation model.
-- `[ ]` [UserProfileAddConnectedAccountView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileAddConnectedAccountView+macOS.swift)
-  Target convergence: merge into [UserProfileAddConnectedAccountView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileAddConnectedAccountView.swift) with shared data loading and provider actions, while keeping presentation chrome platform-specific.
-- `[ ]` [UserProfileUpdateProfileView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView+macOS.swift)
-  Target convergence: merge into [UserProfileUpdateProfileView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView.swift) after deciding whether profile-photo editing should also exist on macOS or remain platform-conditional inside one file.
 - `[ ]` [UserProfileSecurityView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileSecurityView+macOS.swift)
   Target convergence: merge into [UserProfileSecurityView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileSecurityView.swift) once the macOS security scope is closer to the iOS section set.
 - `[ ]` [UserProfileDeleteAccountConfirmationView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileDeleteAccountConfirmationView+macOS.swift)
@@ -79,6 +76,7 @@ Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is
 - Hard rule: merge-back work must not change existing iOS behavior or UI unless we explicitly decide to change iOS first.
 - Hard rule: the temporary `+macOS.swift` files were validation scaffolding, not product/source-of-truth implementations.
 - Hard rule: do not preserve, port, or normalize behavior from temporary macOS validation files into shared production code unless iOS already behaves that way or a real macOS platform requirement forces the difference.
+- Hard rule: when a temporary `+macOS.swift` file disagrees with iOS on layout, control placement, copy, validation, or interaction flow, assume the temporary macOS file is wrong by default and collapse back to the iOS behavior unless a concrete macOS API limitation requires the difference.
 - Primary implementation rule: reuse the existing iOS component structure, UI layout, UX flow, and shared SwiftUI code wherever that is reasonably possible on macOS.
 - Platform-specific code should be the exception, not the default:
   - add macOS-only code only when AppKit/macOS interaction differences actually require it
@@ -92,8 +90,6 @@ Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is
   3. Modal/detail subviews
   4. Top-level public components
 - UserProfile subtree merge next:
-  - `UserProfileAddConnectedAccountView+macOS.swift`
-  - `UserProfileUpdateProfileView+macOS.swift`
   - `UserProfileChangePasswordView+macOS.swift`
   - `BackupCodesView+macOS.swift`
   - `UserProfilePasskeyRenameView+macOS.swift`
@@ -298,9 +294,35 @@ Step 10 cleanup is complete: the retroactive audit of the earlier merge-backs is
 - Validation after the Step 10 retroactive audit fixes:
   - `swift build` succeeded.
   - `xcodebuild -project /Users/seanperez/Desktop/clerk-ios/Examples/MacExampleApp/MacExampleApp.xcodeproj -scheme MacExampleApp -destination 'platform=macOS' -derivedDataPath /tmp/MacExampleAppDerivedData CODE_SIGNING_ALLOWED=NO build` succeeded.
-- Step 10 next subtarget: converge [UserProfileAddConnectedAccountView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileAddConnectedAccountView+macOS.swift) back into [UserProfileAddConnectedAccountView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileAddConnectedAccountView.swift), then continue through the remaining modal/detail views.
+- Step 10 first `ClerkTheme` convergence pass is complete.
+- Step 10 first `ClerkTheme` convergence result:
+  - shared themed field/focus styling now works on macOS through [ClerkTextField.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Common/ClerkTextField.swift) and [ClerkFocusedBorder.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Common/ClerkFocusedBorder.swift)
+  - current macOS auth/profile detail sheets now use the shared Clerk-themed text field instead of `.roundedBorder` where the shared input behavior already exists
+  - current macOS profile/security `GroupBox` surfaces now use [ClerkGroupBoxStyle.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Common/ClerkGroupBoxStyle.swift) instead of the default system `GroupBox` chrome
 - Step 10 cleanup note: after the first row/section merge, [UserProfileDeviceRow.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileDeviceRow.swift) was tightened so both platforms now share one `isLoading` state and one `error` source, with only the error presentation and control chrome staying platform-specific.
-- Theme parity follow-up: after the main component convergence work is stable, add a dedicated pass for [ClerkTheme.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkTheme.swift), [ClerkThemes.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkThemes.swift), [ClerkColors.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkColors.swift), [ClerkFonts.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkFonts.swift), and [ClerkDesign.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkDesign.swift) so macOS can style the same public components through `clerkTheme` as closely to iOS as possible.
+- Validation after the Step 10 first `ClerkTheme` convergence pass:
+  - `swift build` succeeded.
+  - `xcodebuild -project /Users/seanperez/Desktop/clerk-ios/Examples/MacExampleApp/MacExampleApp.xcodeproj -scheme MacExampleApp -destination 'platform=macOS' -derivedDataPath /tmp/MacExampleAppDerivedData CODE_SIGNING_ALLOWED=NO build` succeeded.
+- Step 10 second `ClerkTheme` convergence pass is complete.
+- Step 10 second `ClerkTheme` convergence result:
+  - current macOS auth/profile loading states now use [ClerkLoadingStatusView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Common/ClerkLoadingStatusView.swift) or [SpinnerView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Common/SpinnerView.swift) instead of the default macOS `ProgressView` chrome
+  - current macOS cancel/close actions now use Clerk button styling instead of the default system button chrome
+  - the macOS password-management toggle and passkey action menu label now pick up theme-backed control styling instead of reading as isolated system controls
+- Validation after the Step 10 second `ClerkTheme` convergence pass:
+  - `swift build` succeeded.
+  - `xcodebuild -project /Users/seanperez/Desktop/clerk-ios/Examples/MacExampleApp/MacExampleApp.xcodeproj -scheme MacExampleApp -destination 'platform=macOS' -derivedDataPath /tmp/MacExampleAppDerivedData CODE_SIGNING_ALLOWED=NO build` succeeded.
+- Step 10 `UserProfileUpdateProfileView` convergence pass is complete.
+- Step 10 `UserProfileUpdateProfileView` convergence result:
+  - the temporary [UserProfileUpdateProfileView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView+macOS.swift) scaffold was deleted, and both platforms now flow through [UserProfileUpdateProfileView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileUpdateProfileView.swift)
+  - shared profile-editing state, validation, and `User.UpdateParams` construction now live in one place, keeping the existing iOS flow as the source of truth
+  - the shared view shell was tightened again after the initial merge so macOS now reuses the iOS-style `NavigationStack`, toolbar title/cancel placement, scroll layout, save-button placement, and shared error presentation instead of preserving the temporary macOS sheet copy and footer chrome
+  - iOS-only profile photo editing stays isolated behind iOS conditionals, while macOS keeps only its sheet sizing and post-save `clerk.refreshClient()` behavior as platform-specific branches
+  - TODO follow-up: port the existing iOS profile image editing flow to macOS rather than treating missing image editing as an acceptable long-term divergence
+- Validation after the Step 10 `UserProfileUpdateProfileView` convergence pass:
+  - `swift build` succeeded.
+  - `xcodebuild -project /Users/seanperez/Desktop/clerk-ios/Examples/MacExampleApp/MacExampleApp.xcodeproj -scheme MacExampleApp -destination 'platform=macOS' -derivedDataPath /tmp/MacExampleAppDerivedData CODE_SIGNING_ALLOWED=NO build` succeeded.
+- Step 10 next subtarget: converge [UserProfileChangePasswordView+macOS.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView+macOS.swift) back into [UserProfileChangePasswordView.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView.swift), then continue through the remaining modal/detail views in merge order.
+- Theme parity follow-up: after the modal/detail convergence work stabilizes, revisit [ClerkTheme.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkTheme.swift), [ClerkThemes.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkThemes.swift), [ClerkColors.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkColors.swift), [ClerkFonts.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkFonts.swift), and [ClerkDesign.swift](/Users/seanperez/Desktop/clerk-ios/Sources/ClerkKitUI/Theme/ClerkDesign.swift) for any token-level cleanup that still makes sense once the shared view structure is settled.
 - Validation after the Step 9 delete-account milestone:
   - `swift build` succeeded.
   - `xcodebuild -project /Users/seanperez/Desktop/clerk-ios/Examples/MacExampleApp/MacExampleApp.xcodeproj -scheme MacExampleApp -destination 'platform=macOS' -derivedDataPath /tmp/MacExampleAppDerivedData CODE_SIGNING_ALLOWED=NO build` succeeded.

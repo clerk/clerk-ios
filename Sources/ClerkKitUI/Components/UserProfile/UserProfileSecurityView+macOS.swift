@@ -59,6 +59,7 @@ struct UserProfileSecurityView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .groupBoxStyle(.clerk)
       }
 
       if clerk.environment?.userSettings.passkeySettings?.allowAutofill != nil {
@@ -95,6 +96,7 @@ struct UserProfileSecurityView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .groupBoxStyle(.clerk)
       }
 
       HStack {
@@ -103,6 +105,7 @@ struct UserProfileSecurityView: View {
         Button("Close") {
           dismiss()
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .keyboardShortcut(.cancelAction)
       }
     }

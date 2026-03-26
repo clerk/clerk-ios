@@ -43,6 +43,7 @@ public struct UserProfileView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
           }
+          .groupBoxStyle(.clerk)
 
           if clerk.environment?.mutliSessionModeIsEnabled == true {
             sessionManagementSection
@@ -57,6 +58,7 @@ public struct UserProfileView: View {
               }
               .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .groupBoxStyle(.clerk)
           }
 
           if !unconnectedProviders.isEmpty {
@@ -81,6 +83,7 @@ public struct UserProfileView: View {
               Button("Close") {
                 dismiss()
               }
+              .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
               .keyboardShortcut(.cancelAction)
             }
 
@@ -148,6 +151,7 @@ public struct UserProfileView: View {
               Button("Close") {
                 dismiss()
               }
+              .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
             }
           }
         }
@@ -189,6 +193,7 @@ extension UserProfileView {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .groupBoxStyle(.clerk)
   }
 
   private var unconnectedProviders: [OAuthProvider] {

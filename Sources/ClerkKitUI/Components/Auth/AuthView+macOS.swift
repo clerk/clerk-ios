@@ -54,13 +54,13 @@ public struct AuthView: View {
           Button("Close") {
             dismiss()
           }
+          .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
           .keyboardShortcut(.cancelAction)
         }
       }
 
       if isLoadingProviders {
-        ProgressView("Loading authentication options…")
-          .controlSize(.regular)
+        ClerkLoadingStatusView("Loading authentication options…")
       } else {
         VStack(alignment: .leading, spacing: 12) {
           if supportsPasswordSignIn {
@@ -84,8 +84,7 @@ public struct AuthView: View {
       }
 
       if isAuthenticating {
-        ProgressView("Waiting for authentication…")
-          .controlSize(.small)
+        ClerkLoadingStatusView("Waiting for authentication…")
       }
 
       if let authError {
@@ -130,13 +129,9 @@ extension AuthView {
         .font(theme.fonts.headline)
         .foregroundStyle(theme.colors.foreground)
 
-      TextField(identifierPrompt, text: $identifier)
-        .textFieldStyle(.roundedBorder)
-        .tint(theme.colors.primary)
+      ClerkTextField(identifierPrompt, text: $identifier)
 
-      SecureField("Password", text: $password)
-        .textFieldStyle(.roundedBorder)
-        .tint(theme.colors.primary)
+      ClerkTextField("Password", text: $password, isSecure: true)
 
       Button(passwordActionTitle) {
         Task {
@@ -484,18 +479,14 @@ private struct SignInClientTrustSheet: View {
           .fixedSize(horizontal: false, vertical: true)
       }
 
-      TextField("Verification code", text: $code)
-        .textFieldStyle(.roundedBorder)
-        .tint(theme.colors.primary)
+      ClerkTextField("Verification code", text: $code)
 
       if isPreparingCode {
-        ProgressView("Sending code…")
-          .controlSize(.small)
+        ClerkLoadingStatusView("Sending code…")
       }
 
       if isVerifying {
-        ProgressView("Verifying…")
-          .controlSize(.small)
+        ClerkLoadingStatusView("Verifying…")
       }
 
       if let errorMessage {
@@ -509,6 +500,7 @@ private struct SignInClientTrustSheet: View {
         Button("Cancel") {
           dismiss()
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .keyboardShortcut(.cancelAction)
 
         Spacer()
@@ -518,6 +510,7 @@ private struct SignInClientTrustSheet: View {
             await prepareCode()
           }
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .disabled(isPreparingCode || isVerifying)
 
         Button("Verify") {

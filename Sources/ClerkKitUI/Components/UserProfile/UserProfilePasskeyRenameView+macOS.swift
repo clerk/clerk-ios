@@ -35,8 +35,7 @@ struct UserProfilePasskeyRenameView: View {
         .foregroundStyle(theme.colors.mutedForeground)
         .fixedSize(horizontal: false, vertical: true)
 
-      TextField("Name of passkey", text: $passkeyName)
-        .textFieldStyle(.roundedBorder)
+      ClerkTextField("Name of passkey", text: $passkeyName)
 
       if let errorMessage {
         Text(errorMessage)
@@ -49,6 +48,7 @@ struct UserProfilePasskeyRenameView: View {
         Button("Cancel") {
           dismiss()
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .keyboardShortcut(.cancelAction)
 
         Spacer()

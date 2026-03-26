@@ -2,7 +2,7 @@
 //  View+ErrorPresenting.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -30,7 +30,9 @@ struct ClerkErrorViewModifier: ViewModifier {
           if let error {
             ErrorView(error: error, action: actionProvider?(error))
               .padding()
+            #if os(iOS)
               .contentSizingDetent()
+            #endif
           }
         }
       )

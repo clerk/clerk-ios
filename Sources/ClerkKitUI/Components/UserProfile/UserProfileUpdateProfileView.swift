@@ -3,21 +3,25 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
+import SwiftUI
+#if os(iOS)
 import NukeUI
 import PhotosUI
-import SwiftUI
+#endif
 
 struct UserProfileUpdateProfileView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
+  #if os(iOS)
   @State private var photosPickerIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var imageIsLoading = false
+  #endif
 
   @State private var firstName: String
   @State private var lastName: String
@@ -49,14 +53,18 @@ struct UserProfileUpdateProfileView: View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 32) {
-          menu
+          #if os(iOS)
+          profileImageMenu
+          #endif
 
           VStack(spacing: 24) {
             if usernameIsEditable {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
+                #endif
             }
 
             if environment?.firstNameIsEnabled == true {
@@ -85,62 +93,74 @@ struct UserProfileUpdateProfileView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
+        #if os(iOS)
         .padding(.top, 60)
+        #elseif os(macOS)
+        .padding(.top, 24)
+        #endif
       }
       .clerkErrorPresenting($error)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
-
-        ToolbarItem(placement: .principal) {
-          Text("Edit profile", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
-      }
-      .photosPicker(
-        isPresented: $photosPickerIsPresented,
-        selection: $photosPickerItem,
-        matching: .images
-      )
-      .onChange(of: photosPickerItem) { _, item in
-        guard let item else { return }
-
-        Task {
-          imageIsLoading = true
-
-          do {
-            guard
-              let data = try await item.loadTransferable(type: Data.self),
-              let uiImage = UIImage(data: data),
-              let resizedData =
-              uiImage
-                .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
-                .jpegData(compressionQuality: 0.8)
-            else {
-              throw ClerkClientError(message: "There was an error loading the image from the photos library.")
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        .preGlassSolidNavBar()
+      #endif
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
             }
+            .foregroundStyle(theme.colors.primary)
+          }
 
-            try await user.setProfileImage(imageData: resizedData)
-          } catch {
-            self.error = error
-            ClerkLogger.error("Failed to set profile image", error: error)
-            imageIsLoading = false
+          ToolbarItem(placement: .principal) {
+            Text("Edit profile", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
         }
-      }
+      #if os(iOS)
+        .photosPicker(
+          isPresented: $photosPickerIsPresented,
+          selection: $photosPickerItem,
+          matching: .images
+        )
+        .onChange(of: photosPickerItem) { _, item in
+          guard let item else { return }
+
+          Task {
+            imageIsLoading = true
+
+            do {
+              guard
+                let data = try await item.loadTransferable(type: Data.self),
+                let uiImage = UIImage(data: data),
+                let resizedData =
+                uiImage
+                  .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+                  .jpegData(compressionQuality: 0.8)
+              else {
+                throw ClerkClientError(message: "There was an error loading the image from the photos library.")
+              }
+
+              try await user.setProfileImage(imageData: resizedData)
+            } catch {
+              self.error = error
+              ClerkLogger.error("Failed to set profile image", error: error)
+              imageIsLoading = false
+            }
+          }
+        }
+      #endif
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }
 
-  private var menu: some View {
+  #if os(iOS)
+  private var profileImageMenu: some View {
     LazyImage(url: URL(string: user.imageUrl)) { state in
       if let image = state.image {
         image
@@ -199,7 +219,45 @@ struct UserProfileUpdateProfileView: View {
       }
     }
   }
+  #endif
 
+  private var editableFields: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      if environment?.usernameIsEnabled == true {
+        ClerkTextField("Username", text: $username)
+          .textContentType(.username)
+          .autocorrectionDisabled()
+        #if os(iOS)
+          .textInputAutocapitalization(.never)
+        #endif
+      }
+
+      if environment?.firstNameIsEnabled == true {
+        ClerkTextField("First name", text: $firstName)
+          .textContentType(.givenName)
+      }
+
+      if environment?.lastNameIsEnabled == true {
+        ClerkTextField("Last name", text: $lastName)
+          .textContentType(.familyName)
+      }
+    }
+  }
+
+  private var saveButton: some View {
+    AsyncButton {
+      await save()
+    } label: { isRunning in
+      Text("Save", bundle: .module)
+        .frame(maxWidth: .infinity)
+        .overlayProgressView(isActive: isRunning) {
+          SpinnerView(color: theme.colors.primaryForeground)
+        }
+    }
+    .buttonStyle(.primary())
+  }
+
+  #if os(iOS)
   @ViewBuilder
   private var menuContent: some View {
     Button("Choose from photo library") {
@@ -222,6 +280,7 @@ struct UserProfileUpdateProfileView: View {
       }
     }
   }
+  #endif
 }
 
 extension UserProfileUpdateProfileView {
@@ -234,18 +293,29 @@ extension UserProfileUpdateProfileView {
           lastName: environment?.lastNameIsEnabled == true ? lastName : nil
         )
       )
-
       dismiss()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to update user profile", error: error)
     }
   }
+
+  private var updateParams: User.UpdateParams {
+    .init(
+      username: environment?.usernameIsEnabled == true ? username : nil,
+      firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
+      lastName: environment?.lastNameIsEnabled == true ? lastName : nil
+    )
+  }
 }
 
 #Preview {
   UserProfileUpdateProfileView(user: .mock)
+  #if os(iOS)
     .clerkPreview()
+  #elseif os(macOS)
+    .environment(Clerk.preview())
+  #endif
     .environment(\.clerkTheme, .clerk)
 }
 

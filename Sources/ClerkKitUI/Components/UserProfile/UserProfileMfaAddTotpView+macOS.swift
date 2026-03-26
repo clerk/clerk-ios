@@ -57,14 +57,7 @@ struct UserProfileMfaAddTotpView: View {
       detailBlock(title: "TOTP URI", value: uri)
     }
 
-    VStack(alignment: .leading, spacing: 6) {
-      Text("Verification code")
-        .font(theme.fonts.subheadline.weight(.medium))
-        .foregroundStyle(theme.colors.foreground)
-
-      TextField("Enter 6-digit code", text: $verificationCode)
-        .textFieldStyle(.roundedBorder)
-    }
+    ClerkTextField("Enter 6-digit code", text: $verificationCode)
 
     if let errorMessage {
       Text(errorMessage)
@@ -77,6 +70,7 @@ struct UserProfileMfaAddTotpView: View {
       Button("Cancel") {
         dismiss()
       }
+      .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
       .keyboardShortcut(.cancelAction)
 
       Spacer()

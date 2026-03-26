@@ -121,8 +121,8 @@ extension UserButtonAccountSwitcher {
         Spacer()
 
         if isRunning {
-          ProgressView()
-            .controlSize(.small)
+          SpinnerView(color: theme.colors.primary)
+            .frame(width: 16, height: 16)
         } else if isActiveSession {
           Label("Current", systemImage: "checkmark.circle.fill")
             .font(theme.fonts.subheadline.weight(.medium))
@@ -150,6 +150,7 @@ extension UserButtonAccountSwitcher {
       Button("Close") {
         dismiss()
       }
+      .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
       .keyboardShortcut(.cancelAction)
 
       Spacer()

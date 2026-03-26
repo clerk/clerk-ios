@@ -36,14 +36,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
         .foregroundStyle(theme.colors.danger)
         .fixedSize(horizontal: false, vertical: true)
 
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Type \"DELETE\" to continue")
-          .font(theme.fonts.subheadline)
-          .foregroundStyle(theme.colors.mutedForeground)
-
-        TextField("DELETE", text: $confirmationText)
-          .textFieldStyle(.roundedBorder)
-      }
+      ClerkTextField("Type \"DELETE\" to continue", text: $confirmationText)
 
       if let errorMessage {
         Text(errorMessage)
@@ -56,6 +49,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
         Button("Cancel") {
           dismiss()
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .keyboardShortcut(.cancelAction)
 
         Spacer()

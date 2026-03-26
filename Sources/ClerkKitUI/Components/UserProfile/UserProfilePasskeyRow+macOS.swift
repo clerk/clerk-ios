@@ -40,7 +40,7 @@ struct UserProfilePasskeyRow: View {
 
         Spacer()
 
-        Menu("Actions") {
+        Menu {
           Button("Rename") {
             renameIsPresented = true
           }
@@ -48,9 +48,21 @@ struct UserProfilePasskeyRow: View {
           Button("Remove", role: .destructive) {
             isConfirmingRemoval = true
           }
+        } label: {
+          Label("Actions", systemImage: "ellipsis.circle")
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.foreground)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 32)
+            .background(theme.colors.background, in: RoundedRectangle(cornerRadius: theme.design.borderRadius))
+            .overlay {
+              RoundedRectangle(cornerRadius: theme.design.borderRadius)
+                .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
+            }
         }
         .menuStyle(.borderlessButton)
         .disabled(isLoading)
+        .opacity(isLoading ? 0.5 : 1)
       }
 
       if let errorMessage {

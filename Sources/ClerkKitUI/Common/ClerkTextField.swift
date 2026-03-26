@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -39,6 +39,18 @@ struct ClerkTextField: View {
     self.isSecure = isSecure
     self.fieldState = fieldState
     self.accessibilityIdentifier = accessibilityIdentifier
+  }
+
+  init(
+    _ title: String,
+    text: Binding<String>,
+    isSecure: Bool = false,
+    fieldState: FieldState = .default
+  ) {
+    titleKey = LocalizedStringKey(title)
+    _text = text
+    self.isSecure = isSecure
+    self.fieldState = fieldState
   }
 
   var isFocusedOrFilled: Bool {

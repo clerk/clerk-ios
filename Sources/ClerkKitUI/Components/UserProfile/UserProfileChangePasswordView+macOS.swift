@@ -51,36 +51,19 @@ struct UserProfileChangePasswordView: View {
 
       VStack(alignment: .leading, spacing: 16) {
         if !isAddingPassword {
-          VStack(alignment: .leading, spacing: 6) {
-            Text("Current password")
-              .font(theme.fonts.subheadline.weight(.medium))
-              .foregroundStyle(theme.colors.foreground)
-
-            SecureField("Current password", text: $currentPassword)
-              .textFieldStyle(.roundedBorder)
-          }
+          ClerkTextField("Current password", text: $currentPassword, isSecure: true)
         }
 
-        VStack(alignment: .leading, spacing: 6) {
-          Text("New password")
-            .font(theme.fonts.subheadline.weight(.medium))
-            .foregroundStyle(theme.colors.foreground)
+        ClerkTextField("New password", text: $newPassword, isSecure: true)
 
-          SecureField("New password", text: $newPassword)
-            .textFieldStyle(.roundedBorder)
-        }
-
-        VStack(alignment: .leading, spacing: 6) {
-          Text("Confirm password")
-            .font(theme.fonts.subheadline.weight(.medium))
-            .foregroundStyle(theme.colors.foreground)
-
-          SecureField("Confirm password", text: $confirmNewPassword)
-            .textFieldStyle(.roundedBorder)
-        }
+        ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
       }
 
       Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
+        .font(theme.fonts.body)
+        .foregroundStyle(theme.colors.foreground)
+        .toggleStyle(.switch)
+        .tint(theme.colors.primary)
 
       if let errorMessage {
         Text(errorMessage)
@@ -93,6 +76,7 @@ struct UserProfileChangePasswordView: View {
         Button("Cancel") {
           dismiss()
         }
+        .buttonStyle(.secondary(config: .init(emphasis: .low, size: .small)))
         .keyboardShortcut(.cancelAction)
 
         Spacer()

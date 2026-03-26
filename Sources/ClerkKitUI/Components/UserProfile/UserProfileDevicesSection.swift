@@ -52,6 +52,7 @@ struct UserProfileDevicesSection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
+      .groupBoxStyle(.clerk)
     }
     #endif
   }
