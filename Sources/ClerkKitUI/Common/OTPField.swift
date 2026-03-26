@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -47,7 +47,9 @@ struct OTPField: View {
       TextField("", text: $code)
         .focused($isFocused)
         .textContentType(.oneTimeCode)
+      #if os(iOS)
         .keyboardType(.numberPad)
+      #endif
         .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
         .tint(.clear)

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 enum ClerkAccessibilityIdentifiers {
   static let dismissButton = "clerk.dismissButton"

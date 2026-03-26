@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -148,6 +148,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserButton.profileButton)
+        .accessibilityLabel(Text("Open account", bundle: .module))
       } else {
         signedOutContent()
       }

@@ -3,13 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
 
 struct UserProfileMfaAddTotpView: View {
-  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
@@ -32,16 +31,12 @@ struct UserProfileMfaAddTotpView: View {
         if let backupCodes {
           path.append(Destination.backupCodes(backupCodes))
         } else {
-          navigation.presentedAddMfaType = nil
+          closeFlow()
         }
       }
     case let .backupCodes(backupCodes):
       BackupCodesView(backupCodes: backupCodes, mfaType: .authenticatorApp)
     }
-  }
-
-  private var user: User? {
-    clerk.user
   }
 
   var body: some View {
@@ -106,32 +101,41 @@ struct UserProfileMfaAddTotpView: View {
         .padding(24)
       }
       .clerkErrorPresenting($error)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
-        }
 
-        ToolbarItem(placement: .principal) {
-          Text("Add authenticator application", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
+          ToolbarItem(placement: .principal) {
+            Text("Add authenticator application", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
+          }
         }
-      }
-      .navigationDestination(for: Destination.self) {
-        viewForDestination($0)
-      }
+        .navigationDestination(for: Destination.self) {
+          viewForDestination($0)
+        }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }
 }
 
 extension UserProfileMfaAddTotpView {
+  private func closeFlow() {
+    navigation.presentedAddMfaType = nil
+  }
+
   private func copyToClipboard(_ text: String) {
     #if os(iOS)
     UIPasteboard.general.string = text
@@ -145,6 +149,7 @@ extension UserProfileMfaAddTotpView {
 #Preview {
   UserProfileMfaAddTotpView(totp: .mock)
     .clerkPreview()
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 

@@ -648,5 +648,4 @@ extension SignInClientTrustSheet {
     return nil
   }
 }
-
 #endif

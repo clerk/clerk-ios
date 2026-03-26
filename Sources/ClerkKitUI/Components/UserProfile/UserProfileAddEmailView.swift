@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -51,9 +51,11 @@ struct UserProfileAddEmailView: View {
           VStack(spacing: 4) {
             ClerkTextField("Enter your email", text: $email)
               .textContentType(.emailAddress)
+            #if os(iOS)
               .keyboardType(.emailAddress)
-              .autocorrectionDisabled()
               .textInputAutocapitalization(.never)
+            #endif
+              .autocorrectionDisabled()
               .focused($isFocused)
               .onFirstAppear {
                 isFocused = true
@@ -86,38 +88,43 @@ struct UserProfileAddEmailView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
-        }
 
-        ToolbarItem(placement: .principal) {
-          Text("Add email address", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
-      }
-      .navigationDestination(for: Destination.self) {
-        switch $0 {
-        case let .verify(email):
-          UserProfileVerifyView(
-            mode: .email(email)
-          ) { _ in
-            dismiss()
-          } customDismiss: {
-            dismiss()
+          ToolbarItem(placement: .principal) {
+            Text("Add email address", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
-        case .add:
-          EmptyView() // should never be hit, .add should never be added to path
-            .task { dismiss() }
         }
-      }
+        .navigationDestination(for: Destination.self) {
+          switch $0 {
+          case let .verify(email):
+            UserProfileVerifyView(
+              mode: .email(email)
+            ) { _ in
+              dismiss()
+            } customDismiss: {
+              dismiss()
+            }
+          case .add:
+            EmptyView() // should never be hit, .add should never be added to path
+              .task { dismiss() }
+          }
+        }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 

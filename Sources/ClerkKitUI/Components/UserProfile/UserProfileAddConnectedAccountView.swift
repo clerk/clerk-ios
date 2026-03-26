@@ -46,7 +46,7 @@ struct UserProfileAddConnectedAccountView: View {
       .background(theme.colors.background)
       .toolbar {
         ToolbarItem(placement: cancellationPlacement) {
-          Button(cancelText) {
+          Button("Cancel") {
             dismiss()
           }
           .foregroundStyle(theme.colors.primary)
@@ -106,14 +106,6 @@ extension UserProfileAddConnectedAccountView {
     .cancellationAction
     #elseif os(macOS)
     .automatic
-    #endif
-  }
-
-  private var cancelText: LocalizedStringKey {
-    #if os(iOS)
-    "Cancel"
-    #elseif os(macOS)
-    "Close"
     #endif
   }
 

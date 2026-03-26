@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -18,7 +18,7 @@ struct UserProfilePhoneRow: View {
   @State private var isConfirmingRemoval = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -96,6 +96,9 @@ struct UserProfilePhoneRow: View {
           ThreeDotsMenuLabel()
         }
         .frame(width: 30, height: 30)
+        #if os(macOS)
+        .menuStyle(.borderlessButton)
+        #endif
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

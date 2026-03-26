@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -176,30 +176,32 @@ struct UserProfileVerifyView: View {
     .clerkErrorPresenting($error)
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .navigationBarBackButtonHidden(hasCancelAction)
-    .toolbar {
-      if hasCancelAction {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(hasCancelAction)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        if hasCancelAction {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text(titleKey, bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
         }
       }
-
-      ToolbarItem(placement: .principal) {
-        Text(titleKey, bundle: .module)
-          .font(theme.fonts.headline)
-          .foregroundStyle(theme.colors.foreground)
+      .taskOnce {
+        if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
+          await prepare()
+        }
       }
-    }
-    .taskOnce {
-      if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
-        await prepare()
-      }
-    }
   }
 }
 
@@ -270,6 +272,14 @@ extension UserProfileVerifyView {
 #Preview("Phone") {
   NavigationStack {
     UserProfileVerifyView(mode: .phone(.mock)) { _ in }
+  }
+  .environment(CodeLimiter())
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("TOTP") {
+  NavigationStack {
+    UserProfileVerifyView(mode: .totp) { _ in }
   }
   .environment(CodeLimiter())
   .environment(\.clerkTheme, .clerk)

@@ -8,9 +8,7 @@ import SwiftUI
 
 struct UserProfileDevicesSection: View {
   @Environment(Clerk.self) private var clerk
-  #if os(iOS)
   @Environment(\.clerkTheme) private var theme
-  #endif
 
   private var user: User? {
     clerk.user
@@ -31,7 +29,6 @@ struct UserProfileDevicesSection: View {
   }
 
   var body: some View {
-    #if os(iOS)
     Section {
       VStack(spacing: 0) {
         ForEach(sortedSessions) { session in
@@ -42,29 +39,11 @@ struct UserProfileDevicesSection: View {
     } header: {
       UserProfileSectionHeader(text: "ACTIVE DEVICES")
     }
-    #elseif os(macOS)
-    if !sortedSessions.isEmpty {
-      GroupBox("Active Devices") {
-        VStack(alignment: .leading, spacing: 16) {
-          ForEach(sortedSessions) { session in
-            UserProfileDeviceRow(session: session)
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-      }
-      .groupBoxStyle(.clerk)
-    }
-    #endif
   }
 }
 
 #Preview {
-  #if os(iOS)
   UserProfileDevicesSection()
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
-  #elseif os(macOS)
-  UserProfileDevicesSection()
-    .environment(Clerk.preview())
-  #endif
 }

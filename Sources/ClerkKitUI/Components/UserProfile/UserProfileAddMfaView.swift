@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -21,6 +21,7 @@ struct UserProfileAddMfaView: View {
   enum PresentedView: Identifiable, Hashable {
     case sms
     case authApp(TOTPResource)
+
     var id: Self {
       self
     }
@@ -37,19 +38,23 @@ struct UserProfileAddMfaView: View {
     }
   }
 
-  var extraContentHeight: CGFloat {
+  private var extraContentHeight: CGFloat {
+    #if os(iOS)
     if #available(iOS 26.0, *) {
       0
     } else {
       7
     }
+    #else
+    0
+    #endif
   }
 
-  var environment: Clerk.Environment? {
+  private var environment: Clerk.Environment? {
     clerk.environment
   }
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -108,29 +113,36 @@ struct UserProfileAddMfaView: View {
         }
         .padding(.top, 24)
         .clerkErrorPresenting($error)
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
+        #if os(iOS)
+          .navigationBarTitleDisplayMode(.inline)
+        #endif
+          .preGlassSolidNavBar()
+          .preGlassDetentSheetBackground()
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Cancel") {
+                dismiss()
+              }
+              .foregroundStyle(theme.colors.primary)
             }
-            .foregroundStyle(theme.colors.primary)
-          }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add two-step verification", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+            ToolbarItem(placement: .principal) {
+              Text("Add two-step verification", bundle: .module)
+                .font(theme.fonts.headline)
+                .foregroundStyle(theme.colors.foreground)
+            }
           }
-        }
-        .onGeometryChange(for: CGFloat.self) { proxy in
-          proxy.size.height
-        } action: { newValue in
-          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-        }
+        #if os(iOS)
+          .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+          } action: { newValue in
+            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
+          }
+        #endif
       }
+      #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620)
+      #endif
       .scrollBounceBehavior(.basedOnSize)
     }
   }

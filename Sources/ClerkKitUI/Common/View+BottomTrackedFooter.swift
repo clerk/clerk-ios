@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -52,7 +52,9 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
               }
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+          #if os(iOS)
           .ignoresSafeArea(.keyboard, edges: .bottom)
+          #endif
           .allowsHitTesting(false)
         }
       }

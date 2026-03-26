@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -27,7 +27,7 @@ struct UserProfileAddPhoneView: View {
     }
   }
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -55,7 +55,9 @@ struct UserProfileAddPhoneView: View {
               accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Phone.phoneNumber
             )
             .textContentType(.telephoneNumber)
-            .keyboardType(.numberPad)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
             .focused($isFocused)
             .onFirstAppear {
               isFocused = true
@@ -89,43 +91,48 @@ struct UserProfileAddPhoneView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
-        }
 
-        ToolbarItem(placement: .principal) {
-          Text("Add phone number", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
-      }
-      .navigationDestination(for: Destination.self) {
-        switch $0 {
-        case let .verify(phoneNumber):
-          UserProfileVerifyView(
-            mode: .phone(phoneNumber)
-          ) { _ in
-            dismiss()
-          } customDismiss: {
-            dismiss()
+          ToolbarItem(placement: .principal) {
+            Text("Add phone number", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
-        case .add:
-          EmptyView() // should never be hit, .add should never be added to path
-            .task { dismiss() }
         }
-      }
+        .navigationDestination(for: Destination.self) {
+          switch $0 {
+          case let .verify(phoneNumber):
+            UserProfileVerifyView(
+              mode: .phone(phoneNumber)
+            ) { _ in
+              dismiss()
+            } customDismiss: {
+              dismiss()
+            }
+          case .add:
+            EmptyView() // should never be hit, .add should never be added to path
+              .task { dismiss() }
+          }
+        }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 
 extension UserProfileAddPhoneView {
-  func addPhoneNumber() async {
+  private func addPhoneNumber() async {
     guard let user else { return }
 
     do {
@@ -140,6 +147,7 @@ extension UserProfileAddPhoneView {
 
 #Preview {
   UserProfileAddPhoneView()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

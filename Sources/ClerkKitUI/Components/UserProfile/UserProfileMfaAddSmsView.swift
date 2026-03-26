@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import PhoneNumberKit
@@ -104,33 +104,40 @@ struct UserProfileMfaAddSmsView: View {
         }
         .padding(24)
         .clerkErrorPresenting($error)
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
+        #if os(iOS)
+          .navigationBarTitleDisplayMode(.inline)
+        #endif
+          .preGlassSolidNavBar()
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Cancel") {
+                dismiss()
+              }
+              .foregroundStyle(theme.colors.primary)
             }
-            .foregroundStyle(theme.colors.primary)
-          }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add SMS code verification", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+            ToolbarItem(placement: .principal) {
+              Text("Add SMS code verification", bundle: .module)
+                .font(theme.fonts.headline)
+                .foregroundStyle(theme.colors.foreground)
+            }
           }
-        }
       }
       .navigationDestination(for: Destination.self) {
         $0.view
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
-    .sheet(isPresented: $addPhoneNumberIsPresented) {
-      UserProfileAddPhoneView()
-    }
+    #if os(iOS)
+      .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
+    #endif
+      .sheet(isPresented: $addPhoneNumberIsPresented) {
+        UserProfileAddPhoneView()
+      }
   }
 }
 
@@ -157,17 +164,17 @@ struct AddMfaSmsRow: View {
   let phoneNumber: ClerkKit.PhoneNumber
   let isSelected: Bool
 
-  var country: CountryCodePickerViewController.Country? {
+  var country: ClerkPhoneCountry? {
     if let phoneNumber = try? utility.parse(phoneNumber.phoneNumber),
        let regionId = phoneNumber.regionID
     {
-      return CountryCodePickerViewController.Country(
+      return ClerkPhoneCountry(
         for: regionId,
         with: utility
       )
     }
 
-    return CountryCodePickerViewController.Country(
+    return ClerkPhoneCountry(
       for: "US",
       with: utility
     )

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import PhoneNumberKit
 import SwiftUI
@@ -13,20 +13,20 @@ extension ClerkPhoneNumberField {
   @MainActor
   final class PhoneNumberModel {
     private let utility = PhoneNumberUtility()
-    let textField: PhoneNumberTextField
     let partialFormatter: PartialFormatter
 
-    let defaultCountry: CountryCodePickerViewController.Country
-    var currentCountry: CountryCodePickerViewController.Country {
+    let defaultCountry: ClerkPhoneCountry
+    var currentCountry: ClerkPhoneCountry {
       didSet {
         partialFormatter.defaultRegion = currentCountry.code
       }
     }
 
     init() {
-      textField = .init(utility: utility)
-      defaultCountry = .init(for: textField.defaultRegion, with: utility)!
-      currentCountry = .init(for: textField.defaultRegion, with: utility)!
+      let defaultRegion = PhoneNumberUtility.defaultRegionCode()
+      defaultCountry = ClerkPhoneCountry(for: defaultRegion, with: utility)
+        ?? ClerkPhoneCountry(for: "US", with: utility)!
+      currentCountry = defaultCountry
       partialFormatter = .init(
         utility: utility,
         defaultRegion: defaultCountry.code,
@@ -34,19 +34,19 @@ extension ClerkPhoneNumberField {
       )
     }
 
-    var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
+    var allCountriesExceptDefault: [ClerkPhoneCountry] {
       utility.allCountries.filter { country in
         country.code != defaultCountry.code
       }
     }
 
-    func stringForCountry(_ country: CountryCodePickerViewController.Country) -> String {
+    func stringForCountry(_ country: ClerkPhoneCountry) -> String {
       "\(country.flag) \(country.name) \(country.prefix)"
     }
 
     var exampleNumber: String {
       utility.getFormattedExampleNumber(
-        forCountry: textField.currentRegion,
+        forCountry: currentCountry.code,
         withFormat: .national,
         withPrefix: false
       ) ?? ""
@@ -181,7 +181,9 @@ struct ClerkPhoneNumberField: View {
             TextField("", text: $displayText)
               .focused($isFocused)
               .textContentType(.telephoneNumber)
+            #if os(iOS)
               .keyboardType(.numberPad)
+            #endif
               .tint(theme.colors.primary)
               .animation(.default.delay(0.2)) {
                 $0.opacity(isFocusedOrFilled ? 1 : 0)

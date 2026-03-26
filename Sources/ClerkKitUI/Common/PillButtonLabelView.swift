@@ -2,7 +2,7 @@
 //  PillButtonLabelView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 

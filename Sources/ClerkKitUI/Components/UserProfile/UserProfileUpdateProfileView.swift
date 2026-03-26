@@ -102,8 +102,8 @@ struct UserProfileUpdateProfileView: View {
       .clerkErrorPresenting($error)
       #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
       #endif
+        .preGlassSolidNavBar()
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
             Button("Cancel") {
@@ -311,11 +311,7 @@ extension UserProfileUpdateProfileView {
 
 #Preview {
   UserProfileUpdateProfileView(user: .mock)
-  #if os(iOS)
     .clerkPreview()
-  #elseif os(macOS)
-    .environment(Clerk.preview())
-  #endif
     .environment(\.clerkTheme, .clerk)
 }
 

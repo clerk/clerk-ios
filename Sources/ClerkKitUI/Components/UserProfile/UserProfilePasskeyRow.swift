@@ -3,13 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
 
 struct UserProfilePasskeyRow: View {
-  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   @State private var renameIsPresented = false
@@ -61,6 +60,9 @@ struct UserProfilePasskeyRow: View {
         ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
+      #if os(macOS)
+        .menuStyle(.borderlessButton)
+      #endif
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)

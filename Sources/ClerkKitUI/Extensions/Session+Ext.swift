@@ -5,10 +5,7 @@
 
 import ClerkKit
 import Foundation
-
-#if os(iOS)
 import SwiftUI
-#endif
 
 extension Session {
   var pendingTasks: [Task] {
@@ -38,7 +35,6 @@ extension SessionActivity {
     [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
   }
 
-  #if os(macOS)
   var deviceDescription: String {
     if let deviceType, !deviceType.isEmpty {
       return deviceType
@@ -50,12 +46,7 @@ extension SessionActivity {
 
     return "Unknown device"
   }
-  #endif
-}
 
-#if os(iOS)
-
-extension SessionActivity {
   var deviceText: Text {
     if let deviceType {
       Text(verbatim: deviceType)
@@ -70,5 +61,3 @@ extension SessionActivity {
     Image(isMobile == true ? "device-mobile" : "device-desktop", bundle: .module)
   }
 }
-
-#endif

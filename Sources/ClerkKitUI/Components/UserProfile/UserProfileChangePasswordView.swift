@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -58,6 +58,9 @@ struct UserProfileChangePasswordView: View {
           }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }
@@ -92,7 +95,9 @@ struct UserProfileChangePasswordView: View {
       }
       .padding(24)
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .cancellationAction) {
@@ -125,7 +130,9 @@ struct UserProfileChangePasswordView: View {
           )
           .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
           .focused($focusedField, equals: .newPassword)
-          .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+          #if os(iOS)
+            .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+          #endif
 
           ClerkTextField(
             "Confirm password",
@@ -137,7 +144,9 @@ struct UserProfileChangePasswordView: View {
           .focused($focusedField, equals: .confirmNewPassword)
         }
         .autocorrectionDisabled()
-        .textInputAutocapitalization(.never)
+        #if os(iOS)
+          .textInputAutocapitalization(.never)
+        #endif
 
         signOutOfOtherDevicesView
 
@@ -156,8 +165,6 @@ struct UserProfileChangePasswordView: View {
       }
       .padding(24)
     }
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
     .clerkErrorPresenting(
       $error,
       action: { error in
@@ -170,6 +177,10 @@ struct UserProfileChangePasswordView: View {
         return nil
       }
     )
+    #if os(iOS)
+    .navigationBarTitleDisplayMode(.inline)
+    #endif
+    .preGlassSolidNavBar()
     .toolbar {
       if isAddingPassword {
         ToolbarItem(placement: .cancellationAction) {

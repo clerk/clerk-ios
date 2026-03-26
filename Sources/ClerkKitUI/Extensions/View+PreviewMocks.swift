@@ -5,7 +5,7 @@
 //  Created on 2025-01-27.
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -43,10 +43,12 @@ extension View {
 
       return AnyView(
         environment(clerk)
-          .environment(AuthState())
-          .environment(AuthNavigation())
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
+        #if os(iOS)
+          .environment(AuthState())
+          .environment(AuthNavigation())
+        #endif
       )
     }
     return AnyView(self)

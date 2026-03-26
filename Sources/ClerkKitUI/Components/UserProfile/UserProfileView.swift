@@ -5,10 +5,9 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 /// A comprehensive user profile view that displays user information and account management options.
@@ -192,8 +191,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+        #if os(iOS)
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
+        #elseif os(macOS)
+        UserButtonAccountSwitcher()
+        #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
@@ -308,21 +311,31 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     .background(theme.colors.muted)
     .securedByClerkFooter()
     .animation(.default, value: user)
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Account", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Account", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
 
-      if isDismissible {
-        ToolbarItem(placement: .topBarTrailing) {
-          DismissButton()
+        if isDismissible {
+          ToolbarItem(
+            placement: {
+              #if os(iOS)
+              .topBarTrailing
+              #elseif os(macOS)
+              .cancellationAction
+              #endif
+            }()
+          ) {
+            DismissButton()
+          }
         }
       }
-    }
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
         .environment(sheetNavigation)
@@ -341,6 +354,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         )
         .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 
@@ -644,7 +660,9 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
+  #if os(iOS)
     .environment(AuthState())
+  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -693,7 +711,9 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
+  #if os(iOS)
     .environment(AuthState())
+  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -718,7 +738,9 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
+  #if os(iOS)
     .environment(AuthState())
+  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -745,7 +767,9 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
+  #if os(iOS)
     .environment(AuthState())
+  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
