@@ -106,7 +106,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [UserProfileCustomRow<Route>]
-  private let configuration: UserProfileOAuthConfiguration
+  private let oauthConfig: UserProfileOAuthConfiguration
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var updateProfileIsPresented = false
@@ -121,13 +121,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     isDismissable: Bool,
     navigationPath: Binding<NavigationPath>?,
     customRows: [UserProfileCustomRow<Route>],
-    configuration: UserProfileOAuthConfiguration,
+    oauthConfig: UserProfileOAuthConfiguration,
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
     self.customRows = customRows
-    self.configuration = configuration
+    self.oauthConfig = oauthConfig
     self.customDestination = customDestination
   }
 
@@ -151,7 +151,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
-      configuration: .init(),
+      oauthConfig: .init(),
       customDestination: nil
     )
   }
@@ -340,7 +340,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             dismissAction: dismissAction
           )
         )
-        .environment(\.clerkUserProfileOAuthConfiguration, configuration)
+        .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
     }
   }
 }
@@ -356,7 +356,7 @@ extension UserProfileView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
-      configuration: configuration,
+      oauthConfig: oauthConfig,
       customDestination: customDestination
     )
   }
@@ -365,13 +365,13 @@ extension UserProfileView {
   public func userProfileAdditionalOAuthScopes(
     _ scopes: [OAuthScopes]
   ) -> UserProfileView<Route, Destination> {
-    var configuration = configuration
-    configuration.additionalScopes = scopes
+    var config = oauthConfig
+    config.additionalScopes = scopes
     return UserProfileView<Route, Destination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      configuration: configuration,
+      oauthConfig: config,
       customDestination: customDestination
     )
   }
@@ -380,13 +380,13 @@ extension UserProfileView {
   public func userProfileOIDCPrompts(
     _ prompts: [OAuthPrompts]
   ) -> UserProfileView<Route, Destination> {
-    var configuration = configuration
-    configuration.prompts = prompts
+    var config = oauthConfig
+    config.prompts = prompts
     return UserProfileView<Route, Destination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      configuration: configuration,
+      oauthConfig: config,
       customDestination: customDestination
     )
   }
@@ -405,7 +405,7 @@ extension UserProfileView where Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      configuration: configuration,
+      oauthConfig: oauthConfig,
       customDestination: destination
     )
   }
@@ -420,7 +420,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
-      configuration: configuration,
+      oauthConfig: oauthConfig,
       customDestination: nil
     )
   }
@@ -438,7 +438,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
-      configuration: configuration,
+      oauthConfig: oauthConfig,
       customDestination: destination
     )
   }

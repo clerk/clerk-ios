@@ -15,7 +15,7 @@ struct SignInTests {
       apiClient: createMockAPIClient(),
       signInService: service
     )
-    try? (Clerk.shared.dependencies as? MockDependencyContainer)?
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
   }

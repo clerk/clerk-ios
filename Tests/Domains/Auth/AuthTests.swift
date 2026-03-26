@@ -26,7 +26,7 @@ struct AuthTests {
       signUpService: signUpService,
       sessionService: sessionService
     )
-    try? (Clerk.shared.dependencies as? MockDependencyContainer)?
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: options)
     Clerk.shared.environment = environment

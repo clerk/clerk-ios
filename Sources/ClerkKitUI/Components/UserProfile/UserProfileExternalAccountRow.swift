@@ -11,7 +11,7 @@ import SwiftUI
 
 struct UserProfileExternalAccountRow: View {
   @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkUserProfileOAuthConfiguration) private var configuration
+  @Environment(\.clerkUserProfileOAuthConfig) private var oauthConfig
   @Environment(\.clerkTheme) private var theme
 
   @State private var removeResource: RemoveResource?
@@ -26,7 +26,7 @@ struct UserProfileExternalAccountRow: View {
   let externalAccount: ExternalAccount
 
   private var requiresReauthorization: Bool {
-    configuration.requiresReauthorization(for: externalAccount)
+    oauthConfig.requiresReauthorization(for: externalAccount)
   }
 
   var body: some View {
@@ -143,8 +143,8 @@ extension UserProfileExternalAccountRow {
     do {
       let account = try await user.createExternalAccount(
         provider: externalAccount.oauthProvider,
-        additionalScopes: configuration.additionalScopes(for: externalAccount.oauthProvider),
-        oidcPrompts: configuration.prompts(for: externalAccount.oauthProvider)
+        additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
+        oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
       )
       try await account.reauthorize()
     } catch {

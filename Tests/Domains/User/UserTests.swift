@@ -15,7 +15,7 @@ struct UserTests {
       apiClient: createMockAPIClient(),
       userService: service
     )
-    try? (Clerk.shared.dependencies as? MockDependencyContainer)?
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
   }
@@ -101,15 +101,14 @@ struct UserTests {
     let redirectUrl: String?
     let additionalScopes: [String]
     let oidcPrompts: [OIDCPrompt]
-    let expectedPrompts: [OIDCPrompt]
   }
 
   @Test(
     arguments: [
-      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: [], expectedPrompts: []),
-      ExternalAccountScenario(redirectUrl: "custom://redirect", additionalScopes: [], oidcPrompts: [], expectedPrompts: []),
-      ExternalAccountScenario(redirectUrl: nil, additionalScopes: ["scope1", "scope2"], oidcPrompts: [], expectedPrompts: []),
-      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: [.consent], expectedPrompts: [.consent]),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: "custom://redirect", additionalScopes: [], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: ["scope1", "scope2"], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: [.consent]),
     ]
   )
   func createExternalAccountUsesUserServiceCreateExternalAccount(
@@ -134,7 +133,7 @@ struct UserTests {
     #expect(params.0 == .google)
     #expect(params.1 == scenario.redirectUrl)
     #expect(params.2 == scenario.additionalScopes)
-    #expect(params.3 == scenario.expectedPrompts)
+    #expect(params.3 == scenario.oidcPrompts)
   }
 
   @Test

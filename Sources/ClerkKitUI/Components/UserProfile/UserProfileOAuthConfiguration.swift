@@ -63,13 +63,13 @@ public struct OAuthPrompts: Sendable, Hashable {
 }
 
 extension EnvironmentValues {
-  var clerkUserProfileOAuthConfiguration: UserProfileOAuthConfiguration {
-    get { self[UserProfileOAuthConfigurationKey.self] }
-    set { self[UserProfileOAuthConfigurationKey.self] = newValue }
+  var clerkUserProfileOAuthConfig: UserProfileOAuthConfiguration {
+    get { self[UserProfileOAuthConfigKey.self] }
+    set { self[UserProfileOAuthConfigKey.self] = newValue }
   }
 }
 
-private struct UserProfileOAuthConfigurationKey: EnvironmentKey {
+private struct UserProfileOAuthConfigKey: EnvironmentKey {
   static let defaultValue = UserProfileOAuthConfiguration()
 }
 
