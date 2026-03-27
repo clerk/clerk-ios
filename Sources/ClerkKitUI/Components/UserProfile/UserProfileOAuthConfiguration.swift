@@ -6,12 +6,12 @@ import SwiftUI
 /// Per-provider OAuth configuration for additional scopes and prompts.
 public struct OAuthProviderConfig: Sendable, Hashable {
   public let provider: OAuthProvider
-  public let scopes: [String]
+  public let additionalScopes: [String]
   public let prompts: [OIDCPrompt]
 
-  public init(provider: OAuthProvider, scopes: [String] = [], prompts: [OIDCPrompt] = []) {
+  public init(provider: OAuthProvider, additionalScopes: [String] = [], prompts: [OIDCPrompt] = []) {
     self.provider = provider
-    self.scopes = scopes
+    self.additionalScopes = additionalScopes
     self.prompts = prompts
   }
 }
@@ -25,7 +25,7 @@ struct UserProfileOAuthConfiguration: Equatable {
   }
 
   func additionalScopes(for provider: OAuthProvider) -> [String] {
-    configs.first { $0.provider == provider }?.scopes ?? []
+    configs.first { $0.provider == provider }?.additionalScopes ?? []
   }
 
   func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
