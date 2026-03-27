@@ -5,7 +5,7 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -64,7 +64,9 @@ struct SignInFactorCodeView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {

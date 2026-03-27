@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -64,11 +64,15 @@ struct SignInSetNewPasswordView: View {
             fieldState: fieldError != nil ? .error : .default
           )
           .textContentType(.newPassword)
+          #if os(iOS)
           .textInputAutocapitalization(.never)
+          #endif
           .autocorrectionDisabled()
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
           .focused($focusedField, equals: .new)
+          #if os(iOS)
           .hiddenTextField(text: $identifier, textContentType: .username)
+          #endif
           .onFirstAppear {
             focusedField = .new
 
@@ -84,7 +88,9 @@ struct SignInSetNewPasswordView: View {
               fieldState: fieldError != nil ? .error : .default
             )
             .textContentType(.newPassword)
+            #if os(iOS)
             .textInputAutocapitalization(.never)
+            #endif
             .autocorrectionDisabled()
             .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.confirmPassword)
             .focused($focusedField, equals: .confirm)

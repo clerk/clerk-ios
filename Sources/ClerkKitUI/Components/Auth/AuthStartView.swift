@@ -5,7 +5,7 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -173,7 +173,9 @@ struct AuthStartView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .clerkErrorPresenting($generalError)
     .background(theme.colors.background)
     .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
@@ -232,9 +234,11 @@ extension AuthStartView {
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
-        .keyboardType(.emailAddress)
-        .textInputAutocapitalization(.never)
-        .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
+        #if os(iOS)
+          .keyboardType(.emailAddress)
+          .textInputAutocapitalization(.never)
+        #endif
+          .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
       }
       .transition(.blurReplace)
     }

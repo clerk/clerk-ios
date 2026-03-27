@@ -45,10 +45,8 @@ extension View {
         environment(clerk)
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
-        #if os(iOS)
           .environment(AuthState())
           .environment(AuthNavigation())
-        #endif
       )
     }
     return AnyView(self)
