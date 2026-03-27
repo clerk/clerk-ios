@@ -130,9 +130,7 @@ struct UserProfileChangePasswordView: View {
           )
           .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
           .focused($focusedField, equals: .newPassword)
-          #if os(iOS)
-            .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
-          #endif
+          .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
 
           ClerkTextField(
             "Confirm password",

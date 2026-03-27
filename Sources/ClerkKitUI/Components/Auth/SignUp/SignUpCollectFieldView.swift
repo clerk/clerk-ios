@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -70,7 +70,9 @@ struct SignUpCollectFieldView: View {
         accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.emailAddress
       )
       .textContentType(.emailAddress)
-      .keyboardType(.emailAddress)
+      #if os(iOS)
+        .keyboardType(.emailAddress)
+      #endif
     case .phoneNumber:
       ClerkPhoneNumberField(
         "Enter your phone number",
@@ -125,7 +127,9 @@ struct SignUpCollectFieldView: View {
         VStack(spacing: 24) {
           textField
             .autocorrectionDisabled()
+          #if os(iOS)
             .textInputAutocapitalization(.never)
+          #endif
             .focused($isFocused)
             .onAppear {
               isFocused = true
@@ -146,7 +150,9 @@ struct SignUpCollectFieldView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .toolbar {
@@ -156,7 +162,9 @@ struct SignUpCollectFieldView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
   }
 }
 

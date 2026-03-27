@@ -70,9 +70,7 @@ struct SignInSetNewPasswordView: View {
           .autocorrectionDisabled()
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
           .focused($focusedField, equals: .new)
-          #if os(iOS)
           .hiddenTextField(text: $identifier, textContentType: .username)
-          #endif
           .onFirstAppear {
             focusedField = .new
 

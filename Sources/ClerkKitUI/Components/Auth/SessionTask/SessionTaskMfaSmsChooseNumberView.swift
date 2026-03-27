@@ -2,7 +2,7 @@
 //  SessionTaskMfaSmsChooseNumberView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -39,11 +39,21 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     }
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
+        #if os(iOS)
+        ToolbarItem(placement: .topBarTrailing) {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #else
+          ToolbarItem {
+            UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #endif
       }
     }
     .onChange(of: navigation.path) { oldPath, newPath in
@@ -66,9 +76,15 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         }
         .background(theme.colors.background)
         .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
+          #if os(iOS)
+          ToolbarIte(placement: .topBarTrailing) {
             DismissButton()
           }
+          #else
+          ToolbarItem {
+            DismissButton()
+          }
+          #endif
         }
       }
       .presentationBackground(theme.colors.background)

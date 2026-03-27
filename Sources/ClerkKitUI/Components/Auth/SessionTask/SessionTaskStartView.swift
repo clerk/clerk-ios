@@ -2,7 +2,7 @@
 //  SessionTaskStartView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -17,24 +17,40 @@ struct SessionTaskStartView: View {
       SessionTaskMfaSetupView()
     case .resetPassword:
       SignInSetNewPasswordView(mode: .sessionTask)
+      #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+      #endif
         .preGlassSolidNavBar()
         .toolbar {
+          #if os(iOS)
           ToolbarItem(placement: .topBarTrailing) {
             UserButton(presentationContext: .sessionTaskToolbar)
           }
+          #else
+          ToolbarItem {
+            UserButton(presentationContext: .sessionTaskToolbar)
+          }
+          #endif
         }
     case .chooseOrganization:
       SessionTaskChooseOrganizationView()
     case .unknown:
       GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
+      #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+      #endif
         .preGlassSolidNavBar()
         .toolbar {
+          #if os(iOS)
           ToolbarItem(placement: .topBarTrailing) {
             UserButton(presentationContext: .sessionTaskToolbar)
           }
+          #else
+          ToolbarItem {
+            UserButton(presentationContext: .sessionTaskToolbar)
+          }
+          #endif
         }
     }
   }

@@ -2,7 +2,7 @@
 //  SessionTaskMfaTotpView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -44,7 +44,7 @@ struct SessionTaskMfaTotpView: View {
             )
 
             Button {
-              UIPasteboard.general.string = secret
+              copyToClipboard(secret)
             } label: {
               HStack(spacing: 6) {
                 Image("icon-clipboard", bundle: .module)
@@ -73,13 +73,32 @@ struct SessionTaskMfaTotpView: View {
       .padding(16)
     }
     .background(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        #if os(iOS)
+        ToolbarItem(placement: .topBarTrailing) {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #else
+        ToolbarItem {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #endif
       }
-    }
+  }
+}
+
+extension SessionTaskMfaTotpView {
+  private func copyToClipboard(_ text: String) {
+    #if os(iOS)
+    UIPasteboard.general.string = text
+    #elseif os(macOS)
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(text, forType: .string)
+    #endif
   }
 }
 

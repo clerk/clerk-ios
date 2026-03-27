@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -122,22 +122,38 @@ public struct AuthView: View {
       AuthStartView()
         .toolbar {
           if showDismissButton {
+            #if os(iOS)
             ToolbarItem(placement: .topBarTrailing) {
               DismissButton {
                 dismiss()
               }
             }
+            #else
+            ToolbarItem {
+              DismissButton {
+                dismiss()
+              }
+            }
+            #endif
           }
         }
         .navigationDestination(for: Destination.self) {
           $0.view
             .toolbar {
               if showDismissButton {
+                #if os(iOS)
                 ToolbarItem(placement: .topBarTrailing) {
                   DismissButton {
                     dismiss()
                   }
                 }
+                #else
+                ToolbarItem {
+                  DismissButton {
+                    dismiss()
+                  }
+                }
+                #endif
               }
             }
             .developmentModeBottomInset(background: .white)
@@ -149,7 +165,9 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
+    #if os(iOS)
     .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
+    #endif
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -193,7 +211,7 @@ public struct AuthView: View {
         navigation.path = []
       }
     }
-    .onChange(of: config) { _, newConfig in
+    .onChange(of: config, initial: true) { _, newConfig in
       authState.configure(newConfig)
     }
     .taskOnce {

@@ -2,7 +2,7 @@
 //  SessionTaskMfaSetupView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -86,14 +86,22 @@ struct SessionTaskMfaSetupView: View {
       .padding(16)
     }
     .background(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        #if os(iOS)
+        ToolbarItem(placement: .topBarTrailing) {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #else
+        ToolbarItem {
+          UserButton(presentationContext: .sessionTaskToolbar)
+        }
+        #endif
       }
-    }
-    .clerkErrorPresenting($error)
+      .clerkErrorPresenting($error)
   }
 
   private func createTotp() async {

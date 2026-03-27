@@ -2,7 +2,7 @@
 //  SessionTaskBackupCodesView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -91,7 +91,7 @@ struct SessionTaskBackupCodesView: View {
             .buttonStyle(.secondary())
 
             Button {
-              UIPasteboard.general.string = backupCodes.joined(separator: ", ")
+              copyToClipboard(backupCodes.joined(separator: ", "))
             } label: {
               Text("Copy to clipboard", bundle: .module)
                 .frame(maxWidth: .infinity)
@@ -131,16 +131,38 @@ struct SessionTaskBackupCodesView: View {
     .navigationBarBackButtonHidden()
     .preGlassSolidNavBar()
     .toolbar {
+      #if os(iOS)
       ToolbarItem(placement: .topBarTrailing) {
-        if navigation.nextPendingSessionTask(from: clerk.session) != nil {
-          UserButton(presentationContext: .sessionTaskToolbar)
-        } else {
-          DismissButton {
-            navigation.handleSessionTaskCompletion(session: clerk.session)
-          }
-        }
+        toolbarContent()
+      }
+      #else
+      ToolbarItem {
+        toolbarContent()
+      }
+      #endif
+    }
+  }
+}
+
+extension SessionTaskBackupCodesView {
+  @ViewBuilder
+  private func toolbarContent() -> some View {
+    if navigation.nextPendingSessionTask(from: clerk.session) != nil {
+      UserButton(presentationContext: .sessionTaskToolbar)
+    } else {
+      DismissButton {
+        navigation.handleSessionTaskCompletion(session: clerk.session)
       }
     }
+  }
+
+  private func copyToClipboard(_ text: String) {
+    #if os(iOS)
+    UIPasteboard.general.string = text
+    #elseif os(macOS)
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(text, forType: .string)
+    #endif
   }
 }
 
