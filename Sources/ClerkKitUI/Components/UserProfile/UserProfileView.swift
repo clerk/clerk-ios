@@ -106,8 +106,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [UserProfileCustomRow<Route>]
-  private let oauthConfig: UserProfileOAuthConfiguration
   private let customDestination: (@MainActor (Route) -> Destination)?
+  private let oauthConfig: UserProfileOAuthConfiguration
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
@@ -121,14 +121,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     isDismissable: Bool,
     navigationPath: Binding<NavigationPath>?,
     customRows: [UserProfileCustomRow<Route>],
-    oauthConfig: UserProfileOAuthConfiguration,
-    customDestination: (@MainActor (Route) -> Destination)?
+    customDestination: (@MainActor (Route) -> Destination)?,
+    oauthConfig: UserProfileOAuthConfiguration
   ) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
     self.customRows = customRows
-    self.oauthConfig = oauthConfig
     self.customDestination = customDestination
+    self.oauthConfig = oauthConfig
   }
 
   /// Creates a new user profile view.
@@ -151,8 +151,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
-      oauthConfig: .init(),
-      customDestination: nil
+      customDestination: nil,
+      oauthConfig: .init()
     )
   }
 
@@ -356,8 +356,8 @@ extension UserProfileView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
-      oauthConfig: oauthConfig,
-      customDestination: customDestination
+      customDestination: customDestination,
+      oauthConfig: oauthConfig
     )
   }
 
@@ -369,8 +369,8 @@ extension UserProfileView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      oauthConfig: .init(configs),
-      customDestination: customDestination
+      customDestination: customDestination,
+      oauthConfig: .init(configs)
     )
   }
 }
@@ -388,8 +388,8 @@ extension UserProfileView where Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      oauthConfig: oauthConfig,
-      customDestination: destination
+      customDestination: destination,
+      oauthConfig: oauthConfig
     )
   }
 }
@@ -403,8 +403,8 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: rows,
-      oauthConfig: oauthConfig,
-      customDestination: nil
+      customDestination: nil,
+      oauthConfig: oauthConfig
     )
   }
 
@@ -421,8 +421,8 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: [],
-      oauthConfig: oauthConfig,
-      customDestination: destination
+      customDestination: destination,
+      oauthConfig: oauthConfig
     )
   }
 }

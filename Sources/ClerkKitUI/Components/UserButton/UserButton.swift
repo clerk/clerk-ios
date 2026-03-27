@@ -58,8 +58,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   @State private var presentedSheet: PresentedSheet?
   private let presentationContext: UserButtonPresentationContext
   private let customRows: [UserProfileCustomRow<Route>]
-  private let userProfileOAuthConfig: UserProfileOAuthConfiguration
   private let customDestination: (@MainActor (Route) -> Destination)?
+  private let userProfileOAuthConfig: UserProfileOAuthConfiguration
   private let signedOutContent: () -> SignedOutContent
 
   private enum PresentedSheet: String, Identifiable {
@@ -82,8 +82,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     self.init(
       presentationContext: .standard,
       customRows: [],
-      userProfileOAuthConfig: .init(),
       customDestination: nil,
+      userProfileOAuthConfig: .init(),
       signedOutContent: signedOutContent
     )
   }
@@ -91,14 +91,14 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   init(
     presentationContext: UserButtonPresentationContext,
     customRows: [UserProfileCustomRow<Route>],
-    userProfileOAuthConfig: UserProfileOAuthConfiguration,
     customDestination: (@MainActor (Route) -> Destination)?,
+    userProfileOAuthConfig: UserProfileOAuthConfiguration,
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
   ) {
     self.presentationContext = presentationContext
     self.customRows = customRows
-    self.userProfileOAuthConfig = userProfileOAuthConfig
     self.customDestination = customDestination
+    self.userProfileOAuthConfig = userProfileOAuthConfig
     self.signedOutContent = signedOutContent
   }
 
@@ -113,8 +113,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     self.init(
       presentationContext: presentationContext,
       customRows: [],
-      userProfileOAuthConfig: .init(),
       customDestination: nil,
+      userProfileOAuthConfig: .init(),
       signedOutContent: { EmptyView() }
     )
   }
@@ -158,8 +158,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           isDismissable: true,
           navigationPath: nil,
           customRows: customRows,
-          oauthConfig: userProfileOAuthConfig,
-          customDestination: customDestination
+          customDestination: customDestination,
+          oauthConfig: userProfileOAuthConfig
         )
         .presentationDragIndicator(.visible)
       case .sessionTaskAuth:
@@ -194,8 +194,8 @@ extension UserButton {
     UserButton<Route, SignedOutContent, Destination>(
       presentationContext: presentationContext,
       customRows: rows,
-      userProfileOAuthConfig: userProfileOAuthConfig,
       customDestination: customDestination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
@@ -207,8 +207,8 @@ extension UserButton {
     UserButton<Route, SignedOutContent, Destination>(
       presentationContext: presentationContext,
       customRows: customRows,
-      userProfileOAuthConfig: .init(configs),
       customDestination: customDestination,
+      userProfileOAuthConfig: .init(configs),
       signedOutContent: signedOutContent
     )
   }
@@ -235,8 +235,8 @@ extension UserButton where Destination == EmptyView {
     UserButton<Route, SignedOutContent, NewDestination>(
       presentationContext: presentationContext,
       customRows: customRows,
-      userProfileOAuthConfig: userProfileOAuthConfig,
       customDestination: destination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
@@ -250,8 +250,8 @@ extension UserButton where Route == Never, Destination == EmptyView {
     UserButton<NewRoute, SignedOutContent, EmptyView>(
       presentationContext: presentationContext,
       customRows: rows,
-      userProfileOAuthConfig: userProfileOAuthConfig,
       customDestination: nil,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
@@ -264,8 +264,8 @@ extension UserButton where Route == Never, Destination == EmptyView {
     UserButton<NewRoute, SignedOutContent, NewDestination>(
       presentationContext: presentationContext,
       customRows: [],
-      userProfileOAuthConfig: userProfileOAuthConfig,
       customDestination: destination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
