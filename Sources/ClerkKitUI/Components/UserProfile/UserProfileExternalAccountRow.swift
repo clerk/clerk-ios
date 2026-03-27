@@ -70,7 +70,7 @@ struct UserProfileExternalAccountRow: View {
       Spacer()
 
       Menu {
-        if externalAccount.verification?.error != nil || oauthConfig.requiresReauthorization(for: externalAccount) {
+        if externalAccount.verification?.error != nil || oauthConfig.shouldOfferReconnect(for: externalAccount) {
           AsyncButton {
             await reconnect()
           } label: { _ in
@@ -136,21 +136,29 @@ extension UserProfileExternalAccountRow {
   private func reconnect() async {
     guard let user else { return }
 
+    let provider = externalAccount.oauthProvider
+    let scopes = oauthConfig.additionalScopes(for: provider)
+    let prompts = oauthConfig.prompts(for: provider)
+
     do {
-      if oauthConfig.requiresReauthorization(for: externalAccount) {
-        let account = try await externalAccount.prepareReauthorization(
-          additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
-          oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
+      let account: ExternalAccount = if oauthConfig.requiresReauthorization(for: externalAccount) {
+        try await externalAccount.prepareReauthorization(
+          additionalScopes: scopes,
+          oidcPrompts: prompts
         )
-        try await account.reauthorize()
+      } else if externalAccount.verification?.error != nil {
+        try await user.createExternalAccount(
+          provider: provider,
+          additionalScopes: scopes,
+          oidcPrompts: prompts
+        )
       } else {
-        let account = try await user.createExternalAccount(
-          provider: externalAccount.oauthProvider,
-          additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
-          oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
+        try await externalAccount.prepareReauthorization(
+          additionalScopes: scopes,
+          oidcPrompts: prompts
         )
-        try await account.reauthorize()
       }
+      try await account.reauthorize()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)

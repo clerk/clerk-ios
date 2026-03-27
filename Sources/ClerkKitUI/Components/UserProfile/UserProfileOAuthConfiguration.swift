@@ -32,6 +32,10 @@ struct UserProfileOAuthConfiguration: Equatable {
     configs.first { $0.provider == provider }?.prompts ?? []
   }
 
+  func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
+    requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
+  }
+
   func requiresReauthorization(for account: ExternalAccount) -> Bool {
     let configuredScopes = Set(additionalScopes(for: account.oauthProvider))
     guard !configuredScopes.isEmpty else { return false }
