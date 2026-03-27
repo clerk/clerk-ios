@@ -45,14 +45,7 @@ struct UserProfileOAuthConfiguration: Equatable {
 }
 
 extension EnvironmentValues {
-  var clerkUserProfileOAuthConfig: UserProfileOAuthConfiguration {
-    get { self[UserProfileOAuthConfigKey.self] }
-    set { self[UserProfileOAuthConfigKey.self] = newValue }
-  }
-}
-
-private struct UserProfileOAuthConfigKey: EnvironmentKey {
-  static let defaultValue = UserProfileOAuthConfiguration()
+  @Entry var clerkUserProfileOAuthConfig = UserProfileOAuthConfiguration()
 }
 
 #endif
