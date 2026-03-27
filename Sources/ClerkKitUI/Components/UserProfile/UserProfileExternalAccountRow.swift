@@ -142,7 +142,11 @@ extension UserProfileExternalAccountRow {
 
     do {
       if externalAccount.verification?.error != nil {
-        let account = try await user.createExternalAccount(provider: externalAccount.oauthProvider)
+        let account = try await user.createExternalAccount(
+          provider: externalAccount.oauthProvider,
+          additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
+          oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
+        )
         try await account.reauthorize()
       } else {
         try await externalAccount.reauthorize(

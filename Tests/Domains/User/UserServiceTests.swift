@@ -169,6 +169,8 @@ struct UserServiceTests {
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
+      #expect(request.urlEncodedFormBody!["additional_scope"] == nil)
+      #expect(request.urlEncodedFormBody!["oidc_prompt"] == nil)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -199,6 +201,8 @@ struct UserServiceTests {
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == explicitRedirectUrl)
+      #expect(request.urlEncodedFormBody!["additional_scope"] == nil)
+      #expect(request.urlEncodedFormBody!["oidc_prompt"] == nil)
       requestHandled.setValue(true)
     }
     mock.register()
