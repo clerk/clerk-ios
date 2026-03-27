@@ -25,10 +25,6 @@ struct UserProfileExternalAccountRow: View {
 
   let externalAccount: ExternalAccount
 
-  private var requiresReauthorization: Bool {
-    oauthConfig.requiresReauthorization(for: externalAccount)
-  }
-
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
@@ -74,7 +70,7 @@ struct UserProfileExternalAccountRow: View {
       Spacer()
 
       Menu {
-        if externalAccount.verification?.error != nil || requiresReauthorization {
+        if externalAccount.verification?.error != nil || oauthConfig.requiresReauthorization(for: externalAccount) {
           AsyncButton {
             await reconnect()
           } label: { _ in
@@ -141,15 +137,15 @@ extension UserProfileExternalAccountRow {
     guard let user else { return }
 
     do {
-      if externalAccount.verification?.error != nil {
-        let account = try await user.createExternalAccount(
-          provider: externalAccount.oauthProvider,
+      if oauthConfig.requiresReauthorization(for: externalAccount) {
+        let account = try await externalAccount.prepareReauthorization(
           additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
           oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
         )
         try await account.reauthorize()
       } else {
-        let account = try await externalAccount.prepareReauthorization(
+        let account = try await user.createExternalAccount(
+          provider: externalAccount.oauthProvider,
           additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
           oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
         )
