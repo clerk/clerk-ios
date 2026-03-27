@@ -23,15 +23,31 @@ extension ClerkPhoneNumberField {
     }
 
     init() {
-      let defaultRegion = PhoneNumberUtility.defaultRegionCode()
-      defaultCountry = ClerkPhoneCountry(for: defaultRegion, with: utility)
-        ?? ClerkPhoneCountry(for: "US", with: utility)!
+      let resolvedDefaultCountry = Self.defaultCountry(using: utility) ?? utility.allCountries.first
+
+      guard let defaultCountry = resolvedDefaultCountry else {
+        preconditionFailure("PhoneNumberKit returned no supported countries")
+      }
+
+      self.defaultCountry = defaultCountry
       currentCountry = defaultCountry
       partialFormatter = .init(
         utility: utility,
         defaultRegion: defaultCountry.code,
         withPrefix: false
       )
+    }
+
+    private static func defaultCountry(using utility: PhoneNumberUtility) -> ClerkPhoneCountry? {
+      [
+        PhoneNumberUtility.defaultRegionCode(),
+        Locale.current.region?.identifier,
+        Locale.autoupdatingCurrent.region?.identifier,
+        "US",
+      ]
+      .compactMap(\.self)
+      .compactMap { ClerkPhoneCountry(for: $0, with: utility) }
+      .first
     }
 
     var allCountriesExceptDefault: [ClerkPhoneCountry] {

@@ -54,6 +54,8 @@ struct UserProfileExternalAccountRow: View {
             Text(externalAccount.oauthProvider.name)
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
+              .lineLimit(1)
+              .truncationMode(.tail)
               .frame(minHeight: 20)
           }
         }
@@ -62,6 +64,8 @@ struct UserProfileExternalAccountRow: View {
           Text(externalAccount.emailAddress)
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.foreground)
+            .lineLimit(1)
+            .truncationMode(.middle)
             .frame(minHeight: 22)
         }
 
@@ -100,12 +104,22 @@ struct UserProfileExternalAccountRow: View {
       } label: {
         ThreeDotsMenuLabel()
       }
+      .frame(width: 30, height: 30)
       #if os(macOS)
-      .menuStyle(.borderlessButton)
+        .menuStyle(.borderlessButton)
       #endif
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .modifier(PlatformRowChrome(isLoading: isLoading, error: $error))
+    .padding(.horizontal, 24)
+    .padding(.vertical, 16)
+    .background(theme.colors.background)
+    .overlayProgressView(isActive: isLoading)
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .frame(height: 1)
+        .foregroundStyle(theme.colors.border)
+    }
+    .clerkErrorPresenting($error)
     .onChange(of: removeResource) {
       if $1 != nil { isConfirmingRemoval = true }
     }
@@ -148,19 +162,12 @@ extension UserProfileExternalAccountRow {
     return Text(verbatim: error.localizedDescription)
   }
 
-  @ViewBuilder
   private var actionsLabel: some View {
-    #if os(iOS)
     Image("icon-three-dots-vertical", bundle: .module)
       .resizable()
       .scaledToFit()
       .foregroundStyle(theme.colors.mutedForeground)
       .frame(width: 20, height: 20)
-      .frame(width: 30, height: 30)
-    #elseif os(macOS)
-    Label("Actions", systemImage: "ellipsis.circle")
-      .foregroundStyle(theme.colors.mutedForeground)
-    #endif
   }
 
   private func reconnect() async {
@@ -214,38 +221,6 @@ extension UserProfileExternalAccountRow {
       self.error = error
       ClerkLogger.error("Failed to remove external account resource", error: error)
     }
-  }
-}
-
-private struct PlatformRowChrome: ViewModifier {
-  @Environment(\.clerkTheme) private var theme
-
-  let isLoading: Bool
-  @Binding var error: Error?
-
-  func body(content: Content) -> some View {
-    #if os(iOS)
-    content
-      .padding(.horizontal, 24)
-      .padding(.vertical, 16)
-      .background(theme.colors.background)
-      .overlayProgressView(isActive: isLoading)
-      .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
-      }
-      .clerkErrorPresenting($error)
-    #elseif os(macOS)
-    content
-      .overlay(alignment: .trailing) {
-        if isLoading {
-          ProgressView()
-            .controlSize(.small)
-            .tint(theme.colors.primary)
-        }
-      }
-    #endif
   }
 }
 

@@ -15,28 +15,29 @@ struct ClerkPhoneCountry: Equatable, Hashable {
   let prefix: String
 
   init?(for countryCode: String, with utility: PhoneNumberUtility) {
+    let normalizedCode = countryCode.uppercased()
     let flagBase = UnicodeScalar("🇦").value - UnicodeScalar("A").value
+    let fallbackLocale = Locale(identifier: "en_US_POSIX")
 
     guard
-      let name = (Locale.current as NSLocale).localizedString(forCountryCode: countryCode),
-      let prefix = utility.countryCode(for: countryCode)?.description
+      normalizedCode.count == 2,
+      normalizedCode.unicodeScalars.allSatisfy(CharacterSet.letters.contains),
+      let name = Locale.current.localizedString(forRegionCode: normalizedCode)
+      ?? fallbackLocale.localizedString(forRegionCode: normalizedCode),
+      let prefix = utility.countryCode(for: normalizedCode)?.description
     else {
       return nil
     }
 
-    code = countryCode
+    code = normalizedCode
     self.name = name
     self.prefix = "+" + prefix
 
     var flag = ""
-    for unicodeScalar in countryCode.uppercased().unicodeScalars {
+    for unicodeScalar in normalizedCode.unicodeScalars {
       if let scalar = UnicodeScalar(flagBase + unicodeScalar.value) {
         flag.append(String(describing: scalar))
       }
-    }
-
-    guard flag.count != 1 else {
-      return nil
     }
 
     self.flag = flag

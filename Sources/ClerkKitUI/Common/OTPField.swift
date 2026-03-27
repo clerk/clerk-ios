@@ -49,6 +49,8 @@ struct OTPField: View {
         .textContentType(.oneTimeCode)
       #if os(iOS)
         .keyboardType(.numberPad)
+      #elseif os(macOS)
+        .textFieldStyle(.plain)
       #endif
         .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
