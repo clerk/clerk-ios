@@ -149,10 +149,11 @@ extension UserProfileExternalAccountRow {
         )
         try await account.reauthorize()
       } else {
-        try await externalAccount.reauthorize(
+        let account = try await externalAccount.prepareReauthorization(
           additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
           oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
         )
+        try await account.reauthorize()
       }
     } catch {
       self.error = error

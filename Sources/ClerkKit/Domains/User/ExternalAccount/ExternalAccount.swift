@@ -89,36 +89,42 @@ extension ExternalAccount {
     Clerk.shared.dependencies.externalAccountService
   }
 
-  /// Invokes a re-authorization flow for an existing external account.
+  /// Prepares a reauthorization for an existing external account, requesting new scopes or prompts.
   ///
-  /// When `additionalScopes` or `oidcPrompts` are provided, calls the backend to generate
-  /// a new authorization URL with those parameters. Otherwise, opens the existing redirect
-  /// URL from the account's verification.
+  /// Calls the backend to generate a new authorization URL with the specified parameters.
+  /// Call ``reauthorize(prefersEphemeralWebBrowserSession:)`` on the returned account
+  /// to open the OAuth flow in a browser.
   ///
   /// - Parameters:
   ///     - additionalScopes: Additional scopes to request from the OAuth provider.
   ///     - oidcPrompts: OIDC prompt values to include in the authorization request.
+  @discardableResult @MainActor
+  public func prepareReauthorization(
+    additionalScopes: [String] = [],
+    oidcPrompts: [OIDCPrompt] = []
+  ) async throws -> ExternalAccount {
+    try await externalAccountService.reauthorize(
+      id,
+      additionalScopes: additionalScopes,
+      oidcPrompts: oidcPrompts
+    )
+  }
+
+  /// Opens the OAuth flow using the redirect URL from this account's verification.
+  ///
+  /// Use after ``User/createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)``
+  /// or ``prepareReauthorization(additionalScopes:oidcPrompts:)`` to complete the
+  /// browser-based authorization step.
+  ///
+  /// - Parameters:
   ///     - prefersEphemeralWebBrowserSession: A Boolean indicating whether to prefer an ephemeral web
   ///                                         browser session (default is `false`). When `true`, the session
   ///                                         does not persist cookies or other data between sessions, ensuring
   ///                                         a private browsing experience.
   @discardableResult @MainActor
-  public func reauthorize(
-    additionalScopes: [String] = [],
-    oidcPrompts: [OIDCPrompt] = [],
-    prefersEphemeralWebBrowserSession: Bool = false
-  ) async throws -> ExternalAccount {
-    var account = self
-    if !additionalScopes.isEmpty || !oidcPrompts.isEmpty {
-      account = try await externalAccountService.reauthorize(
-        id,
-        additionalScopes: additionalScopes,
-        oidcPrompts: oidcPrompts
-      )
-    }
-
+  public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
     guard
-      let redirectUrl = account.verification?.externalVerificationRedirectUrl,
+      let redirectUrl = verification?.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
     else {
       throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
