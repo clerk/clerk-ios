@@ -200,31 +200,14 @@ extension UserButton {
     )
   }
 
-  /// Configures additional OAuth scopes for built-in connected account flows in the presented user profile.
-  public func userProfileAdditionalOAuthScopes(
-    _ scopes: [OAuthScopes]
+  /// Configures OAuth settings per provider for built-in connected account flows in the presented user profile.
+  public func userProfileOAuthConfig(
+    _ configs: [OAuthProviderConfig]
   ) -> UserButton<Route, SignedOutContent, Destination> {
-    var config = userProfileOAuthConfig
-    config.additionalScopes = scopes
-    return UserButton<Route, SignedOutContent, Destination>(
+    UserButton<Route, SignedOutContent, Destination>(
       presentationContext: presentationContext,
       customRows: customRows,
-      userProfileOAuthConfig: config,
-      customDestination: customDestination,
-      signedOutContent: signedOutContent
-    )
-  }
-
-  /// Configures OIDC prompts for built-in connected account flows in the presented user profile.
-  public func userProfileOIDCPrompts(
-    _ prompts: [OAuthPrompts]
-  ) -> UserButton<Route, SignedOutContent, Destination> {
-    var config = userProfileOAuthConfig
-    config.prompts = prompts
-    return UserButton<Route, SignedOutContent, Destination>(
-      presentationContext: presentationContext,
-      customRows: customRows,
-      userProfileOAuthConfig: config,
+      userProfileOAuthConfig: .init(configs),
       customDestination: customDestination,
       signedOutContent: signedOutContent
     )

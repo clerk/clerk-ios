@@ -361,32 +361,15 @@ extension UserProfileView {
     )
   }
 
-  /// Configures additional OAuth scopes per provider for built-in connected account flows.
-  public func userProfileAdditionalOAuthScopes(
-    _ scopes: [OAuthScopes]
+  /// Configures OAuth settings per provider for built-in connected account flows.
+  public func userProfileOAuthConfig(
+    _ configs: [OAuthProviderConfig]
   ) -> UserProfileView<Route, Destination> {
-    var config = oauthConfig
-    config.additionalScopes = scopes
-    return UserProfileView<Route, Destination>(
+    UserProfileView<Route, Destination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       customRows: customRows,
-      oauthConfig: config,
-      customDestination: customDestination
-    )
-  }
-
-  /// Configures OIDC prompts per provider for built-in connected account flows.
-  public func userProfileOIDCPrompts(
-    _ prompts: [OAuthPrompts]
-  ) -> UserProfileView<Route, Destination> {
-    var config = oauthConfig
-    config.prompts = prompts
-    return UserProfileView<Route, Destination>(
-      isDismissable: isDismissable,
-      navigationPath: navigationPath,
-      customRows: customRows,
-      oauthConfig: config,
+      oauthConfig: .init(configs),
       customDestination: customDestination
     )
   }

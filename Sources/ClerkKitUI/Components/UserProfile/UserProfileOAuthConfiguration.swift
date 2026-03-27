@@ -3,29 +3,33 @@
 import ClerkKit
 import SwiftUI
 
-/// OAuth configuration for built-in connected account flows in ``UserProfileView``.
-public struct UserProfileOAuthConfiguration: Sendable, Equatable {
-  /// Additional OAuth scopes to request per provider for connected account flows.
-  public var additionalScopes: [OAuthScopes]
+/// Per-provider OAuth configuration for additional scopes and prompts.
+public struct OAuthProviderConfig: Sendable, Hashable {
+  public let provider: OAuthProvider
+  public let scopes: [String]
+  public let prompts: [OIDCPrompt]
 
-  /// OIDC prompts to request per provider for connected account flows.
-  public var prompts: [OAuthPrompts]
-
-  /// Creates a new user profile OAuth configuration.
-  public init(
-    additionalScopes: [OAuthScopes] = [],
-    prompts: [OAuthPrompts] = []
-  ) {
-    self.additionalScopes = additionalScopes
+  public init(provider: OAuthProvider, scopes: [String] = [], prompts: [OIDCPrompt] = []) {
+    self.provider = provider
+    self.scopes = scopes
     self.prompts = prompts
+  }
+}
+
+/// OAuth configuration for built-in connected account flows in ``UserProfileView``.
+struct UserProfileOAuthConfiguration: Equatable {
+  let configs: [OAuthProviderConfig]
+
+  init(_ configs: [OAuthProviderConfig] = []) {
+    self.configs = configs
   }
 
   func additionalScopes(for provider: OAuthProvider) -> [String] {
-    additionalScopes.first { $0.provider == provider }?.scopes ?? []
+    configs.first { $0.provider == provider }?.scopes ?? []
   }
 
   func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
-    prompts.first { $0.provider == provider }?.prompts ?? []
+    configs.first { $0.provider == provider }?.prompts ?? []
   }
 
   func requiresReauthorization(for account: ExternalAccount) -> Bool {
@@ -37,28 +41,6 @@ public struct UserProfileOAuthConfiguration: Sendable, Equatable {
     // If no approved scopes are reported, we can't determine if reauth is needed.
     guard !approvedScopes.isEmpty else { return false }
     return !configuredScopes.isSubset(of: approvedScopes)
-  }
-}
-
-/// Additional OAuth scopes to request for a specific provider.
-public struct OAuthScopes: Sendable, Hashable {
-  public let provider: OAuthProvider
-  public let scopes: [String]
-
-  public init(provider: OAuthProvider, scopes: [String]) {
-    self.provider = provider
-    self.scopes = scopes
-  }
-}
-
-/// OIDC prompts to request for a specific provider.
-public struct OAuthPrompts: Sendable, Hashable {
-  public let provider: OAuthProvider
-  public let prompts: [OIDCPrompt]
-
-  public init(provider: OAuthProvider, prompts: [OIDCPrompt]) {
-    self.provider = provider
-    self.prompts = prompts
   }
 }
 
