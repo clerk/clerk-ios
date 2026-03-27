@@ -98,7 +98,7 @@ extension ExternalAccount {
   /// - Parameters:
   ///     - additionalScopes: Additional scopes to request from the OAuth provider.
   ///     - oidcPrompts: OIDC prompt values to include in the authorization request.
-  @discardableResult @MainActor
+  @MainActor
   public func prepareReauthorization(
     additionalScopes: [String] = [],
     oidcPrompts: [OIDCPrompt] = []
