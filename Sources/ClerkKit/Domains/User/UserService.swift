@@ -111,7 +111,7 @@ final class UserService: UserServiceProtocol {
     ]
 
     if !additionalScopes.isEmpty {
-      bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
+      bodyParams["additional_scope"] = additionalScopes.joined(separator: ",")
     }
 
     if let serializedPrompt = oidcPrompts.serializedPrompt {

@@ -141,12 +141,15 @@ extension UserProfileExternalAccountRow {
     guard let user else { return }
 
     do {
-      let account = try await user.createExternalAccount(
-        provider: externalAccount.oauthProvider,
-        additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
-        oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
-      )
-      try await account.reauthorize()
+      if externalAccount.verification?.error != nil {
+        let account = try await user.createExternalAccount(provider: externalAccount.oauthProvider)
+        try await account.reauthorize()
+      } else {
+        try await externalAccount.reauthorize(
+          additionalScopes: oauthConfig.additionalScopes(for: externalAccount.oauthProvider),
+          oidcPrompts: oauthConfig.prompts(for: externalAccount.oauthProvider)
+        )
+      }
     } catch {
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)
