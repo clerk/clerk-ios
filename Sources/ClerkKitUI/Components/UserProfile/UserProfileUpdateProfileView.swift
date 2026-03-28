@@ -6,22 +6,18 @@
 #if os(iOS) || os(macOS)
 
 import ClerkKit
-import SwiftUI
-#if os(iOS)
 import NukeUI
 import PhotosUI
-#endif
+import SwiftUI
 
 struct UserProfileUpdateProfileView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  #if os(iOS)
   @State private var photosPickerIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var imageIsLoading = false
-  #endif
 
   @State private var firstName: String
   @State private var lastName: String
@@ -53,9 +49,7 @@ struct UserProfileUpdateProfileView: View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 32) {
-          #if os(iOS)
           profileImageMenu
-          #endif
 
           VStack(spacing: 24) {
             if usernameIsEditable {
@@ -118,7 +112,6 @@ struct UserProfileUpdateProfileView: View {
               .foregroundStyle(theme.colors.foreground)
           }
         }
-      #if os(iOS)
         .photosPicker(
           isPresented: $photosPickerIsPresented,
           selection: $photosPickerItem,
@@ -133,11 +126,7 @@ struct UserProfileUpdateProfileView: View {
             do {
               guard
                 let data = try await item.loadTransferable(type: Data.self),
-                let uiImage = UIImage(data: data),
-                let resizedData =
-                uiImage
-                  .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
-                  .jpegData(compressionQuality: 0.8)
+                let resizedData = resizedImageData(from: data)
               else {
                 throw ClerkClientError(message: "There was an error loading the image from the photos library.")
               }
@@ -150,7 +139,6 @@ struct UserProfileUpdateProfileView: View {
             }
           }
         }
-      #endif
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
@@ -159,7 +147,6 @@ struct UserProfileUpdateProfileView: View {
     .background(theme.colors.background)
   }
 
-  #if os(iOS)
   private var profileImageMenu: some View {
     LazyImage(url: URL(string: user.imageUrl)) { state in
       if let image = state.image {
@@ -219,7 +206,6 @@ struct UserProfileUpdateProfileView: View {
       }
     }
   }
-  #endif
 
   private var editableFields: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -257,7 +243,6 @@ struct UserProfileUpdateProfileView: View {
     .buttonStyle(.primary())
   }
 
-  #if os(iOS)
   @ViewBuilder
   private var menuContent: some View {
     Button("Choose from photo library") {
@@ -280,10 +265,29 @@ struct UserProfileUpdateProfileView: View {
       }
     }
   }
-  #endif
 }
 
 extension UserProfileUpdateProfileView {
+  private func resizedImageData(from data: Data) -> Data? {
+    #if os(iOS)
+    guard let image = UIImage(data: data) else {
+      return nil
+    }
+
+    return image
+      .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+      .jpegData(compressionQuality: 0.8)
+    #elseif os(macOS)
+    guard let image = NSImage(data: data) else {
+      return nil
+    }
+
+    return image
+      .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+      .jpegData(compressionQuality: 0.8)
+    #endif
+  }
+
   func save() async {
     do {
       try await user.update(

@@ -135,19 +135,17 @@ struct UserButtonAccountSwitcher: View {
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
           }
+          #if os(iOS)
           .onGeometryChange(
             for: CGFloat.self,
             of: { proxy in
               proxy.size.height
             },
             action: { newValue in
-              #if os(iOS)
               contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-              #elseif os(macOS)
-              _ = newValue
-              #endif
             }
           )
+          #endif
         }
       }
       .animation(.default, value: sessions)

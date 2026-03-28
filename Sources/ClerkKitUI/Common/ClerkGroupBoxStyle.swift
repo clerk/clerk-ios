@@ -20,9 +20,9 @@ struct ClerkGroupBoxStyle: GroupBoxStyle {
     }
     .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.colors.muted, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .background(theme.colors.muted, in: .rect(cornerRadius: 14))
     .overlay {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
+      RoundedRectangle(cornerRadius: 14)
         .strokeBorder(theme.colors.border, lineWidth: 1)
     }
   }

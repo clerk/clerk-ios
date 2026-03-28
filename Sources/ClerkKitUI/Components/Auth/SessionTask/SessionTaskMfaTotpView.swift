@@ -91,15 +91,4 @@ struct SessionTaskMfaTotpView: View {
   }
 }
 
-extension SessionTaskMfaTotpView {
-  private func copyToClipboard(_ text: String) {
-    #if os(iOS)
-    UIPasteboard.general.string = text
-    #elseif os(macOS)
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
-    #endif
-  }
-}
-
 #endif

@@ -24,7 +24,7 @@ struct UserProfileSecurityView: View {
 
   private var shouldShowDevices: Bool {
     guard let user else { return false }
-    return !(clerk.sessionsByUserId[user.id] ?? []).filter { $0.latestActivity != nil }.isEmpty
+    return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
   var body: some View {

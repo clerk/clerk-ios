@@ -201,9 +201,7 @@ extension UserProfileExternalAccountRow {
       _ = try? await clerk.refreshClient()
       #endif
     } catch {
-      #if os(macOS)
       if error.isUserCancelledError { return }
-      #endif
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)
     }

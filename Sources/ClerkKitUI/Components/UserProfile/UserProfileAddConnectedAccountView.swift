@@ -79,17 +79,17 @@ extension UserProfileAddConnectedAccountView {
         }
       }
 
-      #if os(macOS)
       if let error {
         ErrorText(error: error, alignment: .leading)
+        #if os(macOS)
           .fixedSize(horizontal: false, vertical: true)
+        #endif
       }
-      #endif
     }
     .padding(24)
     .background(theme.colors.background)
+    .clerkErrorPresenting($error)
     #if os(iOS)
-      .clerkErrorPresenting($error)
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .preGlassDetentSheetBackground()

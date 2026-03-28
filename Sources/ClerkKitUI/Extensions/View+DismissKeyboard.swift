@@ -20,14 +20,10 @@ extension EnvironmentValues {
 private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
   @MainActor static let defaultValue: @MainActor () -> Void = {
     #if os(iOS)
-    DispatchQueue.main.async {
-      _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
+    _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     #elseif os(macOS)
-    DispatchQueue.main.async {
-      let window = NSApp.keyWindow ?? NSApp.mainWindow
-      _ = window?.makeFirstResponder(nil)
-    }
+    let window = NSApp.keyWindow ?? NSApp.mainWindow
+    _ = window?.makeFirstResponder(nil)
     #endif
   }
 }
