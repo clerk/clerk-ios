@@ -24,19 +24,16 @@ struct UserProfileOAuthConfiguration: Equatable {
     self.configs = configs
   }
 
-  func additionalScopes(for provider: OAuthProvider) -> [String] {
-    configs.filter { $0.provider == provider }.flatMap(\.additionalScopes)
+  func additionalScopes(for provider: OAuthProvider) -> Set<String> {
+    Set(configs.filter { $0.provider == provider }.flatMap(\.additionalScopes))
   }
 
-  func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
-    configs.filter { $0.provider == provider }.flatMap(\.prompts)
+  func prompts(for provider: OAuthProvider) -> Set<OIDCPrompt> {
+    Set(configs.filter { $0.provider == provider }.flatMap(\.prompts))
   }
 
   func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
-    // Apple uses a native ID token flow and does not support redirect-based
-    // reauthorization with additional scopes or prompts.
-    guard account.oauthProvider != .apple else { return false }
-    return requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
+    requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
   }
 
   func requiresReauthorization(for account: ExternalAccount) -> Bool {

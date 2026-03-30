@@ -6,7 +6,7 @@
 import Foundation
 
 protocol ExternalAccountServiceProtocol: Sendable {
-  @MainActor func reauthorize(_ externalAccountId: String, additionalScopes: [String], oidcPrompts: [OIDCPrompt]) async throws -> ExternalAccount
+  @MainActor func reauthorize(_ externalAccountId: String, redirectUrl: String?, additionalScopes: [String], oidcPrompts: [OIDCPrompt]) async throws -> ExternalAccount
   @MainActor func destroy(_ externalAccountId: String) async throws -> DeletedObject
 }
 
@@ -20,11 +20,12 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
   @MainActor
   func reauthorize(
     _ externalAccountId: String,
+    redirectUrl: String?,
     additionalScopes: [String],
     oidcPrompts: [OIDCPrompt]
   ) async throws -> ExternalAccount {
     var bodyParams: [String: JSON] = [
-      "redirect_url": .string(Clerk.shared.options.redirectConfig.redirectUrl),
+      "redirect_url": .string(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl),
     ]
 
     if !additionalScopes.isEmpty {

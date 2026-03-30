@@ -39,6 +39,7 @@ struct ExternalAccountServiceTests {
 
     _ = try await Clerk.shared.dependencies.externalAccountService.reauthorize(
       externalAccount.id,
+      redirectUrl: nil,
       additionalScopes: ["write", "view"],
       oidcPrompts: []
     )

@@ -96,15 +96,19 @@ extension ExternalAccount {
   /// to open the OAuth flow in a browser.
   ///
   /// - Parameters:
+  ///     - redirectUrl: A custom redirect URL for the OAuth callback. When `nil`, the global
+  ///                    redirect URL from ``Clerk/Options`` is used.
   ///     - additionalScopes: Additional scopes to request from the OAuth provider.
   ///     - oidcPrompts: OIDC prompt values to include in the authorization request.
   @MainActor
   public func prepareReauthorization(
+    redirectUrl: String? = nil,
     additionalScopes: [String] = [],
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
     try await externalAccountService.reauthorize(
       id,
+      redirectUrl: redirectUrl,
       additionalScopes: additionalScopes,
       oidcPrompts: oidcPrompts
     )
