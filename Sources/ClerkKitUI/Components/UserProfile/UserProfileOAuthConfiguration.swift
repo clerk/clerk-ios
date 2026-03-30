@@ -33,7 +33,10 @@ struct UserProfileOAuthConfiguration: Equatable {
   }
 
   func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
-    requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
+    // Apple uses a native ID token flow and does not support redirect-based
+    // reauthorization with additional scopes or prompts.
+    guard account.oauthProvider != .apple else { return false }
+    return requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
   }
 
   func requiresReauthorization(for account: ExternalAccount) -> Bool {
