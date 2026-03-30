@@ -17,6 +17,8 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   @State private var isSubmittingPhone = false
   @State private var didNavigateAway = false
   @State private var addPhoneNumberIsPresented = false
+  @State private var isReservingForSecondFactor = false
+  @State private var selectedPhoneNumber: PhoneNumber?
 
   private var user: User? {
     clerk.user
@@ -29,7 +31,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   var body: some View {
     ScrollView {
-      if availablePhoneNumbers.isEmpty || isSubmittingPhone {
+      if (availablePhoneNumbers.isEmpty && !isReservingForSecondFactor) || isSubmittingPhone {
         addPhoneContent
       } else {
         chooseNumberContent
@@ -53,6 +55,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       guard didNavigateAway else { return }
       didNavigateAway = false
       isSubmittingPhone = false
+      isReservingForSecondFactor = false
     }
     .sheet(isPresented: $addPhoneNumberIsPresented) {
       NavigationStack {
@@ -95,21 +98,27 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
       VStack(spacing: 12) {
         ForEach(availablePhoneNumbers) { phoneNumber in
-          AsyncButton(
-            action: {
-              await sendCode(to: phoneNumber)
-            },
-            label: { isRunning in
-              AddMfaSmsRow(
-                phoneNumber: phoneNumber,
-                isSelected: false
-              )
-              .overlayProgressView(isActive: isRunning)
-            }
-          )
+          Button {
+            selectedPhoneNumber = phoneNumber
+          } label: {
+            AddMfaSmsRow(
+              phoneNumber: phoneNumber,
+              isSelected: selectedPhoneNumber == phoneNumber
+            )
+          }
           .buttonStyle(.pressedBackground)
         }
       }
+      .padding(.bottom, 24)
+
+      AsyncButton {
+        guard let selectedPhoneNumber else { return }
+        await continueWithPhoneNumber(selectedPhoneNumber)
+      } label: { isRunning in
+        ContinueButtonLabelView(isActive: isRunning)
+      }
+      .buttonStyle(.primary())
+      .disabled(selectedPhoneNumber == nil)
       .padding(.bottom, 24)
 
       Button {
@@ -130,16 +139,33 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       SecuredByClerkView()
     }
     .padding(16)
+    .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
   }
 
-  private func sendCode(to phoneNumber: PhoneNumber) async {
-    do {
-      try await phoneNumber.sendCode()
-      codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
-      navigation.path.append(.taskVerifySms(phoneNumber: phoneNumber))
-    } catch {
-      self.error = error
-      ClerkLogger.error("Failed to send SMS code", error: error)
+  private func continueWithPhoneNumber(_ phoneNumber: PhoneNumber) async {
+    if phoneNumber.verification?.status == .verified {
+      isReservingForSecondFactor = true
+      do {
+        let reserved = try await phoneNumber.setReservedForSecondFactor()
+        if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
+          navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
+        } else {
+          navigation.handleSessionTaskCompletion(session: clerk.session)
+        }
+      } catch {
+        isReservingForSecondFactor = false
+        self.error = error
+        ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
+      }
+    } else {
+      do {
+        try await phoneNumber.sendCode()
+        codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
+        navigation.path.append(.taskVerifySms(phoneNumber: phoneNumber))
+      } catch {
+        self.error = error
+        ClerkLogger.error("Failed to send SMS code", error: error)
+      }
     }
   }
 }
