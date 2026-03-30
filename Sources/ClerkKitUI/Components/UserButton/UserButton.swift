@@ -188,6 +188,26 @@ enum UserButtonPresentationContext {
   case sessionTaskToolbar
 }
 
+struct UserButtonToolbarItem: ToolbarContent {
+  private let presentationContext: UserButtonPresentationContext
+
+  init(presentationContext: UserButtonPresentationContext = .standard) {
+    self.presentationContext = presentationContext
+  }
+
+  var body: some ToolbarContent {
+    #if os(iOS)
+    ToolbarItem(placement: .topBarTrailing) {
+      UserButton(presentationContext: presentationContext)
+    }
+    #elseif os(macOS)
+    ToolbarItem {
+      UserButton(presentationContext: presentationContext)
+    }
+    #endif
+  }
+}
+
 extension UserButton {
   /// Replaces the custom rows shown in the presented user profile.
   public func userProfileRows(

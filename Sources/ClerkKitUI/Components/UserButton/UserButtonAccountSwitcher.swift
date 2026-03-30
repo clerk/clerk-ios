@@ -156,25 +156,7 @@ struct UserButtonAccountSwitcher: View {
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
-          ToolbarItem(
-            placement: {
-              #if os(iOS)
-              .topBarTrailing
-              #elseif os(macOS)
-              .cancellationAction
-              #endif
-            }()
-          ) {
-            Button {
-              dismiss()
-            } label: {
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary)
-            }
-            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
-          }
+          doneToolbarItem
 
           ToolbarItem(placement: .principal) {
             Text("Switch account", bundle: .module)
@@ -185,6 +167,31 @@ struct UserButtonAccountSwitcher: View {
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
+    #endif
+  }
+}
+
+extension UserButtonAccountSwitcher {
+  @ToolbarContentBuilder
+  private var doneToolbarItem: some ToolbarContent {
+    ToolbarItem(placement: doneToolbarPlacement) {
+      Button {
+        dismiss()
+      } label: {
+        Text("Done", bundle: .module)
+          .font(theme.fonts.body)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.primary)
+      }
+      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
+    }
+  }
+
+  private var doneToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarTrailing
+    #elseif os(macOS)
+    .confirmationAction
     #endif
   }
 }

@@ -41,24 +41,21 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     .background(theme.colors.background)
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #elseif os(macOS)
+    .macOSBackButton()
     #endif
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        #if os(iOS)
-        ToolbarItem(placement: .topBarTrailing) {
-          UserButton(presentationContext: .sessionTaskToolbar)
-        }
-        #else
-          ToolbarItem {
-            UserButton(presentationContext: .sessionTaskToolbar)
-        }
-        #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
       }
     }
     .onChange(of: navigation.path) { oldPath, newPath in
       if newPath.count > oldPath.count {
         didNavigateAway = true
+      } else if newPath.count < oldPath.count, didNavigateAway {
+        // On macOS, onDisappear doesn't fire on back navigation so we reset here.
+        didNavigateAway = false
+        isSubmittingPhone = false
       }
     }
     .onDisappear {
@@ -76,15 +73,9 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         }
         .background(theme.colors.background)
         .toolbar {
-          #if os(iOS)
-          ToolbarIte(placement: .topBarTrailing) {
-            DismissButton()
+          DismissToolbarItem {
+            addPhoneNumberIsPresented = false
           }
-          #else
-          ToolbarItem {
-            DismissButton()
-          }
-          #endif
         }
       }
       .presentationBackground(theme.colors.background)

@@ -74,9 +74,7 @@ struct UserProfileDeviceRow: View {
           ThreeDotsMenuLabel()
         }
         .frame(width: 30, height: 30)
-        #if os(macOS)
-          .menuStyle(.borderlessButton)
-        #endif
+        .menuIndicator(.hidden)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

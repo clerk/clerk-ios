@@ -45,7 +45,7 @@ struct UserProfileAddConnectedAccountView: View {
       .scrollBounceBehavior(.basedOnSize)
       .background(theme.colors.background)
       .toolbar {
-        ToolbarItem(placement: cancellationPlacement) {
+        ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
             dismiss()
           }
@@ -98,14 +98,6 @@ extension UserProfileAddConnectedAccountView {
       } action: { newValue in
         contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
       }
-    #endif
-  }
-
-  private var cancellationPlacement: ToolbarItemPlacement {
-    #if os(iOS)
-    .cancellationAction
-    #elseif os(macOS)
-    .automatic
     #endif
   }
 

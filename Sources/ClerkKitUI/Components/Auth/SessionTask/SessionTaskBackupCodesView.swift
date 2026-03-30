@@ -131,28 +131,16 @@ struct SessionTaskBackupCodesView: View {
     .navigationBarBackButtonHidden()
     .preGlassSolidNavBar()
     .toolbar {
-      #if os(iOS)
-      ToolbarItem(placement: .topBarTrailing) {
-        toolbarContent()
-      }
-      #else
-      ToolbarItem {
-        toolbarContent()
-      }
-      #endif
+      sessionTaskToolbarItem
     }
   }
 }
 
 extension SessionTaskBackupCodesView {
-  @ViewBuilder
-  private func toolbarContent() -> some View {
+  @ToolbarContentBuilder
+  private var sessionTaskToolbarItem: some ToolbarContent {
     if navigation.nextPendingSessionTask(from: clerk.session) != nil {
-      UserButton(presentationContext: .sessionTaskToolbar)
-    } else {
-      DismissButton {
-        navigation.handleSessionTaskCompletion(session: clerk.session)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
   }
 }

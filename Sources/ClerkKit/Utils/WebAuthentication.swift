@@ -37,10 +37,24 @@ actor WebAuthContinuationManager {
   }
 }
 
+actor WebAuthLifecycleRefreshManager {
+  private var suppressNextForegroundRefresh = false
+
+  func markPendingForegroundRefreshSuppression() {
+    suppressNextForegroundRefresh = true
+  }
+
+  func consumePendingForegroundRefreshSuppression() -> Bool {
+    defer { suppressNextForegroundRefresh = false }
+    return suppressNextForegroundRefresh
+  }
+}
+
 @available(tvOS 16.0, watchOS 6.2, *)
 @MainActor
 final class WebAuthentication: NSObject {
   private static let continuationManager = WebAuthContinuationManager()
+  private static let lifecycleRefreshManager = WebAuthLifecycleRefreshManager()
 
   let url: URL
   let prefersEphemeralWebBrowserSession: Bool
@@ -59,6 +73,9 @@ final class WebAuthentication: NSObject {
           callbackURLScheme: Clerk.shared.options.redirectConfig.callbackUrlScheme,
           completionHandler: { url, error in
             Task {
+              #if os(macOS)
+              await WebAuthentication.lifecycleRefreshManager.markPendingForegroundRefreshSuppression()
+              #endif
               await WebAuthentication.continuationManager.completeSession(with: url, error: error)
             }
           }
@@ -81,6 +98,9 @@ final class WebAuthentication: NSObject {
 
   static func finishWithDeeplinkUrl(url: URL) {
     Task {
+      #if os(macOS)
+      await lifecycleRefreshManager.markPendingForegroundRefreshSuppression()
+      #endif
       await continuationManager.completeSession(with: url, error: nil)
 
       #if targetEnvironment(macCatalyst)
@@ -101,6 +121,10 @@ final class WebAuthentication: NSObject {
     currentSession = nil
 
     await continuationManager.cancelSessionIfNeeded()
+  }
+
+  static func consumePendingForegroundRefreshSuppression() async -> Bool {
+    await lifecycleRefreshManager.consumePendingForegroundRefreshSuppression()
   }
 }
 

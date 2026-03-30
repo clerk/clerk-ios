@@ -117,9 +117,7 @@ struct UserProfileMfaRow: View {
         ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
-      #if os(macOS)
-        .menuStyle(.borderlessButton)
-      #endif
+      .menuIndicator(.hidden)
     }
     .padding(.horizontal, 24)
     .padding(.vertical, 16)

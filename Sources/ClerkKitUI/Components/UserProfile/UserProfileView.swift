@@ -323,18 +323,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         }
 
         if isDismissible {
-          ToolbarItem(
-            placement: {
-              #if os(iOS)
-              .topBarTrailing
-              #elseif os(macOS)
-              .cancellationAction
-              #endif
-            }()
-          ) {
-            DismissButton {
-              dismiss()
-            }
+          DismissToolbarItem {
+            dismiss()
           }
         }
       }

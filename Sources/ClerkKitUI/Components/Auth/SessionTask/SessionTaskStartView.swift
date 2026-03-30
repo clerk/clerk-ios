@@ -22,15 +22,7 @@ struct SessionTaskStartView: View {
       #endif
         .preGlassSolidNavBar()
         .toolbar {
-          #if os(iOS)
-          ToolbarItem(placement: .topBarTrailing) {
-            UserButton(presentationContext: .sessionTaskToolbar)
-          }
-          #else
-          ToolbarItem {
-            UserButton(presentationContext: .sessionTaskToolbar)
-          }
-          #endif
+          UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
         }
     case .chooseOrganization:
       SessionTaskChooseOrganizationView()
@@ -42,15 +34,7 @@ struct SessionTaskStartView: View {
       #endif
         .preGlassSolidNavBar()
         .toolbar {
-          #if os(iOS)
-          ToolbarItem(placement: .topBarTrailing) {
-            UserButton(presentationContext: .sessionTaskToolbar)
-          }
-          #else
-          ToolbarItem {
-            UserButton(presentationContext: .sessionTaskToolbar)
-          }
-          #endif
+          UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
         }
     }
   }

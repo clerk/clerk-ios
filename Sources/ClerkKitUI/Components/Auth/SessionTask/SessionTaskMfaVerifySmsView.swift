@@ -131,18 +131,12 @@ struct SessionTaskMfaVerifySmsView: View {
     .background(theme.colors.background)
     #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+    #elseif os(macOS)
+      .macOSBackButton()
     #endif
       .preGlassSolidNavBar()
       .toolbar {
-        #if os(iOS)
-        ToolbarItem(placement: .topBarTrailing) {
-          UserButton(presentationContext: .sessionTaskToolbar)
-        }
-        #else
-        ToolbarItem {
-          UserButton(presentationContext: .sessionTaskToolbar)
-        }
-        #endif
+        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
       }
   }
 
