@@ -30,16 +30,22 @@ struct OIDCPromptTests {
   @Test
   func noneWithOtherPromptsThrows() throws {
     let prompts: [OIDCPrompt] = [.none, .login]
-    #expect(throws: ClerkClientError.self) {
+    #expect {
       try prompts.validatedPrompt()
+    } throws: { error in
+      let clientError = error as? ClerkClientError
+      return clientError?.message?.contains("\"none\" cannot be combined") == true
     }
   }
 
   @Test
   func duplicatePromptsThrows() throws {
     let prompts: [OIDCPrompt] = [.login, .login]
-    #expect(throws: ClerkClientError.self) {
+    #expect {
       try prompts.validatedPrompt()
+    } throws: { error in
+      let clientError = error as? ClerkClientError
+      return clientError?.message?.contains("Duplicate") == true
     }
   }
 }
