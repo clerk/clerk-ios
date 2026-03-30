@@ -233,7 +233,7 @@ struct UserServiceTests {
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      #expect(request.urlEncodedFormBody!["additional_scope"] == "scope1,scope2")
+      #expect(request.urlEncodedFormBodyMultiValue!["additional_scope"] == ["scope1", "scope2"])
       requestHandled.setValue(true)
     }
     mock.register()

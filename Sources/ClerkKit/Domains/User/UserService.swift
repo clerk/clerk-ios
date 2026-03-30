@@ -105,17 +105,17 @@ final class UserService: UserServiceProtocol {
     additionalScopes: [String],
     oidcPrompts: [OIDCPrompt]
   ) async throws -> ExternalAccount {
-    var bodyParams: [String: String] = [
-      "strategy": provider.strategy,
-      "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
+    var bodyParams: [String: JSON] = [
+      "strategy": .string(provider.strategy),
+      "redirect_url": .string(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl),
     ]
 
     if !additionalScopes.isEmpty {
-      bodyParams["additional_scope"] = additionalScopes.joined(separator: ",")
+      bodyParams["additional_scope"] = .array(additionalScopes.map { .string($0) })
     }
 
     if let serializedPrompt = oidcPrompts.serializedPrompt {
-      bodyParams["oidc_prompt"] = serializedPrompt
+      bodyParams["oidc_prompt"] = .string(serializedPrompt)
     }
 
     let request = Request<ClientResponse<ExternalAccount>>(
