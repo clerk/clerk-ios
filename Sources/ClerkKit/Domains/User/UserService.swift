@@ -114,7 +114,7 @@ final class UserService: UserServiceProtocol {
       bodyParams["additional_scope"] = .array(additionalScopes.map { .string($0) })
     }
 
-    if let serializedPrompt = oidcPrompts.serializedPrompt {
+    if let serializedPrompt = try oidcPrompts.validatedPrompt() {
       bodyParams["oidc_prompt"] = .string(serializedPrompt)
     }
 
