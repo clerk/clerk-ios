@@ -34,19 +34,8 @@ public enum OIDCPrompt: Sendable, Hashable, Equatable {
 }
 
 extension [OIDCPrompt] {
-  func validatedPrompt() throws -> String? {
+  var serializedPrompt: String? {
     guard !isEmpty else { return nil }
-    let unique = Set(self)
-    if unique.count != count {
-      throw ClerkClientError(
-        message: "Duplicate OIDC prompt values are not allowed."
-      )
-    }
-    if unique.contains(.none), unique.count > 1 {
-      throw ClerkClientError(
-        message: "The OIDC prompt value \"none\" cannot be combined with other prompt values."
-      )
-    }
-    return map(\.value).joined(separator: " ")
+    return Set(self).map(\.value).joined(separator: " ")
   }
 }

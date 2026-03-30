@@ -295,7 +295,8 @@ struct UserServiceTests {
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
-      #expect(request.urlEncodedFormBody!["oidc_prompt"] == "login consent")
+      let promptValues = Set(request.urlEncodedFormBody!["oidc_prompt"]!.split(separator: " ").map(String.init))
+      #expect(promptValues == Set(["login", "consent"]))
       requestHandled.setValue(true)
     }
     mock.register()
@@ -327,7 +328,8 @@ struct UserServiceTests {
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
       #expect(request.urlEncodedFormBodyMultiValue!["additional_scope"] == ["scope1", "scope2"])
-      #expect(request.urlEncodedFormBody!["oidc_prompt"] == "login consent")
+      let promptValues = Set(request.urlEncodedFormBody!["oidc_prompt"]!.split(separator: " ").map(String.init))
+      #expect(promptValues == Set(["login", "consent"]))
       requestHandled.setValue(true)
     }
     mock.register()

@@ -3,49 +3,41 @@ import Testing
 
 struct OIDCPromptTests {
   @Test
-  func emptyArrayReturnsNil() throws {
+  func emptyArrayReturnsNil() {
     let prompts: [OIDCPrompt] = []
-    #expect(try prompts.validatedPrompt() == nil)
+    #expect(prompts.serializedPrompt == nil)
   }
 
   @Test
-  func singleNoneReturnsNone() throws {
+  func singleNoneReturnsNone() {
     let prompts: [OIDCPrompt] = [.none]
-    #expect(try prompts.validatedPrompt() == "none")
+    #expect(prompts.serializedPrompt == "none")
   }
 
   @Test
-  func singlePromptReturnsValue() throws {
-    #expect(try [OIDCPrompt.consent].validatedPrompt() == "consent")
-    #expect(try [OIDCPrompt.login].validatedPrompt() == "login")
-    #expect(try [OIDCPrompt.selectAccount].validatedPrompt() == "select_account")
+  func singlePromptReturnsValue() {
+    #expect([OIDCPrompt.consent].serializedPrompt == "consent")
+    #expect([OIDCPrompt.login].serializedPrompt == "login")
+    #expect([OIDCPrompt.selectAccount].serializedPrompt == "select_account")
   }
 
   @Test
   func multiplePromptsJoinedWithSpace() throws {
     let prompts: [OIDCPrompt] = [.login, .consent]
-    #expect(try prompts.validatedPrompt() == "login consent")
+    let values = try Set(#require(prompts.serializedPrompt?.split(separator: " ").map(String.init)))
+    #expect(values == Set(["login", "consent"]))
   }
 
   @Test
-  func noneWithOtherPromptsThrows() throws {
-    let prompts: [OIDCPrompt] = [.none, .login]
-    #expect {
-      try prompts.validatedPrompt()
-    } throws: { error in
-      let clientError = error as? ClerkClientError
-      return clientError?.message?.contains("\"none\" cannot be combined") == true
-    }
-  }
-
-  @Test
-  func duplicatePromptsThrows() throws {
+  func duplicatePromptsAreDeduped() {
     let prompts: [OIDCPrompt] = [.login, .login]
-    #expect {
-      try prompts.validatedPrompt()
-    } throws: { error in
-      let clientError = error as? ClerkClientError
-      return clientError?.message?.contains("Duplicate") == true
-    }
+    #expect(prompts.serializedPrompt == "login")
+  }
+
+  @Test
+  func noneWithOtherPromptsPassesThrough() throws {
+    let prompts: [OIDCPrompt] = [.none, .login]
+    let values = try Set(#require(prompts.serializedPrompt?.split(separator: " ").map(String.init)))
+    #expect(values == Set(["none", "login"]))
   }
 }
