@@ -15,6 +15,9 @@ struct UserTests {
       apiClient: createMockAPIClient(),
       userService: service
     )
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: .init())
   }
 
   @Test
@@ -94,24 +97,26 @@ struct UserTests {
     #expect(captured.value == "+1234567890")
   }
 
-  struct ExternalAccountScenario: Codable, Equatable {
+  struct ExternalAccountScenario: Equatable {
     let redirectUrl: String?
-    let additionalScopes: [String]?
+    let additionalScopes: [String]
+    let oidcPrompts: [OIDCPrompt]
   }
 
   @Test(
     arguments: [
-      ExternalAccountScenario(redirectUrl: nil, additionalScopes: nil),
-      ExternalAccountScenario(redirectUrl: "custom://redirect", additionalScopes: nil),
-      ExternalAccountScenario(redirectUrl: nil, additionalScopes: ["scope1", "scope2"]),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: "custom://redirect", additionalScopes: [], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: ["scope1", "scope2"], oidcPrompts: []),
+      ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: [.consent]),
     ]
   )
   func createExternalAccountUsesUserServiceCreateExternalAccount(
     scenario: ExternalAccountScenario
   ) async throws {
-    let captured = LockIsolated<(OAuthProvider, String?, [String]?)?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes in
-      captured.setValue((provider, redirectUrl, additionalScopes))
+    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt])?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts in
+      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
       return .mockVerified
     })
 
@@ -120,13 +125,15 @@ struct UserTests {
     _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: scenario.redirectUrl,
-      additionalScopes: scenario.additionalScopes
+      additionalScopes: scenario.additionalScopes,
+      oidcPrompts: scenario.oidcPrompts
     )
 
     let params = try #require(captured.value)
     #expect(params.0 == .google)
     #expect(params.1 == scenario.redirectUrl)
     #expect(params.2 == scenario.additionalScopes)
+    #expect(params.3 == scenario.oidcPrompts)
   }
 
   @Test

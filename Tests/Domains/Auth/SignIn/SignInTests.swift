@@ -15,6 +15,9 @@ struct SignInTests {
       apiClient: createMockAPIClient(),
       signInService: service
     )
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: .init())
   }
 
   private func configureServices(signUpService: MockSignUpService) {

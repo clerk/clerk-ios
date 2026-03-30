@@ -11,6 +11,7 @@ import SwiftUI
 
 struct UserProfileExternalAccountRow: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkUserProfileOAuthConfig) private var oauthConfig
   @Environment(\.clerkTheme) private var theme
 
   @State private var removeResource: RemoveResource?
@@ -69,7 +70,7 @@ struct UserProfileExternalAccountRow: View {
       Spacer()
 
       Menu {
-        if externalAccount.verification?.error != nil {
+        if externalAccount.verification?.error != nil || oauthConfig.shouldOfferReconnect(for: externalAccount) {
           AsyncButton {
             await reconnect()
           } label: { _ in
@@ -135,8 +136,29 @@ extension UserProfileExternalAccountRow {
   private func reconnect() async {
     guard let user else { return }
 
+    let provider = externalAccount.oauthProvider
+    let scopes = oauthConfig.additionalScopes(for: provider)
+    let prompts = oauthConfig.prompts(for: provider)
+
     do {
-      let account = try await user.createExternalAccount(provider: externalAccount.oauthProvider)
+      // Use prepareReauthorization when additional scopes are needed, even if
+      // there is a verification error — reauthorization preserves the existing
+      // account while upserting scopes. Only create a fresh external account
+      // when there is a verification error and no scope reauthorization is required.
+      let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
+                                        externalAccount.verification?.error != nil
+      {
+        try await user.createExternalAccount(
+          provider: provider,
+          additionalScopes: scopes,
+          oidcPrompts: prompts
+        )
+      } else {
+        try await externalAccount.prepareReauthorization(
+          additionalScopes: scopes,
+          oidcPrompts: prompts
+        )
+      }
       try await account.reauthorize()
     } catch {
       self.error = error

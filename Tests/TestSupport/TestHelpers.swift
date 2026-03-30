@@ -121,6 +121,31 @@ extension URLRequest {
     return bodyDict.isEmpty ? nil : bodyDict
   }
 
+  /// Extracts URL-encoded form data preserving repeated keys as arrays.
+  ///
+  /// Use this instead of `urlEncodedFormBody` when the request may contain
+  /// repeated keys (e.g. `additional_scope=write&additional_scope=view`).
+  var urlEncodedFormBodyMultiValue: [String: [String]]? {
+    guard let requestBodyData,
+          let bodyString = String(data: requestBodyData, encoding: .utf8)
+    else {
+      return nil
+    }
+
+    var bodyDict: [String: [String]] = [:]
+    let pairs = bodyString.split(separator: "&")
+    for pair in pairs {
+      let parts = pair.split(separator: "=", maxSplits: 1)
+      if parts.count == 2 {
+        let key = String(parts[0])
+        let value = String(parts[1]).removingPercentEncoding ?? String(parts[1])
+        bodyDict[key, default: []].append(value)
+      }
+    }
+
+    return bodyDict.isEmpty ? nil : bodyDict
+  }
+
   /// Decodes request body as `JSON`.
   var jsonBody: JSON? {
     guard let requestBodyData else { return nil }

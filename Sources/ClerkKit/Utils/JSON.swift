@@ -40,6 +40,11 @@ import Foundation
   case array([JSON])
   case bool(Bool)
   case null
+
+  var isString: Bool {
+    if case .string = self { return true }
+    return false
+  }
 }
 
 extension JSON: Codable {

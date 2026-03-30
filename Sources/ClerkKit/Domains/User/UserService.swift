@@ -12,7 +12,7 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func createBackupCodes() async throws -> BackupCodeResource
   @MainActor func createEmailAddress(emailAddress: String) async throws -> EmailAddress
   @MainActor func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber
-  @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount
+  @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String], oidcPrompts: [OIDCPrompt]) async throws -> ExternalAccount
   @MainActor func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor func createPasskey() async throws -> Passkey
@@ -99,14 +99,23 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String]?) async throws -> ExternalAccount {
-    var bodyParams: [String: String] = [
-      "strategy": provider.strategy,
-      "redirect_url": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
+  func createExternalAccount(
+    provider: OAuthProvider,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompts: [OIDCPrompt]
+  ) async throws -> ExternalAccount {
+    var bodyParams: [String: JSON] = [
+      "strategy": .string(provider.strategy),
+      "redirect_url": .string(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl),
     ]
 
-    if let additionalScopes {
-      bodyParams["additional_scopes"] = additionalScopes.joined(separator: ",")
+    if !additionalScopes.isEmpty {
+      bodyParams["additional_scope"] = .array(additionalScopes.map { .string($0) })
+    }
+
+    if let serializedPrompt = oidcPrompts.serializedPrompt {
+      bodyParams["oidc_prompt"] = .string(serializedPrompt)
     }
 
     let request = Request<ClientResponse<ExternalAccount>>(

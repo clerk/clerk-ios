@@ -59,6 +59,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   private let presentationContext: UserButtonPresentationContext
   private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
+  private let userProfileOAuthConfig: UserProfileOAuthConfiguration
   private let signedOutContent: () -> SignedOutContent
 
   private enum PresentedSheet: String, Identifiable {
@@ -82,6 +83,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       presentationContext: .standard,
       customRows: [],
       customDestination: nil,
+      userProfileOAuthConfig: .init(),
       signedOutContent: signedOutContent
     )
   }
@@ -90,11 +92,13 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     presentationContext: UserButtonPresentationContext,
     customRows: [UserProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?,
+    userProfileOAuthConfig: UserProfileOAuthConfiguration,
     @ViewBuilder signedOutContent: @escaping () -> SignedOutContent
   ) {
     self.presentationContext = presentationContext
     self.customRows = customRows
     self.customDestination = customDestination
+    self.userProfileOAuthConfig = userProfileOAuthConfig
     self.signedOutContent = signedOutContent
   }
 
@@ -110,6 +114,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       presentationContext: presentationContext,
       customRows: [],
       customDestination: nil,
+      userProfileOAuthConfig: .init(),
       signedOutContent: { EmptyView() }
     )
   }
@@ -153,7 +158,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           isDismissable: true,
           navigationPath: nil,
           customRows: customRows,
-          customDestination: customDestination
+          customDestination: customDestination,
+          oauthConfig: userProfileOAuthConfig
         )
         .presentationDragIndicator(.visible)
       case .sessionTaskAuth:
@@ -189,6 +195,20 @@ extension UserButton {
       presentationContext: presentationContext,
       customRows: rows,
       customDestination: customDestination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
+      signedOutContent: signedOutContent
+    )
+  }
+
+  /// Configures OAuth settings per provider for built-in connected account flows in the presented user profile.
+  public func userProfileOAuthConfig(
+    _ configs: [OAuthProviderConfig]
+  ) -> UserButton<Route, SignedOutContent, Destination> {
+    UserButton<Route, SignedOutContent, Destination>(
+      presentationContext: presentationContext,
+      customRows: customRows,
+      customDestination: customDestination,
+      userProfileOAuthConfig: .init(configs),
       signedOutContent: signedOutContent
     )
   }
@@ -216,6 +236,7 @@ extension UserButton where Destination == EmptyView {
       presentationContext: presentationContext,
       customRows: customRows,
       customDestination: destination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
@@ -230,6 +251,7 @@ extension UserButton where Route == Never, Destination == EmptyView {
       presentationContext: presentationContext,
       customRows: rows,
       customDestination: nil,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
@@ -243,6 +265,7 @@ extension UserButton where Route == Never, Destination == EmptyView {
       presentationContext: presentationContext,
       customRows: [],
       customDestination: destination,
+      userProfileOAuthConfig: userProfileOAuthConfig,
       signedOutContent: signedOutContent
     )
   }
