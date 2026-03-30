@@ -25,11 +25,11 @@ struct UserProfileOAuthConfiguration: Equatable {
   }
 
   func additionalScopes(for provider: OAuthProvider) -> [String] {
-    configs.first { $0.provider == provider }?.additionalScopes ?? []
+    configs.filter { $0.provider == provider }.flatMap(\.additionalScopes)
   }
 
   func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
-    configs.first { $0.provider == provider }?.prompts ?? []
+    configs.filter { $0.provider == provider }.flatMap(\.prompts)
   }
 
   func shouldOfferReconnect(for account: ExternalAccount) -> Bool {

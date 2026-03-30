@@ -141,12 +141,9 @@ extension UserProfileExternalAccountRow {
     let prompts = oauthConfig.prompts(for: provider)
 
     do {
-      let account: ExternalAccount = if oauthConfig.requiresReauthorization(for: externalAccount) {
-        try await externalAccount.prepareReauthorization(
-          additionalScopes: scopes,
-          oidcPrompts: prompts
-        )
-      } else if externalAccount.verification?.error != nil {
+      let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
+                                        externalAccount.verification?.error != nil
+      {
         try await user.createExternalAccount(
           provider: provider,
           additionalScopes: scopes,
