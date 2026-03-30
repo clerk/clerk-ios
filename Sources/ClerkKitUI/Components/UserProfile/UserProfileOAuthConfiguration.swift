@@ -42,8 +42,9 @@ struct UserProfileOAuthConfiguration: Equatable {
 
     let approvedScopes = Set(account.approvedScopes.split(separator: " ").map(String.init))
 
-    // If no approved scopes are reported, we can't determine if reauth is needed.
-    guard !approvedScopes.isEmpty else { return false }
+    // If no approved scopes are reported, assume the configured scopes
+    // have not been granted so the user can request them via reconnect.
+    guard !approvedScopes.isEmpty else { return true }
     return !configuredScopes.isSubset(of: approvedScopes)
   }
 }
