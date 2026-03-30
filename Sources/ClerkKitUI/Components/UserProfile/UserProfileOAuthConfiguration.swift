@@ -24,12 +24,12 @@ struct UserProfileOAuthConfiguration: Equatable {
     self.configs = configs
   }
 
-  func additionalScopes(for provider: OAuthProvider) -> Set<String> {
-    Set(configs.filter { $0.provider == provider }.flatMap(\.additionalScopes))
+  func additionalScopes(for provider: OAuthProvider) -> [String] {
+    Array(Set(configs.filter { $0.provider == provider }.flatMap(\.additionalScopes)))
   }
 
-  func prompts(for provider: OAuthProvider) -> Set<OIDCPrompt> {
-    Set(configs.filter { $0.provider == provider }.flatMap(\.prompts))
+  func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
+    Array(Set(configs.filter { $0.provider == provider }.flatMap(\.prompts)))
   }
 
   func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
