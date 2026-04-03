@@ -92,6 +92,10 @@ enum MagicLinkStore {
     Clerk.shared.dependencies.keychain
   }
 
+  /// Stores the verifier for the active native magic-link flow.
+  ///
+  /// Only one pending flow is persisted at a time. Saving a new verifier
+  /// replaces any previously stored pending flow.
   static func save(codeVerifier: String) throws {
     let createdAt = Date()
     let pendingFlow = PendingMagicLinkFlow(

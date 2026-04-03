@@ -105,7 +105,9 @@ extension SignIn {
   /// Sends a native magic link to the specified email address.
   ///
   /// This prepares the `email_link` first factor using PKCE and stores the verifier locally
-  /// so the callback can be completed inside the app.
+  /// so the callback can be completed inside the app. Only one pending native
+  /// magic-link flow is stored locally at a time; starting a new flow replaces
+  /// the previously stored verifier.
   ///
   /// - Parameters:
   ///   - emailAddressId: Optional email address ID. If not provided, uses the identifying email-link factor.
