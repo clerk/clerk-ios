@@ -212,14 +212,14 @@ extension EmailLinkVerificationView {
           navigation.path = []
           return
         }
-        _ = try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
 
       case .signUp:
         guard let signUp = clerk.auth.currentSignUp else {
           navigation.path = []
           return
         }
-        _ = try await signUp.sendEmailLink()
+        try await signUp.sendEmailLink()
       }
       deliveryState = .sent
     } catch {
