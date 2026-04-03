@@ -230,15 +230,17 @@ extension EmailLinkVerificationView {
   }
 
   private func openEmailApp() {
-    for urlString in ["message://", "mailto:"] {
-      guard let url = URL(string: urlString) else { continue }
-      if UIApplication.shared.canOpenURL(url) {
-        UIApplication.shared.open(url)
-        return
-      }
+    guard let url = URL(string: "mailto:") else {
+      error = ClerkClientError(message: "No email app is available on this device.")
+      return
     }
 
-    error = ClerkClientError(message: "No email app is available on this device.")
+    guard UIApplication.shared.canOpenURL(url) else {
+      error = ClerkClientError(message: "No email app is available on this device.")
+      return
+    }
+
+    UIApplication.shared.open(url)
   }
 }
 
