@@ -330,12 +330,8 @@ struct AuthTests {
     )
     try MagicLinkStore.save(codeVerifier: "verifier_123")
 
-    let result = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
+    let signIn = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
 
-    guard case .signIn(let signIn) = result else {
-      Issue.record("Expected .signIn result")
-      return
-    }
     #expect(signIn.createdSessionId == "sess_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")

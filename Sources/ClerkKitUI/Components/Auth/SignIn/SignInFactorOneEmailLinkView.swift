@@ -224,6 +224,7 @@ extension EmailLinkVerificationView {
       deliveryState = .sent
     } catch {
       deliveryState = .failed(error)
+      self.error = error
       ClerkLogger.error("Failed to send email link", error: error)
     }
   }

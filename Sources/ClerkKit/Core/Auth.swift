@@ -305,31 +305,31 @@ public struct Auth {
 
   /// Returns whether a URL looks like a native magic-link callback.
   ///
-  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string or fragment.
+  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
   public func canHandleMagicLinkCallback(_ url: URL) -> Bool {
     MagicLinkCallback.canHandle(url)
   }
 
-  /// Handles a native magic-link callback and completes sign-in or sign-up using the stored PKCE verifier.
+  /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
   ///
   /// - Parameter url: The callback URL opened by the app.
-  /// - Returns: A `TransferFlowResult` containing the completed `SignIn` or `SignUp`.
+  /// - Returns: The completed `SignIn`.
   /// - Throws: An error if the callback is invalid or completion fails.
   @discardableResult
-  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
+  public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
     let callback = try MagicLinkCallback(url: url)
     return try await completeMagicLink(flowId: callback.flowId, approvalToken: callback.approvalToken)
   }
 
-  /// Completes a pending native magic-link flow using callback values from the deep link.
+  /// Completes a pending native magic-link sign-in flow using callback values from the deep link.
   ///
   /// - Parameters:
   ///   - flowId: The `flow_id` value from the callback.
   ///   - approvalToken: The `approval_token` value from the callback.
-  /// - Returns: A `TransferFlowResult` containing the completed `SignIn` or `SignUp`.
+  /// - Returns: The completed `SignIn`.
   /// - Throws: An error if no pending flow exists or completion fails.
   @discardableResult
-  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> SignIn {
     let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -379,7 +379,7 @@ public struct Auth {
       }
     }
 
-    return .signIn(signIn)
+    return signIn
   }
 
   // MARK: - Sign Up Entry Points
