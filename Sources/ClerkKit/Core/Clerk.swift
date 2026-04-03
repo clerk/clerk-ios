@@ -202,7 +202,6 @@ public final class Clerk {
     Auth(
       apiClient: dependencies.apiClient,
       magicLinkStore: dependencies.magicLinkStore,
-      redirectUrl: options.redirectConfig.redirectUrl,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
@@ -492,10 +491,10 @@ extension Clerk {
 
     let callback = try MagicLinkCallback(url: url)
 
-    try await handle(
-      .magicLink(flowId: callback.flowId, approvalToken: callback.approvalToken),
-      using: auth
-    )
+    try await auth.handle(.magicLink(
+      flowId: callback.flowId,
+      approvalToken: callback.approvalToken
+    ))
 
     return true
   }
