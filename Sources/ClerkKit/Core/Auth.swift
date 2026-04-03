@@ -403,19 +403,6 @@ public struct Auth {
     }
   }
 
-  private func matchesRedirectUrl(_ url: URL) -> Bool {
-    guard
-      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
-      let expected = URLComponents(string: redirectUrl)
-    else {
-      return false
-    }
-
-    return actual.scheme == expected.scheme
-      && actual.host == expected.host
-      && actual.path == expected.path
-  }
-
   // MARK: - Sign Up Entry Points
 
   /// Creates a new sign-up attempt with the provided parameters.
@@ -656,5 +643,20 @@ public struct Auth {
   /// This is internal to allow middleware to emit events while keeping the emitter private.
   func send(_ event: AuthEvent) {
     eventEmitter.send(event)
+  }
+}
+
+extension Auth {
+  private func matchesRedirectUrl(_ url: URL) -> Bool {
+    guard
+      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
+      let expected = URLComponents(string: redirectUrl)
+    else {
+      return false
+    }
+
+    return actual.scheme == expected.scheme
+      && actual.host == expected.host
+      && actual.path == expected.path
   }
 }
