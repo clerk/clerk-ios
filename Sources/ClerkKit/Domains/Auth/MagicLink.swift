@@ -47,6 +47,20 @@ struct MagicLinkCallback: Equatable {
       && queryParam(named: "approval_token", in: url) != nil
   }
 
+  static func canHandle(_ url: URL, redirectUrl: String) -> Bool {
+    guard
+      hasRequiredQueryParams(url),
+      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
+      let expected = URLComponents(string: redirectUrl)
+    else {
+      return false
+    }
+
+    return actual.scheme == expected.scheme
+      && actual.host == expected.host
+      && actual.path == expected.path
+  }
+
   private static func queryParam(named name: String, in url: URL) -> String? {
     guard let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?
       .queryItems?

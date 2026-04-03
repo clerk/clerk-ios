@@ -345,14 +345,11 @@ extension Clerk {
   /// ```
   @discardableResult
   public func handle(_ url: URL) async throws -> Bool {
-    guard auth.canHandleMagicLinkCallback(url) else { return false }
+    guard let route = try ClerkURLRoute(url: url) else {
+      return false
+    }
 
-    let callback = try MagicLinkCallback(url: url)
-
-    try await auth.handle(.magicLink(
-      flowId: callback.flowId,
-      approvalToken: callback.approvalToken
-    ))
+    try await auth.handle(route)
 
     return true
   }

@@ -316,7 +316,10 @@ public struct Auth {
   ///
   /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
   func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    matchesRedirectUrl(url) && MagicLinkCallback.hasRequiredQueryParams(url)
+    MagicLinkCallback.canHandle(
+      url,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    )
   }
 
   /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
@@ -326,7 +329,7 @@ public struct Auth {
   /// - Throws: An error if the callback is invalid or completion fails.
   @discardableResult
   public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
-    guard matchesRedirectUrl(url) else {
+    guard canHandleMagicLinkCallback(url) else {
       throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
     }
 
@@ -642,20 +645,5 @@ public struct Auth {
   /// This is internal to allow middleware to emit events while keeping the emitter private.
   func send(_ event: AuthEvent) {
     eventEmitter.send(event)
-  }
-}
-
-extension Auth {
-  private func matchesRedirectUrl(_ url: URL) -> Bool {
-    guard
-      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
-      let expected = URLComponents(string: Clerk.shared.options.redirectConfig.redirectUrl)
-    else {
-      return false
-    }
-
-    return actual.scheme == expected.scheme
-      && actual.host == expected.host
-      && actual.path == expected.path
   }
 }
