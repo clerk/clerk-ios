@@ -16,7 +16,6 @@ import Foundation
 public struct Auth {
   private let apiClient: APIClient
   private let magicLinkStore: MagicLinkStore
-  private let redirectUrl: String
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
@@ -26,7 +25,6 @@ public struct Auth {
   init(
     apiClient: APIClient,
     magicLinkStore: MagicLinkStore,
-    redirectUrl: String,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
@@ -35,7 +33,6 @@ public struct Auth {
   ) {
     self.apiClient = apiClient
     self.magicLinkStore = magicLinkStore
-    self.redirectUrl = redirectUrl
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
@@ -329,8 +326,15 @@ public struct Auth {
   /// - Throws: An error if the callback is invalid or completion fails.
   @discardableResult
   public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
+    guard matchesRedirectUrl(url) else {
+      throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
+    }
+
     let callback = try MagicLinkCallback(url: url)
-    return try await handle(.magicLink(flowId: callback.flowId, approvalToken: callback.approvalToken))
+    return try await handle(.magicLink(
+      flowId: callback.flowId,
+      approvalToken: callback.approvalToken
+    ))
   }
 
   /// Completes a pending native magic-link sign-in flow using callback values from the deep link.
@@ -376,8 +380,7 @@ public struct Auth {
       do {
         try await setActive(sessionId: sessionId)
       } catch {
-        let isAlreadyActive = sessions.contains(where: { $0.id == sessionId })
-        if !isAlreadyActive {
+        if Clerk.shared.client?.lastActiveSessionId != sessionId {
           throw error
         }
       }
@@ -386,6 +389,7 @@ public struct Auth {
     return signIn
   }
 
+  @discardableResult
   func handle(_ route: ClerkURLRoute) async throws -> SignIn {
     try await urlHandlingCoordinator.handle(route) {
       switch route {
@@ -645,7 +649,7 @@ extension Auth {
   private func matchesRedirectUrl(_ url: URL) -> Bool {
     guard
       let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
-      let expected = URLComponents(string: redirectUrl)
+      let expected = URLComponents(string: Clerk.shared.options.redirectConfig.redirectUrl)
     else {
       return false
     }
