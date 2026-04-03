@@ -31,6 +31,7 @@ final class MockDependencyContainer: Dependencies {
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
+  let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
 
   /// Creates a dependency container with the provided API client and optional custom services.
@@ -71,6 +72,7 @@ final class MockDependencyContainer: Dependencies {
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
+    magicLinkStore = MagicLinkStore(keychain: self.keychain)
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services

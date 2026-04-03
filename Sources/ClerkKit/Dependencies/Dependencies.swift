@@ -58,6 +58,9 @@ protocol Dependencies: AnyObject {
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }
 
+  /// Store for pending native magic-link PKCE state.
+  var magicLinkStore: MagicLinkStore { get }
+
   /// Manages logging of session status changes.
   var sessionStatusLogger: SessionStatusLogger { get }
 }

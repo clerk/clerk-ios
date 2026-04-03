@@ -84,19 +84,19 @@ enum MagicLinkPKCE {
   }
 }
 
-@MainActor
-enum MagicLinkStore {
-  private static let ttl: TimeInterval = 10 * 60
+final class MagicLinkStore {
+  private let keychain: any KeychainStorage
+  private let ttl: TimeInterval = 10 * 60
 
-  private static var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
+  init(keychain: any KeychainStorage) {
+    self.keychain = keychain
   }
 
   /// Stores the verifier for the active native magic-link flow.
   ///
   /// Only one pending flow is persisted at a time. Saving a new verifier
   /// replaces any previously stored pending flow.
-  static func save(codeVerifier: String) throws {
+  func save(codeVerifier: String) throws {
     let createdAt = Date()
     let pendingFlow = PendingMagicLinkFlow(
       codeVerifier: codeVerifier,
@@ -107,7 +107,7 @@ enum MagicLinkStore {
     try keychain.set(data, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 
-  static func load() -> PendingMagicLinkFlow? {
+  func load() -> PendingMagicLinkFlow? {
     guard let data = try? keychain.data(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) else {
       return nil
     }
@@ -125,7 +125,7 @@ enum MagicLinkStore {
     return pendingFlow
   }
 
-  static func clear() {
+  func clear() {
     try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 }
