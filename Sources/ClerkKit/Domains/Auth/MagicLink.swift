@@ -30,11 +30,10 @@ struct MagicLinkCallback: Equatable {
   let approvalToken: String
 
   init(url: URL) throws {
-    guard let flowId = Self.queryParam(named: "flow_id", in: url) else {
+    guard let flowId = url.queryParam(named: Param.flowId.rawValue) else {
       throw ClerkClientError(message: "Magic link callback is missing flow_id.")
     }
-
-    guard let approvalToken = Self.queryParam(named: "approval_token", in: url) else {
+    guard let approvalToken = url.queryParam(named: Param.approvalToken.rawValue) else {
       throw ClerkClientError(message: "Magic link callback is missing approval_token.")
     }
 
@@ -42,38 +41,12 @@ struct MagicLinkCallback: Equatable {
     self.approvalToken = approvalToken
   }
 
-  static func hasRequiredQueryParams(_ url: URL) -> Bool {
-    queryParam(named: "flow_id", in: url) != nil
-      && queryParam(named: "approval_token", in: url) != nil
+  private enum Param: String, CaseIterable {
+    case flowId = "flow_id"
+    case approvalToken = "approval_token"
   }
 
-  static func canHandle(_ url: URL, redirectUrl: String) -> Bool {
-    guard
-      hasRequiredQueryParams(url),
-      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
-      let expected = URLComponents(string: redirectUrl)
-    else {
-      return false
-    }
-
-    return actual.scheme == expected.scheme
-      && actual.host == expected.host
-      && actual.path == expected.path
-  }
-
-  private static func queryParam(named name: String, in url: URL) -> String? {
-    guard let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-      .queryItems?
-      .first(where: { $0.name == name })?
-      .value?
-      .trimmingCharacters(in: .whitespacesAndNewlines),
-      !value.isEmpty
-    else {
-      return nil
-    }
-
-    return value
-  }
+  static let requiredParams = Set(Param.allCases.map(\.rawValue))
 }
 
 enum MagicLinkPKCE {

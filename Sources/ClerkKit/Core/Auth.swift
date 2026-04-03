@@ -316,10 +316,11 @@ public struct Auth {
   ///
   /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
   func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    MagicLinkCallback.canHandle(
-      url,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    )
+    guard case .magicLink = try? ClerkURLRoute(url: url) else {
+      return false
+    }
+
+    return true
   }
 
   /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
