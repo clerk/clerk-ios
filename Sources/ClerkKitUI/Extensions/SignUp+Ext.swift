@@ -24,7 +24,7 @@ extension SignUp {
 
     // Fall back to environment user settings
     if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
-       verifications.contains("email_link")
+       verifications.contains(FactorStrategy.emailLink.rawValue)
     {
       return .emailLink
     }

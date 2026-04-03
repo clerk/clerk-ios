@@ -44,7 +44,7 @@ struct MagicLinkCallback: Equatable {
 
   static func canHandle(_ url: URL) -> Bool {
     queryParam(named: "flow_id", in: url) != nil
-      || queryParam(named: "approval_token", in: url) != nil
+      && queryParam(named: "approval_token", in: url) != nil
   }
 
   private static func queryParam(named name: String, in url: URL) -> String? {
