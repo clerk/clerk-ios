@@ -20,7 +20,6 @@ struct AuthTests {
     sessionService: MockSessionService? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
-    environment: Clerk.Environment? = .mock,
     options: Clerk.Options = .init()
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
