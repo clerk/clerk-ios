@@ -286,8 +286,9 @@ struct AuthTests {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-success.clerk.accounts.dev"))
+    let redirectUrl = "com.clerk.Quickstart://callback"
 
-    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
@@ -349,8 +350,9 @@ struct AuthTests {
     let activatedSessionId = LockIsolated<String?>(nil)
     let completionRequestCount = LockIsolated(0)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-dedupe.clerk.accounts.dev"))
+    let redirectUrl = "com.clerk.Quickstart://callback"
 
-    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
@@ -415,8 +417,9 @@ struct AuthTests {
     let signInCalled = LockIsolated(false)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-stale.clerk.accounts.dev"))
+    let redirectUrl = "com.clerk.Quickstart://callback"
 
-    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_old&approval_token=approval_old"))
+    let callbackUrl = try #require(URL(string: "\(redirectUrl)?flow_id=flow_old&approval_token=approval_old"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
@@ -477,6 +480,18 @@ struct AuthTests {
     #expect(activatedSessionId.value == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == true)
     #expect(clerk.dependencies.magicLinkStore.load()?.codeVerifier == "verifier_new")
+  }
+
+  @Test
+  func canHandleMagicLinkCallbackRejectsMismatchedOrigin() throws {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient()
+    )
+
+    let mismatchedUrl = try #require(URL(string: "https://example.com/callback?flow_id=flow_123&approval_token=approval_123"))
+
+    #expect(clerk.auth.canHandleMagicLinkCallback(mismatchedUrl) == false)
   }
 
   @Test

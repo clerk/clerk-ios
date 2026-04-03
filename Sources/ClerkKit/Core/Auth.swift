@@ -16,6 +16,7 @@ import Foundation
 public struct Auth {
   private let apiClient: APIClient
   private let magicLinkStore: MagicLinkStore
+  private let redirectUrl: String
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
@@ -25,6 +26,7 @@ public struct Auth {
   init(
     apiClient: APIClient,
     magicLinkStore: MagicLinkStore,
+    redirectUrl: String,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
@@ -33,6 +35,7 @@ public struct Auth {
   ) {
     self.apiClient = apiClient
     self.magicLinkStore = magicLinkStore
+    self.redirectUrl = redirectUrl
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
@@ -315,8 +318,8 @@ public struct Auth {
   /// Returns whether a URL looks like a native magic-link callback.
   ///
   /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
-  public func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    MagicLinkCallback.canHandle(url)
+  func canHandleMagicLinkCallback(_ url: URL) -> Bool {
+    matchesRedirectUrl(url) && MagicLinkCallback.hasRequiredQueryParams(url)
   }
 
   /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
@@ -369,9 +372,6 @@ public struct Auth {
       completionResponse = try await apiClient.send(request).value
       magicLinkStore.clear()
     } catch let error as ClerkAPIError {
-      if magicLinkTerminalErrorCodes.contains(error.code), error.code != "pkce_verification_failed" {
-        magicLinkStore.clear()
-      }
       throw error
     }
 
@@ -401,6 +401,19 @@ public struct Auth {
         )
       }
     }
+  }
+
+  private func matchesRedirectUrl(_ url: URL) -> Bool {
+    guard
+      let actual = URLComponents(url: url, resolvingAgainstBaseURL: false),
+      let expected = URLComponents(string: redirectUrl)
+    else {
+      return false
+    }
+
+    return actual.scheme == expected.scheme
+      && actual.host == expected.host
+      && actual.path == expected.path
   }
 
   // MARK: - Sign Up Entry Points

@@ -229,8 +229,6 @@ struct ClerkTests {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-clerktests-success.clerk.accounts.dev"))
-
-    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
@@ -275,6 +273,7 @@ struct ClerkTests {
       sessionService: sessionService
     )
     clerk.environment = .mock
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
 
     let handled = try await clerk.handle(callbackUrl)
@@ -291,8 +290,6 @@ struct ClerkTests {
     let createCallCount = LockIsolated(0)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-clerktests-dedupe.clerk.accounts.dev"))
-
-    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     let completionMock = try Mock(
@@ -331,6 +328,7 @@ struct ClerkTests {
       sessionService: sessionService
     )
     clerk.environment = .mock
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
 
     async let firstHandled = clerk.handle(callbackUrl)

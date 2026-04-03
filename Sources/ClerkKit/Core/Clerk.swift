@@ -166,6 +166,7 @@ public final class Clerk {
     Auth(
       apiClient: dependencies.apiClient,
       magicLinkStore: dependencies.magicLinkStore,
+      redirectUrl: options.redirectConfig.redirectUrl,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
@@ -345,9 +346,14 @@ extension Clerk {
   /// ```
   @discardableResult
   public func handle(_ url: URL) async throws -> Bool {
-    guard let route = try ClerkURLRoute(url: url) else { return false }
+    guard auth.canHandleMagicLinkCallback(url) else { return false }
 
-    try await handle(route, using: auth)
+    let callback = try MagicLinkCallback(url: url)
+
+    try await handle(
+      .magicLink(flowId: callback.flowId, approvalToken: callback.approvalToken),
+      using: auth
+    )
 
     return true
   }
